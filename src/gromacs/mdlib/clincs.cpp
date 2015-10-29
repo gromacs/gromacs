@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -398,7 +399,7 @@ real lincs_rmsd(struct gmx_lincsdata *lincsd, gmx_bool bSD2)
 {
     if (lincsd->rmsd_data[0] > 0)
     {
-        return sqrt(lincsd->rmsd_data[bSD2 ? 2 : 1]/lincsd->rmsd_data[0]);
+        return std::sqrt(lincsd->rmsd_data[bSD2 ? 2 : 1]/lincsd->rmsd_data[0]);
     }
     else
     {
@@ -988,7 +989,7 @@ static void calc_dist_iter(int                       b0,
         }
         if (dlen2 > 0)
         {
-            mvb = blc[b]*(len - dlen2*gmx_invsqrt(dlen2));
+            mvb = blc[b]*(len - dlen2*gmx::invsqrt(dlen2));
         }
         else
         {
@@ -1155,7 +1156,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
             tmp0    = x[i][0] - x[j][0];
             tmp1    = x[i][1] - x[j][1];
             tmp2    = x[i][2] - x[j][2];
-            rlen    = gmx_invsqrt(tmp0*tmp0 + tmp1*tmp1 + tmp2*tmp2);
+            rlen    = gmx::invsqrt(tmp0*tmp0 + tmp1*tmp1 + tmp2*tmp2);
             r[b][0] = rlen*tmp0;
             r[b][1] = rlen*tmp1;
             r[b][2] = rlen*tmp2;
@@ -1450,7 +1451,7 @@ void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
 
         a1          = li->bla[2*i];
         a2          = li->bla[2*i+1];
-        li->blc[i]  = gmx_invsqrt(invmass[a1] + invmass[a2]);
+        li->blc[i]  = gmx::invsqrt(invmass[a1] + invmass[a2]);
         li->blc1[i] = invsqrt2;
     }
 
@@ -2486,8 +2487,8 @@ static void cconerr(const struct gmx_lincsdata *lincsd,
                 rvec_sub(x[bla[2*b]], x[bla[2*b+1]], dx);
             }
             r2  = norm2(dx);
-            len = r2*gmx_invsqrt(r2);
-            d   = fabs(len/bllen[b]-1);
+            len = r2*gmx::invsqrt(r2);
+            d   = std::abs(len/bllen[b]-1);
             if (d > ma && (nlocat == NULL || nlocat[b]))
             {
                 ma = d;
@@ -2599,8 +2600,8 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                     if (lincsd->bllen[i] == 0)
                     {
                         lincsd->bllen[i] =
-                            sqrt(distance2(x[lincsd->bla[2*i]],
-                                           x[lincsd->bla[2*i+1]]));
+                            std::sqrt(distance2(x[lincsd->bla[2*i]],
+                                                x[lincsd->bla[2*i+1]]));
                     }
                 }
             }
@@ -2641,7 +2642,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             fprintf(fplog, "   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
             fprintf(fplog, "       Before LINCS          %.6f    %.6f %6d %6d\n",
-                    sqrt(p_ssd/ncons_loc), p_max,
+                    std::sqrt(p_ssd/ncons_loc), p_max,
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
         }
@@ -2671,7 +2672,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             fprintf(fplog,
                     "        After LINCS          %.6f    %.6f %6d %6d\n\n",
-                    sqrt(p_ssd/ncons_loc), p_max,
+                    std::sqrt(p_ssd/ncons_loc), p_max,
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
                     ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
         }
@@ -2695,7 +2696,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                         "rms %.6f, max %.6f (between atoms %d and %d)\n",
                         gmx_step_str(step, buf2), ir->init_t+step*ir->delta_t,
                         buf3,
-                        sqrt(p_ssd/ncons_loc), p_max,
+                        std::sqrt(p_ssd/ncons_loc), p_max,
                         ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
                         ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
                 if (fplog)

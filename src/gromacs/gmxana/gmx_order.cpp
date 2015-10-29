@@ -51,6 +51,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -607,15 +608,15 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                  */
                 if (use_unitvector)
                 {
-                    cossum[XX] = sqr(iprod(Sx, direction)); /* this is allowed, since Sa is normalized */
-                    cossum[YY] = sqr(iprod(Sy, direction));
-                    cossum[ZZ] = sqr(iprod(Sz, direction));
+                    cossum[XX] = gmx::square(iprod(Sx, direction)); /* this is allowed, since Sa is normalized */
+                    cossum[YY] = gmx::square(iprod(Sy, direction));
+                    cossum[ZZ] = gmx::square(iprod(Sz, direction));
                 }
                 else
                 {
-                    cossum[XX] = sqr(Sx[axis]); /* this is allowed, since Sa is normalized */
-                    cossum[YY] = sqr(Sy[axis]);
-                    cossum[ZZ] = sqr(Sz[axis]);
+                    cossum[XX] = gmx::square(Sx[axis]); /* this is allowed, since Sa is normalized */
+                    cossum[YY] = gmx::square(Sy[axis]);
+                    cossum[ZZ] = gmx::square(Sz[axis]);
                 }
 
                 for (m = 0; m < DIM; m++)

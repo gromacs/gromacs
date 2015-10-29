@@ -52,6 +52,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -477,7 +478,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             {
                 if (bDim[m] || bDim[DIM])
                 {
-                    len2 += sqr(sum[index[i]][m]);
+                    len2 += gmx::square(sum[index[i]][m]);
                 }
             }
             if (len2 > max)
@@ -520,7 +521,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                 {
                     if (bDim[m] || bDim[DIM])
                     {
-                        len2 += sqr(sum[index[i]][m]);
+                        len2 += gmx::square(sum[index[i]][m]);
                     }
                 }
                 atoms->pdbinfo[index[i]].bfac = std::sqrt(len2)*scale;

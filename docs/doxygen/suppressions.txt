@@ -4,7 +4,6 @@ share/template/template.cpp: error: source file documentation appears outside fu
 src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
 
 # These are OK
-src/gromacs/math/vec.h: warning: installed header includes non-installed "config.h"
 src/gromacs/linearalgebra/eigensolver.cpp: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_arpack.cpp: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first

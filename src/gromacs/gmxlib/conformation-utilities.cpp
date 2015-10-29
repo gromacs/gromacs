@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 
@@ -57,7 +58,7 @@ static real dist2(t_pbc *pbc, rvec x, rvec y)
 
 static real distance_to_z(rvec x)
 {
-    return (sqr(x[XX])+sqr(x[YY]));
+    return (gmx::square(x[XX])+gmx::square(x[YY]));
 } /*distance_to_z()*/
 
 static void low_rotate_conf(int natom, rvec *x, real alfa, real beta, real gamma)

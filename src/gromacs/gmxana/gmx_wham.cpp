@@ -60,6 +60,7 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
@@ -879,7 +880,7 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
 
                 if (!opt->bTab)
                 {
-                    U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                    U = 0.5*window[i].k[j]*gmx::square(distance);       /* harmonic potential assumed. */
                 }
                 else
                 {
@@ -972,7 +973,7 @@ void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
 
                         if (!opt->bTab)
                         {
-                            U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                            U = 0.5*window[j].k[k]*gmx::square(distance);       /* harmonic potential assumed. */
                         }
                         else
                         {
@@ -1039,7 +1040,7 @@ double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
 
                         if (!opt->bTab)
                         {
-                            U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                            U = 0.5*window[i].k[j]*gmx::square(distance);       /* harmonic potential assumed. */
                         }
                         else
                         {
@@ -1781,7 +1782,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
     {
         bsProfiles_av [i] /= opt->nBootStrap;
         bsProfiles_av2[i] /= opt->nBootStrap;
-        tmp                = bsProfiles_av2[i]-sqr(bsProfiles_av[i]);
+        tmp                = bsProfiles_av2[i]-gmx::square(bsProfiles_av[i]);
         stddev             = (tmp >= 0.) ? std::sqrt(tmp) : 0.; /* Catch rouding errors */
         fprintf(fp, "%e\t%e\t%e\n", (i+0.5)*opt->dz+opt->min, bsProfiles_av [i], stddev);
     }
@@ -2180,7 +2181,7 @@ double dist_ndim(double **dx, int ndim, int line)
     double r2 = 0.;
     for (i = 0; i < ndim; i++)
     {
-        r2 += sqr(dx[i][line]);
+        r2 += gmx::square(dx[i][line]);
     }
     return std::sqrt(r2);
 }
@@ -2649,10 +2650,10 @@ void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
 
     /* only evaluate within +- 3sigma of the Gausian */
     siglim  = 3.0*opt->sigSmoothIact;
-    siglim2 = dsqr(siglim);
+    siglim2 = gmx::square(siglim);
     /* pre-factor of Gaussian */
     gaufact    = 1.0/(std::sqrt(2*M_PI)*opt->sigSmoothIact);
-    invtwosig2 = 0.5/dsqr(opt->sigSmoothIact);
+    invtwosig2 = 0.5/gmx::square(opt->sigSmoothIact);
 
     for (i = 0; i < nwins; i++)
     {
@@ -2666,7 +2667,7 @@ void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
             {
                 for (jg = 0; jg < window[j].nPull; jg++)
                 {
-                    dpos2 = dsqr(window[j].pos[jg]-pos);
+                    dpos2 = gmx::square(window[j].pos[jg]-pos);
                     if (dpos2 < siglim2)
                     {
                         w       = gaufact*std::exp(-dpos2*invtwosig2);

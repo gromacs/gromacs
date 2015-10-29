@@ -45,6 +45,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -253,13 +254,13 @@ int gmx_spol(int argc, char *argv[])
     {
         rcut = 10*rmax;
     }
-    rcut2 = sqr(rcut);
+    rcut2 = gmx::square(rcut);
     invbw = 1/bw;
     nbin  = static_cast<int>(rcut*invbw)+2;
     snew(hist, nbin);
 
-    rmin2 = sqr(rmin);
-    rmax2 = sqr(rmax);
+    rmin2 = gmx::square(rmin);
+    rmax2 = gmx::square(rmax);
 
     nf    = 0;
     ntot  = 0;
@@ -368,7 +369,7 @@ int gmx_spol(int argc, char *argv[])
         sinp  /= ntot;
         sdinp /= ntot;
         fprintf(stderr, "Average dipole:                               %f (D), std.dev. %f\n",
-                sdip, std::sqrt(sdip2-sqr(sdip)));
+                sdip, std::sqrt(sdip2-gmx::square(sdip)));
         fprintf(stderr, "Average radial component of the dipole:       %f (D)\n",
                 sinp);
         fprintf(stderr, "Average radial component of the polarization: %f (D)\n",

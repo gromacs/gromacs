@@ -52,6 +52,7 @@
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"
@@ -913,12 +914,12 @@ int gmx_make_edi(int argc, char *argv[])
         {
             /* Trick: invert sign of Efl and alpha2 then this will give the same sign in the exponential and inverted sign outside */
             edi_params.flood.constEfl = -constEfl;
-            edi_params.flood.alpha2   = -sqr(alpha);
+            edi_params.flood.alpha2   = -gmx::square(alpha);
         }
         else
         {
             edi_params.flood.constEfl = constEfl;
-            edi_params.flood.alpha2   = sqr(alpha);
+            edi_params.flood.alpha2   = gmx::square(alpha);
         }
     }
 

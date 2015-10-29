@@ -54,6 +54,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -78,7 +79,7 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
     {
         for (i = 0; i < isize; i++)
         {
-            vec[m] += sqr(x[index[i]][m]);
+            vec[m] += gmx::square(x[index[i]][m]);
         }
         vec[m] = std::sqrt(vec[m] / isize);
         /* calculate scaling constants */

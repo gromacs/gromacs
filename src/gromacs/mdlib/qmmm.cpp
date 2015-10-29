@@ -59,6 +59,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -485,8 +486,8 @@ void init_QMMMrec(t_commrec  *cr,
     t_ilist                 *ilist_mol;
     gmx_mtop_atomlookup_t    alook;
 
-    c6au  = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 6));
-    c12au = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 12));
+    c6au  = (HARTREE2KJ*AVOGADRO*gmx::power6(BOHR2NM));
+    c12au = (HARTREE2KJ*AVOGADRO*gmx::power12(BOHR2NM));
     /* issue a fatal if the user wants to run with more than one node */
     if (PAR(cr))
     {
@@ -808,8 +809,8 @@ void update_QMMMrec(t_commrec      *cr,
     real
         c12au, c6au;
 
-    c6au  = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 6));
-    c12au = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 12));
+    c6au  = (HARTREE2KJ*AVOGADRO*gmx::power6(BOHR2NM));
+    c12au = (HARTREE2KJ*AVOGADRO*gmx::power12(BOHR2NM));
 
     /* every cpu has this array. On every processor we fill this array
      * with 1's and 0's. 1's indicate the atoms is a QM atom on the

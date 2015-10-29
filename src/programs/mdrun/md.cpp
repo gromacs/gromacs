@@ -75,6 +75,7 @@
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -714,7 +715,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     gmx_fatal(FARGS, "Rerun trajectory frame step %d time %f does not contain a box, while pbc is used", rerun_fr.step, rerun_fr.time);
                 }
-                if (max_cutoff2(ir->ePBC, rerun_fr.box) < sqr(fr->rlistlong))
+                if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlistlong))
                 {
                     gmx_fatal(FARGS, "Rerun trajectory frame step %d time %f has too small box dimensions", rerun_fr.step, rerun_fr.time);
                 }
