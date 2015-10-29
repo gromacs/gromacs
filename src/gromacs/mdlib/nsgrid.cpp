@@ -219,7 +219,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
     }
 
     /* Use the ideal number of cg's per cell to set the ideal cell size */
-    inv_r_ideal = std::pow((real)(grid_density/grid->ncg_ideal), (real)(1.0/3.0));
+    inv_r_ideal = std::cbrt(grid_density/grid->ncg_ideal);
     if (rlist > 0 && inv_r_ideal*rlist < 1)
     {
         inv_r_ideal = 1/rlist;

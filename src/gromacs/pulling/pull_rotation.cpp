@@ -54,6 +54,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -561,7 +562,7 @@ static double calc_beta_max(real min_gaussian, real slab_dist)
         gmx_fatal(FARGS, "min_gaussian of flexible rotation groups must be <%g", GAUSS_NORM);
     }
 
-    return sqrt(-2.0*sigma*sigma*log(min_gaussian/GAUSS_NORM));
+    return std::sqrt(-2.0*sigma*sigma*log(min_gaussian/GAUSS_NORM));
 }
 
 
@@ -580,7 +581,7 @@ static gmx_inline real gaussian_weight(rvec curr_x, t_rotgrp *rotg, int n)
     /* Define the sigma value */
     sigma = 0.7*rotg->slab_dist;
     /* Calculate the Gaussian value of slab n for position curr_x */
-    return norm * exp( -0.5 * sqr( calc_beta(curr_x, rotg, n)/sigma ) );
+    return norm * exp( -0.5 * gmx::square( calc_beta(curr_x, rotg, n)/sigma ) );
 }
 
 
@@ -1266,7 +1267,7 @@ static void weigh_coords(rvec* str, real* weight, int natoms)
     {
         for (j = 0; j < 3; j++)
         {
-            str[i][j] *= sqrt(weight[i]);
+            str[i][j] *= std::sqrt(weight[i]);
         }
     }
 }
@@ -1374,7 +1375,7 @@ static real opt_angle_analytic(
     {
         for (j = 0; j < 2; j++)
         {
-            WS[i][j] = eigvec[i][j] / sqrt(eigval[j]);
+            WS[i][j] = eigvec[i][j] / std::sqrt(eigval[j]);
         }
     }
 
@@ -1977,7 +1978,7 @@ static real do_flex2_lowlevel(
 
             OOpsijstar = norm2(tmpvec)+rotg->eps; /* OOpsij* = 1/psij* = |v x (xj-xcn)|^2 + eps */
 
-            numerator = sqr(iprod(tmpvec, rjn));
+            numerator = gmx::square(iprod(tmpvec, rjn));
 
             /*********************************/
             /* Add to the rotation potential */
@@ -1991,7 +1992,7 @@ static real do_flex2_lowlevel(
                 for (ifit = 0; ifit < rotg->PotAngle_nstep; ifit++)
                 {
                     mvmul(erg->PotAngleFit->rotmat[ifit], yj0_ycn, fit_rjn);
-                    fit_numerator              = sqr(iprod(tmpvec, fit_rjn));
+                    fit_numerator              = gmx::square(iprod(tmpvec, fit_rjn));
                     erg->PotAngleFit->V[ifit] += 0.5*rotg->k*wj*gaussian_xj*fit_numerator/OOpsijstar;
                 }
             }
@@ -2223,7 +2224,7 @@ static real do_flex_lowlevel(
             /*********************************/
             /* Add to the rotation potential */
             /*********************************/
-            V += 0.5*rotg->k*wj*gaussian_xj*sqr(bjn);
+            V += 0.5*rotg->k*wj*gaussian_xj*gmx::square(bjn);
 
             /* If requested, also calculate the potential for a set of angles
              * near the current reference angle */
@@ -2240,7 +2241,7 @@ static real do_flex_lowlevel(
                                                                              /*            |v x Omega.(yj0-ycn)|   */
                     fit_bjn = iprod(fit_qjn, xj_xcn);                        /* fit_bjn = fit_qjn * (xj - xcn) */
                     /* Add to the rotation potential for this angle */
-                    erg->PotAngleFit->V[ifit] += 0.5*rotg->k*wj*gaussian_xj*sqr(fit_bjn);
+                    erg->PotAngleFit->V[ifit] += 0.5*rotg->k*wj*gaussian_xj*gmx::square(fit_bjn);
                 }
             }
 
@@ -2696,7 +2697,7 @@ static void do_fixed(
         {
             tmp_f[m]             = k_wi*dr[m];
             erg->f_rot_loc[j][m] = tmp_f[m];
-            erg->V              += 0.5*k_wi*sqr(dr[m]);
+            erg->V              += 0.5*k_wi*gmx::square(dr[m]);
         }
 
         /* If requested, also calculate the potential for a set of angles
@@ -3035,7 +3036,7 @@ static void radial_motion2_precalc_inner_sum(t_rotgrp  *rotg, rvec innersumvec)
         psiistar = 1.0/(fac + rotg->eps); /* psiistar = --------------------- */
                                           /*            |v x (xi-xc)|^2 + eps */
 
-        psii = gmx_invsqrt(fac);          /*                 1                */
+        psii = gmx::invsqrt(fac);         /*                 1                */
                                           /*  psii    = -------------         */
                                           /*            |v x (xi-xc)|         */
 
@@ -3150,7 +3151,7 @@ static void do_radial_motion2(
         psijstar = 1.0/(fac + rotg->eps); /*  psistar = --------------------  */
                                           /*            |v x (xj-u)|^2 + eps  */
 
-        psij = gmx_invsqrt(fac);          /*                 1                */
+        psij = gmx::invsqrt(fac);         /*                 1                */
                                           /*  psij    = ------------          */
                                           /*            |v x (xj-u)|          */
 

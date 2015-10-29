@@ -43,6 +43,7 @@
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -555,7 +556,7 @@ adress_thermo_force(int                  start,
                         case eAdressXSplit:
                             /* plane through center of ref, varies in x direction */
                             sqr_dl           = dr[0]*dr[0];
-                            rinv             = gmx_invsqrt(dr[0]*dr[0]);
+                            rinv             = gmx::invsqrt(dr[0]*dr[0]);
                             break;
                         case eAdressSphere:
                             /* point at center of ref, assuming cubic geometry */
@@ -563,7 +564,7 @@ adress_thermo_force(int                  start,
                             {
                                 sqr_dl    += dr[i]*dr[i];
                             }
-                            rinv             = gmx_invsqrt(sqr_dl);
+                            rinv             = gmx::invsqrt(sqr_dl);
                             break;
                         default:
                             /* This case should not happen */

@@ -53,6 +53,7 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -528,8 +529,8 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                         pos[d] = std::max(-pbc->hbox_diag[d], -trial[d]);
                                     }
                                 }
-                                d2old += sqr(pos[d]);
-                                d2new += sqr(pos[d] + trial[d]);
+                                d2old += gmx::square(pos[d]);
+                                d2new += gmx::square(pos[d] + trial[d]);
                             }
                             if (BOX_MARGIN*d2new < d2old)
                             {
@@ -543,7 +544,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                         real d2new_c = 0;
                                         for (int d = 0; d < DIM; d++)
                                         {
-                                            d2new_c += sqr(pos[d] + trial[d] - shift*box[dd][d]);
+                                            d2new_c += gmx::square(pos[d] + trial[d] - shift*box[dd][d]);
                                         }
                                         if (d2new_c <= BOX_MARGIN*d2new)
                                         {
