@@ -136,6 +136,38 @@ class AlignedAllocator
             typedef AlignedAllocator<U> other; //!< Align class U with our alignment
         };
 
+        /*! \brief Templated copy constructor
+         *
+         * This template constructor cannot be auto-generated, and is
+         * normally unused, except e.g. MSVC2015 standard library uses
+         * it in debug mode, presumably to implement some checks.
+         *
+         * \todo Declare noexcept when the set of supported compilers
+         * permits it (e.g. only MSVC 2015)
+         */
+        template <class U>
+        explicit AlignedAllocator(const AlignedAllocator<U> &) {}
+
+        /*! \brief Constructor
+         *
+         * No constructor can be auto-generated in the presence of any
+         * user-defined constructor, but we want the default constructor.
+         *
+         * \todo Declare noexcept when the set of supported compilers
+         * permits it (e.g. only MSVC 2015)
+         */
+        AlignedAllocator() {};
+
+        /*! \brief Normal copy constructor
+         *
+         * No constructor can be auto-generated in the presence of any
+         * user-defined constructor, but we want the default constructor.
+         *
+         * \todo Declare noexcept when the set of supported compilers
+         * permits it (e.g. only MSVC 2015)
+         */
+        explicit AlignedAllocator(const AlignedAllocator<T> &) {};
+
         /*! \brief Return address of an object
          *
          *  \param r Reference to object of type T
