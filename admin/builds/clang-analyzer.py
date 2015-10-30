@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+build_options = ['clang-3.4', 'clang-analyzer']
+
 def do_build(context):
     cmake_opts = {
             'CMAKE_BUILD_TYPE': 'Debug',
@@ -43,8 +45,6 @@ def do_build(context):
             'GMX_FFT_LIBRARY': 'fftpack'
         }
 
-    output_dir = context.workspace.get_log_dir(category='scan_html')
-    context.env.init_clang_analyzer(clang_version='3.4', html_output_dir=output_dir)
     context.run_cmake(cmake_opts)
     context.build_target(target=None)
-    context.process_clang_analyzer_results(output_dir)
+    context.process_clang_analyzer_results()
