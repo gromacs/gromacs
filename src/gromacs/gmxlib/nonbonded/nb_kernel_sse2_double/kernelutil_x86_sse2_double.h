@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include <emmintrin.h>
 
 /* Normal sum of four ymm registers */
 #define gmx_mm_sum4_pd(t0, t1, t2, t3)  _mm_add_pd(_mm_add_pd(t0, t1), _mm_add_pd(t2, t3))
@@ -777,5 +778,91 @@ gmx_mm_update_2pot_pd(__m128d pot1, double * gmx_restrict ptrA,
     _mm_store_sd(ptrB, _mm_add_sd(pot2, _mm_load_sd(ptrB)));
 }
 
+#ifdef __PGI
+#    define SSE2_DOUBLE_NEGZERO  ({ const union { int  di[2]; double d; } _gmx_dzero = {0, -2147483648}; _gmx_dzero.d; })
+#else
+#    define SSE2_DOUBLE_NEGZERO  (-0.0)
+#endif
+
+static gmx_inline __m128d gmx_simdcall
+sse2_invsqrt_d(__m128d x)
+{
+    __m128d lu = _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x)));
+    lu = _mm_mul_pd(_mm_set1_pd(0.5), _mm_mul_pd(_mm_sub_pd(_mm_set1_pd(3.0), _mm_mul_pd(_mm_mul_pd(lu, lu), x)), lu));
+    return _mm_mul_pd(_mm_set1_pd(0.5), _mm_mul_pd(_mm_sub_pd(_mm_set1_pd(3.0), _mm_mul_pd(_mm_mul_pd(lu, lu), x)), lu));
+}
+
+static gmx_inline __m128d gmx_simdcall
+sse2_inv_d(__m128d x)
+{
+    __m128d lu = _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)));
+    lu = _mm_mul_pd(lu, _mm_sub_pd(_mm_set1_pd(2.0), _mm_mul_pd(lu, x)));
+    return _mm_mul_pd(lu, _mm_sub_pd(_mm_set1_pd(2.0), _mm_mul_pd(lu, x)));
+}
+
+static gmx_inline __m128d gmx_simdcall
+sse2_set_exponent_d(__m128d x)
+{
+    const __m128i  expbias      = _mm_set1_epi32(1023);
+    __m128i        iexp         = _mm_cvtpd_epi32(x);
+
+    /* After conversion integers will be in slot 0,1. Move them to 0,2 so
+     * we can do a 64-bit shift and get them to the dp exponents. */
+    iexp = _mm_shuffle_epi32(iexp, _MM_SHUFFLE(3, 1, 2, 0));
+    iexp = _mm_slli_epi64(_mm_add_epi32(iexp, expbias), 52);
+    return _mm_castsi128_pd(iexp);
+}
+
+static gmx_inline __m128d gmx_simdcall
+sse2_exp_d(__m128d x)
+{
+    const __m128d  argscale      = _mm_set1_pd(1.44269504088896340735992468100);
+    const __m128d  arglimit      = _mm_set1_pd(1022.0);
+    const __m128d  invargscale0  = _mm_set1_pd(-0.69314718055966295651160180568695068359375);
+    const __m128d  invargscale1  = _mm_set1_pd(-2.8235290563031577122588448175013436025525412068e-13);
+    const __m128d  CE12          = _mm_set1_pd(2.078375306791423699350304e-09);
+    const __m128d  CE11          = _mm_set1_pd(2.518173854179933105218635e-08);
+    const __m128d  CE10          = _mm_set1_pd(2.755842049600488770111608e-07);
+    const __m128d  CE9           = _mm_set1_pd(2.755691815216689746619849e-06);
+    const __m128d  CE8           = _mm_set1_pd(2.480158383706245033920920e-05);
+    const __m128d  CE7           = _mm_set1_pd(0.0001984127043518048611841321);
+    const __m128d  CE6           = _mm_set1_pd(0.001388888889360258341755930);
+    const __m128d  CE5           = _mm_set1_pd(0.008333333332907368102819109);
+    const __m128d  CE4           = _mm_set1_pd(0.04166666666663836745814631);
+    const __m128d  CE3           = _mm_set1_pd(0.1666666666666796929434570);
+    const __m128d  CE2           = _mm_set1_pd(0.5);
+    const __m128d  one           = _mm_set1_pd(1.0);
+    const __m128i  expbias       = _mm_set1_epi32(1023);
+    __m128i        iexp;
+    __m128d        fexppart;
+    __m128d        intpart;
+    __m128d        y, p;
+    __m128d        valuemask;
+
+    y         = _mm_mul_pd(x, argscale);
+    fexppart  = sse2_set_exponent_d(y);
+
+    intpart   = _mm_cvtepi32_pd(_mm_cvtpd_epi32(y));         /* use same rounding mode here */
+    valuemask = _mm_cmple_pd(_mm_andnot_pd(_mm_set1_pd(SSE2_DOUBLE_NEGZERO), y), arglimit);
+    fexppart  = _mm_and_pd(fexppart, valuemask);
+
+    /* Extended precision arithmetics */
+    x         = _mm_add_pd(_mm_mul_pd(invargscale0, intpart), x);
+    x         = _mm_add_pd(_mm_mul_pd(invargscale1, intpart), x);
+
+    p         = _mm_add_pd(_mm_mul_pd(CE12, x), CE11);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE10);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE9);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE8);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE7);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE6);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE5);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE4);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE3);
+    p         = _mm_add_pd(_mm_mul_pd(p, x), CE2);
+    p         = _mm_add_pd(_mm_mul_pd(p, _mm_mul_pd(x, x)), _mm_add_pd(x, one));
+    x         = _mm_mul_pd(p, fexppart);
+    return x;
+}
 
 #endif /* _kernelutil_x86_sse2_double_h_ */

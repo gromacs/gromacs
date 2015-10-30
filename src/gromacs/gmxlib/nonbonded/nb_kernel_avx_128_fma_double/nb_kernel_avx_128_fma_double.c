@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
+#include "../nb_kernel.h"
 
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_avx_128_fma_double;
 nb_kernel_t nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_avx_128_fma_double;

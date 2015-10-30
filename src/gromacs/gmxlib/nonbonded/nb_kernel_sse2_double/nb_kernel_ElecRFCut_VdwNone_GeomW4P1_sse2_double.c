@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse2_double.h"
 #include "kernelutil_x86_sse2_double.h"
 
 /*
@@ -192,9 +190,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4P1_VF_sse2_double
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_pd(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv30           = gmx_mm_invsqrt_pd(rsq30);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
+            rinv30           = sse2_invsqrt_d(rsq30);
 
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
             rinvsq20         = _mm_mul_pd(rinv20,rinv20);
@@ -358,9 +356,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4P1_VF_sse2_double
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_pd(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv30           = gmx_mm_invsqrt_pd(rsq30);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
+            rinv30           = sse2_invsqrt_d(rsq30);
 
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
             rinvsq20         = _mm_mul_pd(rinv20,rinv20);
@@ -670,9 +668,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4P1_F_sse2_double
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_pd(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv30           = gmx_mm_invsqrt_pd(rsq30);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
+            rinv30           = sse2_invsqrt_d(rsq30);
 
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
             rinvsq20         = _mm_mul_pd(rinv20,rinv20);
@@ -821,9 +819,9 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4P1_F_sse2_double
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_pd(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv30           = gmx_mm_invsqrt_pd(rsq30);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
+            rinv30           = sse2_invsqrt_d(rsq30);
 
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
             rinvsq20         = _mm_mul_pd(rinv20,rinv20);
