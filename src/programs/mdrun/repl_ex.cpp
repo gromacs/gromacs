@@ -1243,7 +1243,7 @@ compute_exchange_order(FILE     *fplog,
                 {
                     break;
                 }
-                fprintf(debug, "%2d", order[i][j]);
+                fprintf(fplog, "%2d", order[i][j]);
             }
             fprintf(fplog, "\n");
         }
