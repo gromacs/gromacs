@@ -1204,8 +1204,7 @@ cyclic_decomposition(const int *destinations,
 }
 
 static void
-compute_exchange_order(FILE     *fplog,
-                       int     **cyclic,
+compute_exchange_order(int     **cyclic,
                        int     **order,
                        const int nrepl,
                        const int maxswap)
@@ -1233,10 +1232,10 @@ compute_exchange_order(FILE     *fplog,
 
     if (debug)
     {
-        fprintf(fplog, "Replica Exchange Order\n");
+        fprintf(debug, "Replica Exchange Order\n");
         for (i = 0; i < nrepl; i++)
         {
-            fprintf(fplog, "Replica %d:", i);
+            fprintf(debug, "Replica %d:", i);
             for (j = 0; j < maxswap; j++)
             {
                 if (order[i][j] < 0)
@@ -1245,15 +1244,14 @@ compute_exchange_order(FILE     *fplog,
                 }
                 fprintf(debug, "%2d", order[i][j]);
             }
-            fprintf(fplog, "\n");
+            fprintf(debug, "\n");
         }
-        fflush(fplog);
+        fflush(debug);
     }
 }
 
 static void
-prepare_to_do_exchange(FILE               *fplog,
-                       struct gmx_repl_ex *re,
+prepare_to_do_exchange(struct gmx_repl_ex *re,
                        const int           replica_id,
                        int                *maxswap,
                        gmx_bool           *bThisReplicaExchanged)
@@ -1291,7 +1289,7 @@ prepare_to_do_exchange(FILE               *fplog,
 
         /* Now translate the decomposition into a replica exchange
          * order at each step. */
-        compute_exchange_order(fplog, re->cyclic, re->order, re->nrepl, *maxswap);
+        compute_exchange_order(re->cyclic, re->order, re->nrepl, *maxswap);
 
         /* Did this replica do any exchange at any point? */
         for (j = 0; j < *maxswap; j++)
@@ -1323,7 +1321,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     {
         replica_id  = re->repl;
         test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
-        prepare_to_do_exchange(fplog, re, replica_id, &maxswap, &bThisReplicaExchanged);
+        prepare_to_do_exchange(re, replica_id, &maxswap, &bThisReplicaExchanged);
     }
     /* Do intra-simulation broadcast so all processors belonging to
      * each simulation know whether they need to participate in
