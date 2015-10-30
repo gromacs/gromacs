@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse2_double.h"
 #include "kernelutil_x86_sse2_double.h"
 
 /*
@@ -265,16 +263,16 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_double
             rsq32            = gmx_mm_calc_rsq_pd(dx32,dy32,dz32);
             rsq33            = gmx_mm_calc_rsq_pd(dx33,dy33,dz33);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv13           = gmx_mm_invsqrt_pd(rsq13);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
-            rinv23           = gmx_mm_invsqrt_pd(rsq23);
-            rinv31           = gmx_mm_invsqrt_pd(rsq31);
-            rinv32           = gmx_mm_invsqrt_pd(rsq32);
-            rinv33           = gmx_mm_invsqrt_pd(rsq33);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv11           = sse2_invsqrt_d(rsq11);
+            rinv12           = sse2_invsqrt_d(rsq12);
+            rinv13           = sse2_invsqrt_d(rsq13);
+            rinv21           = sse2_invsqrt_d(rsq21);
+            rinv22           = sse2_invsqrt_d(rsq22);
+            rinv23           = sse2_invsqrt_d(rsq23);
+            rinv31           = sse2_invsqrt_d(rsq31);
+            rinv32           = sse2_invsqrt_d(rsq32);
+            rinv33           = sse2_invsqrt_d(rsq33);
 
             fjx0             = _mm_setzero_pd();
             fjy0             = _mm_setzero_pd();
@@ -817,16 +815,16 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_VF_sse2_double
             rsq32            = gmx_mm_calc_rsq_pd(dx32,dy32,dz32);
             rsq33            = gmx_mm_calc_rsq_pd(dx33,dy33,dz33);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv13           = gmx_mm_invsqrt_pd(rsq13);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
-            rinv23           = gmx_mm_invsqrt_pd(rsq23);
-            rinv31           = gmx_mm_invsqrt_pd(rsq31);
-            rinv32           = gmx_mm_invsqrt_pd(rsq32);
-            rinv33           = gmx_mm_invsqrt_pd(rsq33);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv11           = sse2_invsqrt_d(rsq11);
+            rinv12           = sse2_invsqrt_d(rsq12);
+            rinv13           = sse2_invsqrt_d(rsq13);
+            rinv21           = sse2_invsqrt_d(rsq21);
+            rinv22           = sse2_invsqrt_d(rsq22);
+            rinv23           = sse2_invsqrt_d(rsq23);
+            rinv31           = sse2_invsqrt_d(rsq31);
+            rinv32           = sse2_invsqrt_d(rsq32);
+            rinv33           = sse2_invsqrt_d(rsq33);
 
             fjx0             = _mm_setzero_pd();
             fjy0             = _mm_setzero_pd();
@@ -1580,16 +1578,16 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_double
             rsq32            = gmx_mm_calc_rsq_pd(dx32,dy32,dz32);
             rsq33            = gmx_mm_calc_rsq_pd(dx33,dy33,dz33);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv13           = gmx_mm_invsqrt_pd(rsq13);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
-            rinv23           = gmx_mm_invsqrt_pd(rsq23);
-            rinv31           = gmx_mm_invsqrt_pd(rsq31);
-            rinv32           = gmx_mm_invsqrt_pd(rsq32);
-            rinv33           = gmx_mm_invsqrt_pd(rsq33);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv11           = sse2_invsqrt_d(rsq11);
+            rinv12           = sse2_invsqrt_d(rsq12);
+            rinv13           = sse2_invsqrt_d(rsq13);
+            rinv21           = sse2_invsqrt_d(rsq21);
+            rinv22           = sse2_invsqrt_d(rsq22);
+            rinv23           = sse2_invsqrt_d(rsq23);
+            rinv31           = sse2_invsqrt_d(rsq31);
+            rinv32           = sse2_invsqrt_d(rsq32);
+            rinv33           = sse2_invsqrt_d(rsq33);
 
             fjx0             = _mm_setzero_pd();
             fjy0             = _mm_setzero_pd();
@@ -2079,16 +2077,16 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW4W4_F_sse2_double
             rsq32            = gmx_mm_calc_rsq_pd(dx32,dy32,dz32);
             rsq33            = gmx_mm_calc_rsq_pd(dx33,dy33,dz33);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv13           = gmx_mm_invsqrt_pd(rsq13);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
-            rinv23           = gmx_mm_invsqrt_pd(rsq23);
-            rinv31           = gmx_mm_invsqrt_pd(rsq31);
-            rinv32           = gmx_mm_invsqrt_pd(rsq32);
-            rinv33           = gmx_mm_invsqrt_pd(rsq33);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv11           = sse2_invsqrt_d(rsq11);
+            rinv12           = sse2_invsqrt_d(rsq12);
+            rinv13           = sse2_invsqrt_d(rsq13);
+            rinv21           = sse2_invsqrt_d(rsq21);
+            rinv22           = sse2_invsqrt_d(rsq22);
+            rinv23           = sse2_invsqrt_d(rsq23);
+            rinv31           = sse2_invsqrt_d(rsq31);
+            rinv32           = sse2_invsqrt_d(rsq32);
+            rinv33           = sse2_invsqrt_d(rsq33);
 
             fjx0             = _mm_setzero_pd();
             fjy0             = _mm_setzero_pd();
