@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/nrnb.h"
 
 #include "kernelutil_sparc64_hpc_ace_double.h"

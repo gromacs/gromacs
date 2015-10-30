@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_128_fma_single.h"
 #include "kernelutil_x86_avx_128_fma_single.h"
 
 /*
@@ -267,15 +265,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             rsq21            = gmx_mm_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm_invsqrt_ps(rsq22);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
+            rinv01           = avx128fma_invsqrt_f(rsq01);
+            rinv02           = avx128fma_invsqrt_f(rsq02);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv11           = avx128fma_invsqrt_f(rsq11);
+            rinv12           = avx128fma_invsqrt_f(rsq12);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv21           = avx128fma_invsqrt_f(rsq21);
+            rinv22           = avx128fma_invsqrt_f(rsq22);
 
             fjx0             = _mm_setzero_ps();
             fjy0             = _mm_setzero_ps();
@@ -781,15 +779,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_128_fma_single
             rsq21            = gmx_mm_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm_invsqrt_ps(rsq22);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
+            rinv01           = avx128fma_invsqrt_f(rsq01);
+            rinv02           = avx128fma_invsqrt_f(rsq02);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv11           = avx128fma_invsqrt_f(rsq11);
+            rinv12           = avx128fma_invsqrt_f(rsq12);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv21           = avx128fma_invsqrt_f(rsq21);
+            rinv22           = avx128fma_invsqrt_f(rsq22);
 
             fjx0             = _mm_setzero_ps();
             fjy0             = _mm_setzero_ps();
@@ -1503,15 +1501,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             rsq21            = gmx_mm_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm_invsqrt_ps(rsq22);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
+            rinv01           = avx128fma_invsqrt_f(rsq01);
+            rinv02           = avx128fma_invsqrt_f(rsq02);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv11           = avx128fma_invsqrt_f(rsq11);
+            rinv12           = avx128fma_invsqrt_f(rsq12);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv21           = avx128fma_invsqrt_f(rsq21);
+            rinv22           = avx128fma_invsqrt_f(rsq22);
 
             fjx0             = _mm_setzero_ps();
             fjy0             = _mm_setzero_ps();
@@ -1966,15 +1964,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_128_fma_single
             rsq21            = gmx_mm_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm_invsqrt_ps(rsq22);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
+            rinv01           = avx128fma_invsqrt_f(rsq01);
+            rinv02           = avx128fma_invsqrt_f(rsq02);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv11           = avx128fma_invsqrt_f(rsq11);
+            rinv12           = avx128fma_invsqrt_f(rsq12);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv21           = avx128fma_invsqrt_f(rsq21);
+            rinv22           = avx128fma_invsqrt_f(rsq22);
 
             fjx0             = _mm_setzero_ps();
             fjy0             = _mm_setzero_ps();

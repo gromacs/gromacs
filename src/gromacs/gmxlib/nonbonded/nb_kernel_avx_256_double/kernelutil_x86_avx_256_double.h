@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
 #define _kernelutil_x86_avx_256_double_h_
 
 #include "config.h"
+
+#include <immintrin.h>
 
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
@@ -972,5 +974,93 @@ gmx_mm256_update_2pot_pd(__m256d pot1, double * gmx_restrict ptrA,
     _mm_store_sd(ptrB, _mm_add_sd(_mm_load_sd(ptrB), t2));
 }
 
+
+#ifdef __PGI
+#    define AVX256_DOUBLE_NEGZERO  ({ const union { int  di[2]; double d; } _gmx_dzero = {0, -2147483648}; _gmx_dzero.d; })
+#else
+#    define AVX256_DOUBLE_NEGZERO  (-0.0)
+#endif
+
+static gmx_inline __m256d gmx_simdcall
+avx256_invsqrt_d(__m256d x)
+{
+    __m256d lu = _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)));
+    lu = _mm256_mul_pd(_mm256_set1_pd(0.5), _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
+    return _mm256_mul_pd(_mm256_set1_pd(0.5), _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
+
+}
+
+static gmx_inline __m256d gmx_simdcall
+avx256_inv_d(__m256d x)
+{
+    __m256d lu = _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(x)));
+    lu = _mm256_mul_pd(lu, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(lu, x)));
+    return _mm256_mul_pd(lu, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(lu, x)));
+}
+
+static gmx_inline __m256d gmx_simdcall
+avx256_set_exponent_d(__m256d x)
+{
+    const __m128i expbias      = _mm_set1_epi32(1023);
+    __m128i       iexp128a, iexp128b;
+
+    iexp128a = _mm256_cvtpd_epi32(x);
+    iexp128a = _mm_add_epi32(iexp128a, expbias);
+    iexp128b = _mm_shuffle_epi32(iexp128a, _MM_SHUFFLE(3, 3, 2, 2));
+    iexp128a = _mm_shuffle_epi32(iexp128a, _MM_SHUFFLE(1, 1, 0, 0));
+    iexp128b = _mm_slli_epi64(iexp128b, 52);
+    iexp128a = _mm_slli_epi64(iexp128a, 52);
+    return _mm256_castsi256_pd(_mm256_insertf128_si256(_mm256_castsi128_si256(iexp128a), iexp128b, 0x1));
+}
+
+static gmx_inline __m256d gmx_simdcall
+avx256_exp_d(__m256d x)
+{
+    const __m256d  argscale      = _mm256_set1_pd(1.44269504088896340735992468100);
+    const __m256d  arglimit      = _mm256_set1_pd(1022.0);
+    const __m256d  invargscale0  = _mm256_set1_pd(-0.69314718055966295651160180568695068359375);
+    const __m256d  invargscale1  = _mm256_set1_pd(-2.8235290563031577122588448175013436025525412068e-13);
+    const __m256d  CE12          = _mm256_set1_pd(2.078375306791423699350304e-09);
+    const __m256d  CE11          = _mm256_set1_pd(2.518173854179933105218635e-08);
+    const __m256d  CE10          = _mm256_set1_pd(2.755842049600488770111608e-07);
+    const __m256d  CE9           = _mm256_set1_pd(2.755691815216689746619849e-06);
+    const __m256d  CE8           = _mm256_set1_pd(2.480158383706245033920920e-05);
+    const __m256d  CE7           = _mm256_set1_pd(0.0001984127043518048611841321);
+    const __m256d  CE6           = _mm256_set1_pd(0.001388888889360258341755930);
+    const __m256d  CE5           = _mm256_set1_pd(0.008333333332907368102819109);
+    const __m256d  CE4           = _mm256_set1_pd(0.04166666666663836745814631);
+    const __m256d  CE3           = _mm256_set1_pd(0.1666666666666796929434570);
+    const __m256d  CE2           = _mm256_set1_pd(0.5);
+    const __m256d  one           = _mm256_set1_pd(1.0);
+    __m256d        fexppart;
+    __m256d        intpart;
+    __m256d        y, p;
+    __m256d        valuemask;
+
+    y         = _mm256_mul_pd(x, argscale);
+    fexppart  = avx256_set_exponent_d(y);                  /* rounds to nearest int internally */
+
+    intpart   = _mm256_cvtepi32_pd(_mm256_cvtpd_epi32(y)); /* use same rounding mode here */
+    valuemask = _mm256_cmp_pd(_mm256_andnot_pd(_mm256_set1_pd(AVX256_DOUBLE_NEGZERO), y), arglimit, _CMP_LE_OQ);
+    fexppart  = _mm256_and_pd(fexppart, valuemask);
+
+    /* Extended precision arithmetics */
+    x         = _mm256_add_pd(_mm256_mul_pd(invargscale0, intpart), x);
+    x         = _mm256_add_pd(_mm256_mul_pd(invargscale1, intpart), x);
+
+    p         = _mm256_add_pd(_mm256_mul_pd(CE12, x), CE11);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE10);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE9);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE8);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE7);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE6);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE5);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE4);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE3);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, x), CE2);
+    p         = _mm256_add_pd(_mm256_mul_pd(p, _mm256_mul_pd(x, x)), _mm256_add_pd(x, one));
+    x         = _mm256_mul_pd(p, fexppart);
+    return x;
+}
 
 #endif /* _kernelutil_x86_avx_256_double_h_ */

@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 
 /*
@@ -259,10 +257,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_VF_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
             rinvsq00         = _mm256_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
@@ -549,10 +547,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_VF_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
             rinvsq00         = _mm256_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
@@ -1019,10 +1017,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_F_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
             rinvsq00         = _mm256_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
@@ -1289,10 +1287,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4P1_F_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
             rinvsq00         = _mm256_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);

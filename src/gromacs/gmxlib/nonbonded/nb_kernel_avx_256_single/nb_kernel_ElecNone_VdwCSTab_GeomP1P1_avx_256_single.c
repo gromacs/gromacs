@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/legacyheaders/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 
 /*
@@ -205,7 +203,7 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_256_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm256_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
+            rinv00           = avx256_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
@@ -361,7 +359,7 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_VF_avx_256_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm256_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
+            rinv00           = avx256_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
@@ -646,7 +644,7 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_256_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm256_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
+            rinv00           = avx256_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
@@ -794,7 +792,7 @@ nb_kernel_ElecNone_VdwCSTab_GeomP1P1_F_avx_256_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm256_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
+            rinv00           = avx256_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
