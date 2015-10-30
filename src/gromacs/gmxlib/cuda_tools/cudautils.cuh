@@ -104,17 +104,7 @@
         } \
     } while (0)
 
-/*! Check for NVML error on the return status of a NVML API call. */
-#ifdef HAVE_NVML
-#define HANDLE_NVML_RET_ERR(status, msg) \
-    do { \
-        if (status != NVML_SUCCESS) \
-        { \
-            gmx_warning("%s: %s\n", msg, nvmlErrorString(status)); \
-        } \
-    } while (0)
-#endif /* HAVE_NVML */
-#else
+#else /* CHECK_CUDA_ERRORS */
 
 #define CU_RET_ERR(status, msg) do { } while (0)
 #define CU_CHECK_PREV_ERR()     do { } while (0)

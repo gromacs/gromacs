@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-include_directories(${LIBXML2_INCLUDE_DIR})
+include_directories(SYSTEM ${LIBXML2_INCLUDE_DIR})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     integrationtests.cpp
