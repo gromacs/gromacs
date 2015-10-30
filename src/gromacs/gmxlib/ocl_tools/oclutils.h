@@ -46,6 +46,10 @@
 extern "C" {
 #endif
 
+/*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
+   features that were deprecated in 2.0, so that they don't warn about
+   it. */
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #ifdef __APPLE__
 #    include <OpenCL/opencl.h>
 #else

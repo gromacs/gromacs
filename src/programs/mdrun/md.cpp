@@ -551,6 +551,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 gmx_fatal(FARGS, "nstexpanded should be divisible by nstcalclr");
             }
+            nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
         }
         if (repl_ex_nst > 0)
         {
@@ -1183,6 +1184,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
+                                | (bStopCM ? CGLO_STOPCM : 0)
                                 | CGLO_SCALEEKIN
                                 );
                 /* explanation of above:
@@ -1777,7 +1779,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                  * until after load balancing completes,
                  * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
                 gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                          "reset mdrun counters at step " GMX_PRId64 ". Try "
+                          "reset mdrun counters at step %" GMX_PRId64 ". Try "
                           "resetting counters later in the run, e.g. with gmx "
                           "mdrun -resetstep.", step);
             }
