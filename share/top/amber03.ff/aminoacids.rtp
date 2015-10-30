@@ -213,16 +213,6 @@
     CA     C
      C     O
     -C     N
- [ dihedrals ]
-    CA     C    +N    +H    
-     O     C    +N    +H    
-    -C     N    CA     C    
-    CA     C    +N   +CA    
-     O     C    +N   +CA    
-    -C     N    CA   HA1    
-    -C     N    CA   HA2    
-   HA1    CA     C    +N    
-   HA2    CA     C    +N    
  [ impropers ]
     -C    CA     N     H
     CA    +N     C     O
