@@ -82,7 +82,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         endif()
 
         set(PKG_FFT "${${FFTW}_PKG}")
-        include_directories(${${FFTW}_INCLUDE_DIRS})
+        include_directories(SYSTEM ${${FFTW}_INCLUDE_DIRS})
 
         if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
             message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
@@ -121,7 +121,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 
         set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
     else()
-        include_directories(${MKL_INCLUDE_DIR})
+        include_directories(SYSTEM ${MKL_INCLUDE_DIR})
         set(FFT_LIBRARIES "${MKL_LIBRARIES}")
         set(MKL_ERROR_MESSAGE "The include path to mkl.h in MKL_INCLUDE_DIR, and the link libraries in MKL_LIBRARIES=${MKL_LIBRARIES} need to match what the MKL documentation says you need for your system: ${MKL_LIBRARIES_FORMAT_DESCRIPTION}")
         # Convert the semi-colon separated list to a list of

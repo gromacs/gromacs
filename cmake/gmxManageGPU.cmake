@@ -154,9 +154,12 @@ endif()
 
 # Try to find NVML if a GPU accelerated binary should be build.
 if (GMX_GPU)
+    if (DEFINED NVML_LIBRARY)
+        set(NVML_FIND_QUIETLY TRUE)
+    endif()
     find_package(NVML)
     if(NVML_FOUND)
-        include_directories(${NVML_INCLUDE_DIR})
+        include_directories(SYSTEM ${NVML_INCLUDE_DIR})
         set(HAVE_NVML 1)
         list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
     endif(NVML_FOUND)
