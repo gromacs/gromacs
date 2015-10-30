@@ -32,64 +32,70 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-import os
+import os.path
 
+extra_options = {
+    'mdrun-only': Option.simple,
+    'reference': Option.simple,
+    'release': Option.simple,
+    'asan': Option.simple,
+    'mkl': Option.simple,
+    'fftpack': Option.simple,
+    'double': Option.simple,
+    'thread-mpi': Option.bool,
+    'gpu': Option.bool,
+    'openmp': Option.bool
+}
 extra_projects = [Project.REGRESSIONTESTS]
 
 def do_build(context):
-    cmake_opts=dict()
+    cmake_opts = dict()
     cmake_opts['GMX_DEFAULT_SUFFIX'] = 'OFF'
     cmake_opts['CMAKE_BUILD_TYPE'] = 'Debug'
 
-    if context.params.build_type is None:
-        pass
-    elif context.params.build_type == BuildType.REFERENCE:
+    if context.opts.reference:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'Reference'
-    elif context.params.build_type == BuildType.OPTIMIZED:
+    elif context.opts.release:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithAssert'
-    elif context.params.build_type == BuildType.PERFORMANCE:
-        cmake_opts['CMAKE_BUILD_TYPE'] = 'Release'
-    elif context.params.build_type == BuildType.ASAN:
+    elif context.opts.asan:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'ASAN'
-    elif context.params.build_type == BuildType.TSAN:
+    elif context.opts.tsan:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'TSAN'
 
-    if context.params.phi:
+    if context.opts.phi:
         cmake_opts['CMAKE_TOOLCHAIN_FILE'] = 'Platform/XeonPhi'
 
-    if context.params.double:
+    if context.opts.double:
         cmake_opts['GMX_DOUBLE'] = 'ON'
 
-    if context.params.simd is None:
+    if context.opts.simd is None:
         cmake_opts['GMX_SIMD'] = 'None'
     else:
-        cmake_opts['GMX_SIMD'] = context.params.simd
-    if context.params.gpu:
+        cmake_opts['GMX_SIMD'] = context.opts.simd
+    if context.opts.gpu:
         cmake_opts['GMX_GPU'] = 'ON'
         cmake_opts.update(context.get_cuda_cmake_options())
     else:
         cmake_opts['GMX_GPU'] = 'OFF'
-    if context.params.thread_mpi is False:
+    if context.opts.thread_mpi is False:
         cmake_opts['GMX_THREAD_MPI'] = 'OFF'
-    if context.params.mpi:
+    if context.opts.mpi:
         cmake_opts['GMX_MPI'] = 'ON'
-    if context.params.openmp is False:
+    if context.opts.openmp is False:
         cmake_opts['GMX_OPENMP'] = 'OFF'
 
-    if context.params.fft_library is None:
-        pass
-    elif context.params.fft_library == FftLibrary.MKL:
+    if context.opts.mkl:
         cmake_opts['GMX_FFT_LIBRARY'] = 'mkl'
-    elif context.params.fft_library == FftLibrary.FFTPACK:
+    elif context.opts.fftpack:
         cmake_opts['GMX_FFT_LIBRARY'] = 'fftpack'
-    if context.params.external_linalg:
+    if context.opts.mkl or context.opts.atlas:
         cmake_opts['GMX_EXTERNAL_BLAS'] = 'ON'
         cmake_opts['GMX_EXTERNAL_LAPACK'] = 'ON'
 
-    if context.params.x11:
+    if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
 
-    if context.params.mdrun_only:
+    if context.opts.mdrun_only:
         cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
 
     context.env.add_env_var('GMX_NO_TERM', '1')
@@ -98,48 +104,42 @@ def do_build(context):
     context.build_target(target=None, keep_going=True)
     context.build_target(target='tests', keep_going=True)
 
-    if not context.params.memcheck:
-        context.run_ctest(args=['--output-on-failure'])
-    else:
-        context.run_ctest(args=['-LE', 'GTest', '--output-on-failure'])
-        context.run_ctest(args=['-L', 'GTest', '--output-on-failure'], memcheck=True)
+    context.run_ctest(args=['--output-on-failure'])
 
-    if not context.params.mdrun_only:
+    if not context.opts.mdrun_only:
         context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
-        os.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
+        context.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
 
-        if not context.params.mpi and context.params.thread_mpi is not False:
+        if not context.opts.mpi and context.opts.thread_mpi is not False:
             use_tmpi = True
 
         cmd = 'perl gmxtest.pl -mpirun mpirun -xml -nosuffix all'
-        if context.params.build_type == BuildType.ASAN:
+        if context.opts.asan:
             cmd+=' -parse asan_symbolize.py'
 
         # setting this stuff below is just a temporary solution,
         # it should all be passed as a proper the runconf from outside
         # The whole mechanism should be rethought in #1587.
-        if context.params.phi:
+        if context.opts.phi:
             cmd += ' -ntomp 28'
-        elif context.params.openmp:
+        elif context.opts.openmp:
             # OpenMP should always work when compiled in! Currently not set if
             # not explicitly set
             cmd += ' -ntomp 2'
 
-        if context.params.gpu:
-            if context.params.mpi or use_tmpi:
+        if context.opts.gpu:
+            if context.opts.mpi or use_tmpi:
                 gpu_id = '01' # for (T)MPI use the two GT 640-s
             else:
                 gpu_id = '0' # use GPU #0 by default
             cmd += ' -gpu_id ' + gpu_id
 
-        if any([x in ('-np', '-nt') for x in context.params.extra_gmxtest_args]):
-            # Use values passed
-            pass
-        elif context.params.mpi:
+        # TODO: Add options to influence this (should be now local to the build
+        # script).
+        if context.opts.mpi:
             cmd += ' -np 2'
         elif use_tmpi:
             cmd += ' -nt 2'
-        if context.params.double:
+        if context.opts.double:
             cmd += ' -double'
-        cmd += ' ' + ' '.join(context.params.extra_gmxtest_args)
         context.run_cmd_with_env(cmd, shell=True, failure_message='Regression tests failed to execute')

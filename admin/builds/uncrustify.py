@@ -32,10 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-import os
-
 def do_build(context):
-    os.environ['UNCRUSTIFY'] = context.env.get_uncrustify_command()
+    context.env.add_env_var('UNCRUSTIFY', context.env.get_uncrustify_command())
     warning_log = context.workspace.get_path_for_logfile('uncrustify.log', category='uncrustify')
     cmd = ['admin/uncrustify.sh', 'check', '--rev=HEAD^', '--warnings=' + warning_log]
     ret = context.run_cmd(cmd, use_return_code=True)
