@@ -47,94 +47,94 @@
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_float_t           __m256
-#define gmx_simd_load_f            _mm256_load_ps
-#define gmx_simd_load1_f           _mm256_broadcast_ss
-#define gmx_simd_set1_f            _mm256_set1_ps
-#define gmx_simd_store_f           _mm256_store_ps
-#define gmx_simd_loadu_f           _mm256_loadu_ps
-#define gmx_simd_storeu_f          _mm256_storeu_ps
-#define gmx_simd_setzero_f         _mm256_setzero_ps
-#define gmx_simd_add_f             _mm256_add_ps
-#define gmx_simd_sub_f             _mm256_sub_ps
-#define gmx_simd_mul_f             _mm256_mul_ps
-#define gmx_simd_fmadd_f(a, b, c)    _mm256_add_ps(_mm256_mul_ps(a, b), c)
-#define gmx_simd_fmsub_f(a, b, c)    _mm256_sub_ps(_mm256_mul_ps(a, b), c)
-#define gmx_simd_fnmadd_f(a, b, c)   _mm256_sub_ps(c, _mm256_mul_ps(a, b))
-#define gmx_simd_fnmsub_f(a, b, c)   _mm256_sub_ps(_mm256_setzero_ps(), gmx_simd_fmadd_f(a, b, c))
-#define gmx_simd_and_f             _mm256_and_ps
-#define gmx_simd_andnot_f          _mm256_andnot_ps
-#define gmx_simd_or_f              _mm256_or_ps
-#define gmx_simd_xor_f             _mm256_xor_ps
-#define gmx_simd_rsqrt_f           _mm256_rsqrt_ps
-#define gmx_simd_rcp_f             _mm256_rcp_ps
-#define gmx_simd_fabs_f(x)         _mm256_andnot_ps(_mm256_set1_ps(GMX_FLOAT_NEGZERO), x)
-#define gmx_simd_fneg_f(x)         _mm256_xor_ps(x, _mm256_set1_ps(GMX_FLOAT_NEGZERO))
-#define gmx_simd_max_f             _mm256_max_ps
-#define gmx_simd_min_f             _mm256_min_ps
-#define gmx_simd_round_f(x)        _mm256_round_ps(x, _MM_FROUND_NINT)
-#define gmx_simd_trunc_f(x)        _mm256_round_ps(x, _MM_FROUND_TRUNC)
-#define gmx_simd_fraction_f(x)     _mm256_sub_ps(x, gmx_simd_trunc_f(x))
-#define gmx_simd_get_exponent_f    gmx_simd_get_exponent_f_avx_256
-#define gmx_simd_get_mantissa_f    gmx_simd_get_mantissa_f_avx_256
-#define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_avx_256
-/* integer datatype corresponding to float: gmx_simd_fint32_t */
-#define gmx_simd_fint32_t          __m256i
-#define gmx_simd_load_fi(m)        _mm256_load_si256((__m256i const*)(m))
-#define gmx_simd_set1_fi           _mm256_set1_epi32
-#define gmx_simd_store_fi(m, x)    _mm256_store_si256((__m256i *)(m), x)
-#define gmx_simd_loadu_fi(m)       _mm256_loadu_si256((__m256i const*)(m))
-#define gmx_simd_storeu_fi(m, x)   _mm256_storeu_si256((__m256i *)(m), x)
-#define gmx_simd_setzero_fi        _mm256_setzero_si256
-#define gmx_simd_cvt_f2i           _mm256_cvtps_epi32
-#define gmx_simd_cvtt_f2i          _mm256_cvttps_epi32
-#define gmx_simd_cvt_i2f           _mm256_cvtepi32_ps
-#define gmx_simd_extract_fi(x, i)   _mm_extract_epi32(_mm256_extractf128_si256(x, (i)>>2), (i)&0x3)
-/* Integer logical ops on gmx_simd_fint32_t */
-/* gmx_simd_add_fi not supported     */
-/* gmx_simd_sub_fi not supported     */
-/* gmx_simd_mul_fi not supported     */
-/* gmx_simd_slli_fi not supported    */
-/* gmx_simd_srli_fi not supported    */
-/* gmx_simd_and_fi not supported     */
-/* gmx_simd_andnot_fi not supported  */
-/* gmx_simd_or_fi not supported      */
-/* gmx_simd_xor_fi not supported     */
-/* Integer arithmetic ops on gmx_simd_fint32_t */
-/* gmx_simd_add_fi not supported     */
-/* gmx_simd_sub_fi not supported     */
-/* gmx_simd_mul_fi not supported     */
-/* Boolean & comparison operations on gmx_simd_float_t */
-#define gmx_simd_fbool_t           __m256
-#define gmx_simd_cmpeq_f(a, b)      _mm256_cmp_ps(a, b, _CMP_EQ_OQ)
-#define gmx_simd_cmplt_f(a, b)      _mm256_cmp_ps(a, b, _CMP_LT_OQ)
-#define gmx_simd_cmple_f(a, b)      _mm256_cmp_ps(a, b, _CMP_LE_OQ)
-#define gmx_simd_and_fb            _mm256_and_ps
-#define gmx_simd_or_fb             _mm256_or_ps
-#define gmx_simd_anytrue_fb        _mm256_movemask_ps
-#define gmx_simd_blendzero_f       _mm256_and_ps
-#define gmx_simd_blendnotzero_f(a, sel)  _mm256_andnot_ps(sel, a)
-#define gmx_simd_blendv_f          _mm256_blendv_ps
-#define gmx_simd_reduce_f          gmx_simd_reduce_f_avx_256
-/* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_fibool_t          __m256i
-/* gmx_simd_cmpeq_fi not supported        */
-/* gmx_simd_cmplt_fi not supported        */
-/* gmx_simd_and_fib not supported         */
-/* gmx_simd_or_fib not supported          */
-/* gmx_simd_anytrue_fib not supported     */
-/* gmx_simd_blendzero_fi not supported    */
-/* gmx_simd_blendnotzero_fi not supported    */
-/* gmx_simd_blendv_fi not supported       */
+#define SimdFloat           __m256
+#define simdLoadF            _mm256_load_ps
+#define simdLoad1F           _mm256_broadcast_ss
+#define simdSet1F            _mm256_set1_ps
+#define simdStoreF           _mm256_store_ps
+#define simdLoadUF           _mm256_loadu_ps
+#define simdStoreUF          _mm256_storeu_ps
+#define simdSetZeroF         _mm256_setzero_ps
+#define simdAddF             _mm256_add_ps
+#define simdSubF             _mm256_sub_ps
+#define simdMulF             _mm256_mul_ps
+#define simdFmaddF(a, b, c)    _mm256_add_ps(_mm256_mul_ps(a, b), c)
+#define simdFmsubF(a, b, c)    _mm256_sub_ps(_mm256_mul_ps(a, b), c)
+#define simdFnmaddF(a, b, c)   _mm256_sub_ps(c, _mm256_mul_ps(a, b))
+#define simdFnmsubF(a, b, c)   _mm256_sub_ps(_mm256_setzero_ps(), simdFmaddF(a, b, c))
+#define simdAndF             _mm256_and_ps
+#define simdAndNotF          _mm256_andnot_ps
+#define simdOrF              _mm256_or_ps
+#define simdXorF             _mm256_xor_ps
+#define simdRsqrtF           _mm256_rsqrt_ps
+#define simdRcpF             _mm256_rcp_ps
+#define simdAbsF(x)         _mm256_andnot_ps(_mm256_set1_ps(GMX_FLOAT_NEGZERO), x)
+#define simdNegF(x)         _mm256_xor_ps(x, _mm256_set1_ps(GMX_FLOAT_NEGZERO))
+#define simdMaxF             _mm256_max_ps
+#define simdMinF             _mm256_min_ps
+#define simdRoundF(x)        _mm256_round_ps(x, _MM_FROUND_NINT)
+#define simdTruncF(x)        _mm256_round_ps(x, _MM_FROUND_TRUNC)
+#define simdFractionF(x)     _mm256_sub_ps(x, simdTruncF(x))
+#define simdGetExponentF    simdGetExponentF_avx_256
+#define simdGetMantissaF    simdGetMantissaF_avx_256
+#define simdSetExponentF    simdSetExponentF_avx_256
+/* integer datatype corresponding to float: SimdFInt32 */
+#define SimdFInt32          __m256i
+#define simdLoadFI(m)        _mm256_load_si256((__m256i const*)(m))
+#define simdSet1FI           _mm256_set1_epi32
+#define simdStoreFI(m, x)    _mm256_store_si256((__m256i *)(m), x)
+#define simdLoadUFI(m)       _mm256_loadu_si256((__m256i const*)(m))
+#define simdStoreUFI(m, x)   _mm256_storeu_si256((__m256i *)(m), x)
+#define simdSetZeroFI        _mm256_setzero_si256
+#define simdCvtF2I           _mm256_cvtps_epi32
+#define simdCvttF2I          _mm256_cvttps_epi32
+#define simdCvtI2F           _mm256_cvtepi32_ps
+#define simdExtractFI(x, i)   _mm_extract_epi32(_mm256_extractf128_si256(x, (i)>>2), (i)&0x3)
+/* Integer logical ops on SimdFInt32 */
+/* simdAddFI not supported     */
+/* simdSubFI not supported     */
+/* simdMulFI not supported     */
+/* simdSlliFI not supported    */
+/* simdSrliFI not supported    */
+/* simdAndFI not supported     */
+/* simdAndNotFI not supported  */
+/* simdOrFI not supported      */
+/* simdXorFI not supported     */
+/* Integer arithmetic ops on SimdFInt32 */
+/* simdAddFI not supported     */
+/* simdSubFI not supported     */
+/* simdMulFI not supported     */
+/* Boolean & comparison operations on SimdFloat */
+#define SimdFBool           __m256
+#define simdCmpEqF(a, b)      _mm256_cmp_ps(a, b, _CMP_EQ_OQ)
+#define simdCmpLtF(a, b)      _mm256_cmp_ps(a, b, _CMP_LT_OQ)
+#define simdCmpLeF(a, b)      _mm256_cmp_ps(a, b, _CMP_LE_OQ)
+#define simdAndFB            _mm256_and_ps
+#define simdOrFB             _mm256_or_ps
+#define simdAnyTrueFB        _mm256_movemask_ps
+#define simdMaskF       _mm256_and_ps
+#define simdMaskNotF(a, sel)  _mm256_andnot_ps(sel, a)
+#define simdBlendF          _mm256_blendv_ps
+#define simdReduceF          simdReduceF_avx_256
+/* Boolean & comparison operations on SimdFInt32 */
+#define SimdFIBool          __m256i
+/* simdCmpEqFI not supported        */
+/* simdCmpLtFI not supported        */
+/* simdAndFIB not supported         */
+/* simdOrFIB not supported          */
+/* simdAnyTrueFIB not supported     */
+/* simdMaskFI not supported    */
+/* simdMaskNotFI not supported    */
+/* simdBlendFI not supported       */
 /* Conversions between different booleans */
-#define gmx_simd_cvt_fb2fib        _mm256_castps_si256
-#define gmx_simd_cvt_fib2fb        _mm256_castsi256_ps
+#define simdCvtFB2FIB        _mm256_castps_si256
+#define simdCvtFIB2FB        _mm256_castsi256_ps
 
 /*********************************************************
  * SIMD SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  *********************************************************/
-static gmx_inline __m256 gmx_simdcall
-gmx_simd_get_exponent_f_avx_256(__m256 x)
+static inline __m256 gmx_simdcall
+simdGetExponentF_avx_256(__m256 x)
 {
     const __m256  expmask      = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
     const __m128i expbias      = _mm_set1_epi32(127);
@@ -153,8 +153,8 @@ gmx_simd_get_exponent_f_avx_256(__m256 x)
     return _mm256_cvtepi32_ps(iexp256);
 }
 
-static gmx_inline __m256 gmx_simdcall
-gmx_simd_get_mantissa_f_avx_256(__m256 x)
+static inline __m256 gmx_simdcall
+simdGetMantissaF_avx_256(__m256 x)
 {
     const __m256 mantmask   = _mm256_castsi256_ps(_mm256_set1_epi32(0x007FFFFF));
     const __m256 one        = _mm256_set1_ps(1.0);
@@ -163,8 +163,8 @@ gmx_simd_get_mantissa_f_avx_256(__m256 x)
     return _mm256_or_ps(x, one);
 }
 
-static gmx_inline __m256 gmx_simdcall
-gmx_simd_set_exponent_f_avx_256(__m256 x)
+static inline __m256 gmx_simdcall
+simdSetExponentF_avx_256(__m256 x)
 {
     const __m128i expbias      = _mm_set1_epi32(127);
     __m256i       iexp256;
@@ -180,8 +180,8 @@ gmx_simd_set_exponent_f_avx_256(__m256 x)
     return _mm256_castsi256_ps(iexp256);
 }
 
-static gmx_inline float gmx_simdcall
-gmx_simd_reduce_f_avx_256(__m256 a)
+static inline float gmx_simdcall
+simdReduceF_avx_256(__m256 a)
 {
     float  f;
 
