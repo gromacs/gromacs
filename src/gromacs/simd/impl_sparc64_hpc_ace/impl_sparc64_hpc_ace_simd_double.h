@@ -56,88 +56,89 @@
 #    undef SAVE_ISOC99_SOURCE
 #endif
 
-#include <math.h>
+#include <cmath>
+#include <cstdint>
 
 #include "impl_sparc64_hpc_ace_common.h"
 
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_double_t          _fjsp_v2r8
-#define gmx_simd_load_d            _fjsp_load_v2r8
-#define gmx_simd_load1_d(m)        _fjsp_set_v2r8((*m), (*m))
-#define gmx_simd_set1_d(a)         _fjsp_set_v2r8(a, a)
-#define gmx_simd_store_d           _fjsp_store_v2r8
-#define gmx_simd_loadu_d           gmx_simd_load_d
-/* No unaligned store of gmx_simd_double_t */
-#define gmx_simd_setzero_d         _fjsp_setzero_v2r8
-#define gmx_simd_add_d             _fjsp_add_v2r8
-#define gmx_simd_sub_d             _fjsp_sub_v2r8
-#define gmx_simd_mul_d             _fjsp_mul_v2r8
-#define gmx_simd_fmadd_d(a, b, c)   _fjsp_madd_v2r8(a, b, c)
-#define gmx_simd_fmsub_d(a, b, c)   _fjsp_msub_v2r8(a, b, c)
-#define gmx_simd_fnmadd_d(a, b, c)  _fjsp_nmsub_v2r8(a, b, c)
-#define gmx_simd_fnmsub_d(a, b, c)  _fjsp_nmadd_v2r8(a, b, c)
-#define gmx_simd_and_d             _fjsp_and_v2r8
-#define gmx_simd_andnot_d          _fjsp_andnot1_v2r8
-#define gmx_simd_or_d              _fjsp_or_v2r8
-#define gmx_simd_xor_d             _fjsp_xor_v2r8
-#define gmx_simd_rsqrt_d(x)        _fjsp_rsqrta_v2r8(x)
-#define gmx_simd_rcp_d(x)          _fjsp_rcpa_v2r8(x)
-#define gmx_simd_fabs_d(x)         _fjsp_abs_v2r8(x)
-#define gmx_simd_fneg_d(x)         _fjsp_neg_v2r8(x)
-#define gmx_simd_max_d             _fjsp_max_v2r8
-#define gmx_simd_min_d             _fjsp_min_v2r8
-#define gmx_simd_round_d(x)        gmx_simd_cvt_i2d(gmx_simd_cvt_d2i(x))
-#define gmx_simd_trunc_d(x)        gmx_simd_cvt_i2d(gmx_simd_cvtt_d2i(x))
-#define gmx_simd_fraction_d(x)     gmx_simd_sub_d(x, gmx_simd_trunc_d(x))
-#define gmx_simd_get_exponent_d    gmx_simd_get_exponent_d_sparc64_hpc_ace
-#define gmx_simd_get_mantissa_d    gmx_simd_get_mantissa_d_sparc64_hpc_ace
-#define gmx_simd_set_exponent_d    gmx_simd_set_exponent_d_sparc64_hpc_ace
-/* integer datatype corresponding to double: gmx_simd_dint32_t */
-#define gmx_simd_dint32_t          _fjsp_v2r8
-#define gmx_simd_load_di(m)        gmx_simd_load_di_sparc64_hpc_ace(m)
-#define gmx_simd_set1_di(i)        gmx_simd_set1_di_sparc64_hpc_ace(i)
-#define gmx_simd_store_di(m, x)    gmx_simd_store_di_sparc64_hpc_ace(m, x)
-#define gmx_simd_loadu_di          gmx_simd_load_di
-/* No unaligned store of gmx_simd_dint32_t */
-#define gmx_simd_setzero_di        _fjsp_setzero_v2r8
-#define gmx_simd_cvt_d2i           gmx_simd_cvt_d2i_sparc64_hpc_ace
-#define gmx_simd_cvtt_d2i          _fjsp_dtox_v2r8
-#define gmx_simd_cvt_i2d           _fjsp_xtod_v2r8
-#define gmx_simd_extract_di        gmx_simd_extract_di_sparc64_hpc_ace
-/* Integer logical ops on gmx_simd_dint32_t */
-#define gmx_simd_slli_di           gmx_simd_slli_di_sparc64_hpc_ace
-#define gmx_simd_srli_di           gmx_simd_srli_di_sparc64_hpc_ace
-#define gmx_simd_and_di            _fjsp_and_v2r8
-#define gmx_simd_andnot_di         _fjsp_andnot1_v2r8
-#define gmx_simd_or_di             _fjsp_or_v2r8
-#define gmx_simd_xor_di            _fjsp_xor_v2r8
+#define SimdDouble          _fjsp_v2r8
+#define simdLoadD            _fjsp_load_v2r8
+#define simdLoad1D(m)        _fjsp_set_v2r8((*m), (*m))
+#define simdSet1D(a)         _fjsp_set_v2r8(a, a)
+#define simdStoreD           _fjsp_store_v2r8
+#define simdLoadUD           simdLoadD
+/* No unaligned store of SimdDouble */
+#define simdSetZeroD         _fjsp_setzero_v2r8
+#define simdAddD             _fjsp_add_v2r8
+#define simdSubD             _fjsp_sub_v2r8
+#define simdMulD             _fjsp_mul_v2r8
+#define simdFmaddD(a, b, c)   _fjsp_madd_v2r8(a, b, c)
+#define simdFmsubD(a, b, c)   _fjsp_msub_v2r8(a, b, c)
+#define simdFnmaddD(a, b, c)  _fjsp_nmsub_v2r8(a, b, c)
+#define simdFnmsubD(a, b, c)  _fjsp_nmadd_v2r8(a, b, c)
+#define simdAndD             _fjsp_and_v2r8
+#define simdAndNotD          _fjsp_andnot1_v2r8
+#define simdOrD              _fjsp_or_v2r8
+#define simdXorD             _fjsp_xor_v2r8
+#define simdRsqrtD(x)        _fjsp_rsqrta_v2r8(x)
+#define simdRcpD(x)          _fjsp_rcpa_v2r8(x)
+#define simdAbsD(x)         _fjsp_abs_v2r8(x)
+#define simdNegD(x)         _fjsp_neg_v2r8(x)
+#define simdMaxD             _fjsp_max_v2r8
+#define simdMinD             _fjsp_min_v2r8
+#define simdRoundD(x)        simdCvtI2D(simdCvtD2I(x))
+#define simdTruncD(x)        simdCvtI2D(simdCvttD2I(x))
+#define simdFractionD(x)     simdSubD(x, simdTruncD(x))
+#define simdGetExponentD    simdGetExponentD_sparc64_hpc_ace
+#define simdGetMantissaD    simdGetMantissaD_sparc64_hpc_ace
+#define simdSetExponentD    simdSetExponentD_sparc64_hpc_ace
+/* integer datatype corresponding to double: SimdDInt32 */
+#define SimdDInt32          _fjsp_v2r8
+#define simdLoadDI(m)        simdLoadDI_sparc64_hpc_ace(m)
+#define simdSet1DI(i)        simdSet1DI_sparc64_hpc_ace(i)
+#define simdStoreDI(m, x)    simdStoreDI_sparc64_hpc_ace(m, x)
+#define simdLoadUDI          simdLoadDI
+/* No unaligned store of SimdDInt32 */
+#define simdSetZeroDI        _fjsp_setzero_v2r8
+#define simdCvtD2I           simdCvtD2I_sparc64_hpc_ace
+#define simdCvttD2I          _fjsp_dtox_v2r8
+#define simdCvtI2D           _fjsp_xtod_v2r8
+#define simdExtractDI        simdExtractDI_sparc64_hpc_ace
+/* Integer logical ops on SimdDInt32 */
+#define simdSlliDI           simdSlliDI_sparc64_hpc_ace
+#define simdSrliDI           simdSrliDI_sparc64_hpc_ace
+#define simdAndDI            _fjsp_and_v2r8
+#define simdAndNotDI         _fjsp_andnot1_v2r8
+#define simdOrDI             _fjsp_or_v2r8
+#define simdXorDI            _fjsp_xor_v2r8
 /* Integer arithmetic ops on integer datatype corresponding to double */
-/* Boolean & comparison operations on gmx_simd_double_t */
-#define gmx_simd_dbool_t           _fjsp_v2r8
-#define gmx_simd_cmpeq_d           _fjsp_cmpeq_v2r8
-#define gmx_simd_cmplt_d           _fjsp_cmplt_v2r8
-#define gmx_simd_cmple_d           _fjsp_cmple_v2r8
-#define gmx_simd_and_db            _fjsp_and_v2r8
-#define gmx_simd_or_db             _fjsp_or_v2r8
-#define gmx_simd_anytrue_db         gmx_simd_anytrue_d_sparc64_hpc_ace
-#define gmx_simd_blendzero_d        _fjsp_and_v2r8
-#define gmx_simd_blendnotzero_d(a, sel)  _fjsp_andnot1_v2r8(sel, a)
-#define gmx_simd_blendv_d(a, b, sel) _fjsp_selmov_v2r8(b, a, sel)
-#define gmx_simd_reduce_d(a)        gmx_simd_reduce_d_sparc64_hpc_ace(a)
+/* Boolean & comparison operations on SimdDouble */
+#define SimdDBool           _fjsp_v2r8
+#define simdCmpEqD           _fjsp_cmpeq_v2r8
+#define simdCmpLtD           _fjsp_cmplt_v2r8
+#define simdCmpLeD           _fjsp_cmple_v2r8
+#define simdAndDB            _fjsp_and_v2r8
+#define simdOrDB             _fjsp_or_v2r8
+#define simdAnyTrueDB         gmx_simd_anytrue_d_sparc64_hpc_ace
+#define simdMaskD        _fjsp_and_v2r8
+#define simdMaskNotD(a, sel)  _fjsp_andnot1_v2r8(sel, a)
+#define simdBlendD(a, b, sel) _fjsp_selmov_v2r8(b, a, sel)
+#define simdReduceD(a)        simdReduceD_sparc64_hpc_ace(a)
 
-/* No boolean & comparison operations on gmx_simd_dint32_t */
+/* No boolean & comparison operations on SimdDInt32 */
 /* Float/double conversion */
-#define gmx_simd_cvt_f2d(f)         (f)
-#define gmx_simd_cvt_d2f(d)         (d)
+#define simdCvtF2D(f)         (f)
+#define simdCvtD2F(d)         (d)
 
 
 /****************************************************
  * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_load_di_sparc64_hpc_ace(const int *m)
+static inline SimdDInt32
+simdLoadDI_sparc64_hpc_ace(const int *m)
 {
     union
     {
@@ -152,8 +153,8 @@ gmx_simd_load_di_sparc64_hpc_ace(const int *m)
     return _fjsp_load_v2r8( (double *) &(conv.simd) );
 }
 
-static gmx_inline void
-gmx_simd_store_di_sparc64_hpc_ace(int *m, gmx_simd_dint32_t x)
+static inline void
+simdStoreDI_sparc64_hpc_ace(int *m, SimdDInt32 x)
 {
     union
     {
@@ -168,8 +169,8 @@ gmx_simd_store_di_sparc64_hpc_ace(int *m, gmx_simd_dint32_t x)
     m[1] = conv.i[1];
 }
 
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_set1_di_sparc64_hpc_ace(int i)
+static inline SimdDInt32
+simdSet1DI_sparc64_hpc_ace(int i)
 {
     union
     {
@@ -184,8 +185,8 @@ gmx_simd_set1_di_sparc64_hpc_ace(int i)
     return _fjsp_load_v2r8( (double *) &(conv.simd) );
 }
 
-static gmx_inline int
-gmx_simd_extract_di_sparc64_hpc_ace(gmx_simd_dint32_t x, int i)
+static inline int
+simdExtractDI_sparc64_hpc_ace(SimdDInt32 x, int i)
 {
     long long int res;
     /* This conditional should be optimized away at compile time */
@@ -200,8 +201,8 @@ gmx_simd_extract_di_sparc64_hpc_ace(gmx_simd_dint32_t x, int i)
     return (int)res;
 }
 
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_slli_di_sparc64_hpc_ace(gmx_simd_dint32_t x, int i)
+static inline SimdDInt32
+simdSlliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
 {
     _fjsp_v2i8 ix = *((_fjsp_v2i8 *)&x);
     ix = _fjsp_slli_v2i8(ix, i);
@@ -209,8 +210,8 @@ gmx_simd_slli_di_sparc64_hpc_ace(gmx_simd_dint32_t x, int i)
     return x;
 }
 
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_srli_di_sparc64_hpc_ace(gmx_simd_dint32_t x, int i)
+static inline SimdDInt32
+simdSrliDI_sparc64_hpc_ace(SimdDInt32 x, int i)
 {
     _fjsp_v2i8 ix = *((_fjsp_v2i8 *)&x);
     ix = _fjsp_srli_v2i8(ix, i);
@@ -218,8 +219,8 @@ gmx_simd_srli_di_sparc64_hpc_ace(gmx_simd_dint32_t x, int i)
     return x;
 }
 
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_cvt_d2i_sparc64_hpc_ace(gmx_simd_double_t x)
+static inline SimdDInt32
+simdCvtD2I_sparc64_hpc_ace(SimdDouble x)
 {
     _fjsp_v2r8 signbit = _fjsp_set_v2r8(-0.0, -0.0);
     _fjsp_v2r8 half    = _fjsp_set_v2r8(0.5, 0.5);
@@ -228,8 +229,8 @@ gmx_simd_cvt_d2i_sparc64_hpc_ace(gmx_simd_double_t x)
     return _fjsp_dtox_v2r8(x);
 }
 
-static gmx_inline int
-gmx_simd_anytrue_d_sparc64_hpc_ace(gmx_simd_dbool_t x)
+static inline int
+gmx_simd_anytrue_d_sparc64_hpc_ace(SimdDBool x)
 {
     long long int i;
     x = _fjsp_or_v2r8(x, _fjsp_unpackhi_v2r8(x, x));
@@ -237,8 +238,8 @@ gmx_simd_anytrue_d_sparc64_hpc_ace(gmx_simd_dbool_t x)
     return (i != 0LL);
 }
 
-static gmx_inline double
-gmx_simd_reduce_d_sparc64_hpc_ace(gmx_simd_double_t x)
+static inline double
+simdReduceD_sparc64_hpc_ace(SimdDouble x)
 {
     double d;
     x = _fjsp_add_v2r8(x, _fjsp_unpackhi_v2r8(x, x));
@@ -247,16 +248,16 @@ gmx_simd_reduce_d_sparc64_hpc_ace(gmx_simd_double_t x)
 }
 
 
-static gmx_inline gmx_simd_double_t
-gmx_simd_get_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
+static inline SimdDouble
+simdGetExponentD_sparc64_hpc_ace(SimdDouble x)
 {
     /* HPC-ACE cannot cast _fjsp_v2r8 to _fjsp_v4i4, so to perform shifts we
      * would need to store and reload. Since we are only operating on two
      * numbers it is likely more efficient to do the operations directly on
      * normal registers.
      */
-    const gmx_int64_t    expmask   = 0x7ff0000000000000LL;
-    const gmx_int64_t    expbias   = 1023LL;
+    const std::int64_t    expmask   = 0x7ff0000000000000LL;
+    const std::int64_t    expbias   = 1023LL;
 
     union
     {
@@ -272,20 +273,20 @@ gmx_simd_get_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
     return _fjsp_xtod_v2r8(x);
 }
 
-static gmx_inline gmx_simd_double_t
-gmx_simd_get_mantissa_d_sparc64_hpc_ace(gmx_simd_double_t x)
+static inline SimdDouble
+simdGetMantissaD_sparc64_hpc_ace(SimdDouble x)
 {
-    gmx_int64_t       mantmask[2] = {0x000fffffffffffffLL, 0x000fffffffffffffLL};
-    gmx_simd_double_t one         = _fjsp_set_v2r8(1.0, 1.0);
+    std::int64_t       mantmask[2] = {0x000fffffffffffffLL, 0x000fffffffffffffLL};
+    SimdDouble         one         = _fjsp_set_v2r8(1.0, 1.0);
 
     x = _fjsp_and_v2r8(x, _fjsp_load_v2r8((double *)mantmask));
     return _fjsp_or_v2r8(x, one);
 }
 
-static gmx_inline gmx_simd_double_t
-gmx_simd_set_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
+static inline SimdDouble
+simdSetExponentD_sparc64_hpc_ace(SimdDouble x)
 {
-    const gmx_int64_t    expbias   = 1023;
+    const std::int64_t    expbias   = 1023;
     union
     {
         _fjsp_v2r8       simd;
@@ -294,7 +295,7 @@ gmx_simd_set_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
     conv;
 
 
-    _fjsp_store_v2r8( (double *) &conv.simd, gmx_simd_cvt_d2i_sparc64_hpc_ace(x));
+    _fjsp_store_v2r8( (double *) &conv.simd, simdCvtD2I_sparc64_hpc_ace(x));
     conv.i[0] = (conv.i[0] + expbias) << 52;
     conv.i[1] = (conv.i[1] + expbias) << 52;
 

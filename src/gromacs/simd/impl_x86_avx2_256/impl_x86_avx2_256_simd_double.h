@@ -45,28 +45,28 @@
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#undef  gmx_simd_fmadd_d
-#define gmx_simd_fmadd_d           _mm256_fmadd_pd
-#undef  gmx_simd_fmsub_d
-#define gmx_simd_fmsub_d           _mm256_fmsub_pd
-#undef  gmx_simd_fnmadd_d
-#define gmx_simd_fnmadd_d          _mm256_fnmadd_pd
-#undef  gmx_simd_fnmsub_d
-#define gmx_simd_fnmsub_d          _mm256_fnmsub_pd
-#undef  gmx_simd_get_exponent_d
-#define gmx_simd_get_exponent_d    gmx_simd_get_exponent_d_avx2_256
-#undef  gmx_simd_set_exponent_d
-#define gmx_simd_set_exponent_d    gmx_simd_set_exponent_d_avx2_256
-#undef  gmx_simd_cvt_db2dib
-#define gmx_simd_cvt_db2dib        gmx_simd_cvt_db2dib_avx2_256
-#undef  gmx_simd_cvt_dib2db
-#define gmx_simd_cvt_dib2db        gmx_simd_cvt_dib2db_avx2_256
+#undef  simdFmaddD
+#define simdFmaddD           _mm256_fmadd_pd
+#undef  simdFmsubD
+#define simdFmsubD           _mm256_fmsub_pd
+#undef  simdFnmaddD
+#define simdFnmaddD          _mm256_fnmadd_pd
+#undef  simdFnmsubD
+#define simdFnmsubD          _mm256_fnmsub_pd
+#undef  simdGetExponentD
+#define simdGetExponentD    simdGetExponentD_avx2_256
+#undef  simdSetExponentD
+#define simdSetExponentD    simdSetExponentD_avx2_256
+#undef  simdCvtDB2DIB
+#define simdCvtDB2DIB        simdCvtDB2DIB_avx2_256
+#undef  simdCvtDIB2DB
+#define simdCvtDIB2DB        simdCvtDIB2DB_avx2_256
 
 /*********************************************************
  * SIMD DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  *********************************************************/
-static gmx_inline gmx_simd_double_t gmx_simdcall
-gmx_simd_get_exponent_d_avx2_256(gmx_simd_double_t x)
+static inline SimdDouble gmx_simdcall
+simdGetExponentD_avx2_256(SimdDouble x)
 {
     const __m256d  expmask      = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FF0000000000000LL));
     const __m256i  expbias      = _mm256_set1_epi64x(1023LL);
@@ -82,8 +82,8 @@ gmx_simd_get_exponent_d_avx2_256(gmx_simd_double_t x)
     return _mm256_cvtepi32_pd(iexp128);
 }
 
-static gmx_inline gmx_simd_double_t gmx_simdcall
-gmx_simd_set_exponent_d_avx2_256(gmx_simd_double_t x)
+static inline SimdDouble gmx_simdcall
+simdSetExponentD_avx2_256(SimdDouble x)
 {
     const __m256i  expbias      = _mm256_set1_epi64x(1023LL);
     __m256i        iexp         = _mm256_cvtepi32_epi64(_mm256_cvtpd_epi32(x));
@@ -92,8 +92,8 @@ gmx_simd_set_exponent_d_avx2_256(gmx_simd_double_t x)
     return _mm256_castsi256_pd(iexp);
 }
 
-static gmx_inline gmx_simd_dibool_t gmx_simdcall
-gmx_simd_cvt_db2dib_avx2_256(gmx_simd_dbool_t a)
+static inline SimdDIBool gmx_simdcall
+simdCvtDB2DIB_avx2_256(SimdDBool a)
 {
     __m128i ia = _mm256_castsi256_si128(_mm256_castpd_si256(a));
     __m128i ib = _mm256_extractf128_si256(_mm256_castpd_si256(a), 0x1);
@@ -103,8 +103,8 @@ gmx_simd_cvt_db2dib_avx2_256(gmx_simd_dbool_t a)
     return ia;
 }
 
-static gmx_inline gmx_simd_dbool_t gmx_simdcall
-gmx_simd_cvt_dib2db_avx2_256(gmx_simd_dibool_t ia)
+static inline SimdDBool gmx_simdcall
+simdCvtDIB2DB_avx2_256(SimdDIBool ia)
 {
     __m128d lo = _mm_castsi128_pd(_mm_unpacklo_epi32(ia, ia));
     __m128d hi = _mm_castsi128_pd(_mm_unpackhi_epi32(ia, ia));

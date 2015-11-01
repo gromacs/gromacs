@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,40 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* Get the half-width SIMD stuff from the kernel utils files */
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
-
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 #if GMX_SIMD_REAL_WIDTH >= 2*NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_REAL_WIDTH/2)
 #else
 #define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
 #endif
-
-static gmx_inline gmx_simd_real_t gmx_load_hpr_hilo_pr(const real *a)
-{
-    gmx_mm_hpr       a_S;
-    gmx_simd_real_t  a_a_S;
-
-    gmx_load_hpr(&a_S, a);
-
-    gmx_2hpr_to_pr(a_S, a_S, &a_a_S);
-
-    return a_a_S;
-}
-
-static gmx_inline gmx_simd_real_t gmx_set_2real_shift_pr(const real *a, real shift)
-{
-    gmx_mm_hpr       a0_S, a1_S;
-    gmx_simd_real_t  a0_a1_S;
-
-    gmx_set1_hpr(&a0_S, a[0] + shift);
-    gmx_set1_hpr(&a1_S, a[1] + shift);
-
-    gmx_2hpr_to_pr(a0_S, a1_S, &a0_a1_S);
-
-    return a0_a1_S;
-}
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
 static gmx_inline void
@@ -76,19 +49,17 @@ icell_set_x_simd_2xnn(int ci,
                       int gmx_unused stride, const real *x,
                       nbnxn_list_work_t *work)
 {
-    int                     ia;
-    nbnxn_x_ci_simd_2xnn_t *x_ci;
-
-    x_ci = work->x_ci_simd_2xnn;
+    int   ia;
+    real *x_ci_simd = work->x_ci_simd;;
 
     ia = X_IND_CI_SIMD_2XNN(ci);
 
-    x_ci->ix_S0 = gmx_set_2real_shift_pr(x + ia + 0*STRIDE_S + 0, shx);
-    x_ci->iy_S0 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 0, shy);
-    x_ci->iz_S0 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 0, shz);
-    x_ci->ix_S2 = gmx_set_2real_shift_pr(x + ia + 0*STRIDE_S + 2, shx);
-    x_ci->iy_S2 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 2, shy);
-    x_ci->iz_S2 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 2, shz);
+    store(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0*STRIDE_S + 0) + SimdReal(shx) );
+    store(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1*STRIDE_S + 0) + SimdReal(shy) );
+    store(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2*STRIDE_S + 0) + SimdReal(shz) );
+    store(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0*STRIDE_S + 2) + SimdReal(shx) );
+    store(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1*STRIDE_S + 2) + SimdReal(shy) );
+    store(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2*STRIDE_S + 2) + SimdReal(shz) );
 }
 
 /* SIMD code for making a pair list of cell ci vs cell cjf-cjl
@@ -105,22 +76,22 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
                             real rl2, float rbb2,
                             int *ndistc)
 {
-    const nbnxn_x_ci_simd_2xnn_t       *work;
+    const real                         *x_ci_simd;
     const nbnxn_bb_t                   *bb_ci;
 
-    gmx_simd_real_t                     jx_S, jy_S, jz_S;
+    SimdReal                            jx_S, jy_S, jz_S;
 
-    gmx_simd_real_t                     dx_S0, dy_S0, dz_S0;
-    gmx_simd_real_t                     dx_S2, dy_S2, dz_S2;
+    SimdReal                            dx_S0, dy_S0, dz_S0;
+    SimdReal                            dx_S2, dy_S2, dz_S2;
 
-    gmx_simd_real_t                     rsq_S0;
-    gmx_simd_real_t                     rsq_S2;
+    SimdReal                            rsq_S0;
+    SimdReal                            rsq_S2;
 
-    gmx_simd_bool_t                     wco_S0;
-    gmx_simd_bool_t                     wco_S2;
-    gmx_simd_bool_t                     wco_any_S;
+    SimdBool                            wco_S0;
+    SimdBool                            wco_S2;
+    SimdBool                            wco_any_S;
 
-    gmx_simd_real_t                     rc2_S;
+    SimdReal                            rc2_S;
 
     gmx_bool                            InRange;
     float                               d2;
@@ -129,11 +100,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     cjf = CI_TO_CJ_SIMD_2XNN(cjf);
     cjl = CI_TO_CJ_SIMD_2XNN(cjl+1) - 1;
 
-    work = nbl->work->x_ci_simd_2xnn;
+    x_ci_simd = nbl->work->x_ci_simd;
 
     bb_ci = nbl->work->bb_ci;
 
-    rc2_S   = gmx_simd_set1_r(rl2);
+    rc2_S   = SimdReal(rl2);
 
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
@@ -158,28 +129,28 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         {
             xind_f  = X_IND_CJ_SIMD_2XNN(CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cjf);
 
-            jx_S  = gmx_load_hpr_hilo_pr(x_j+xind_f+0*STRIDE_S);
-            jy_S  = gmx_load_hpr_hilo_pr(x_j+xind_f+1*STRIDE_S);
-            jz_S  = gmx_load_hpr_hilo_pr(x_j+xind_f+2*STRIDE_S);
+            jx_S  = loadDuplicateHsimd(x_j+xind_f+0*STRIDE_S);
+            jy_S  = loadDuplicateHsimd(x_j+xind_f+1*STRIDE_S);
+            jz_S  = loadDuplicateHsimd(x_j+xind_f+2*STRIDE_S);
 
             /* Calculate distance */
-            dx_S0            = gmx_simd_sub_r(work->ix_S0, jx_S);
-            dy_S0            = gmx_simd_sub_r(work->iy_S0, jy_S);
-            dz_S0            = gmx_simd_sub_r(work->iz_S0, jz_S);
-            dx_S2            = gmx_simd_sub_r(work->ix_S2, jx_S);
-            dy_S2            = gmx_simd_sub_r(work->iy_S2, jy_S);
-            dz_S2            = gmx_simd_sub_r(work->iz_S2, jz_S);
+            dx_S0            = load(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0            = load(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0            = load(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2            = load(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2            = load(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2            = load(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH) - jz_S;
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_S0           = gmx_simd_calc_rsq_r(dx_S0, dy_S0, dz_S0);
-            rsq_S2           = gmx_simd_calc_rsq_r(dx_S2, dy_S2, dz_S2);
+            rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
+            rsq_S2           = norm2(dx_S2, dy_S2, dz_S2);
 
-            wco_S0           = gmx_simd_cmplt_r(rsq_S0, rc2_S);
-            wco_S2           = gmx_simd_cmplt_r(rsq_S2, rc2_S);
+            wco_S0           = (rsq_S0 < rc2_S);
+            wco_S2           = (rsq_S2 < rc2_S);
 
-            wco_any_S        = gmx_simd_or_b(wco_S0, wco_S2);
+            wco_any_S        = wco_S0 || wco_S2;
 
-            InRange          = gmx_simd_anytrue_b(wco_any_S);
+            InRange          = anyTrue(wco_any_S);
 
             *ndistc += 2*GMX_SIMD_REAL_WIDTH;
         }
@@ -216,28 +187,28 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         {
             xind_l  = X_IND_CJ_SIMD_2XNN(CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cjl);
 
-            jx_S  = gmx_load_hpr_hilo_pr(x_j+xind_l+0*STRIDE_S);
-            jy_S  = gmx_load_hpr_hilo_pr(x_j+xind_l+1*STRIDE_S);
-            jz_S  = gmx_load_hpr_hilo_pr(x_j+xind_l+2*STRIDE_S);
+            jx_S  = loadDuplicateHsimd(x_j+xind_l+0*STRIDE_S);
+            jy_S  = loadDuplicateHsimd(x_j+xind_l+1*STRIDE_S);
+            jz_S  = loadDuplicateHsimd(x_j+xind_l+2*STRIDE_S);
 
             /* Calculate distance */
-            dx_S0            = gmx_simd_sub_r(work->ix_S0, jx_S);
-            dy_S0            = gmx_simd_sub_r(work->iy_S0, jy_S);
-            dz_S0            = gmx_simd_sub_r(work->iz_S0, jz_S);
-            dx_S2            = gmx_simd_sub_r(work->ix_S2, jx_S);
-            dy_S2            = gmx_simd_sub_r(work->iy_S2, jy_S);
-            dz_S2            = gmx_simd_sub_r(work->iz_S2, jz_S);
+            dx_S0            = load(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0            = load(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0            = load(x_ci_simd + 2*GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2            = load(x_ci_simd + 3*GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2            = load(x_ci_simd + 4*GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2            = load(x_ci_simd + 5*GMX_SIMD_REAL_WIDTH) - jz_S;
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_S0           = gmx_simd_calc_rsq_r(dx_S0, dy_S0, dz_S0);
-            rsq_S2           = gmx_simd_calc_rsq_r(dx_S2, dy_S2, dz_S2);
+            rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
+            rsq_S2           = norm2(dx_S2, dy_S2, dz_S2);
 
-            wco_S0           = gmx_simd_cmplt_r(rsq_S0, rc2_S);
-            wco_S2           = gmx_simd_cmplt_r(rsq_S2, rc2_S);
+            wco_S0           = (rsq_S0 < rc2_S);
+            wco_S2           = (rsq_S2 < rc2_S);
 
-            wco_any_S        = gmx_simd_or_b(wco_S0, wco_S2);
+            wco_any_S        = wco_S0 || wco_S2;
 
-            InRange          = gmx_simd_anytrue_b(wco_any_S);
+            InRange          = anyTrue(wco_any_S);
 
             *ndistc += 2*GMX_SIMD_REAL_WIDTH;
         }
