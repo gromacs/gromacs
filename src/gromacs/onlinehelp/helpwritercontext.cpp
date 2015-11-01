@@ -46,10 +46,10 @@
 #include <cctype>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/onlinehelp/helpformat.h"
@@ -476,7 +476,8 @@ class HelpWriterContext::Impl
 
             private:
                 //! Formatter for console output options.
-                mutable boost::scoped_ptr<TextTableFormatter> consoleOptionsFormatter_;
+                // Never releases ownership.
+                mutable std::unique_ptr<TextTableFormatter> consoleOptionsFormatter_;
         };
 
         struct ReplaceItem

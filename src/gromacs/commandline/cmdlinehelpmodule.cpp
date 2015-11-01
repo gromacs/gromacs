@@ -47,8 +47,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
@@ -540,8 +538,9 @@ class HelpExportReStructuredText : public IHelpExport
         IFileOutputRedirector          *outputRedirector_;
         const std::string              &binaryName_;
         HelpLinks                       links_;
-        boost::scoped_ptr<TextWriter>   indexFile_;
-        boost::scoped_ptr<TextWriter>   manPagesFile_;
+        // These never release ownership.
+        std::unique_ptr<TextWriter>     indexFile_;
+        std::unique_ptr<TextWriter>     manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(

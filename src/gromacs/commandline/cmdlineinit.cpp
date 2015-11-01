@@ -47,7 +47,7 @@
 
 #include <cstring>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -71,10 +71,11 @@ namespace
 //! \addtogroup module_commandline
 //! \{
 
+// These never release ownership.
 //! Global context instance initialized in initForCommandLine().
-boost::scoped_ptr<CommandLineProgramContext> g_commandLineContext;
+std::unique_ptr<CommandLineProgramContext> g_commandLineContext;
 //! Global library data file finder that respects GMXLIB.
-boost::scoped_ptr<DataFileFinder>            g_libFileFinder;
+std::unique_ptr<DataFileFinder>            g_libFileFinder;
 
 #ifdef GMX_LIB_MPI
 void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)

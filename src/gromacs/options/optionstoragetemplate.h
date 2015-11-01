@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,9 @@
 #ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 #define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/scoped_ptr.hpp>
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
@@ -283,8 +282,9 @@ class OptionStorageTemplate : public AbstractOptionStorage
         ValueList                   *values_;
         T                           *store_;
         int                         *countptr_;
-        boost::scoped_ptr<ValueList> ownedValues_;
-        boost::scoped_ptr<T>         defaultValueIfSet_;
+        // These never release ownership.
+        std::unique_ptr<ValueList>   ownedValues_;
+        std::unique_ptr<T>           defaultValueIfSet_;
 
         // Copy and assign disallowed by base.
 };

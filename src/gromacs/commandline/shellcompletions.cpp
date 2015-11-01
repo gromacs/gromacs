@@ -47,9 +47,8 @@
 
 #include <cstdio>
 
+#include <memory>
 #include <string>
-
-#include <boost/scoped_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
@@ -197,7 +196,8 @@ class ShellCompletionWriter::Impl
         }
 
         std::string                   binaryName_;
-        boost::scoped_ptr<TextWriter> file_;
+        // Never releases ownership.
+        std::unique_ptr<TextWriter>   file_;
 };
 
 ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,

@@ -10,7 +10,7 @@ Steps to produce minimal version of BOOST:
    - Edit config/select_compiler_config.hpp to add the fallback
      to a generic compiler capability file at the end.
    - Add the generic compiler capability file config/compiler/generic.hpp
-5) run bcp with required files (currently boost/exception/all.hpp boost/scoped_ptr.hpp)
+5) run bcp with required files (currently boost/exception/all.hpp)
 6) delete source files which are not required. Currently:
    - libs/smart_ptr/
    - libs/exception/
