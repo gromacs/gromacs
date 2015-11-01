@@ -45,29 +45,29 @@
 /* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
  * can be implemented more efficiently in SSE4.1.
  */
-#undef  gmx_simd_round_d
-#define gmx_simd_round_d(x)       _mm_round_pd(x, _MM_FROUND_NINT)
+#undef  simdRoundD
+#define simdRoundD(x)       _mm_round_pd(x, _MM_FROUND_NINT)
 
-#undef  gmx_simd_trunc_d
-#define gmx_simd_trunc_d(x)       _mm_round_pd(x, _MM_FROUND_TRUNC)
+#undef  simdTruncD
+#define simdTruncD(x)       _mm_round_pd(x, _MM_FROUND_TRUNC)
 
-#undef  gmx_simd_extract_di
-#define gmx_simd_extract_di       _mm_extract_epi32
+#undef  simdExtractDI
+#define simdExtractDI       _mm_extract_epi32
 
-#undef  gmx_simd_mul_di
-#define gmx_simd_mul_di           _mm_mullo_epi32
+#undef  simdMulDI
+#define simdMulDI           _mm_mullo_epi32
 
-#undef  gmx_simd_blendv_d
-#define gmx_simd_blendv_d         _mm_blendv_pd
+#undef  simdBlendD
+#define simdBlendD         _mm_blendv_pd
 
-#undef  gmx_simd_reduce_d
-#define gmx_simd_reduce_d(a)      gmx_simd_reduce_d_sse4_1(a)
+#undef  simdReduceD
+#define simdReduceD(a)      simdReduceD_sse4_1(a)
 
-#undef  gmx_simd_blendv_di
-#define gmx_simd_blendv_di        _mm_blendv_epi8
+#undef  simdBlendDI
+#define simdBlendDI        _mm_blendv_epi8
 
-static gmx_inline double gmx_simdcall
-gmx_simd_reduce_d_sse4_1(__m128d a)
+static inline double gmx_simdcall
+simdReduceD_sse4_1(__m128d a)
 {
     double  f;
 
