@@ -41,15 +41,15 @@
 
 #include "impl_x86_avx_128_fma_common.h"
 
-#undef  gmx_simd_fmadd_f
-#define gmx_simd_fmadd_f                 _mm_macc_ps
-#undef  gmx_simd_fmsub_f
-#define gmx_simd_fmsub_f                 _mm_msub_ps
-#undef  gmx_simd_fnmadd_f
-#define gmx_simd_fnmadd_f                _mm_nmacc_ps
-#undef  gmx_simd_fnmsub_f
-#define gmx_simd_fnmsub_f                _mm_nmsub_ps
-#undef  gmx_simd_fraction_f
-#define gmx_simd_fraction_f              _mm_frcz_ps
+#undef  simdFmaddF
+#define simdFmaddF                 _mm_macc_ps
+#undef  simdFmsubF
+#define simdFmsubF                 _mm_msub_ps
+#undef  simdFnmaddF
+#define simdFnmaddF                _mm_nmacc_ps
+#undef  simdFnmsubF
+#define simdFnmsubF                _mm_nmsub_ps
+#undef  simdFractionF
+#define simdFractionF              _mm_frcz_ps
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_FLOAT_H */

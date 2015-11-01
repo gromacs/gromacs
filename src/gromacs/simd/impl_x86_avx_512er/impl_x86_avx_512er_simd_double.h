@@ -40,10 +40,10 @@
 
 #include "impl_x86_avx_512er_common.h"
 
-#undef  gmx_simd_rsqrt_d
-#define gmx_simd_rsqrt_d           _mm512_rsqrt28_pd
+#undef  simdRsqrtD
+#define simdRsqrtD           _mm512_rsqrt28_pd
 
-#undef  gmx_simd_rcp_d
-#define gmx_simd_rcp_d             _mm512_rcp28_pd
+#undef  simdRcpD
+#define simdRcpD             _mm512_rcp28_pd
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H */
