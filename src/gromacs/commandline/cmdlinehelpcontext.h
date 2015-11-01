@@ -87,6 +87,10 @@ class CommandLineHelpContext
         explicit CommandLineHelpContext(ShellCompletionWriter *writer);
         //! Creates a copy of the context.
         explicit CommandLineHelpContext(const CommandLineHelpContext &other);
+        //! Moves the context.
+        CommandLineHelpContext(CommandLineHelpContext &&other);
+        //! Move-assigns the context.
+        CommandLineHelpContext &operator=(CommandLineHelpContext &&other);
         ~CommandLineHelpContext();
 
         /*! \brief

@@ -49,7 +49,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/fileio/trx.h"
@@ -682,6 +681,23 @@ SelectionCollection::parseFromStdin(int count, bool bInteractive,
                             context);
 }
 
+namespace
+{
+
+//! Helper function to initialize status writer for interactive selection parsing.
+std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
+{
+    std::unique_ptr<TextWriter> statusWriter;
+    if (statusStream != NULL)
+    {
+        statusWriter.reset(new TextWriter(statusStream));
+        statusWriter->wrapperSettings().setLineLength(78);
+    }
+    return std::move(statusWriter);
+}
+
+}   // namespace
+
 SelectionList
 SelectionCollection::parseInteractive(int                count,
                                       TextInputStream   *inputStream,
@@ -690,12 +706,8 @@ SelectionCollection::parseInteractive(int                count,
 {
     yyscan_t scanner;
 
-    boost::scoped_ptr<TextWriter> statusWriter;
-    if (statusStream != NULL)
-    {
-        statusWriter.reset(new TextWriter(statusStream));
-        statusWriter->wrapperSettings().setLineLength(78);
-    }
+    const std::unique_ptr<TextWriter> statusWriter(
+            initStatusWriter(statusStream));
     _gmx_sel_init_lexer(&scanner, &impl_->sc_, statusWriter.get(),
                         count, impl_->bExternalGroupsSet_, impl_->grps_);
     return runParser(scanner, inputStream, true, count, context);

@@ -132,6 +132,8 @@ template <class Impl>
 class PrivateImplPointer
 {
     public:
+        //! Allow implicit initialization from nullptr to support comparison.
+        PrivateImplPointer(std::nullptr_t) : ptr_(nullptr) {}
         //! Initialize with the given implementation class.
         explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
         //! \cond
@@ -147,7 +149,8 @@ class PrivateImplPointer
         /*! \brief
          * Sets a new implementation class and destructs the previous one.
          *
-         * Needed, e.g., to implement assignable classes.
+         * Needed, e.g., to implement lazily initializable or copy-assignable
+         * classes.
          */
         void reset(Impl *ptr) { ptr_.reset(ptr); }
         //! Access the raw pointer.
@@ -156,12 +159,18 @@ class PrivateImplPointer
         Impl *operator->() { return ptr_.get(); }
         //! Access the implementation class as with a raw pointer.
         Impl &operator*() { return *ptr_; }
-        //! Access the raw pointer.
-        const Impl *get() const { return ptr_.get(); }
         //! Access the implementation class as with a raw pointer.
         const Impl *operator->() const { return ptr_.get(); }
         //! Access the implementation class as with a raw pointer.
         const Impl &operator*() const { return *ptr_; }
+
+        //! Allows testing whether the implementation is initialized.
+        explicit operator bool() const { return ptr_ != nullptr; }
+
+        //! Tests for equality (mainly useful against nullptr).
+        bool operator==(const PrivateImplPointer &other) const { return ptr_ == other.ptr_; }
+        //! Tests for inequality (mainly useful against nullptr).
+        bool operator!=(const PrivateImplPointer &other) const { return ptr_ != other.ptr_; }
 
     private:
         std::unique_ptr<Impl> ptr_;

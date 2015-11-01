@@ -124,6 +124,18 @@ CommandLineHelpContext::CommandLineHelpContext(
 {
 }
 
+CommandLineHelpContext::CommandLineHelpContext(CommandLineHelpContext &&other)
+    : impl_(std::move(other.impl_))
+{
+}
+
+CommandLineHelpContext &CommandLineHelpContext::operator=(
+        CommandLineHelpContext &&other)
+{
+    impl_ = std::move(other.impl_);
+    return *this;
+}
+
 CommandLineHelpContext::~CommandLineHelpContext()
 {
 }

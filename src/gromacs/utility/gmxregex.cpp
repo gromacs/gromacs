@@ -177,7 +177,7 @@ class Regex::Impl
 #endif
 
 Regex::Regex()
-    : impl_(NULL)
+    : impl_(nullptr)
 {
 }
 
@@ -198,7 +198,7 @@ Regex::~Regex()
 /*! \cond libapi */
 bool regexMatch(const char *str, const Regex &regex)
 {
-    if (regex.impl_.get() == NULL)
+    if (regex.impl_ == nullptr)
     {
         return false;
     }

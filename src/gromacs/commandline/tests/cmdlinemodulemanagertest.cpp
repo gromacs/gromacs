@@ -46,13 +46,13 @@
 #include <memory>
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
 #include <gmock/gmock.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
@@ -132,13 +132,21 @@ MockOptionsModule::~MockOptionsModule()
 class CommandLineModuleManagerTestBase::Impl
 {
     public:
-        TestFileOutputRedirector                     redirector_;
-        boost::scoped_ptr<CommandLineProgramContext> programContext_;
-        boost::scoped_ptr<CommandLineModuleManager>  manager_;
+        Impl(const CommandLine &args, const char *realBinaryName)
+            : programContext_(args.argc(), args.argv()),
+              manager_(realBinaryName, &programContext_)
+        {
+            manager_.setQuiet(true);
+            manager_.setOutputRedirector(&redirector_);
+        }
+
+        TestFileOutputRedirector   redirector_;
+        CommandLineProgramContext  programContext_;
+        CommandLineModuleManager   manager_;
 };
 
 CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase()
-    : impl_(new Impl)
+    : impl_(nullptr)
 {
 }
 
@@ -149,13 +157,8 @@ CommandLineModuleManagerTestBase::~CommandLineModuleManagerTestBase()
 void CommandLineModuleManagerTestBase::initManager(
         const CommandLine &args, const char *realBinaryName)
 {
-    impl_->manager_.reset();
-    impl_->programContext_.reset(
-            new gmx::CommandLineProgramContext(args.argc(), args.argv()));
-    impl_->manager_.reset(new gmx::CommandLineModuleManager(
-                                  realBinaryName, impl_->programContext_.get()));
-    impl_->manager_->setQuiet(true);
-    impl_->manager_->setOutputRedirector(&impl_->redirector_);
+    GMX_RELEASE_ASSERT(impl_ == nullptr, "initManager() called more than once in test");
+    impl_.reset(new Impl(args, realBinaryName));
 }
 
 MockModule &
@@ -186,11 +189,13 @@ CommandLineModuleManagerTestBase::addHelpTopic(const char *name, const char *tit
 
 CommandLineModuleManager &CommandLineModuleManagerTestBase::manager()
 {
-    return *impl_->manager_;
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "initManager() not called");
+    return impl_->manager_;
 }
 
 void CommandLineModuleManagerTestBase::checkRedirectedOutput()
 {
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "initManager() not called");
     impl_->redirector_.checkRedirectedFiles(&checker());
 }
 

@@ -43,6 +43,7 @@
 
 #include "cmdlinehelpmodule.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -122,6 +123,8 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         // unused because of the writeHelp() override
         virtual std::string helpText() const { return ""; }
 
+        CommandLineHelpContext createContext(const HelpWriterContext &context) const;
+
         const CommandLineHelpModuleImpl  &helpModule_;
         std::string                       title_;
         std::vector<std::string>          exportedTopics_;
@@ -143,6 +146,9 @@ class CommandLineHelpModuleImpl
                                   const CommandLineModuleMap       &modules,
                                   const CommandLineModuleGroupList &groups);
 
+        std::unique_ptr<IHelpExport> createExporter(
+            const std::string     &format,
+            IFileOutputRedirector *redirector);
         void exportHelp(IHelpExport *exporter);
 
         RootHelpTopic                     rootTopic_;
@@ -286,17 +292,9 @@ void RootHelpTopic::exportHelp(IHelpExport *exporter)
 void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
     {
-        CommandLineCommonOptionsHolder            optionsHolder;
-        boost::scoped_ptr<CommandLineHelpContext> cmdlineContext;
-        if (helpModule_.context_ != NULL)
-        {
-            cmdlineContext.reset(new CommandLineHelpContext(*helpModule_.context_));
-        }
-        else
-        {
-            cmdlineContext.reset(new CommandLineHelpContext(context));
-        }
-        cmdlineContext->setModuleDisplayName(helpModule_.binaryName_);
+        CommandLineCommonOptionsHolder  optionsHolder;
+        CommandLineHelpContext          cmdlineContext(createContext(context));
+        cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
         Options                    &options = *optionsHolder.options();
         ConstArrayRef<const char *> helpText;
@@ -307,7 +305,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         // TODO: Add <command> [<args>] into the synopsis.
         CommandLineHelpWriter(options)
             .setHelpText(helpText)
-            .writeHelp(*cmdlineContext);
+            .writeHelp(cmdlineContext);
     }
     if (context.outputFormat() == eHelpOutputFormat_Console)
     {
@@ -328,6 +326,19 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
                 "for further details.");
         context.writeTextBlock("");
         context.writeTextBlock(".. include:: /fragments/bytopic-man.rst");
+    }
+}
+
+CommandLineHelpContext
+RootHelpTopic::createContext(const HelpWriterContext &context) const
+{
+    if (helpModule_.context_ != NULL)
+    {
+        return CommandLineHelpContext(*helpModule_.context_);
+    }
+    else
+    {
+        return CommandLineHelpContext(context);
     }
 }
 
@@ -768,6 +779,23 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
 {
 }
 
+std::unique_ptr<IHelpExport>
+CommandLineHelpModuleImpl::createExporter(const std::string     &format,
+                                          IFileOutputRedirector *redirector)
+{
+    if (format == "rst")
+    {
+        return std::unique_ptr<IHelpExport>(
+                new HelpExportReStructuredText(*this, redirector));
+    }
+    else if (format == "completion")
+    {
+        return std::unique_ptr<IHelpExport>(
+                new HelpExportCompletion(*this));
+    }
+    GMX_THROW(NotImplementedError("This help format is not implemented"));
+}
+
 void CommandLineHelpModuleImpl::exportHelp(IHelpExport *exporter)
 {
     // TODO: Would be nicer to have the file names supplied by the build system
@@ -928,19 +956,8 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);
-        boost::scoped_ptr<IHelpExport>           exporter;
-        if (exportFormat == "rst")
-        {
-            exporter.reset(new HelpExportReStructuredText(*impl_, &redirector));
-        }
-        else if (exportFormat == "completion")
-        {
-            exporter.reset(new HelpExportCompletion(*impl_));
-        }
-        else
-        {
-            GMX_THROW(NotImplementedError("This help format is not implemented"));
-        }
+        const std::unique_ptr<IHelpExport>       exporter(
+                impl_->createExporter(exportFormat, &redirector));
         impl_->exportHelp(exporter.get());
         return 0;
     }
