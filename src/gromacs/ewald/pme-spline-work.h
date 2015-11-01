@@ -39,16 +39,18 @@
 
 #include "pme-simd.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 struct pme_spline_work
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
     /* Masks for 4-wide SIMD aligned spreading and gathering */
-    gmx_simd4_bool_t mask_S0[6], mask_S1[6];
+    Simd4Bool        mask_S0[6], mask_S1[6];
 #else
     int              dummy; /* C89 requires that struct has at least one member */
 #endif
 };
 
-struct pme_spline_work *make_pme_spline_work(int order);
+pme_spline_work *make_pme_spline_work(int order);
 
 #endif

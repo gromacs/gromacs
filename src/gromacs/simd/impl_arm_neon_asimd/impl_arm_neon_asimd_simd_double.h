@@ -45,122 +45,122 @@
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_double_t          float64x2_t
-#define gmx_simd_load_d            vld1q_f64
-#define gmx_simd_load1_d           vld1q_dup_f64
-#define gmx_simd_set1_d            vdupq_n_f64
-#define gmx_simd_store_d           vst1q_f64
-#define gmx_simd_loadu_d           vld1q_f64
-#define gmx_simd_storeu_d          vst1q_f64
-#define gmx_simd_setzero_d()       vdupq_n_f64(0.0)
-#define gmx_simd_add_d             vaddq_f64
-#define gmx_simd_sub_d             vsubq_f64
-#define gmx_simd_mul_d             vmulq_f64
-#define gmx_simd_fmadd_d(a, b, c)  vfmaq_f64(c, b, a)
-#define gmx_simd_fmsub_d(a, b, c)  vnegq_f64(vfmsq_f64(c, b, a))
-#define gmx_simd_fnmadd_d(a, b, c) vfmsq_f64(c, b, a)
-#define gmx_simd_fnmsub_d(a, b, c) vnegq_f64(vfmaq_f64(c, b, a))
-#define gmx_simd_and_d(a, b)        (float64x2_t)(vandq_s64((int64x2_t)(a), (int64x2_t)(b)))
-#define gmx_simd_andnot_d(a, b)     (float64x2_t)(vbicq_s64((int64x2_t)(b), (int64x2_t)(a)))
-#define gmx_simd_or_d(a, b)         (float64x2_t)(vorrq_s64((int64x2_t)(a), (int64x2_t)(b)))
-#define gmx_simd_xor_d(a, b)        (float64x2_t)(veorq_s64((int64x2_t)(a), (int64x2_t)(b)))
-#define gmx_simd_rsqrt_d            vrsqrteq_f64
-#define gmx_simd_rsqrt_iter_d(lu, x) vmulq_f64(lu, vrsqrtsq_f64(vmulq_f64(lu, lu), x))
-#define gmx_simd_rcp_d              vrecpeq_f64
-#define gmx_simd_rcp_iter_d(lu, x)   vmulq_f64(lu, vrecpsq_f64(lu, x))
-#define gmx_simd_fabs_d(x)         vabsq_f64(x)
-#define gmx_simd_fneg_d(x)         vnegq_f64(x)
-#define gmx_simd_max_d             vmaxq_f64
-#define gmx_simd_min_d             vminq_f64
-#define gmx_simd_round_d(x)        vrndnq_f64(x)
-#define gmx_simd_trunc_d(x)        vrndq_f64(x)
-#define gmx_simd_fraction_d(x)     vsubq_f64(x, gmx_simd_trunc_d(x))
-#define gmx_simd_get_exponent_d    gmx_simd_get_exponent_d_arm_neon_asimd
-#define gmx_simd_get_mantissa_d    gmx_simd_get_mantissa_d_arm_neon_asimd
-#define gmx_simd_set_exponent_d    gmx_simd_set_exponent_d_arm_neon_asimd
-/* integer datatype corresponding to double: gmx_simd_dint32_t */
-#define gmx_simd_dint32_t          int32x2_t
-#define gmx_simd_load_di(m)        vld1_s32(m)
-#define gmx_simd_set1_di           vdup_n_s32
-#define gmx_simd_store_di(m, x)    vst1_s32(m, x)
-#define gmx_simd_loadu_di(m)       vld1_s32(m)
-#define gmx_simd_storeu_di(m, x)   vst1_s32(m, x)
-#define gmx_simd_setzero_di()      vdup_n_s32(0)
-#define gmx_simd_cvtt_d2i(x)       vmovn_s64(vcvtq_s64_f64(x))
-#define gmx_simd_cvt_d2i(x)        vmovn_s64(vcvtnq_s64_f64(x))
-#define gmx_simd_cvt_i2d(x)        vcvtq_f64_s64(vmovl_s32(x))
-#define gmx_simd_extract_di(x, i)  vget_lane_s32(x, i)
-/* Integer logical ops on gmx_simd_dint32_t */
-#define gmx_simd_slli_di           vshl_n_s32
-#define gmx_simd_srli_di           vshr_n_s32
-#define gmx_simd_and_di            vand_s32
-#define gmx_simd_andnot_di(a, b)    vbic_s32(b, a)
-#define gmx_simd_or_di             vorr_s32
-#define gmx_simd_xor_di            veor_s32
-/* Integer arithmetic ops on gmx_simd_dint32_t */
-#define gmx_simd_add_di            vadd_s32
-#define gmx_simd_sub_di            vsub_s32
-#define gmx_simd_mul_di            vmul_s32
-/* Boolean & comparison operations on gmx_simd_double_t */
-#define gmx_simd_dbool_t           uint64x2_t
-#define gmx_simd_cmpeq_d           vceqq_f64
-#define gmx_simd_cmplt_d           vcltq_f64
-#define gmx_simd_cmple_d           vcleq_f64
-#define gmx_simd_and_db            vandq_u64
-#define gmx_simd_or_db             vorrq_u64
-#define gmx_simd_anytrue_db(x)     (vmaxvq_u32((uint32x4_t)(x)) != 0)
-#define gmx_simd_blendzero_d(a, sel)     (float64x2_t)(vandq_u64((uint64x2_t)(a), sel))
-#define gmx_simd_blendnotzero_d(a, sel)  (float64x2_t)(vbicq_u64((uint64x2_t)(a), sel))
-#define gmx_simd_blendv_d(a, b, sel)     vbslq_f64(sel, b, a)
-#define gmx_simd_reduce_d(a)       gmx_simd_reduce_d_arm_neon_asimd(a)
-/* Boolean & comparison operations on gmx_simd_dint32_t */
-#define gmx_simd_dibool_t          uint32x2_t
-#define gmx_simd_cmpeq_di          vceq_s32
-#define gmx_simd_cmplt_di          vclt_s32
-#define gmx_simd_and_dib           vand_u32
-#define gmx_simd_or_dib            vorr_u32
-#define gmx_simd_anytrue_dib(x)    (vmaxv_u32(x) != 0)
-#define gmx_simd_blendzero_di(a, sel)      vand_s32(a, vreinterpret_s32_u32(sel))
-#define gmx_simd_blendnotzero_di(a, sel)  vbic_s32(a, vreinterpret_s32_u32(sel))
-#define gmx_simd_blendv_di(a, b, sel)     vbsl_s32(sel, b, a)
+#define SimdDouble          float64x2_t
+#define simdLoadD            vld1q_f64
+#define simdLoad1D           vld1q_dup_f64
+#define simdSet1D            vdupq_n_f64
+#define simdStoreD           vst1q_f64
+#define simdLoadUD           vld1q_f64
+#define simdStoreUD          vst1q_f64
+#define simdSetZeroD()       vdupq_n_f64(0.0)
+#define simdAddD             vaddq_f64
+#define simdSubD             vsubq_f64
+#define simdMulD             vmulq_f64
+#define simdFmaddD(a, b, c)  vfmaq_f64(c, b, a)
+#define simdFmsubD(a, b, c)  vnegq_f64(vfmsq_f64(c, b, a))
+#define simdFnmaddD(a, b, c) vfmsq_f64(c, b, a)
+#define simdFnmsubD(a, b, c) vnegq_f64(vfmaq_f64(c, b, a))
+#define simdAndD(a, b)        (float64x2_t)(vandq_s64((int64x2_t)(a), (int64x2_t)(b)))
+#define simdAndNotD(a, b)     (float64x2_t)(vbicq_s64((int64x2_t)(b), (int64x2_t)(a)))
+#define simdOrD(a, b)         (float64x2_t)(vorrq_s64((int64x2_t)(a), (int64x2_t)(b)))
+#define simdXorD(a, b)        (float64x2_t)(veorq_s64((int64x2_t)(a), (int64x2_t)(b)))
+#define simdRsqrtD            vrsqrteq_f64
+#define simdRsqrtIterD(lu, x) vmulq_f64(lu, vrsqrtsq_f64(vmulq_f64(lu, lu), x))
+#define simdRcpD              vrecpeq_f64
+#define simdRcpIterD(lu, x)   vmulq_f64(lu, vrecpsq_f64(lu, x))
+#define simdAbsD(x)         vabsq_f64(x)
+#define simdNegD(x)         vnegq_f64(x)
+#define simdMaxD             vmaxq_f64
+#define simdMinD             vminq_f64
+#define simdRoundD(x)        vrndnq_f64(x)
+#define simdTruncD(x)        vrndq_f64(x)
+#define simdFractionD(x)     vsubq_f64(x, simdTruncD(x))
+#define simdGetExponentD    simdGetExponentD_arm_neon_asimd
+#define simdGetMantissaD    simdGetMantissaD_arm_neon_asimd
+#define simdSetExponentD    simdSetExponentD_arm_neon_asimd
+/* integer datatype corresponding to double: SimdDInt32 */
+#define SimdDInt32          int32x2_t
+#define simdLoadDI(m)        vld1_s32(m)
+#define simdSet1DI           vdup_n_s32
+#define simdStoreDI(m, x)    vst1_s32(m, x)
+#define simdLoadUDI(m)       vld1_s32(m)
+#define simdStoreUDI(m, x)   vst1_s32(m, x)
+#define simdSetZeroDI()      vdup_n_s32(0)
+#define simdCvttD2I(x)       vmovn_s64(vcvtq_s64_f64(x))
+#define simdCvtD2I(x)        vmovn_s64(vcvtnq_s64_f64(x))
+#define simdCvtI2D(x)        vcvtq_f64_s64(vmovl_s32(x))
+#define simdExtractDI(x, i)  vget_lane_s32(x, i)
+/* Integer logical ops on SimdDInt32 */
+#define simdSlliDI           vshl_n_s32
+#define simdSrliDI           vshr_n_s32
+#define simdAndDI            vand_s32
+#define simdAndNotDI(a, b)    vbic_s32(b, a)
+#define simdOrDI             vorr_s32
+#define simdXorDI            veor_s32
+/* Integer arithmetic ops on SimdDInt32 */
+#define simdAddDI            vadd_s32
+#define simdSubDI            vsub_s32
+#define simdMulDI            vmul_s32
+/* Boolean & comparison operations on SimdDouble */
+#define SimdDBool           uint64x2_t
+#define simdCmpEqD           vceqq_f64
+#define simdCmpLtD           vcltq_f64
+#define simdCmpLeD           vcleq_f64
+#define simdAndDB            vandq_u64
+#define simdOrDB             vorrq_u64
+#define simdAnyTrueDB(x)     (vmaxvq_u32((uint32x4_t)(x)) != 0)
+#define simdMaskD(a, sel)     (float64x2_t)(vandq_u64((uint64x2_t)(a), sel))
+#define simdMaskNotD(a, sel)  (float64x2_t)(vbicq_u64((uint64x2_t)(a), sel))
+#define simdBlendD(a, b, sel)     vbslq_f64(sel, b, a)
+#define simdReduceD(a)       simdReduceD_arm_neon_asimd(a)
+/* Boolean & comparison operations on SimdDInt32 */
+#define SimdDIBool          uint32x2_t
+#define simdCmpEqDI          vceq_s32
+#define simdCmpLtDI          vclt_s32
+#define simdAndDIB           vand_u32
+#define simdOrDIB            vorr_u32
+#define simdAnyTrueDIB(x)    (vmaxv_u32(x) != 0)
+#define simdMaskDI(a, sel)      vand_s32(a, vreinterpret_s32_u32(sel))
+#define simdMaskNotDI(a, sel)  vbic_s32(a, vreinterpret_s32_u32(sel))
+#define simdBlendDI(a, b, sel)     vbsl_s32(sel, b, a)
 /* Conversions between different booleans */
-#define gmx_simd_cvt_db2dib(x)     vqmovn_u64(x)
-#define gmx_simd_cvt_dib2db(x)     vorrq_u64(vmovl_u32(x), vshlq_n_u64(vmovl_u32(x), 32))
+#define simdCvtDB2DIB(x)     vqmovn_u64(x)
+#define simdCvtDIB2DB(x)     vorrq_u64(vmovl_u32(x), vshlq_n_u64(vmovl_u32(x), 32))
 
 /* Float/double conversion */
-#define gmx_simd_cvt_f2dd(f, d0, d1)  { *d0 = vcvt_f64_f32(vget_low_f32(f)); *d1 = vcvt_high_f64_f32(f); }
-#define gmx_simd_cvt_dd2f(d0, d1)     vcvt_high_f32_f64(vcvt_f32_f64(d0), d1)
+#define simdCvtF2DD(f, d0, d1)  { *d0 = vcvt_f64_f32(vget_low_f32(f)); *d1 = vcvt_high_f64_f32(f); }
+#define simdCvtDD2F(d0, d1)     vcvt_high_f32_f64(vcvt_f32_f64(d0), d1)
 
 /****************************************************
  * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline gmx_simd_double_t
-gmx_simd_get_exponent_d_arm_neon_asimd(gmx_simd_double_t x)
+static inline SimdDouble
+simdGetExponentD_arm_neon_asimd(SimdDouble x)
 {
     const float64x2_t expmask    = (float64x2_t)( vdupq_n_s64(0x7FF0000000000000LL) );
     int64x2_t         iexp;
 
-    iexp = (int64x2_t)(gmx_simd_and_d(x, expmask));
+    iexp = (int64x2_t)(simdAndD(x, expmask));
     iexp = vsubq_s64(vshrq_n_s64(iexp, 52), vdupq_n_s64(1023));
     return vcvtq_f64_s64(iexp);
 }
 
 
-static gmx_inline gmx_simd_double_t
-gmx_simd_get_mantissa_d_arm_neon_asimd(gmx_simd_double_t x)
+static inline SimdDouble
+simdGetMantissaD_arm_neon_asimd(SimdDouble x)
 {
     const float64x2_t mantmask   = (float64x2_t)( vdupq_n_s64(0x000FFFFFFFFFFFFFLL) );
     const float64x2_t one        = vdupq_n_f64(1.0);
 
     /* Get mantissa */
-    x = gmx_simd_and_d(mantmask, x);
+    x = simdAndD(mantmask, x);
     /* Reset zero (but correctly biased) exponent */
-    return gmx_simd_or_d(x, one);
+    return simdOrD(x, one);
 }
 
 
-static gmx_inline gmx_simd_double_t
-gmx_simd_set_exponent_d_arm_neon_asimd(gmx_simd_double_t x)
+static inline SimdDouble
+simdSetExponentD_arm_neon_asimd(SimdDouble x)
 {
     int64x2_t  iexp = vcvtnq_s64_f64(x);
 
@@ -168,8 +168,8 @@ gmx_simd_set_exponent_d_arm_neon_asimd(gmx_simd_double_t x)
     return (float64x2_t)(iexp);
 }
 
-static gmx_inline double
-gmx_simd_reduce_d_arm_neon_asimd(gmx_simd_double_t a)
+static inline double
+simdReduceD_arm_neon_asimd(SimdDouble a)
 {
     a = vpaddq_f64(a, a);
     return vgetq_lane_f64(a, 0);

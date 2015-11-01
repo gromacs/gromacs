@@ -50,6 +50,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 struct gmx_domdec_t;
 
 #ifdef __cplusplus
@@ -65,15 +67,15 @@ extern "C" {
  */
 typedef struct {
 #if GMX_SIMD_HAVE_REAL
-    gmx_simd_real_t inv_bzz; /**< 1/box[ZZ][ZZ] */
-    gmx_simd_real_t inv_byy; /**< 1/box[YY][YY] */
-    gmx_simd_real_t inv_bxx; /**< 1/box[XX][XX] */
-    gmx_simd_real_t bzx;     /**< box[ZZ][XX] */
-    gmx_simd_real_t bzy;     /**< box[ZZ][YY] */
-    gmx_simd_real_t bzz;     /**< box[ZZ][ZZ] */
-    gmx_simd_real_t byx;     /**< box[YY][XX] */
-    gmx_simd_real_t byy;     /**< box[YY][YY] */
-    gmx_simd_real_t bxx;     /**< bo[XX][XX] */
+    SimdReal        inv_bzz; /**< 1/box[ZZ][ZZ] */
+    SimdReal        inv_byy; /**< 1/box[YY][YY] */
+    SimdReal        inv_bxx; /**< 1/box[XX][XX] */
+    SimdReal        bzx;     /**< box[ZZ][XX] */
+    SimdReal        bzy;     /**< box[ZZ][YY] */
+    SimdReal        bzz;     /**< box[ZZ][ZZ] */
+    SimdReal        byx;     /**< box[YY][XX] */
+    SimdReal        byy;     /**< box[YY][YY] */
+    SimdReal        bxx;     /**< bo[XX][XX] */
 #else
     int             dum;     /**< Dummy variable to avoid empty struct */
 #endif
@@ -102,24 +104,24 @@ void set_pbc_simd(const t_pbc *pbc,
  * routine should be low. On e.g. Intel Haswell/Broadwell it takes 8 cycles.
  */
 static gmx_inline void gmx_simdcall
-pbc_correct_dx_simd(gmx_simd_real_t  *dx,
-                    gmx_simd_real_t  *dy,
-                    gmx_simd_real_t  *dz,
+pbc_correct_dx_simd(SimdReal         *dx,
+                    SimdReal         *dy,
+                    SimdReal         *dz,
                     const pbc_simd_t *pbc)
 {
-    gmx_simd_real_t shz, shy, shx;
+    SimdReal shz, shy, shx;
 
-    shz = gmx_simd_round_r(gmx_simd_mul_r(*dz, pbc->inv_bzz));
-    *dx = gmx_simd_fnmadd_r(shz, pbc->bzx, *dx);
-    *dy = gmx_simd_fnmadd_r(shz, pbc->bzy, *dy);
-    *dz = gmx_simd_fnmadd_r(shz, pbc->bzz, *dz);
+    shz = round(*dz * pbc->inv_bzz);
+    *dx = *dx - shz * pbc->bzx;
+    *dy = *dy - shz * pbc->bzy;
+    *dz = *dz - shz * pbc->bzz;
 
-    shy = gmx_simd_round_r(gmx_simd_mul_r(*dy, pbc->inv_byy));
-    *dx = gmx_simd_fnmadd_r(shy, pbc->byx, *dx);
-    *dy = gmx_simd_fnmadd_r(shy, pbc->byy, *dy);
+    shy = round(*dy * pbc->inv_byy);
+    *dx = *dx - shy * pbc->byx;
+    *dy = *dy - shy * pbc->byy;
 
-    shx = gmx_simd_round_r(gmx_simd_mul_r(*dx, pbc->inv_bxx));
-    *dx = gmx_simd_fnmadd_r(shx, pbc->bxx, *dx);
+    shx = round(*dx * pbc->inv_bxx);
+    *dx = *dx - shx * pbc->bxx;
 }
 
 #endif /* GMX_SIMD_HAVE_REAL */

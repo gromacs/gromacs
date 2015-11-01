@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,32 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _nbnxn_kernel_x86_simd128_h
-#define _nbnxn_kernel_x86_simd128_h
+/*! \internal \file
+ * \brief Tests for base definitions (only alignment attributes for now)
+ *
+ * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \ingroup module_utility
+ */
 
-#include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/math/vectypes.h"
+#include "gmxpre.h"
+
+#include "gromacs/utility/basedefinitions.h"
+
+#include <cstdint>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace gmx
+{
 
-/* Wrapper call for the non-bonded cluster vs cluster kernels */
-void
-nbnxn_kernel_x86_simd128(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         int                         ewald_excl,
-                         rvec                       *shift_vec,
-                         int                         force_flags,
-                         int                         clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw);
+TEST(BasedefinitionsTest, GmxAlignedDeclaresAlignedVariable)
+{
+    GMX_ALIGNED(real, 2)  r1;
+    GMX_ALIGNED(real, 4)  r2;
+    GMX_ALIGNED(real, 8)  r3;
 
-#ifdef __cplusplus
+    std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
+    std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
+    std::uint64_t addr3 = reinterpret_cast<std::uint64_t>(&r3);
+
+    EXPECT_EQ(0, addr1 % 2);
+    EXPECT_EQ(0, addr2 % 4);
+    EXPECT_EQ(0, addr3 % 8);
+
+    GMX_ALIGNED(int, 2)   i1;
+    GMX_ALIGNED(int, 4)   i2;
+    GMX_ALIGNED(int, 8)   i3;
+
+    addr1 = reinterpret_cast<std::uint64_t>(&i1);
+    addr2 = reinterpret_cast<std::uint64_t>(&i2);
+    addr3 = reinterpret_cast<std::uint64_t>(&i3);
+
+    EXPECT_EQ(0, addr1 % 2);
+    EXPECT_EQ(0, addr2 % 4);
+    EXPECT_EQ(0, addr3 % 8);
 }
-#endif
 
-#endif
+}
