@@ -1570,7 +1570,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
     {
 #ifdef GMX_NBNXN_SIMD_4XN
         *kernel_type = nbnxnk4xN_SIMD_4xN;
@@ -1650,7 +1650,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
     }
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
 }
 
 
@@ -1667,23 +1667,11 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
             break;
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
-#ifdef GMX_NBNXN_SIMD
-#if GMX_SIMD_X86_SSE2
-            returnvalue = "SSE2";
-#elif GMX_SIMD_X86_SSE4_1
-            returnvalue = "SSE4.1";
-#elif GMX_SIMD_X86_AVX_128_FMA
-            returnvalue = "AVX_128_FMA";
-#elif GMX_SIMD_X86_AVX_256
-            returnvalue = "AVX_256";
-#elif GMX_SIMD_X86_AVX2_256
-            returnvalue = "AVX2_256";
-#else
+#if GMX_SIMD
             returnvalue = "SIMD";
-#endif
-#else  /* GMX_NBNXN_SIMD */
+#else  // GMX_SIMD
             returnvalue = "not available";
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
             break;
         case nbnxnk8x8x8_GPU: returnvalue    = "GPU"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;

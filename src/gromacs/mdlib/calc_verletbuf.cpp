@@ -137,7 +137,7 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
 
         kernel_type = nbnxnk4x4_PlainC;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
         if (bSIMD)
         {
 #ifdef GMX_NBNXN_SIMD_2XNN

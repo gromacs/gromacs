@@ -260,8 +260,7 @@ calc_one_bond(int thread,
               int *global_atom_index)
 {
 #if GMX_SIMD_HAVE_REAL
-    gmx_bool bUseSIMD;
-    bUseSIMD = fr->use_simd_kernels;
+    bool bUseSIMD = fr->use_simd_kernels;
 #endif
 
     int      nat1, nbonds, efptFTYPE;

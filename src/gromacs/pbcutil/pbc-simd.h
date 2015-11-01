@@ -50,43 +50,29 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 struct gmx_domdec_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*! \cond INTERNAL */
-
-/*! \brief Structure containing the PBC setup for SIMD PBC calculations.
- *
- * Without SIMD this is a dummy struct, so it can be declared and passed.
- * This can avoid some ifdef'ing.
- */
-typedef struct {
-#if GMX_SIMD_HAVE_REAL
-    gmx_simd_real_t inv_bzz; /**< 1/box[ZZ][ZZ] */
-    gmx_simd_real_t inv_byy; /**< 1/box[YY][YY] */
-    gmx_simd_real_t inv_bxx; /**< 1/box[XX][XX] */
-    gmx_simd_real_t bzx;     /**< box[ZZ][XX] */
-    gmx_simd_real_t bzy;     /**< box[ZZ][YY] */
-    gmx_simd_real_t bzz;     /**< box[ZZ][ZZ] */
-    gmx_simd_real_t byx;     /**< box[YY][XX] */
-    gmx_simd_real_t byy;     /**< box[YY][YY] */
-    gmx_simd_real_t bxx;     /**< bo[XX][XX] */
-#else
-    int             dum;     /**< Dummy variable to avoid empty struct */
-#endif
-} pbc_simd_t;
-
-/*! \endcond */
-
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
  *
- * NULL can be passed for \p pbc, then no PBC will be used.
+ * \param pbc        Type of periodic boundary,
+ *                   NULL can be passed for then no PBC will be used.
+ * \param pbc_simd   Pointer to aligned memory with (DIM + DIM*(DIM+1)/2)
+ *                   GMX_SIMD_REAL_WIDTH reals describing the box vectors
+ *                   unrolled by GMX_SIMD_REAL_WIDTH.
+ *                   These are sorted in a slightly non-standard
+ *                   order so that we always issue the memory loads in order
+ *                   (to improve prefetching) in pbc_correct_dx_simd().
+ *                   The order is inv_bzz, bzx, bzy, bzz, inv_byy, byx, byy,
+ *                   inv_bxx, and bxx.
  */
 void set_pbc_simd(const t_pbc *pbc,
-                  pbc_simd_t  *pbc_simd);
+                  real        *pbc_simd);
 
 #if GMX_SIMD_HAVE_REAL
 
@@ -102,24 +88,24 @@ void set_pbc_simd(const t_pbc *pbc,
  * routine should be low. On e.g. Intel Haswell/Broadwell it takes 8 cycles.
  */
 static gmx_inline void gmx_simdcall
-pbc_correct_dx_simd(gmx_simd_real_t  *dx,
-                    gmx_simd_real_t  *dy,
-                    gmx_simd_real_t  *dz,
-                    const pbc_simd_t *pbc)
+pbc_correct_dx_simd(SimdReal         *dx,
+                    SimdReal         *dy,
+                    SimdReal         *dz,
+                    const real       *pbc_simd)
 {
-    gmx_simd_real_t shz, shy, shx;
+    SimdReal shz, shy, shx;
 
-    shz = gmx_simd_round_r(gmx_simd_mul_r(*dz, pbc->inv_bzz));
-    *dx = gmx_simd_fnmadd_r(shz, pbc->bzx, *dx);
-    *dy = gmx_simd_fnmadd_r(shz, pbc->bzy, *dy);
-    *dz = gmx_simd_fnmadd_r(shz, pbc->bzz, *dz);
+    shz = round(*dz * load(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
+    *dx = *dx - shz * load(pbc_simd+1*GMX_SIMD_REAL_WIDTH);  // load bzx
+    *dy = *dy - shz * load(pbc_simd+2*GMX_SIMD_REAL_WIDTH);  // load bzy
+    *dz = *dz - shz * load(pbc_simd+3*GMX_SIMD_REAL_WIDTH);  // load bzz
 
-    shy = gmx_simd_round_r(gmx_simd_mul_r(*dy, pbc->inv_byy));
-    *dx = gmx_simd_fnmadd_r(shy, pbc->byx, *dx);
-    *dy = gmx_simd_fnmadd_r(shy, pbc->byy, *dy);
+    shy = round(*dy * load(pbc_simd+4*GMX_SIMD_REAL_WIDTH)); // load inv_byy
+    *dx = *dx - shy * load(pbc_simd+5*GMX_SIMD_REAL_WIDTH);  // load byx
+    *dy = *dy - shy * load(pbc_simd+6*GMX_SIMD_REAL_WIDTH);  // load byy
 
-    shx = gmx_simd_round_r(gmx_simd_mul_r(*dx, pbc->inv_bxx));
-    *dx = gmx_simd_fnmadd_r(shx, pbc->bxx, *dx);
+    shx = round(*dx * load(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
+    *dx = *dx - shx * load(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
 }
 
 #endif /* GMX_SIMD_HAVE_REAL */
