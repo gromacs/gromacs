@@ -42,12 +42,12 @@
 
 #include "impl_x86_sse4_1_common.h"
 
-#undef  gmx_simd4_dotproduct3_f
-#define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
+#undef  simd4DotProductF
+#define simd4DotProductF   simd4DotProductF_sse4_1
 
-/* SIMD4 Dotproduct helper function */
-static gmx_inline float gmx_simdcall
-gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
+/* SIMD4 Dot product helper function */
+static inline float gmx_simdcall
+simd4DotProductF_sse4_1(__m128 a, __m128 b)
 {
     float f;
     _MM_EXTRACT_FLOAT(f, _mm_dp_ps(a, b, 0x71), 0);

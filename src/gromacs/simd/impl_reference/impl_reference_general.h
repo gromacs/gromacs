@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,32 +32,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _nbnxn_kernel_x86_simd256_h
-#define _nbnxn_kernel_x86_simd256_h
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/utility/real.h"
+#ifndef GMX_SIMD_IMPL_REFERENCE_GENERAL_H
+#define GMX_SIMD_IMPL_REFERENCE_GENERAL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/utility/basedefinitions.h"
 
-/* Wrapper call for the non-bonded cluster vs cluster kernels */
-void
-nbnxn_kernel_x86_simd256(nbnxn_pairlist_set_t       *nbl_list,
-                         const nbnxn_atomdata_t     *nbat,
-                         const interaction_const_t  *ic,
-                         int                         ewald_excl,
-                         rvec                       *shift_vec,
-                         int                         force_flags,
-                         int                         clearF,
-                         real                       *fshift,
-                         real                       *Vc,
-                         real                       *Vvdw);
+/*! \libinternal \file
+ *
+ * \brief Reference SIMD implementation, general utility functions
+ *
+ * \author Erik Lindahl <erik.lindahl@scilifelab.se>
+ *
+ * \ingroup module_simd
+ */
 
-#ifdef __cplusplus
+namespace gmx
+{
+
+/*! \brief Prefetch memory at address m
+ *
+ *  This typically prefetches one cache line of memory from address m,
+ *  usually 64bytes or more, but the exact amount will depend on the
+ *  implementation. On many platforms this is simply a no-op. Technically it
+ *  might not be part of the SIMD instruction set, but since it is a
+ *  hardware-specific function that is normally only used in tight loops where
+ *  we also apply SIMD, it fits well here.
+ *
+ *  There are no guarantees about the level of cache or temporality, but
+ *  usually we expect stuff to end up in level 2, and be used in a few hundred
+ *  clock cycles, after which it stays in cache until evicted (normal caching).
+ *
+ * \param m Pointer to location prefetch. There are no alignment requirements,
+ *        but if the pointer is not aligned the prefetch might start at the
+ *        lower cache line boundary (meaning fewer bytes are prefetched).
+ */
+static void
+simdPrefetch(void gmx_unused * m)
+{
+    // Do nothing for reference implementation
 }
-#endif
 
-#endif
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_REFERENCE_GENERAL_H
