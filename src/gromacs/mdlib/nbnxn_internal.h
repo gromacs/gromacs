@@ -39,19 +39,15 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/real.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 struct gmx_domdec_zones_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
 #define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH*sizeof(real))
 #else
@@ -173,21 +169,23 @@ typedef struct {
     int           nsubc_tot;        /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 
-typedef struct nbnxn_x_ci_simd_4xn {
+struct nbnxn_x_ci_simd_4xn_t
+{
     /* The i-cluster coordinates for simple search */
-    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t ix_S1, iy_S1, iz_S1;
-    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
-    gmx_simd_real_t ix_S3, iy_S3, iz_S3;
-} nbnxn_x_ci_simd_4xn_t;
+    SimdReal ix_S0, iy_S0, iz_S0;
+    SimdReal ix_S1, iy_S1, iz_S1;
+    SimdReal ix_S2, iy_S2, iz_S2;
+    SimdReal ix_S3, iy_S3, iz_S3;
+};
 
-typedef struct nbnxn_x_ci_simd_2xnn {
+struct nbnxn_x_ci_simd_2xnn_t
+{
     /* The i-cluster coordinates for simple search */
-    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
-} nbnxn_x_ci_simd_2xnn_t;
+    SimdReal ix_S0, iy_S0, iz_S0;
+    SimdReal ix_S2, iy_S2, iz_S2;
+};
 
 #endif
 
@@ -198,7 +196,7 @@ typedef struct nbnxn_list_work {
     nbnxn_bb_t             *bb_ci;  /* The bounding boxes, pbc shifted, for each cluster */
     float                  *pbb_ci; /* As bb_ci, but in xxxx packed format               */
     real                   *x_ci;   /* The coordinates, pbc shifted, for each atom       */
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
     nbnxn_x_ci_simd_4xn_t  *x_ci_simd_4xn;
     nbnxn_x_ci_simd_2xnn_t *x_ci_simd_2xnn;
 #endif
@@ -231,7 +229,7 @@ typedef void
                        nbnxn_list_work_t *work);
 
 static gmx_icell_set_x_t icell_set_x_simple;
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 static gmx_icell_set_x_t icell_set_x_simple_simd_4xn;
 static gmx_icell_set_x_t icell_set_x_simple_simd_2xnn;
 #endif
@@ -322,9 +320,5 @@ static void nbs_cycle_stop(nbnxn_cycle_t *cc)
     cc->count++;
 }
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -44,54 +44,54 @@
 #include "impl_arm_neon_simd_float.h"
 
 /* ARM 32-bit Neon is already 4-wide in single, so just reuse float type for SIMD4 */
-#define gmx_simd4_float_t                gmx_simd_float_t
-#define gmx_simd4_load_f                 gmx_simd_load_f
-#define gmx_simd4_load1_f                gmx_simd_load1_f
-#define gmx_simd4_set1_f                 gmx_simd_set1_f
-#define gmx_simd4_store_f                gmx_simd_store_f
-#define gmx_simd4_loadu_f                gmx_simd_loadu_f
-#define gmx_simd4_storeu_f               gmx_simd_storeu_f
-#define gmx_simd4_setzero_f              gmx_simd_setzero_f
-#define gmx_simd4_add_f                  gmx_simd_add_f
-#define gmx_simd4_sub_f                  gmx_simd_sub_f
-#define gmx_simd4_mul_f                  gmx_simd_mul_f
-#define gmx_simd4_fmadd_f                gmx_simd_fmadd_f
-#define gmx_simd4_fmsub_f                gmx_simd_fmsub_f
-#define gmx_simd4_fnmadd_f               gmx_simd_fnmadd_f
-#define gmx_simd4_fnmsub_f               gmx_simd_fnmsub_f
-#define gmx_simd4_and_f                  gmx_simd_and_f
-#define gmx_simd4_andnot_f               gmx_simd_andnot_f
-#define gmx_simd4_or_f                   gmx_simd_or_f
-#define gmx_simd4_xor_f                  gmx_simd_xor_f
-#define gmx_simd4_rsqrt_f                gmx_simd_rsqrt_f
-#define gmx_simd4_fabs_f                 gmx_simd_fabs_f
-#define gmx_simd4_fneg_f                 gmx_simd_fneg_f
-#define gmx_simd4_max_f                  gmx_simd_max_f
-#define gmx_simd4_min_f                  gmx_simd_min_f
-#define gmx_simd4_round_f                gmx_simd_round_f
-#define gmx_simd4_trunc_f                gmx_simd_trunc_f
-#define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_arm_neon
-#define gmx_simd4_fbool_t                gmx_simd_fbool_t
-#define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
-#define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
-#define gmx_simd4_cmple_f                gmx_simd_cmple_f
-#define gmx_simd4_and_fb                 gmx_simd_and_fb
-#define gmx_simd4_or_fb                  gmx_simd_or_fb
-#define gmx_simd4_anytrue_fb             gmx_simd_anytrue_fb
-#define gmx_simd4_blendzero_f            gmx_simd_blendzero_f
-#define gmx_simd4_blendnotzero_f         gmx_simd_blendnotzero_f
-#define gmx_simd4_blendv_f               gmx_simd_blendv_f
-#define gmx_simd4_reduce_f               gmx_simd_reduce_f
+#define Simd4Float                 SimdFloat
+#define simd4LoadF                 simdLoadF
+#define simd4Load1F                simdLoad1F
+#define simd4Set1F                 simdSet1F
+#define simd4StoreF                simdStoreF
+#define simd4LoadUF                simdLoadUF
+#define simd4StoreUF               simdStoreUF
+#define simd4SetZeroF              simdSetZeroF
+#define simd4AddF                  simdAddF
+#define simd4SubF                  simdSubF
+#define simd4MulF                  simdMulF
+#define simd4FmaddF                simdFmaddF
+#define simd4FmsubF                simdFmsubF
+#define simd4FnmaddF               simdFnmaddF
+#define simd4FnmsubF               simdFnmsubF
+#define simd4AndF                  simdAndF
+#define simd4AndNotF               simdAndNotF
+#define simd4OrF                   simdOrF
+#define simd4XorF                  simdXorF
+#define simd4RsqrtF                simdRsqrtF
+#define simd4AbsF                  simdAbsF
+#define simd4NegF                  simdNegF
+#define simd4MaxF                  simdMaxF
+#define simd4MinF                  simdMinF
+#define simd4RoundF                simdRoundF
+#define simd4TruncF                simdTruncF
+#define simd4DotProductF           simd4DotProductF_arm_neon
+#define Simd4FBool                 SimdFBool
+#define simd4CmpEqF                simdCmpEqF
+#define simd4CmpLtF                simdCmpLtF
+#define simd4CmpLeF                simdCmpLeF
+#define simd4AndFB                 simdAndFB
+#define simd4OrFB                  simdOrFB
+#define simd4AnyTrueFB             simdAnyTrueFB
+#define simd4MaskF                 simdMaskF
+#define simd4MaskNotF              simdMaskNotF
+#define simd4BlendF                simdBlendF
+#define simd4ReduceF               simdReduceF
 
-/* SIMD4 Dotproduct helper function */
-static gmx_inline float
-gmx_simd4_dotproduct3_f_arm_neon(gmx_simd_float_t a, gmx_simd_float_t b)
+/* SIMD4 Dot product helper function */
+static inline float
+simd4DotProductF_arm_neon(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
-    c = gmx_simd_mul_f(a, b);
+    SimdFloat  c;
+    c = simdMulF(a, b);
     /* set 4th element to 0, then add all of them */
     c = vsetq_lane_f32(0.0f, c, 3);
-    return gmx_simd_reduce_f_arm_neon(c);
+    return simdReduceF_arm_neon(c);
 }
 
 #endif /* GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H */
