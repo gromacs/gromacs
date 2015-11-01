@@ -53,6 +53,8 @@
  */
 #include "config.h"
 
+#include <cstdint>
+
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -110,7 +112,7 @@ class SimdBaseTest : public ::testing::Test
         }
 
         /*! \brief Adjust ulp tolerance from the default 10 (float) or 255 (double). */
-        void setUlpTol(gmx_int64_t newTol)   { ulpTol_ = newTol; }
+        void setUlpTol(std::int64_t newTol)   { ulpTol_ = newTol; }
 
         /*! \brief Adjust the absolute tolerance from the default 0.
          *
@@ -175,7 +177,7 @@ class SimdBaseTest : public ::testing::Test
         }
 
     protected:
-        gmx_int64_t            ulpTol_;       //!< Current tolerance in units-in-last-position.
+        std::int64_t           ulpTol_;       //!< Current tolerance in units-in-last-position.
         real                   absTol_;       //!< Current absolute tolerance.
         std::pair<real, real>  range_;        //!< Range for math function tests.
 };

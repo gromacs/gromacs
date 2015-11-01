@@ -48,6 +48,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 void set_pbc_simd(const t_pbc gmx_unused *pbc,
                   pbc_simd_t gmx_unused  *pbc_simd)
 {
@@ -65,27 +67,27 @@ void set_pbc_simd(const t_pbc gmx_unused *pbc,
         }
     }
 
-    pbc_simd->inv_bzz = gmx_simd_set1_r(inv_box_diag[ZZ]);
-    pbc_simd->inv_byy = gmx_simd_set1_r(inv_box_diag[YY]);
-    pbc_simd->inv_bxx = gmx_simd_set1_r(inv_box_diag[XX]);
+    pbc_simd->inv_bzz = SimdReal(inv_box_diag[ZZ]);
+    pbc_simd->inv_byy = SimdReal(inv_box_diag[YY]);
+    pbc_simd->inv_bxx = SimdReal(inv_box_diag[XX]);
 
     if (pbc != NULL)
     {
-        pbc_simd->bzx = gmx_simd_set1_r(pbc->box[ZZ][XX]);
-        pbc_simd->bzy = gmx_simd_set1_r(pbc->box[ZZ][YY]);
-        pbc_simd->bzz = gmx_simd_set1_r(pbc->box[ZZ][ZZ]);
-        pbc_simd->byx = gmx_simd_set1_r(pbc->box[YY][XX]);
-        pbc_simd->byy = gmx_simd_set1_r(pbc->box[YY][YY]);
-        pbc_simd->bxx = gmx_simd_set1_r(pbc->box[XX][XX]);
+        pbc_simd->bzx = SimdReal(pbc->box[ZZ][XX]);
+        pbc_simd->bzy = SimdReal(pbc->box[ZZ][YY]);
+        pbc_simd->bzz = SimdReal(pbc->box[ZZ][ZZ]);
+        pbc_simd->byx = SimdReal(pbc->box[YY][XX]);
+        pbc_simd->byy = SimdReal(pbc->box[YY][YY]);
+        pbc_simd->bxx = SimdReal(pbc->box[XX][XX]);
     }
     else
     {
-        pbc_simd->bzx = gmx_simd_setzero_r();
-        pbc_simd->bzy = gmx_simd_setzero_r();
-        pbc_simd->bzz = gmx_simd_setzero_r();
-        pbc_simd->byx = gmx_simd_setzero_r();
-        pbc_simd->byy = gmx_simd_setzero_r();
-        pbc_simd->bxx = gmx_simd_setzero_r();
+        pbc_simd->bzx = SimdReal(0.0);
+        pbc_simd->bzy = SimdReal(0.0);
+        pbc_simd->bzz = SimdReal(0.0);
+        pbc_simd->byx = SimdReal(0.0);
+        pbc_simd->byy = SimdReal(0.0);
+        pbc_simd->bxx = SimdReal(0.0);
     }
 #endif
 }

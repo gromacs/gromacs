@@ -62,7 +62,6 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -82,7 +81,7 @@
 #if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
 #endif
-#if GMX_SIMD_X86_AVX_256_OR_HIGHER && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
 #endif
 #if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
@@ -94,7 +93,7 @@
 #if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
 #endif
-#if GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
 #if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
@@ -132,7 +131,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 #if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_single, kernellist_avx_128_fma_single_size);
 #endif
-#if GMX_SIMD_X86_AVX_256_OR_HIGHER && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_avx_256_single, kernellist_avx_256_single_size);
 #endif
                 /* Double precision */
@@ -145,7 +144,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
 #if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_double, kernellist_avx_128_fma_double_size);
 #endif
-#if GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
 #endif
 #if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
@@ -182,7 +181,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     arch_and_padding[] =
     {
         /* Single precision */
-#if GMX_SIMD_X86_AVX_256_OR_HIGHER && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
         { "avx_256_single", 8 },
 #endif
 #if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
@@ -195,7 +194,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
         { "sse2_single", 4 },
 #endif
         /* Double precision */
-#if GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
         { "avx_256_double", 4 },
 #endif
 #if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
