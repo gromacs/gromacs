@@ -61,72 +61,72 @@ typedef SimdTest SimdFloatingpointTest;
 
 TEST_F(SimdFloatingpointTest, gmxSimdSetZeroR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(0.0), gmx_simd_setzero_r());
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(0.0), simdSetZero());
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdSet1R)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.0), gmx_simd_set1_r(1.0));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.0), simdSet1(1.0));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdLoad1R)
 {
     real r = 2.0;
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(r), gmx_simd_load1_r(&r));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(r), simdLoad1(&r));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdAddR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_5_7_9,
-                            gmx_simd_add_r(rSimd_1_2_3, rSimd_4_5_6)); // 1+4=5, 2+5=7, 3+6=9
+                            simdAdd(rSimd_1_2_3, rSimd_4_5_6)); // 1+4=5, 2+5=7, 3+6=9
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdSubR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_4_5_6,
-                            gmx_simd_sub_r(rSimd_5_7_9, rSimd_1_2_3)); // 5-1=4, 7-2=5, 9-3=6
+                            simdSub(rSimd_5_7_9, rSimd_1_2_3)); // 5-1=4, 7-2=5, 9-3=6
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdMulR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, 10, 18),
-                            gmx_simd_mul_r(rSimd_1_2_3, rSimd_4_5_6));
+                            simdMul(rSimd_1_2_3, rSimd_4_5_6));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFmaddR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(11, 18, 27),
-                            gmx_simd_fmadd_r(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // 1*4+7, etc.
+                            simdFmadd(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // 1*4+7, etc.
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFmsubR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-3, 2, 9),
-                            gmx_simd_fmsub_r(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // 1*4-7, etc.
+                            simdFmsub(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // 1*4-7, etc.
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFnmaddR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(3, -2, -9),
-                            gmx_simd_fnmadd_r(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // -1*4+7, etc.
+                            simdFnmadd(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // -1*4+7, etc.
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFnmsubR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-11, -18, -27),
-                            gmx_simd_fnmsub_r(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // -1*4-7, etc.
+                            simdFnmsub(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // -1*4-7, etc.
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFabsR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, gmx_simd_fabs_r(rSimd_1_2_3));    // fabs(x)=x
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, gmx_simd_fabs_r(rSimd_m1_m2_m3)); // fabs(-x)=x
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, simdAbs(rSimd_1_2_3));    // fabs(x)=x
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, simdAbs(rSimd_m1_m2_m3)); // fabs(-x)=x
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFnegR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_m1_m2_m3, gmx_simd_fneg_r(rSimd_1_2_3));    // fneg(x)=-x
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3,    gmx_simd_fneg_r(rSimd_m1_m2_m3)); // fneg(-x)=x
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_m1_m2_m3, simdNeg(rSimd_1_2_3));    // fneg(x)=-x
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3,    simdNeg(rSimd_m1_m2_m3)); // fneg(-x)=x
 }
 
 #if GMX_SIMD_HAVE_LOGICAL
@@ -141,15 +141,15 @@ TEST_F(SimdFloatingpointTest, gmxSimdFnegR)
 TEST_F(SimdFloatingpointTest, gmxSimdAndR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.26666259765625),
-                            gmx_simd_and_r(gmx_simd_set1_r(1.3333282470703125),
-                                           gmx_simd_set1_r(1.79998779296875)));
+                            simdAnd(simdSet1(1.3333282470703125),
+                                    simdSet1(1.79998779296875)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdOrR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(1.8666534423828125),
-                            gmx_simd_or_r(gmx_simd_set1_r(1.3333282470703125),
-                                          gmx_simd_set1_r(1.79998779296875)));
+                            simdOr(simdSet1(1.3333282470703125),
+                                   simdSet1(1.79998779296875)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdXorR)
@@ -158,8 +158,8 @@ TEST_F(SimdFloatingpointTest, gmxSimdXorR)
      * in only the sign bit being set. We then use this bit change the sign of
      * different numbers.
      */
-    gmx_simd_real_t signbit = gmx_simd_xor_r(gmx_simd_set1_r(1.5), gmx_simd_set1_r(-1.5));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, 2, -3), gmx_simd_xor_r(signbit, setSimdRealFrom3R(1, -2, 3)));
+    SimdReal signbit = simdXor(simdSet1(1.5), simdSet1(-1.5));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, 2, -3), simdXor(signbit, setSimdRealFrom3R(1, -2, 3)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdAndnotR)
@@ -167,50 +167,50 @@ TEST_F(SimdFloatingpointTest, gmxSimdAndnotR)
     /* Use xor (which we already tested, so fix that first if both tests fail)
      * to extract the sign bit, and then use andnot to take absolute values.
      */
-    gmx_simd_real_t signbit = gmx_simd_xor_r(gmx_simd_set1_r(1.5), gmx_simd_set1_r(-1.5));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 3), gmx_simd_andnot_r(signbit, setSimdRealFrom3R(-1, 2, -3)));
+    SimdReal signbit = simdXor(simdSet1(1.5), simdSet1(-1.5));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 3), simdAndNot(signbit, setSimdRealFrom3R(-1, 2, -3)));
 }
 
 #endif
 
 TEST_F(SimdFloatingpointTest, gmxSimdMaxR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(3, 2, 4), gmx_simd_max_r(rSimd_1_2_3, rSimd_3_1_4));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(3, 2, 4), gmx_simd_max_r(rSimd_3_1_4, rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, -1, -3), gmx_simd_max_r(rSimd_m1_m2_m3, rSimd_m3_m1_m4));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, -1, -3), gmx_simd_max_r(rSimd_m3_m1_m4, rSimd_m1_m2_m3));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(3, 2, 4), simdMax(rSimd_1_2_3, rSimd_3_1_4));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(3, 2, 4), simdMax(rSimd_3_1_4, rSimd_1_2_3));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, -1, -3), simdMax(rSimd_m1_m2_m3, rSimd_m3_m1_m4));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-1, -1, -3), simdMax(rSimd_m3_m1_m4, rSimd_m1_m2_m3));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdMinR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 1, 3), gmx_simd_min_r(rSimd_1_2_3, rSimd_3_1_4));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 1, 3), gmx_simd_min_r(rSimd_3_1_4, rSimd_1_2_3));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-3, -2, -4), gmx_simd_min_r(rSimd_m1_m2_m3, rSimd_m3_m1_m4));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-3, -2, -4), gmx_simd_min_r(rSimd_m3_m1_m4, rSimd_m1_m2_m3));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 1, 3), simdMin(rSimd_1_2_3, rSimd_3_1_4));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 1, 3), simdMin(rSimd_3_1_4, rSimd_1_2_3));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-3, -2, -4), simdMin(rSimd_m1_m2_m3, rSimd_m3_m1_m4));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-3, -2, -4), simdMin(rSimd_m3_m1_m4, rSimd_m1_m2_m3));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdRoundR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2), gmx_simd_round_r(gmx_simd_set1_r(2.25)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(4), gmx_simd_round_r(gmx_simd_set1_r(3.75)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2), gmx_simd_round_r(gmx_simd_set1_r(-2.25)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-4), gmx_simd_round_r(gmx_simd_set1_r(-3.75)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2), simdRound(simdSet1(2.25)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(4), simdRound(simdSet1(3.75)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2), simdRound(simdSet1(-2.25)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-4), simdRound(simdSet1(-3.75)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdTruncR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2), gmx_simd_trunc_r(rSimd_2p25));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(3), gmx_simd_trunc_r(rSimd_3p75));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2), gmx_simd_trunc_r(rSimd_m2p25));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-3), gmx_simd_trunc_r(rSimd_m3p75));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2), simdTrunc(rSimd_2p25));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(3), simdTrunc(rSimd_3p75));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2), simdTrunc(rSimd_m2p25));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-3), simdTrunc(rSimd_m3p75));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdFractionR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(0.25), gmx_simd_fraction_r(rSimd_2p25));   // fract(2.25)=0.25
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(0.75), gmx_simd_fraction_r(rSimd_3p75));   // fract(3.75)=0.75
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-0.25), gmx_simd_fraction_r(rSimd_m2p25)); // fract(-2.25)=-0.25
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-0.75), gmx_simd_fraction_r(rSimd_m3p75)); // fract(-3.75)=-0.75
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(0.25), simdFraction(rSimd_2p25));   // fract(2.25)=0.25
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(0.75), simdFraction(rSimd_3p75));   // fract(3.75)=0.75
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-0.25), simdFraction(rSimd_m2p25)); // fract(-2.25)=-0.25
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-0.75), simdFraction(rSimd_m3p75)); // fract(-3.75)=-0.75
 }
 
 // We explicitly test the exponent/mantissa routines with double precision data,
@@ -219,9 +219,9 @@ TEST_F(SimdFloatingpointTest, gmxSimdFractionR)
 
 TEST_F(SimdFloatingpointTest, gmxSimdGetExponentR)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(60.0, -41.0, 54.0), gmx_simd_get_exponent_r(rSimd_Exp));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(60.0, -41.0, 54.0), simdGetExponent(rSimd_Exp));
 #if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(587.0, -462.0, 672.0), gmx_simd_get_exponent_r(rSimd_ExpDouble));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(587.0, -462.0, 672.0), simdGetExponent(rSimd_ExpDouble));
 #endif
 }
 
@@ -229,28 +229,28 @@ TEST_F(SimdFloatingpointTest, gmxSimdGetMantissaR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.219097320577810839026256,
                                               1.166738027848349235071623,
-                                              1.168904015004464724825084), gmx_simd_get_mantissa_r(rSimd_Exp));
+                                              1.168904015004464724825084), simdGetMantissa(rSimd_Exp));
 #if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.241261238952345623563251,
                                               1.047294723759123852359232,
-                                              1.856066204750275957395734), gmx_simd_get_mantissa_r(rSimd_ExpDouble));
+                                              1.856066204750275957395734), simdGetMantissa(rSimd_ExpDouble));
 #endif
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdSetExponentR)
 {
-    gmx_simd_real_t x0 = setSimdRealFrom3R(0.5, 11.5, 99.5);
-    gmx_simd_real_t x1 = setSimdRealFrom3R(-0.5, -11.5, -99.5);
+    SimdReal x0 = setSimdRealFrom3R(0.5, 11.5, 99.5);
+    SimdReal x1 = setSimdRealFrom3R(-0.5, -11.5, -99.5);
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
-                            gmx_simd_set_exponent_r(setSimdRealFrom3R(60.0, -41.0, 54.0)));
+                            simdSetExponent(setSimdRealFrom3R(60.0, -41.0, 54.0)));
 #if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
-                            gmx_simd_set_exponent_r(setSimdRealFrom3R(587.0, -462.0, 672.0)));
+                            simdSetExponent(setSimdRealFrom3R(587.0, -462.0, 672.0)));
 #endif
-    /* Rounding mode in gmx_simd_set_exponent_r() must be consistent with gmx_simd_round_r() */
-    GMX_EXPECT_SIMD_REAL_EQ(gmx_simd_set_exponent_r(gmx_simd_round_r(x0)), gmx_simd_set_exponent_r(x0));
-    GMX_EXPECT_SIMD_REAL_EQ(gmx_simd_set_exponent_r(gmx_simd_round_r(x1)), gmx_simd_set_exponent_r(x1));
+    /* Rounding mode in simdSetExponent() must be consistent with simdRound() */
+    GMX_EXPECT_SIMD_REAL_EQ(simdSetExponent(simdRound(x0)), simdSetExponent(x0));
+    GMX_EXPECT_SIMD_REAL_EQ(simdSetExponent(simdRound(x1)), simdSetExponent(x1));
 }
 
 /*
@@ -260,8 +260,8 @@ TEST_F(SimdFloatingpointTest, gmxSimdSetExponentR)
 
 TEST_F(SimdFloatingpointTest, gmxSimdRsqrtR)
 {
-    gmx_simd_real_t x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    gmx_simd_real_t ref                = setSimdRealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    SimdReal        ref                = setSimdRealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
     int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
@@ -273,13 +273,13 @@ TEST_F(SimdFloatingpointTest, gmxSimdRsqrtR)
      * the mantissa that do not have to be correct after the table lookup.
      */
     setUlpTol(1LL << shiftbits);
-    GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rsqrt_r(x));
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, simdRsqrt(x));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
 {
-    gmx_simd_real_t x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    gmx_simd_real_t ref                = setSimdRealFrom3R(0.25, 1.0/M_PI, 1.0/1234567890.0);
+    SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    SimdReal        ref                = setSimdRealFrom3R(0.25, 1.0/M_PI, 1.0/1234567890.0);
     int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
 
     if (shiftbits < 0)
@@ -291,66 +291,66 @@ TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
      * the mantissa that do not have to be correct after the table lookup.
      */
     setUlpTol(1LL << shiftbits);
-    GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rcp_r(x));
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, simdRcp(x));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpEqAndBlendZeroR)
 {
-    gmx_simd_bool_t eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), gmx_simd_blendzero_r(rSimd_1_2_3, eq));
+    SimdBool eq   = simdCmpEq(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), simdMask(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBlendNotZeroR)
 {
-    gmx_simd_bool_t eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), gmx_simd_blendnotzero_r(rSimd_1_2_3, eq));
+    SimdBool eq   = simdCmpEq(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), simdMaskNot(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpLER)
 {
-    gmx_simd_bool_t le   = gmx_simd_cmple_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, gmx_simd_blendzero_r(rSimd_1_2_3, le));
+    SimdBool le   = simdCmpLe(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, simdMask(rSimd_1_2_3, le));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpLTR)
 {
-    gmx_simd_bool_t lt   = gmx_simd_cmplt_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), gmx_simd_blendzero_r(rSimd_1_2_3, lt));
+    SimdBool lt   = simdCmpLt(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), simdMask(rSimd_1_2_3, lt));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBoolAndB)
 {
-    gmx_simd_bool_t eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, rSimd_7_8_9);
-    gmx_simd_bool_t le   = gmx_simd_cmple_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), gmx_simd_blendzero_r(rSimd_1_2_3, gmx_simd_and_b(eq, le)));
+    SimdBool eq   = simdCmpEq(rSimd_5_7_9, rSimd_7_8_9);
+    SimdBool le   = simdCmpLe(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), simdMask(rSimd_1_2_3, simdAndB(eq, le)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBoolOrB)
 {
-    gmx_simd_bool_t eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, rSimd_7_8_9);
-    gmx_simd_bool_t lt   = gmx_simd_cmplt_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 3), gmx_simd_blendzero_r(rSimd_1_2_3, gmx_simd_or_b(eq, lt)));
+    SimdBool eq   = simdCmpEq(rSimd_5_7_9, rSimd_7_8_9);
+    SimdBool lt   = simdCmpLt(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 3), simdMask(rSimd_1_2_3, simdOrB(eq, lt)));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdAnytrueB)
 {
-    gmx_simd_bool_t eq;
+    SimdBool eq;
 
     /* this test is a bit tricky since we don't know the simd width.
      * We cannot check for truth values for "any" element beyond the first,
      * since that part of the data will not be used if simd width is 1.
      */
-    eq = gmx_simd_cmpeq_r(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));
-    EXPECT_NE(0, gmx_simd_anytrue_b(eq));
+    eq = simdCmpEq(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));
+    EXPECT_NE(0, simdAnyTrueB(eq));
 
-    eq = gmx_simd_cmpeq_r(rSimd_1_2_3, rSimd_4_5_6);
-    EXPECT_EQ(0, gmx_simd_anytrue_b(eq));
+    eq = simdCmpEq(rSimd_1_2_3, rSimd_4_5_6);
+    EXPECT_EQ(0, simdAnyTrueB(eq));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBlendvR)
 {
-    gmx_simd_bool_t lt   = gmx_simd_cmplt_r(rSimd_5_7_9, rSimd_7_8_9);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, 5, 3), gmx_simd_blendv_r(rSimd_1_2_3, rSimd_4_5_6, lt));
+    SimdBool lt   = simdCmpLt(rSimd_5_7_9, rSimd_7_8_9);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, 5, 3), simdBlend(rSimd_1_2_3, rSimd_4_5_6, lt));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdReduceR)
@@ -365,7 +365,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdReduceR)
         sum += v[i];
     }
 
-    EXPECT_EQ(sum, gmx_simd_reduce_r(rSimd_4_5_6));
+    EXPECT_EQ(sum, simdReduce(rSimd_4_5_6));
 }
 
 #endif      // GMX_SIMD_HAVE_REAL

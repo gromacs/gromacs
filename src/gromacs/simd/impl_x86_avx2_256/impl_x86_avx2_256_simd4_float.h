@@ -44,13 +44,13 @@
 /****************************************************
  *      SIMD4 SINGLE PRECISION IMPLEMENTATION       *
  ****************************************************/
-#undef  gmx_simd4_fmadd_f
-#define gmx_simd4_fmadd_f          _mm_fmadd_ps
-#undef  gmx_simd4_fmsub_f
-#define gmx_simd4_fmsub_f          _mm_fmsub_ps
-#undef  gmx_simd4_fnmadd_f
-#define gmx_simd4_fnmadd_f         _mm_fnmadd_ps
-#undef  gmx_simd4_fnmsub_f
-#define gmx_simd4_fnmsub_f         _mm_fnmsub_ps
+#undef  simd4FmaddF
+#define simd4FmaddF          _mm_fmadd_ps
+#undef  simd4FmsubF
+#define simd4FmsubF          _mm_fmsub_ps
+#undef  simd4FnmaddF
+#define simd4FnmaddF         _mm_fnmadd_ps
+#undef  simd4FnmsubF
+#define simd4FnmsubF         _mm_fnmsub_ps
 
 #endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H */

@@ -65,27 +65,27 @@ void set_pbc_simd(const t_pbc gmx_unused *pbc,
         }
     }
 
-    pbc_simd->inv_bzz = gmx_simd_set1_r(inv_box_diag[ZZ]);
-    pbc_simd->inv_byy = gmx_simd_set1_r(inv_box_diag[YY]);
-    pbc_simd->inv_bxx = gmx_simd_set1_r(inv_box_diag[XX]);
+    pbc_simd->inv_bzz = gmx::simdSet1(inv_box_diag[ZZ]);
+    pbc_simd->inv_byy = gmx::simdSet1(inv_box_diag[YY]);
+    pbc_simd->inv_bxx = gmx::simdSet1(inv_box_diag[XX]);
 
     if (pbc != NULL)
     {
-        pbc_simd->bzx = gmx_simd_set1_r(pbc->box[ZZ][XX]);
-        pbc_simd->bzy = gmx_simd_set1_r(pbc->box[ZZ][YY]);
-        pbc_simd->bzz = gmx_simd_set1_r(pbc->box[ZZ][ZZ]);
-        pbc_simd->byx = gmx_simd_set1_r(pbc->box[YY][XX]);
-        pbc_simd->byy = gmx_simd_set1_r(pbc->box[YY][YY]);
-        pbc_simd->bxx = gmx_simd_set1_r(pbc->box[XX][XX]);
+        pbc_simd->bzx = gmx::simdSet1(pbc->box[ZZ][XX]);
+        pbc_simd->bzy = gmx::simdSet1(pbc->box[ZZ][YY]);
+        pbc_simd->bzz = gmx::simdSet1(pbc->box[ZZ][ZZ]);
+        pbc_simd->byx = gmx::simdSet1(pbc->box[YY][XX]);
+        pbc_simd->byy = gmx::simdSet1(pbc->box[YY][YY]);
+        pbc_simd->bxx = gmx::simdSet1(pbc->box[XX][XX]);
     }
     else
     {
-        pbc_simd->bzx = gmx_simd_setzero_r();
-        pbc_simd->bzy = gmx_simd_setzero_r();
-        pbc_simd->bzz = gmx_simd_setzero_r();
-        pbc_simd->byx = gmx_simd_setzero_r();
-        pbc_simd->byy = gmx_simd_setzero_r();
-        pbc_simd->bxx = gmx_simd_setzero_r();
+        pbc_simd->bzx = gmx::simdSetZero();
+        pbc_simd->bzy = gmx::simdSetZero();
+        pbc_simd->bzz = gmx::simdSetZero();
+        pbc_simd->byx = gmx::simdSetZero();
+        pbc_simd->byy = gmx::simdSetZero();
+        pbc_simd->bxx = gmx::simdSetZero();
     }
 #endif
 }

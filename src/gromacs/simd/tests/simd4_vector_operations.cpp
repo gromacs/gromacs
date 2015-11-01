@@ -61,13 +61,13 @@ typedef Simd4Test Simd4VectorOperationsTest;
 
 TEST_F(Simd4VectorOperationsTest, gmxSimd4CalcRsqR)
 {
-    gmx_simd4_real_t simdX  = setSimd4RealFrom3R(1, 2, 3);
-    gmx_simd4_real_t simdY  = setSimd4RealFrom3R(3, 0, 5);
-    gmx_simd4_real_t simdZ  = setSimd4RealFrom3R(4, 1, 8);
-    gmx_simd4_real_t simdR2 = setSimd4RealFrom3R(26, 5, 98);
+    Simd4Real simdX  = setSimd4RealFrom3R(1, 2, 3);
+    Simd4Real simdY  = setSimd4RealFrom3R(3, 0, 5);
+    Simd4Real simdZ  = setSimd4RealFrom3R(4, 1, 8);
+    Simd4Real simdR2 = setSimd4RealFrom3R(26, 5, 98);
 
     setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, gmx_simd4_calc_rsq_r(simdX, simdY, simdZ));
+    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, simd4CalcRsq(simdX, simdY, simdZ));
 }
 
 #endif      // GMX_SIMD4_HAVE_REAL

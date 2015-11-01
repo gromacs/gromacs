@@ -61,53 +61,53 @@ typedef SimdTest SimdVectorOperationsTest;
 
 TEST_F(SimdVectorOperationsTest, gmxSimdCalcRsqR)
 {
-    gmx_simd_real_t simdX  = setSimdRealFrom3R(1, 2, 3);
-    gmx_simd_real_t simdY  = setSimdRealFrom3R(3, 0, 5);
-    gmx_simd_real_t simdZ  = setSimdRealFrom3R(4, 1, 8);
-    gmx_simd_real_t simdR2 = setSimdRealFrom3R(26, 5, 98);
+    SimdReal simdX  = setSimdRealFrom3R(1, 2, 3);
+    SimdReal simdY  = setSimdRealFrom3R(3, 0, 5);
+    SimdReal simdZ  = setSimdRealFrom3R(4, 1, 8);
+    SimdReal simdR2 = setSimdRealFrom3R(26, 5, 98);
 
     setUlpTol(2);
-    GMX_EXPECT_SIMD_REAL_NEAR(simdR2, gmx_simd_calc_rsq_r(simdX, simdY, simdZ));
+    GMX_EXPECT_SIMD_REAL_NEAR(simdR2, simdCalcRsq(simdX, simdY, simdZ));
 }
 
 TEST_F(SimdVectorOperationsTest, gmxSimdIprodR)
 {
-    gmx_simd_real_t aX    = setSimdRealFrom3R(1, 2, 3);
-    gmx_simd_real_t aY    = setSimdRealFrom3R(3, 0, 5);
-    gmx_simd_real_t aZ    = setSimdRealFrom3R(4, 1, 8);
-    gmx_simd_real_t bX    = setSimdRealFrom3R(8, 3, 6);
-    gmx_simd_real_t bY    = setSimdRealFrom3R(2, 3, 1);
-    gmx_simd_real_t bZ    = setSimdRealFrom3R(5, 7, 9);
-    gmx_simd_real_t iprod = setSimdRealFrom3R(34, 13, 95);
+    SimdReal aX    = setSimdRealFrom3R(1, 2, 3);
+    SimdReal aY    = setSimdRealFrom3R(3, 0, 5);
+    SimdReal aZ    = setSimdRealFrom3R(4, 1, 8);
+    SimdReal bX    = setSimdRealFrom3R(8, 3, 6);
+    SimdReal bY    = setSimdRealFrom3R(2, 3, 1);
+    SimdReal bZ    = setSimdRealFrom3R(5, 7, 9);
+    SimdReal iprod = setSimdRealFrom3R(34, 13, 95);
 
     setUlpTol(2);
-    GMX_EXPECT_SIMD_REAL_NEAR(iprod, gmx_simd_iprod_r(aX, aY, aZ, bX, bY, bZ));
+    GMX_EXPECT_SIMD_REAL_NEAR(iprod, simdIprod(aX, aY, aZ, bX, bY, bZ));
 }
 
 TEST_F(SimdVectorOperationsTest, gmxSimdNorm2R)
 {
-    gmx_simd_real_t simdX     = setSimdRealFrom3R(1, 2, 3);
-    gmx_simd_real_t simdY     = setSimdRealFrom3R(3, 0, 5);
-    gmx_simd_real_t simdZ     = setSimdRealFrom3R(4, 1, 8);
-    gmx_simd_real_t simdNorm2 = setSimdRealFrom3R(26, 5, 98);
+    SimdReal simdX        = setSimdRealFrom3R(1, 2, 3);
+    SimdReal simdY        = setSimdRealFrom3R(3, 0, 5);
+    SimdReal simdZ        = setSimdRealFrom3R(4, 1, 8);
+    SimdReal simdNorm2Ref = setSimdRealFrom3R(26, 5, 98);
 
     setUlpTol(2);
-    GMX_EXPECT_SIMD_REAL_NEAR(simdNorm2, gmx_simd_norm2_r(simdX, simdY, simdZ));
+    GMX_EXPECT_SIMD_REAL_NEAR(simdNorm2Ref, simdNorm2(simdX, simdY, simdZ));
 }
 
 TEST_F(SimdVectorOperationsTest, gmxSimdCprodR)
 {
-    gmx_simd_real_t aX    = setSimdRealFrom3R(1, 2, 3);
-    gmx_simd_real_t aY    = setSimdRealFrom3R(3, 0, 5);
-    gmx_simd_real_t aZ    = setSimdRealFrom3R(4, 1, 8);
-    gmx_simd_real_t bX    = setSimdRealFrom3R(8, 3, 6);
-    gmx_simd_real_t bY    = setSimdRealFrom3R(2, 3, 1);
-    gmx_simd_real_t bZ    = setSimdRealFrom3R(5, 7, 9);
-    gmx_simd_real_t refcX = setSimdRealFrom3R(7, -3, 37);
-    gmx_simd_real_t refcY = setSimdRealFrom3R(27, -11, 21);
-    gmx_simd_real_t refcZ = setSimdRealFrom3R(-22, 6, -27);
-    gmx_simd_real_t cX, cY, cZ;
-    gmx_simd_cprod_r(aX, aY, aZ, bX, bY, bZ, &cX, &cY, &cZ);
+    SimdReal aX    = setSimdRealFrom3R(1, 2, 3);
+    SimdReal aY    = setSimdRealFrom3R(3, 0, 5);
+    SimdReal aZ    = setSimdRealFrom3R(4, 1, 8);
+    SimdReal bX    = setSimdRealFrom3R(8, 3, 6);
+    SimdReal bY    = setSimdRealFrom3R(2, 3, 1);
+    SimdReal bZ    = setSimdRealFrom3R(5, 7, 9);
+    SimdReal refcX = setSimdRealFrom3R(7, -3, 37);
+    SimdReal refcY = setSimdRealFrom3R(27, -11, 21);
+    SimdReal refcZ = setSimdRealFrom3R(-22, 6, -27);
+    SimdReal cX, cY, cZ;
+    simdCprod(aX, aY, aZ, bX, bY, bZ, &cX, &cY, &cZ);
 
     setUlpTol(2);
     GMX_EXPECT_SIMD_REAL_NEAR(refcX, cX);

@@ -46,6 +46,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -319,9 +320,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
     int            offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    real           thz_buffer[GMX_SIMD4_WIDTH*3], *thz_aligned;
-
-    thz_aligned = gmx_simd4_align_r(thz_buffer);
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH*2];
 #endif
 
     pnx = pmegrid->s[XX];

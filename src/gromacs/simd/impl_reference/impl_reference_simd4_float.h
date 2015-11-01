@@ -64,138 +64,138 @@
 /*! \brief SIMD4 float type. Available if \ref GMX_SIMD4_HAVE_FLOAT.
  *
  * Unless you specifically want a single-precision type you should check
- * \ref gmx_simd4_real_t instead.
+ * \ref gmx::Simd4Real instead.
  *
  * While the SIMD4 datatype is identical to the normal SIMD type in the
  * reference implementation, this will often not be the case for
  * other architectures.
  */
-#    define gmx_simd4_float_t    gmx_simd_float_t
+#    define Simd4Float    SimdFloat
 
 /*! \brief Load SIMD4 float from aligned memory.
- *  \copydetails gmx_simd_load_f
+ *  \copydetails simdLoadF
  */
-#    define gmx_simd4_load_f     gmx_simd_load_f
+#    define simd4LoadF     simdLoadF
 
 /*! \brief Set all elements of SIMD4 float from single pointer.
- *  \copydetails gmx_simd_load1_f
+ *  \copydetails simdLoad1F
  */
-#    define gmx_simd4_load1_f    gmx_simd_load1_f
+#    define simd4Load1F    simdLoad1F
 
 /*! \brief Set all SIMD4 float elements to the value r.
- *  \copydetails gmx_simd_set1_f
+ *  \copydetails simdSet1F
  */
-#    define gmx_simd4_set1_f     gmx_simd_set1_f
+#    define simd4Set1F     simdSet1F
 
 /*! \brief Store the contents of SIMD4 float pr to aligned memory m.
- *  \copydetails gmx_simd_store_f
+ *  \copydetails simdStoreF
  */
-#    define gmx_simd4_store_f    gmx_simd_store_f
+#    define simd4StoreF    simdStoreF
 
 /*! \brief Load SIMD4 float from unaligned memory.
- * \copydetails gmx_simd_loadu_f
+ * \copydetails simdLoadUF
  */
-#    define gmx_simd4_loadu_f    gmx_simd_loadu_f
+#    define simd4LoadUF    simdLoadUF
 
 /*! \brief Store SIMD4 float to unaligned memory.
- * \copydetails gmx_simd_storeu_f
+ * \copydetails simdStoreUF
  */
-#    define gmx_simd4_storeu_f   gmx_simd_storeu_f
+#    define simd4StoreUF   simdStoreUF
 
 /*! \brief Set all SIMD4 float elements to 0.
- * \copydetails gmx_simd_setzero_f
+ * \copydetails simdSetZeroF
  */
-#    define gmx_simd4_setzero_f  gmx_simd_setzero_f
+#    define simd4SetZeroF  simdSetZeroF
 
 /*! \brief Bitwise and for two SIMD4 float variables.
- * \copydetails gmx_simd_and_f
+ * \copydetails simdAndF
  */
-#    define gmx_simd4_and_f      gmx_simd_and_f
+#    define simd4AndF      simdAndF
 
 /*! \brief Bitwise andnot for two SIMD4 float variables. c=(~a) & b.
- * \copydetails gmx_simd_andnot_f
+ * \copydetails simdAndNotF
  */
-#    define gmx_simd4_andnot_f   gmx_simd_andnot_f
+#    define simd4AndNotF   simdAndNotF
 
 /*! \brief Bitwise or for two SIMD4 float variables.
- * \copydetails gmx_simd_or_f
+ * \copydetails simdOrF
  */
-#    define gmx_simd4_or_f       gmx_simd_or_f
+#    define simd4OrF       simdOrF
 
 /*! \brief Bitwise xor for two SIMD4 float variables.
- * \copydetails gmx_simd_xor_f
+ * \copydetails simdXorF
  */
-#    define gmx_simd4_xor_f      gmx_simd_xor_f
+#    define simd4XorF      simdXorF
 
 /*! \brief Add two SIMD4 float variables.
- * \copydetails gmx_simd_add_f
+ * \copydetails simdAddF
  */
-#    define gmx_simd4_add_f      gmx_simd_add_f
+#    define simd4AddF      simdAddF
 
 /*! \brief Subtract two SIMD4 float variables.
- * \copydetails gmx_simd_sub_f
+ * \copydetails simdSubF
  */
-#    define gmx_simd4_sub_f      gmx_simd_sub_f
+#    define simd4SubF      simdSubF
 
 /*! \brief Multiply two SIMD4 float variables.
- * \copydetails gmx_simd_mul_f
+ * \copydetails simdMulF
  */
-#    define gmx_simd4_mul_f      gmx_simd_mul_f
+#    define simd4MulF      simdMulF
 
 /*! \brief Fused-multiply-add for SIMD4 float. Result is a*b+c.
- * \copydetails gmx_simd_fmadd_f
+ * \copydetails simdFmaddF
  */
-#    define gmx_simd4_fmadd_f    gmx_simd_fmadd_f
+#    define simd4FmaddF    simdFmaddF
 
 /*! \brief Fused-multiply-subtract for SIMD4 float. Result is a*b-c.
- * \copydetails gmx_simd_fmsub_f
+ * \copydetails simdFmsubF
  */
-#    define gmx_simd4_fmsub_f    gmx_simd_fmsub_f
+#    define simd4FmsubF    simdFmsubF
 
 /*! \brief Fused-negated-multiply-add for SIMD4 float. Result is -a*b+c.
- * \copydetails gmx_simd_fnmadd_f
+ * \copydetails simdFnmaddF
  */
-#    define gmx_simd4_fnmadd_f   gmx_simd_fnmadd_f
+#    define simd4FnmaddF   simdFnmaddF
 
 /*! \brief Fused-negated-multiply-add for SIMD4 float. Result is -a*b-c.
- * \copydetails gmx_simd_fnmsub_f
+ * \copydetails simdFnmsubF
  */
-#    define gmx_simd4_fnmsub_f   gmx_simd_fnmsub_f
+#    define simd4FnmsubF   simdFnmsubF
 
 /*! \brief Lookup of approximate 1/sqrt(x) for SIMD4 float.
- * \copydetails gmx_simd_rsqrt_f
+ * \copydetails simdRsqrtF
  */
-#    define gmx_simd4_rsqrt_f    gmx_simd_rsqrt_f
+#    define simd4RsqrtF    simdRsqrtF
 
 /*! \brief Floating-point absolute value for SIMD4 float.
- * \copydetails gmx_simd_fabs_f
+ * \copydetails simdAbsF
  */
-#    define gmx_simd4_fabs_f     gmx_simd_fabs_f
+#    define simd4AbsF     simdAbsF
 
 /*! \brief Floating-point negate for SIMD4 float.
- * \copydetails gmx_simd_fneg_f
+ * \copydetails simdNegF
  */
-#    define gmx_simd4_fneg_f     gmx_simd_fneg_f
+#    define simd4NegF     simdNegF
 
 /*! \brief Set each SIMD4 float element to the largest from two variables.
- * \copydetails gmx_simd_max_f
+ * \copydetails simdMaxF
  */
-#    define gmx_simd4_max_f      gmx_simd_max_f
+#    define simd4MaxF      simdMaxF
 
 /*! \brief Set each SIMD4 float element to the smallest from two variables.
- * \copydetails gmx_simd_min_f
+ * \copydetails simdMinF
  */
-#    define gmx_simd4_min_f      gmx_simd_min_f
+#    define simd4MinF      simdMinF
 
 /*! \brief Round to nearest integer value for SIMD4 float.
- * \copydetails gmx_simd_round_f
+ * \copydetails simdRoundF
  */
-#    define gmx_simd4_round_f    gmx_simd_round_f
+#    define simd4RoundF    simdRoundF
 
 /*! \brief Round to largest integral value for SIMD4 float.
- * \copydetails gmx_simd_trunc_f
+ * \copydetails simdTruncF
  */
-#    define gmx_simd4_trunc_f    gmx_simd_trunc_f
+#    define simd4TruncF    simdTruncF
 
 /*! \brief Return dot product of two single precision SIMD4 variables.
  *
@@ -206,66 +206,66 @@
  * \param b vector2
  * \result a[0]*b[0]+a[1]*b[1]+a[2]*b[2], returned as scalar. Last element is ignored.
  */
-static gmx_inline float
-gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline float
+simd4DotProductF(SimdFloat a, SimdFloat b)
 {
     return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
 }
 
 /*! \brief SIMD4 variable type to use for logical comparisons on floats.
- * \copydetails gmx_simd_fbool_t
+ * \copydetails SimdFBool
  */
-#    define gmx_simd4_fbool_t   gmx_simd_fbool_t
+#    define Simd4FBool   SimdFBool
 
 /*! \brief Equality comparison of two single precision SIMD4.
- * \copydetails gmx_simd_cmpeq_f
+ * \copydetails simdCmpEqF
  */
-#    define gmx_simd4_cmpeq_f   gmx_simd_cmpeq_f
+#    define simd4CmpEqF   simdCmpEqF
 
 /*! \brief Less-than comparison of two single precision SIMD4.
- * \copydetails gmx_simd_cmplt_f
+ * \copydetails simdCmpLtF
  */
-#    define gmx_simd4_cmplt_f   gmx_simd_cmplt_f
+#    define simd4CmpLtF   simdCmpLtF
 
 /*! \brief Less-than comparison of two single precision SIMD4.
- * \copydetails gmx_simd_cmple_f
+ * \copydetails simdCmpLeF
  */
-#    define gmx_simd4_cmple_f   gmx_simd_cmple_f
+#    define simd4CmpLeF   simdCmpLeF
 
 /*! \brief Logical AND on float SIMD4 booleans.
- * \copydetails gmx_simd_and_fb
+ * \copydetails simdAndFB
  */
-#    define gmx_simd4_and_fb gmx_simd_and_fb
+#    define simd4AndFB simdAndFB
 
 /*! \brief Logical OR on float SIMD4 booleans.
- * \copydetails gmx_simd_or_fb
+ * \copydetails simdOrFB
  */
-#    define gmx_simd4_or_fb gmx_simd_or_fb
+#    define simd4OrFB simdOrFB
 
 /*! \brief Returns non-zero if any of the SIMD4 boolean in x is True.
- * \copydetails gmx_simd_anytrue_fb
+ * \copydetails simdAnyTrueFB
  */
-#    define gmx_simd4_anytrue_fb gmx_simd_anytrue_fb
+#    define simd4AnyTrueFB simdAnyTrueFB
 
 /*! \brief Select from single precision SIMD4 variable where boolean is true.
- * \copydetails gmx_simd_blendzero_f
+ * \copydetails simdMaskF
  */
-#    define gmx_simd4_blendzero_f gmx_simd_blendzero_f
+#    define simd4MaskF simdMaskF
 
 /*! \brief Select from single precision SIMD4 variable where boolean is false.
- * \copydetails gmx_simd_blendnotzero_f
+ * \copydetails simdMaskNotF
  */
-#    define gmx_simd4_blendnotzero_f gmx_simd_blendnotzero_f
+#    define simd4MaskNotF simdMaskNotF
 
 /*! \brief Vector-blend instruction form SIMD4 float.
- * \copydetails gmx_simd_blendv_f
+ * \copydetails simdBlendF
  */
-#    define gmx_simd4_blendv_f  gmx_simd_blendv_f
+#    define simd4BlendF  simdBlendF
 
 /*! \brief Return sum of all elements in SIMD4 float.
- * \copydetails gmx_simd_reduce_f
+ * \copydetails simdReduceF
  */
-#    define gmx_simd4_reduce_f  gmx_simd_reduce_f
+#    define simd4ReduceF  simdReduceF
 
 #else /* GMX_SIMD_FLOAT_WIDTH!=4 */
 #    define GMX_SIMD4_HAVE_FLOAT    0
