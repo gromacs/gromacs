@@ -38,7 +38,9 @@
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd_math.h"
 
-typedef gmx_simd_int32_t        gmx_simd_ref_exclfilter;
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
+typedef SimdInt32        gmx_simd_ref_exclfilter;
 typedef gmx_simd_ref_exclfilter gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
@@ -58,12 +60,12 @@ static const int nbfp_stride = 4;
 /* float/double SIMD register type */
 typedef struct {
     real r[4];
-} gmx_simd4_real_t;
+} Simd4Real;
 
-static gmx_inline gmx_simd4_real_t
-gmx_simd4_load_r(const real *r)
+static gmx_inline Simd4Real
+simd4Load(const real *r)
 {
-    gmx_simd4_real_t a;
+    Simd4Real        a;
     int              i;
 
     for (i = 0; i < 4; i++)
@@ -75,9 +77,9 @@ gmx_simd4_load_r(const real *r)
 }
 
 static gmx_inline void
-gmx_simd4_store_r(real *dest, gmx_simd4_real_t src)
+simd4Store(real *dest, Simd4Real src)
 {
-    gmx_simd4_real_t a;
+    Simd4Real        a;
     int              i;
 
     for (i = 0; i < 4; i++)
@@ -86,10 +88,10 @@ gmx_simd4_store_r(real *dest, gmx_simd4_real_t src)
     }
 }
 
-static gmx_inline gmx_simd4_real_t
-gmx_simd4_add_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
+static gmx_inline Simd4Real
+simd4Add(Simd4Real a, Simd4Real b)
 {
-    gmx_simd4_real_t c;
+    Simd4Real        c;
     int              i;
 
     for (i = 0; i < 4; i++)
@@ -101,7 +103,7 @@ gmx_simd4_add_r(gmx_simd4_real_t a, gmx_simd4_real_t b)
 }
 
 static gmx_inline real
-gmx_simd4_reduce_r(gmx_simd4_real_t a)
+simd4Reduce(Simd4Real a)
 {
     return a.r[0] + a.r[1] + a.r[2] + a.r[3];
 }
@@ -147,7 +149,7 @@ gmx_set1_hpr(gmx_mm_hpr *a, real b)
 
 /* Load one real at b and one real at b+1 into halves of a, respectively */
 static gmx_inline void
-gmx_load1p1_pr(gmx_simd_real_t *a, const real *b)
+gmx_load1p1_pr(SimdReal *a, const real *b)
 {
     int i;
 
@@ -160,7 +162,7 @@ gmx_load1p1_pr(gmx_simd_real_t *a, const real *b)
 
 /* Load reals at half-width aligned pointer b into two halves of a */
 static gmx_inline void
-gmx_loaddh_pr(gmx_simd_real_t *a, const real *b)
+gmx_loaddh_pr(SimdReal *a, const real *b)
 {
     int i;
 
@@ -213,7 +215,7 @@ gmx_sub_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
 
 /* Sum over 4 half SIMD registers */
 static gmx_inline gmx_mm_hpr
-gmx_sum4_hpr(gmx_simd_real_t a, gmx_simd_real_t b)
+gmx_sum4_hpr(SimdReal a, SimdReal b)
 {
     gmx_mm_hpr c;
     int        i;
@@ -232,10 +234,10 @@ gmx_sum4_hpr(gmx_simd_real_t a, gmx_simd_real_t b)
 
 #ifdef GMX_NBNXN_SIMD_2XNN
 /* Sum the elements of halfs of each input register and store sums in out */
-static gmx_inline gmx_simd4_real_t
-gmx_mm_transpose_sum4h_pr(gmx_simd_real_t a, gmx_simd_real_t b)
+static gmx_inline Simd4Real
+gmx_mm_transpose_sum4h_pr(SimdReal a, SimdReal b)
 {
-    gmx_simd4_real_t sum;
+    Simd4Real        sum;
     int              i;
 
     sum.r[0] = 0;
@@ -256,7 +258,7 @@ gmx_mm_transpose_sum4h_pr(gmx_simd_real_t a, gmx_simd_real_t b)
 #endif
 
 static gmx_inline void
-gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
+gmx_pr_to_2hpr(SimdReal a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
     int i;
 
@@ -267,7 +269,7 @@ gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
     }
 }
 static gmx_inline void
-gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_real_t *c)
+gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, SimdReal *c)
 {
     int i;
 
@@ -283,9 +285,9 @@ gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_real_t *c)
 
 #ifndef TAB_FDV0
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S,
+load_table_f(const real *tab_coul_F, SimdInt32 ti_S,
              int gmx_unused *ti,
-             gmx_simd_real_t *ctab0_S, gmx_simd_real_t *ctab1_S)
+             SimdReal *ctab0_S, SimdReal *ctab1_S)
 {
     int i;
 
@@ -295,14 +297,14 @@ load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S,
         ctab1_S->r[i] = tab_coul_F[ti_S.i[i]+1];
     }
 
-    *ctab1_S  = gmx_simd_sub_r(*ctab1_S, *ctab0_S);
+    *ctab1_S  = simdSub(*ctab1_S, *ctab0_S);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_simd_int32_t ti_S, int *ti,
-               gmx_simd_real_t *ctab0_S, gmx_simd_real_t *ctab1_S,
-               gmx_simd_real_t *ctabv_S)
+               SimdInt32 ti_S, int *ti,
+               SimdReal *ctab0_S, SimdReal *ctab1_S,
+               SimdReal *ctabv_S)
 {
     int i;
 
@@ -317,8 +319,8 @@ load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
 
 #ifdef TAB_FDV0
 static gmx_inline void
-load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
-             gmx_simd_real_t *ctab0_S, gmx_simd_real_t *ctab1_S)
+load_table_f(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
+             SimdReal *ctab0_S, SimdReal *ctab1_S)
 {
     int i;
 
@@ -331,9 +333,9 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_FDV0,
-               gmx_simd_int32_t ti_S, int *ti,
-               gmx_simd_real_t *ctab0_S, gmx_simd_real_t *ctab1_S,
-               gmx_simd_real_t *ctabv_S)
+               SimdInt32 ti_S, int *ti,
+               SimdReal *ctab0_S, SimdReal *ctab1_S,
+               SimdReal *ctabv_S)
 {
     int i;
 
@@ -350,10 +352,10 @@ load_table_f_v(const real *tab_coul_FDV0,
  * Note that 4/8-way SIMD requires gmx_mm_transpose_sum4_pr instead.
  */
 #if GMX_SIMD_REAL_WIDTH == 2
-static gmx_inline gmx_simd_real_t
-gmx_mm_transpose_sum2_pr(gmx_simd_real_t in0, gmx_simd_real_t in1)
+static gmx_inline SimdReal
+gmx_mm_transpose_sum2_pr(SimdReal in0, SimdReal in1)
 {
-    gmx_simd_real_t sum;
+    SimdReal sum;
 
     sum.r[0] = in0.r[0] + in0.r[1];
     sum.r[1] = in1.r[0] + in1.r[1];
@@ -364,19 +366,19 @@ gmx_mm_transpose_sum2_pr(gmx_simd_real_t in0, gmx_simd_real_t in1)
 
 #if GMX_SIMD_REAL_WIDTH >= 4
 #if GMX_SIMD_REAL_WIDTH == 4
-static gmx_inline gmx_simd_real_t
+static gmx_inline SimdReal
 #else
-static gmx_inline gmx_simd4_real_t
+static gmx_inline Simd4Real
 #endif
-gmx_mm_transpose_sum4_pr(gmx_simd_real_t in0, gmx_simd_real_t in1,
-                         gmx_simd_real_t in2, gmx_simd_real_t in3)
+gmx_mm_transpose_sum4_pr(SimdReal in0, SimdReal in1,
+                         SimdReal in2, SimdReal in3)
 {
 #if GMX_SIMD_REAL_WIDTH == 4
-    gmx_simd_real_t  sum;
+    SimdReal              sum;
 #else
-    gmx_simd4_real_t sum;
+    Simd4Real             sum;
 #endif
-    int              i;
+    int                   i;
 
     sum.r[0] = 0;
     sum.r[1] = 0;
@@ -402,17 +404,17 @@ gmx_mm_transpose_sum4_pr(gmx_simd_real_t in0, gmx_simd_real_t in1,
  * For this reference code we just use a plain-C sqrt.
  */
 static gmx_inline void
-gmx_mm_invsqrt2_pd(gmx_simd_real_t in0, gmx_simd_real_t in1,
-                   gmx_simd_real_t *out0, gmx_simd_real_t *out1)
+gmx_mm_invsqrt2_pd(SimdReal in0, SimdReal in1,
+                   SimdReal *out0, SimdReal *out1)
 {
-    *out0 = gmx_simd_invsqrt_r(in0);
-    *out1 = gmx_simd_invsqrt_r(in1);
+    *out0 = simdInvsqrt(in0);
+    *out1 = simdInvsqrt(in1);
 }
 #endif
 
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
-                    gmx_simd_real_t *c6_S, gmx_simd_real_t *c12_S)
+                    SimdReal *c6_S, SimdReal *c12_S)
 {
     int i;
 
@@ -427,7 +429,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 static gmx_inline void
 load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
                      const int *type, int aj,
-                     gmx_simd_real_t *c6_S, gmx_simd_real_t *c12_S)
+                     SimdReal *c6_S, SimdReal *c12_S)
 {
     int i;
 
@@ -488,11 +490,11 @@ gmx_simd_ref_load_exclusion_filter(const int *src)
  * If the same bit is set in both input masks, return TRUE, else
  * FALSE. This function is only called with a single bit set in b.
  */
-static gmx_inline gmx_simd_bool_t
+static gmx_inline SimdBool
 gmx_simd_ref_checkbitmask_pb(gmx_simd_ref_exclfilter a, gmx_simd_ref_exclfilter b)
 {
-    gmx_simd_bool_t c;
-    int             i;
+    SimdBool             c;
+    int                  i;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {

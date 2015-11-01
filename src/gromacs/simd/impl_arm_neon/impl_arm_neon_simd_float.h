@@ -45,134 +45,134 @@
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_float_t           float32x4_t
-#define gmx_simd_load_f            vld1q_f32
-#define gmx_simd_load1_f           vld1q_dup_f32
-#define gmx_simd_set1_f            vdupq_n_f32
-#define gmx_simd_store_f           vst1q_f32
-#define gmx_simd_loadu_f           vld1q_f32
-#define gmx_simd_storeu_f          vst1q_f32
-#define gmx_simd_setzero_f()       vdupq_n_f32(0.0f)
-#define gmx_simd_add_f             vaddq_f32
-#define gmx_simd_sub_f             vsubq_f32
-#define gmx_simd_mul_f             vmulq_f32
+#define SimdFloat            float32x4_t
+#define simdLoadF            vld1q_f32
+#define simdLoad1F           vld1q_dup_f32
+#define simdSet1F            vdupq_n_f32
+#define simdStoreF           vst1q_f32
+#define simdLoadUF           vld1q_f32
+#define simdStoreUF          vst1q_f32
+#define simdSetZeroF()       vdupq_n_f32(0.0f)
+#define simdAddF             vaddq_f32
+#define simdSubF             vsubq_f32
+#define simdMulF             vmulq_f32
 #ifdef __ARM_FEATURE_FMA
-#    define gmx_simd_fmadd_f(a, b, c)  vfmaq_f32(c, b, a)
-#    define gmx_simd_fmsub_f(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
-#    define gmx_simd_fnmadd_f(a, b, c) vfmaq_f32(c, b, a)
-#    define gmx_simd_fnmsub_f(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
+#    define simdFmaddF(a, b, c)  vfmaq_f32(c, b, a)
+#    define simdFmsubF(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
+#    define simdFnmaddF(a, b, c) vfmaq_f32(c, b, a)
+#    define simdFnmsubF(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
 #else
-#    define gmx_simd_fmadd_f(a, b, c)  vmlaq_f32(c, b, a)
-#    define gmx_simd_fmsub_f(a, b, c)  vnegq_f32(vmlsq_f32(c, b, a))
-#    define gmx_simd_fnmadd_f(a, b, c) vmlsq_f32(c, b, a)
-#    define gmx_simd_fnmsub_f(a, b, c) vnegq_f32(vmlaq_f32(c, b, a))
+#    define simdFmaddF(a, b, c)  vmlaq_f32(c, b, a)
+#    define simdFmsubF(a, b, c)  vnegq_f32(vmlsq_f32(c, b, a))
+#    define simdFnmaddF(a, b, c) vmlsq_f32(c, b, a)
+#    define simdFnmsubF(a, b, c) vnegq_f32(vmlaq_f32(c, b, a))
 #endif
-#define gmx_simd_and_f(a, b)        vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
-#define gmx_simd_andnot_f(a, b)     vreinterpretq_f32_s32(vbicq_s32(vreinterpretq_s32_f32(b), vreinterpretq_s32_f32(a)))
-#define gmx_simd_or_f(a, b)         vreinterpretq_f32_s32(vorrq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
-#define gmx_simd_xor_f(a, b)        vreinterpretq_f32_s32(veorq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
-#define gmx_simd_rsqrt_f            vrsqrteq_f32
-#define gmx_simd_rsqrt_iter_f(lu, x) vmulq_f32(lu, vrsqrtsq_f32(vmulq_f32(lu, lu), x))
-#define gmx_simd_rcp_f              vrecpeq_f32
-#define gmx_simd_rcp_iter_f(lu, x)   vmulq_f32(lu, vrecpsq_f32(lu, x))
-#define gmx_simd_fabs_f(x)         vabsq_f32(x)
-#define gmx_simd_fneg_f(x)         vnegq_f32(x)
-#define gmx_simd_max_f             vmaxq_f32
-#define gmx_simd_min_f             vminq_f32
-#define gmx_simd_round_f(x)        gmx_simd_cvt_i2f(gmx_simd_cvt_f2i(x))
-#define gmx_simd_trunc_f(x)        gmx_simd_cvt_i2f(gmx_simd_cvtt_f2i(x))
-#define gmx_simd_fraction_f(x)     vsubq_f32(x, gmx_simd_trunc_f(x))
-#define gmx_simd_get_exponent_f    gmx_simd_get_exponent_f_arm_neon
-#define gmx_simd_get_mantissa_f    gmx_simd_get_mantissa_f_arm_neon
-#define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_arm_neon
-/* integer datatype corresponding to float: gmx_simd_fint32_t */
-#define gmx_simd_fint32_t         int32x4_t
-#define gmx_simd_load_fi(m)        vld1q_s32(m)
-#define gmx_simd_set1_fi           vdupq_n_s32
-#define gmx_simd_store_fi(m, x)    vst1q_s32(m, x)
-#define gmx_simd_loadu_fi(m)       vld1q_s32(m)
-#define gmx_simd_storeu_fi(m, x)   vst1q_s32(m, x)
-#define gmx_simd_setzero_fi()      vdupq_n_s32(0)
-#define gmx_simd_cvtt_f2i          vcvtq_s32_f32
-#define gmx_simd_cvt_f2i(x)        vcvtq_s32_f32(gmx_simd_add_f(gmx_simd_or_f(gmx_simd_and_f(vdupq_n_f32(-0.0f), x), vdupq_n_f32(0.5f)), x))
-#define gmx_simd_cvt_i2f           vcvtq_f32_s32
-#define gmx_simd_extract_fi(x, i)  vgetq_lane_s32(x, i)
-/* Integer logical ops on gmx_simd_fint32_t */
-#define gmx_simd_slli_fi           vshlq_n_s32
-#define gmx_simd_srli_fi           vshrq_n_s32
-#define gmx_simd_and_fi            vandq_s32
-#define gmx_simd_andnot_fi(a, b)   vbicq_s32(b, a)
-#define gmx_simd_or_fi             vorrq_s32
-#define gmx_simd_xor_fi            veorq_s32
-/* Integer arithmetic ops on gmx_simd_fint32_t */
-#define gmx_simd_add_fi            vaddq_s32
-#define gmx_simd_sub_fi            vsubq_s32
-#define gmx_simd_mul_fi            vmulq_s32
-/* Boolean & comparison operations on gmx_simd_float_t */
-#define gmx_simd_fbool_t           uint32x4_t
-#define gmx_simd_cmpeq_f           vceqq_f32
-#define gmx_simd_cmplt_f           vcltq_f32
-#define gmx_simd_cmple_f           vcleq_f32
-#define gmx_simd_and_fb            vandq_u32
-#define gmx_simd_or_fb             vorrq_u32
-#define gmx_simd_anytrue_fb        gmx_simd_anytrue_fb_arm_neon
-#define gmx_simd_blendzero_f(a, sel)     vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), sel))
-#define gmx_simd_blendnotzero_f(a, sel)  vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a), sel))
-#define gmx_simd_blendv_f(a, b, sel)     vbslq_f32(sel, b, a)
-#define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_arm_neon(a)
-/* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_fibool_t          uint32x4_t
-#define gmx_simd_cmpeq_fi          vceqq_s32
-#define gmx_simd_cmplt_fi          vcltq_s32
-#define gmx_simd_and_fib           vandq_u32
-#define gmx_simd_or_fib            vorrq_u32
-#define gmx_simd_anytrue_fib       gmx_simd_anytrue_fb
-#define gmx_simd_blendzero_fi(a, sel)     vandq_s32(a, vreinterpretq_s32_u32(sel))
-#define gmx_simd_blendnotzero_fi(a, sel)  vbicq_s32(a, vreinterpretq_s32_u32(sel))
-#define gmx_simd_blendv_fi(a, b, sel)     vbslq_s32(sel, b, a)
+#define simdAndF(a, b)        vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
+#define simdAndNotF(a, b)     vreinterpretq_f32_s32(vbicq_s32(vreinterpretq_s32_f32(b), vreinterpretq_s32_f32(a)))
+#define simdOrF(a, b)         vreinterpretq_f32_s32(vorrq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
+#define simdXorF(a, b)        vreinterpretq_f32_s32(veorq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
+#define simdRsqrtF            vrsqrteq_f32
+#define simdRsqrtIterF(lu, x) vmulq_f32(lu, vrsqrtsq_f32(vmulq_f32(lu, lu), x))
+#define simdRcpF              vrecpeq_f32
+#define simdRcpIterF(lu, x)   vmulq_f32(lu, vrecpsq_f32(lu, x))
+#define simdAbsF(x)         vabsq_f32(x)
+#define simdNegF(x)         vnegq_f32(x)
+#define simdMaxF             vmaxq_f32
+#define simdMinF             vminq_f32
+#define simdRoundF(x)        simdCvtI2F(simdCvtF2I(x))
+#define simdTruncF(x)        simdCvtI2F(simdCvttF2I(x))
+#define simdFractionF(x)     vsubq_f32(x, simdTruncF(x))
+#define simdGetExponentF    simdGetExponentF_arm_neon
+#define simdGetMantissaF    simdGetMantissaF_arm_neon
+#define simdSetExponentF    simdSetExponentF_arm_neon
+/* integer datatype corresponding to float: SimdFInt32 */
+#define SimdFInt32         int32x4_t
+#define simdLoadFI(m)        vld1q_s32(m)
+#define simdSet1FI           vdupq_n_s32
+#define simdStoreFI(m, x)    vst1q_s32(m, x)
+#define simdLoadUFI(m)       vld1q_s32(m)
+#define simdStoreUFI(m, x)   vst1q_s32(m, x)
+#define simdSetZeroFI()      vdupq_n_s32(0)
+#define simdCvttF2I          vcvtq_s32_f32
+#define simdCvtF2I(x)        vcvtq_s32_f32(simdAddF(simdOrF(simdAndF(vdupq_n_f32(-0.0f), x), vdupq_n_f32(0.5f)), x))
+#define simdCvtI2F           vcvtq_f32_s32
+#define simdExtractFI(x, i)  vgetq_lane_s32(x, i)
+/* Integer logical ops on SimdFInt32 */
+#define simdSlliFI           vshlq_n_s32
+#define simdSrliFI           vshrq_n_s32
+#define simdAndFI            vandq_s32
+#define simdAndNotFI(a, b)   vbicq_s32(b, a)
+#define simdOrFI             vorrq_s32
+#define simdXorFI            veorq_s32
+/* Integer arithmetic ops on SimdFInt32 */
+#define simdAddFI            vaddq_s32
+#define simdSubFI            vsubq_s32
+#define simdMulFI            vmulq_s32
+/* Boolean & comparison operations on SimdFloat */
+#define SimdFBool           uint32x4_t
+#define simdCmpEqF           vceqq_f32
+#define simdCmpLtF           vcltq_f32
+#define simdCmpLeF           vcleq_f32
+#define simdAndFB            vandq_u32
+#define simdOrFB             vorrq_u32
+#define simdAnyTrueFB        simdAnyTrueFB_arm_neon
+#define simdMaskF(a, sel)     vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), sel))
+#define simdMaskNotF(a, sel)  vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a), sel))
+#define simdBlendF(a, b, sel)     vbslq_f32(sel, b, a)
+#define simdReduceF(a)       simdReduceF_arm_neon(a)
+/* Boolean & comparison operations on SimdFInt32 */
+#define SimdFIBool          uint32x4_t
+#define simdCmpEqFI          vceqq_s32
+#define simdCmpLtFI          vcltq_s32
+#define simdAndFIB           vandq_u32
+#define simdOrFIB            vorrq_u32
+#define simdAnyTrueFIB       simdAnyTrueFB
+#define simdMaskFI(a, sel)     vandq_s32(a, vreinterpretq_s32_u32(sel))
+#define simdMaskNotFI(a, sel)  vbicq_s32(a, vreinterpretq_s32_u32(sel))
+#define simdBlendFI(a, b, sel)     vbslq_s32(sel, b, a)
 /* Conversions between different booleans */
-#define gmx_simd_cvt_fb2fib(x)     (x)
-#define gmx_simd_cvt_fib2fb(x)     (x)
+#define simdCvtFB2FIB(x)     (x)
+#define simdCvtFIB2FB(x)     (x)
 
 /****************************************************
  * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_exponent_f_arm_neon(gmx_simd_float_t x)
+static inline SimdFloat
+simdGetExponentF_arm_neon(SimdFloat x)
 {
     const float32x4_t expmask    = vreinterpretq_f32_s32( vdupq_n_s32(0x7F800000) );
     int32x4_t         iexp;
 
-    iexp = vreinterpretq_s32_f32(gmx_simd_and_f(x, expmask));
+    iexp = vreinterpretq_s32_f32(simdAndF(x, expmask));
     iexp = vsubq_s32(vshrq_n_s32(iexp, 23), vdupq_n_s32(127));
     return vcvtq_f32_s32(iexp);
 }
 
 
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_mantissa_f_arm_neon(gmx_simd_float_t x)
+static inline SimdFloat
+simdGetMantissaF_arm_neon(SimdFloat x)
 {
     const float32x4_t mantmask   = vreinterpretq_f32_s32( vdupq_n_s32(0x007FFFFF) );
     const float32x4_t one        = vdupq_n_f32(1.0f);
 
     /* Get mantissa */
-    x = gmx_simd_and_f(mantmask, x);
+    x = simdAndF(mantmask, x);
     /* Reset zero (but correctly biased) exponent */
-    return gmx_simd_or_f(x, one);
+    return simdOrF(x, one);
 }
 
 
-static gmx_inline gmx_simd_float_t
-gmx_simd_set_exponent_f_arm_neon(gmx_simd_float_t x)
+static inline SimdFloat
+simdSetExponentF_arm_neon(SimdFloat x)
 {
-    int32x4_t  iexp = gmx_simd_cvt_f2i(x);
+    int32x4_t  iexp = simdCvtF2I(x);
 
     iexp = vshlq_n_s32(vaddq_s32(iexp, vdupq_n_s32(127)), 23);
     return vreinterpretq_f32_s32(iexp);
 }
 
-static gmx_inline float
-gmx_simd_reduce_f_arm_neon(gmx_simd_float_t a)
+static inline float
+simdReduceF_arm_neon(SimdFloat a)
 {
     float32x4_t b = vextq_f32(a, a, 2);
 
@@ -182,14 +182,14 @@ gmx_simd_reduce_f_arm_neon(gmx_simd_float_t a)
     return vgetq_lane_f32(a, 0);
 }
 
-static gmx_inline int
-gmx_simd_anytrue_fb_arm_neon(gmx_simd_fbool_t a)
+static inline int
+simdAnyTrueFB_arm_neon(SimdFBool a)
 {
     uint32x4_t b = vextq_u32(a, a, 2);
 
-    a = gmx_simd_or_fb(a, b);
+    a = simdOrFB(a, b);
     b = vextq_u32(a, a, 1);
-    a = gmx_simd_or_fb(a, b);
+    a = simdOrFB(a, b);
     return (vgetq_lane_u32(a, 0) != 0);
 }
 
