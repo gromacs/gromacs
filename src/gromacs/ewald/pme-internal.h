@@ -275,7 +275,7 @@ typedef struct gmx_pme_t {
     int     pmegrid_start_ix, pmegrid_start_iy, pmegrid_start_iz;
 
     /* Work data for spreading and gathering */
-    struct pme_spline_work   *spline_work;
+    pme_spline_work          *spline_work;
 
     real                    **fftgrid; /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
     /* inside the interpolation grid, but separate for 2D PME decomp. */

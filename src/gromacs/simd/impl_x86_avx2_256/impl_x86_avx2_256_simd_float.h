@@ -45,44 +45,44 @@
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#undef  gmx_simd_fmadd_f
-#define gmx_simd_fmadd_f           _mm256_fmadd_ps
-#undef  gmx_simd_fmsub_f
-#define gmx_simd_fmsub_f           _mm256_fmsub_ps
-#undef  gmx_simd_fnmadd_f
-#define gmx_simd_fnmadd_f          _mm256_fnmadd_ps
-#undef  gmx_simd_fnmsub_f
-#define gmx_simd_fnmsub_f          _mm256_fnmsub_ps
-#undef  gmx_simd_get_exponent_f
-#define gmx_simd_get_exponent_f    gmx_simd_get_exponent_f_avx2_256
-#undef  gmx_simd_set_exponent_f
-#define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_avx2_256
-/* Previously undefined logical ops on gmx_simd_fint32_t */
-#define gmx_simd_slli_fi           _mm256_slli_epi32
-#define gmx_simd_srli_fi           _mm256_srli_epi32
-#define gmx_simd_and_fi            _mm256_and_si256
-#define gmx_simd_andnot_fi         _mm256_andnot_si256
-#define gmx_simd_or_fi             _mm256_or_si256
-#define gmx_simd_xor_fi            _mm256_xor_si256
-/* Previously undefined arithmetic ops on gmx_simd_fint32_t */
-#define gmx_simd_add_fi            _mm256_add_epi32
-#define gmx_simd_sub_fi            _mm256_sub_epi32
-#define gmx_simd_mul_fi            _mm256_mullo_epi32
-/* Previously undefined boolean ops on gmx_simd_fint32_t */
-#define gmx_simd_cmpeq_fi          _mm256_cmpeq_epi32
-#define gmx_simd_cmplt_fi(a, b)     _mm256_cmpgt_epi32(b, a)
-#define gmx_simd_and_fib           _mm256_and_si256
-#define gmx_simd_or_fib            _mm256_or_si256
-#define gmx_simd_anytrue_fib       _mm256_movemask_epi8
-#define gmx_simd_blendzero_fi      _mm256_and_si256
-#define gmx_simd_blendnotzero_fi(a, sel) _mm256_andnot_si256(sel, a)
-#define gmx_simd_blendv_fi         _mm256_blendv_epi8
+#undef  simdFmaddF
+#define simdFmaddF           _mm256_fmadd_ps
+#undef  simdFmsubF
+#define simdFmsubF           _mm256_fmsub_ps
+#undef  simdFnmaddF
+#define simdFnmaddF          _mm256_fnmadd_ps
+#undef  simdFnmsubF
+#define simdFnmsubF          _mm256_fnmsub_ps
+#undef  simdGetExponentF
+#define simdGetExponentF    simdGetExponentF_avx2_256
+#undef  simdSetExponentF
+#define simdSetExponentF    simdSetExponentF_avx2_256
+/* Previously undefined logical ops on SimdFInt32 */
+#define simdSlliFI           _mm256_slli_epi32
+#define simdSrliFI           _mm256_srli_epi32
+#define simdAndFI            _mm256_and_si256
+#define simdAndNotFI         _mm256_andnot_si256
+#define simdOrFI             _mm256_or_si256
+#define simdXorFI            _mm256_xor_si256
+/* Previously undefined arithmetic ops on SimdFInt32 */
+#define simdAddFI            _mm256_add_epi32
+#define simdSubFI            _mm256_sub_epi32
+#define simdMulFI            _mm256_mullo_epi32
+/* Previously undefined boolean ops on SimdFInt32 */
+#define simdCmpEqFI          _mm256_cmpeq_epi32
+#define simdCmpLtFI(a, b)     _mm256_cmpgt_epi32(b, a)
+#define simdAndFIB           _mm256_and_si256
+#define simdOrFIB            _mm256_or_si256
+#define simdAnyTrueFIB       _mm256_movemask_epi8
+#define simdMaskFI      _mm256_and_si256
+#define simdMaskNotFI(a, sel) _mm256_andnot_si256(sel, a)
+#define simdBlendFI         _mm256_blendv_epi8
 
 /*********************************************************
  * SIMD SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  *********************************************************/
-static gmx_inline gmx_simd_float_t gmx_simdcall
-gmx_simd_get_exponent_f_avx2_256(gmx_simd_float_t x)
+static inline SimdFloat gmx_simdcall
+simdGetExponentF_avx2_256(SimdFloat x)
 {
     const __m256  expmask      = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
     const __m256i expbias      = _mm256_set1_epi32(127);
@@ -93,8 +93,8 @@ gmx_simd_get_exponent_f_avx2_256(gmx_simd_float_t x)
     return _mm256_cvtepi32_ps(iexp);
 }
 
-static gmx_inline gmx_simd_float_t gmx_simdcall
-gmx_simd_set_exponent_f_avx2_256(gmx_simd_float_t x)
+static inline SimdFloat gmx_simdcall
+simdSetExponentF_avx2_256(SimdFloat x)
 {
     const __m256i  expbias      = _mm256_set1_epi32(127);
     __m256i        iexp         = _mm256_cvtps_epi32(x);
