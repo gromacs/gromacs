@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,7 +35,7 @@
 #ifndef _nbnxn_kernel_simd_utils_ibm_qpx_h_
 #define _nbnxn_kernel_simd_utils_ibm_qpx_h_
 
-typedef gmx_simd_real_t gmx_exclfilter;
+typedef SimdReal gmx_exclfilter;
 static const int filter_stride = 1;
 
 /* This files contains all functions/macros for the SIMD kernels
@@ -48,10 +48,10 @@ static const int filter_stride = 1;
 
 /* Collect all [0123] elements of the 4 inputs to out[0123], respectively */
 static gmx_inline void
-gmx_transpose_4_ps(gmx_simd_real_t a, gmx_simd_real_t b,
-                   gmx_simd_real_t c, gmx_simd_real_t d,
-                   gmx_simd_real_t *out0, gmx_simd_real_t *out1,
-                   gmx_simd_real_t *out2, gmx_simd_real_t *out3)
+gmx_transpose_4_ps(SimdReal a, SimdReal b,
+                   SimdReal c, SimdReal d,
+                   SimdReal *out0, SimdReal *out1,
+                   SimdReal *out2, SimdReal *out3)
 {
     /* Prepare control vectors for swizzling. In its third input,
        vec_perm accepts indices into the effective 8-wide SIMD vector
@@ -61,14 +61,14 @@ gmx_transpose_4_ps(gmx_simd_real_t a, gmx_simd_real_t b,
        vec_gpci() converts an octal literal of the indices into the
        correct form for vec_perm() to use. That form is an octal digit
        in bits 0-2 of the mantissa of each double. */
-    gmx_simd_real_t p6420 = vec_gpci(06420);
-    gmx_simd_real_t p7531 = vec_gpci(07531);
+    SimdReal p6420 = vec_gpci(06420);
+    SimdReal p7531 = vec_gpci(07531);
 
     /* Four-way swizzle (i.e. transpose) of vectors a = a0a1a2a3, etc. */
-    gmx_simd_real_t b2b0a2a0 = vec_perm(a, b, p6420);
-    gmx_simd_real_t b3b1a3a1 = vec_perm(a, b, p7531);
-    gmx_simd_real_t d2d0c2c0 = vec_perm(c, d, p6420);
-    gmx_simd_real_t d3d1c3c1 = vec_perm(c, d, p7531);
+    SimdReal b2b0a2a0 = vec_perm(a, b, p6420);
+    SimdReal b3b1a3a1 = vec_perm(a, b, p7531);
+    SimdReal d2d0c2c0 = vec_perm(c, d, p6420);
+    SimdReal d3d1c3c1 = vec_perm(c, d, p7531);
     *out0 = vec_perm(d2d0c2c0, b2b0a2a0, p7531);
     *out1 = vec_perm(d3d1c3c1, b3b1a3a1, p7531);
     *out2 = vec_perm(d2d0c2c0, b2b0a2a0, p6420);
@@ -77,47 +77,40 @@ gmx_transpose_4_ps(gmx_simd_real_t a, gmx_simd_real_t b,
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 static gmx_inline void
-gmx_shuffle_4_ps_fil01_to_2_ps(gmx_simd_real_t a, gmx_simd_real_t b,
-                               gmx_simd_real_t c, gmx_simd_real_t d,
-                               gmx_simd_real_t *out0, gmx_simd_real_t *out1)
+gmx_shuffle_4_ps_fil01_to_2_ps(SimdReal a, SimdReal b,
+                               SimdReal c, SimdReal d,
+                               SimdReal *out0, SimdReal *out1)
 {
-    gmx_simd_real_t p6420 = vec_gpci(06420);
-    gmx_simd_real_t p7531 = vec_gpci(07531);
+    SimdReal p6420 = vec_gpci(06420);
+    SimdReal p7531 = vec_gpci(07531);
 
     /* Partial four-way swizzle of vectors a = a0a1a2a3, etc. */
-    gmx_simd_real_t b2b0a2a0 = vec_perm(a, b, p6420);
-    gmx_simd_real_t b3b1a3a1 = vec_perm(a, b, p7531);
-    gmx_simd_real_t d2d0c2c0 = vec_perm(c, d, p6420);
-    gmx_simd_real_t d3d1c3c1 = vec_perm(c, d, p7531);
+    SimdReal b2b0a2a0 = vec_perm(a, b, p6420);
+    SimdReal b3b1a3a1 = vec_perm(a, b, p7531);
+    SimdReal d2d0c2c0 = vec_perm(c, d, p6420);
+    SimdReal d3d1c3c1 = vec_perm(c, d, p7531);
     *out0 = vec_perm(d2d0c2c0, b2b0a2a0, p7531);
     *out1 = vec_perm(d3d1c3c1, b3b1a3a1, p7531);
 }
 
 /* Collect element 2 of the 4 inputs to out */
-static gmx_inline gmx_simd_real_t
-gmx_shuffle_4_ps_fil2_to_1_ps(gmx_simd_real_t a, gmx_simd_real_t b,
-                              gmx_simd_real_t c, gmx_simd_real_t d)
+static gmx_inline SimdReal
+gmx_shuffle_4_ps_fil2_to_1_ps(SimdReal a, SimdReal b,
+                              SimdReal c, SimdReal d)
 {
-    gmx_simd_real_t p6420 = vec_gpci(06420);
+    SimdReal p6420 = vec_gpci(06420);
 
     /* Partial four-way swizzle of vectors a = a0a1a2a3, etc. */
-    gmx_simd_real_t b2b0a2a0 = vec_perm(a, b, p6420);
-    gmx_simd_real_t d2d0c2c0 = vec_perm(c, d, p6420);
+    SimdReal b2b0a2a0 = vec_perm(a, b, p6420);
+    SimdReal d2d0c2c0 = vec_perm(c, d, p6420);
     return vec_perm(d2d0c2c0, b2b0a2a0, p6420);
 }
 
 #ifdef TAB_FDV0
-/* Align a stack-based thread-local working array. Table loads on QPX
- * use the array, but most other implementations do not. */
-static gmx_inline int *
-prepare_table_load_buffer(int *array)
-{
-    return gmx_simd_align_i(array);
-}
 
 static gmx_inline void
-load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
-             gmx_simd_real_t *ctab0_S, gmx_simd_real_t *ctab1_S)
+load_table_f(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
+             SimdReal *ctab0_S, SimdReal *ctab1_S)
 {
 #ifdef NDEBUG
     /* Just like 256-bit AVX, we need to use memory to get indices
@@ -128,19 +121,19 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
 #endif
 
     /* Here we load 4 aligned reals, but we need just 2 elements of each */
-    gmx_simd_real_t a = gmx_simd_load_r(tab_coul_FDV0 + ti[0] * nbfp_stride);
-    gmx_simd_real_t b = gmx_simd_load_r(tab_coul_FDV0 + ti[1] * nbfp_stride);
-    gmx_simd_real_t c = gmx_simd_load_r(tab_coul_FDV0 + ti[2] * nbfp_stride);
-    gmx_simd_real_t d = gmx_simd_load_r(tab_coul_FDV0 + ti[3] * nbfp_stride);
+    SimdReal a = simdLoad(tab_coul_FDV0 + ti[0] * nbfp_stride);
+    SimdReal b = simdLoad(tab_coul_FDV0 + ti[1] * nbfp_stride);
+    SimdReal c = simdLoad(tab_coul_FDV0 + ti[2] * nbfp_stride);
+    SimdReal d = simdLoad(tab_coul_FDV0 + ti[3] * nbfp_stride);
 
     gmx_shuffle_4_ps_fil01_to_2_ps(a, b, c, d, ctab0_S, ctab1_S);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_FDV0,
-               gmx_simd_int32_t ti_S, int *ti,
-               gmx_simd_real_t *ctab0_S, gmx_simd_real_t *ctab1_S,
-               gmx_simd_real_t *ctabv_S)
+               SimdInt32 ti_S, int *ti,
+               SimdReal *ctab0_S, SimdReal *ctab1_S,
+               SimdReal *ctabv_S)
 {
 #ifdef NDEBUG
     /* Just like 256-bit AVX, we need to use memory to get indices
@@ -151,10 +144,10 @@ load_table_f_v(const real *tab_coul_FDV0,
 #endif
 
     /* Here we load 4 aligned reals, but we need just 3 elements of each. */
-    gmx_simd_real_t a = gmx_simd_load_r(tab_coul_FDV0 + ti[0] * nbfp_stride);
-    gmx_simd_real_t b = gmx_simd_load_r(tab_coul_FDV0 + ti[1] * nbfp_stride);
-    gmx_simd_real_t c = gmx_simd_load_r(tab_coul_FDV0 + ti[2] * nbfp_stride);
-    gmx_simd_real_t d = gmx_simd_load_r(tab_coul_FDV0 + ti[3] * nbfp_stride);
+    SimdReal a = simdLoad(tab_coul_FDV0 + ti[0] * nbfp_stride);
+    SimdReal b = simdLoad(tab_coul_FDV0 + ti[1] * nbfp_stride);
+    SimdReal c = simdLoad(tab_coul_FDV0 + ti[2] * nbfp_stride);
+    SimdReal d = simdLoad(tab_coul_FDV0 + ti[3] * nbfp_stride);
 
     gmx_shuffle_4_ps_fil01_to_2_ps(a, b, c, d, ctab0_S, ctab1_S);
     *ctabv_S = gmx_shuffle_4_ps_fil2_to_1_ps(a, b, c, d);
@@ -167,31 +160,31 @@ load_table_f_v(const real *tab_coul_FDV0,
 
 /* Sum the elements within each input register and store the sums in out.
  */
-static gmx_inline gmx_simd_real_t
-gmx_mm_transpose_sum4_pr(gmx_simd_real_t a, gmx_simd_real_t b,
-                         gmx_simd_real_t c, gmx_simd_real_t d)
+static gmx_inline SimdReal
+gmx_mm_transpose_sum4_pr(SimdReal a, SimdReal b,
+                         SimdReal c, SimdReal d)
 {
-    gmx_simd_real_t a0b0c0d0, a1b1c1d1, a2b2c2d2, a3b3c3d3;
+    SimdReal a0b0c0d0, a1b1c1d1, a2b2c2d2, a3b3c3d3;
     gmx_transpose_4_ps(a, b, c, d,
                        &a0b0c0d0,
                        &a1b1c1d1,
                        &a2b2c2d2,
                        &a3b3c3d3);
     /* Now reduce the transposed vectors */
-    gmx_simd_real_t sum01 = gmx_simd_add_r(a0b0c0d0, a1b1c1d1);
-    gmx_simd_real_t sim23 = gmx_simd_add_r(a2b2c2d2, a3b3c3d3);
-    return gmx_simd_add_r(sum01, sim23);
+    SimdReal sum01 = simdAdd(a0b0c0d0, a1b1c1d1);
+    SimdReal sim23 = simdAdd(a2b2c2d2, a3b3c3d3);
+    return simdAdd(sum01, sim23);
 }
 
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
-                    gmx_simd_real_t *c6_S, gmx_simd_real_t *c12_S)
+                    SimdReal *c6_S, SimdReal *c12_S)
 {
     /* Here we load 4 aligned reals, but we need just 2 elemnts of each. */
-    gmx_simd_real_t a = gmx_simd_load_r(nbfp + type[aj+0] * nbfp_stride);
-    gmx_simd_real_t b = gmx_simd_load_r(nbfp + type[aj+1] * nbfp_stride);
-    gmx_simd_real_t c = gmx_simd_load_r(nbfp + type[aj+2] * nbfp_stride);
-    gmx_simd_real_t d = gmx_simd_load_r(nbfp + type[aj+3] * nbfp_stride);
+    SimdReal a = simdLoad(nbfp + type[aj+0] * nbfp_stride);
+    SimdReal b = simdLoad(nbfp + type[aj+1] * nbfp_stride);
+    SimdReal c = simdLoad(nbfp + type[aj+2] * nbfp_stride);
+    SimdReal d = simdLoad(nbfp + type[aj+3] * nbfp_stride);
 
     gmx_shuffle_4_ps_fil01_to_2_ps(a, b, c, d, c6_S, c12_S);
 }
@@ -218,7 +211,7 @@ static gmx_inline gmx_exclfilter gmx_load_exclusion_filter(const unsigned *a)
 /* Code for handling loading and applying exclusion masks. Note that
    parameter a is not treated like an array index; it is naively added
    to b, so should be in bytes. */
-static gmx_inline gmx_simd_bool_t gmx_load_interaction_mask_pb(long a, const real *b)
+static gmx_inline SimdBool gmx_load_interaction_mask_pb(long a, const real *b)
 {
 #ifdef NDEBUG
     return vec_ld(a, (real *) b);

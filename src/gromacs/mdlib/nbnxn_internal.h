@@ -44,12 +44,9 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/real.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 struct gmx_domdec_zones_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 #ifdef GMX_NBNXN_SIMD
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
@@ -177,16 +174,16 @@ typedef struct {
 
 typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */
-    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t ix_S1, iy_S1, iz_S1;
-    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
-    gmx_simd_real_t ix_S3, iy_S3, iz_S3;
+    SimdReal ix_S0, iy_S0, iz_S0;
+    SimdReal ix_S1, iy_S1, iz_S1;
+    SimdReal ix_S2, iy_S2, iz_S2;
+    SimdReal ix_S3, iy_S3, iz_S3;
 } nbnxn_x_ci_simd_4xn_t;
 
 typedef struct nbnxn_x_ci_simd_2xnn {
     /* The i-cluster coordinates for simple search */
-    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
+    SimdReal ix_S0, iy_S0, iz_S0;
+    SimdReal ix_S2, iy_S2, iz_S2;
 } nbnxn_x_ci_simd_2xnn_t;
 
 #endif
@@ -322,9 +319,5 @@ static void nbs_cycle_stop(nbnxn_cycle_t *cc)
     cc->count++;
 }
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

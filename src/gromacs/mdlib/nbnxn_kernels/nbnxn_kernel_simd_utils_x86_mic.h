@@ -35,7 +35,7 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_mic_h_
 #define _nbnxn_kernel_simd_utils_x86_mic_h_
 
-typedef gmx_simd_int32_t      gmx_exclfilter;
+typedef SimdInt32      gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 #define PERM_LOW2HIGH _MM_PERM_BABA
@@ -65,7 +65,7 @@ gmx_set1_hpr(gmx_mm_hpr *a, real b)
 
 /* Load one real at b and one real at b+1 into halves of a, respectively */
 static gmx_inline void
-gmx_load1p1_pr(gmx_simd_float_t *a, const real *b)
+gmx_load1p1_pr(SimdFloat *a, const real *b)
 {
 
     *a = _mm512_mask_extload_ps(_mm512_extload_ps(b, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE), mask_hih,
@@ -74,7 +74,7 @@ gmx_load1p1_pr(gmx_simd_float_t *a, const real *b)
 
 /* Load reals at half-width aligned pointer b into two halves of a */
 static gmx_inline void
-gmx_loaddh_pr(gmx_simd_float_t *a, const real *b)
+gmx_loaddh_pr(SimdFloat *a, const real *b)
 {
     *a = _mm512_castpd_ps(_mm512_extload_pd((const double*)b, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
 }
@@ -92,7 +92,7 @@ gmx_store_hpr(real *a, gmx_mm_hpr b)
 
 /* Sum over 4 half SIMD registers */
 static gmx_inline gmx_mm_hpr
-gmx_sum4_hpr(gmx_simd_float_t a, gmx_simd_float_t b)
+gmx_sum4_hpr(SimdFloat a, SimdFloat b)
 {
     a = _mm512_add_ps(a, b);
     b = _mm512_permute4f128_ps(a, PERM_HIGH2LOW);
@@ -101,7 +101,7 @@ gmx_sum4_hpr(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /* Sum the elements of halfs of each input register and store sums in out */
 static gmx_inline __m512
-gmx_mm_transpose_sum4h_pr(gmx_simd_float_t a, gmx_simd_float_t b)
+gmx_mm_transpose_sum4h_pr(SimdFloat a, SimdFloat b)
 {
     a = _mm512_add_ps(a, _mm512_swizzle_ps(a, _MM_SWIZ_REG_CDAB));
     a = _mm512_add_ps(a, _mm512_swizzle_ps(a, _MM_SWIZ_REG_BADC));
@@ -115,43 +115,36 @@ gmx_mm_transpose_sum4h_pr(gmx_simd_float_t a, gmx_simd_float_t b)
 }
 
 static gmx_inline void
-gmx_pr_to_2hpr(gmx_simd_float_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
+gmx_pr_to_2hpr(SimdFloat a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
     *b = a;
     *c = _mm512_permute4f128_ps(a, PERM_HIGH2LOW);
 }
 
 static gmx_inline void
-gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_float_t *c)
+gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, SimdFloat *c)
 {
     *c = _mm512_mask_permute4f128_ps(a, mask_hih, b, PERM_LOW2HIGH);
 }
 
 /* recombine the 2 high half into c */
 static gmx_inline void
-gmx_2hpr_high_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_float_t *c)
+gmx_2hpr_high_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, SimdFloat *c)
 {
     *c = _mm512_mask_permute4f128_ps(b, mask_loh, a, PERM_HIGH2LOW);
 }
 
 static gmx_inline void
-gmx_2hepi_to_epi(gmx_simd_int32_t a, gmx_simd_int32_t b, gmx_simd_int32_t *c)
+gmx_2hepi_to_epi(SimdInt32 a, SimdInt32 b, SimdInt32 *c)
 {
     *c = _mm512_mask_permute4f128_epi32(a, mask_hih, b, PERM_LOW2HIGH);
 }
 
 /* recombine the 2 high half into c */
 static gmx_inline void
-gmx_2hepi_high_to_epi(gmx_simd_int32_t a, gmx_simd_int32_t b, gmx_simd_int32_t *c)
+gmx_2hepi_high_to_epi(SimdInt32 a, SimdInt32 b, SimdInt32 *c)
 {
     *c = _mm512_mask_permute4f128_epi32(b, mask_loh, a, PERM_HIGH2LOW);
-}
-
-/* Align a stack-based thread-local working array. work-array (currently) not used by load_table_f*/
-static gmx_inline int *
-prepare_table_load_buffer(const int *array)
-{
-    return NULL;
 }
 
 /* Using TAB_FDV0 is slower (for non-analytical PME). For the _mm512_i32gather_ps it helps
@@ -161,8 +154,8 @@ prepare_table_load_buffer(const int *array)
    instead of low/high.
  */
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S, int *ti,
-             gmx_simd_float_t *ctab0_S, gmx_simd_float_t *ctab1_S)
+load_table_f(const real *tab_coul_F, SimdInt32 ti_S, int *ti,
+             SimdFloat *ctab0_S, SimdFloat *ctab1_S)
 {
     __m512i idx;
     __m512i ti1 = _mm512_add_epi32(ti_S, _mm512_set1_epi32(1)); /* incr by 1 for tab1 */
@@ -174,22 +167,22 @@ load_table_f(const real *tab_coul_F, gmx_simd_int32_t ti_S, int *ti,
     gmx_2hpr_to_pr(tmp1, tmp2, ctab0_S);
     gmx_2hpr_high_to_pr(tmp1, tmp2, ctab1_S);
 
-    *ctab1_S  = gmx_simd_sub_r(*ctab1_S, *ctab0_S);
+    *ctab1_S  = simdSub(*ctab1_S, *ctab0_S);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_simd_int32_t ti_S, int *ti,
-               gmx_simd_float_t *ctab0_S, gmx_simd_float_t *ctab1_S,
-               gmx_simd_float_t *ctabv_S)
+               SimdInt32 ti_S, int *ti,
+               SimdFloat *ctab0_S, SimdFloat *ctab1_S,
+               SimdFloat *ctabv_S)
 {
     load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S);
     *ctabv_S = _mm512_i32gather_ps(ti_S, tab_coul_V, sizeof(float));
 }
 
 static gmx_inline __m512
-gmx_mm_transpose_sum4_pr(gmx_simd_float_t in0, gmx_simd_float_t in1,
-                         gmx_simd_float_t in2, gmx_simd_float_t in3)
+gmx_mm_transpose_sum4_pr(SimdFloat in0, SimdFloat in1,
+                         SimdFloat in2, SimdFloat in3)
 {
     return _mm512_setr4_ps(_mm512_reduce_add_ps(in0),
                            _mm512_reduce_add_ps(in1),
@@ -200,7 +193,7 @@ gmx_mm_transpose_sum4_pr(gmx_simd_float_t in0, gmx_simd_float_t in1,
 static gmx_inline void
 load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
                      const int *type, int aj,
-                     gmx_simd_float_t *c6_S, gmx_simd_float_t *c12_S)
+                     SimdFloat *c6_S, SimdFloat *c12_S)
 {
     __m512i idx0, idx1, idx;
 

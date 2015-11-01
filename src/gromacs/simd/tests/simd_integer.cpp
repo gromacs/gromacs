@@ -35,6 +35,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "simd.h"
 
@@ -68,79 +69,77 @@ typedef SimdTest SimdIntegerTest;
 
 TEST_F(SimdIntegerTest, gmxSimdSetZeroI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0), gmx_simd_setzero_i());
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0), simdSetZeroI());
 }
 
 TEST_F(SimdIntegerTest, gmxSimdSet1I)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(1), gmx_simd_set1_i(1));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(1), simdSet1I(1));
 }
 
 #if GMX_SIMD_HAVE_FINT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdAddI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9,   gmx_simd_add_i(iSimd_1_2_3, iSimd_4_5_6)    );    // short add
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_5M_7M_9M, gmx_simd_add_i(iSimd_1M_2M_3M, iSimd_4M_5M_6M)); // 32 bit add
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9,   simdAddI(iSimd_1_2_3, iSimd_4_5_6)    );    // short add
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_5M_7M_9M, simdAddI(iSimd_1M_2M_3M, iSimd_4M_5M_6M)); // 32 bit add
 }
 
 TEST_F(SimdIntegerTest, gmxSimdSubI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_1_2_3,   gmx_simd_sub_i(iSimd_5_7_9, iSimd_4_5_6)    );    // short sub
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_1M_2M_3M, gmx_simd_sub_i(iSimd_5M_7M_9M, iSimd_4M_5M_6M)); // 32 bit sub
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_1_2_3,   simdSubI(iSimd_5_7_9, iSimd_4_5_6)    );    // short sub
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_1M_2M_3M, simdSubI(iSimd_5M_7M_9M, iSimd_4M_5M_6M)); // 32 bit sub
 }
 
 TEST_F(SimdIntegerTest, gmxSimdMulI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 10, 18), gmx_simd_mul_i(iSimd_1_2_3, iSimd_4_5_6));                       // 2*3=6 (short mul)
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), gmx_simd_mul_i(gmx_simd_set1_i(16384), gmx_simd_set1_i(16384))); // 16384*16384 = 268435456 (long mul)
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 10, 18), simdMulI(iSimd_1_2_3, iSimd_4_5_6));           // 2*3=6 (short mul)
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), simdMulI(simdSet1I(16384), simdSet1I(16384))); // 16384*16384 = 268435456 (long mul)
 }
 #endif
 
 #if GMX_SIMD_HAVE_FINT32_LOGICAL
 TEST_F(SimdIntegerTest, gmxSimdSlliI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), gmx_simd_slli_i(gmx_simd_set1_i(2), 21)); // 2 << 21 = 4194304
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), simdSlliI(simdSet1I(2), 21)); // 2 << 21 = 4194304
 }
 
 TEST_F(SimdIntegerTest, gmxSimdSrliI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), gmx_simd_srli_i(gmx_simd_set1_i(4194304), 20)); // 4194304 >> 20 = 4
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), simdSrliI(simdSet1I(4194304), 20)); // 4194304 >> 20 = 4
 }
 
 TEST_F(SimdIntegerTest, gmxSimdAndI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0xC0C0C0C0), gmx_simd_and_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0xC0C0C0C0), simdAndI(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdAndnotI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x0C0C0C0C), gmx_simd_andnot_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x0C0C0C0C), simdAndNotI(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdOrI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0xFCFCFCFC), gmx_simd_or_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0xFCFCFCFC), simdOrI(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdXorI)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x3C3C3C3C), gmx_simd_xor_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x3C3C3C3C), simdXorI(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
 }
 #endif
 
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, gmxSimdExtractI)
 {
-    int              idata[GMX_SIMD_INT32_WIDTH*2];
-    int *            p = gmx_simd_align_i(idata);
-    gmx_simd_int32_t simd;
-    int              i, extracted_int;
+    GMX_ALIGNED(int, GMX_SIMD_INT32_WIDTH)  idata[GMX_SIMD_INT32_WIDTH];
+    SimdInt32 simd;
 
-    for (i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
     {
-        p[i] = i+1;
+        idata[i] = i+1;
     }
-    simd = gmx_simd_load_i(p);
+    simd = simdLoadI(idata);
 
     /* We cannot do a loop here, since
      * - C++ gets confused about signed/unsigned if SSE macros are used in EXPECT_EQ()
@@ -149,22 +148,23 @@ TEST_F(SimdIntegerTest, gmxSimdExtractI)
      *
      * To solve this we use a few values manually instead of a for-loop.
      */
-    extracted_int = gmx_simd_extract_i(simd, 0);
+    int extracted_int;
+    extracted_int = simdExtractI<0>(simd);
     EXPECT_EQ(1, extracted_int);
 #if GMX_SIMD_INT32_WIDTH >= 2
-    extracted_int = gmx_simd_extract_i(simd, 1);
+    extracted_int = simdExtractI<1>(simd);
     EXPECT_EQ(2, extracted_int);
 #endif
 #if GMX_SIMD_INT32_WIDTH >= 4
-    extracted_int = gmx_simd_extract_i(simd, 3);
+    extracted_int = simdExtractI<3>(simd);
     EXPECT_EQ(4, extracted_int);
 #endif
 #if GMX_SIMD_INT32_WIDTH >= 6
-    extracted_int = gmx_simd_extract_i(simd, 5);
+    extracted_int = simdExtractI<5>(simd);
     EXPECT_EQ(6, extracted_int);
 #endif
 #if GMX_SIMD_INT32_WIDTH >= 8
-    extracted_int = gmx_simd_extract_i(simd, 7);
+    extracted_int = simdExtractI<7>(simd);
     EXPECT_EQ(8, extracted_int);
 #endif
 }
@@ -173,91 +173,91 @@ TEST_F(SimdIntegerTest, gmxSimdExtractI)
 #if GMX_SIMD_HAVE_REAL
 TEST_F(SimdIntegerTest, gmxSimdCvtR2I)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), gmx_simd_cvt_r2i(rSimd_3p75));
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-4), gmx_simd_cvt_r2i(rSimd_m3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), simdCvtR2I(rSimd_3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-4), simdCvtR2I(rSimd_m3p75));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdCvttR2I)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), gmx_simd_cvtt_r2i(rSimd_3p75));
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), gmx_simd_cvtt_r2i(rSimd_m3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), simdCvttR2I(rSimd_3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), simdCvttR2I(rSimd_m3p75));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdCvtI2R)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2.0), gmx_simd_cvt_i2r(gmx_simd_set1_i(2)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2.0), gmx_simd_cvt_i2r(gmx_simd_set1_i(-2)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2.0), simdCvtI2R(simdSet1I(2)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2.0), simdCvtI2R(simdSet1I(-2)));
 }
 #endif
 
 #if GMX_SIMD_HAVE_FINT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdBoolCmpEqAndBlendZeroI)
 {
-    gmx_simd_ibool_t eq   = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, 0, 3), gmx_simd_blendzero_i(iSimd_1_2_3, eq));
+    SimdIBool eq   = simdCmpEqI(iSimd_5_7_9, iSimd_7_8_9);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, 0, 3), simdMaskI(iSimd_1_2_3, eq));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdBlendNotZeroI)
 {
-    gmx_simd_ibool_t eq   = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 2, 0), gmx_simd_blendnotzero_i(iSimd_1_2_3, eq));
+    SimdIBool eq   = simdCmpEqI(iSimd_5_7_9, iSimd_7_8_9);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 2, 0), simdMaskNotI(iSimd_1_2_3, eq));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdBoolCmpLTI)
 {
-    gmx_simd_ibool_t lt   = gmx_simd_cmplt_i(iSimd_5_7_9, iSimd_7_8_9);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 2, 0), gmx_simd_blendzero_i(iSimd_1_2_3, lt));
+    SimdIBool lt   = simdCmpLtI(iSimd_5_7_9, iSimd_7_8_9);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 2, 0), simdMaskI(iSimd_1_2_3, lt));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdBoolAndIB)
 {
-    gmx_simd_ibool_t eq1  = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
-    gmx_simd_ibool_t eq2  = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_5_7_9);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, 0, 3), gmx_simd_blendzero_i(iSimd_1_2_3, gmx_simd_and_ib(eq1, eq2)));
+    SimdIBool eq1  = simdCmpEqI(iSimd_5_7_9, iSimd_7_8_9);
+    SimdIBool eq2  = simdCmpEqI(iSimd_5_7_9, iSimd_5_7_9);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, 0, 3), simdMaskI(iSimd_1_2_3, simdAndIB(eq1, eq2)));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdBoolOrIB)
 {
-    gmx_simd_ibool_t eq1  = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
-    gmx_simd_ibool_t eq2  = gmx_simd_cmpeq_i(iSimd_5_7_9, setSimdIntFrom3I(5, 0, 0));
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 3), gmx_simd_blendzero_i(iSimd_1_2_3, gmx_simd_or_ib(eq1, eq2)));
+    SimdIBool eq1  = simdCmpEqI(iSimd_5_7_9, iSimd_7_8_9);
+    SimdIBool eq2  = simdCmpEqI(iSimd_5_7_9, setSimdIntFrom3I(5, 0, 0));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 3), simdMaskI(iSimd_1_2_3, simdOrIB(eq1, eq2)));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdAnytrueIB)
 {
-    gmx_simd_ibool_t eq;
+    SimdIBool eq;
 
     /* See comment in floatingpoint.cpp. We should only check the first element here,
      * since the SIMD width could be 1 as a special case.
      */
-    eq = gmx_simd_cmpeq_i(iSimd_5_7_9, setSimdIntFrom3I(5, 0, 0));
-    EXPECT_NE(0, gmx_simd_anytrue_ib(eq));
+    eq = simdCmpEqI(iSimd_5_7_9, setSimdIntFrom3I(5, 0, 0));
+    EXPECT_NE(0, simdAnyTrueIB(eq));
 
-    eq = gmx_simd_cmpeq_i(iSimd_1_2_3, iSimd_4_5_6);
-    EXPECT_EQ(0, gmx_simd_anytrue_ib(eq));
+    eq = simdCmpEqI(iSimd_1_2_3, iSimd_4_5_6);
+    EXPECT_EQ(0, simdAnyTrueIB(eq));
 }
 
 TEST_F(SimdIntegerTest, gmxSimdBlendvI)
 {
-    gmx_simd_ibool_t lt   = gmx_simd_cmplt_i(iSimd_5_7_9, iSimd_7_8_9);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 5, 3), gmx_simd_blendv_i(iSimd_1_2_3, iSimd_4_5_6, lt));
+    SimdIBool lt   = simdCmpLtI(iSimd_5_7_9, iSimd_7_8_9);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 5, 3), simdBlendI(iSimd_1_2_3, iSimd_4_5_6, lt));
 }
 #endif
 
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_FINT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdCvtB2IB)
 {
-    gmx_simd_bool_t  eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
-    gmx_simd_ibool_t eqi  = gmx_simd_cvt_b2ib(eq);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 0), gmx_simd_blendzero_i(iSimd_1_2_3, eqi));
+    SimdBool  eq   = simdCmpEq(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
+    SimdIBool eqi  = simdCvtB2IB(eq);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 0), simdMaskI(iSimd_1_2_3, eqi));
 
 }
 
 TEST_F(SimdIntegerTest, gmxSimdCvtIB2B)
 {
-    gmx_simd_ibool_t eqi  = gmx_simd_cmpeq_i(iSimd_5_7_9, setSimdIntFrom3I(5, 0, 0));  // eq should be T,F,F
-    gmx_simd_bool_t  eq   = gmx_simd_cvt_ib2b(eqi);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), gmx_simd_blendzero_r(rSimd_1_2_3, eq));
+    SimdIBool eqi  = simdCmpEqI(iSimd_5_7_9, setSimdIntFrom3I(5, 0, 0));  // eq should be T,F,F
+    SimdBool  eq   = simdCvtIB2B(eqi);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), simdMask(rSimd_1_2_3, eq));
 }
 #endif
 

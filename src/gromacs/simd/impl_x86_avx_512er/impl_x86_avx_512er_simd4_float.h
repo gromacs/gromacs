@@ -41,7 +41,7 @@
 #include "impl_x86_avx_512er_common.h"
 #include "impl_x86_avx_512er_simd_float.h"
 
-#undef  gmx_simd4_rsqrt_f
-#define gmx_simd4_rsqrt_f(x)       _mm512_castps512_ps128(_mm512_rsqrt28_ps(_mm512_castps128_ps512(x)))
+#undef  simd4RsqrtF
+#define simd4RsqrtF(x)       _mm512_castps512_ps128(_mm512_rsqrt28_ps(_mm512_castps128_ps512(x)))
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_FLOAT_H */

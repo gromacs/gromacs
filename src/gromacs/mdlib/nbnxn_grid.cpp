@@ -521,20 +521,20 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
          * so we don't need to treat special cases in the rest of the code.
          */
 #ifdef NBNXN_SEARCH_BB_SIMD4
-        gmx_simd4_store_f(&bbj[1].lower[0], gmx_simd4_load_f(&bbj[0].lower[0]));
-        gmx_simd4_store_f(&bbj[1].upper[0], gmx_simd4_load_f(&bbj[0].upper[0]));
+        simd4StoreF(&bbj[1].lower[0], simd4LoadF(&bbj[0].lower[0]));
+        simd4StoreF(&bbj[1].upper[0], simd4LoadF(&bbj[0].upper[0]));
 #else
         bbj[1] = bbj[0];
 #endif
     }
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
-    gmx_simd4_store_f(&bb->lower[0],
-                      gmx_simd4_min_f(gmx_simd4_load_f(&bbj[0].lower[0]),
-                                      gmx_simd4_load_f(&bbj[1].lower[0])));
-    gmx_simd4_store_f(&bb->upper[0],
-                      gmx_simd4_max_f(gmx_simd4_load_f(&bbj[0].upper[0]),
-                                      gmx_simd4_load_f(&bbj[1].upper[0])));
+    simd4StoreF(&bb->lower[0],
+                simd4MinF(simd4LoadF(&bbj[0].lower[0]),
+                          simd4LoadF(&bbj[1].lower[0])));
+    simd4StoreF(&bb->upper[0],
+                simd4MaxF(simd4LoadF(&bbj[0].upper[0]),
+                          simd4LoadF(&bbj[1].upper[0])));
 #else
     {
         int i;
@@ -590,21 +590,21 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
 /* Coordinate order xyz?, bb order xyz0 */
 static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
 {
-    gmx_simd4_float_t bb_0_S, bb_1_S;
-    gmx_simd4_float_t x_S;
+    Simd4Float bb_0_S, bb_1_S;
+    Simd4Float x_S;
 
-    bb_0_S = gmx_simd4_load_f(x);
+    bb_0_S = simd4LoadF(x);
     bb_1_S = bb_0_S;
 
     for (int i = 1; i < na; i++)
     {
-        x_S    = gmx_simd4_load_f(x+i*NNBSBB_C);
-        bb_0_S = gmx_simd4_min_f(bb_0_S, x_S);
-        bb_1_S = gmx_simd4_max_f(bb_1_S, x_S);
+        x_S    = simd4LoadF(x+i*NNBSBB_C);
+        bb_0_S = simd4MinF(bb_0_S, x_S);
+        bb_1_S = simd4MaxF(bb_1_S, x_S);
     }
 
-    gmx_simd4_store_f(&bb->lower[0], bb_0_S);
-    gmx_simd4_store_f(&bb->upper[0], bb_1_S);
+    simd4StoreF(&bb->lower[0], bb_0_S);
+    simd4StoreF(&bb->upper[0], bb_1_S);
 }
 
 /* Coordinate order xyz?, bb order xxxxyyyyzzzz */
@@ -638,14 +638,14 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
         for (c2 = sc2; c2 < sc2+nc2; c2++)
         {
 #ifdef NBNXN_SEARCH_BB_SIMD4
-            gmx_simd4_float_t min_S, max_S;
+            Simd4Float min_S, max_S;
 
-            min_S = gmx_simd4_min_f(gmx_simd4_load_f(&bb[c2*2+0].lower[0]),
-                                    gmx_simd4_load_f(&bb[c2*2+1].lower[0]));
-            max_S = gmx_simd4_max_f(gmx_simd4_load_f(&bb[c2*2+0].upper[0]),
-                                    gmx_simd4_load_f(&bb[c2*2+1].upper[0]));
-            gmx_simd4_store_f(&grid->bbj[c2].lower[0], min_S);
-            gmx_simd4_store_f(&grid->bbj[c2].upper[0], max_S);
+            min_S = simd4MinF(simd4LoadF(&bb[c2*2+0].lower[0]),
+                              simd4LoadF(&bb[c2*2+1].lower[0]));
+            max_S = simd4MaxF(simd4LoadF(&bb[c2*2+0].upper[0]),
+                              simd4LoadF(&bb[c2*2+1].upper[0]));
+            simd4StoreF(&grid->bbj[c2].lower[0], min_S);
+            simd4StoreF(&grid->bbj[c2].upper[0], max_S);
 #else
             for (int j = 0; j < NNBSBB_C; j++)
             {
