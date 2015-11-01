@@ -38,7 +38,9 @@
 
 #include "config.h"
 
-#include <math.h>
+#include <cmath>
+#include <cstdint>
+
 #ifdef __clang__
 #include <qpxmath.h>
 #endif
@@ -48,78 +50,78 @@
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_double_t         vector4double
+#define SimdDouble         vector4double
 #ifdef NDEBUG
-#    define gmx_simd_load_d(m)    vec_ld(0, (double *)(m))
-#    define gmx_simd_store_d(m, a) vec_st(a, 0, (double *)(m))
+#    define simdLoadD(m)    vec_ld(0, (double *)(m))
+#    define simdStoreD(m, a) vec_st(a, 0, (double *)(m))
 #else
-#    define gmx_simd_load_d(m)    vec_lda(0, (double *)(m))
-#    define gmx_simd_store_d(m, a) vec_sta(a, 0, (double *)(m))
+#    define simdLoadD(m)    vec_lda(0, (double *)(m))
+#    define simdStoreD(m, a) vec_sta(a, 0, (double *)(m))
 #endif
-#    define gmx_simd_load1_d(m)   vec_lds(0, (double *)(m))
-#define gmx_simd_set1_d(x)        vec_splats(x)
+#    define simdLoad1D(m)   vec_lds(0, (double *)(m))
+#define simdSet1D(x)        vec_splats(x)
 /* No support for unaligned load/store */
-#define gmx_simd_setzero_d        gmx_simd_setzero_ibm_qpx
-#define gmx_simd_add_d(a, b)       vec_add(a, b)
-#define gmx_simd_sub_d(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_d(a, b)       vec_mul(a, b)
-#define gmx_simd_fmadd_d(a, b, c)   vec_madd(a, b, c)
-#define gmx_simd_fmsub_d(a, b, c)   vec_msub(a, b, c)
+#define simdSetZeroD        simdSetZeroIbm_qpx
+#define simdAddD(a, b)       vec_add(a, b)
+#define simdSubD(a, b)       vec_sub(a, b)
+#define simdMulD(a, b)       vec_mul(a, b)
+#define simdFmaddD(a, b, c)   vec_madd(a, b, c)
+#define simdFmsubD(a, b, c)   vec_msub(a, b, c)
 /* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
-#define gmx_simd_fnmadd_d(a, b, c)  vec_nmsub(a, b, c)
+#define simdFnmaddD(a, b, c)  vec_nmsub(a, b, c)
 /* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
-#define gmx_simd_fnmsub_d(a, b, c)  vec_nmadd(a, b, c)
-/* gmx_simd_and_d not supported - no bitwise logical ops */
-/* gmx_simd_andnot_d not supported - no bitwise logical ops */
-/* gmx_simd_or_d not supported - no bitwise logical ops */
-/* gmx_simd_xor_d not supported - no bitwise logical ops */
-#define gmx_simd_rsqrt_d(a)       vec_rsqrte(a)
-#define gmx_simd_rcp_d(a)         vec_re(a)
-#define gmx_simd_fabs_d(a)        vec_abs(a)
-#define gmx_simd_fneg_d           gmx_simd_fneg_ibm_qpx
-#define gmx_simd_max_d(a, b)       vec_sel(b, a, vec_sub(a, b))
-#define gmx_simd_min_d(a, b)       vec_sel(b, a, vec_sub(b, a))
+#define simdFnmsubD(a, b, c)  vec_nmadd(a, b, c)
+/* simdAndD not supported - no bitwise logical ops */
+/* simdAndNotD not supported - no bitwise logical ops */
+/* simdOrD not supported - no bitwise logical ops */
+/* simdXorD not supported - no bitwise logical ops */
+#define simdRsqrtD(a)       vec_rsqrte(a)
+#define simdRcpD(a)         vec_re(a)
+#define simdAbsD(a)        vec_abs(a)
+#define simdNegD           gmx_simd_fneg_ibm_qpx
+#define simdMaxD(a, b)       vec_sel(b, a, vec_sub(a, b))
+#define simdMinD(a, b)       vec_sel(b, a, vec_sub(b, a))
 /* Note: It is critical to use vec_cfid(vec_ctid(a)) for the implementation
- * of gmx_simd_round_f(), since vec_round() does not adhere to the FP control
+ * of simdRoundF(), since vec_round() does not adhere to the FP control
  * word rounding scheme. We rely on float-to-float and float-to-integer
  * rounding being the same for half-way values in a few algorithms.
  */
-#define gmx_simd_round_d(a)       vec_cfid(vec_ctid(a))
-#define gmx_simd_trunc_d(a)       vec_trunc(a)
-#define gmx_simd_fraction_d(x)    vec_sub(x, vec_trunc(x))
-#define gmx_simd_get_exponent_d(a) gmx_simd_get_exponent_ibm_qpx(a)
-#define gmx_simd_get_mantissa_d(a) gmx_simd_get_mantissa_ibm_qpx(a)
-#define gmx_simd_set_exponent_d(a) gmx_simd_set_exponent_ibm_qpx(a)
-/* integer datatype corresponding to double: gmx_simd_dint32_t */
-#define gmx_simd_dint32_t         vector4double
+#define simdRoundD(a)       vec_cfid(vec_ctid(a))
+#define simdTruncD(a)       vec_trunc(a)
+#define simdFractionD(x)    vec_sub(x, vec_trunc(x))
+#define simdGetExponentD(a) gmx_simd_get_exponent_ibm_qpx(a)
+#define simdGetMantissaD(a) gmx_simd_get_mantissa_ibm_qpx(a)
+#define simdSetExponentD(a) gmx_simd_set_exponent_ibm_qpx(a)
+/* integer datatype corresponding to double: SimdDInt32 */
+#define SimdDInt32         vector4double
 #ifdef NDEBUG
-#    define gmx_simd_load_di(m)   vec_ldia(0, (int *)(m))
+#    define simdLoadDI(m)   vec_ldia(0, (int *)(m))
 #else
-#    define gmx_simd_load_di(m)   vec_ldiaa(0, (int *)(m))
+#    define simdLoadDI(m)   vec_ldiaa(0, (int *)(m))
 #endif
-#define gmx_simd_set1_di(i)       gmx_simd_set1_int_ibm_qpx(i)
-#define gmx_simd_store_di(m, x)   vec_st(x, 0, (int *)(m))
-#define gmx_simd_setzero_di       gmx_simd_setzero_ibm_qpx
-#define gmx_simd_cvt_d2i(a)       vec_ctiw(a)
-#define gmx_simd_cvtt_d2i(a)      vec_ctiwz(a)
-#define gmx_simd_cvt_i2d(a)       vec_cfid(a)
+#define simdSet1DI(i)       simdSet1Int_ibm_qpx(i)
+#define simdStoreDI(m, x)   vec_st(x, 0, (int *)(m))
+#define simdSetZeroDI       simdSetZeroIbm_qpx
+#define simdCvtD2I(a)       vec_ctiw(a)
+#define simdCvttD2I(a)      vec_ctiwz(a)
+#define simdCvtI2D(a)       vec_cfid(a)
 /* Integer simd extract not available */
-/* Integer logical ops on gmx_simd_dint32_t not supported */
-/* Integer arithmetic ops on gmx_simd_dint32_t not supported */
-/* Boolean & comparison operations on gmx_simd_double_t */
-#define gmx_simd_dbool_t          vector4double
-#define gmx_simd_cmpeq_d(a, b)     vec_cmpeq(a, b)
-#define gmx_simd_cmplt_d(a, b)     vec_cmplt((a), (b))
-#define gmx_simd_cmple_d(a, b)     gmx_simd_or_fb(vec_cmpeq(a, b), vec_cmplt(a, b))
-#define gmx_simd_and_db(a, b)      vec_and(a, b)
-#define gmx_simd_or_db(a, b)       vec_or(a, b)
-#define gmx_simd_anytrue_db(a)    gmx_simd_anytrue_bool_ibm_qpx(a)
-#define gmx_simd_blendzero_d(a, sel) vec_sel(vec_splats(0.0), a, sel)
-#define gmx_simd_blendnotzero_d(a, sel) vec_sel(a, vec_splats(0.0), sel)
-#define gmx_simd_blendv_d(a, b, sel)  vec_sel(a, b, sel)
-#define gmx_simd_reduce_d(a)      gmx_simd_reduce_ibm_qpx(a)
+/* Integer logical ops on SimdDInt32 not supported */
+/* Integer arithmetic ops on SimdDInt32 not supported */
+/* Boolean & comparison operations on SimdDouble */
+#define SimdDBool          vector4double
+#define simdCmpEqD(a, b)     vec_cmpeq(a, b)
+#define simdCmpLtD(a, b)     vec_cmplt((a), (b))
+#define simdCmpLeD(a, b)     simdOrFB(vec_cmpeq(a, b), vec_cmplt(a, b))
+#define simdAndDB(a, b)      vec_and(a, b)
+#define simdOrDB(a, b)       vec_or(a, b)
+#define simdAnyTrueDB(a)     simdAnyTrueB_ibm_qpx(a)
+#define simdMaskD(a, sel)   vec_sel(vec_splats(0.0), a, sel)
+#define simdMaskNotD(a, sel) vec_sel(a, vec_splats(0.0), sel)
+#define simdBlendD(a, b, sel)  vec_sel(a, b, sel)
+#define simdReduceD(a)      gmx_simd_reduce_ibm_qpx(a)
 
-/* Boolean & comparison operations on gmx_simd_dint32_t not supported */
+/* Boolean & comparison operations on SimdDInt32 not supported */
 /* Conversions between different booleans not supported */
 
 
@@ -133,7 +135,7 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 }
 
 static __attribute__((always_inline)) vector4double gmx_simdcall
-gmx_simd_setzero_ibm_qpx(void)
+simdSetZeroIbm_qpx(void)
 {
     return vec_splats(0.0);
 }
@@ -141,9 +143,9 @@ gmx_simd_setzero_ibm_qpx(void)
 static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_get_exponent_ibm_qpx(vector4double x)
 {
-    const gmx_int64_t    expmask   = 0x7ff0000000000000LL;
-    const gmx_int64_t    expbase   = 1023;
-    gmx_int64_t          idata[4] __attribute__((aligned(32)));
+    const std::int64_t    expmask   = 0x7ff0000000000000LL;
+    const std::int64_t    expbase   = 1023;
+    std::int64_t          idata[4] __attribute__((aligned(32)));
 
     /* Store to memory */
     vec_st(x, 0, idata);
@@ -159,9 +161,9 @@ gmx_simd_get_exponent_ibm_qpx(vector4double x)
 static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_get_mantissa_ibm_qpx(vector4double x)
 {
-    const gmx_int64_t    exp_and_sign_mask = 0xfff0000000000000LL;
-    const gmx_int64_t    ione              = 0x3ff0000000000000LL;
-    gmx_int64_t          idata[4] __attribute__((aligned(32)));
+    const std::int64_t    exp_and_sign_mask = 0xfff0000000000000LL;
+    const std::int64_t    ione              = 0x3ff0000000000000LL;
+    std::int64_t          idata[4] __attribute__((aligned(32)));
 
     /* Store to memory */
     vec_st(x, 0, idata);
@@ -177,12 +179,12 @@ gmx_simd_get_mantissa_ibm_qpx(vector4double x)
 static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_set_exponent_ibm_qpx(vector4double x)
 {
-    const gmx_int64_t    expbase = 1023;
-    gmx_int64_t          idata[4] __attribute__((aligned(32)));
+    const std::int64_t    expbase = 1023;
+    std::int64_t          idata[4] __attribute__((aligned(32)));
 
     /* Store to memory for shifts. It is REALLY critical that we use the same
-     * rounding mode as for gmx_simd_round_r() here. In particular, for QPX
-     * this means we implement gmx_simd_round_r(a) as vec_cfid(vec_ctid(a)),
+     * rounding mode as for simdRound() here. In particular, for QPX
+     * this means we implement simdRound(a) as vec_cfid(vec_ctid(a)),
      * since vec_round() uses a different rounding scheme.
      */
     vec_st(vec_ctid(x), 0, idata);
@@ -208,7 +210,7 @@ gmx_simd_reduce_ibm_qpx(vector4double x)
 }
 
 static __attribute__((always_inline)) vector4double gmx_simdcall
-gmx_simd_set1_int_ibm_qpx(int i)
+simdSet1Int_ibm_qpx(int i)
 {
     int idata[4] __attribute__((aligned(32)));
 
@@ -220,7 +222,7 @@ gmx_simd_set1_int_ibm_qpx(int i)
 
 /* This works in both single and double */
 static __attribute__((always_inline)) int gmx_simdcall
-gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
+simdAnyTrueB_ibm_qpx(vector4double a)
 {
     vector4double b = vec_sldw(a, a, 2);
 
