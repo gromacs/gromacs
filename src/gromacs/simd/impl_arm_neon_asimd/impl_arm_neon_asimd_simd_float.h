@@ -43,50 +43,50 @@
 #include "impl_arm_neon_asimd_common.h"
 
 /* NEON ASIMD always has FMA support, so make sure we use that for single too. */
-#undef  gmx_simd_fmadd_f
-#define gmx_simd_fmadd_f(a, b, c)  vfmaq_f32(c, b, a)
-#undef  gmx_simd_fmsub_f
-#define gmx_simd_fmsub_f(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
-#undef  gmx_simd_fnmadd_f
-#define gmx_simd_fnmadd_f(a, b, c) vfmsq_f32(c, b, a)
-#undef  gmx_simd_fnmsub_f
-#define gmx_simd_fnmsub_f(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
+#undef  simdFmaddF
+#define simdFmaddF(a, b, c)  vfmaq_f32(c, b, a)
+#undef  simdFmsubF
+#define simdFmsubF(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
+#undef  simdFnmaddF
+#define simdFnmaddF(a, b, c) vfmsq_f32(c, b, a)
+#undef  simdFnmsubF
+#define simdFnmsubF(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
 
 /* The rounding instructions were actually added already in ARMv8, but most
  * compilers did not add intrinsics for them. Make sure we use them for single
  * precision too when enabling NEON Advanced SIMD.
  */
-#undef  gmx_simd_round_f
-#define gmx_simd_round_f(x)        vrndnq_f32(x)
-#undef  gmx_simd_trunc_f
-#define gmx_simd_trunc_f(x)        vrndq_f32(x)
+#undef  simdRoundF
+#define simdRoundF(x)        vrndnq_f32(x)
+#undef  simdTruncF
+#define simdTruncF(x)        vrndq_f32(x)
 
 /* NEON Advanced SIMD has a real rounding conversion instruction */
-#undef  gmx_simd_cvt_f2i
-#define gmx_simd_cvt_f2i(x)        vcvtnq_s32_f32(x)
+#undef  simdCvtF2I
+#define simdCvtF2I(x)        vcvtnq_s32_f32(x)
 
 /* Since we redefine rounding/conversion-with-rounding, make
  * sure we use the new operations by redefining the routine
  * to set the exponent too.
  */
-#undef  gmx_simd_set_exponent_f
-#define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_arm_neon_asimd
+#undef  simdSetExponentF
+#define simdSetExponentF    simdSetExponentF_arm_neon_asimd
 
 /* We can do more efficient reduce with vector pairwise arithmetic */
-#undef  gmx_simd_reduce_f
-#define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_arm_neon_asimd(a)
+#undef  simdReduceF
+#define simdReduceF(a)       simdReduceF_arm_neon_asimd(a)
 
 /* Pick the largest unsigned integer as a shortcut for any-true */
-#undef  gmx_simd_anytrue_fb
-#define gmx_simd_anytrue_fb(x)     (vmaxvq_u32(x) != 0)
-#undef  gmx_simd_anytrue_fib
-#define gmx_simd_anytrue_fib(x)    (vmaxvq_u32(x) != 0)
+#undef  simdAnyTrueFB
+#define simdAnyTrueFB(x)     (vmaxvq_u32(x) != 0)
+#undef  simdAnyTrueFIB
+#define simdAnyTrueFIB(x)    (vmaxvq_u32(x) != 0)
 
 /****************************************************
  * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline gmx_simd_float_t
-gmx_simd_set_exponent_f_arm_neon_asimd(gmx_simd_float_t x)
+static inline SimdFloat
+simdSetExponentF_arm_neon_asimd(SimdFloat x)
 {
     int32x4_t  iexp = vcvtnq_s32_f32(x);
 
@@ -94,8 +94,8 @@ gmx_simd_set_exponent_f_arm_neon_asimd(gmx_simd_float_t x)
     return vreinterpretq_f32_s32(iexp);
 }
 
-static gmx_inline float
-gmx_simd_reduce_f_arm_neon_asimd(gmx_simd_float_t a)
+static inline float
+simdReduceF_arm_neon_asimd(SimdFloat a)
 {
     a = vpaddq_f32(a, a);
     a = vpaddq_f32(a, a);

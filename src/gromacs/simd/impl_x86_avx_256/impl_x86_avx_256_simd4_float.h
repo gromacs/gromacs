@@ -48,49 +48,49 @@
 /****************************************************
  *      SINGLE PRECISION SIMD4 IMPLEMENTATION       *
  ****************************************************/
-#define gmx_simd4_float_t          __m128
-#define gmx_simd4_load_f           _mm_load_ps
-#define gmx_simd4_load1_f          _mm_broadcast_ss
-#define gmx_simd4_set1_f           _mm_set1_ps
-#define gmx_simd4_store_f          _mm_store_ps
-#define gmx_simd4_loadu_f          _mm_loadu_ps
-#define gmx_simd4_storeu_f         _mm_storeu_ps
-#define gmx_simd4_setzero_f        _mm_setzero_ps
-#define gmx_simd4_add_f            _mm_add_ps
-#define gmx_simd4_sub_f            _mm_sub_ps
-#define gmx_simd4_mul_f            _mm_mul_ps
-#define gmx_simd4_fmadd_f(a, b, c)   _mm_add_ps(_mm_mul_ps(a, b), c)
-#define gmx_simd4_fmsub_f(a, b, c)   _mm_sub_ps(_mm_mul_ps(a, b), c)
-#define gmx_simd4_fnmadd_f(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
-#define gmx_simd4_fnmsub_f(a, b, c)  _mm_sub_ps(_mm_setzero_ps(), gmx_simd4_fmadd_f(a, b, c))
-#define gmx_simd4_and_f            _mm_and_ps
-#define gmx_simd4_andnot_f         _mm_andnot_ps
-#define gmx_simd4_or_f             _mm_or_ps
-#define gmx_simd4_xor_f            _mm_xor_ps
-#define gmx_simd4_rsqrt_f          _mm_rsqrt_ps
-#define gmx_simd4_fabs_f(x)        _mm_andnot_ps(_mm_set1_ps(GMX_FLOAT_NEGZERO), x)
-#define gmx_simd4_fneg_f(x)        _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
-#define gmx_simd4_max_f            _mm_max_ps
-#define gmx_simd4_min_f            _mm_min_ps
-#define gmx_simd4_round_f(x)       _mm_round_ps(x, _MM_FROUND_NINT)
-#define gmx_simd4_trunc_f(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
-#define gmx_simd4_dotproduct3_f    gmx_simd4_dotproduct3_f_avx_256
-#define gmx_simd4_fbool_t          __m128
-#define gmx_simd4_cmpeq_f          _mm_cmpeq_ps
-#define gmx_simd4_cmplt_f          _mm_cmplt_ps
-#define gmx_simd4_cmple_f          _mm_cmple_ps
-#define gmx_simd4_and_fb           _mm_and_ps
-#define gmx_simd4_or_fb            _mm_or_ps
-#define gmx_simd4_anytrue_fb       _mm_movemask_ps
-#define gmx_simd4_blendzero_f      _mm_and_ps
-#define gmx_simd4_blendnotzero_f(a, sel)  _mm_andnot_ps(sel, a)
-#define gmx_simd4_blendv_f         _mm_blendv_ps
-#define gmx_simd4_reduce_f         gmx_simd4_reduce_f_avx_256
+#define Simd4Float          __m128
+#define simd4LoadF           _mm_load_ps
+#define simd4Load1F          _mm_broadcast_ss
+#define simd4Set1F           _mm_set1_ps
+#define simd4StoreF          _mm_store_ps
+#define simd4LoadUF          _mm_loadu_ps
+#define simd4StoreUF         _mm_storeu_ps
+#define simd4SetZeroF        _mm_setzero_ps
+#define simd4AddF            _mm_add_ps
+#define simd4SubF            _mm_sub_ps
+#define simd4MulF            _mm_mul_ps
+#define simd4FmaddF(a, b, c)   _mm_add_ps(_mm_mul_ps(a, b), c)
+#define simd4FmsubF(a, b, c)   _mm_sub_ps(_mm_mul_ps(a, b), c)
+#define simd4FnmaddF(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
+#define simd4FnmsubF(a, b, c)  _mm_sub_ps(_mm_setzero_ps(), simd4FmaddF(a, b, c))
+#define simd4AndF            _mm_and_ps
+#define simd4AndNotF         _mm_andnot_ps
+#define simd4OrF             _mm_or_ps
+#define simd4XorF            _mm_xor_ps
+#define simd4RsqrtF          _mm_rsqrt_ps
+#define simd4AbsF(x)        _mm_andnot_ps(_mm_set1_ps(GMX_FLOAT_NEGZERO), x)
+#define simd4NegF(x)        _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
+#define simd4MaxF            _mm_max_ps
+#define simd4MinF            _mm_min_ps
+#define simd4RoundF(x)       _mm_round_ps(x, _MM_FROUND_NINT)
+#define simd4TruncF(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
+#define simd4DotProductF    simd4DotProductF_avx_256
+#define Simd4FBool           __m128
+#define simd4CmpEqF          _mm_cmpeq_ps
+#define simd4CmpLtF          _mm_cmplt_ps
+#define simd4CmpLeF          _mm_cmple_ps
+#define simd4AndFB           _mm_and_ps
+#define simd4OrFB            _mm_or_ps
+#define simd4AnyTrueFB       _mm_movemask_ps
+#define simd4MaskF      _mm_and_ps
+#define simd4MaskNotF(a, sel)  _mm_andnot_ps(sel, a)
+#define simd4BlendF         _mm_blendv_ps
+#define simd4ReduceF         simd4ReduceF_avx_256
 
 
 /* SIMD4 reduce helper */
-static gmx_inline float gmx_simdcall
-gmx_simd4_reduce_f_avx_256(__m128 a)
+static inline float gmx_simdcall
+simd4ReduceF_avx_256(__m128 a)
 {
     float f;
     a = _mm_hadd_ps(a, a);
@@ -99,9 +99,9 @@ gmx_simd4_reduce_f_avx_256(__m128 a)
     return f;
 }
 
-/* SIMD4 Dotproduct helper function */
-static gmx_inline float gmx_simdcall
-gmx_simd4_dotproduct3_f_avx_256(__m128 a, __m128 b)
+/* SIMD4 Dot product helper function */
+static inline float gmx_simdcall
+simd4DotProductF_avx_256(__m128 a, __m128 b)
 {
     float  f;
     __m128 c;

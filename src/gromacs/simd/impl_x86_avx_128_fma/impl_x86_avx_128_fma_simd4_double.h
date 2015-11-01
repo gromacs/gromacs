@@ -51,51 +51,48 @@
  * be available in AVX, so we can use them for double precision SIMD4!
  */
 /* SIMD4 Double precision floating point */
-#define gmx_simd4_double_t               __m256d
-#define gmx_simd4_load_d                 _mm256_load_pd
-#define gmx_simd4_load1_d                _mm256_broadcast_sd
-#define gmx_simd4_set1_d                 _mm256_set1_pd
-#define gmx_simd4_store_d                _mm256_store_pd
-#define gmx_simd4_loadu_d                _mm256_loadu_pd
-#define gmx_simd4_storeu_d               _mm256_storeu_pd
-#define gmx_simd4_setzero_d              _mm256_setzero_pd
-#define gmx_simd4_add_d                  _mm256_add_pd
-#define gmx_simd4_sub_d                  _mm256_sub_pd
-#define gmx_simd4_mul_d                  _mm256_mul_pd
-#define gmx_simd4_fmadd_d                _mm256_macc_pd
-#define gmx_simd4_fmsub_d                _mm256_msub_pd
-#define gmx_simd4_fnmadd_d               _mm256_nmacc_pd
-#define gmx_simd4_fnmsub_d               _mm256_nmsub_pd
-#define gmx_simd4_and_d                  _mm256_and_pd
-#define gmx_simd4_andnot_d               _mm256_andnot_pd
-#define gmx_simd4_or_d                   _mm256_or_pd
-#define gmx_simd4_xor_d                  _mm256_xor_pd
-#define gmx_simd4_rsqrt_d(x)             _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
-#define gmx_simd4_fabs_d(x)              _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
-#define gmx_simd4_fneg_d(x)              _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
-#define gmx_simd4_max_d                  _mm256_max_pd
-#define gmx_simd4_min_d                  _mm256_min_pd
-#define gmx_simd4_round_d(x)             _mm256_round_pd(x, _MM_FROUND_NINT)
-#define gmx_simd4_trunc_d(x)             _mm256_round_pd(x, _MM_FROUND_TRUNC)
-#define gmx_simd4_dotproduct3_d          gmx_simd4_dotproduct3_d_avx_128_fma
+#define Simd4Double               __m256d
+#define simd4LoadD                 _mm256_load_pd
+#define simd4Load1D                _mm256_broadcast_sd
+#define simd4Set1D                 _mm256_set1_pd
+#define simd4StoreD                _mm256_store_pd
+#define simd4LoadUD                _mm256_loadu_pd
+#define simd4StoreUD               _mm256_storeu_pd
+#define simd4SetZeroD              _mm256_setzero_pd
+#define simd4AddD                  _mm256_add_pd
+#define simd4SubD                  _mm256_sub_pd
+#define simd4MulD                  _mm256_mul_pd
+#define simd4FmaddD                _mm256_macc_pd
+#define simd4FmsubD                _mm256_msub_pd
+#define simd4FnmaddD               _mm256_nmacc_pd
+#define simd4FnmsubD               _mm256_nmsub_pd
+#define simd4AndD                  _mm256_and_pd
+#define simd4AndNotD               _mm256_andnot_pd
+#define simd4OrD                   _mm256_or_pd
+#define simd4XorD                  _mm256_xor_pd
+#define simd4RsqrtD(x)             _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
+#define simd4AbsD(x)              _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
+#define simd4NegD(x)              _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
+#define simd4MaxD                  _mm256_max_pd
+#define simd4MinD                  _mm256_min_pd
+#define simd4RoundD(x)             _mm256_round_pd(x, _MM_FROUND_NINT)
+#define simd4TruncD(x)             _mm256_round_pd(x, _MM_FROUND_TRUNC)
+#define simd4DotProductD          simd4DotProductD_avx_128_fma
 /* SIMD4 booleans corresponding to double */
-#define gmx_simd4_dbool_t                __m256d
-#define gmx_simd4_cmpeq_d(a, b)           _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
-#define gmx_simd4_cmplt_d(a, b)           _mm256_cmp_pd(a, b, _CMP_LT_OQ)
-#define gmx_simd4_cmple_d(a, b)           _mm256_cmp_pd(a, b, _CMP_LE_OQ)
-#define gmx_simd4_and_db                 _mm256_and_pd
-#define gmx_simd4_or_db                  _mm256_or_pd
-#define gmx_simd4_anytrue_db             _mm256_movemask_pd
-#define gmx_simd4_blendzero_d            _mm256_and_pd
-#define gmx_simd4_blendnotzero_d(a, sel)  _mm256_andnot_pd(sel, a)
-#define gmx_simd4_blendv_d               _mm256_blendv_pd
-#define gmx_simd4_reduce_d               gmx_simd4_reduce_d_avx_128_fma
-/* SIMD4 float/double conversion */
-#define gmx_simd4_cvt_f2d                _mm256_cvtps_pd
-#define gmx_simd4_cvt_d2f                _mm256_cvtpd_ps
+#define Simd4DBool                __m256d
+#define simd4CmpEqD(a, b)           _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
+#define simd4CmpLtD(a, b)           _mm256_cmp_pd(a, b, _CMP_LT_OQ)
+#define simd4CmpLeD(a, b)           _mm256_cmp_pd(a, b, _CMP_LE_OQ)
+#define simd4AndDB                 _mm256_and_pd
+#define simd4OrDB                  _mm256_or_pd
+#define simd4AnyTrueDB             _mm256_movemask_pd
+#define simd4MaskD            _mm256_and_pd
+#define simd4MaskNotD(a, sel)  _mm256_andnot_pd(sel, a)
+#define simd4BlendD               _mm256_blendv_pd
+#define simd4ReduceD               simd4ReduceD_avx_128_fma
 
-static gmx_inline double gmx_simdcall
-gmx_simd4_reduce_d_avx_128_fma(__m256d a)
+static inline double gmx_simdcall
+simd4ReduceD_avx_128_fma(__m256d a)
 {
     double  f;
     __m128d a0, a1;
@@ -107,8 +104,8 @@ gmx_simd4_reduce_d_avx_128_fma(__m256d a)
     return f;
 }
 
-static gmx_inline double gmx_simdcall
-gmx_simd4_dotproduct3_d_avx_128_fma(__m256d a, __m256d b)
+static inline double gmx_simdcall
+simd4DotProductD_avx_128_fma(__m256d a, __m256d b)
 {
     double  d;
     __m128d tmp1, tmp2;
