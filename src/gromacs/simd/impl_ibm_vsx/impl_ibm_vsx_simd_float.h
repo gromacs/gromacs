@@ -70,139 +70,139 @@
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
-#define gmx_simd_float_t           __vector float
-#define gmx_simd_load_f(m)         (*(const gmx_simd_float_t *)(m))
-#define gmx_simd_store_f(m, x)      { *(gmx_simd_float_t *)(m) = (x); }
-#define gmx_simd_load1_f(m)        vec_splats((float)(*m))
-#define gmx_simd_set1_f(x)         vec_splats((float)(x))
+#define SimdFloat           __vector float
+#define simdLoadF(m)         (*(const SimdFloat *)(m))
+#define simdStoreF(m, x)      { *(SimdFloat *)(m) = (x); }
+#define simdLoad1F(m)        vec_splats((float)(*m))
+#define simdSet1F(x)         vec_splats((float)(x))
 #if defined(__ibmxl__) || defined(__xlC__)
-#    define gmx_simd_loadu_f(m)    vec_xlw4(0, (float *)(m))
-#    define gmx_simd_storeu_f(m, x) vec_xstw4(x, 0, (m))
+#    define simdLoadUF(m)    vec_xlw4(0, (float *)(m))
+#    define simdStoreUF(m, x) vec_xstw4(x, 0, (m))
 #else
 /* GCC can handle unaligned load/store as pointer dereference */
-#    define gmx_simd_loadu_f       gmx_simd_load_f
-#    define gmx_simd_storeu_f      gmx_simd_store_f
+#    define simdLoadUF       simdLoadF
+#    define simdStoreUF      simdStoreF
 #endif
-#define gmx_simd_setzero_f()       vec_splats(0.0f)
-#define gmx_simd_add_f(a, b)       vec_add(a, b)
-#define gmx_simd_sub_f(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_f(a, b)       vec_mul(a, b)
-#define gmx_simd_fmadd_f(a, b, c)  vec_madd(a, b, c)
-#define gmx_simd_fmsub_f(a, b, c)  vec_msub(a, b, c)
+#define simdSetZeroF()       vec_splats(0.0f)
+#define simdAddF(a, b)       vec_add(a, b)
+#define simdSubF(a, b)       vec_sub(a, b)
+#define simdMulF(a, b)       vec_mul(a, b)
+#define simdFmaddF(a, b, c)  vec_madd(a, b, c)
+#define simdFmsubF(a, b, c)  vec_msub(a, b, c)
 /* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
-#define gmx_simd_fnmadd_f(a, b, c) vec_nmsub(a, b, c)
+#define simdFnmaddF(a, b, c) vec_nmsub(a, b, c)
 /* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
-#define gmx_simd_fnmsub_f(a, b, c) vec_nmadd(a, b, c)
-#define gmx_simd_and_f(a, b)       vec_and(a, b)
-#define gmx_simd_andnot_f(a, b)    vec_andc(b, a)
-#define gmx_simd_or_f(a, b)        vec_or(a, b)
-#define gmx_simd_xor_f(a, b)       vec_xor(a, b)
-#define gmx_simd_rsqrt_f(a)        vec_rsqrte(a)
-#define gmx_simd_rcp_f(a)          vec_re(a)
-#define gmx_simd_fabs_f(a)         vec_abs(a)
-#define gmx_simd_fneg_f(a)         (-(a))
-#define gmx_simd_max_f(a, b)       vec_max(a, b)
-#define gmx_simd_min_f(a, b)       vec_min(a, b)
-#define gmx_simd_round_f(a)        vec_round(a)
-#define gmx_simd_trunc_f(a)        vec_trunc(a)
-#define gmx_simd_fraction_f(x)     vec_sub(x, vec_trunc(x))
-#define gmx_simd_get_exponent_f(a) gmx_simd_get_exponent_f_ibm_vsx(a)
-#define gmx_simd_get_mantissa_f(a) gmx_simd_get_mantissa_f_ibm_vsx(a)
-#define gmx_simd_set_exponent_f(a) gmx_simd_set_exponent_f_ibm_vsx(a)
-/* integer datatype corresponding to float: gmx_simd_fint32_t */
-#define gmx_simd_fint32_t          __vector signed int
-#define gmx_simd_load_fi(m)        (*(const gmx_simd_fint32_t *)(m))
-#define gmx_simd_store_fi(m, x)     { *(gmx_simd_fint32_t *)(m) = (x); }
-#define gmx_simd_set1_fi(i)        vec_splats((int)(i))
+#define simdFnmsubF(a, b, c) vec_nmadd(a, b, c)
+#define simdAndF(a, b)       vec_and(a, b)
+#define simdAndNotF(a, b)    vec_andc(b, a)
+#define simdOrF(a, b)        vec_or(a, b)
+#define simdXorF(a, b)       vec_xor(a, b)
+#define simdRsqrtF(a)        vec_rsqrte(a)
+#define simdRcpF(a)          vec_re(a)
+#define simdAbsF(a)         vec_abs(a)
+#define simdNegF(a)         (-(a))
+#define simdMaxF(a, b)       vec_max(a, b)
+#define simdMinF(a, b)       vec_min(a, b)
+#define simdRoundF(a)        vec_round(a)
+#define simdTruncF(a)        vec_trunc(a)
+#define simdFractionF(x)     vec_sub(x, vec_trunc(x))
+#define simdGetExponentF(a) simdGetExponentF_ibm_vsx(a)
+#define simdGetMantissaF(a) simdGetMantissaF_ibm_vsx(a)
+#define simdSetExponentF(a) simdSetExponentF_ibm_vsx(a)
+/* integer datatype corresponding to float: SimdFInt32 */
+#define SimdFInt32          __vector signed int
+#define simdLoadFI(m)        (*(const SimdFInt32 *)(m))
+#define simdStoreFI(m, x)     { *(SimdFInt32 *)(m) = (x); }
+#define simdSet1FI(i)        vec_splats((int)(i))
 #if defined(__ibmxl__) || defined(__xlC__)
-#    define gmx_simd_loadu_fi(m)    vec_xlw4(0, (int *)(m))
-#    define gmx_simd_storeu_fi(m, x) vec_xstw4(x, 0, (m))
+#    define simdLoadUFI(m)    vec_xlw4(0, (int *)(m))
+#    define simdStoreUFI(m, x) vec_xstw4(x, 0, (m))
 #else
 /* GCC can handle unaligned load/store as pointer dereference */
-#    define gmx_simd_loadu_fi      gmx_simd_load_fi
-#    define gmx_simd_storeu_fi     gmx_simd_store_fi
+#    define simdLoadUFI      simdLoadFI
+#    define simdStoreUFI     simdStoreFI
 #endif
-#define gmx_simd_setzero_fi()      vec_splats((int)0)
-#define gmx_simd_cvt_f2i(a)        vec_cts(vec_round(a), 0)
-#define gmx_simd_cvtt_f2i(a)       vec_cts(a, 0)
-#define gmx_simd_cvt_i2f(a)        vec_ctf(a, 0)
-#define gmx_simd_extract_fi(a, i)   gmx_simd_extract_fi_ibm_vsx(a, i)
-/* Integer logical ops on gmx_simd_fint32_t */
-#define gmx_simd_slli_fi(a, i)      vec_sl(a, vec_splats((unsigned int)(i)))
-#define gmx_simd_srli_fi(a, i)      vec_sr(a, vec_splats((unsigned int)(i)))
-#define gmx_simd_and_fi(a, b)       vec_and(a, b)
-#define gmx_simd_andnot_fi(a, b)    vec_andc(b, a)
-#define gmx_simd_or_fi(a, b)        vec_or(a, b)
-#define gmx_simd_xor_fi(a, b)       vec_xor(a, b)
-/* Integer arithmetic ops on gmx_simd_fint32_t */
-#define gmx_simd_add_fi(a, b)       vec_add(a, b)
-#define gmx_simd_sub_fi(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_fi(a, b)      ((a)*(b))
-/* Boolean & comparison operations on gmx_simd_float_t */
-#define gmx_simd_fbool_t           __vector vsx_bool int
-#define gmx_simd_cmpeq_f(a, b)     vec_cmpeq(a, b)
-#define gmx_simd_cmplt_f(a, b)     vec_cmplt(a, b)
-#define gmx_simd_cmple_f(a, b)     vec_cmple(a, b)
-#define gmx_simd_and_fb(a, b)      vec_and(a, b)
-#define gmx_simd_or_fb(a, b)       vec_or(a, b)
-#define gmx_simd_anytrue_fb(a)     vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
-#define gmx_simd_blendzero_f(a, sel)    vec_and(a, (__vector float)sel)
-#define gmx_simd_blendnotzero_f(a, sel) vec_andc(a, (__vector float)sel)
-#define gmx_simd_blendv_f(a, b, sel)    vec_sel(a, b, sel)
-#define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_ibm_vsx(a)
-/* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_fibool_t          __vector vsx_bool int
-#define gmx_simd_cmpeq_fi(a, b)    vec_cmpeq(a, b)
-#define gmx_simd_cmplt_fi(a, b)    vec_cmplt(a, b)
-#define gmx_simd_and_fib(a, b)     vec_and(a, b)
-#define gmx_simd_or_fib(a, b)      vec_or(a, b)
-#define gmx_simd_anytrue_fib(a)          vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
-#define gmx_simd_blendzero_fi(a, sel)    vec_and(a, (__vector signed int)sel)
-#define gmx_simd_blendnotzero_fi(a, sel) vec_andc(a, (__vector signed int)sel)
-#define gmx_simd_blendv_fi(a, b, sel)    vec_sel(a, b, sel)
+#define simdSetZeroFI()      vec_splats((int)0)
+#define simdCvtF2I(a)        vec_cts(vec_round(a), 0)
+#define simdCvttF2I(a)       vec_cts(a, 0)
+#define simdCvtI2F(a)        vec_ctf(a, 0)
+#define simdExtractFI(a, i)   simdExtractFI_ibm_vsx(a, i)
+/* Integer logical ops on SimdFInt32 */
+#define simdSlliFI(a, i)      vec_sl(a, vec_splats((unsigned int)(i)))
+#define simdSrliFI(a, i)      vec_sr(a, vec_splats((unsigned int)(i)))
+#define simdAndFI(a, b)       vec_and(a, b)
+#define simdAndNotFI(a, b)    vec_andc(b, a)
+#define simdOrFI(a, b)        vec_or(a, b)
+#define simdXorFI(a, b)       vec_xor(a, b)
+/* Integer arithmetic ops on SimdFInt32 */
+#define simdAddFI(a, b)       vec_add(a, b)
+#define simdSubFI(a, b)       vec_sub(a, b)
+#define simdMulFI(a, b)      ((a)*(b))
+/* Boolean & comparison operations on SimdFloat */
+#define SimdFBool           __vector vsx_bool int
+#define simdCmpEqF(a, b)     vec_cmpeq(a, b)
+#define simdCmpLtF(a, b)     vec_cmplt(a, b)
+#define simdCmpLeF(a, b)     vec_cmple(a, b)
+#define simdAndFB(a, b)      vec_and(a, b)
+#define simdOrFB(a, b)       vec_or(a, b)
+#define simdAnyTrueFB(a)     vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
+#define simdMaskF(a, sel)    vec_and(a, (__vector float)sel)
+#define simdMaskNotF(a, sel) vec_andc(a, (__vector float)sel)
+#define simdBlendF(a, b, sel)    vec_sel(a, b, sel)
+#define simdReduceF(a)       simdReduceF_ibm_vsx(a)
+/* Boolean & comparison operations on SimdFInt32 */
+#define SimdFIBool          __vector vsx_bool int
+#define simdCmpEqFI(a, b)    vec_cmpeq(a, b)
+#define simdCmpLtFI(a, b)    vec_cmplt(a, b)
+#define simdAndFIB(a, b)     vec_and(a, b)
+#define simdOrFIB(a, b)      vec_or(a, b)
+#define simdAnyTrueFIB(a)          vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
+#define simdMaskFI(a, sel)    vec_and(a, (__vector signed int)sel)
+#define simdMaskNotFI(a, sel) vec_andc(a, (__vector signed int)sel)
+#define simdBlendFI(a, b, sel)    vec_sel(a, b, sel)
 /* Conversions between different booleans */
-#define gmx_simd_cvt_fb2fib(x)     (x)
-#define gmx_simd_cvt_fib2fb(x)     (x)
+#define simdCvtFB2FIB(x)     (x)
+#define simdCvtFIB2FB(x)     (x)
 
 
 /****************************************************
  * SINGLE PREC. IMPLEMENTATION HELPER FUNCTIONS     *
  ****************************************************/
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_exponent_f_ibm_vsx(gmx_simd_float_t x)
+static inline SimdFloat
+simdGetExponentF_ibm_vsx(SimdFloat x)
 {
     /* Generate 0x7F800000 without memory operations */
-    gmx_simd_float_t     expmask = (__vector float)vec_splats(0x7F800000);
-    gmx_simd_fint32_t    i127    = vec_splats(127);
-    gmx_simd_fint32_t    iexp;
+    SimdFloat     expmask = (__vector float)vec_splats(0x7F800000);
+    SimdFInt32    i127    = vec_splats(127);
+    SimdFInt32    iexp;
 
-    iexp = (__vector signed int)gmx_simd_and_f(x, expmask);
-    iexp = vec_sub(gmx_simd_srli_fi(iexp, 23), i127);
+    iexp = (__vector signed int)simdAndF(x, expmask);
+    iexp = vec_sub(simdSrliFI(iexp, 23), i127);
     return vec_ctf(iexp, 0);
 }
 
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_mantissa_f_ibm_vsx(gmx_simd_float_t x)
+static inline SimdFloat
+simdGetMantissaF_ibm_vsx(SimdFloat x)
 {
-    gmx_simd_float_t     expmask = (__vector float)vec_splats(0x7F800000);
+    SimdFloat     expmask = (__vector float)vec_splats(0x7F800000);
 
-    x = gmx_simd_andnot_f(expmask, vec_abs(x));
+    x = simdAndNotF(expmask, vec_abs(x));
     /* Reset zero (but correctly biased) exponent */
-    return gmx_simd_or_f(x, vec_splats(1.0f));
+    return simdOrF(x, vec_splats(1.0f));
 }
 
-static gmx_inline gmx_simd_float_t
-gmx_simd_set_exponent_f_ibm_vsx(gmx_simd_float_t x)
+static inline SimdFloat
+simdSetExponentF_ibm_vsx(SimdFloat x)
 {
-    gmx_simd_fint32_t  iexp = gmx_simd_cvt_f2i(x);
-    gmx_simd_fint32_t  i127 = vec_splats(127);
+    SimdFInt32  iexp = simdCvtF2I(x);
+    SimdFInt32  i127 = vec_splats(127);
 
-    iexp = gmx_simd_slli_fi(vec_add(iexp, i127), 23);
+    iexp = simdSlliFI(vec_add(iexp, i127), 23);
     return (__vector float)iexp;
 }
 
-static gmx_inline float
-gmx_simd_reduce_f_ibm_vsx(gmx_simd_float_t x)
+static inline float
+simdReduceF_ibm_vsx(SimdFloat x)
 {
     const __vector unsigned char perm1 = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
     const __vector unsigned char perm2 = { 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3 };
@@ -213,8 +213,8 @@ gmx_simd_reduce_f_ibm_vsx(gmx_simd_float_t x)
 }
 
 /* gcc-4.9 does not detect that vec_extract() uses its argument */
-static gmx_inline int
-gmx_simd_extract_fi_ibm_vsx(gmx_simd_fint32_t gmx_unused x, unsigned int i)
+static inline int
+simdExtractFI_ibm_vsx(SimdFInt32 gmx_unused x, unsigned int i)
 {
     return vec_extract(x, i);
 }

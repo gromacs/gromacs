@@ -1265,32 +1265,32 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-    gmx_simd_real_t dest_SSE, src_SSE;
+    gmx::SimdReal dest_SSE, src_SSE;
 
     if (bDestSet)
     {
         for (int i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_simd_load_r(dest+i);
+            dest_SSE = gmx::simdLoad(dest+i);
             for (int s = 0; s < nsrc; s++)
             {
-                src_SSE  = gmx_simd_load_r(src[s]+i);
-                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
+                src_SSE  = gmx::simdLoad(src[s]+i);
+                dest_SSE = gmx::simdAdd(dest_SSE, src_SSE);
             }
-            gmx_simd_store_r(dest+i, dest_SSE);
+            gmx::simdStore(dest+i, dest_SSE);
         }
     }
     else
     {
         for (int i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_simd_load_r(src[0]+i);
+            dest_SSE = gmx::simdLoad(src[0]+i);
             for (int s = 1; s < nsrc; s++)
             {
-                src_SSE  = gmx_simd_load_r(src[s]+i);
-                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
+                src_SSE  = gmx::simdLoad(src[s]+i);
+                dest_SSE = gmx::simdAdd(dest_SSE, src_SSE);
             }
-            gmx_simd_store_r(dest+i, dest_SSE);
+            gmx::simdStore(dest+i, dest_SSE);
         }
     }
 #endif

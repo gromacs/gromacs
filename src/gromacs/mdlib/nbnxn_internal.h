@@ -176,16 +176,16 @@ typedef struct {
 
 typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */
-    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t ix_S1, iy_S1, iz_S1;
-    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
-    gmx_simd_real_t ix_S3, iy_S3, iz_S3;
+    gmx::SimdReal ix_S0, iy_S0, iz_S0;
+    gmx::SimdReal ix_S1, iy_S1, iz_S1;
+    gmx::SimdReal ix_S2, iy_S2, iz_S2;
+    gmx::SimdReal ix_S3, iy_S3, iz_S3;
 } nbnxn_x_ci_simd_4xn_t;
 
 typedef struct nbnxn_x_ci_simd_2xnn {
     /* The i-cluster coordinates for simple search */
-    gmx_simd_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t ix_S2, iy_S2, iz_S2;
+    gmx::SimdReal ix_S0, iy_S0, iz_S0;
+    gmx::SimdReal ix_S2, iy_S2, iz_S2;
 } nbnxn_x_ci_simd_2xnn_t;
 
 #endif

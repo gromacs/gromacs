@@ -59,13 +59,6 @@
 
 #if GMX_SIMD_REFERENCE
 
-/* Align a stack-based thread-local working array. */
-static gmx_inline int *
-prepare_table_load_buffer(const int gmx_unused *array)
-{
-    return NULL;
-}
-
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ref.h"
 
 #else /* GMX_SIMD_REFERENCE */
@@ -81,19 +74,6 @@ static const int nbfp_stride = 2;
 #else
 static const int nbfp_stride = 4;
 #endif
-
-/* Align a stack-based thread-local working array. Table loads on
- * 256-bit AVX use the array, but other implementations do not.
- */
-static gmx_inline int *
-prepare_table_load_buffer(int gmx_unused *array)
-{
-#if GMX_SIMD_REAL_WIDTH >= 8 || (defined GMX_DOUBLE && GMX_SIMD_REAL_WIDTH >= 4)
-    return gmx_simd_align_i(array);
-#else
-    return NULL;
-#endif
-}
 
 #ifdef GMX_DOUBLE
 #if GMX_SIMD_REAL_WIDTH == 2
@@ -137,22 +117,9 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 
 #endif /* GMX_SIMD_REFERENCE */
 
-/* If the simd width is 4, but simd4 instructions are not defined,
- * reuse the simd real type and the four instructions we need.
- */
-#if GMX_SIMD_REAL_WIDTH == 4 && \
-    !((!defined GMX_DOUBLE && GMX_SIMD4_HAVE_FLOAT) || \
-    (defined GMX_DOUBLE && GMX_SIMD4_HAVE_DOUBLE))
-#define gmx_simd4_real_t    gmx_simd_real_t
-#define gmx_simd4_load_r    gmx_simd_load_r
-#define gmx_simd4_store_r   gmx_simd_store_r
-#define gmx_simd4_add_r     gmx_simd_add_r
-#define gmx_simd4_reduce_r  gmx_simd_reduce_r
-#endif
-
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */
-static gmx_inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *offset_jj)
+static gmx_inline void add_ener_grp(gmx::SimdReal e_S, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -162,10 +129,10 @@ static gmx_inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *off
      */
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_simd_real_t v_S;
+        gmx::SimdReal v_S;
 
-        v_S = gmx_simd_load_r(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH);
-        gmx_simd_store_r(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH, gmx_simd_add_r(v_S, e_S));
+        v_S = gmx::simdLoad(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH);
+        gmx::simdStore(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH, gmx::simdAdd(v_S, e_S));
     }
 }
 #endif
@@ -175,7 +142,7 @@ static gmx_inline void add_ener_grp(gmx_simd_real_t e_S, real *v, const int *off
  * a single SIMD register.
  */
 static gmx_inline void
-add_ener_grp_halves(gmx_simd_real_t e_S, real *v0, real *v1, const int *offset_jj)
+add_ener_grp_halves(gmx::SimdReal e_S, real *v0, real *v1, const int *offset_jj)
 {
     gmx_mm_hpr e_S0, e_S1;
     int        jj;
