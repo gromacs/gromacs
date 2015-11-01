@@ -45,10 +45,17 @@
  * \ingroup module_simd
  */
 
-#include <math.h>
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 
-#include "impl_reference_common.h"
-#include "impl_reference_simd_float.h"
+#include <algorithm>
+
+#include "impl_reference_definitions.h"
+
+namespace gmx
+{
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
@@ -58,144 +65,421 @@
  * \{
  */
 
-#if (GMX_SIMD_FLOAT_WIDTH == 4) || defined DOXYGEN
-
-
-/*! \brief SIMD4 float type. Available if \ref GMX_SIMD4_HAVE_FLOAT.
+/*! \libinternal \brief SIMD4 float type. Available if \ref GMX_SIMD4_HAVE_FLOAT.
  *
  * Unless you specifically want a single-precision type you should check
- * \ref gmx_simd4_real_t instead.
+ * \ref gmx::Simd4Real instead.
  *
  * While the SIMD4 datatype is identical to the normal SIMD type in the
  * reference implementation, this will often not be the case for
  * other architectures.
  */
-#    define gmx_simd4_float_t    gmx_simd_float_t
+struct Simd4Float
+{
+    float r[GMX_SIMD4_WIDTH]; /**< Implementation dependent. Don't touch. */
+};
 
 /*! \brief Load SIMD4 float from aligned memory.
- *  \copydetails gmx_simd_load_f
+ *  \copydetails simdLoadF
  */
-#    define gmx_simd4_load_f     gmx_simd_load_f
+static inline Simd4Float
+simd4LoadF(const float *m)
+{
+    assert(std::size_t(m) % (GMX_SIMD4_WIDTH*sizeof(float)) == 0);
+
+    Simd4Float        a;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = m[i];
+    }
+    return a;
+}
 
 /*! \brief Set all elements of SIMD4 float from single pointer.
- *  \copydetails gmx_simd_load1_f
+ *  \copydetails simdLoad1F
  */
-#    define gmx_simd4_load1_f    gmx_simd_load1_f
+static inline Simd4Float
+simd4Load1F(const float *m)
+{
+    Simd4Float        a;
+    float             f = *m;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = f;
+    }
+    return a;
+}
+
 
 /*! \brief Set all SIMD4 float elements to the value r.
- *  \copydetails gmx_simd_set1_f
+ *  \copydetails simdSet1F
  */
-#    define gmx_simd4_set1_f     gmx_simd_set1_f
+static inline Simd4Float
+simd4Set1F(float r)
+{
+    Simd4Float        a;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = r;
+    }
+    return a;
+}
+
 
 /*! \brief Store the contents of SIMD4 float pr to aligned memory m.
- *  \copydetails gmx_simd_store_f
+ *  \copydetails simdStoreF
  */
-#    define gmx_simd4_store_f    gmx_simd_store_f
+static inline void
+simd4StoreF(float *m, Simd4Float a)
+{
+    assert(std::size_t(m) % (GMX_SIMD4_WIDTH*sizeof(float)) == 0);
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        m[i] = a.r[i];
+    }
+}
 
 /*! \brief Load SIMD4 float from unaligned memory.
- * \copydetails gmx_simd_loadu_f
+ * \copydetails simdLoadUF
  */
-#    define gmx_simd4_loadu_f    gmx_simd_loadu_f
+static inline Simd4Float
+simd4LoadUF(const float *m)
+{
+    Simd4Float        a;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = m[i];
+    }
+    return a;
+}
 
 /*! \brief Store SIMD4 float to unaligned memory.
- * \copydetails gmx_simd_storeu_f
+ * \copydetails simdStoreUF
  */
-#    define gmx_simd4_storeu_f   gmx_simd_storeu_f
+static inline void
+simd4StoreUF(float *m, Simd4Float a)
+{
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        m[i] = a.r[i];
+    }
+}
 
 /*! \brief Set all SIMD4 float elements to 0.
- * \copydetails gmx_simd_setzero_f
+ * \copydetails simdSetZeroF
  */
-#    define gmx_simd4_setzero_f  gmx_simd_setzero_f
+static inline Simd4Float
+simd4SetZeroF()
+{
+    Simd4Float a;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = 0.0f;
+    }
+    return a;
+}
+
 
 /*! \brief Bitwise and for two SIMD4 float variables.
- * \copydetails gmx_simd_and_f
+ * \copydetails simdAndF
  */
-#    define gmx_simd4_and_f      gmx_simd_and_f
+static inline Simd4Float
+simd4AndF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float        c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = conv1.i & conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
+
 
 /*! \brief Bitwise andnot for two SIMD4 float variables. c=(~a) & b.
- * \copydetails gmx_simd_andnot_f
+ * \copydetails simdAndNotF
  */
-#    define gmx_simd4_andnot_f   gmx_simd_andnot_f
+static inline Simd4Float
+simd4AndNotF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float        c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = (~conv1.i) & conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
+
 
 /*! \brief Bitwise or for two SIMD4 float variables.
- * \copydetails gmx_simd_or_f
+ * \copydetails simdOrF
  */
-#    define gmx_simd4_or_f       gmx_simd_or_f
+static inline Simd4Float
+simd4OrF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float        c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = conv1.i | conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
 
 /*! \brief Bitwise xor for two SIMD4 float variables.
- * \copydetails gmx_simd_xor_f
+ * \copydetails simdXorF
  */
-#    define gmx_simd4_xor_f      gmx_simd_xor_f
+static inline Simd4Float
+simd4XorF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float        c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = conv1.i ^ conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
 
 /*! \brief Add two SIMD4 float variables.
- * \copydetails gmx_simd_add_f
+ * \copydetails simdAddF
  */
-#    define gmx_simd4_add_f      gmx_simd_add_f
+static inline Simd4Float
+simd4AddF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = a.r[i] + b.r[i];
+    }
+
+    return c;
+}
 
 /*! \brief Subtract two SIMD4 float variables.
- * \copydetails gmx_simd_sub_f
+ * \copydetails simdSubF
  */
-#    define gmx_simd4_sub_f      gmx_simd_sub_f
+static inline Simd4Float
+simd4SubF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = a.r[i] - b.r[i];
+    }
+
+    return c;
+}
 
 /*! \brief Multiply two SIMD4 float variables.
- * \copydetails gmx_simd_mul_f
+ * \copydetails simdMulF
  */
-#    define gmx_simd4_mul_f      gmx_simd_mul_f
+static inline Simd4Float
+simd4MulF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = a.r[i] * b.r[i];
+    }
+
+    return c;
+}
 
 /*! \brief Fused-multiply-add for SIMD4 float. Result is a*b+c.
- * \copydetails gmx_simd_fmadd_f
+ * \copydetails simdFmaddF
  */
-#    define gmx_simd4_fmadd_f    gmx_simd_fmadd_f
+static inline Simd4Float
+simd4FmaddF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return simd4AddF(simd4MulF(a, b), c);
+}
 
 /*! \brief Fused-multiply-subtract for SIMD4 float. Result is a*b-c.
- * \copydetails gmx_simd_fmsub_f
+ * \copydetails simdFmsubF
  */
-#    define gmx_simd4_fmsub_f    gmx_simd_fmsub_f
+static inline Simd4Float
+simd4FmsubF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return simd4SubF(simd4MulF(a, b), c);
+}
 
 /*! \brief Fused-negated-multiply-add for SIMD4 float. Result is -a*b+c.
- * \copydetails gmx_simd_fnmadd_f
+ * \copydetails simdFnmaddF
  */
-#    define gmx_simd4_fnmadd_f   gmx_simd_fnmadd_f
+static inline Simd4Float
+simd4FnmaddF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return simd4SubF(c, simd4MulF(a, b));
+}
 
 /*! \brief Fused-negated-multiply-add for SIMD4 float. Result is -a*b-c.
- * \copydetails gmx_simd_fnmsub_f
+ * \copydetails simdFnmsubF
  */
-#    define gmx_simd4_fnmsub_f   gmx_simd_fnmsub_f
+static inline Simd4Float
+simd4FnmsubF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return simd4SubF(simd4SetZeroF(), simd4FmaddF(a, b, c));
+}
 
 /*! \brief Lookup of approximate 1/sqrt(x) for SIMD4 float.
- * \copydetails gmx_simd_rsqrt_f
+ * \copydetails simdRsqrtF
  */
-#    define gmx_simd4_rsqrt_f    gmx_simd_rsqrt_f
+static inline Simd4Float
+simd4RsqrtF(Simd4Float x)
+{
+    Simd4Float        b;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        b.r[i] = 1.0f / std::sqrt(x.r[i]);
+    }
+    return b;
+};
+
 
 /*! \brief Floating-point absolute value for SIMD4 float.
- * \copydetails gmx_simd_fabs_f
+ * \copydetails simdAbsF
  */
-#    define gmx_simd4_fabs_f     gmx_simd_fabs_f
+static inline Simd4Float
+simd4AbsF(Simd4Float a)
+{
+    Simd4Float        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = std::abs(a.r[i]);
+    }
+    return c;
+}
 
 /*! \brief Floating-point negate for SIMD4 float.
- * \copydetails gmx_simd_fneg_f
+ * \copydetails simdNegF
  */
-#    define gmx_simd4_fneg_f     gmx_simd_fneg_f
+static inline Simd4Float
+simd4NegF(Simd4Float a)
+{
+    Simd4Float        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = -a.r[i];
+    }
+    return c;
+}
 
 /*! \brief Set each SIMD4 float element to the largest from two variables.
- * \copydetails gmx_simd_max_f
+ * \copydetails simdMaxF
  */
-#    define gmx_simd4_max_f      gmx_simd_max_f
+static inline Simd4Float
+simd4MaxF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = std::max(a.r[i], b.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief Set each SIMD4 float element to the smallest from two variables.
- * \copydetails gmx_simd_min_f
+ * \copydetails simdMinF
  */
-#    define gmx_simd4_min_f      gmx_simd_min_f
+static inline Simd4Float
+simd4MinF(Simd4Float a, Simd4Float b)
+{
+    Simd4Float        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = std::min(a.r[i], b.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief Round to nearest integer value for SIMD4 float.
- * \copydetails gmx_simd_round_f
+ * \copydetails simdRoundF
  */
-#    define gmx_simd4_round_f    gmx_simd_round_f
+static inline Simd4Float
+simd4RoundF(Simd4Float a)
+{
+    Simd4Float        b;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        b.r[i] = std::round(a.r[i]);
+    }
+    return b;
+}
+
 
 /*! \brief Round to largest integral value for SIMD4 float.
- * \copydetails gmx_simd_trunc_f
+ * \copydetails simdTruncF
  */
-#    define gmx_simd4_trunc_f    gmx_simd_trunc_f
+static inline Simd4Float
+simd4TruncF(Simd4Float a)
+{
+    Simd4Float        b;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        b.r[i] = std::trunc(a.r[i]);
+    }
+    return b;
+}
 
 /*! \brief Return dot product of two single precision SIMD4 variables.
  *
@@ -206,74 +490,203 @@
  * \param b vector2
  * \result a[0]*b[0]+a[1]*b[1]+a[2]*b[2], returned as scalar. Last element is ignored.
  */
-static gmx_inline float
-gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline float
+simd4DotProductF(Simd4Float a, Simd4Float b)
 {
-    return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
+    return a.r[0] * b.r[0] + a.r[1] * b.r[1] + a.r[2] * b.r[2];
 }
 
-/*! \brief SIMD4 variable type to use for logical comparisons on floats.
- * \copydetails gmx_simd_fbool_t
+/*! \brief SIMD4 float transpose
+ *
+ * \param[in,out] v0  Row 0 on input, column 0 on output
+ * \param[in,out] v1  Row 1 on input, column 1 on output
+ * \param[in,out] v2  Row 2 on input, column 2 on output
+ * \param[in,out] v3  Row 3 on input, column 3 on output
+ *
+ * This is only available in C++.
  */
-#    define gmx_simd4_fbool_t   gmx_simd_fbool_t
+static inline void
+simd4Transpose(Simd4Float * v0, Simd4Float * v1,
+               Simd4Float * v2, Simd4Float * v3)
+{
+    Simd4Float t0 = *v0;
+    Simd4Float t1 = *v1;
+    Simd4Float t2 = *v2;
+    Simd4Float t3 = *v3;
+    v0->r[0] = t0.r[0];
+    v0->r[1] = t1.r[0];
+    v0->r[2] = t2.r[0];
+    v0->r[3] = t3.r[0];
+    v1->r[0] = t0.r[1];
+    v1->r[1] = t1.r[1];
+    v1->r[2] = t2.r[1];
+    v1->r[3] = t3.r[1];
+    v2->r[0] = t0.r[2];
+    v2->r[1] = t1.r[2];
+    v2->r[2] = t2.r[2];
+    v2->r[3] = t3.r[2];
+    v3->r[0] = t0.r[3];
+    v3->r[1] = t1.r[3];
+    v3->r[2] = t2.r[3];
+    v3->r[3] = t3.r[3];
+}
+
+/*! \libinternal  \brief SIMD4 variable type to use for logical comparisons on floats.
+ * \copydetails SimdFBool
+ */
+struct Simd4FBool
+{
+    std::int32_t b[GMX_SIMD4_WIDTH]; /**< Implementation dependent. Don't touch. */
+};
 
 /*! \brief Equality comparison of two single precision SIMD4.
- * \copydetails gmx_simd_cmpeq_f
+ * \copydetails simdCmpEqF
  */
-#    define gmx_simd4_cmpeq_f   gmx_simd_cmpeq_f
+static inline Simd4FBool
+simd4CmpEqF(Simd4Float a, Simd4Float b)
+{
+    Simd4FBool        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
 
 /*! \brief Less-than comparison of two single precision SIMD4.
- * \copydetails gmx_simd_cmplt_f
+ * \copydetails simdCmpLtF
  */
-#    define gmx_simd4_cmplt_f   gmx_simd_cmplt_f
+static inline Simd4FBool
+simd4CmpLtF(Simd4Float a, Simd4Float b)
+{
+    Simd4FBool         c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] < b.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief Less-than comparison of two single precision SIMD4.
- * \copydetails gmx_simd_cmple_f
+ * \copydetails simdCmpLeF
  */
-#    define gmx_simd4_cmple_f   gmx_simd_cmple_f
+static inline Simd4FBool
+simd4CmpLeF(Simd4Float a, Simd4Float b)
+{
+    Simd4FBool         c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] <= b.r[i]);
+    }
+    return c;
+}
 
 /*! \brief Logical AND on float SIMD4 booleans.
- * \copydetails gmx_simd_and_fb
+ * \copydetails simdAndFB
  */
-#    define gmx_simd4_and_fb gmx_simd_and_fb
+static inline Simd4FBool
+simd4AndFB(Simd4FBool a, Simd4FBool b)
+{
+    Simd4FBool c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = a.b[i] && b.b[i];
+    }
+
+    return c;
+}
 
 /*! \brief Logical OR on float SIMD4 booleans.
- * \copydetails gmx_simd_or_fb
+ * \copydetails simdOrFB
  */
-#    define gmx_simd4_or_fb gmx_simd_or_fb
+static inline Simd4FBool
+simd4OrFB(Simd4FBool a, Simd4FBool b)
+{
+    Simd4FBool c;
 
-/*! \brief Returns non-zero if any of the SIMD4 boolean in x is True.
- * \copydetails gmx_simd_anytrue_fb
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = a.b[i] || b.b[i];
+    }
+
+    return c;
+}
+
+/*! \brief Returns true if any of the SIMD4 boolean in x is True.
+ * \copydetails simdAnyTrueFB
  */
-#    define gmx_simd4_anytrue_fb gmx_simd_anytrue_fb
+static inline bool
+simd4AnyTrueFB(Simd4FBool a)
+{
+    return a.b[0] || a.b[1] || a.b[2] || a.b[3];
+}
 
 /*! \brief Select from single precision SIMD4 variable where boolean is true.
- * \copydetails gmx_simd_blendzero_f
+ * \copydetails simdMaskF
  */
-#    define gmx_simd4_blendzero_f gmx_simd_blendzero_f
+static inline Simd4Float
+simd4MaskF(Simd4Float a, Simd4FBool mask)
+{
+    Simd4Float         c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = mask.b[i] ? a.r[i] : 0.0f;
+    }
+    return c;
+}
 
 /*! \brief Select from single precision SIMD4 variable where boolean is false.
- * \copydetails gmx_simd_blendnotzero_f
+ * \copydetails simdMaskNotF
  */
-#    define gmx_simd4_blendnotzero_f gmx_simd_blendnotzero_f
+static inline Simd4Float
+simd4MaskNotF(Simd4Float a, Simd4FBool mask)
+{
+    Simd4Float         c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = mask.b[i] ? 0.0f : a.r[i];
+    }
+    return c;
+}
+
 
 /*! \brief Vector-blend instruction form SIMD4 float.
- * \copydetails gmx_simd_blendv_f
+ * \copydetails simdBlendF
  */
-#    define gmx_simd4_blendv_f  gmx_simd_blendv_f
+static inline Simd4Float
+simd4BlendF(Simd4Float a, Simd4Float b, Simd4FBool sel)
+{
+    Simd4Float        d;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        d.r[i] = sel.b[i] ? b.r[i] : a.r[i];
+    }
+    return d;
+}
+
 
 /*! \brief Return sum of all elements in SIMD4 float.
- * \copydetails gmx_simd_reduce_f
+ * \copydetails simdReduceF
  */
-#    define gmx_simd4_reduce_f  gmx_simd_reduce_f
-
-#else /* GMX_SIMD_FLOAT_WIDTH!=4 */
-#    define GMX_SIMD4_HAVE_FLOAT    0
-#endif
+static inline float
+simd4ReduceF(Simd4Float a)
+{
+    return a.r[0]+a.r[1]+a.r[2]+a.r[3];
+}
 
 /*! \} */
 
 /*! \} */
 /*! \endcond */
 
-#endif /* GMX_SIMD_IMPL_REFERENCE_SIMD4_FLOAT_H */
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_REFERENCE_SIMD4_FLOAT_H
