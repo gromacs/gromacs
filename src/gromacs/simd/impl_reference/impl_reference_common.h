@@ -59,7 +59,7 @@
  */
 
 /*! \brief 1 if any SIMD support is present, otherwise 0 */
-#define GMX_SIMD                             0
+#define GMX_SIMD                             1
 
 /*! \brief
  * 1 when SIMD float support is present, otherwise 0
@@ -88,19 +88,19 @@
 /*! \brief 1 if the SIMD fraction has a direct hardware instruction, otherwise 0 */
 #define GMX_SIMD_HAVE_FRACTION               0
 
-/*! \brief 1 if the SIMD implementation has \ref gmx_simd_fint32_t, otherwise 0 */
+/*! \brief 1 if the SIMD implementation has \ref SimdFInt32, otherwise 0 */
 #define GMX_SIMD_HAVE_FINT32                 1
 
-/*! \brief Support for extracting integers from \ref gmx_simd_fint32_t (1/0 for present/absent) */
+/*! \brief Support for extracting integers from \ref SimdFInt32 (1/0 for present/absent) */
 #define GMX_SIMD_HAVE_FINT32_EXTRACT         1
 
-/*! \brief 1 if SIMD logical ops are supported for \ref gmx_simd_fint32_t, otherwise 0 */
+/*! \brief 1 if SIMD logical ops are supported for \ref SimdFInt32, otherwise 0 */
 #define GMX_SIMD_HAVE_FINT32_LOGICAL         1
 
-/*! \brief 1 if SIMD arithmetic ops are supported for \ref gmx_simd_fint32_t, otherwise 0 */
+/*! \brief 1 if SIMD arithmetic ops are supported for \ref SimdFInt32, otherwise 0 */
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS     1
 
-/*! \brief 1 if the SIMD implementation has \ref gmx_simd_dint32_t, otherwise 0.
+/*! \brief 1 if the SIMD implementation has \ref SimdDInt32, otherwise 0.
  *
  * \note The Gromacs SIMD module works entirely with 32 bit integers, both
  * in single and double precision, since some platforms do not support 64 bit
@@ -113,7 +113,7 @@
  * we work with to also use a SIMD width of 8 to make it easy to load/store
  * indices from arrays. This refers entirely to the function calls
  * and how many integers we load/store in one call; the actual SIMD registers
- * might be wider for integers internally (e.g. on x86 gmx_simd_dint32_t will
+ * might be wider for integers internally (e.g. on x86 SimdDInt32 will
  * only fill half the register), but this is none of the user's business.
  * While this works for all current architectures, and we think it will work
  * for future ones, we might have to alter this decision in the future. To
@@ -123,39 +123,39 @@
  */
 #define GMX_SIMD_HAVE_DINT32                 1
 
-/*! \brief Support for extracting integer from \ref gmx_simd_dint32_t (1/0 for present/absent) */
+/*! \brief Support for extracting integer from \ref SimdDInt32 (1/0 for present/absent) */
 #define GMX_SIMD_HAVE_DINT32_EXTRACT         1
 
-/*! \brief 1 if logical operations are supported for \ref gmx_simd_dint32_t, otherwise 0 */
+/*! \brief 1 if logical operations are supported for \ref SimdDInt32, otherwise 0 */
 #define GMX_SIMD_HAVE_DINT32_LOGICAL         1
 
-/*! \brief 1 if SIMD arithmetic ops are supported for \ref gmx_simd_dint32_t, otherwise 0 */
+/*! \brief 1 if SIMD arithmetic ops are supported for \ref SimdDInt32, otherwise 0 */
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS     1
 
-/*! \brief 1 if implementation provides \ref gmx_simd4_float_t, otherwise 0 */
+/*! \brief 1 if implementation provides \ref Simd4Float, otherwise 0 */
 #define GMX_SIMD4_HAVE_FLOAT                 1
 
-/*! \brief 1 if the implementation provides \ref gmx_simd4_double_t, otherwise 0 */
+/*! \brief 1 if the implementation provides \ref Simd4Double, otherwise 0 */
 #define GMX_SIMD4_HAVE_DOUBLE                1
 
 #ifdef GMX_SIMD_REF_FLOAT_WIDTH
 #    define GMX_SIMD_FLOAT_WIDTH             GMX_SIMD_REF_FLOAT_WIDTH
 #else
-/*! \brief Width of the \ref gmx_simd_float_t datatype. */
+/*! \brief Width of the \ref SimdFloat datatype. */
 #    define GMX_SIMD_FLOAT_WIDTH             4
 #endif
 
 #ifdef GMX_SIMD_REF_DOUBLE_WIDTH
 #    define GMX_SIMD_DOUBLE_WIDTH            GMX_SIMD_REF_DOUBLE_WIDTH
 #else
-/*! \brief Width of the \ref gmx_simd_double_t datatype. */
+/*! \brief Width of the \ref SimdDouble datatype. */
 #    define GMX_SIMD_DOUBLE_WIDTH            4
 #endif
 
-/*! \brief Width of the \ref gmx_simd_fint32_t datatype. */
+/*! \brief Width of the \ref SimdFInt32 datatype. */
 #define GMX_SIMD_FINT32_WIDTH            GMX_SIMD_FLOAT_WIDTH
 
-/*! \brief Width of the \ref gmx_simd_dint32_t datatype. */
+/*! \brief Width of the \ref SimdDInt32 datatype. */
 #define GMX_SIMD_DINT32_WIDTH            GMX_SIMD_DOUBLE_WIDTH
 
 /*! \brief The SIMD4 type is always four units wide, but this makes code more explicit */

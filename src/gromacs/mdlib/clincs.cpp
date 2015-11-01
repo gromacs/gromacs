@@ -62,6 +62,7 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -88,10 +89,10 @@
 
 #    ifdef GMX_DOUBLE
 static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose4_r(gmx_simd_double_t *row0,
-                           gmx_simd_double_t *row1,
-                           gmx_simd_double_t *row2,
-                           gmx_simd_double_t *row3)
+gmx_hack_simd_transpose4_r(SimdDouble *row0,
+                           SimdDouble *row1,
+                           SimdDouble *row2,
+                           SimdDouble *row3)
 {
     __m256d tmp0, tmp1, tmp2, tmp3;
 
@@ -106,11 +107,11 @@ gmx_hack_simd_transpose4_r(gmx_simd_double_t *row0,
 }
 
 static gmx_inline void gmx_simdcall
-gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_double_t *a,
-                                   gmx_simd_double_t        *row0,
-                                   gmx_simd_double_t        *row1,
-                                   gmx_simd_double_t        *row2,
-                                   gmx_simd_double_t        *row3)
+gmx_hack_simd4_transpose_to_simd_r(const Simd4Double *a,
+                                   SimdDouble        *row0,
+                                   SimdDouble        *row1,
+                                   SimdDouble        *row2,
+                                   SimdDouble        *row3)
 {
     *row0 = a[0];
     *row1 = a[1];
@@ -121,11 +122,11 @@ gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_double_t *a,
 }
 
 static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose_to_simd4_r(gmx_simd_double_t   row0,
-                                   gmx_simd_double_t   row1,
-                                   gmx_simd_double_t   row2,
-                                   gmx_simd_double_t   row3,
-                                   gmx_simd4_double_t *a)
+gmx_hack_simd_transpose_to_simd4_r(SimdDouble   row0,
+                                   SimdDouble   row1,
+                                   SimdDouble   row2,
+                                   SimdDouble   row3,
+                                   Simd4Double *a)
 {
     a[0] = row0;
     a[1] = row1;
@@ -146,10 +147,10 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_double_t   row0,
 
 #    else /* single instead of double */
 static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose4_r(gmx_simd_float_t *row0,
-                           gmx_simd_float_t *row1,
-                           gmx_simd_float_t *row2,
-                           gmx_simd_float_t *row3)
+gmx_hack_simd_transpose4_r(SimdFloat *row0,
+                           SimdFloat *row1,
+                           SimdFloat *row2,
+                           SimdFloat *row3)
 {
     __m256 tmp0, tmp1, tmp2, tmp3;
 
@@ -164,11 +165,11 @@ gmx_hack_simd_transpose4_r(gmx_simd_float_t *row0,
 }
 
 static gmx_inline void gmx_simdcall
-gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_float_t *a,
-                                   gmx_simd_float_t        *row0,
-                                   gmx_simd_float_t        *row1,
-                                   gmx_simd_float_t        *row2,
-                                   gmx_simd_float_t        *row3)
+gmx_hack_simd4_transpose_to_simd_r(const Simd4Float *a,
+                                   SimdFloat        *row0,
+                                   SimdFloat        *row1,
+                                   SimdFloat        *row2,
+                                   SimdFloat        *row3)
 {
     *row0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[0]), a[4], 1);
     *row1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[1]), a[5], 1);
@@ -179,11 +180,11 @@ gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_float_t *a,
 }
 
 static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
-                                   gmx_simd_float_t   row1,
-                                   gmx_simd_float_t   row2,
-                                   gmx_simd_float_t   row3,
-                                   gmx_simd4_float_t *a)
+gmx_hack_simd_transpose_to_simd4_r(SimdFloat   row0,
+                                   SimdFloat   row1,
+                                   SimdFloat   row2,
+                                   SimdFloat   row3,
+                                   Simd4Float *a)
 {
     gmx_hack_simd_transpose4_r(&row0, &row1, &row2, &row3);
 
@@ -225,28 +226,24 @@ static gmx_inline void gmx_simdcall
 gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
                                           const int       *pair_index,
                                           real gmx_unused *buf,
-                                          gmx_simd_real_t *dx,
-                                          gmx_simd_real_t *dy,
-                                          gmx_simd_real_t *dz)
+                                          gmx::SimdReal   *dx,
+                                          gmx::SimdReal   *dy,
+                                          gmx::SimdReal   *dz)
 {
 #if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
     int              i;
-    gmx_simd4_real_t d[GMX_SIMD_REAL_WIDTH];
-    gmx_simd_real_t  tmp;
+    gmx::Simd4Real   d[GMX_SIMD_REAL_WIDTH];
+    gmx::SimdReal    tmp;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        d[i] = gmx_simd4_sub_r(gmx_hack_simd4_load3_r(&(v[pair_index[i*2 + 0]][0])),
-                               gmx_hack_simd4_load3_r(&(v[pair_index[i*2 + 1]][0])));
+        d[i] = gmx::simd4Sub(gmx_hack_simd4_load3_r(&(v[pair_index[i*2 + 0]][0])),
+                             gmx_hack_simd4_load3_r(&(v[pair_index[i*2 + 1]][0])));
     }
 
     gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
 #else
-#if GMX_ALIGNMENT
     GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf_aligned[3*GMX_SIMD_REAL_WIDTH];
-#else
-    real* buf_aligned = buf;
-#endif
 
     int i, m;
 
@@ -259,9 +256,9 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
                 v[pair_index[i*2]][m] - v[pair_index[i*2 + 1]][m];
         }
     }
-    *dx = gmx_simd_load_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
-    *dy = gmx_simd_load_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
-    *dz = gmx_simd_load_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
+    *dx = gmx::simdLoad(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
+    *dy = gmx::simdLoad(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
+    *dz = gmx::simdLoad(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
 #endif
 }
 
@@ -275,16 +272,16 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
  * \param[out]    v           Array of GMX_SIMD_REAL_WIDTH rvecs
  */
 static gmx_inline void gmx_simdcall
-gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
-                           gmx_simd_real_t  y,
-                           gmx_simd_real_t  z,
+gmx_simd_store_vec_to_rvec(gmx::SimdReal    x,
+                           gmx::SimdReal    y,
+                           gmx::SimdReal    z,
                            real gmx_unused *buf,
                            rvec            *v)
 {
 #if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
     int              i;
-    gmx_simd4_real_t s4[GMX_SIMD_REAL_WIDTH];
-    gmx_simd_real_t  zero = gmx_simd_setzero_r();
+    gmx::Simd4Real   s4[GMX_SIMD_REAL_WIDTH];
+    gmx::SimdReal    zero = gmx::simdSetZero();
 
     gmx_hack_simd_transpose_to_simd4_r(x, y, z, zero, s4);
 
@@ -293,17 +290,13 @@ gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
         gmx_hack_simd4_store3_r(v[i], s4[i]);
     }
 #else
-#if GMX_ALIGNMENT
     GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf_aligned[3*GMX_SIMD_REAL_WIDTH];
-#else
-    real* buf_aligned = buf;
-#endif
 
     int i, m;
 
-    gmx_simd_store_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH, x);
-    gmx_simd_store_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH, y);
-    gmx_simd_store_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH, z);
+    gmx::simdStore(buf_aligned + 0*GMX_SIMD_REAL_WIDTH, x);
+    gmx::simdStore(buf_aligned + 1*GMX_SIMD_REAL_WIDTH, y);
+    gmx::simdStore(buf_aligned + 2*GMX_SIMD_REAL_WIDTH, z);
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -677,33 +670,33 @@ calc_dr_x_f_simd(int                       b0,
 
     for (bs = b0; bs < b1; bs += GMX_SIMD_REAL_WIDTH)
     {
-        gmx_simd_real_t rx_S, ry_S, rz_S, n2_S, il_S;
-        gmx_simd_real_t fx_S, fy_S, fz_S, ip_S, rhs_S;
+        gmx::SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
+        gmx::SimdReal fx_S, fy_S, fz_S, ip_S, rhs_S;
 
         gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
                                                   &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
-        n2_S  = gmx_simd_norm2_r(rx_S, ry_S, rz_S);
-        il_S  = gmx_simd_invsqrt_r(n2_S);
+        n2_S  = gmx::simdNorm2(rx_S, ry_S, rz_S);
+        il_S  = gmx::simdInvsqrt(n2_S);
 
-        rx_S  = gmx_simd_mul_r(rx_S, il_S);
-        ry_S  = gmx_simd_mul_r(ry_S, il_S);
-        rz_S  = gmx_simd_mul_r(rz_S, il_S);
+        rx_S  = gmx::simdMul(rx_S, il_S);
+        ry_S  = gmx::simdMul(ry_S, il_S);
+        rz_S  = gmx::simdMul(rz_S, il_S);
 
         gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
 
         gmx_hack_simd_gather_rvec_dist_pair_index(f, bla + bs*2, vbuf2,
                                                   &fx_S, &fy_S, &fz_S);
 
-        ip_S  = gmx_simd_iprod_r(rx_S, ry_S, rz_S,
-                                 fx_S, fy_S, fz_S);
+        ip_S  = gmx::simdIprod(rx_S, ry_S, rz_S,
+                               fx_S, fy_S, fz_S);
 
-        rhs_S = gmx_simd_mul_r(gmx_simd_load_r(blc + bs), ip_S);
+        rhs_S = gmx::simdMul(gmx::simdLoad(blc + bs), ip_S);
 
-        gmx_simd_store_r(rhs + bs, rhs_S);
-        gmx_simd_store_r(sol + bs, rhs_S);
+        gmx::simdStore(rhs + bs, rhs_S);
+        gmx::simdStore(sol + bs, rhs_S);
     }
 }
 #endif /* LINCS_SIMD */
@@ -917,20 +910,20 @@ calc_dr_x_xp_simd(int                       b0,
 
     for (bs = b0; bs < b1; bs += GMX_SIMD_REAL_WIDTH)
     {
-        gmx_simd_real_t rx_S, ry_S, rz_S, n2_S, il_S;
-        gmx_simd_real_t rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
+        gmx::SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
+        gmx::SimdReal rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
 
         gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
                                                   &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
-        n2_S  = gmx_simd_norm2_r(rx_S, ry_S, rz_S);
-        il_S  = gmx_simd_invsqrt_r(n2_S);
+        n2_S  = gmx::simdNorm2(rx_S, ry_S, rz_S);
+        il_S  = gmx::simdInvsqrt(n2_S);
 
-        rx_S  = gmx_simd_mul_r(rx_S, il_S);
-        ry_S  = gmx_simd_mul_r(ry_S, il_S);
-        rz_S  = gmx_simd_mul_r(rz_S, il_S);
+        rx_S  = gmx::simdMul(rx_S, il_S);
+        ry_S  = gmx::simdMul(ry_S, il_S);
+        rz_S  = gmx::simdMul(rz_S, il_S);
 
         gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
 
@@ -939,14 +932,14 @@ calc_dr_x_xp_simd(int                       b0,
 
         pbc_correct_dx_simd(&rxp_S, &ryp_S, &rzp_S, pbc_simd);
 
-        ip_S  = gmx_simd_iprod_r(rx_S, ry_S, rz_S,
-                                 rxp_S, ryp_S, rzp_S);
+        ip_S  = gmx::simdIprod(rx_S, ry_S, rz_S,
+                               rxp_S, ryp_S, rzp_S);
 
-        rhs_S = gmx_simd_mul_r(gmx_simd_load_r(blc + bs),
-                               gmx_simd_sub_r(ip_S, gmx_simd_load_r(bllen + bs)));
+        rhs_S = gmx::simdMul(gmx::simdLoad(blc + bs),
+                             gmx::simdSub(ip_S, gmx::simdLoad(bllen + bs)));
 
-        gmx_simd_store_r(rhs + bs, rhs_S);
-        gmx_simd_store_r(sol + bs, rhs_S);
+        gmx::simdStore(rhs + bs, rhs_S);
+        gmx::simdStore(sol + bs, rhs_S);
     }
 }
 #endif /* LINCS_SIMD */
@@ -1016,56 +1009,56 @@ calc_dist_iter_simd(int                       b0,
                     real * gmx_restrict       sol,
                     gmx_bool *                bWarn)
 {
-    gmx_simd_real_t min_S  = gmx_simd_set1_r(GMX_REAL_MIN);
-    gmx_simd_real_t two_S  = gmx_simd_set1_r(2.0);
-    gmx_simd_real_t wfac_S = gmx_simd_set1_r(wfac);
-    gmx_simd_bool_t warn_S;
+    gmx::SimdReal   min_S  = gmx::simdSet1(GMX_REAL_MIN);
+    gmx::SimdReal   two_S  = gmx::simdSet1(2.0);
+    gmx::SimdReal   wfac_S = gmx::simdSet1(wfac);
+    gmx::SimdBool   warn_S;
 
     int             bs;
 
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
 
     /* Initialize all to FALSE */
-    warn_S = gmx_simd_cmplt_r(two_S, gmx_simd_setzero_r());
+    warn_S = gmx::simdCmpLt(two_S, gmx::simdSetZero());
 
     for (bs = b0; bs < b1; bs += GMX_SIMD_REAL_WIDTH)
     {
-        gmx_simd_real_t rx_S, ry_S, rz_S, n2_S;
-        gmx_simd_real_t len_S, len2_S, dlen2_S, lc_S, blc_S;
+        gmx::SimdReal rx_S, ry_S, rz_S, n2_S;
+        gmx::SimdReal len_S, len2_S, dlen2_S, lc_S, blc_S;
 
         gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf,
                                                   &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
-        n2_S    = gmx_simd_norm2_r(rx_S, ry_S, rz_S);
+        n2_S    = gmx::simdNorm2(rx_S, ry_S, rz_S);
 
-        len_S   = gmx_simd_load_r(bllen + bs);
-        len2_S  = gmx_simd_mul_r(len_S, len_S);
+        len_S   = gmx::simdLoad(bllen + bs);
+        len2_S  = gmx::simdMul(len_S, len_S);
 
-        dlen2_S = gmx_simd_fmsub_r(two_S, len2_S, n2_S);
+        dlen2_S = gmx::simdFmsub(two_S, len2_S, n2_S);
 
-        warn_S  = gmx_simd_or_b(warn_S,
-                                gmx_simd_cmplt_r(dlen2_S,
-                                                 gmx_simd_mul_r(wfac_S, len2_S)));
+        warn_S  = gmx::simdOrB(warn_S,
+                               gmx::simdCmpLt(dlen2_S,
+                                              gmx::simdMul(wfac_S, len2_S)));
 
         /* Avoid 1/0 by taking the max with REAL_MIN.
          * Note: when dlen2 is close to zero (90 degree constraint rotation),
          * the accuracy of the algorithm is no longer relevant.
          */
-        dlen2_S = gmx_simd_max_r(dlen2_S, min_S);
+        dlen2_S = gmx::simdMax(dlen2_S, min_S);
 
-        lc_S    = gmx_simd_fnmadd_r(dlen2_S, gmx_simd_invsqrt_r(dlen2_S), len_S);
+        lc_S    = gmx::simdFnmadd(dlen2_S, gmx::simdInvsqrt(dlen2_S), len_S);
 
-        blc_S   = gmx_simd_load_r(blc + bs);
+        blc_S   = gmx::simdLoad(blc + bs);
 
-        lc_S    = gmx_simd_mul_r(blc_S, lc_S);
+        lc_S    = gmx::simdMul(blc_S, lc_S);
 
-        gmx_simd_store_r(rhs + bs, lc_S);
-        gmx_simd_store_r(sol + bs, lc_S);
+        gmx::simdStore(rhs + bs, lc_S);
+        gmx::simdStore(sol + bs, lc_S);
     }
 
-    if (gmx_simd_anytrue_b(warn_S))
+    if (gmx::simdAnyTrueB(warn_S))
     {
         *bWarn = TRUE;
     }
@@ -1205,9 +1198,9 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 #else
     for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
     {
-        gmx_simd_store_r(mlambda + b,
-                         gmx_simd_mul_r(gmx_simd_load_r(blc + b),
-                                        gmx_simd_load_r(sol + b)));
+        gmx::simdStore(mlambda + b,
+                       gmx::simdMul(gmx::simdLoad(blc + b),
+                                    gmx::simdLoad(sol + b)));
     }
 #endif
 
@@ -1267,13 +1260,13 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 #else
         for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
         {
-            gmx_simd_real_t mvb;
+            gmx::SimdReal mvb;
 
-            mvb = gmx_simd_mul_r(gmx_simd_load_r(blc + b),
-                                 gmx_simd_load_r(sol + b));
-            gmx_simd_store_r(blc_sol + b, mvb);
-            gmx_simd_store_r(mlambda + b,
-                             gmx_simd_add_r(gmx_simd_load_r(mlambda + b), mvb));
+            mvb = gmx::simdMul(gmx::simdLoad(blc + b),
+                               gmx::simdLoad(sol + b));
+            gmx::simdStore(blc_sol + b, mvb);
+            gmx::simdStore(mlambda + b,
+                           gmx::simdAdd(gmx::simdLoad(mlambda + b), mvb));
         }
 #endif
 

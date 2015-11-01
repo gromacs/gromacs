@@ -37,6 +37,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/basedefinitions.h"
 #ifdef CALC_COUL_EWALD
 #include "gromacs/math/utilities.h"
 #endif
@@ -66,10 +67,10 @@ gmx_load_simd_4xn_interactions(int                        excl,
                                gmx_exclfilter gmx_unused  filter_S2,
                                gmx_exclfilter gmx_unused  filter_S3,
                                real gmx_unused           *simd_interaction_array,
-                               gmx_simd_bool_t           *interact_S0,
-                               gmx_simd_bool_t           *interact_S1,
-                               gmx_simd_bool_t           *interact_S2,
-                               gmx_simd_bool_t           *interact_S3)
+                               gmx::SimdBool             *interact_S0,
+                               gmx::SimdBool             *interact_S1,
+                               gmx::SimdBool             *interact_S2,
+                               gmx::SimdBool             *interact_S3)
 {
 #if GMX_SIMD_X86_SSE2_OR_HIGHER || GMX_SIMD_REFERENCE
     /* Load integer interaction mask */

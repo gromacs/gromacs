@@ -45,7 +45,8 @@
  * \ingroup module_simd
  */
 
-#include <math.h>
+#include <cmath>
+#include <cstdint>
 
 #include "impl_reference_common.h"
 
@@ -62,7 +63,7 @@ typedef struct
 {
     float r[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
-gmx_simd_float_t;
+SimdFloat;
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
  *
@@ -70,27 +71,27 @@ gmx_simd_float_t;
  */
 typedef struct
 {
-    gmx_int32_t i[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
+    std::int32_t i[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
-gmx_simd_fint32_t;
+SimdFInt32;
 
 /*! \libinternal \brief Boolean type for float SIMD data.
  *
- * You should likely use gmx_simd_bool_t
- * (for gmx_simd_real_t) instead, unless you really know what you are doing.
+ * You should likely use SimdBool
+ * (for SimdReal) instead, unless you really know what you are doing.
  */
 typedef struct
 {
-    gmx_int32_t b[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
+    std::int32_t b[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
-gmx_simd_fbool_t;
+SimdFBool;
 
 /*! \libinternal \brief Boolean type for integer datatypes corresponding to float SIMD. */
 typedef struct
 {
-    gmx_int32_t b[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
+    std::int32_t b[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
-gmx_simd_fibool_t;
+SimdFIBool;
 
 /*! \}
  *
@@ -103,10 +104,10 @@ gmx_simd_fibool_t;
  * \param m Pointer to memory aligned to the SIMD width.
  * \return SIMD variable with data loaded.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_load_f(const float *m)
+static inline SimdFloat
+simdLoadF(const float *m)
 {
-    gmx_simd_float_t  a;
+    SimdFloat         a;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -121,10 +122,10 @@ gmx_simd_load_f(const float *m)
  * \param m Pointer to single value in memory.
  * \return SIMD variable with all elements set to *m.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_load1_f(const float *m)
+static inline SimdFloat
+simdLoad1F(const float *m)
 {
-    gmx_simd_float_t  a;
+    SimdFloat         a;
     int               i;
     float             f = *m;
 
@@ -140,10 +141,10 @@ gmx_simd_load1_f(const float *m)
  *  \param r floating-point constant
  *  \return SIMD variable with all elements set to r.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_set1_f(float r)
+static inline SimdFloat
+simdSet1F(float r)
 {
-    gmx_simd_float_t  a;
+    SimdFloat         a;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -157,10 +158,10 @@ gmx_simd_set1_f(float r)
  *
  *  \return The value 0.0 in all elements of a SIMD variable.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_setzero_f()
+static inline SimdFloat
+simdSetZeroF()
 {
-    gmx_simd_float_t  a;
+    SimdFloat         a;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -175,8 +176,8 @@ gmx_simd_setzero_f()
  * \param[out] m Pointer to memory, aligned to SIMD width.
  * \param a SIMD variable to store
  */
-static gmx_inline void
-gmx_simd_store_f(float *m, gmx_simd_float_t a)
+static inline void
+simdStoreF(float *m, SimdFloat a)
 {
     int i;
 
@@ -193,7 +194,7 @@ gmx_simd_store_f(float *m, gmx_simd_float_t a)
  * \param m Pointer to memory, no alignment requirement.
  * \return SIMD variable with data loaded.
  */
-#define gmx_simd_loadu_f gmx_simd_load_f
+#define simdLoadUF simdLoadF
 
 /*! \brief Store SIMD float to unaligned memory.
  *
@@ -202,7 +203,7 @@ gmx_simd_store_f(float *m, gmx_simd_float_t a)
  * \param[out] m Pointer to memory, no alignment requirement.
  * \param a SIMD variable to store.
  */
-#define gmx_simd_storeu_f gmx_simd_store_f
+#define simdStoreUF simdStoreF
 
 /*! \}
  *
@@ -210,17 +211,17 @@ gmx_simd_store_f(float *m, gmx_simd_float_t a)
  * \{
  */
 
-/*! \brief Load aligned SIMD integer data, width corresponds to \ref gmx_simd_float_t.
+/*! \brief Load aligned SIMD integer data, width corresponds to \ref SimdFloat.
  *
- * You should typically call the real-precision \ref gmx_simd_load_i.
+ * You should typically call the real-precision \ref gmx::simdLoadI.
  *
  * \param m Pointer to memory, aligned to integer SIMD width.
  * \return SIMD integer variable.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_load_fi(const gmx_int32_t * m)
+static inline SimdFInt32
+simdLoadFI(const std::int32_t * m)
 {
-    gmx_simd_fint32_t  a;
+    SimdFInt32         a;
     int                i;
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
@@ -229,17 +230,17 @@ gmx_simd_load_fi(const gmx_int32_t * m)
     return a;
 };
 
-/*! \brief Set SIMD from integer, width corresponds to \ref gmx_simd_float_t.
+/*! \brief Set SIMD from integer, width corresponds to \ref SimdFloat.
  *
- * You should typically call the real-precision \ref gmx_simd_set1_i.
+ * You should typically call the real-precision \ref gmx::simdSet1I.
  *
  *  \param b integer value to set variable to.
  *  \return SIMD variable with all elements set to b.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_set1_fi(gmx_int32_t b)
+static inline SimdFInt32
+simdSet1FI(std::int32_t b)
 {
-    gmx_simd_fint32_t  a;
+    SimdFInt32         a;
     int                i;
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
@@ -248,16 +249,16 @@ gmx_simd_set1_fi(gmx_int32_t b)
     return a;
 }
 
-/*! \brief Set all SIMD variable elements to 0, width corresponds to \ref gmx_simd_float_t.
+/*! \brief Set all SIMD variable elements to 0, width corresponds to \ref SimdFloat.
  *
- * You should typically call the real-precision \ref gmx_simd_setzero_i.
+ * You should typically call the real-precision \ref gmx::simdSetZeroI.
  *
  * \return SIMD integer variable with all bits set to zero.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_setzero_fi()
+static inline SimdFInt32
+simdSetZeroFI()
 {
-    gmx_simd_fint32_t  a;
+    SimdFInt32         a;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -267,15 +268,15 @@ gmx_simd_setzero_fi()
     return a;
 }
 
-/*! \brief Store aligned SIMD integer data, width corresponds to \ref gmx_simd_float_t.
+/*! \brief Store aligned SIMD integer data, width corresponds to \ref SimdFloat.
  *
- * You should typically call the real-precision \ref gmx_simd_store_i.
+ * You should typically call the real-precision \ref gmx::simdStoreI.
  *
  * \param m Memory aligned to integer SIMD width.
  * \param a SIMD variable to store.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_store_fi(int * m, gmx_simd_fint32_t a)
+static inline SimdFInt32
+simdStoreFI(int * m, SimdFInt32 a)
 {
     int                i;
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -285,40 +286,40 @@ gmx_simd_store_fi(int * m, gmx_simd_fint32_t a)
     return a;
 };
 
-/*! \brief Load unaligned integer SIMD data, width corresponds to \ref gmx_simd_float_t.
+/*! \brief Load unaligned integer SIMD data, width corresponds to \ref SimdFloat.
  *
- * You should typically call the real-precision \ref gmx_simd_loadu_i.
+ * You should typically call the real-precision \ref gmx::simdLoadUI.
  *
  * Supported with \ref GMX_SIMD_HAVE_LOADU.
  *
  * \param m Pointer to memory, no alignment requirements.
  * \return SIMD integer variable.
  */
-#define gmx_simd_loadu_fi  gmx_simd_load_fi
+#define simdLoadUFI  simdLoadFI
 
-/*! \brief Store unaligned SIMD integer data, width corresponds to \ref gmx_simd_float_t.
+/*! \brief Store unaligned SIMD integer data, width corresponds to \ref SimdFloat.
  *
- * You should typically call the real-precision \ref gmx_simd_storeu_i.
+ * You should typically call the real-precision \ref gmx::simdStoreUI.
  *
  * Supported with \ref GMX_SIMD_HAVE_STOREU.
  *
  * \param m Memory pointer, no alignment requirements.
  * \param a SIMD variable to store.
  */
-#define gmx_simd_storeu_fi gmx_simd_store_fi
+#define simdStoreUFI simdStoreFI
 
-/*! \brief Extract element with index i from \ref gmx_simd_fint32_t.
+/*! \brief Extract element with index i from \ref SimdFInt32.
  *
- * You should typically call the real-precision \ref gmx_simd_extract_i.
+ * You should typically call the real-precision \ref gmx::simdExtractI.
  *
  * Available with \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
  *
  * \param a SIMD variable
- * \param index Position to extract integer from
+ * \param index Immediate value, position to extract integer from
  * \return Single integer from position index in SIMD variable.
  */
-static gmx_inline gmx_int32_t
-gmx_simd_extract_fi(gmx_simd_fint32_t a, int index)
+static inline std::int32_t
+simdExtractFI(SimdFInt32 a, int index)
 {
     return a.i[index];
 }
@@ -331,21 +332,21 @@ gmx_simd_extract_fi(gmx_simd_fint32_t a, int index)
 
 /*! \brief Bitwise and for two SIMD float variables. Supported with \ref GMX_SIMD_HAVE_LOGICAL.
  *
- * You should typically call the real-precision \ref gmx_simd_and_r.
+ * You should typically call the real-precision \ref gmx::simdAnd.
  *
  * \param a data1
  * \param b data2
  * \return data1 & data2
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_and_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdAndF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
     union
     {
-        float        r;
-        gmx_int32_t  i;
+        float         r;
+        std::int32_t  i;
     }
     conv1, conv2;
 
@@ -361,21 +362,21 @@ gmx_simd_and_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Bitwise andnot for SIMD float. c=(~a) & b. Supported with \ref GMX_SIMD_HAVE_LOGICAL.
  *
- * You should typically call the real-precision \ref gmx_simd_andnot_r.
+ * You should typically call the real-precision \ref gmx::simdAndNot.
  *
  * \param a data1
  * \param b data2
  * \return (~data1) & data2
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_andnot_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdAndNotF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
     union
     {
-        float        r;
-        gmx_int32_t  i;
+        float         r;
+        std::int32_t  i;
     }
     conv1, conv2;
 
@@ -391,21 +392,21 @@ gmx_simd_andnot_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Bitwise or for SIMD float. Supported with \ref GMX_SIMD_HAVE_LOGICAL.
  *
- * You should typically call the real-precision \ref gmx_simd_or_r.
+ * You should typically call the real-precision \ref gmx::simdOr.
  *
  * \param a data1
  * \param b data2
  * \return data1 | data2
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_or_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdOrF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
     union
     {
-        float        r;
-        gmx_int32_t  i;
+        float         r;
+        std::int32_t  i;
     }
     conv1, conv2;
 
@@ -421,21 +422,21 @@ gmx_simd_or_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Bitwise xor for SIMD float. Supported with \ref GMX_SIMD_HAVE_LOGICAL.
  *
- * You should typically call the real-precision \ref gmx_simd_xor_r.
+ * You should typically call the real-precision \ref gmx::simdXor.
  *
  * \param a data1
  * \param b data2
  * \return data1 ^ data2
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_xor_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdXorF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
     union
     {
-        float        r;
-        gmx_int32_t  i;
+        float         r;
+        std::int32_t  i;
     }
     conv1, conv2;
 
@@ -456,16 +457,16 @@ gmx_simd_xor_f(gmx_simd_float_t a, gmx_simd_float_t b)
  */
 /*! \brief Add two float SIMD variables.
  *
- * You should typically call the real-precision \ref gmx_simd_add_r.
+ * You should typically call the real-precision \ref gmx::simdAdd.
  *
  * \param a term1
  * \param b term2
  * \return a+b
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_add_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdAddF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -477,16 +478,16 @@ gmx_simd_add_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Subtract two SIMD variables.
  *
- * You should typically call the real-precision \ref gmx_simd_sub_r.
+ * You should typically call the real-precision \ref gmx::simdSub.
  *
  * \param a term1
  * \param b term2
  * \return a-b
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_sub_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdSubF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -498,16 +499,16 @@ gmx_simd_sub_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Multiply two SIMD variables.
  *
- * You should typically call the real-precision \ref gmx_simd_mul_r.
+ * You should typically call the real-precision \ref gmx::simdMul.
  *
  * \param a factor1
  * \param b factor2
  * \return a*b.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdMulF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -519,7 +520,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Fused-multiply-add. Result is a*b+c.
  *
- * You should typically call the real-precision \ref gmx_simd_fmadd_r.
+ * You should typically call the real-precision \ref gmx::simdFmadd.
  *
  *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
@@ -531,12 +532,12 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define gmx_simd_fmadd_f(a, b, c) gmx_simd_add_f(gmx_simd_mul_f(a, b), c)
+#define simdFmaddF(a, b, c) simdAddF(simdMulF(a, b), c)
 
 
 /*! \brief Fused-multiply-subtract. Result is a*b-c.
  *
- * You should typically call the real-precision \ref gmx_simd_fmsub_r.
+ * You should typically call the real-precision \ref gmx::simdFmsub.
  *
  *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
@@ -548,12 +549,12 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define gmx_simd_fmsub_f(a, b, c) gmx_simd_sub_f(gmx_simd_mul_f(a, b), c)
+#define simdFmsubF(a, b, c) simdSubF(simdMulF(a, b), c)
 
 
 /*! \brief Fused-negated-multiply-add. Result is -a*b+c.
  *
- * You should typically call the real-precision \ref gmx_simd_fnmadd_r.
+ * You should typically call the real-precision \ref gmx::simdFnmadd.
  *
  *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
@@ -565,12 +566,12 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define gmx_simd_fnmadd_f(a, b, c) gmx_simd_sub_f(c, gmx_simd_mul_f(a, b))
+#define simdFnmaddF(a, b, c) simdSubF(c, simdMulF(a, b))
 
 
 /*! \brief Fused-negated-multiply-sub. Result is -a*b-c.
  *
- * You should typically call the real-precision \ref gmx_simd_fnmsub_r.
+ * You should typically call the real-precision \ref gmx::simdFnmsub.
  *
  *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
@@ -582,11 +583,11 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define gmx_simd_fnmsub_f(a, b, c) gmx_simd_sub_f(gmx_simd_setzero_f(), gmx_simd_fmadd_f(a, b, c))
+#define simdFnmsubF(a, b, c) simdSubF(simdSetZeroF(), simdFmaddF(a, b, c))
 
 /*! \brief SIMD 1.0/sqrt(x) lookup.
  *
- * You should typically call the real-precision \ref gmx_simd_rsqrt_r.
+ * You should typically call the real-precision \ref gmx::simdRsqrt.
  *
  * This is a low-level instruction that should only be called from routines
  * implementing the inverse square root in simd_math.h.
@@ -594,10 +595,10 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * \param x Argument, x>0
  * \return Approximation of 1/sqrt(x), accuracy is \ref GMX_SIMD_RSQRT_BITS.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_rsqrt_f(gmx_simd_float_t x)
+static inline SimdFloat
+simdRsqrtF(SimdFloat x)
 {
-    gmx_simd_float_t  b;
+    SimdFloat         b;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -609,7 +610,7 @@ gmx_simd_rsqrt_f(gmx_simd_float_t x)
 
 /*! \brief SIMD 1.0/x lookup.
  *
- * You should typically call the real-precision \ref gmx_simd_rcp_r.
+ * You should typically call the real-precision \ref gmx::simdRcp.
  *
  * This is a low-level instruction that should only be called from routines
  * implementing the reciprocal in simd_math.h.
@@ -617,10 +618,10 @@ gmx_simd_rsqrt_f(gmx_simd_float_t x)
  * \param x Argument, x!=0
  * \return Approximation of 1/x, accuracy is \ref GMX_SIMD_RCP_BITS.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_rcp_f(gmx_simd_float_t x)
+static inline SimdFloat
+simdRcpF(SimdFloat x)
 {
-    gmx_simd_float_t  b;
+    SimdFloat         b;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -632,15 +633,15 @@ gmx_simd_rcp_f(gmx_simd_float_t x)
 
 /*! \brief SIMD Floating-point fabs().
  *
- * You should typically call the real-precision \ref gmx_simd_fabs_r.
+ * You should typically call the real-precision \ref gmx::simdAbs.
  *
  * \param a any floating point values
  * \return fabs(a) for each element.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_fabs_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdAbsF(SimdFloat a)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -652,15 +653,15 @@ gmx_simd_fabs_f(gmx_simd_float_t a)
 
 /*! \brief SIMD floating-point negate.
  *
- * You should typically call the real-precision \ref gmx_simd_fneg_r.
+ * You should typically call the real-precision \ref gmx::simdNeg.
  *
  * \param a Any floating-point value
  * \return -a
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_fneg_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdNegF(SimdFloat a)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -672,16 +673,16 @@ gmx_simd_fneg_f(gmx_simd_float_t a)
 
 /*! \brief Set each SIMD element to the largest from two variables.
  *
- * You should typically call the real-precision \ref gmx_simd_max_r.
+ * You should typically call the real-precision \ref gmx::simdMax.
  *
  * \param a Any floating-point value
  * \param b Any floating-point value
  * \return max(a,b) for each element.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_max_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdMaxF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -693,16 +694,16 @@ gmx_simd_max_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Set each SIMD element to the smallest from two variables.
  *
- * You should typically call the real-precision \ref gmx_simd_min_r.
+ * You should typically call the real-precision \ref gmx::simdMin.
  *
  * \param a Any floating-point value
  * \param b Any floating-point value
  * \return min(a,b) for each element.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_min_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFloat
+simdMinF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_float_t  c;
+    SimdFloat         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -714,7 +715,7 @@ gmx_simd_min_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Round to nearest integer value (in floating-point format).
  *
- * You should typically call the real-precision \ref gmx_simd_round_r.
+ * You should typically call the real-precision \ref gmx::simdRound.
  *
  * \param a Any floating-point value
  * \return The nearest integer, represented in floating-point format.
@@ -727,10 +728,10 @@ gmx_simd_min_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * round() than rint(), so we do that and hope we never get bitten in
  * testing. (Thanks, Microsoft.)
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_round_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdRoundF(SimdFloat a)
 {
-    gmx_simd_float_t  b;
+    SimdFloat         b;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -747,7 +748,7 @@ gmx_simd_round_f(gmx_simd_float_t a)
 
 /*! \brief Truncate SIMD, i.e. round towards zero - common hardware instruction.
  *
- * You should typically call the real-precision \ref gmx_simd_trunc_r.
+ * You should typically call the real-precision \ref gmx::simdTrunc.
  *
  * \param a Any floating-point value
  * \return Integer rounded towards zero, represented in floating-point format.
@@ -756,10 +757,10 @@ gmx_simd_round_f(gmx_simd_float_t a)
  * is that truncation is virtually always present as a dedicated hardware
  * instruction, but floor() frequently isn't.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_trunc_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdTruncF(SimdFloat a)
 {
-    gmx_simd_float_t  b;
+    SimdFloat         b;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -772,7 +773,7 @@ gmx_simd_trunc_f(gmx_simd_float_t a)
 
 /*! \brief Fraction of the SIMD floating point number.
  *
- * You should typically call the real-precision \ref gmx_simd_fraction_r.
+ * You should typically call the real-precision \ref gmx::simdFraction.
  *
  * \param a Any floating-point value
  * \return a-trunc(r)
@@ -784,15 +785,15 @@ gmx_simd_trunc_f(gmx_simd_float_t a)
  *
  * Hardware support with \ref GMX_SIMD_HAVE_FRACTION, otherwise emulated.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_fraction_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdFractionF(SimdFloat a)
 {
-    return gmx_simd_sub_f(a, gmx_simd_trunc_f(a));
+    return simdSubF(a, simdTruncF(a));
 }
 
 /*! \brief Extract (integer) exponent from single precision SIMD.
  *
- * You should typically call the real-precision \ref gmx_simd_get_exponent_r.
+ * You should typically call the real-precision \ref gmx::simdGetExponent.
  *
  * \param a Any floating-point value
  * \return Exponent value, represented in floating-point format.
@@ -800,17 +801,17 @@ gmx_simd_fraction_f(gmx_simd_float_t a)
  * The IEEE754 exponent field is selected, the bias removed, and it is converted to
  * a normal floating-point SIMD.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_exponent_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdGetExponentF(SimdFloat a)
 {
     /* Mask with ones for the exponent field of single precision fp */
-    const gmx_int32_t  expmask = 0x7f800000;
-    gmx_simd_float_t   b;
-    int                i;
+    const std::int32_t  expmask = 0x7f800000;
+    SimdFloat           b;
+    int                 i;
     union
     {
-        float        f;
-        gmx_int32_t  i;
+        float         f;
+        std::int32_t  i;
     }
     conv;
 
@@ -825,24 +826,24 @@ gmx_simd_get_exponent_f(gmx_simd_float_t a)
 
 /*! \brief Get SIMD mantissa.
  *
- * You should typically call the real-precision \ref gmx_simd_get_mantissa_r.
+ * You should typically call the real-precision \ref gmx::simdGetMantissa.
  *
  * \param a Any floating-point value
  * \return Mantissa, represented in floating-point format.
  *
  * The mantissa field is selected, and a new neutral exponent created.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_mantissa_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdGetMantissaF(SimdFloat a)
 {
-    const gmx_int32_t  mantmask = 0x007fffff;
-    const gmx_int32_t  one      = 0x3f800000;
-    gmx_simd_float_t   b;
-    int                i;
+    const std::int32_t  mantmask = 0x007fffff;
+    const std::int32_t  one      = 0x3f800000;
+    SimdFloat           b;
+    int                 i;
     union
     {
-        float        f;
-        gmx_int32_t  i;
+        float         f;
+        std::int32_t  i;
     }
     conv;
 
@@ -858,7 +859,7 @@ gmx_simd_get_mantissa_f(gmx_simd_float_t a)
 
 /*! \brief Set (integer) exponent from single precision floating-point SIMD.
  *
- * You should typically call the real-precision \ref gmx_simd_set_exponent_r.
+ * You should typically call the real-precision \ref gmx::simdSetExponent.
  *
  * \param a A floating point value that will not overflow as 2^a.
  * \return 2^(round(a)).
@@ -870,22 +871,22 @@ gmx_simd_get_mantissa_f(gmx_simd_float_t a)
  * we need for the exponential functions, and this integer x will be set as the
  * exponent so the new floating-point number will be 2^x.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_set_exponent_f(gmx_simd_float_t a)
+static inline SimdFloat
+simdSetExponentF(SimdFloat a)
 {
-    gmx_simd_float_t   b;
-    gmx_int32_t        iexp;
-    int                i;
+    SimdFloat           b;
+    std::int32_t        iexp;
+    int                 i;
     union
     {
-        float        f;
-        gmx_int32_t  i;
+        float         f;
+        std::int32_t  i;
     }
     conv;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        /* Critical to use same algorithm as for gmx_simd_round_f() */
+        /* Critical to use same algorithm as for simdRoundF() */
 #ifdef _MSC_VER
         iexp = (a.r[i] >= 0.0f) ? (a.r[i] + 0.5f) : (a.r[i] - 0.5f);
 #else
@@ -905,7 +906,7 @@ gmx_simd_set_exponent_f(gmx_simd_float_t a)
  */
 /*! \brief SIMD a==b for single SIMD.
  *
- * You should typically call the real-precision \ref gmx_simd_cmpeq_r.
+ * You should typically call the real-precision \ref gmx::simdCmpEq.
  *
  * \param a value1
  * \param b value2
@@ -913,10 +914,10 @@ gmx_simd_set_exponent_f(gmx_simd_float_t a)
  *
  * Beware that exact floating-point comparisons are difficult.
  */
-static gmx_inline gmx_simd_fbool_t
-gmx_simd_cmpeq_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFBool
+simdCmpEqF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_fbool_t  c;
+    SimdFBool         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -928,16 +929,16 @@ gmx_simd_cmpeq_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief SIMD a<b for single SIMD.
  *
- * You should typically call the real-precision \ref gmx_simd_cmplt_r.
+ * You should typically call the real-precision \ref gmx::simdCmpLt.
  *
  * \param a value1
  * \param b value2
  * \return Each element of the boolean will be set to true if a<b.
  */
-static gmx_inline gmx_simd_fbool_t
-gmx_simd_cmplt_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFBool
+simdCmpLtF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_fbool_t   c;
+    SimdFBool          c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -949,16 +950,16 @@ gmx_simd_cmplt_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief SIMD a<=b for single SIMD.
  *
- * You should typically call the real-precision \ref gmx_simd_cmple_r.
+ * You should typically call the real-precision \ref gmx::simdCmpLe.
  *
  * \param a value1
  * \param b value2
  * \return Each element of the boolean will be set to true if a<=b.
  */
-static gmx_inline gmx_simd_fbool_t
-gmx_simd_cmple_f(gmx_simd_float_t a, gmx_simd_float_t b)
+static inline SimdFBool
+simdCmpLeF(SimdFloat a, SimdFloat b)
 {
-    gmx_simd_fbool_t   c;
+    SimdFBool          c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -970,7 +971,7 @@ gmx_simd_cmple_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
 /*! \brief Logical \a and on single precision SIMD booleans.
  *
- * You should typically call the real-precision \ref gmx_simd_and_r.
+ * You should typically call the real-precision \ref gmx::simdAnd.
  *
  * \param a logical vars 1
  * \param b logical vars 2
@@ -979,12 +980,12 @@ gmx_simd_cmple_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * \note This is not necessarily a bitwise operation - the storage format
  * of booleans is implementation-dependent.
  *
- * \sa gmx_simd_and_ib
+ * \sa simdAndIB
  */
-static gmx_inline gmx_simd_fbool_t
-gmx_simd_and_fb(gmx_simd_fbool_t a, gmx_simd_fbool_t b)
+static inline SimdFBool
+simdAndFB(SimdFBool a, SimdFBool b)
 {
-    gmx_simd_fbool_t  c;
+    SimdFBool         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -996,7 +997,7 @@ gmx_simd_and_fb(gmx_simd_fbool_t a, gmx_simd_fbool_t b)
 
 /*! \brief Logical \a or on single precision SIMD booleans.
  *
- * You should typically call the real-precision \ref gmx_simd_or_r.
+ * You should typically call the real-precision \ref gmx::simdOr.
  *
  * \param a logical vars 1
  * \param b logical vars 2
@@ -1005,12 +1006,12 @@ gmx_simd_and_fb(gmx_simd_fbool_t a, gmx_simd_fbool_t b)
  * Note that this is not necessarily a bitwise operation - the storage format
  * of booleans is implementation-dependent.
  *
- * \sa gmx_simd_or_ib
+ * \sa simdOrIB
  */
-static gmx_inline gmx_simd_fbool_t
-gmx_simd_or_fb(gmx_simd_fbool_t a, gmx_simd_fbool_t b)
+static inline SimdFBool
+simdOrFB(SimdFBool a, SimdFBool b)
 {
-    gmx_simd_fbool_t  c;
+    SimdFBool         c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -1022,7 +1023,7 @@ gmx_simd_or_fb(gmx_simd_fbool_t a, gmx_simd_fbool_t b)
 
 /*! \brief Returns non-zero if any of the boolean in x is True, otherwise 0.
  *
- * You should typically call the real-precision \ref gmx_simd_anytrue_b.
+ * You should typically call the real-precision \ref gmx::simdAnyTrueB.
  *
  * \param a Logical variable.
  * \return non-zero if any element in a is true, otherwise 0.
@@ -1030,8 +1031,8 @@ gmx_simd_or_fb(gmx_simd_fbool_t a, gmx_simd_fbool_t b)
  * The actual return value for truth will depend on the architecture,
  * so any non-zero value is considered truth.
  */
-static gmx_inline int
-gmx_simd_anytrue_fb(gmx_simd_fbool_t a)
+static inline int
+simdAnyTrueFB(SimdFBool a)
 {
     int             anytrue;
     int             i;
@@ -1046,59 +1047,59 @@ gmx_simd_anytrue_fb(gmx_simd_fbool_t a)
 
 /*! \brief Select from single precision SIMD variable where boolean is true.
  *
- * You should typically call the real-precision \ref gmx_simd_blendzero_r.
+ * You should typically call the real-precision \ref gmx::simdMask.
  *
  * \param a Floating-point variable to select from
- * \param sel Boolean selector
+ * \param mask Boolean selector
  * \return  For each element, a is selected for true, 0 for false.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_blendzero_f(gmx_simd_float_t a, gmx_simd_fbool_t sel)
+static inline SimdFloat
+simdMaskF(SimdFloat a, SimdFBool mask)
 {
-    gmx_simd_float_t   c;
+    SimdFloat          c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = sel.b[i] ? a.r[i] : 0.0;
+        c.r[i] = mask.b[i] ? a.r[i] : 0.0;
     }
     return c;
 }
 
 /*! \brief Select from single precision SIMD variable where boolean is false.
  *
- * You should typically call the real-precision \ref gmx_simd_blendnotzero_r.
+ * You should typically call the real-precision \ref gmx::simdMaskNot.
  *
  * \param a Floating-point variable to select from
- * \param sel Boolean selector
+ * \param mask Boolean selector
  * \return  For each element, a is selected for false, 0 for true (sic).
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_blendnotzero_f(gmx_simd_float_t a, gmx_simd_fbool_t sel)
+static inline SimdFloat
+simdMaskNotF(SimdFloat a, SimdFBool mask)
 {
-    gmx_simd_float_t   c;
+    SimdFloat          c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = sel.b[i] ? 0.0 : a.r[i];
+        c.r[i] = mask.b[i] ? 0.0 : a.r[i];
     }
     return c;
 }
 
 /*! \brief Vector-blend SIMD selection.
  *
- * You should typically call the real-precision \ref gmx_simd_blendv_r.
+ * You should typically call the real-precision \ref gmx::simdBlend.
  *
  * \param a First source
  * \param b Second source
  * \param sel Boolean selector
  * \return For each element, select b if sel is true, a otherwise.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_blendv_f(gmx_simd_float_t a, gmx_simd_float_t b, gmx_simd_fbool_t sel)
+static inline SimdFloat
+simdBlendF(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
-    gmx_simd_float_t  d;
+    SimdFloat         d;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -1110,14 +1111,14 @@ gmx_simd_blendv_f(gmx_simd_float_t a, gmx_simd_float_t b, gmx_simd_fbool_t sel)
 
 /*! \brief Return sum of all elements in SIMD float variable.
  *
- * You should typically call the real-precision \ref gmx_simd_reduce_r.
+ * You should typically call the real-precision \ref gmx::simdReduce.
  *
  * \param a SIMD variable to reduce/sum.
  * \return The sum of all elements in the argument variable.
  *
  */
-static gmx_inline float
-gmx_simd_reduce_f(gmx_simd_float_t a)
+static inline float
+simdReduceF(SimdFloat a)
 {
     float     sum = 0.0;
     int       i;
@@ -1137,7 +1138,7 @@ gmx_simd_reduce_f(gmx_simd_float_t a)
 
 /*! \brief SIMD integer shift left logical, based on immediate value.
  *
- * You should typically call the real-precision \ref gmx_simd_slli_i.
+ * You should typically call the real-precision \ref gmx::simdSlliI.
  *
  *  Logical shift. Each element is shifted (independently) up to 32 positions
  *  left, while zeros are shifted in from the right. Only available if
@@ -1148,10 +1149,10 @@ gmx_simd_reduce_f(gmx_simd_float_t a)
  * \param n number of positions to shift left. n<=32.
  * \return shifted values
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_slli_fi(gmx_simd_fint32_t a, int n)
+static inline SimdFInt32
+simdSlliFI(SimdFInt32 a, int n)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1163,7 +1164,7 @@ gmx_simd_slli_fi(gmx_simd_fint32_t a, int n)
 
 /*! \brief SIMD integer shift right logical, based on immediate value.
  *
- * You should typically call the real-precision \ref gmx_simd_srli_i.
+ * You should typically call the real-precision \ref gmx::simdSrliI.
  *
  *  Logical shift. Each element is shifted (independently) up to 32 positions
  *  right, while zeros are shifted in from the left. Only available if
@@ -1174,10 +1175,10 @@ gmx_simd_slli_fi(gmx_simd_fint32_t a, int n)
  * \param n number of positions to shift right. n<=32.
  * \return shifted values
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_srli_fi(gmx_simd_fint32_t a, int n)
+static inline SimdFInt32
+simdSrliFI(SimdFInt32 a, int n)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1189,23 +1190,23 @@ gmx_simd_srli_fi(gmx_simd_fint32_t a, int n)
 
 /*! \brief Integer SIMD bitwise and.
  *
- * You should typically call the real-precision \ref gmx_simd_and_i.
+ * You should typically call the real-precision \ref gmx::simdAndI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
  *
  * \note You can \a not use this operation directly to select based on a boolean
  * SIMD variable, since booleans are separate from integer SIMD. If that
- * is what you need, have a look at \ref gmx_simd_blendzero_i instead.
+ * is what you need, have a look at \ref gmx::simdMaskI instead.
  *
  * \param a first integer SIMD
  * \param b second integer SIMD
  * \return a \& b (bitwise and)
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_and_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdAndFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1217,23 +1218,23 @@ gmx_simd_and_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Integer SIMD bitwise not-and.
  *
- * You should typically call the real-precision \ref gmx_simd_andnot_i.
+ * You should typically call the real-precision \ref gmx::simdAndNotI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
  *
  * Note that you can NOT use this operation directly to select based on a boolean
  * SIMD variable, since booleans are separate from integer SIMD. If that
- * is what you need, have a look at \ref gmx_simd_blendnotzero_i instead.
+ * is what you need, have a look at \ref gmx::simdMaskNotI instead.
  *
  * \param a first integer SIMD
  * \param b second integer SIMD
  * \return (~a) \& b (bitwise andnot)
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_andnot_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdAndNotFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1245,7 +1246,7 @@ gmx_simd_andnot_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Integer SIMD bitwise or.
  *
- * You should typically call the real-precision \ref gmx_simd_or_i.
+ * You should typically call the real-precision \ref gmx::simdOrI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
@@ -1254,10 +1255,10 @@ gmx_simd_andnot_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b second integer SIMD
  * \return a \| b (bitwise or)
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_or_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdOrFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1269,7 +1270,7 @@ gmx_simd_or_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Integer SIMD bitwise xor.
  *
- * You should typically call the real-precision \ref gmx_simd_xor_i.
+ * You should typically call the real-precision \ref gmx::simdXorI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
@@ -1278,10 +1279,10 @@ gmx_simd_or_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b second integer SIMD
  * \return a ^ b (bitwise xor)
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_xor_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdXorFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1298,7 +1299,7 @@ gmx_simd_xor_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  */
 /*! \brief Add SIMD integers.
  *
- * You should typically call the real-precision \ref gmx_simd_xor_i.
+ * You should typically call the real-precision \ref gmx::simdXorI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1307,10 +1308,10 @@ gmx_simd_xor_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b term2
  * \return a+b
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_add_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdAddFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1322,7 +1323,7 @@ gmx_simd_add_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Subtract SIMD integers.
  *
- * You should typically call the real-precision \ref gmx_simd_xor_i.
+ * You should typically call the real-precision \ref gmx::simdXorI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1331,10 +1332,10 @@ gmx_simd_add_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b term2
  * \return a-b
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_sub_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdSubFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1346,7 +1347,7 @@ gmx_simd_sub_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Multiply SIMD integers.
  *
- * You should typically call the real-precision \ref gmx_simd_xor_i.
+ * You should typically call the real-precision \ref gmx::simdXorI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1357,10 +1358,10 @@ gmx_simd_sub_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  *
  * \note Only the low 32 bits are retained, so this can overflow.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_mul_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFInt32
+simdMulFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1378,7 +1379,7 @@ gmx_simd_mul_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Equality comparison of two integers corresponding to float values.
  *
- * You should typically call the real-precision \ref gmx_simd_cmpeq_i.
+ * You should typically call the real-precision \ref gmx::simdCmpEqI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1387,10 +1388,10 @@ gmx_simd_mul_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b SIMD integer2
  * \return SIMD integer boolean with true for elements where a==b
  */
-static gmx_inline gmx_simd_fibool_t
-gmx_simd_cmpeq_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFIBool
+simdCmpEqFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fibool_t  c;
+    SimdFIBool         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1402,7 +1403,7 @@ gmx_simd_cmpeq_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
 /*! \brief Less-than comparison of two SIMD integers corresponding to float values.
  *
- * You should typically call the real-precision \ref gmx_simd_cmplt_i.
+ * You should typically call the real-precision \ref gmx::simdCmpLtI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1411,10 +1412,10 @@ gmx_simd_cmpeq_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b SIMD integer2
  * \return SIMD integer boolean with true for elements where a<b
  */
-static gmx_inline gmx_simd_fibool_t
-gmx_simd_cmplt_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
+static inline SimdFIBool
+simdCmpLtFI(SimdFInt32 a, SimdFInt32 b)
 {
-    gmx_simd_fibool_t  c;
+    SimdFIBool         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1424,9 +1425,9 @@ gmx_simd_cmplt_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
     return c;
 }
 
-/*! \brief Logical AND on gmx_simd_fibool_t.
+/*! \brief Logical AND on SimdFIBool.
  *
- * You should typically call the real-precision \ref gmx_simd_and_ib.
+ * You should typically call the real-precision \ref gmx::simdAndIB.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1435,10 +1436,10 @@ gmx_simd_cmplt_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * \param b SIMD boolean 2
  * \return True for elements where both a and b are true.
  */
-static gmx_inline gmx_simd_fibool_t
-gmx_simd_and_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
+static inline SimdFIBool
+simdAndFIB(SimdFIBool a, SimdFIBool b)
 {
-    gmx_simd_fibool_t c;
+    SimdFIBool        c;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1448,9 +1449,9 @@ gmx_simd_and_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
     return c;
 }
 
-/*! \brief Logical OR on gmx_simd_fibool_t.
+/*! \brief Logical OR on SimdFIBool.
  *
- * You should typically call the real-precision \ref gmx_simd_or_ib.
+ * You should typically call the real-precision \ref gmx::simdOrIB.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1459,10 +1460,10 @@ gmx_simd_and_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
  * \param b SIMD boolean 2
  * \return True for elements where both a and b are true.
  */
-static gmx_inline gmx_simd_fibool_t
-gmx_simd_or_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
+static inline SimdFIBool
+simdOrFIB(SimdFIBool a, SimdFIBool b)
 {
-    gmx_simd_fibool_t  c;
+    SimdFIBool         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1474,7 +1475,7 @@ gmx_simd_or_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
 
 /*! \brief Returns non-zero if any of the boolean in x is True, otherwise 0.
  *
- * You should typically call the real-precision \ref gmx_simd_anytrue_ib.
+ * You should typically call the real-precision \ref gmx::simdAnyTrueIB.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1485,8 +1486,8 @@ gmx_simd_or_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
  * \param a SIMD boolean
  * \return Nonzero integer if any of the elements in a is true, otherwise 0.
  */
-static gmx_inline int
-gmx_simd_anytrue_fib(gmx_simd_fibool_t a)
+static inline int
+simdAnyTrueFIB(SimdFIBool a)
 {
     int             anytrue;
     int             i;
@@ -1499,57 +1500,57 @@ gmx_simd_anytrue_fib(gmx_simd_fibool_t a)
     return anytrue;
 }
 
-/*! \brief Select from \ref gmx_simd_fint32_t variable where boolean is true.
+/*! \brief Select from \ref SimdFInt32 variable where boolean is true.
  *
- * You should typically call the real-precision \ref gmx_simd_blendzero_i.
+ * You should typically call the real-precision \ref gmx::simdMaskI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD integer to select from
- * \param sel Boolean selector
+ * \param mask Boolean selector
  * \return Elements from a where sel is true, 0 otherwise.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_blendzero_fi(gmx_simd_fint32_t a, gmx_simd_fibool_t sel)
+static inline SimdFInt32
+simdMaskFI(SimdFInt32 a, SimdFIBool mask)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = sel.b[i] ? a.i[i] : 0.0;
+        c.i[i] = mask.b[i] ? a.i[i] : 0.0;
     }
     return c;
 }
 
-/*! \brief Select from \ref gmx_simd_fint32_t variable where boolean is false.
+/*! \brief Select from \ref SimdFInt32 variable where boolean is false.
  *
- * You should typically call the real-precision \ref gmx_simd_blendnotzero_i.
+ * You should typically call the real-precision \ref gmx::simdMaskNotI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD integer to select from
- * \param sel Boolean selector
+ * \param mask Boolean selector
  * \return Elements from a where sel is false, 0 otherwise (sic).
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_blendnotzero_fi(gmx_simd_fint32_t a, gmx_simd_fibool_t sel)
+static inline SimdFInt32
+simdMaskNotFI(SimdFInt32 a, SimdFIBool mask)
 {
-    gmx_simd_fint32_t  c;
+    SimdFInt32         c;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = sel.b[i] ? 0.0 : a.i[i];
+        c.i[i] = mask.b[i] ? 0.0 : a.i[i];
     }
     return c;
 }
 
 /*! \brief Vector-blend SIMD selection.
  *
- * You should typically call the real-precision \ref gmx_simd_blendv_i.
+ * You should typically call the real-precision \ref gmx::simdBlendI.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
  *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
@@ -1559,10 +1560,10 @@ gmx_simd_blendnotzero_fi(gmx_simd_fint32_t a, gmx_simd_fibool_t sel)
  * \param sel Boolean selector
  * \return For each element, select b if sel is true, a otherwise.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_blendv_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b, gmx_simd_fibool_t sel)
+static inline SimdFInt32
+simdBlendFI(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
-    gmx_simd_fint32_t d;
+    SimdFInt32        d;
     int               i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1580,15 +1581,15 @@ gmx_simd_blendv_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b, gmx_simd_fibool_t s
 
 /*! \brief Round single precision floating point to integer.
  *
- * You should typically call the real-precision \ref gmx_simd_cvt_r2i.
+ * You should typically call the real-precision \ref gmx::simdCvtR2I.
  *
  * \param a SIMD floating-point
  * \return SIMD integer, rounded to nearest integer.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_cvt_f2i(gmx_simd_float_t a)
+static inline SimdFInt32
+simdCvtF2I(SimdFloat a)
 {
-    gmx_simd_fint32_t  b;
+    SimdFInt32         b;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1604,15 +1605,15 @@ gmx_simd_cvt_f2i(gmx_simd_float_t a)
 
 /*! \brief Truncate single precision floating point to integer.
  *
- * You should typically call the real-precision \ref gmx_simd_cvtt_r2i.
+ * You should typically call the real-precision \ref gmx::simdCvttR2I.
  *
  * \param a SIMD floating-point
  * \return SIMD integer, truncated towards zero.
  */
-static gmx_inline gmx_simd_fint32_t
-gmx_simd_cvtt_f2i(gmx_simd_float_t a)
+static inline SimdFInt32
+simdCvttF2I(SimdFloat a)
 {
-    gmx_simd_fint32_t  b;
+    SimdFInt32         b;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1624,15 +1625,15 @@ gmx_simd_cvtt_f2i(gmx_simd_float_t a)
 
 /*! \brief Convert integer to single precision floating-point.
  *
- * You should typically call the real-precision \ref gmx_simd_cvt_i2r.
+ * You should typically call the real-precision \ref gmx::simdCvtI2R.
  *
  * \param a SIMD integer
  * \return SIMD floating-pint
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_cvt_i2f(gmx_simd_fint32_t a)
+static inline SimdFloat
+simdCvtI2F(SimdFInt32 a)
 {
-    gmx_simd_float_t   b;
+    SimdFloat          b;
     int                i;
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
@@ -1644,15 +1645,15 @@ gmx_simd_cvt_i2f(gmx_simd_fint32_t a)
 
 /*! \brief Convert from float boolean to corresponding integer boolean.
  *
- * You should typically call the real-precision \ref gmx_simd_cvt_b2ib.
+ * You should typically call the real-precision \ref gmx::simdCvtB2IB.
  *
  * \param a Boolean corresponding to SIMD floating-point
  * \return Boolean that can be applied to SIMD integer operations.
  */
-static gmx_inline gmx_simd_fibool_t
-gmx_simd_cvt_fb2fib(gmx_simd_fbool_t a)
+static inline SimdFIBool
+simdCvtFB2FIB(SimdFBool a)
 {
-    gmx_simd_fibool_t  b;
+    SimdFIBool         b;
     int                i;
 
     /* Integer width >= float width */
@@ -1665,15 +1666,15 @@ gmx_simd_cvt_fb2fib(gmx_simd_fbool_t a)
 
 /*! \brief Convert from integer boolean (corresponding to float) to float boolean.
  *
- * You should typically call the real-precision \ref gmx_simd_cvt_ib2b.
+ * You should typically call the real-precision \ref gmx::simdCvtIB2B.
  *
  * \param a Boolean corresponding to SIMD integer
  * \return Boolean that can be applied to SIMD floating-point.
  */
-static gmx_inline gmx_simd_fbool_t
-gmx_simd_cvt_fib2fb(gmx_simd_fibool_t a)
+static inline SimdFBool
+simdCvtFIB2FB(SimdFIBool a)
 {
-    gmx_simd_fbool_t  b;
+    SimdFBool         b;
     int               i;
 
     /* Integer width >= float width */

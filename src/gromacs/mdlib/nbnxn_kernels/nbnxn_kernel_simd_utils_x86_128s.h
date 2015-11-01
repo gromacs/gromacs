@@ -45,7 +45,7 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_simd_int32_t gmx_exclfilter;
+typedef gmx::SimdInt32 gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
@@ -95,7 +95,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
     for (p = 0; p < UNROLLJ; p++)
     {
         /* Here we load 4 aligned floats, but we need just 2 */
-        clj_S[p] = gmx_simd_load_r(nbfp+type[aj+p]*nbfp_stride);
+        clj_S[p] = gmx::simdLoad(nbfp+type[aj+p]*nbfp_stride);
     }
     gmx_shuffle_4_ps_fil01_to_2_ps(clj_S[0], clj_S[1], clj_S[2], clj_S[3], c6_S, c12_S);
 }
@@ -110,13 +110,11 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * This is only faster when we use FDV0 formatted tables, where we also need
  * to multiple the index by 4, which can be done by a SIMD bit shift.
  * With single precision AVX, 8 extracts are much slower than 1 store.
- * Because of this, the load_table_f function always takes the ti
- * parameter, which should contain a buffer that is aligned with
- * prepare_table_load_buffer(), but it is only used with full-width
- * AVX_256. */
+ * Because of this, we always align the table buffer and provide it in the ti
+ * parameter here, even though it is only used with full-width AVX_256. */
 
 static gmx_inline void gmx_simdcall
-load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *ti,
+load_table_f(const real *tab_coul_FDV0, gmx::SimdInt32 ti_S, int gmx_unused *ti,
              __m128 *ctab0_S, __m128 *ctab1_S)
 {
     int    idx[4];
@@ -125,13 +123,13 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *t
     /* Table has 4 entries, left-shift index by 2 */
     ti_S = _mm_slli_epi32(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
-    idx[0]    = gmx_simd_extract_i(ti_S, 0);
+    idx[0]    = gmx::simdExtractI<0>(ti_S);
     ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
-    idx[1]    = gmx_simd_extract_i(ti_S, 1);
+    idx[1]    = gmx::simdExtractI<1>(ti_S);
     ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
-    idx[2]    = gmx_simd_extract_i(ti_S, 2);
+    idx[2]    = gmx::simdExtractI<2>(ti_S);
     ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
-    idx[3]    = gmx_simd_extract_i(ti_S, 3);
+    idx[3]    = gmx::simdExtractI<3>(ti_S);
     ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
@@ -139,7 +137,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *t
 }
 
 static gmx_inline void gmx_simdcall
-load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused *ti,
+load_table_f_v(const real *tab_coul_FDV0, gmx::SimdInt32 ti_S, int gmx_unused *ti,
                __m128 *ctab0_S, __m128 *ctab1_S, __m128 *ctabv_S)
 {
     int    idx[4];
@@ -148,13 +146,13 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int gmx_unused 
     /* Table has 4 entries, left-shift index by 2 */
     ti_S = _mm_slli_epi32(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
-    idx[0]    = gmx_simd_extract_i(ti_S, 0);
+    idx[0]    = gmx::simdExtractI<0>(ti_S);
     ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
-    idx[1]    = gmx_simd_extract_i(ti_S, 1);
+    idx[1]    = gmx::simdExtractI<1>(ti_S);
     ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
-    idx[2]    = gmx_simd_extract_i(ti_S, 2);
+    idx[2]    = gmx::simdExtractI<2>(ti_S);
     ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
-    idx[3]    = gmx_simd_extract_i(ti_S, 3);
+    idx[3]    = gmx::simdExtractI<3>(ti_S);
     ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
@@ -172,10 +170,10 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return gmx_simd_load_i(i);
+    return gmx::simdLoadI(reinterpret_cast<const std::int32_t *>(i));
 }
 
-static gmx_inline gmx_simd_bool_t gmx_simdcall
+static gmx_inline gmx::SimdBool gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));

@@ -77,7 +77,7 @@ static __m128 gmx_simdcall gmx_sum4_hpr(__m256 x, __m256 y)
 
 /* Load reals at half-width aligned pointer b into two halves of a */
 static gmx_inline void
-gmx_loaddh_pr(gmx_simd_real_t *a, const real *b)
+gmx_loaddh_pr(gmx::SimdReal *a, const real *b)
 {
     __m128 tmp;
     tmp = _mm_load_ps(b);
@@ -85,7 +85,7 @@ gmx_loaddh_pr(gmx_simd_real_t *a, const real *b)
 }
 
 static gmx_inline void gmx_simdcall
-gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
+gmx_pr_to_2hpr(gmx::SimdReal a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
     *b = _mm256_extractf128_ps(a, 0);
     *c = _mm256_extractf128_ps(a, 1);
@@ -93,7 +93,7 @@ gmx_pr_to_2hpr(gmx_simd_real_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 
 /* Store half width SIMD registers a and b in full width register *c */
 static gmx_inline void gmx_simdcall
-gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_simd_real_t *c)
+gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx::SimdReal *c)
 {
     *c = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 0x1);
 }
@@ -219,13 +219,11 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
  * This is only faster when we use FDV0 formatted tables, where we also need
  * to multiple the index by 4, which can be done by a SIMD bit shift.
  * With single precision AVX, 8 extracts are much slower than 1 store.
- * Because of this, the load_table_f function always takes the ti
- * parameter, which should contain a buffer that is aligned with
- * prepare_table_load_buffer(), but it is only used with full-width
- * AVX_256. */
+ * Because of this, we always align the table buffer and provide it in the ti
+ * parameter here, even though it is only used with full-width AVX_256. */
 
 static gmx_inline void gmx_simdcall
-load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
+load_table_f(const real *tab_coul_FDV0, gmx::SimdInt32 ti_S, int *ti,
              __m256 *ctab0_S, __m256 *ctab1_S)
 {
     __m128 ctab_S[8], ctabt_S[4];
@@ -247,7 +245,7 @@ load_table_f(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
 }
 
 static gmx_inline void gmx_simdcall
-load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
+load_table_f_v(const real *tab_coul_FDV0, gmx::SimdInt32 ti_S, int *ti,
                __m256 *ctab0_S, __m256 *ctab1_S, __m256 *ctabv_S)
 {
     __m128 ctab_S[8], ctabt_S[4], ctabvt_S[2];
@@ -277,7 +275,7 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
 
 #if GMX_SIMD_HAVE_FINT32_LOGICAL
 
-typedef gmx_simd_int32_t gmx_exclfilter;
+typedef gmx::SimdInt32 gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 
 static gmx_inline gmx_exclfilter gmx_simdcall
@@ -289,10 +287,10 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return gmx_simd_load_i(i);
+    return gmx::simdLoadI(reinterpret_cast<const std::int32_t *>(i));
 }
 
-static gmx_inline gmx_simd_bool_t gmx_simdcall
+static gmx_inline gmx::SimdBool gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm256_castsi256_ps(_mm256_cmpeq_epi32(_mm256_andnot_si256(m0, m1), _mm256_setzero_si256()));
@@ -301,7 +299,7 @@ gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 #else /* GMX_SIMD_HAVE_FINT32_LOGICAL */
 
 /* No integer support, use a real to store the exclusion bits */
-typedef gmx_simd_real_t gmx_exclfilter;
+typedef gmx::SimdReal gmx_exclfilter;
 static const int filter_stride = 1;
 
 static gmx_inline gmx_exclfilter gmx_simdcall
@@ -314,10 +312,10 @@ static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load_exclusion_filter(const unsigned *i)
 {
     /* cppcheck-suppress invalidPointerCast */
-    return gmx_simd_load_r((real *) (i));
+    return gmx::simdLoad((real *) (i));
 }
 
-static gmx_inline gmx_simd_bool_t gmx_simdcall
+static gmx_inline gmx::SimdBool gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);

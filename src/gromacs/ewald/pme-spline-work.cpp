@@ -40,6 +40,7 @@
 #include "pme-spline-work.h"
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -50,16 +51,15 @@ struct pme_spline_work *make_pme_spline_work(int gmx_unused order)
     struct pme_spline_work *work;
 
 #ifdef PME_SIMD4_SPREAD_GATHER
-    real             tmp[GMX_SIMD4_WIDTH*3], *tmp_aligned;
-    gmx_simd4_real_t zero_S;
-    gmx_simd4_real_t real_mask_S0, real_mask_S1;
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  tmp[GMX_SIMD4_WIDTH*2];
+    gmx::Simd4Real   zero_S;
+    gmx::Simd4Real   real_mask_S0, real_mask_S1;
     int              of, i;
 
     snew_aligned(work, 1, SIMD4_ALIGNMENT);
 
-    tmp_aligned = gmx_simd4_align_r(tmp);
 
-    zero_S = gmx_simd4_setzero_r();
+    zero_S = gmx::simd4SetZero();
 
     /* Generate bit masks to mask out the unused grid entries,
      * as we only operate on order of the 8 grid entries that are
@@ -69,12 +69,12 @@ struct pme_spline_work *make_pme_spline_work(int gmx_unused order)
     {
         for (i = 0; i < 2*GMX_SIMD4_WIDTH; i++)
         {
-            tmp_aligned[i] = (i >= of && i < of+order ? -1.0 : 1.0);
+            tmp[i] = (i >= of && i < of+order ? -1.0 : 1.0);
         }
-        real_mask_S0      = gmx_simd4_load_r(tmp_aligned);
-        real_mask_S1      = gmx_simd4_load_r(tmp_aligned+GMX_SIMD4_WIDTH);
-        work->mask_S0[of] = gmx_simd4_cmplt_r(real_mask_S0, zero_S);
-        work->mask_S1[of] = gmx_simd4_cmplt_r(real_mask_S1, zero_S);
+        real_mask_S0      = gmx::simd4Load(tmp);
+        real_mask_S1      = gmx::simd4Load(tmp+GMX_SIMD4_WIDTH);
+        work->mask_S0[of] = gmx::simd4CmpLt(real_mask_S0, zero_S);
+        work->mask_S1[of] = gmx::simd4CmpLt(real_mask_S1, zero_S);
     }
 #else
     work = NULL;

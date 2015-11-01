@@ -77,6 +77,12 @@ Just to give a few examples:
   integers corresponding to float/double, we need to use separate boolean
   types for all these values and convert between them if we e.g. want to use
   result of an integer compare to select floating-point values.
+- We cannot (easily) rely on C++ overloading since some of the SIMD type
+  that are different on the GROMACS level (e.g. integers corresponding to
+  float vs. double SIMD registers) can map either to different or identical
+  datatypes on the platform level, and some functions (such as setting a SIMD
+  type from a constant integer value) can map to several SIMD types. To avoid
+  making a mess of this, we stick to using suffixes.
 
 While this might sound complicated, it is actually far easier than writing
 separate SIMD code for 10 architectures in both single & double. The point
@@ -144,7 +150,7 @@ double precision but the hardware only supports single-precision SIMD
 there will not be any SIMD routines for default \Gromacs 'real' precision.
 There are \#defines you can use to check this, as described further down.
 </dd>
-<dt>`gromacs/simd/impl_reference.h`</dt>
+<dt>`gromacs/simd/impl_reference/impl_reference.h`</dt>
 <dd>
 This is an example of a low-level implementation. You should never, ever,
 work directly with these in higher-level code. The reference implementation
@@ -181,25 +187,25 @@ Floating-point data
 -------------------
 
 <dl>
-<dt>`#gmx_simd_real_t`</dt>
+<dt>`#gmx::SimdReal`</dt>
 <dd>
 This is the SIMD-version of \Gromacs' real type,
 which is set based on the CMake configuration and internally aliased
 to one of the next two types.
-Operations on these variables have the suffix `_r`, e.g. `gmx_simd_add_r()`.
+Operations on these variables do not use any suffix, e.g. `gmx::simdAdd()`.
 </dd>
-<dt>`#gmx_simd_float_t`</dt>
+<dt>`#SimdFloat`</dt>
 <dd>
 This is always single-precision data, but it
-might not be supported on all architectures. Suffix `_f` is used for
-explicit single-precision routines, e.g. `gmx_simd_mul_f()`.
+might not be supported on all architectures. Suffix `F` is used for
+explicit single-precision routines, e.g. `simdMulF()`.
 </dd>
-<dt>`gmx_simd_double_t`</dt>
+<dt>`SimdDouble`</dt>
 <dd>
 This is always double precision when available,
 and in rare cases you might want to use a specific precision.
-Suffix `_d` is used for explicit double-precision routines,
-e.g. `gmx_simd_mul_d()`
+Suffix `D` is used for explicit double-precision routines,
+e.g. `simdMulD()`
 </dd>
 </dl>
 
@@ -214,12 +220,12 @@ for single SIMD variables, and then we only get half the number of
 integers too.
 
 <dl>
-<dt>`#gmx_simd_int32_t`</dt>
+<dt>`#gmx::SimdInt32`</dt>
 <dd>
 This is used for integers when converting to/from \Gromacs default "real" type.
-The corresponding routines have suffix `_i`, e.g. `gmx_simd_add_i()`.
+The corresponding routines have suffix `I`, e.g. `gmx::simdAddI()`.
 </dd>
-<dt>`gmx_simd_fint32_t`</dt>
+<dt>`SimdFInt32`</dt>
 <dd>
 Integers obtained when converting from single precision, or intended to be
 converted to single precision floating-point. These are normal integers
@@ -228,16 +234,16 @@ SSE or AVX use different registers for integer SIMD variables having the
 same width as float and double, respectively, we need to separate these
 two types of integers. The actual operations you perform on the are normal
 ones such as addition or multiplication. The routines
-operating on these variables have suffix `_fi`, like `gmx_simd_add_fi()`.
+operating on these variables have suffix `FI`, like `simdAddFI()`.
 This will also be the widest integer data type if you want to do pure
 integer SIMD operations, but that will not be supported on all platforms.
 </dd>
-<dt>`gmx_simd_dint32_t`</dt>
+<dt>`SimdDInt32`</dt>
 <dd>
 Integers used when converting to/from double. See the preceding item
 for a detailed explanation. On many architectures,
-including all x86 ones, this will be a narrower type than `gmx_simd_fint32_t`.
-The correspoding routines have suffix `_di`, like `gmx_simd_add_di()`.
+including all x86 ones, this will be a narrower type than `SimdFInt32`.
+The correspoding routines have suffix `DI`, like `simdAddDI()`.
 </dd>
 </dl>
 
@@ -254,36 +260,36 @@ we cannot assume they are identical either to integers, floats or double -
 some implementations use specific predicate registers for booleans.
 
 <dl>
-<dt>`#gmx_simd_bool_t`</dt>
+<dt>`#gmx::SimdBool`</dt>
 <dd>
 Results from boolean operations involving reals, and the booleans we use
-to select between real values. The corresponding routines have suffix `_b`,
-like `gmx_simd_or_b()`.
+to select between real values. The corresponding routines have suffix `B`,
+like `gmx::simdOrB()`.
 </dd>
-<dt>`gmx_simd_fbool_t`</dt>
+<dt>`SimdFBool`</dt>
 <dd>
 Booleans specifically for single precision. Corresponding function suffix
-is `_fb`, like `gmx_simd_or_fb()`.
+is `FB`, like `simdOrFB()`.
 </dd>
-<dt>`gmx_simd_dbool_t`</dt>
+<dt>`SimdDBool`</dt>
 <dd>
-Operations specifically on double. Operations have suffix `_db`: `gmx_simd_or_db()`
+Operations specifically on double. Operations have suffix `DB`: `simdOrDB()`
 </dd>
-<dt>`#gmx_simd_ibool_t`</dt>
+<dt>`#gmx::SimdIBool`</dt>
 <dd>
 Boolean operations on integers corresponding to real (see floating-point
-descriptions above). Operations on these booleans use suffix `_ib`,
-like `gmx_simd_or_ib()`.
+descriptions above). Operations on these booleans use suffix `IB`,
+like `gmx::simdOrIB()`.
 </dd>
-<dt>`gmx_simd_fibool_t`</dt>
+<dt>`SimdFIBool`</dt>
 <dd>
-Booleans for integers corresponding to float. Operation suffix is `_fib`,
-like `gmx_simd_or_fib()`.
+Booleans for integers corresponding to float. Operation suffix is `FIB`,
+like `simdOrFIB()`.
 </dd>
-<dt>`gmx_simd_dibool_t`</dt>
+<dt>`SimdDIBool`</dt>
 <dd>
-Booleans for integers corresponding to double. Operation suffix is `_dib`,
-like `gmx_simd_or_dib()`.
+Booleans for integers corresponding to double. Operation suffix is `DIB`,
+like `simdOrDIB()`.
 </dd>
 </dl>
 
@@ -294,22 +300,25 @@ If this seems daunting, in practice you should only need to use these types
 when you start coding:
 
 <dl>
-<dt>`#gmx_simd_real_t`</dt>
+<dt>`#gmx::SimdReal`</dt>
 <dd>
 Floating-point data.
 </dd>
-<dt>`#gmx_simd_bool_t`</dt>
+<dt>`#gmx::SimdBool`</dt>
 <dd>
 Booleans.
 </dd>
-<dt>`#gmx_simd_int32_t`</dt>
+<dt>`#gmx::SimdInt32`</dt>
 <dd>
 Integer data. Might not be supported, so you must check
 the preprocessor macros described below.
 </dd>
 </dl>
 
-Operations on these types will be defined to either float/double (or corresponding integers) based on the current \Gromacs precision, so the documentation is occasionally more detailed for the lower-level actual implementation functions.
+Operations on these types will be defined to either float/double (or
+corresponding integers) based on the current \Gromacs precision, so the
+documentation is occasionally more detailed for the lower-level actual
+implementation functions.
 
 SIMD4 Macros
 ------------
@@ -318,7 +327,7 @@ The above should be sufficient for code that works with the full SIMD width.
 Unfortunately reality is not that simple. Some algorithms like lattice
 summation need quartets of elements, so even when the SIMD width is >4 we
 need width-4 SIMD if it is supported. These datatypes and operations use the
-prefix `gmx_simd4_`, and availability is indicated by `GMX_SIMD4_HAVE_FLOAT`
+prefix `simd4`, and availability is indicated by `GMX_SIMD4_HAVE_FLOAT`
 and `GMX_SIMD4_HAVE_DOUBLE`. For now we only support a small subset of SIMD
 operations for SIMD4, but that is trivial to extend if we need to.
 
@@ -327,20 +336,17 @@ Predefined SIMD preprocessor macros
 
 Functionality-wise, we have a small set of core set of features that we
 require to be present on all platforms, while more avanced features can be
-used in the code when defines like e.g. `GMX_SIMD_HAVE_LOADU` are set to 1.
-To avoid bugs when we forget to include the SIMD header, we always define
-these macros to either 1 or 0. Thus, it is important that you always
-check the value rather than whether it is defined.
+used in the code when defines like e.g. `GMX_SIMD_HAVE_LOADU` are set.
 
 This is a summary of the currently available preprocessor defines that
 you should use to check for support when using the corresponding features.
 We first list the float/double/int defines set by the _implementation_; in
-most cases you do not want to check directly for float/double define values,
-but you should instead use the derived "real" defines set in this file - we list
+most cases you do not want to check directly for float/double defines, but
+you should instead use the derived "real" defines set in this file - we list
 those at the end below.
 
 Preprocessor predefined macro defines set by the low-level implementation.
-These are only set to 1 if they work for all datatypes; `GMX_SIMD_HAVE_LOADU`
+These are only set if they work for all datatypes; `GMX_SIMD_HAVE_LOADU`
 thus means we can load both float, double, and integers from unaligned memory,
 and that the unaligned loads are available for SIMD4 too.
 
@@ -352,6 +358,10 @@ Single-precision instructions available.
 <dt>`GMX_SIMD_HAVE_DOUBLE `</dt>
 <dd>
 Double-precision instructions available.
+</dd>
+<dt>`GMX_SIMD_HAVE_HARDWARE`</dt>
+<dd>
+Set when we are NOT emulating SIMD.
 </dd>
 <dt>`GMX_SIMD_HAVE_LOADU`</dt>
 <dd>
@@ -382,15 +392,15 @@ Integer conversions to/from float available.
 </dd>
 <dt>`GMX_SIMD_HAVE_FINT32_EXTRACT`</dt>
 <dd>
-Support for extracting integer SIMD elements from `gmx_simd_fint32_t`.
+Support for extracting integer SIMD elements from `SimdFInt32`.
 </dd>
 <dt>`GMX_SIMD_HAVE_FINT32_LOGICAL`</dt>
 <dd>
-Bitwise shifts on `gmx_simd_fint32_t`.
+Bitwise shifts on `SimdFInt32`.
 </dd>
 <dt>`GMX_SIMD_HAVE_FINT32_ARITHMETICS`</dt>
 <dd>
-Arithmetic ops for `gmx_simd_fint32_t`.
+Arithmetic ops for `SimdFInt32`.
 </dd>
 <dt>`GMX_SIMD_HAVE_DINT32`</dt>
 <dd>
@@ -398,20 +408,20 @@ Integer conversions to/from double available.
 </dd>
 <dt>`GMX_SIMD_HAVE_DINT32_EXTRACT`</dt>
 <dd>
-Support for extracting integer SIMD elements from `gmx_simd_dint32_t`.
+Support for extracting integer SIMD elements from `SimdDInt32`.
 </dd>
 <dt>`GMX_SIMD_HAVE_DINT32_LOGICAL`</dt>
 <dd>
-Bitwise shifts on `gmx_simd_dint32_t`.
+Bitwise shifts on `SimdDInt32`.
 </dd>
 <dt>`GMX_SIMD_HAVE_DINT32_ARITHMETICS`</dt>
 <dd>
-Arithmetic ops for `gmx_simd_dint32_t`.
+Arithmetic ops for `SimdDInt32`.
 </dd>
 </dl>
 
 There are also two macros specific to SIMD4: `GMX_SIMD4_HAVE_FLOAT` is set
-to 1 if we can use SIMD4 in single precision, and `GMX_SIMD4_HAVE_DOUBLE`
+if we can use SIMD4 in single precision, and `GMX_SIMD4_HAVE_DOUBLE`
 similarly denotes support for a double-precision SIMD4 implementation. For
 generic properties (e.g. whether SIMD4 FMA is supported), you should check
 the normal SIMD macros above.
@@ -425,11 +435,11 @@ for instance what the SIMD width is:
 <dl>
 <dt>`GMX_SIMD_FLOAT_WIDTH`</dt>
 <dd>
-Number of elements in `gmx_simd_float_t`, and practical width of `gmx_simd_fint32_t`.
+Number of elements in `SimdFloat`, and practical width of `SimdFInt32`.
 </dd>
 <dt>`GMX_SIMD_DOUBLE_WIDTH`</dt>
 <dd>
-Number of elements in `gmx_simd_double_t`, and practical width of `gmx_simd_dint32_t`</dd>
+Number of elements in `SimdDouble`, and practical width of `SimdDInt32`</dd>
 <dt>`GMX_SIMD_RSQRT_BITS`</dt>
 <dd>
 Accuracy (bits) of 1/sqrt(x) lookup step.
@@ -492,7 +502,7 @@ this with faster architecture-specific versions for some implementations. The
 recommended way to do that is to add a define around the generic function
 that skips it if the name is already defined. The actual implementations in
 the lowest-level files are typically defined to an architecture-specific name
-(such as `gmx_simd_sincos_d_sse2`) so we can override it (e.g. in SSE4) by
+(such as `simdSinCosD_Sse2`) so we can override it (e.g. in SSE4) by
 simply undefining and setting a new definition. Still, this is an
 implementation detail you won't have to worry about until you start writing
 support for a new SIMD architecture.
