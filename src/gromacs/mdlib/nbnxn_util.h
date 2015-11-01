@@ -40,7 +40,6 @@
 
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
-#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -98,7 +97,7 @@ static gmx_inline int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
     int nbnxn_simd_width = 0;
     int cj_size          = 0;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
     nbnxn_simd_width = GMX_SIMD_REAL_WIDTH;
 #endif
 
