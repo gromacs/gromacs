@@ -451,7 +451,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
     }
     if (useCycleSubcounters && wc->wcsc && !isPmeRank)
     {
-        for (int i = 0; i < ewcNR; i++)
+        for (int i = 0; i < ewcsNR; i++)
         {
             wc->wcsc[i].c *= nthreads_pp;
         }
