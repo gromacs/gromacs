@@ -53,67 +53,67 @@
    only operate on the 4 elements (to avoid floating excpetions). But other operations
    are not gurateed to not modify the other 12 elements. E.g. setzero or blendzero
    set the upper 12 to zero. */
-#define gmx_simd4_float_t           __m512
-#define gmx_simd4_mask              _mm512_int2mask(0xF)
-#define gmx_simd4_load_f(m)         _mm512_mask_extload_ps(_mm512_undefined_ps(), gmx_simd4_mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE)
-#define gmx_simd4_load1_f(m)        _mm512_mask_extload_ps(_mm512_undefined_ps(), gmx_simd4_mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE)
-#define gmx_simd4_set1_f            _mm512_set1_ps
-#define gmx_simd4_store_f           gmx_simd4_store_f_mic
-#define gmx_simd4_loadu_f           gmx_simd4_loadu_f_mic
-#define gmx_simd4_storeu_f          gmx_simd4_storeu_f_mic
-#define gmx_simd4_setzero_f         _mm512_setzero_ps
-#define gmx_simd4_add_f(a, b)       _mm512_mask_add_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
-#define gmx_simd4_sub_f(a, b)       _mm512_mask_sub_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
-#define gmx_simd4_mul_f(a, b)       _mm512_mask_mul_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
-#define gmx_simd4_fmadd_f(a, b, c)  _mm512_mask_fmadd_ps(a, gmx_simd4_mask, b, c)
-#define gmx_simd4_fmsub_f(a, b, c)  _mm512_mask_fmsub_ps(a, gmx_simd4_mask, b, c)
-#define gmx_simd4_fnmadd_f(a, b, c) _mm512_mask_fnmadd_ps(a, gmx_simd4_mask, b, c)
-#define gmx_simd4_fnmsub_f(a, b, c) _mm512_mask_fnmsub_ps(a, gmx_simd4_mask, b, c)
-#define gmx_simd4_and_f(a, b)       _mm512_castsi512_ps(_mm512_mask_and_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
-#define gmx_simd4_andnot_f(a, b)    _mm512_castsi512_ps(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
-#define gmx_simd4_or_f(a, b)        _mm512_castsi512_ps(_mm512_mask_or_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
-#define gmx_simd4_xor_f(a, b)       _mm512_castsi512_ps(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), gmx_simd4_mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
-#define gmx_simd4_rsqrt_f(a)        _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), gmx_simd4_mask, a)
-#define gmx_simd4_fabs_f(x)         gmx_simd4_andnot_f(_mm512_set1_ps(GMX_FLOAT_NEGZERO), x)
-#define gmx_simd4_fneg_f(x)         _mm512_mask_addn_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _mm512_setzero_ps())
-#define gmx_simd4_max_f(a, b)       _mm512_mask_gmax_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
-#define gmx_simd4_min_f(a, b)       _mm512_mask_gmin_ps(_mm512_undefined_ps(), gmx_simd4_mask, a, b)
-#define gmx_simd4_round_f(x)        _mm512_mask_round_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE)
-#define gmx_simd4_trunc_f(x)        _mm512_mask_round_ps(_mm512_undefined_ps(), gmx_simd4_mask, x, _MM_FROUND_TO_ZERO, _MM_EXPADJ_NONE)
-#define gmx_simd4_dotproduct3_f(a, b) _mm512_mask_reduce_add_ps(_mm512_int2mask(7), _mm512_mask_mul_ps(_mm512_undefined_ps(), _mm512_int2mask(7), a, b))
-#define gmx_simd4_fbool_t           __mmask16
-#define gmx_simd4_cmpeq_f(a, b)     _mm512_mask_cmp_ps_mask(gmx_simd4_mask, a, b, _CMP_EQ_OQ)
-#define gmx_simd4_cmplt_f(a, b)     _mm512_mask_cmp_ps_mask(gmx_simd4_mask, a, b, _CMP_LT_OS)
-#define gmx_simd4_cmple_f(a, b)     _mm512_mask_cmp_ps_mask(gmx_simd4_mask, a, b, _CMP_LE_OS)
-#define gmx_simd4_and_fb            _mm512_kand
-#define gmx_simd4_or_fb             _mm512_kor
-#define gmx_simd4_anytrue_fb(x)     (_mm512_mask2int(x)&0xF)
-#define gmx_simd4_blendzero_f(a, sel)    _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
-#define gmx_simd4_blendnotzero_f(a, sel) _mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), a)
-#define gmx_simd4_blendv_f(a, b, sel)    _mm512_mask_blend_ps(sel, a, b)
-#define gmx_simd4_reduce_f(x)       _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x)
+#define Simd4Float           __m512
+#define simd4Mask              _mm512_int2mask(0xF)
+#define simd4LoadF(m)         _mm512_mask_extload_ps(_mm512_undefined_ps(), simd4Mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE)
+#define simd4Load1F(m)        _mm512_mask_extload_ps(_mm512_undefined_ps(), simd4Mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE)
+#define simd4Set1F            _mm512_set1_ps
+#define simd4StoreF           simd4StoreF_mic
+#define simd4LoadUF           simd4LoadUF_mic
+#define simd4StoreUF          simd4StoreUF_mic
+#define simd4SetZeroF         _mm512_setzero_ps
+#define simd4AddF(a, b)       _mm512_mask_add_ps(_mm512_undefined_ps(), simd4Mask, a, b)
+#define simd4SubF(a, b)       _mm512_mask_sub_ps(_mm512_undefined_ps(), simd4Mask, a, b)
+#define simd4MulF(a, b)       _mm512_mask_mul_ps(_mm512_undefined_ps(), simd4Mask, a, b)
+#define simd4FmaddF(a, b, c)  _mm512_mask_fmadd_ps(a, simd4Mask, b, c)
+#define simd4FmsubF(a, b, c)  _mm512_mask_fmsub_ps(a, simd4Mask, b, c)
+#define simd4FnmaddF(a, b, c) _mm512_mask_fnmadd_ps(a, simd4Mask, b, c)
+#define simd4FnmsubF(a, b, c) _mm512_mask_fnmsub_ps(a, simd4Mask, b, c)
+#define simd4AndF(a, b)       _mm512_castsi512_ps(_mm512_mask_and_epi32(_mm512_undefined_epi32(), simd4Mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define simd4AndNotF(a, b)    _mm512_castsi512_ps(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), simd4Mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define simd4OrF(a, b)        _mm512_castsi512_ps(_mm512_mask_or_epi32(_mm512_undefined_epi32(), simd4Mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define simd4XorF(a, b)       _mm512_castsi512_ps(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), simd4Mask, _mm512_castps_si512(a), _mm512_castps_si512(b)))
+#define simd4RsqrtF(a)        _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), simd4Mask, a)
+#define simd4AbsF(x)         simd4AndNotF(_mm512_set1_ps(GMX_FLOAT_NEGZERO), x)
+#define simd4NegF(x)         _mm512_mask_addn_ps(_mm512_undefined_ps(), simd4Mask, x, _mm512_setzero_ps())
+#define simd4MaxF(a, b)       _mm512_mask_gmax_ps(_mm512_undefined_ps(), simd4Mask, a, b)
+#define simd4MinF(a, b)       _mm512_mask_gmin_ps(_mm512_undefined_ps(), simd4Mask, a, b)
+#define simd4RoundF(x)        _mm512_mask_round_ps(_mm512_undefined_ps(), simd4Mask, x, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE)
+#define simd4TruncF(x)        _mm512_mask_round_ps(_mm512_undefined_ps(), simd4Mask, x, _MM_FROUND_TO_ZERO, _MM_EXPADJ_NONE)
+#define simd4DotProductF(a, b) _mm512_mask_reduce_add_ps(_mm512_int2mask(7), _mm512_mask_mul_ps(_mm512_undefined_ps(), _mm512_int2mask(7), a, b))
+#define Simd4FBool           __mmask16
+#define simd4CmpEqF(a, b)     _mm512_mask_cmp_ps_mask(simd4Mask, a, b, _CMP_EQ_OQ)
+#define simd4CmpLtF(a, b)     _mm512_mask_cmp_ps_mask(simd4Mask, a, b, _CMP_LT_OS)
+#define simd4CmpLeF(a, b)     _mm512_mask_cmp_ps_mask(simd4Mask, a, b, _CMP_LE_OS)
+#define simd4AndFB            _mm512_kand
+#define simd4OrFB             _mm512_kor
+#define simd4AnyTrueFB(x)     (_mm512_mask2int(x)&0xF)
+#define simd4MaskF(a, sel)    _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
+#define simd4MaskNotF(a, sel) _mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), a)
+#define simd4BlendF(a, b, sel)    _mm512_mask_blend_ps(sel, a, b)
+#define simd4ReduceF(x)       _mm512_mask_reduce_add_ps(_mm512_int2mask(0xF), x)
 
 /* Implementation helpers */
 
 /* load store simd4 */
-static gmx_inline void gmx_simdcall
-gmx_simd4_store_f_mic(float * m, __m512 s)
+static inline void gmx_simdcall
+simd4StoreF_mic(float * m, __m512 s)
 {
     assert((size_t)m%16 == 0);
-    _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, s);
+    _mm512_mask_packstorelo_ps(m, simd4Mask, s);
 }
 
-static gmx_inline __m512 gmx_simdcall
-gmx_simd4_loadu_f_mic(const float * m)
+static inline __m512 gmx_simdcall
+simd4LoadUF_mic(const float * m)
 {
-    return _mm512_mask_loadunpackhi_ps(_mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), gmx_simd4_mask, m), gmx_simd4_mask, m+16);
+    return _mm512_mask_loadunpackhi_ps(_mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), simd4Mask, m), simd4Mask, m+16);
 }
 
-static gmx_inline void gmx_simdcall
-gmx_simd4_storeu_f_mic(float * m, __m512 s)
+static inline void gmx_simdcall
+simd4StoreUF_mic(float * m, __m512 s)
 {
-    _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, s);
-    _mm512_mask_packstorehi_ps(m+16, gmx_simd4_mask, s);
+    _mm512_mask_packstorelo_ps(m, simd4Mask, s);
+    _mm512_mask_packstorehi_ps(m+16, simd4Mask, s);
 }
 
 #endif /* GMX_SIMD_IMPL_INTEL_MIC_SIMD4_FLOAT_H */

@@ -42,22 +42,22 @@
 
 #include "impl_x86_avx_512er_common.h"
 
-#undef  gmx_simd_rsqrt_f
-#define gmx_simd_rsqrt_f           _mm512_rsqrt28_ps
+#undef  simdRsqrtF
+#define simdRsqrtF           _mm512_rsqrt28_ps
 
-#undef  gmx_simd_rcp_f
-#define gmx_simd_rcp_f             _mm512_rcp28_ps
+#undef  simdRcpF
+#define simdRcpF             _mm512_rcp28_ps
 
-#undef  gmx_simd_exp_f
-#define gmx_simd_exp_f(x)          gmx_simd_exp_f_x86_avx_512er(x)
+#undef  simdExpF
+#define simdExpF(x)          simdExpF_x86_avx_512er(x)
 
 /* Implementation helper */
 
-static gmx_inline __m512 gmx_simdcall
-gmx_simd_exp_f_x86_avx_512er(__m512 x)
+static inline __m512 gmx_simdcall
+simdExpF_x86_avx_512er(__m512 x)
 {
-    const gmx_simd_float_t  argscale    = gmx_simd_set1_f(1.44269504088896341f);
-    const gmx_simd_float_t  invargscale = gmx_simd_set1_f(-0.69314718055994528623f);
+    const SimdFloat         argscale    = simdSet1F(1.44269504088896341f);
+    const SimdFloat         invargscale = simdSet1F(-0.69314718055994528623f);
 
     __m512                  xscaled = _mm512_mul_ps(x, argscale);
     __m512                  r       = _mm512_exp2a23_ps(xscaled);
@@ -69,11 +69,11 @@ gmx_simd_exp_f_x86_avx_512er(__m512 x)
      * correction since exp(a+b)=exp(a)*exp(b).
      * Note that this only adds two instructions (and maybe some constant loads).
      */
-    x         = gmx_simd_fmadd_f(invargscale, xscaled, x);
+    x         = simdFmaddF(invargscale, xscaled, x);
     /* x will now be a _very_ small number, so approximate exp(x)=1+x.
      * We should thus apply the correction as r'=r*(1+x)=r+r*x
      */
-    r         = gmx_simd_fmadd_f(r, x, r);
+    r         = simdFmaddF(r, x, r);
     return r;
 }
 

@@ -44,13 +44,13 @@
 /****************************************************
  *      SIMD4 DOUBLE PRECISION IMPLEMENTATION       *
  ****************************************************/
-#undef  gmx_simd4_fmadd_d
-#define gmx_simd4_fmadd_d          _mm256_fmadd_pd
-#undef  gmx_simd4_fmsub_d
-#define gmx_simd4_fmsub_d          _mm256_fmsub_pd
-#undef  gmx_simd4_fnmadd_d
-#define gmx_simd4_fnmadd_d         _mm256_fnmadd_pd
-#undef  gmx_simd4_fnmsub_d
-#define gmx_simd4_fnmsub_d         _mm256_fnmsub_pd
+#undef  simd4FmaddD
+#define simd4FmaddD          _mm256_fmadd_pd
+#undef  simd4FmsubD
+#define simd4FmsubD          _mm256_fmsub_pd
+#undef  simd4FnmaddD
+#define simd4FnmaddD         _mm256_fnmadd_pd
+#undef  simd4FnmsubD
+#define simd4FnmsubD         _mm256_fnmsub_pd
 
 #endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H */

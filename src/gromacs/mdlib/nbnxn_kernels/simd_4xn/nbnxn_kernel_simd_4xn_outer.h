@@ -55,107 +55,107 @@
     real       *vctp[UNROLLI];
 #endif
 
-    gmx_simd_real_t  shX_S;
-    gmx_simd_real_t  shY_S;
-    gmx_simd_real_t  shZ_S;
-    gmx_simd_real_t  ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t  ix_S1, iy_S1, iz_S1;
-    gmx_simd_real_t  ix_S2, iy_S2, iz_S2;
-    gmx_simd_real_t  ix_S3, iy_S3, iz_S3;
-    gmx_simd_real_t  fix_S0, fiy_S0, fiz_S0;
-    gmx_simd_real_t  fix_S1, fiy_S1, fiz_S1;
-    gmx_simd_real_t  fix_S2, fiy_S2, fiz_S2;
-    gmx_simd_real_t  fix_S3, fiy_S3, fiz_S3;
+    SimdReal  shX_S;
+    SimdReal  shY_S;
+    SimdReal  shZ_S;
+    SimdReal  ix_S0, iy_S0, iz_S0;
+    SimdReal  ix_S1, iy_S1, iz_S1;
+    SimdReal  ix_S2, iy_S2, iz_S2;
+    SimdReal  ix_S3, iy_S3, iz_S3;
+    SimdReal  fix_S0, fiy_S0, fiz_S0;
+    SimdReal  fix_S1, fiy_S1, fiz_S1;
+    SimdReal  fix_S2, fiy_S2, fiz_S2;
+    SimdReal  fix_S3, fiy_S3, fiz_S3;
 #if UNROLLJ >= 4
     /* We use an i-force SIMD register width of 4 */
-    gmx_simd4_real_t fix_S, fiy_S, fiz_S;
+    Simd4Real fix_S, fiy_S, fiz_S;
 #else
     /* We use an i-force SIMD register width of 2 */
-    gmx_simd_real_t  fix0_S, fiy0_S, fiz0_S;
-    gmx_simd_real_t  fix2_S, fiy2_S, fiz2_S;
+    SimdReal  fix0_S, fiy0_S, fiz0_S;
+    SimdReal  fix2_S, fiy2_S, fiz2_S;
 #endif
 
-    gmx_simd_real_t  diagonal_jmi_S;
+    SimdReal  diagonal_jmi_S;
 #if UNROLLI == UNROLLJ
-    gmx_simd_bool_t  diagonal_mask_S0, diagonal_mask_S1, diagonal_mask_S2, diagonal_mask_S3;
+    SimdBool  diagonal_mask_S0, diagonal_mask_S1, diagonal_mask_S2, diagonal_mask_S3;
 #else
-    gmx_simd_bool_t  diagonal_mask0_S0, diagonal_mask0_S1, diagonal_mask0_S2, diagonal_mask0_S3;
-    gmx_simd_bool_t  diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
+    SimdBool  diagonal_mask0_S0, diagonal_mask0_S1, diagonal_mask0_S2, diagonal_mask0_S3;
+    SimdBool  diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
 #endif
 
     unsigned            *exclusion_filter;
     gmx_exclfilter       filter_S0, filter_S1, filter_S2, filter_S3;
 
-    gmx_simd_real_t      zero_S = gmx_simd_set1_r(0.0);
+    SimdReal             zero_S = simdSet1(0.0);
 
-    gmx_simd_real_t      one_S  = gmx_simd_set1_r(1.0);
-    gmx_simd_real_t      iq_S0  = gmx_simd_setzero_r();
-    gmx_simd_real_t      iq_S1  = gmx_simd_setzero_r();
-    gmx_simd_real_t      iq_S2  = gmx_simd_setzero_r();
-    gmx_simd_real_t      iq_S3  = gmx_simd_setzero_r();
+    SimdReal             one_S  = simdSet1(1.0);
+    SimdReal             iq_S0  = simdSetZero();
+    SimdReal             iq_S1  = simdSetZero();
+    SimdReal             iq_S2  = simdSetZero();
+    SimdReal             iq_S3  = simdSetZero();
 
 #ifdef CALC_COUL_RF
-    gmx_simd_real_t      mrc_3_S;
+    SimdReal      mrc_3_S;
 #ifdef CALC_ENERGIES
-    gmx_simd_real_t      hrc_3_S, moh_rc_S;
+    SimdReal      hrc_3_S, moh_rc_S;
 #endif
 #endif
 
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
-    gmx_simd_real_t        invtsp_S;
+    SimdReal               invtsp_S;
     const real      *      tab_coul_F;
 #ifndef TAB_FDV0
     const real gmx_unused *tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
-    int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;
-    int               ti1_array[2*GMX_SIMD_REAL_WIDTH], *ti1 = NULL;
-    int               ti2_array[2*GMX_SIMD_REAL_WIDTH], *ti2 = NULL;
-    int               ti3_array[2*GMX_SIMD_REAL_WIDTH], *ti3 = NULL;
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  ti0[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  ti1[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  ti2[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  ti3[GMX_SIMD_REAL_WIDTH];
 #ifdef CALC_ENERGIES
-    gmx_simd_real_t   mhalfsp_S;
+    SimdReal   mhalfsp_S;
 #endif
 #endif
 
 #ifdef CALC_COUL_EWALD
-    gmx_simd_real_t beta2_S, beta_S;
+    SimdReal beta2_S, beta_S;
 #endif
 
 #if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
-    gmx_simd_real_t  sh_ewald_S;
+    SimdReal  sh_ewald_S;
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
-    gmx_simd_real_t   p6_cpot_S, p12_cpot_S;
+    SimdReal   p6_cpot_S, p12_cpot_S;
 #endif
 #ifdef LJ_POT_SWITCH
-    gmx_simd_real_t   rswitch_S;
-    gmx_simd_real_t   swV3_S, swV4_S, swV5_S;
-    gmx_simd_real_t   swF2_S, swF3_S, swF4_S;
+    SimdReal   rswitch_S;
+    SimdReal   swV3_S, swV4_S, swV5_S;
+    SimdReal   swF2_S, swF3_S, swF4_S;
 #endif
 #ifdef LJ_FORCE_SWITCH
-    gmx_simd_real_t   rswitch_S;
-    gmx_simd_real_t   p6_fc2_S, p6_fc3_S;
-    gmx_simd_real_t   p12_fc2_S, p12_fc3_S;
+    SimdReal   rswitch_S;
+    SimdReal   p6_fc2_S, p6_fc3_S;
+    SimdReal   p12_fc2_S, p12_fc3_S;
 #ifdef CALC_ENERGIES
-    gmx_simd_real_t   p6_vc3_S, p6_vc4_S;
-    gmx_simd_real_t   p12_vc3_S, p12_vc4_S;
-    gmx_simd_real_t   p6_6cpot_S, p12_12cpot_S;
+    SimdReal   p6_vc3_S, p6_vc4_S;
+    SimdReal   p12_vc3_S, p12_vc4_S;
+    SimdReal   p6_6cpot_S, p12_12cpot_S;
 #endif
 #endif
 #ifdef LJ_EWALD_GEOM
     real              lj_ewaldcoeff2, lj_ewaldcoeff6_6;
-    gmx_simd_real_t   mone_S, half_S, lje_c2_S, lje_c6_6_S;
+    SimdReal          mone_S, half_S, lje_c2_S, lje_c6_6_S;
 #endif
 
 #ifdef LJ_COMB_LB
     const real       *ljc;
 
-    gmx_simd_real_t   hsig_i_S0, seps_i_S0;
-    gmx_simd_real_t   hsig_i_S1, seps_i_S1;
-    gmx_simd_real_t   hsig_i_S2, seps_i_S2;
-    gmx_simd_real_t   hsig_i_S3, seps_i_S3;
+    SimdReal          hsig_i_S0, seps_i_S0;
+    SimdReal          hsig_i_S1, seps_i_S1;
+    SimdReal          hsig_i_S2, seps_i_S2;
+    SimdReal          hsig_i_S3, seps_i_S3;
 #else
 
 #if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
@@ -163,10 +163,10 @@
 #endif
 #endif /* LJ_COMB_LB */
 
-    gmx_simd_real_t  avoid_sing_S;
-    gmx_simd_real_t  rc2_S;
+    SimdReal  avoid_sing_S;
+    SimdReal  rc2_S;
 #ifdef VDW_CUTOFF_CHECK
-    gmx_simd_real_t  rcvdw2_S;
+    SimdReal  rcvdw2_S;
 #endif
 
     int ninner;
@@ -185,39 +185,39 @@
 #endif
 
     /* Load j-i for the first i */
-    diagonal_jmi_S    = gmx_simd_load_r(nbat->simd_4xn_diagonal_j_minus_i);
+    diagonal_jmi_S    = simdLoad(nbat->simd_4xn_diagonal_j_minus_i);
     /* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
-    diagonal_mask_S0  = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask_S1  = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask_S2  = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask_S3  = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
+    diagonal_mask_S0  = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask_S1  = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask_S2  = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask_S3  = simdCmpLt(zero_S, diagonal_jmi_S);
 #else
 #if UNROLLI == 2*UNROLLJ || 2*UNROLLI == UNROLLJ
-    diagonal_mask0_S0 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask0_S1 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask0_S2 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask0_S3 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
+    diagonal_mask0_S0 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask0_S1 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask0_S2 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask0_S3 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
 
 #if UNROLLI == 2*UNROLLJ
     /* Load j-i for the second half of the j-cluster */
-    diagonal_jmi_S    = gmx_simd_load_r(nbat->simd_4xn_diagonal_j_minus_i + UNROLLJ);
+    diagonal_jmi_S    = simdLoad(nbat->simd_4xn_diagonal_j_minus_i + UNROLLJ);
 #endif
 
-    diagonal_mask1_S0 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask1_S1 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask1_S2 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
-    diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask1_S3 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
+    diagonal_mask1_S0 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask1_S1 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask1_S2 = simdCmpLt(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = simdSub(diagonal_jmi_S, one_S);
+    diagonal_mask1_S3 = simdCmpLt(zero_S, diagonal_jmi_S);
 #endif
 #endif
 
@@ -243,23 +243,18 @@
 
 #ifdef CALC_COUL_RF
     /* Reaction-field constants */
-    mrc_3_S  = gmx_simd_set1_r(-2*ic->k_rf);
+    mrc_3_S  = simdSet1(-2*ic->k_rf);
 #ifdef CALC_ENERGIES
-    hrc_3_S  = gmx_simd_set1_r(ic->k_rf);
-    moh_rc_S = gmx_simd_set1_r(-ic->c_rf);
+    hrc_3_S  = simdSet1(ic->k_rf);
+    moh_rc_S = simdSet1(-ic->c_rf);
 #endif
 #endif
 
 #ifdef CALC_COUL_TAB
-    /* Generate aligned table index pointers */
-    ti0 = prepare_table_load_buffer(ti0_array);
-    ti1 = prepare_table_load_buffer(ti1_array);
-    ti2 = prepare_table_load_buffer(ti2_array);
-    ti3 = prepare_table_load_buffer(ti3_array);
 
-    invtsp_S  = gmx_simd_set1_r(ic->tabq_scale);
+    invtsp_S  = simdSet1(ic->tabq_scale);
 #ifdef CALC_ENERGIES
-    mhalfsp_S = gmx_simd_set1_r(-0.5/ic->tabq_scale);
+    mhalfsp_S = simdSet1(-0.5/ic->tabq_scale);
 #endif
 
 #ifdef TAB_FDV0
@@ -271,74 +266,74 @@
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_S = gmx_simd_set1_r(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
-    beta_S  = gmx_simd_set1_r(ic->ewaldcoeff_q);
+    beta2_S = simdSet1(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
+    beta_S  = simdSet1(ic->ewaldcoeff_q);
 #endif
 
 #if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
-    sh_ewald_S = gmx_simd_set1_r(ic->sh_ewald);
+    sh_ewald_S = simdSet1(ic->sh_ewald);
 #endif
 
     /* LJ function constants */
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    gmx_simd_real_t sixth_S    = gmx_simd_set1_r(1.0/6.0);
-    gmx_simd_real_t twelveth_S = gmx_simd_set1_r(1.0/12.0);
+    SimdReal sixth_S    = simdSet1(1.0/6.0);
+    SimdReal twelveth_S = simdSet1(1.0/12.0);
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
     /* We shift the potential by cpot, which can be zero */
-    p6_cpot_S    = gmx_simd_set1_r(ic->dispersion_shift.cpot);
-    p12_cpot_S   = gmx_simd_set1_r(ic->repulsion_shift.cpot);
+    p6_cpot_S    = simdSet1(ic->dispersion_shift.cpot);
+    p12_cpot_S   = simdSet1(ic->repulsion_shift.cpot);
 #endif
 #ifdef LJ_POT_SWITCH
-    rswitch_S = gmx_simd_set1_r(ic->rvdw_switch);
-    swV3_S    = gmx_simd_set1_r(ic->vdw_switch.c3);
-    swV4_S    = gmx_simd_set1_r(ic->vdw_switch.c4);
-    swV5_S    = gmx_simd_set1_r(ic->vdw_switch.c5);
-    swF2_S    = gmx_simd_set1_r(3*ic->vdw_switch.c3);
-    swF3_S    = gmx_simd_set1_r(4*ic->vdw_switch.c4);
-    swF4_S    = gmx_simd_set1_r(5*ic->vdw_switch.c5);
+    rswitch_S = simdSet1(ic->rvdw_switch);
+    swV3_S    = simdSet1(ic->vdw_switch.c3);
+    swV4_S    = simdSet1(ic->vdw_switch.c4);
+    swV5_S    = simdSet1(ic->vdw_switch.c5);
+    swF2_S    = simdSet1(3*ic->vdw_switch.c3);
+    swF3_S    = simdSet1(4*ic->vdw_switch.c4);
+    swF4_S    = simdSet1(5*ic->vdw_switch.c5);
 #endif
 #ifdef LJ_FORCE_SWITCH
-    rswitch_S = gmx_simd_set1_r(ic->rvdw_switch);
-    p6_fc2_S  = gmx_simd_set1_r(ic->dispersion_shift.c2);
-    p6_fc3_S  = gmx_simd_set1_r(ic->dispersion_shift.c3);
-    p12_fc2_S = gmx_simd_set1_r(ic->repulsion_shift.c2);
-    p12_fc3_S = gmx_simd_set1_r(ic->repulsion_shift.c3);
+    rswitch_S = simdSet1(ic->rvdw_switch);
+    p6_fc2_S  = simdSet1(ic->dispersion_shift.c2);
+    p6_fc3_S  = simdSet1(ic->dispersion_shift.c3);
+    p12_fc2_S = simdSet1(ic->repulsion_shift.c2);
+    p12_fc3_S = simdSet1(ic->repulsion_shift.c3);
 #ifdef CALC_ENERGIES
     {
-        gmx_simd_real_t mthird_S  = gmx_simd_set1_r(-1.0/3.0);
-        gmx_simd_real_t mfourth_S = gmx_simd_set1_r(-1.0/4.0);
+        SimdReal mthird_S  = simdSet1(-1.0/3.0);
+        SimdReal mfourth_S = simdSet1(-1.0/4.0);
 
-        p6_vc3_S     = gmx_simd_mul_r(mthird_S,  p6_fc2_S);
-        p6_vc4_S     = gmx_simd_mul_r(mfourth_S, p6_fc3_S);
-        p6_6cpot_S   = gmx_simd_set1_r(ic->dispersion_shift.cpot/6);
-        p12_vc3_S    = gmx_simd_mul_r(mthird_S,  p12_fc2_S);
-        p12_vc4_S    = gmx_simd_mul_r(mfourth_S, p12_fc3_S);
-        p12_12cpot_S = gmx_simd_set1_r(ic->repulsion_shift.cpot/12);
+        p6_vc3_S     = simdMul(mthird_S,  p6_fc2_S);
+        p6_vc4_S     = simdMul(mfourth_S, p6_fc3_S);
+        p6_6cpot_S   = simdSet1(ic->dispersion_shift.cpot/6);
+        p12_vc3_S    = simdMul(mthird_S,  p12_fc2_S);
+        p12_vc4_S    = simdMul(mfourth_S, p12_fc3_S);
+        p12_12cpot_S = simdSet1(ic->repulsion_shift.cpot/12);
     }
 #endif
 #endif
 #ifdef LJ_EWALD_GEOM
-    mone_S           = gmx_simd_set1_r(-1.0);
-    half_S           = gmx_simd_set1_r(0.5);
+    mone_S           = simdSet1(-1.0);
+    half_S           = simdSet1(0.5);
     lj_ewaldcoeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
     lj_ewaldcoeff6_6 = lj_ewaldcoeff2*lj_ewaldcoeff2*lj_ewaldcoeff2/6;
-    lje_c2_S         = gmx_simd_set1_r(lj_ewaldcoeff2);
-    lje_c6_6_S       = gmx_simd_set1_r(lj_ewaldcoeff6_6);
+    lje_c2_S         = simdSet1(lj_ewaldcoeff2);
+    lje_c6_6_S       = simdSet1(lj_ewaldcoeff6_6);
 #ifdef CALC_ENERGIES
     /* Determine the grid potential at the cut-off */
-    gmx_simd_real_t lje_vc_S = gmx_simd_set1_r(ic->sh_lj_ewald);
+    SimdReal lje_vc_S = simdSet1(ic->sh_lj_ewald);
 #endif
 #endif
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    rc2_S    = gmx_simd_set1_r(ic->rcoulomb*ic->rcoulomb);
+    rc2_S    = simdSet1(ic->rcoulomb*ic->rcoulomb);
 #ifdef VDW_CUTOFF_CHECK
-    rcvdw2_S = gmx_simd_set1_r(ic->rvdw*ic->rvdw);
+    rcvdw2_S = simdSet1(ic->rvdw*ic->rvdw);
 #endif
 
-    avoid_sing_S = gmx_simd_set1_r(NBNXN_AVOID_SING_R2_INC);
+    avoid_sing_S = simdSet1(NBNXN_AVOID_SING_R2_INC);
 
     q                   = nbat->q;
     facel               = ic->epsfac;
@@ -346,8 +341,7 @@
     x                   = nbat->x;
 
 #ifdef FIX_LJ_C
-    real  pvdw_array[2*UNROLLI*UNROLLJ+3];
-    real *pvdw_c6  = gmx_simd_align_real(pvdw_array);
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2*UNROLLI*UNROLLJ];
     real *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 
     for (int jp = 0; jp < UNROLLJ; jp++)
@@ -362,15 +356,15 @@
         pvdw_c12[2*UNROLLJ+jp] = nbat->nbfp[0*2+1];
         pvdw_c12[3*UNROLLJ+jp] = nbat->nbfp[0*2+1];
     }
-    gmx_simd_real_t c6_S0  = gmx_simd_load_r(pvdw_c6 +0*UNROLLJ);
-    gmx_simd_real_t c6_S1  = gmx_simd_load_r(pvdw_c6 +1*UNROLLJ);
-    gmx_simd_real_t c6_S2  = gmx_simd_load_r(pvdw_c6 +2*UNROLLJ);
-    gmx_simd_real_t c6_S3  = gmx_simd_load_r(pvdw_c6 +3*UNROLLJ);
+    SimdReal c6_S0  = simdLoad(pvdw_c6 +0*UNROLLJ);
+    SimdReal c6_S1  = simdLoad(pvdw_c6 +1*UNROLLJ);
+    SimdReal c6_S2  = simdLoad(pvdw_c6 +2*UNROLLJ);
+    SimdReal c6_S3  = simdLoad(pvdw_c6 +3*UNROLLJ);
 
-    gmx_simd_real_t c12_S0 = gmx_simd_load_r(pvdw_c12+0*UNROLLJ);
-    gmx_simd_real_t c12_S1 = gmx_simd_load_r(pvdw_c12+1*UNROLLJ);
-    gmx_simd_real_t c12_S2 = gmx_simd_load_r(pvdw_c12+2*UNROLLJ);
-    gmx_simd_real_t c12_S3 = gmx_simd_load_r(pvdw_c12+3*UNROLLJ);
+    SimdReal c12_S0 = simdLoad(pvdw_c12+0*UNROLLJ);
+    SimdReal c12_S1 = simdLoad(pvdw_c12+1*UNROLLJ);
+    SimdReal c12_S2 = simdLoad(pvdw_c12+2*UNROLLJ);
+    SimdReal c12_S3 = simdLoad(pvdw_c12+3*UNROLLJ);
 #endif /* FIX_LJ_C */
 
 #ifdef ENERGY_GROUPS
@@ -397,9 +391,9 @@
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
-        shX_S = gmx_simd_load1_r(shiftvec+ish3);
-        shY_S = gmx_simd_load1_r(shiftvec+ish3+1);
-        shZ_S = gmx_simd_load1_r(shiftvec+ish3+2);
+        shX_S = simdLoad1(shiftvec+ish3);
+        shY_S = simdLoad1(shiftvec+ish3+1);
+        shZ_S = simdLoad1(shiftvec+ish3+2);
 
 #if UNROLLJ <= 4
         int sci          = ci*STRIDE;
@@ -514,53 +508,53 @@
         /* Load i atom data */
         int sciy         = scix + STRIDE;
         int sciz         = sciy + STRIDE;
-        ix_S0            = gmx_simd_add_r(gmx_simd_load1_r(x+scix), shX_S);
-        ix_S1            = gmx_simd_add_r(gmx_simd_load1_r(x+scix+1), shX_S);
-        ix_S2            = gmx_simd_add_r(gmx_simd_load1_r(x+scix+2), shX_S);
-        ix_S3            = gmx_simd_add_r(gmx_simd_load1_r(x+scix+3), shX_S);
-        iy_S0            = gmx_simd_add_r(gmx_simd_load1_r(x+sciy), shY_S);
-        iy_S1            = gmx_simd_add_r(gmx_simd_load1_r(x+sciy+1), shY_S);
-        iy_S2            = gmx_simd_add_r(gmx_simd_load1_r(x+sciy+2), shY_S);
-        iy_S3            = gmx_simd_add_r(gmx_simd_load1_r(x+sciy+3), shY_S);
-        iz_S0            = gmx_simd_add_r(gmx_simd_load1_r(x+sciz), shZ_S);
-        iz_S1            = gmx_simd_add_r(gmx_simd_load1_r(x+sciz+1), shZ_S);
-        iz_S2            = gmx_simd_add_r(gmx_simd_load1_r(x+sciz+2), shZ_S);
-        iz_S3            = gmx_simd_add_r(gmx_simd_load1_r(x+sciz+3), shZ_S);
+        ix_S0            = simdAdd(simdLoad1(x+scix), shX_S);
+        ix_S1            = simdAdd(simdLoad1(x+scix+1), shX_S);
+        ix_S2            = simdAdd(simdLoad1(x+scix+2), shX_S);
+        ix_S3            = simdAdd(simdLoad1(x+scix+3), shX_S);
+        iy_S0            = simdAdd(simdLoad1(x+sciy), shY_S);
+        iy_S1            = simdAdd(simdLoad1(x+sciy+1), shY_S);
+        iy_S2            = simdAdd(simdLoad1(x+sciy+2), shY_S);
+        iy_S3            = simdAdd(simdLoad1(x+sciy+3), shY_S);
+        iz_S0            = simdAdd(simdLoad1(x+sciz), shZ_S);
+        iz_S1            = simdAdd(simdLoad1(x+sciz+1), shZ_S);
+        iz_S2            = simdAdd(simdLoad1(x+sciz+2), shZ_S);
+        iz_S3            = simdAdd(simdLoad1(x+sciz+3), shZ_S);
 
         if (do_coul)
         {
-            iq_S0      = gmx_simd_set1_r(facel*q[sci]);
-            iq_S1      = gmx_simd_set1_r(facel*q[sci+1]);
-            iq_S2      = gmx_simd_set1_r(facel*q[sci+2]);
-            iq_S3      = gmx_simd_set1_r(facel*q[sci+3]);
+            iq_S0      = simdSet1(facel*q[sci]);
+            iq_S1      = simdSet1(facel*q[sci+1]);
+            iq_S2      = simdSet1(facel*q[sci+2]);
+            iq_S3      = simdSet1(facel*q[sci+3]);
         }
 
 #ifdef LJ_COMB_LB
-        hsig_i_S0      = gmx_simd_load1_r(ljc+sci2+0);
-        hsig_i_S1      = gmx_simd_load1_r(ljc+sci2+1);
-        hsig_i_S2      = gmx_simd_load1_r(ljc+sci2+2);
-        hsig_i_S3      = gmx_simd_load1_r(ljc+sci2+3);
-        seps_i_S0      = gmx_simd_load1_r(ljc+sci2+STRIDE+0);
-        seps_i_S1      = gmx_simd_load1_r(ljc+sci2+STRIDE+1);
-        seps_i_S2      = gmx_simd_load1_r(ljc+sci2+STRIDE+2);
-        seps_i_S3      = gmx_simd_load1_r(ljc+sci2+STRIDE+3);
+        hsig_i_S0      = simdLoad1(ljc+sci2+0);
+        hsig_i_S1      = simdLoad1(ljc+sci2+1);
+        hsig_i_S2      = simdLoad1(ljc+sci2+2);
+        hsig_i_S3      = simdLoad1(ljc+sci2+3);
+        seps_i_S0      = simdLoad1(ljc+sci2+STRIDE+0);
+        seps_i_S1      = simdLoad1(ljc+sci2+STRIDE+1);
+        seps_i_S2      = simdLoad1(ljc+sci2+STRIDE+2);
+        seps_i_S3      = simdLoad1(ljc+sci2+STRIDE+3);
 #else
 #ifdef LJ_COMB_GEOM
-        gmx_simd_real_t c6s_S0 = gmx_simd_load1_r(ljc+sci2+0);
-        gmx_simd_real_t c6s_S1 = gmx_simd_load1_r(ljc+sci2+1);
-        gmx_simd_real_t c6s_S2, c6s_S3;
+        SimdReal c6s_S0 = simdLoad1(ljc+sci2+0);
+        SimdReal c6s_S1 = simdLoad1(ljc+sci2+1);
+        SimdReal c6s_S2, c6s_S3;
         if (!half_LJ)
         {
-            c6s_S2     = gmx_simd_load1_r(ljc+sci2+2);
-            c6s_S3     = gmx_simd_load1_r(ljc+sci2+3);
+            c6s_S2     = simdLoad1(ljc+sci2+2);
+            c6s_S3     = simdLoad1(ljc+sci2+3);
         }
-        gmx_simd_real_t c12s_S0 = gmx_simd_load1_r(ljc+sci2+STRIDE+0);
-        gmx_simd_real_t c12s_S1 = gmx_simd_load1_r(ljc+sci2+STRIDE+1);
-        gmx_simd_real_t c12s_S2, c12s_S3;
+        SimdReal c12s_S0 = simdLoad1(ljc+sci2+STRIDE+0);
+        SimdReal c12s_S1 = simdLoad1(ljc+sci2+STRIDE+1);
+        SimdReal c12s_S2, c12s_S3;
         if (!half_LJ)
         {
-            c12s_S2    = gmx_simd_load1_r(ljc+sci2+STRIDE+2);
-            c12s_S3    = gmx_simd_load1_r(ljc+sci2+STRIDE+3);
+            c12s_S2    = simdLoad1(ljc+sci2+STRIDE+2);
+            c12s_S3    = simdLoad1(ljc+sci2+STRIDE+3);
         }
 #else
         const real *nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*nbfp_stride;
@@ -575,35 +569,35 @@
 #endif
 #ifdef LJ_EWALD_GEOM
         /* We need the geometrically combined C6 for the PME grid correction */
-        gmx_simd_real_t c6s_S0 = gmx_simd_load1_r(ljc+sci2+0);
-        gmx_simd_real_t c6s_S1 = gmx_simd_load1_r(ljc+sci2+1);
-        gmx_simd_real_t c6s_S2, c6s_S3;
+        SimdReal c6s_S0 = simdLoad1(ljc+sci2+0);
+        SimdReal c6s_S1 = simdLoad1(ljc+sci2+1);
+        SimdReal c6s_S2, c6s_S3;
         if (!half_LJ)
         {
-            c6s_S2 = gmx_simd_load1_r(ljc+sci2+2);
-            c6s_S3 = gmx_simd_load1_r(ljc+sci2+3);
+            c6s_S2 = simdLoad1(ljc+sci2+2);
+            c6s_S3 = simdLoad1(ljc+sci2+3);
         }
 #endif
 
         /* Zero the potential energy for this list */
 #ifdef CALC_ENERGIES
-        gmx_simd_real_t Vvdwtot_S = gmx_simd_setzero_r();
-        gmx_simd_real_t vctot_S   = gmx_simd_setzero_r();
+        SimdReal Vvdwtot_S = simdSetZero();
+        SimdReal vctot_S   = simdSetZero();
 #endif
 
         /* Clear i atom forces */
-        fix_S0           = gmx_simd_setzero_r();
-        fix_S1           = gmx_simd_setzero_r();
-        fix_S2           = gmx_simd_setzero_r();
-        fix_S3           = gmx_simd_setzero_r();
-        fiy_S0           = gmx_simd_setzero_r();
-        fiy_S1           = gmx_simd_setzero_r();
-        fiy_S2           = gmx_simd_setzero_r();
-        fiy_S3           = gmx_simd_setzero_r();
-        fiz_S0           = gmx_simd_setzero_r();
-        fiz_S1           = gmx_simd_setzero_r();
-        fiz_S2           = gmx_simd_setzero_r();
-        fiz_S3           = gmx_simd_setzero_r();
+        fix_S0           = simdSetZero();
+        fix_S1           = simdSetZero();
+        fix_S2           = simdSetZero();
+        fix_S3           = simdSetZero();
+        fiy_S0           = simdSetZero();
+        fiy_S1           = simdSetZero();
+        fiy_S2           = simdSetZero();
+        fiy_S3           = simdSetZero();
+        fiz_S0           = simdSetZero();
+        fiz_S1           = simdSetZero();
+        fiz_S2           = simdSetZero();
+        fiz_S3           = simdSetZero();
 
         cjind = cjind0;
 
@@ -666,49 +660,49 @@
         /* Add accumulated i-forces to the force array */
 #if UNROLLJ >= 4
         fix_S = gmx_mm_transpose_sum4_pr(fix_S0, fix_S1, fix_S2, fix_S3);
-        gmx_simd4_store_r(f+scix, gmx_simd4_add_r(fix_S, gmx_simd4_load_r(f+scix)));
+        simd4Store(f+scix, simd4Add(fix_S, simd4Load(f+scix)));
 
         fiy_S = gmx_mm_transpose_sum4_pr(fiy_S0, fiy_S1, fiy_S2, fiy_S3);
-        gmx_simd4_store_r(f+sciy, gmx_simd4_add_r(fiy_S, gmx_simd4_load_r(f+sciy)));
+        simd4Store(f+sciy, simd4Add(fiy_S, simd4Load(f+sciy)));
 
         fiz_S = gmx_mm_transpose_sum4_pr(fiz_S0, fiz_S1, fiz_S2, fiz_S3);
-        gmx_simd4_store_r(f+sciz, gmx_simd4_add_r(fiz_S, gmx_simd4_load_r(f+sciz)));
+        simd4Store(f+sciz, simd4Add(fiz_S, simd4Load(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_simd4_reduce_r(fix_S);
-        fshift[ish3+1] += gmx_simd4_reduce_r(fiy_S);
-        fshift[ish3+2] += gmx_simd4_reduce_r(fiz_S);
+        fshift[ish3+0] += simd4Reduce(fix_S);
+        fshift[ish3+1] += simd4Reduce(fiy_S);
+        fshift[ish3+2] += simd4Reduce(fiz_S);
 #endif
 #else
         fix0_S = gmx_mm_transpose_sum2_pr(fix_S0, fix_S1);
-        gmx_simd_store_r(f+scix, gmx_simd_add_r(fix0_S, gmx_simd_load_r(f+scix)));
+        simdStore(f+scix, simdAdd(fix0_S, simdLoad(f+scix)));
         fix2_S = gmx_mm_transpose_sum2_pr(fix_S2, fix_S3);
-        gmx_simd_store_r(f+scix+2, gmx_simd_add_r(fix2_S, gmx_simd_load_r(f+scix+2)));
+        simdStore(f+scix+2, simdAdd(fix2_S, simdLoad(f+scix+2)));
 
         fiy0_S = gmx_mm_transpose_sum2_pr(fiy_S0, fiy_S1);
-        gmx_simd_store_r(f+sciy, gmx_simd_add_r(fiy0_S, gmx_simd_load_r(f+sciy)));
+        simdStore(f+sciy, simdAdd(fiy0_S, simdLoad(f+sciy)));
         fiy2_S = gmx_mm_transpose_sum2_pr(fiy_S2, fiy_S3);
-        gmx_simd_store_r(f+sciy+2, gmx_simd_add_r(fiy2_S, gmx_simd_load_r(f+sciy+2)));
+        simdStore(f+sciy+2, simdAdd(fiy2_S, simdLoad(f+sciy+2)));
 
         fiz0_S = gmx_mm_transpose_sum2_pr(fiz_S0, fiz_S1);
-        gmx_simd_store_r(f+sciz, gmx_simd_add_r(fiz0_S, gmx_simd_load_r(f+sciz)));
+        simdStore(f+sciz, simdAdd(fiz0_S, simdLoad(f+sciz)));
         fiz2_S = gmx_mm_transpose_sum2_pr(fiz_S2, fiz_S3);
-        gmx_simd_store_r(f+sciz+2, gmx_simd_add_r(fiz2_S, gmx_simd_load_r(f+sciz+2)));
+        simdStore(f+sciz+2, simdAdd(fiz2_S, simdLoad(f+sciz+2)));
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += gmx_simd_reduce_r(gmx_simd_add_r(fix0_S, fix2_S));
-        fshift[ish3+1] += gmx_simd_reduce_r(gmx_simd_add_r(fiy0_S, fiy2_S));
-        fshift[ish3+2] += gmx_simd_reduce_r(gmx_simd_add_r(fiz0_S, fiz2_S));
+        fshift[ish3+0] += simdReduce(simdAdd(fix0_S, fix2_S));
+        fshift[ish3+1] += simdReduce(simdAdd(fiy0_S, fiy2_S));
+        fshift[ish3+2] += simdReduce(simdAdd(fiz0_S, fiz2_S));
 #endif
 #endif
 
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            *Vc += gmx_simd_reduce_r(vctot_S);
+            *Vc += simdReduce(vctot_S);
         }
 
-        *Vvdw += gmx_simd_reduce_r(Vvdwtot_S);
+        *Vvdw += simdReduce(Vvdwtot_S);
 #endif
 
         /* Outer loop uses 6 flops/iteration */

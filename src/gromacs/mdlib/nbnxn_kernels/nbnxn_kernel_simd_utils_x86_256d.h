@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 #ifndef _nbnxn_kernel_simd_utils_x86_256d_h_
 #define _nbnxn_kernel_simd_utils_x86_256d_h_
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:
@@ -43,7 +45,7 @@
  *   energy group pair energy storage
  */
 
-typedef gmx_simd_real_t gmx_exclfilter;
+typedef SimdReal gmx_exclfilter;
 static const int filter_stride = 2;
 
 /* Transpose 2 double precision registers */
@@ -131,8 +133,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 
 /* The load_table functions below are performance critical. They
  * always take the ti parameter, which should contain a buffer that
- * is aligned with prepare_table_load_buffer(), but it is only used
- * with full-width AVX_256. */
+ * is aligned. */
 
 static gmx_inline void
 load_table_f(const real *tab_coul_F, __m128i ti_S, int *ti,
@@ -193,10 +194,10 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter
 gmx_load_exclusion_filter(const unsigned *i)
 {
-    return gmx_simd_load_r((real *) (i));
+    return simdLoad((real *) (i));
 }
 
-static gmx_inline gmx_simd_bool_t
+static gmx_inline SimdBool
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
     /* With <= 16 bits used the cast and conversion should not be

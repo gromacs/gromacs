@@ -63,204 +63,206 @@
 /*! \brief SIMD4 double type. Available with \ref GMX_SIMD4_HAVE_DOUBLE.
  *
  * Unless you specifically want a double-precision type you should check
- * \ref gmx_simd4_real_t instead.
+ * \ref gmx::Simd4Real instead.
  *
  * While the SIMD4 datatype is identical to the normal SIMD type in the
  * reference implementation, this will often not be the case for
  * other architectures.
  */
-#    define gmx_simd4_double_t   gmx_simd_double_t
+#    define Simd4Double    SimdDouble
 
 /*! \brief Double precision SIMD4 load aligned.
- * \copydetails gmx_simd_load_d
+ * \copydetails simdLoadD
  */
-#    define gmx_simd4_load_d     gmx_simd_load_d
+#    define simd4LoadD     simdLoadD
 
 /*! \brief Double precision SIMD4 load single value to all elements.
- * \copydetails gmx_simd_load1_d
+ * \copydetails simdLoad1D
  */
-#    define gmx_simd4_load1_d    gmx_simd_load1_d
+#    define simd4Load1D    simdLoad1D
 
 /*! \brief Double precision SIMD4 set all elements from value.
- * \copydetails gmx_simd_set1_d
+ * \copydetails simdSet1D
  */
-#    define gmx_simd4_set1_d     gmx_simd_set1_d
+#    define simd4Set1D     simdSet1D
 
 /*! \brief Double precision SIMD4 store to aligned memory.
- * \copydetails gmx_simd_store_d
+ * \copydetails simdStoreD
  */
-#    define gmx_simd4_store_d   gmx_simd_store_d
+#    define simd4StoreD   simdStoreD
 
 /*! \brief Load unaligned SIMD4 double.
- * \copydetails gmx_simd_loadu_d
+ * \copydetails simdLoadUD
  */
-#    define gmx_simd4_loadu_d   gmx_simd_loadu_d
+#    define simd4LoadUD   simdLoadUD
 
 /*! \brief Store unaligned SIMD4 double.
- * \copydetails gmx_simd_storeu_d
+ * \copydetails simdStoreUD
  */
-#    define gmx_simd4_storeu_d  gmx_simd_storeu_d
+#    define simd4StoreUD  simdStoreUD
 
 /*! \brief Set all elements in SIMD4 double to 0.0.
- * \copydetails gmx_simd_setzero_d
+ * \copydetails simdSetZeroD
  */
-#    define gmx_simd4_setzero_d gmx_simd_setzero_d
+#    define simd4SetZeroD simdSetZeroD
 
 /*! \brief Bitwise and for two SIMD4 double variables.
- * \copydetails gmx_simd_and_d
+ * \copydetails simdAndD
  */
-#    define gmx_simd4_and_d     gmx_simd_and_d
+#    define simd4AndD     simdAndD
 
 /*! \brief Bitwise andnot for SIMD4 double. c=(~a) & b.
- * \copydetails gmx_simd_andnot_d
+ * \copydetails simdAndNotD
  */
-#    define gmx_simd4_andnot_d  gmx_simd_andnot_d
+#    define simd4AndNotD  simdAndNotD
 
 /*! \brief Bitwise or for SIMD4 double.
- * \copydetails gmx_simd_or_d
+ * \copydetails gmx::simdOrD
  */
-#    define gmx_simd4_or_d      gmx_simd_or_d
+#    define simd4OrD      simdOrD
 
 /*! \brief Bitwise xor for SIMD4 double.
- * \copydetails gmx_simd_xor_d
+ * \copydetails gmx::simdXorD
  */
-#    define gmx_simd4_xor_d     gmx_simd_xor_d
+#    define simd4XorD     simdXorD
 
 /*! \brief Add two SIMD4 double values.
- * \copydetails gmx_simd_add_d
+ * \copydetails gmx::simdAddD
  */
-#    define gmx_simd4_add_d     gmx_simd_add_d
+#    define simd4AddD     simdAddD
 
 /*! \brief Subtract two SIMD4 double values.
- * \copydetails gmx_simd_sub_d
+ * \copydetails gmx::simdSubD
  */
-#    define gmx_simd4_sub_d     gmx_simd_sub_d
+#    define simd4SubD     simdSubD
 
 /*! \brief Multiply two SIMD4 double values.
- * \copydetails gmx_simd_mul_d
+ * \copydetails gmx::simdMulD
  */
-#    define gmx_simd4_mul_d     gmx_simd_mul_d
+#    define simd4MulD     simdMulD
 
 /*! \brief Fused-multiply-add for SIMD4 double. Result is a*b+c.
- * \copydetails gmx_simd_fmadd_d
+ * \copydetails gmx::simdFmaddD
  */
-#    define gmx_simd4_fmadd_d   gmx_simd_fmadd_d
+#    define simd4FmaddD   simdFmaddD
 
 /*! \brief Fused-multiply-subtract for SIMD4 double. Result is a*b-c.
- * \copydetails gmx_simd_fmsub_d
+ * \copydetails gmx::simdFmsubD
  */
-#    define gmx_simd4_fmsub_d   gmx_simd_fmsub_d
+#    define simd4FmsubD   simdFmsubD
 
 /*! \brief Fused-negated-multiply-add for SIMD4 double. Result is -a*b+c.
- * \copydetails gmx_simd_fnmadd_d
+ * \copydetails gmx::simdFnmaddD
  */
-#    define gmx_simd4_fnmadd_d  gmx_simd_fnmadd_d
+#    define simd4FnmaddD  simdFnmaddD
 
 /*! \brief Fused-negated-multiply-sub for SIMD4 double. Result is -a*b-c.
- * \copydetails gmx_simd_fnmsub_d
+ * \copydetails gmx::simdFnmsubD
  */
-#    define gmx_simd4_fnmsub_d  gmx_simd_fnmsub_d
+#    define simd4FnmsubD  simdFnmsubD
 
 /*! \brief SIMD4 double 1.0/sqrt(x) lookup.
- * \copydetails gmx_simd_rsqrt_d
+ * \copydetails gmx::simdRsqrtD
  */
-#    define gmx_simd4_rsqrt_d   gmx_simd_rsqrt_d
+#    define simd4RsqrtD   simdRsqrtD
 
 /*! \brief SIMD4 double Floating-point fabs().
- * \copydetails gmx_simd_fabs_d
+ * \copydetails gmx::simdAbsD
  */
-#    define gmx_simd4_fabs_d    gmx_simd_fabs_d
+#    define simd4AbsD    simdAbsD
 
 /*! \brief SIMD4 double floating-point negate.
- * \copydetails gmx_simd_fneg_d
+ * \copydetails gmx::simdNegD
  */
-#    define gmx_simd4_fneg_d    gmx_simd_fneg_d
+#    define simd4NegD    simdNegD
 
 /*! \brief Set each SIMD4 element to the largest from two variables.
- * \copydetails gmx_simd_max_d
+ * \copydetails gmx::simdMaxD
  */
-#    define gmx_simd4_max_d     gmx_simd_max_d
+#    define simd4MaxD     simdMaxD
 
 /*! \brief Set each SIMD4 element to the smallest from two variables.
- * \copydetails gmx_simd_min_d
+ * \copydetails gmx::simdMinD
  */
-#    define gmx_simd4_min_d     gmx_simd_min_d
+#    define simd4MinD     simdMinD
 
 /*!  \brief Round SIMD4 double to nearest integer value (in floating-point format).
- * \copydetails gmx_simd_round_d
+ * \copydetails gmx::simdRoundD
  */
-#    define gmx_simd4_round_d   gmx_simd_round_d
+#    define simd4RoundD   simdRoundD
 
 /*! \brief Truncate SIMD4 double, i.e. round towards zero.
- * \copydetails gmx_simd_trunc_d
+ * \copydetails gmx::simdTruncD
  */
-#    define gmx_simd4_trunc_d   gmx_simd_trunc_d
+#    define simd4TruncD   simdTruncD
 
 /*! \brief Return dot product of two double precision SIMD4 variables.
- * \copydetails gmx_simd_setzero_f
+ *
+ * \copydetails simd4DotProductF
  */
-static gmx_inline double
-gmx_simd4_dotproduct3_d(gmx_simd_double_t a, gmx_simd_double_t b)
+static inline double
+simd4DotProductD(SimdDouble a, SimdDouble b)
 {
     return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
 }
 
 /*! \brief SIMD4 variable type to use for logical comparisons on doubles.
- * \copydetails gmx_simd_dbool_t
+ * \copydetails SimdDBool
  */
-#    define gmx_simd4_dbool_t   gmx_simd_dbool_t
+#    define Simd4DBool   SimdDBool
 
 /*! \brief Equality comparison of two double precision SIMD4 values.
- * \copydetails gmx_simd_cmpeq_d
+ * \copydetails simdCmpEqD
  */
-#    define gmx_simd4_cmpeq_d   gmx_simd_cmpeq_d
+#    define simd4CmpEqD   simdCmpEqD
 
 /*! \brief Less-than comparison of two double precision SIMD4 values.
- * \copydetails gmx_simd_cmplt_d
+ * \copydetails simdCmpLtD
  */
-#    define gmx_simd4_cmplt_d   gmx_simd_cmplt_d
+#    define simd4CmpLtD   simdCmpLtD
 
 /*! \brief Less-than comparison of two double precision SIMD4 values.
- * \copydetails gmx_simd_cmple_d
+ * \copydetails simdCmpLeD
  */
-#    define gmx_simd4_cmple_d   gmx_simd_cmple_d
+#    define simd4CmpLeD   simdCmpLeD
 
 /*! \brief Logical AND on double SIMD4 booleans.
- * \copydetails gmx_simd_and_db
+ * \copydetails simdAndDB
  */
-#    define gmx_simd4_and_db gmx_simd_and_db
+#    define simd4AndDB simdAndDB
 
 /*! \brief Logical OR on double SIMD4 booleans.
- * \copydetails gmx_simd_or_db
+ * \copydetails simdOrDB
  */
-#    define gmx_simd4_or_db gmx_simd_or_db
+#    define simd4OrDB simdOrDB
 
 /*! \brief Returns non-zero if any of the SIMD4 booleans in x is True.
- * \copydetails gmx_simd_anytrue_db
+ * \copydetails simdAnyTrueDB
  */
-#    define gmx_simd4_anytrue_db gmx_simd_anytrue_db
+#    define simd4AnyTrueDB simdAnyTrueDB
 
 /*! \brief Select from double precision SIMD4 variable where boolean is true.
- * \copydetails gmx_simd_blendzero_d
+ * \copydetails simdMaskD
  */
-#    define gmx_simd4_blendzero_d gmx_simd_blendzero_d
+#    define simd4MaskD simdMaskD
 
 /*! \brief Select from double precision SIMD4 variable where boolean is false.
- * \copydetails gmx_simd_blendnotzero_d
+ * \copydetails simdMaskNotD
  */
-#    define gmx_simd4_blendnotzero_d gmx_simd_blendnotzero_d
+#    define simd4MaskNotD simdMaskNotD
 
 /*! \brief Vector-blend instruction for SIMD4 double.
- * \copydetails gmx_simd_blendv_d
+ * \copydetails simdBlendD
  */
-#    define gmx_simd4_blendv_d  gmx_simd_blendv_d
+#    define simd4BlendD  simdBlendD
 
 /*! \brief Return sum of all elements in SIMD4 double.
- * \copydetails gmx_simd_reduce_d
+ * \copydetails simdReduceD
  */
-#    define gmx_simd4_reduce_d  gmx_simd_reduce_d
+#    define simd4ReduceD  simdReduceD
 
 #else /* GMX_SIMD4_DOUBLE_WIDTH!=4 */
+#    undef  GMX_SIMD4_HAVE_DOUBLE
 #    define GMX_SIMD4_HAVE_DOUBLE      0
 #endif
 

@@ -35,7 +35,7 @@
 #ifndef _kernelutil_sparc64_hpc_ace_double_h_
 #define _kernelutil_sparc64_hpc_ace_double_h_
 
-/* Get gmx_simd_exp_d() */
+/* Get simdExpD() */
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 
