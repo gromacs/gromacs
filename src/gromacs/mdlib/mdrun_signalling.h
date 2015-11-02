@@ -78,10 +78,10 @@ enum {
  * Note that xlc on BG/Q requires sig to be of size char (see unit tests
  * of ArrayRef for details). */
 struct gmx_signalling_t {
-    int  nstms;             /**< The frequency for inter-simulation communication */
-    char sig[eglsNR];       /**< The signal set by this rank in do_md */
-    char set[eglsNR];       /**< The communicated signal, equal for all ranks once communication has occurred */
-    real mpiBuffer[eglsNR]; /**< Buffer for communication */
+    int         nstms;             /**< The frequency for inter-simulation communication */
+    signed char sig[eglsNR];       /**< The signal set by this rank in do_md */
+    signed char set[eglsNR];       /**< The communicated signal, equal for all ranks once communication has occurred */
+    real        mpiBuffer[eglsNR]; /**< Buffer for communication */
 };
 
 /*! \brief Construct a struct gmx_signalling_t */
