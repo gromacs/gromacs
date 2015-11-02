@@ -88,8 +88,8 @@ prepareSignalBuffer(struct gmx_signalling_t *gs)
 {
     if (gs)
     {
-        gmx::ArrayRef<char> sig(gs->sig);
-        gmx::ArrayRef<real> temp(gs->mpiBuffer);
+        gmx::ArrayRef<signed char> sig(gs->sig);
+        gmx::ArrayRef<real>        temp(gs->mpiBuffer);
 
         std::copy(sig.begin(), sig.end(), temp.begin());
 
@@ -131,9 +131,9 @@ handleSignals(struct gmx_signalling_t  *gs,
             /* Set the communicated signal only when it is non-zero,
              * since signals might not be processed at each MD step.
              */
-            char gsi = (gs->mpiBuffer[i] >= 0.0 ?
-                        static_cast<char>(gs->mpiBuffer[i] + 0.5) :
-                        static_cast<char>(gs->mpiBuffer[i] - 0.5));
+            signed char gsi = (gs->mpiBuffer[i] >= 0.0 ?
+                               static_cast<signed char>(gs->mpiBuffer[i] + 0.5) :
+                               static_cast<signed char>(gs->mpiBuffer[i] - 0.5));
             if (gsi != 0)
             {
                 gs->set[i] = gsi;
