@@ -483,6 +483,10 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 
     if (wc == NULL)
     {
+        /* Default construction of std::array of non-class T can leave
+           the values indeterminate, just like a C array, and icc
+           warns about it. */
+        cycles_sum.fill(0);
         return cycles_sum;
     }
 

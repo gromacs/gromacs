@@ -91,6 +91,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     gmx_bool   bFirst, bVel, oldResFirst;
     char      *p1, *p2, *p3;
 
+    oldres      = -1;
     newres      = -1;
     oldResFirst = FALSE;
     ddist       = 0;
