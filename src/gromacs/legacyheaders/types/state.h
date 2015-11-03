@@ -105,7 +105,7 @@ typedef struct
     real         mvcos;
 } ekinstate_t;
 
-typedef struct
+typedef struct df_history_t
 {
     int      nlambda;        /* total number of lambda states - for history*/
 
