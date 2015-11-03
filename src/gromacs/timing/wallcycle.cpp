@@ -422,6 +422,11 @@ static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
 
 void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme)
 {
+    if (wc == NULL)
+    {
+        return;
+    }
+
     for (int i = 0; i < ewcNR; i++)
     {
         if (is_pme_counter(i) || (i == ewcRUN && isPmeRank))
