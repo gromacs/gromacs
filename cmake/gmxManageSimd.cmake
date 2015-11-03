@@ -476,8 +476,22 @@ endif()
 # Check if the compiler supports one of these, and in that case set gmx_simdcall
 # to that string. If we do not have any such calling convention modifier, set it
 # to an empty string.
+#
+# Update 2015-11-04: As of version 3.6, clang has added support for __vectorcall
+# (also on Linux). This appears to be buggy for the reference SIMD
+# implementation when using the Debug build (when functions are not inlined) 
+# while it seems works fine for the actual SIMD implementations. This is likely
+# because the reference build ends up passing lots of structures with arrays
+# rather than actual vector data. For now we disable __vectorcall with clang
+# when using the reference build.
+# 
 if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
-    foreach(callconv __vectorcall __regcall "")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
+        set(CALLCONV_LIST __regcall " ")
+    else()
+        set(CALLCONV_LIST __vectorcall __regcall " ")
+    endif()
+    foreach(callconv ${CALLCONV_LIST})
         set(callconv_compile_var "_callconv_${callconv}")
         check_c_source_compiles("int ${callconv} f(int i) {return i;} int main(void) {return f(0);}" ${callconv_compile_var})
         if(${callconv_compile_var})
