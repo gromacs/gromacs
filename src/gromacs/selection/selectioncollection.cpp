@@ -692,7 +692,7 @@ std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
         statusWriter.reset(new TextWriter(statusStream));
         statusWriter->wrapperSettings().setLineLength(78);
     }
-    return std::move(statusWriter);
+    return statusWriter;
 }
 
 }   // namespace
