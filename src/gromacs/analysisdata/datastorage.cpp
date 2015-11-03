@@ -490,7 +490,7 @@ AnalysisDataStorageImpl::getFrameBuilder()
     }
     AnalysisDataFrameBuilderPointer builder(std::move(builders_.back()));
     builders_.pop_back();
-    return std::move(builder);
+    return builder;
 }
 
 
@@ -655,7 +655,7 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
     }
     AnalysisDataFrameBuilderPointer builder(std::move(builder_));
     builder_.reset();
-    return std::move(builder);
+    return builder;
 }
 
 
