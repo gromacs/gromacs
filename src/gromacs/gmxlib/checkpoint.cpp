@@ -58,6 +58,7 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/gmxlib/df_history.h"
 #include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"

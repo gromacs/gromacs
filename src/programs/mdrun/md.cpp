@@ -53,6 +53,7 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxlib/df_history.h"
 #include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/sighandler.h"
