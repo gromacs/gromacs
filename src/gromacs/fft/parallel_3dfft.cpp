@@ -41,6 +41,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi/mutex.h"
+#endif
+
 #include "gromacs/fft/fft.h"
 #include "gromacs/fft/fft5d.h"
 #include "gromacs/math/gmxcomplex.h"
@@ -51,6 +55,10 @@
 struct gmx_parallel_3dfft  {
     fft5d_plan p1, p2;
 };
+
+#ifdef GMX_THREAD_MPI
+tMPI_Thread_mutex_t plan_3d_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
 
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
@@ -82,10 +90,19 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
         Nb = K; Mb = rN; Kb = M;  /* currently always true because ORDER_YZ always set */
     }
 
+#ifdef GMX_THREAD_MPI
+    /* fft5d_plan_3d is not thread-safe: use a mutex */
+    tMPI_Thread_mutex_lock(&plan_3d_mutex);
+#endif
+
     (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, nthreads);
 
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
                                       (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
+
+#ifdef GMX_THREAD_MPI
+    tMPI_Thread_mutex_unlock(&plan_3d_mutex);
+#endif
 
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 != 0;
 }
