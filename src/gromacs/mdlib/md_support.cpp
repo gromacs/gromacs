@@ -43,6 +43,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/gmxlib/df_history.h"
 #include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/names.h"
