@@ -37,19 +37,23 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_edsam;
+struct gmx_groups_t;
 struct gmx_vsite_t;
+struct history_t;
 struct nonbonded_verlet_t;
+struct t_blocka;
 struct t_commrec;
 struct t_fcdata;
 struct t_graph;
 struct t_grpopts;
+struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;

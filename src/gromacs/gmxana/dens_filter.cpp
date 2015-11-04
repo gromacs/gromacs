@@ -43,7 +43,6 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 

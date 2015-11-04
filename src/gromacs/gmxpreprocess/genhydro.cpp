@@ -49,7 +49,6 @@
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/ter_db.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

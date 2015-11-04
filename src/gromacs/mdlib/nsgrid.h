@@ -37,7 +37,10 @@
 #ifndef GMX_MDLIB_NSGRID_H
 #define GMX_MDLIB_NSGRID_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
 struct gmx_domdec_zones_t;

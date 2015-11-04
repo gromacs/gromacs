@@ -37,8 +37,10 @@
  * kernel type 4xn.
  */
 
-#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief Run-time dispatcher for nbnxn kernel functions. */
 void
@@ -169,3 +171,5 @@ nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_4xn;
 nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJFSw_F_4xn;
 nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJPSw_F_4xn;
 nbk_func_noener       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_4xn;
+
+
