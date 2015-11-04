@@ -66,17 +66,21 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
+struct history_t;
 struct t_fcdata;
 struct t_forcerec;
+struct t_idef;
 struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
+struct t_state;
 
 #ifdef __cplusplus
 extern "C" {

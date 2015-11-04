@@ -45,7 +45,6 @@
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/vec.h"

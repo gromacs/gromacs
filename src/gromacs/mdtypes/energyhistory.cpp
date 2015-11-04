@@ -41,9 +41,6 @@
 
 #include <algorithm>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 
 static void done_delta_h_history(delta_h_history_t *dht)

@@ -48,11 +48,11 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/smalloc.h"
 
 #define TIME_EXPLICIT 0
