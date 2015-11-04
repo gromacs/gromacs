@@ -559,6 +559,26 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 }
 
+bool nbnxn_gpu_finished(gmx_nbnxn_cuda_t *nb,
+                        int               aloc)
+{
+    cudaError_t stat;
+
+    stat = cudaStreamQuery(nb->stream[aloc]);
+    if (stat == cudaSuccess)
+    {
+        return true;
+    }
+    else
+    {
+        if (stat != cudaErrorNotReady)
+        {
+            CU_RET_ERR(stat, "cudaStreamQuery failed in nbnxn_gpu_query_tasks");
+        }
+        return false;
+    }
+}
+
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
                             int flags, int aloc,
                             real *e_lj, real *e_el, rvec *fshift)

@@ -897,11 +897,13 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnold-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, NULL,
+              econqCoord);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnew-start, NULL, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, NULL,
+              econqCoord);
 
     for (n = start; n < end; n++)
     {
@@ -918,7 +920,8 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x_old, xnew-start, acc_dir, bMolPBC, box,
               lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqDeriv_FlexCon);
+              NULL, NULL, nrnb, NULL,
+              econqDeriv_FlexCon);
 }
 
 int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,

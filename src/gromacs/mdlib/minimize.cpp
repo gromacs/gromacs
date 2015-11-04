@@ -447,7 +447,8 @@ void init_em(FILE *fplog, const char *title,
                       ir, cr, -1, 0, 1.0, mdatoms,
                       ems->s.x, ems->s.x, NULL, fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      NULL, NULL, nrnb, NULL,
+                      econqCoord);
         }
     }
 
@@ -701,7 +702,8 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                   ir, cr, count, 0, 1.0, md,
                   s1->x, s2->x, NULL, bMolPBC, s2->box,
                   s2->lambda[efptBONDED], &dvdl_constr,
-                  NULL, NULL, nrnb, econqCoord);
+                  NULL, NULL, nrnb, NULL,
+                  econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
     }
 }
@@ -827,7 +829,8 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                   inputrec, cr, count, 0, 1.0, mdatoms,
                   ems->s.x, ems->f, ems->f, fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
-                  NULL, &shake_vir, nrnb, econqForceDispl);
+                  NULL, &shake_vir, nrnb, NULL,
+                  econqForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);

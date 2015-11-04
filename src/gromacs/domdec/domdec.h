@@ -219,7 +219,8 @@ void dd_collect_state(struct gmx_domdec_t *dd,
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum {
-    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME, ddCyclNr
+    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME,
+    ddCyclConstraints, ddCyclNr
 };
 
 /*! \brief Add the wallcycle count to the DD counter */

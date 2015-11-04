@@ -2546,6 +2546,24 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
              */
             load -= comm->cycl_max[ddCyclF];
         }
+        if (comm->cycl_n[ddCyclConstraints] > 0)
+        {
+            /* We add the time in constraints after the last constraint
+             * MPI communication tothe force time. We do this because at
+             * the start of the force calculation the last synchronization
+             * usually was at constraint time. The fully correct solution
+             * would be to start the actual timer at the previous step,
+             * but that leads to very complex code in the main MD loop.
+             */
+            load += comm->cycl[ddCyclConstraints];
+            if (comm->cycl_n[ddCyclConstraints] > 1)
+            {
+                /* We should acutally substract the max force+constraint time,
+                 * but we don't have access to that.
+                 */
+                load -= comm->cycl_max[ddCyclConstraints];
+            }
+        }
 
 #ifdef GMX_MPI
         if (comm->cycl_n[ddCyclWaitGPU] && comm->nrank_gpu_shared > 1)
@@ -2557,7 +2575,7 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
             {
                 /* We should remove the WaitGPU time of the same MD step
                  * as the one with the maximum F time, since the F time
-                 * and the wait time are not independent.
+                 * and the wait times are not independent.
                  * Furthermore, the step for the max F time should be chosen
                  * the same on all ranks that share the same GPU.
                  * But to keep the code simple, we remove the average instead.

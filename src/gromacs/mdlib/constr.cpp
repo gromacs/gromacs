@@ -61,6 +61,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/topology/mtop_util.h"
@@ -274,7 +275,9 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq)
+                   t_nrnb *nrnb,
+                   float *cycles_after_last_communication,
+                   int econq)
 {
     gmx_bool    bOK, bDump;
     int         start, homenr;
@@ -367,12 +370,20 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         pbc_null = NULL;
     }
 
+    gmx_cycles_t cycles;
+
     /* Communicate the coordinates required for the non-local constraints
      * for LINCS and/or SETTLE.
      */
     if (cr->dd)
     {
         dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
+
+        if (constr->lincsd == NULL ||
+            !lincs_iteration_communication(constr->lincsd, cr))
+        {
+            cycles = gmx_cycles_read();
+        }
 
         if (v != NULL)
         {
@@ -390,7 +401,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != NULL, vir_r_m_dr,
-                              econq, nrnb,
+                              econq, nrnb, &cycles,
                               constr->maxwarn, &constr->warncount_lincs);
         if (!bOK && constr->maxwarn >= 0)
         {
@@ -615,6 +626,13 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
     }
 
+    if (cr->dd && cycles_after_last_communication != NULL)
+    {
+        /* Stop the counter before we might communicate in pull or edsam */
+        cycles                           = gmx_cycles_read() - cycles;
+        *cycles_after_last_communication = static_cast<float>(cycles);
+    }
+
     if (bDump)
     {
         dump_confs(fplog, step, constr->warn_mtop, start, homenr, cr, x, xprime, box);
@@ -634,11 +652,17 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             }
             set_pbc(&pbc, ir->ePBC, box);
             pull_constraint(ir->pull_work, md, &pbc, cr, ir->delta_t, t, x, xprime, v, *vir);
+
+            /* pull_constraint does communication, so our cycles are useless */
+            cycles_after_last_communication = 0;
         }
         if (constr->ed && delta_step > 0)
         {
             /* apply the essential dynamcs constraints here */
             do_edsam(ir, step, cr, xprime, v, box, constr->ed);
+
+            /* do_edsam might do communication, so our cycles are useless */
+            cycles_after_last_communication = 0;
         }
     }
 

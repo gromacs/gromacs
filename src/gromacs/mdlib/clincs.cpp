@@ -60,6 +60,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/bitmask.h"
@@ -388,6 +389,13 @@ static const int simd_width = 1;
 #endif
 /* We can't use small memory alignments on many systems, so use min 64 bytes*/
 static const int align_bytes = std::max<int>(64, simd_width*sizeof(real));
+
+gmx_bool lincs_iteration_communication(const struct gmx_lincsdata *lincsd,
+                                       const struct t_commrec *cr)
+{
+    /* TODO Remove the dd->constraints check when removing charge groups */
+    return lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints;
+}
 
 real *lincs_rmsd_data(struct gmx_lincsdata *lincsd)
 {
@@ -1078,7 +1086,8 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      gmx_bool bCalcDHDL,
                      real wangle, gmx_bool *bWarn,
                      real invdt, rvec * gmx_restrict v,
-                     gmx_bool bCalcVir, tensor vir_r_m_dr)
+                     gmx_bool bCalcVir, tensor vir_r_m_dr,
+                     gmx_cycles_t *cycles)
 {
     int      b0, b1, b, i, j, n, iter;
     int     *bla, *blnr, *blbnb;
@@ -1224,6 +1233,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 
     for (iter = 0; iter < lincsd->nIter; iter++)
     {
+        /* TODO Remove the dd->constraints check when removing charge groups */
         if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints))
         {
 #pragma omp barrier
@@ -1233,6 +1243,11 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 if (DOMAINDECOMP(cr))
                 {
                     dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
+
+                    if (cycles != NULL && iter == lincsd->nIter - 1)
+                    {
+                        *cycles = gmx_cycles_read();
+                    }
                 }
             }
 #pragma omp barrier
@@ -1645,7 +1660,8 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
      * With more effort we could also make it useful for small
      * molecules with nr. sequential constraints <= nOrder-1.
      */
-    li->bCommIter = (bPLINCS && (li->nOrder < 1 || bMoreThanTwoSeq));
+    li->bCommIter = (bPLINCS && li->nIter > 0 &&
+                     (li->nOrder < 1 || bMoreThanTwoSeq));
 
     if (debug && bPLINCS)
     {
@@ -2524,6 +2540,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          gmx_bool bCalcVir, tensor vir_r_m_dr,
                          int econq,
                          t_nrnb *nrnb,
+                         gmx_cycles_t *cycles,
                          int maxwarn, int *warncount)
 {
     gmx_bool  bCalcDHDL;
@@ -2632,7 +2649,8 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          bCalcDHDL,
                          ir->LincsWarnAngle, &bWarn,
                          invdt, v, bCalcVir,
-                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr,
+                         cycles);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }

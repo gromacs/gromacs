@@ -1496,7 +1496,8 @@ static void combine_forces(gmx_update_t upd,
         }
         constrain(NULL, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
                   state->x, xp, xp, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, vir_lr_constr, nrnb, econqForce);
+                  NULL, vir_lr_constr, nrnb, NULL,
+                  econqForce);
     }
 
     /* Add nstcalclr-1 times the LR force to the sum of both forces
@@ -1525,6 +1526,7 @@ void update_constraints(FILE             *fplog,
                         t_commrec        *cr,
                         t_nrnb           *nrnb,
                         gmx_wallcycle_t   wcycle,
+                        float            *cycles_after_constraint_communication,
                         gmx_update_t      upd,
                         gmx_constr_t      constr,
                         gmx_bool          bFirstHalf,
@@ -1585,7 +1587,9 @@ void update_constraints(FILE             *fplog,
                       state->x, state->v, state->v,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
+                      NULL, bCalcVir ? &vir_con : NULL, nrnb,
+                      cycles_after_constraint_communication,
+                      econqVeloc);
         }
         else
         {
@@ -1594,7 +1598,9 @@ void update_constraints(FILE             *fplog,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
+                      state->v, bCalcVir ? &vir_con : NULL, nrnb,
+                      cycles_after_constraint_communication,
+                      econqCoord);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1676,7 +1682,9 @@ void update_constraints(FILE             *fplog,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, NULL, nrnb, econqCoord);
+                      state->v, NULL, nrnb,
+                      cycles_after_constraint_communication,
+                      econqCoord);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }
@@ -1724,7 +1732,9 @@ void update_constraints(FILE             *fplog,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, NULL, nrnb, econqCoord);
+                      NULL, NULL, nrnb,
+                      cycles_after_constraint_communication,
+                      econqCoord);
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }

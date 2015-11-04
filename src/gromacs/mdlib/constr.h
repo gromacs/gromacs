@@ -42,6 +42,7 @@
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
@@ -161,7 +162,9 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq);
+                   t_nrnb *nrnb,
+                   float *cycles_after_last_communication,
+                   int econq);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -188,6 +191,9 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
  * If vir!=NULL calculate the constraint virial.
+ *
+ * If cycles_after_last_communication!=NULL and we are using DD,
+ * count constraint cycles from after the last MPI communication.
  *
  * Return TRUE if OK, FALSE in case of shake error
  *
@@ -235,6 +241,10 @@ gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
 gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop);
 /* Returns if there are inter charge group settles */
 
+gmx_bool lincs_iteration_communication(const struct gmx_lincsdata *lincsd,
+                                       const struct t_commrec *cr);
+/* Returns if LINCS does MPI communication during iteration */
+
 real *constr_rmsd_data(gmx_constr_t constr);
 /* Return the data for determining constraint RMS relative deviations.
  * Returns NULL when LINCS is not used.
@@ -280,6 +290,7 @@ constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
                 gmx_bool bCalcVir, tensor vir_r_m_dr,
                 int econ,
                 t_nrnb *nrnb,
+                gmx_cycles_t *cycles,
                 int maxwarn, int *warncount);
 /* Returns if the constraining succeeded */
 

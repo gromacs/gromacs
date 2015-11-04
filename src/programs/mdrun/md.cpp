@@ -1139,7 +1139,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 update_constraints(fplog, step, NULL, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
-                                   cr, nrnb, wcycle, upd, constr,
+                                   cr, nrnb, wcycle, NULL,
+                                   upd, constr,
                                    TRUE, bCalcVir);
                 wallcycle_start(wcycle, ewcUPDATE);
                 if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
@@ -1378,7 +1379,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     update_constraints(fplog, step, NULL, ir, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir,
-                                       cr, nrnb, wcycle, upd, constr,
+                                       cr, nrnb, wcycle, NULL, upd, constr,
                                        TRUE, bCalcVir);
                 }
             }
@@ -1445,11 +1446,30 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                           ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
             wallcycle_stop(wcycle, ewcUPDATE);
 
+            float cycles_after_constraint_communication;
+
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
-                               cr, nrnb, wcycle, upd, constr,
+                               cr, nrnb, wcycle,
+                               &cycles_after_constraint_communication,
+                               upd, constr,
                                FALSE, bCalcVir);
+
+            /* Record the constraint cycles for load balancing, because there
+             * is no communication between this point and the next force
+             * calculation.
+             * We don't record the constraint cycles when we will do global
+             * communication afterwards in the same step. This is because
+             * the constraint load can often go up when scaling domains
+             * in typical simulations of globular molecules in solvent.
+             */
+            if (DOMAINDECOMP(cr) && constr != NULL &&
+                !(bGStat || do_per_step(step - 1, nstglobalcomm)))
+            {
+                dd_cycles_add(cr->dd, cycles_after_constraint_communication,
+                              ddCyclConstraints);
+            }
 
             if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
             {
@@ -1487,7 +1507,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 update_constraints(fplog, step, NULL, ir, mdatoms,
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
-                                   cr, nrnb, wcycle, upd, NULL,
+                                   cr, nrnb, wcycle, NULL, upd, NULL,
                                    FALSE, bCalcVir);
             }
             if (bVV)
