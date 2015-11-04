@@ -82,6 +82,14 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               int                    gmx_unused         aloc) GPU_FUNC_TERM
 
 /*! \brief
+ * Returns a bool that tells if the asynchronously launched nonbonded
+ * calculations and data transfers have finished.
+ */
+GPU_FUNC_QUALIFIER
+bool nbnxn_gpu_finished(gmx_nbnxn_gpu_t gmx_unused *nb,
+                        int             gmx_unused  aloc) GPU_FUNC_TERM
+
+/*! \brief
  * Wait for the asynchronously launched nonbonded calculations and data
  * transfers to finish.
  */
