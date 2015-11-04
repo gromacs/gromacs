@@ -151,7 +151,7 @@
 {
     int              offset;
     int              index;
-    gmx_simd4_real_t ty_S0, ty_S1, ty_S2, ty_S3, ty_S4;
+    gmx_simd4_real_t ty_S0, ty_S1, ty_S2, ty_S3;
     gmx_simd4_real_t tz_S0;
     gmx_simd4_real_t tz_S1;
     gmx_simd4_real_t vx_S;
@@ -162,6 +162,7 @@
     gmx_simd4_real_t gri_S00, gri_S01, gri_S02, gri_S03;
     gmx_simd4_real_t gri_S10, gri_S11, gri_S12, gri_S13;
 #if PME_ORDER == 5
+    gmx_simd4_real_t ty_S4;
     gmx_simd4_real_t sum_S04;
     gmx_simd4_real_t sum_S14;
     gmx_simd4_real_t gri_S04;
