@@ -38,7 +38,9 @@
 #ifndef _eigio_h
 #define _eigio_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C"

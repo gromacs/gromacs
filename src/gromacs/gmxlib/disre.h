@@ -39,11 +39,14 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_mtop_t;
+struct history_t;
 struct t_commrec;
+struct t_inputrec;
+struct t_state;
 
 #ifdef __cplusplus
 extern "C" {

@@ -44,7 +44,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/nrama.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"

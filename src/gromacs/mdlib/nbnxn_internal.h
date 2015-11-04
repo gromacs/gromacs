@@ -37,11 +37,12 @@
 #define _nbnxn_internal_h
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_domdec_zones_t;
 
