@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,46 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_MDLIB_TGROUP_H
-#define GMX_MDLIB_TGROUP_H
-
-#include <cstdio>
-
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
-
-struct gmx_ekindata_t;
-struct gmx_mtop_t;
-struct t_commrec;
-struct t_grpopts;
-struct t_mdatoms;
-
-void init_ekindata(FILE *log, gmx_mtop_t *mtop,
-                   t_grpopts *opts,
-                   gmx_ekindata_t *ekind);
-/* Allocate memory and set the grpnr array. */
-
-void done_ekindata(gmx_ekindata_t *ekind);
-/* Free the memory */
-
-void accumulate_u(t_commrec *cr, t_grpopts *opts,
-                  gmx_ekindata_t *ekind);
-
-/* Communicate subsystem - group velocities and subsystem ekin respectively
- * and sum them up. Return them in grps.
+/*! \file
+ * \brief
+ * Low-level utility for converting 64 bit int to 32, printing
+ * a warning if an overflow will occur.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
  */
+#ifndef GMX_UTILITY_INT64_TO_INT_H
+#define GMX_UTILITY_INT64_TO_INT_H
 
-real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
-/* Sum the group ekins into total ekin and calc temp per group,
- * return total temperature.
- */
+#include "gromacs/utility/futil.h"
 
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda);
-/* Do the update of group velocities (if bNEMD) and
- * (partial) group ekin.
+/*! \brief Convert a gmx_int64_t value to int.
+ *
+ * \param[in] step The step number (or other int64)
+ * \param[in] warn If warn!=NULL a warning message will be written
+ *                 to stderr when step does not fit in an int,
+ *                 the first line is:
+ *                 "WARNING during %s:", where warn is printed in %s.
+ * \return the truncated step number.
  */
+int gmx_int64_to_int(gmx_int64_t step, const char *warn);
 
 #endif

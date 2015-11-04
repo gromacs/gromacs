@@ -40,7 +40,6 @@
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/listed-forces/bonded.h"
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \

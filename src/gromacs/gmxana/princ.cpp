@@ -42,9 +42,9 @@
 #include <cmath>
 
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
 static void m_op(matrix mat, rvec x)

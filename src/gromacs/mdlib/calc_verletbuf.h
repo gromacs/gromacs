@@ -36,7 +36,11 @@
 #ifndef GMX_MDLIB_CALC_VERLETBUF_H
 #define GMX_MDLIB_CALC_VERLETBUF_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_mtop_t;
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {

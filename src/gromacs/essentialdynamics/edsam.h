@@ -49,7 +49,7 @@
 #define GMX_ESSENTIALDYNAMICS_EDSAM_H
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -59,7 +59,9 @@ struct gmx_output_env_t;
  */
 typedef struct gmx_edsam *gmx_edsam_t;
 
+struct edsamstate_t;
 struct t_commrec;
+struct t_inputrec;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 
