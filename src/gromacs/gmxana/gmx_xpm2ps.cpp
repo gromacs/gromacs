@@ -51,7 +51,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

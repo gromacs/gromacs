@@ -52,7 +52,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
