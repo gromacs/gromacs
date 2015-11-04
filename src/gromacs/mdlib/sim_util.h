@@ -38,7 +38,6 @@
 #define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/update.h"
@@ -47,6 +46,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 
 struct gmx_constr;
+struct gmx_localtop_t;
 struct gmx_output_env_t;
 struct nonbonded_verlet_t;
 struct t_graph;

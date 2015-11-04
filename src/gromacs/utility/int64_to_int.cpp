@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,42 +32,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
 
-#ifndef _typedefs_h
-#define _typedefs_h
+#include "int64_to_int.h"
 
+#include <cstdio>
 
-/* DEPRECATED! value for signaling unitialized variables */
-//#define NOTSET -12345
+#include "gromacs/utility/basedefinitions.h"
 
-#include "gromacs/legacyheaders/types/state.h"
-#include "gromacs/topology/topology.h"
+int gmx_int64_to_int(gmx_int64_t step, const char *warn)
+{
+    int i;
 
-struct t_inputrec;
+    i = static_cast<int>(step);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+    if (warn != NULL && (step < GMX_INT32_MIN || step > GMX_INT32_MAX))
+    {
+        fprintf(stderr, "\nWARNING during %s:\n", warn);
+        fprintf(stderr, "int64 value ");
+        fprintf(stderr, "%" GMX_PRId64, step);
+        fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
+    }
 
-int gmx_int64_to_int(gmx_int64_t step, const char *warn);
-/* Convert a gmx_int64_t value to int.
- * If warn!=NULL a warning message will be written
- * to stderr when step does not fit in an int,
- * the first line is:
- * "WARNING during %s:", where warn is printed in %s.
- */
-
-/* Functions to initiate and delete structures *
- * These functions are defined in gmxlib/typedefs.c
- */
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
-t_state *serial_init_local_state(t_state *state_global);
-void done_state(t_state *state);
-
-#ifdef __cplusplus
+    return i;
 }
-#endif
-
-
-#endif  /* _typedefs_h */

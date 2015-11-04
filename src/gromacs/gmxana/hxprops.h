@@ -40,7 +40,13 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct t_atom;
+struct t_resinfo;
 
 #ifdef __cplusplus
 extern "C"

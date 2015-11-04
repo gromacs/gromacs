@@ -39,8 +39,14 @@
 #ifndef _adress_h_
 #define _adress_h_
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct t_block;
 struct t_forcerec;
 struct t_mdatoms;
 struct t_pbc;

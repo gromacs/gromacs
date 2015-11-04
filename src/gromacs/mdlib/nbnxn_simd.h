@@ -38,8 +38,9 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
 #if GMX_SIMD_REFERENCE
 #define GMX_NBNXN_SIMD

@@ -37,9 +37,14 @@
 #ifndef GMX_MDLIB_TGROUP_H
 #define GMX_MDLIB_TGROUP_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_ekindata_t;
+struct gmx_mtop_t;
 struct t_commrec;
 struct t_grpopts;
 struct t_mdatoms;

@@ -41,9 +41,9 @@
 #include <math.h>
 
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
