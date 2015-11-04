@@ -37,38 +37,22 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "state.h"
 
 #include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/df_history.h"
-#include "gromacs/gmxlib/energyhistory.h"
+#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
-
-int gmx_int64_to_int(gmx_int64_t step, const char *warn)
-{
-    int i;
-
-    i = static_cast<int>(step);
-
-    if (warn != NULL && (step < INT_MIN || step > INT_MAX))
-    {
-        fprintf(stderr, "\nWARNING during %s:\n", warn);
-        fprintf(stderr, "step value ");
-        fprintf(stderr, "%" GMX_PRId64, step);
-        fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
-    }
-
-    return i;
-}
 
 static void zero_history(history_t *hist)
 {

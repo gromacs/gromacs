@@ -36,12 +36,15 @@
 #ifndef GMX_RESOURCE_DIVISION_H
 #define GMX_RESOURCE_DIVISION_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hw_info_t;
 struct gmx_hw_opt_t;
 struct gmx_mtop_t;
 struct t_commrec;
+struct t_inputrec;
 
 /* Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,

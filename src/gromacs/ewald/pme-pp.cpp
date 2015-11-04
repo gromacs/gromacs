@@ -56,7 +56,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"

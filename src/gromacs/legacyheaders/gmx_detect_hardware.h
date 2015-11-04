@@ -36,7 +36,9 @@
 #ifndef GMX_HARDWARE_DETECT_H
 #define GMX_HARDWARE_DETECT_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
