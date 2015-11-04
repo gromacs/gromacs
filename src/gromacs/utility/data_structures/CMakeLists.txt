@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,30 +32,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB UTILITY_SOURCES *.c *.cpp data_structures/*.c  data_structures/*.cpp )
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
+file(GLOB DATA_STRUCT_SOURCES *.c *.cpp)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${DATA_STRUCT_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    arrayref.h
-    arraysize.h
-    basedefinitions.h
-    classhelpers.h
-    cstringutil.h
-    datafilefinder.h
-    errorcodes.h
-    exceptions.h
-    fatalerror.h
-    flags.h
-    futil.h
-    gmxassert.h
-    init.h
-    programcontext.h
-    real.h
-    smalloc.h
-    stringutil.h
+    flat_irreg_array_2d.h
+    flat_irreg_array_3d.h
+    flat_irreg_array_4d.h
+    irreg_array_1d.h
+    irreg_array_2d.h
+    irreg_array_3d.h
+    irreg_array_4d.h
     )
-
-add_subdirectory(data_structures)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
