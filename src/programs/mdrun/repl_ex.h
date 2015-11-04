@@ -38,11 +38,16 @@
 #ifndef _repl_ex_h
 #define _repl_ex_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_enerdata_t;
 struct gmx_multisim_t;
 struct t_commrec;
+struct t_inputrec;
+struct t_state;
 
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;

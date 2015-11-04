@@ -39,10 +39,12 @@
 #define _QMMM_h
 
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
 
+struct gmx_localtop_t;
 struct t_forcerec;
+struct t_inputrec;
 struct t_QMMMrec;
 
 #ifdef __cplusplus

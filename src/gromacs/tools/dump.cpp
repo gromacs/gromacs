@@ -53,6 +53,7 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/gmxlib/state.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"

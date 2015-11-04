@@ -38,13 +38,13 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/energyhistory.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
 void

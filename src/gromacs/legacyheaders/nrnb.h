@@ -38,7 +38,9 @@
 #ifndef _nrnb_h
 #define _nrnb_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <stdio.h>
+
+#include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;
 struct t_nrnb;

@@ -112,7 +112,6 @@ class AlignedAllocator
 {
     public:
         // The standard library specification for a custom allocator
-        // requires these typedefs, with this capitalization/underscoring.
         typedef T              value_type;      //!< Type of allocated elements
         typedef T             &reference;       //!< Reference to allocated elements
         typedef const T       &const_reference; //!< Constant reference to allocated elements

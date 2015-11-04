@@ -35,6 +35,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "config.h"
 
