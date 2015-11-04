@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/topology/topology.h"
 
 static int div_nsteps(int nsteps, int nst)
 {
