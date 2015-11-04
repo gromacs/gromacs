@@ -37,17 +37,21 @@
 #ifndef GMX_MDLIB_SHELLFC_H
 #define GMX_MDLIB_SHELLFC_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
 struct gmx_enerdata_t;
+struct gmx_groups_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
 struct t_forcerec;
 struct t_fcdata;
 struct t_graph;
+struct t_inputrec;
+struct t_state;
 
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.

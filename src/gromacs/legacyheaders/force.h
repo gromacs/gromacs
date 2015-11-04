@@ -38,13 +38,16 @@
 #ifndef _force_h
 #define _force_h
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct gmx_edsam;
+struct gmx_groups_t;
+struct history_t;
+struct t_blocka;
 struct t_commrec;
 struct t_fcdata;
 struct t_graph;
@@ -53,7 +56,6 @@ struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
-struct gmx_edsam;
 
 #ifdef __cplusplus
 extern "C" {
