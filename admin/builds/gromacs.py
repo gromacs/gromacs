@@ -57,6 +57,8 @@ def do_build(context):
         cmake_opts['CMAKE_BUILD_TYPE'] = 'Reference'
     elif context.opts.release:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithAssert'
+    elif context.opts['release-with-debug-info']:
+        cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithDebInfo'
     elif context.opts.asan:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'ASAN'
     elif context.opts.tsan:
