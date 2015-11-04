@@ -37,7 +37,7 @@
    Please keep it that way. */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/checkpoint.h"
+#include "checkpoint.h"
 
 #include "config.h"
 
@@ -58,19 +58,20 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
-#include "gromacs/gmxlib/df_history.h"
-#include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 

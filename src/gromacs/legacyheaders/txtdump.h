@@ -42,8 +42,10 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/idef.h"
 
+struct t_atomtypes;
+struct t_blocka;
 struct t_commrec;
 
 #ifdef __cplusplus

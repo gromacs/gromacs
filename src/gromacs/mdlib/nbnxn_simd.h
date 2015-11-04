@@ -38,7 +38,6 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/simd/simd.h"
 
 #if GMX_SIMD_REFERENCE

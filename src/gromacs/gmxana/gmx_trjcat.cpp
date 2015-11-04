@@ -54,7 +54,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"

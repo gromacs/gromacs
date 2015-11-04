@@ -42,7 +42,6 @@
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/pbcutil/pbc.h"

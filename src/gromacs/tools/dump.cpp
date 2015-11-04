@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/mtxio.h"
@@ -54,10 +55,10 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
-#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"

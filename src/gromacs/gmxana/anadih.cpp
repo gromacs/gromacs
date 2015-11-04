@@ -47,7 +47,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
