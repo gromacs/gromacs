@@ -41,7 +41,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "Xstuff.h"

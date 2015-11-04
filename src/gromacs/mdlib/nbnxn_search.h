@@ -36,10 +36,11 @@
 #ifndef GMX_MDLIB_NBNXN_SEARCH_H
 #define GMX_MDLIB_NBNXN_SEARCH_H
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 struct gmx_domdec_zones_t;
+struct gmx_groups_t;
+struct t_blocka;
 struct t_nrnb;
 
 /* Tells if the pair-list corresponding to nb_kernel_type is simple.

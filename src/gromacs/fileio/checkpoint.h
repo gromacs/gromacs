@@ -38,8 +38,10 @@
 #ifndef _checkpoint_h
 #define _checkpoint_h
 
+#include <cstdio>
+
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +49,8 @@ extern "C" {
 
 struct gmx_file_position_t;
 struct t_fileio;
+struct t_inputrec;
+struct t_state;
 struct t_trxframe;
 
 /* the name of the environment variable to disable fsync failure checks with */
