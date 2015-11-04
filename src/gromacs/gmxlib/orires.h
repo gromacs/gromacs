@@ -39,18 +39,21 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_mtop_t;
 struct gmx_multisim_t;
+struct history_t;
+struct t_inputrec;
 struct t_pbc;
 struct t_commrec;
 struct t_fcdata;
 struct t_oriresdata;
+struct t_state;
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec x[],

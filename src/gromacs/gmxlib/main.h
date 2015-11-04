@@ -40,7 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
 struct gmx_multisim_t;
 
