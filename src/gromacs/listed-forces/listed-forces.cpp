@@ -67,6 +67,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

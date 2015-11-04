@@ -42,7 +42,7 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"

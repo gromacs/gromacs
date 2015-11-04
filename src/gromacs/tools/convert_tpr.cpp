@@ -43,7 +43,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/inputrec.h"

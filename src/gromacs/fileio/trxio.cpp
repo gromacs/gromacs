@@ -59,7 +59,7 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"

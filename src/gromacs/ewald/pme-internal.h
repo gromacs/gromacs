@@ -59,11 +59,12 @@
 
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
+
+struct t_inputrec;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6

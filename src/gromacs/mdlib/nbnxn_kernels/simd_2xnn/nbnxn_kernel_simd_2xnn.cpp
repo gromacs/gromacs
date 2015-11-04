@@ -41,7 +41,6 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"

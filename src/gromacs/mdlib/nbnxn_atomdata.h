@@ -36,7 +36,6 @@
 #ifndef _nbnxn_atomdata_h
 #define _nbnxn_atomdata_h
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 struct t_mdatoms;
