@@ -344,7 +344,7 @@ class TestReferenceChecker::Impl
         {
             ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
             checker.fillEntry(entry.get());
-            return move(entry);
+            return entry;
         }
         //! Checks an entry for correct type and using \p checker.
         ::testing::AssertionResult

@@ -180,7 +180,7 @@ ReferenceDataEntry::EntryPointer createEntry(xmlNodePtr element)
     ReferenceDataEntry::EntryPointer entry(
             new ReferenceDataEntry(fromXmlString(element->name),
                                    id.toString().c_str()));
-    return move(entry);
+    return entry;
 }
 
 void readChildEntries(xmlNodePtr parentElement, ReferenceDataEntry *entry)
@@ -241,7 +241,7 @@ readReferenceDataFile(const std::string &path)
 
     ReferenceDataEntry::EntryPointer rootEntry(ReferenceDataEntry::createRoot());
     readEntry(rootNode, rootEntry.get());
-    return move(rootEntry);
+    return rootEntry;
 }
 //! \endcond
 
