@@ -36,7 +36,6 @@
 #ifndef _nbnxn_grid_h
 #define _nbnxn_grid_h
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 

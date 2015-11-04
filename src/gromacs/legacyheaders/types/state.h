@@ -74,7 +74,7 @@ enum {
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
 
-typedef struct
+typedef struct history_t
 {
     real  disre_initf;  /* The scaling factor for initializing the time av. */
     int   ndisrepairs;  /* The number of distance restraints                */
@@ -90,7 +90,7 @@ typedef struct
  * can cause the kinetic energy in the MD loop to differ by a few bits from
  * the kinetic energy one would determine from state.v.
  */
-typedef struct
+typedef struct ekinstate_t
 {
     gmx_bool     bUpToDate;
     int          ekin_n;
@@ -129,7 +129,7 @@ typedef struct df_history_t
 
 } df_history_t;
 
-typedef struct
+typedef struct edsamstate_t
 {
     /* If one uses essential dynamics or flooding on a group of atoms from
      * more than one molecule, we cannot make this group whole with
@@ -152,7 +152,7 @@ typedef struct
 edsamstate_t;
 
 
-typedef struct
+typedef struct swapstate_t
 {
     int        eSwapCoords;                         /* Swapping along x, y, or z-direction?      */
     int        nat_req[eCompNR][eIonNR];            /* Requested ion numbers per type an comp.   */
@@ -231,7 +231,7 @@ typedef struct t_state
     int                     cg_gl_nalloc;    /* Allocation size of cg_gl;              */
 } t_state;
 
-typedef struct
+typedef struct t_extmass
 {
     double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
     double *QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */

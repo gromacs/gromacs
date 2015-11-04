@@ -56,6 +56,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/calcgrid.h"
 #include "gromacs/gmxlib/splitter.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/convparm.h"

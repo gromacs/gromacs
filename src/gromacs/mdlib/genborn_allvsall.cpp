@@ -48,6 +48,7 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
 

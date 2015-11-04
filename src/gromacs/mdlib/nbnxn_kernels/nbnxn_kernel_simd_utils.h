@@ -42,7 +42,6 @@
 
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
  *
- * Defines all functions, typedefs, constants and macros that have
  * explicit dependencies on the j-cluster size, precision, or SIMD
  * width. This includes handling diagonal, Newton and topology
  * exclusions.

@@ -41,6 +41,7 @@
 #include "gromacs/gmxana/interf.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
