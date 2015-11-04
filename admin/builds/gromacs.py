@@ -38,6 +38,7 @@ extra_options = {
     'mdrun-only': Option.simple,
     'reference': Option.simple,
     'release': Option.simple,
+    'release-with-debug-info': Option.simple,
     'asan': Option.simple,
     'mkl': Option.simple,
     'fftpack': Option.simple,
@@ -57,6 +58,8 @@ def do_build(context):
         cmake_opts['CMAKE_BUILD_TYPE'] = 'Reference'
     elif context.opts.release:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithAssert'
+    elif context.opts['release-with-debug-info']:
+        cmake_opts['CMAKE_BUILD_TYPE'] = 'RelWithDebInfo'
     elif context.opts.asan:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'ASAN'
     elif context.opts.tsan:
