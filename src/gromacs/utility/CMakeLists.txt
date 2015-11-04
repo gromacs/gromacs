@@ -49,6 +49,7 @@ gmx_install_headers(
     futil.h
     gmxassert.h
     init.h
+    int64_to_int.h
     programcontext.h
     real.h
     smalloc.h

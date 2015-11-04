@@ -39,13 +39,16 @@
 #ifndef _genborn_h
 #define _genborn_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 
 struct gmx_genborn_t;
 struct gmx_enerdata_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_graph;
+struct t_idef;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nblist;
