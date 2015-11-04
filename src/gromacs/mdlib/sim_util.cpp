@@ -755,12 +755,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
-    float               cycles_pme, cycles_force, cycles_wait_gpu;
-    nonbonded_verlet_t *nbv;
-
-    cycles_force    = 0;
-    cycles_wait_gpu = 0;
-    nbv             = fr->nbv;
+    gmx_cycles_t        cycles_gpu_local     = 0;
+    gmx_cycles_t        cycles_force         = 0;
+    float               cycles_pme           = 0;
+    float               cycles_gpu_firstpart = 0;
+    float               cycles_wait_gpu      = 0;
+    gmx_bool            bGPUlocalDone        = FALSE;
+    nonbonded_verlet_t *nbv                  = fr->nbv;
 
     start  = 0;
     homenr = mdatoms->homenr;
@@ -981,9 +982,21 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                     eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
+
+        if (bUseGPU && DOMAINDECOMP(cr))
+        {
+            /* Start a GPU counter before starting GPU related local work */
+            cycles_gpu_local = gmx_cycles_read();
+        }
     }
     else
     {
+        if (bUseGPU && DOMAINDECOMP(cr))
+        {
+            /* Start a GPU counter before starting GPU related local work */
+            cycles_gpu_local = gmx_cycles_read();
+        }
+
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatLocal, FALSE, x,
@@ -1052,6 +1065,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                         eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
+
+            /* Start DLB force counter after pair searching is done */
+            cycles_force = gmx_cycles_read();
         }
         else
         {
@@ -1066,12 +1082,29 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             }
             wallcycle_stop(wcycle, ewcMOVEX);
 
+            /* Start DLB force counter after moving x */
+            cycles_force = gmx_cycles_read();
+
+            if (bUseGPU && DOMAINDECOMP(cr))
+            {
+                bGPUlocalDone = nbnxn_gpu_finished(nbv->gpu_nbv, eatLocal);
+                /* TODO: With GPU sharing, reduce bGPUlocalDone with & */
+
+                gmx_cycles_t diff = cycles_force - cycles_gpu_local;
+                if (bGPUlocalDone)
+                {
+                    /* The actual time is between 0 to diff, we use 1/2 */
+                    diff *= 0.5;
+                }
+                cycles_gpu_firstpart += diff;
+            }
+
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
                                             nbv->grp[eintNonlocal].nbat);
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
 
         /* Initiate the force receive.
@@ -1089,7 +1122,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          nrnb, wcycle);
-            cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
     }
 
@@ -1104,7 +1137,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
                                  flags, eatLocal);
-        cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
     if (bStateChanged && NEED_MUTOT(*inputrec))
@@ -1263,12 +1296,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          * This can be split into a local and a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        cycles_force += wallcycle_stop(wcycle, ewcFORCE);
+        wallcycle_stop(wcycle, ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
@@ -1296,7 +1329,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
-    cycles_force += wallcycle_stop(wcycle, ewcFORCE);
+    wallcycle_stop(wcycle, ewcFORCE);
 
     if (ed)
     {
@@ -1310,23 +1343,19 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             if (bUseGPU)
             {
-                float cycles_tmp;
-
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                        fr->fshift);
-                cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
-                cycles_wait_gpu += cycles_tmp;
-                cycles_force    += cycles_tmp;
+                cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
                              nrnb, wcycle);
-                cycles_force += wallcycle_stop(wcycle, ewcFORCE);
+                wallcycle_stop(wcycle, ewcFORCE);
             }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
@@ -1337,7 +1366,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                                nbv->grp[eintNonlocal].nbat, f);
             }
             wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-            cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
     }
 
@@ -1354,17 +1383,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
-            float cycles_tmp;
-
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
 
-            cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-            cycles_force    += cycles_tmp;
-            cycles_wait_gpu += cycles_tmp;
+            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
@@ -1389,6 +1414,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (DOMAINDECOMP(cr))
     {
+        /* Stop the DLB force counter before waiting for communication */
+        cycles_force = gmx_cycles_read() - cycles_force;
+
         if (bDoForces)
         {
             /* We are done calculating all forces, complete the communication
@@ -1403,11 +1431,28 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         dd_force_flop_stop(cr->dd, nrnb);
         if (wcycle)
         {
-            dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
+            /* Without GPUs we currently only compute between move_x and move_f.
+             * We substract the PME time to avoid removing the load-imbalance
+             * time that leaks into the PME communication time.
+             */
+            float cycles_dlb_force =
+                static_cast<float>(cycles_force) - cycles_pme;
+
             if (bUseGPU)
             {
-                dd_cycles_add(cr->dd, cycles_wait_gpu, ddCyclWaitGPU);
+                float cycles_gpu_no_overlap = cycles_gpu_firstpart;
+                /* If the locals didn't finish before the non-local launch,
+                 * we could lower the non-local + local wait times through DLB,
+                 * so add the wait times to the DLB wait time.
+                 */
+                if (!bGPUlocalDone)
+                {
+                    cycles_gpu_no_overlap += cycles_wait_gpu;
+                }
+                dd_cycles_add(cr->dd, cycles_gpu_no_overlap, ddCyclWaitGPU);
+                cycles_dlb_force += cycles_gpu_no_overlap;
             }
+            dd_cycles_add(cr->dd, cycles_dlb_force, ddCyclF);
         }
     }
 
