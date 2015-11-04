@@ -111,7 +111,7 @@ typedef struct gmx_reverse_top {
     gmx_bool         bConstr;                     /**< Are there constraints in this revserse top?  */
     gmx_bool         bSettle;                     /**< Are there settles in this revserse top?  */
     gmx_bool         bBCheck;                     /**< All bonded interactions have to be assigned? */
-    gmx_bool         bMultiCGmols;                /**< Are the multi charge-group molecules?        */
+    gmx_bool         bInterCGInteractions;        /**< Are there bondeds/exclusions between charge-groups? */
     reverse_ilist_t *ril_mt;                      /**< Reverse ilist for all moltypes      */
     int              ril_mt_tot_size;             /**< The size of ril_mt[?].index summed over all entries */
     int              ilsort;                      /**< The sorting state of bondeds for free energy */
@@ -679,7 +679,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
     rt->bSettle = bSettle;
     rt->bBCheck = bBCheck;
 
-    rt->bMultiCGmols = FALSE;
+    rt->bInterCGInteractions = mtop->bIntermolecularInteractions;
     snew(nint_mt, mtop->nmoltype);
     snew(rt->ril_mt, mtop->nmoltype);
     rt->ril_mt_tot_size = 0;
@@ -688,7 +688,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
         molt = &mtop->moltype[mt];
         if (molt->cgs.nr > 1)
         {
-            rt->bMultiCGmols = TRUE;
+            rt->bInterCGInteractions = TRUE;
         }
 
         /* Make the atom to interaction list for this molecule type */
@@ -1941,13 +1941,13 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     int                thread;
     gmx_reverse_top_t *rt;
 
-    if (dd->reverse_top->bMultiCGmols)
+    if (dd->reverse_top->bInterCGInteractions)
     {
         nzone_bondeds = zones->n;
     }
     else
     {
-        /* Only single charge group molecules, so interactions don't
+        /* Only single charge group (or atom) molecules, so interactions don't
          * cross zone boundaries and we only need to assign in the home zone.
          */
         nzone_bondeds = 1;
@@ -2146,7 +2146,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     bRCheckMB   = FALSE;
     bRCheck2B   = FALSE;
 
-    if (dd->reverse_top->bMultiCGmols)
+    if (dd->reverse_top->bInterCGInteractions)
     {
         /* We need to check to which cell bondeds should be assigned */
         rc = dd_cutoff_twobody(dd);
