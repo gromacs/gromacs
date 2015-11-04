@@ -32,58 +32,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "energyhistory.h"
+#include "int64_to_int.h"
 
-#include <cstring>
+#include <cstdio>
 
-#include <algorithm>
+#include "gromacs/utility/basedefinitions.h"
 
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
-#include "gromacs/utility/smalloc.h"
-
-static void done_delta_h_history(delta_h_history_t *dht)
+int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 {
     int i;
 
-    for (i = 0; i < dht->nndh; i++)
+    i = static_cast<int>(step);
+
+    if (warn != NULL && (static_cast<gmx_int64_t>(i) != step))
     {
-        sfree(dht->dh[i]);
+        fprintf(stderr, "\nWARNING during %s:\n", warn);
+        fprintf(stderr, "int64 value ");
+        fprintf(stderr, "%" GMX_PRId64, step);
+        fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
     }
-    sfree(dht->dh);
-    sfree(dht->ndh);
-}
 
-void init_energyhistory(energyhistory_t * enerhist)
-{
-    enerhist->nener = 0;
-
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
-
-    enerhist->nsteps     = 0;
-    enerhist->nsum       = 0;
-    enerhist->nsteps_sim = 0;
-    enerhist->nsum_sim   = 0;
-
-    enerhist->dht = NULL;
-}
-
-void done_energyhistory(energyhistory_t * enerhist)
-{
-    sfree(enerhist->ener_ave);
-    sfree(enerhist->ener_sum);
-    sfree(enerhist->ener_sum_sim);
-
-    if (enerhist->dht != NULL)
-    {
-        done_delta_h_history(enerhist->dht);
-        sfree(enerhist->dht);
-    }
+    return i;
 }
