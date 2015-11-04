@@ -52,11 +52,13 @@
 #ifndef GMX_SWAP_SWAPCOORDS_H
 #define GMX_SWAP_SWAPCOORDS_H
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct swapstate_t;
+struct t_inputrec;
 struct t_swapcoords;
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").

@@ -44,7 +44,6 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

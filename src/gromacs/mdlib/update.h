@@ -37,17 +37,24 @@
 #ifndef GMX_MDLIB_UPDATE_H
 #define GMX_MDLIB_UPDATE_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
+struct ekinstate_t;
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
+struct t_extmass;
 struct t_fcdata;
 struct t_graph;
 struct t_grpopts;
+struct t_idef;
+struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
+struct t_state;
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;

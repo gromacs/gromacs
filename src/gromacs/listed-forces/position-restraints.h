@@ -50,7 +50,8 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +60,7 @@ extern "C" {
 struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct t_forcerec;
+struct t_idef;
 struct t_lambda;
 struct t_nrnb;
 struct t_pbc;
