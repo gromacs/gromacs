@@ -51,7 +51,6 @@
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"

@@ -40,7 +40,6 @@
 
 
 #include "gromacs/gmxana/hxprops.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C"

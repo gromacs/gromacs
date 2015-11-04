@@ -41,8 +41,9 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
@@ -62,6 +63,7 @@
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
@@ -275,7 +277,6 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     nbnxn_pairlist_t **nbl;
     int                coulkt, vdwkt = 0;
     int                nb;
-    int                nthreads gmx_unused;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -347,9 +348,7 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         gmx_incons("Unsupported VdW interaction type");
     }
 
-    // cppcheck-suppress unreadVariable
-    nthreads = gmx_omp_nthreads_get(emntNonbonded);
-#pragma omp parallel for schedule(static) num_threads(nthreads)
+#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
     for (nb = 0; nb < nnbl; nb++)
     {
         // Presently, the kernels do not call C++ code that can throw, so

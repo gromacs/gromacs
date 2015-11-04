@@ -37,7 +37,6 @@
 #ifndef GMX_MDLIB_MD_SUPPORT_H
 #define GMX_MDLIB_MD_SUPPORT_H
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
