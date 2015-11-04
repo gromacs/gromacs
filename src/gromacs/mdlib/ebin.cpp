@@ -42,7 +42,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"

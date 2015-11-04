@@ -40,12 +40,11 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/utilities.h"

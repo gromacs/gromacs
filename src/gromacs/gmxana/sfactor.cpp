@@ -49,7 +49,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atom_id.h"
