@@ -62,7 +62,6 @@
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrunutility/handlerestart.h"

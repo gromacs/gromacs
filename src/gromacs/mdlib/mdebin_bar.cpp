@@ -43,9 +43,8 @@
 #include <string.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/gmxlib/energyhistory.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

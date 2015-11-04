@@ -39,8 +39,12 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
+struct gmx_groups_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
 struct gmx_ns_t;
 struct t_commrec;
 struct t_forcerec;

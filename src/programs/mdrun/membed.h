@@ -36,11 +36,17 @@
 #ifndef _gmx_membed_h
 #define _gmx_membed_h
 
+#include <cstdio>
+
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_membed_t;
+struct gmx_mtop_t;
 struct t_commrec;
+struct t_inputrec;
+struct t_state;
 
 /* initialisation of membed code */
 gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,

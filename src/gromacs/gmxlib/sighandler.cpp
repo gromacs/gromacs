@@ -42,7 +42,6 @@
 
 #include <cstdlib>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 
 const char *gmx_stop_cond_name[] =

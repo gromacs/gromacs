@@ -37,9 +37,10 @@
 #ifndef _GENBORN_ALLVSALL_H
 #define _GENBORN_ALLVSALL_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_genborn_t;
+struct gmx_localtop_t;
 struct t_forcerec;
 struct t_mdatoms;
 
