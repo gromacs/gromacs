@@ -69,23 +69,23 @@ const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "te
 
 typedef struct gmx_repl_ex
 {
-    int       repl;
-    int       nrepl;
-    real      temp;
-    int       type;
-    real    **q;
-    gmx_bool  bNPT;
-    real     *pres;
-    int      *ind;
-    int      *allswaps;
-    int       nst;
-    int       nex;
-    int       seed;
-    int       nattempt[2];
-    real     *prob_sum;
-    int     **nmoves;
-    int      *nexchange;
-    gmx_rng_t rng;
+    int       repl;        /* replica ID */
+    int       nrepl;       /* total number of replica */
+    real      temp;        /* temperature */
+    int       type;        /* replica exchange type from ere enum */
+    real    **q;           /* quantity, e.g. temperature or lambda; first index is ere, second index is replica ID */
+    gmx_bool  bNPT;        /* use constant pressure and temperature */
+    real     *pres;        /* replica pressures */
+    int      *ind;         /* replica indices */
+    int      *allswaps;    /* used for keeping track of all the replica swaps */
+    int       nst;         /* replica exchange interval (number of steps) */
+    int       nex;         /* number of exchanges per interval */
+    int       seed;        /* random seed */
+    int       nattempt[2]; /* number of even and odd replica change attempts */
+    real     *prob_sum;    /* sum of probabilities */
+    int     **nmoves;      /* number of moves between replicas i and j */
+    int      *nexchange;   /* i-th element of the array is the number of exchanges between replica i-1 and i */
+    gmx_rng_t rng;         /* random number generator */
 
     /* these are helper arrays for replica exchange; allocated here so they
        don't have to be allocated each time */
