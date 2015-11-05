@@ -51,6 +51,7 @@ gmx_install_headers(
     mtxio.h
     oenv.h
     pdbio.h
+    rgb.h
     tpxio.h
     trrio.h
     trx.h
