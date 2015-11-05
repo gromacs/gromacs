@@ -393,7 +393,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     {
         snew(re->nmoves[i], re->nrepl);
     }
-    fprintf(fplog, "Replica exchange information below: x=exchange, pr=probability\n");
+    fprintf(fplog, "Replica exchange information below: ex and x = exchange, pr = probability\n");
 
     /* generate space for the helper functions so we don't have to snew each time */
 
