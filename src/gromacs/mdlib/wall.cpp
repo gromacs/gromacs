@@ -42,13 +42,13 @@
 #include <algorithm>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

@@ -40,6 +40,9 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/utility/real.h"
 
+#define GMX_MAKETABLES_FORCEUSER  (1<<0)
+#define GMX_MAKETABLES_14ONLY     (1<<1)
+
 /* Index in the tables that says which function to use */
 enum {
     etiCOUL, etiLJ6, etiLJ12, etiNR

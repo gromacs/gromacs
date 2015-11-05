@@ -43,7 +43,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"

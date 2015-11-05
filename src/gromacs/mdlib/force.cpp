@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/force.h"
+#include "force.h"
 
 #include "config.h"
 

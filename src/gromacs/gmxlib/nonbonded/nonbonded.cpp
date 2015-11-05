@@ -51,7 +51,6 @@
 #include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
