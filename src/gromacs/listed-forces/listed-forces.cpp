@@ -53,7 +53,6 @@
 
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
@@ -63,6 +62,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"

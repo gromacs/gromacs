@@ -44,11 +44,11 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
