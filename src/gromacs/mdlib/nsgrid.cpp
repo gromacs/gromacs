@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/nsgrid.h"
+#include "nsgrid.h"
 
 #include <stdio.h>
 #include <stdlib.h>

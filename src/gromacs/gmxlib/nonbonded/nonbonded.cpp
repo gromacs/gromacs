@@ -53,7 +53,6 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"

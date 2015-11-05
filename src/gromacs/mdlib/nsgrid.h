@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_NSGRID_H
+#define GMX_MDLIB_NSGRID_H
 
 #include "gromacs/legacyheaders/typedefs.h"
 
@@ -42,10 +44,6 @@ struct gmx_domdec_zones_t;
 struct gmx_ddbox_t;
 struct t_forcerec;
 struct t_grid;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Used when estimating the interaction density.
  *
@@ -118,6 +116,4 @@ void check_grid(t_grid *grid);
 
 void print_grid(FILE *log, t_grid *grid);
 
-#ifdef __cplusplus
-}
 #endif

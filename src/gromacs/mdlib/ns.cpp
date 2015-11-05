@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/ns.h"
+#include "ns.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -51,7 +51,6 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/nsgrid.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -59,6 +58,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
