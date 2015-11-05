@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/vsite.h"
+#include "vsite.h"
 
 #include <stdio.h>
 

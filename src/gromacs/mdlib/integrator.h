@@ -43,7 +43,6 @@
 #include <cstdio>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
@@ -51,6 +50,7 @@
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"

@@ -39,8 +39,8 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"

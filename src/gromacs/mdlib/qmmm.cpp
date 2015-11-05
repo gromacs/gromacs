@@ -50,7 +50,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
@@ -61,6 +60,7 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"

@@ -38,7 +38,7 @@
 #define GMX_MDLIB_SHELLFC_H
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
