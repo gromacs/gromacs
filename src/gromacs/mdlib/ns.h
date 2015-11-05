@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _ns_h
-#define _ns_h
+#ifndef GMX_MDLIB_NS_H
+#define GMX_MDLIB_NS_H
 
 #include <stdio.h>
 
@@ -48,10 +47,6 @@ struct t_forcerec;
 struct t_mdatoms;
 struct t_nblist;
 struct t_nrnb;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /****************************************************
  *
@@ -80,21 +75,21 @@ int calc_naaj(int icg, int cgtot);
  *    Return total number of pairs searched
  *
  ****************************************************/
-void init_ns(FILE *fplog, const struct t_commrec *cr,
+void init_ns(FILE *fplog, const t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
              const gmx_mtop_t *mtop);
 
 int search_neighbours(FILE *log, t_forcerec *fr, matrix box,
                       gmx_localtop_t *top,
                       gmx_groups_t *groups,
-                      struct t_commrec *cr,
+                      t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
                       gmx_bool bFillGrid,
                       gmx_bool bDoLongRangeNS);
 
 
 /* Debugging routines from wnblist.c */
-void dump_nblist(FILE *out, struct t_commrec *cr, t_forcerec *fr, int nDNL);
+void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL);
 
 int read_nblist(FILE *in, FILE *out, int **mat, int natoms, gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
@@ -102,9 +97,4 @@ int read_nblist(FILE *in, FILE *out, int **mat, int natoms, gmx_bool bSymm);
 void reallocate_nblist(t_nblist *nl);
 /* List reallocation, only exported for Verlet scheme use with FEP */
 
-#ifdef __cplusplus
-}
 #endif
-
-
-#endif  /* _ns_h */
