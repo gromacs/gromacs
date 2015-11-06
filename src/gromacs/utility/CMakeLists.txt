@@ -41,6 +41,7 @@ gmx_install_headers(
     basedefinitions.h
     classhelpers.h
     cstringutil.h
+    current_function.h
     datafilefinder.h
     errorcodes.h
     exceptions.h
