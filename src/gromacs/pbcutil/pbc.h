@@ -50,6 +50,13 @@ struct gmx_domdec_t;
 extern "C" {
 #endif
 
+enum {
+    epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
+};
+
+//! Strings corresponding to epbc enum values.
+extern const char *epbc_names[epbcNR+1];
+
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of
  * the diagonal of the box to within the maximum cut-off distance.

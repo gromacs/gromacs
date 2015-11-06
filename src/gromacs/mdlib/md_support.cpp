@@ -56,6 +56,7 @@
 #include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arrayref.h"

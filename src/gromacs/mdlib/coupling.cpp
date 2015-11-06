@@ -55,6 +55,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/pbcutil/boxutilities.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

@@ -79,6 +79,7 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"

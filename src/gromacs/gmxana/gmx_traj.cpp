@@ -54,6 +54,7 @@
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"
