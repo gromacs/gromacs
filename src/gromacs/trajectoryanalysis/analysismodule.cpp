@@ -43,6 +43,7 @@
 
 #include "analysismodule.h"
 
+#include <map>
 #include <utility>
 
 #include "gromacs/analysisdata/analysisdata.h"

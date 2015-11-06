@@ -36,6 +36,10 @@
  * \brief
  * Declares common exception classes and macros for fatal error handling.
  *
+ * The basic approach is the same as in boost::exception for storing additional
+ * context information to exceptions, but since that functionality is a very
+ * small and simple part of boost::exception, the code is duplicated here.
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_utility
@@ -47,16 +51,15 @@
 #include <cstdlib>
 
 #include <exception>
+#include <memory>
 #include <string>
+#include <type_traits>
+#include <typeindex>
 #include <vector>
 
-#include <boost/throw_exception.hpp>
-#include <boost/exception/errinfo_api_function.hpp>
-#include <boost/exception/errinfo_errno.hpp>
-#include <boost/exception/exception.hpp>
-#include <boost/exception/info.hpp>
-
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/current_function.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -67,10 +70,98 @@ namespace internal
 {
 //! Internal container type for storing a list of nested exceptions.
 typedef std::vector<std::exception_ptr> NestedExceptionList;
+
+/*! \internal
+ * \brief
+ * Base class for ExceptionInfo.
+ *
+ * This class only provides a way to store different ExceptionInfo objects in
+ * the same container.  Actual access to the ExceptionInfo items is handled by
+ * downcasting, after looking up the correct item based on its type.
+ *
+ * \ingroup module_utility
+ */
+class IExceptionInfo
+{
+    public:
+        virtual ~IExceptionInfo();
+};
+
+//! Smart pointer to manage IExceptionInfo ownership.
+typedef std::unique_ptr<IExceptionInfo> ExceptionInfoPointer;
+
+class ExceptionData;
+
 }   // namespace internal
 
 //! \addtogroup module_utility
 //! \{
+
+/*! \brief
+ * Stores additional context information for exceptions.
+ *
+ * \tparam  Tag  Tag type (typically, a forward-declared struct that is not
+ *     defined anywhere) that makes all ExceptionInfo types unique, even if
+ *     they have the same value type.
+ * \tparam  T    Type of value this object stores.
+ *     Needs to be copy-constructible.
+ *
+ * Example of declaring a new info type that stores an integer:
+ * \code
+   typedef ExceptionInfo<struct ExceptionInfoMyInfo_, int> ExceptionInfoMyInfo;
+   \endcode
+ *
+ * \inpublicapi
+ */
+template <class Tag, typename T>
+class ExceptionInfo : public internal::IExceptionInfo
+{
+    public:
+        //! The type of value stored in this object.
+        typedef T value_type;
+
+        //! Creates an info object from given value.
+        explicit ExceptionInfo(const T &value)
+            : value_(value)
+        {
+        }
+
+        //! Returns the stored value.
+        const T &value() const { return value_; }
+
+    private:
+        T       value_;
+};
+
+/*! \internal
+ * \brief
+ * Stores the location from which an exception was thrown.
+ */
+struct ThrowLocation
+{
+    //! Creates an object for storing the throw location.
+    ThrowLocation(const char *func, const char *file, int line)
+        : func(func), file(file), line(line)
+    {
+    }
+
+    //! Function where the throw occurred.
+    const char *func;
+    //! File where the throw occurred.
+    const char *file;
+    //! Line number where the throw occurred.
+    int         line;
+};
+
+//! Stores `errno` value that triggered the exception.
+typedef ExceptionInfo<struct ExceptionInfoErrno_, int>
+    ExceptionInfoErrno;
+//! Stores the function name that returned the `errno` in ExceptionInfoErrno.
+typedef ExceptionInfo<struct ExceptionInfoApiFunc_, const char *>
+    ExceptionInfoApiFunction;
+//! Stores the location where the exception was thrown.
+typedef ExceptionInfo<struct ExceptionInfoLocation_, ThrowLocation>
+    ExceptionInfoLocation;
 
 /*! \brief
  * Provides information for Gromacs exception constructors.
@@ -164,21 +255,15 @@ class ExceptionInitializer
 /*! \brief
  * Base class for all exception objects in Gromacs.
  *
- * Although boost recommends using virtual inheritance in exception hiearchies,
- * it is not used here for two reasons:
- * -# It is only useful when there is diamond inheritance, and that should
- *    never occur in this exception hierarchy because this class is the only
- *    instance of multiple inheritance (Gromacs programming guidelines prohibit
- *    multiple inheritance from concrete classes, but it is unavoidable here
- *    because of the design of boost::exception).
- * -# Because the constructor takes an argument, virtual inheritance would
- *    complicate any classes that inherit indirectly from this class.
- *
  * \inpublicapi
  */
-class GromacsException : public std::exception, public boost::exception
+class GromacsException : public std::exception
 {
     public:
+        // Explicitly declared because some compiler/library combinations warn
+        // about missing throw() otherwise.
+        virtual ~GromacsException() throw() {}
+
         /*! \brief
          * Returns the reason string for the exception.
          *
@@ -189,6 +274,47 @@ class GromacsException : public std::exception, public boost::exception
          * Returns the error code corresponding to the exception type.
          */
         virtual int errorCode() const = 0;
+
+        /*! \brief
+         * Returns the value associated with given ExceptionInfo.
+         *
+         * \tparam  InfoType  ExceptionInfo type to get the value for.
+         * \returns Value set for `InfoType`, or `nullptr` if such info has not
+         *     been set.
+         *
+         * Does not throw.
+         */
+        template <class InfoType>
+        const typename InfoType::value_type *getInfo() const
+        {
+            const internal::IExceptionInfo *item = getInfo(typeid(InfoType));
+            if (item != nullptr)
+            {
+                GMX_ASSERT(dynamic_cast<const InfoType *>(item) != nullptr,
+                           "Invalid exception info item found");
+                return &static_cast<const InfoType *>(item)->value();
+            }
+            return nullptr;
+        }
+
+        /*! \brief
+         * Associates extra information with the exception.
+         *
+         * \tparam  Tag  ExceptionInfo tag type.
+         * \tparam  T          ExceptionInfo value type.
+         * \param[in] item  ExceptionInfo to associate.
+         * \throws std::bad_alloc if out of memory.
+         * \throws unspecified    any exception thrown by `T` copy construction.
+         *
+         * If an item of this type is already associated, it is overwritten.
+         */
+        template <class Tag, typename T>
+        void setInfo(const ExceptionInfo<Tag, T> &item)
+        {
+            typedef ExceptionInfo<Tag, T> ItemType;
+            internal::ExceptionInfoPointer itemPtr(new ItemType(item));
+            setInfo(typeid(ItemType), std::move(itemPtr));
+        }
 
         /*! \brief
          * Adds context information to this exception.
@@ -217,7 +343,50 @@ class GromacsException : public std::exception, public boost::exception
          * \throws    std::bad_alloc if out of memory.
          */
         explicit GromacsException(const ExceptionInitializer &details);
+
+    private:
+        const internal::IExceptionInfo *getInfo(const std::type_index &index) const;
+        void setInfo(const std::type_index &index, internal::ExceptionInfoPointer &&item);
+
+        std::shared_ptr<internal::ExceptionData> data_;
 };
+
+/*! \brief
+ * Associates extra information with an exception.
+ *
+ * \tparam  Exception  Exception type (must be derived from GromacsException).
+ * \tparam  Tag        ExceptionInfo tag.
+ * \tparam  T          ExceptionInfo value type.
+ * \param[in,out] ex   Exception to associate the information to.
+ * \param[in]     item Information to associate.
+ *
+ * \internal
+ * The association is done with a templated non-member operator of exactly this
+ * form to make the simple syntax of GMX_THROW() possible.  To support this,
+ * this operation needs to:
+ *  - Allow setting information in a temporary to support
+ *    `GMX_THROW(InvalidInputError(ex))`.  This is the reason for taking a
+ *    const reference and the `const_cast`.
+ *  - Return the same reference it takes in, instead of a base class.
+ *    The compiler needs this information to throw the correct type of
+ *    exception.  This would be tedious to achieve with a member function
+ *    (without a lot of code duplication).
+ *  - Provide convenient syntax for adding multiple items.  A non-member
+ *    function that would require nested calls would look ugly for such cases.
+ *
+ * The reason for the enable_if is that this way, it does not conflict with
+ * other overloads of `operator<<` for ExceptionInfo objects, in case someone
+ * would like to declare those.  But currently we do not have such overloads, so
+ * if the enable_if causes problems with some compilers, it can be removed.
+ */
+template <class Exception, class Tag, class T>
+inline
+typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, const Exception &>::type
+operator<<(const Exception &ex, const ExceptionInfo<Tag, T> &item)
+{
+    const_cast<Exception &>(ex).setInfo(item);
+    return ex;
+}
 
 /*! \brief
  * Exception class for file I/O errors.
@@ -369,7 +538,7 @@ class NotImplementedError : public APIError
    \endcode
  */
 #define GMX_THROW(e) \
-    BOOST_THROW_EXCEPTION((e))
+    throw (e) << gmx::ExceptionInfoLocation(gmx::ThrowLocation(GMX_CURRENT_FUNCTION, __FILE__, __LINE__))
 
 /*! \brief
  * Macro for throwing an exception based on errno.
@@ -398,8 +567,8 @@ class NotImplementedError : public APIError
 #define GMX_THROW_WITH_ERRNO(e, syscall, err) \
     do { \
         int stored_errno_ = (err); \
-        GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
-                  << boost::errinfo_api_function(syscall)); \
+        GMX_THROW((e) << gmx::ExceptionInfoErrno(stored_errno_) \
+                  << gmx::ExceptionInfoApiFunction(syscall)); \
     } while (0)
 //TODO: Add an equivalent macro for Windows GetLastError
 
