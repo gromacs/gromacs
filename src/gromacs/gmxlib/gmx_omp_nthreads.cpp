@@ -35,7 +35,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gmx_omp_nthreads.h"
 
 #include "config.h"
 

@@ -48,7 +48,7 @@
 #define GMX_SIMD_J_UNROLL_SIZE {3}
 #include "{4}"
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 #include "gromacs/simd/simd.h"

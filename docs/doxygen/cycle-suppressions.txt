@@ -18,5 +18,6 @@ timing -> gmxlib
 topology -> fileio
 topology -> legacyheaders
 pbcutil -> fileio
+pbcutil -> gmxlib
 pbcutil -> legacyheaders
 listed-forces -> mdlib

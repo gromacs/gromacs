@@ -46,7 +46,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

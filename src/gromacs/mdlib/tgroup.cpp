@@ -41,7 +41,7 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
