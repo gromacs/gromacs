@@ -49,7 +49,7 @@
 
 #include "thread_mpi/atomic.h"
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"

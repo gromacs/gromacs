@@ -45,8 +45,8 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"

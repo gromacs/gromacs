@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,66 +32,40 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_THREAD_AFFINITY_H
+#define GMX_GMXLIB_THREAD_AFFINITY_H
 
-#ifndef GMX_OMP_NTHREADS_H
-#define GMX_OMP_NTHREADS_H
+#include <cstdio>
 
-#include <stdio.h>
-
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 
 struct t_commrec;
 
-/** Enum values corresponding to multithreaded algorithmic modules. */
-typedef enum module_nth
-{
-    /* Default is meant to be used in OMP regions outside the named
-     * algorithmic modules listed below. */
-    emntDefault, emntDomdec, emntPairsearch, emntNonbonded,
-    emntBonded, emntPME,  emntUpdate, emntVSITE, emntLINCS, emntSETTLE,
-    emntNR
-} module_nth_t;
+/* Sets the thread affinity using the requested setting stored in hw_opt.
+ * The hardware topologu is requested from hwinfo, when present.
+ */
+void
+gmx_set_thread_affinity(FILE                *fplog,
+                        const t_commrec     *cr,
+                        const gmx_hw_opt_t  *hw_opt,
+                        const gmx_hw_info_t *hwinfo);
 
-/*! \brief
- * Initializes the per-module thread count.
+/* Check the process affinity mask and if it is found to be non-zero,
+ * will honor it and disable mdrun internal affinity setting.
+ * This function should be called first before the OpenMP library gets
+ * initialized with the last argument FALSE (which will detect affinity
+ * set by external tools like taskset), and later, after the OpenMP
+ * initialization, with the last argument TRUE to detect affinity changes
+ * made by the OpenMP library.
  *
- * It is compatible with tMPI, thread-safety is ensured (for the features
- * available with tMPI).
- * This function should caled only once during the initialization of mdrun. */
-void gmx_omp_nthreads_init(FILE *fplog, struct t_commrec *cr,
-                           int nthreads_hw_avail,
-                           int omp_nthreads_req,
-                           int omp_nthreads_pme_req,
-                           gmx_bool bCurrNodePMEOnly,
-                           gmx_bool bFullOmpSupport);
-
-/*! \brief
- * Returns the number of threads to be used in the given module \p mod. */
-int gmx_omp_nthreads_get(int mod);
-
-/*! \brief Sets the number of threads to be used in module.
- *
- * Intended for use in testing. */
-void gmx_omp_nthreads_set(int mod, int nthreads);
-
-/*! \brief
- * Read the OMP_NUM_THREADS env. var. and check against the value set on the
- * command line. */
-void gmx_omp_nthreads_read_env(int     *nthreads_omp,
-                               gmx_bool bIsSimMaster);
-
-#if 0
-{
-#endif
-#ifdef __cplusplus
-}
-#endif
+ * Note that this will only work on Linux as we use a GNU feature.
+ * With bAfterOpenmpInit false, it will also detect whether OpenMP environment
+ * variables for setting the affinity are set.
+ */
+void
+gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
+                              gmx_hw_opt_t *hw_opt, int ncpus,
+                              gmx_bool bAfterOpenmpInit);
 
 #endif

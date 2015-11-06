@@ -44,9 +44,9 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
