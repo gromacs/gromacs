@@ -473,18 +473,6 @@ TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
                      }, gmx::InvalidInputError);
 }
 
-TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
-{
-    if (!gmx::Regex::isSupported())
-    {
-        ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-        EXPECT_THROW_GMX({
-                             sc_.parseFromString("resname \"R[AD]\"");
-                             sc_.compile();
-                         }, gmx::InvalidInputError);
-    }
-}
-
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
     EXPECT_THROW_GMX(sc_.parseFromString("mindist from atomnr 1 cutoff"),
@@ -1296,10 +1284,7 @@ TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
         "resname \"R[BD]\"",
         "resname ~ \"R[BD]\""
     };
-    if (gmx::Regex::isSupported())
-    {
-        runTest("simple.gro", selections);
-    }
+    runTest("simple.gro", selections);
 }
 
 

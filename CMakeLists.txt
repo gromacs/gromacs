@@ -352,10 +352,6 @@ check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
-check_include_files(regex.h      HAVE_POSIX_REGEX)
-# TODO: It could be nice to inform the user if no regex support is found,
-# as selections won't be fully functional.
-
 include(CheckCXXSymbolExists)
 check_cxx_symbol_exists(gettimeofday      sys/time.h   HAVE_GETTIMEOFDAY)
 check_cxx_symbol_exists(sysconf           unistd.h     HAVE_SYSCONF)
@@ -617,9 +613,6 @@ if(NOT GMX_CXX11_SUPPORTED)
     message(FATAL_ERROR "This version of GROMACS requires C++11. Please use a newer compiler or use the GROMACS 5.1.x release. Note it might be sufficient to instruct the compiler to use a newer STL version. See the installation guide for details.")
 endif()
 set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
-
-# Now we can test for CXX11_REGEX include file
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
