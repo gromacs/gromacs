@@ -50,7 +50,6 @@ extern "C" {
  * extra argument (the +1)
  * these should correspond to names.c and include/types/enums.h
  */
-extern const char *epbc_names[epbcNR+1];
 extern const char *etcoupl_names[etcNR+1];
 extern const char *epcoupl_names[epcNR+1];
 extern const char *epcoupltype_names[epctNR+1];
@@ -116,7 +115,6 @@ extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 #define ECUTSCHEME(e)  ENUM_NAME(e, ecutsNR, ecutscheme_names)
 #define ENS(e)         ENUM_NAME(e, ensNR, ens_names)
 #define EI(e)          ENUM_NAME(e, eiNR, ei_names)
-#define EPBC(e)        ENUM_NAME(e, epbcNR, epbc_names)
 #define ETCOUPLTYPE(e) ENUM_NAME(e, etcNR, etcoupl_names)
 #define EPCOUPLTYPE(e) ENUM_NAME(e, epcNR, epcoupl_names)
 #define EPCOUPLTYPETYPE(e) ENUM_NAME(e, epctNR, epcoupltype_names)

@@ -62,7 +62,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
@@ -890,7 +889,7 @@ void AnalysisNeighborhoodSearchImpl::init(
         {
             std::string message =
                 formatString("Computations in the XY plane are not supported with PBC type '%s'",
-                             EPBC(pbc->ePBC));
+                             epbc_names[pbc->ePBC]);
             GMX_THROW(NotImplementedError(message));
         }
         if (pbc->ePBC == epbcXYZ &&

@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -919,7 +920,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PS("cutoff-scheme", ECUTSCHEME(ir->cutoff_scheme));
         PI("nstlist", ir->nstlist);
         PS("ns-type", ENS(ir->ns_type));
-        PS("pbc", EPBC(ir->ePBC));
+        PS("pbc", epbc_names[ir->ePBC]);
         PS("periodic-molecules", EBOOL(ir->bPeriodicMols));
         PR("verlet-buffer-tolerance", ir->verletbuf_tol);
         PR("rlist", ir->rlist);

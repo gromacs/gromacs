@@ -38,18 +38,7 @@
 #ifndef ENUMS_H_
 #define ENUMS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
-
 /* note: these enums should correspond to the names in gmxlib/names.c */
-
-enum {
-    epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
-};
 
 enum {
     etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
@@ -446,9 +435,5 @@ enum gmx_nblist_interaction_type
     GMX_NBLIST_INTERACTION_ADRESS,
     GMX_NBLIST_INTERACTION_NR
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* ENUMS_H_ */
