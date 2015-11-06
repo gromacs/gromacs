@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,8 @@
 #ifndef GMX_UTILITY_GMXASSERT_H
 #define GMX_UTILITY_GMXASSERT_H
 
-#include <boost/current_function.hpp>
-
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/current_function.h"
 
 //! \addtogroup module_utility
 //! \{
@@ -67,7 +66,7 @@
 #define GMX_RELEASE_ASSERT(condition, msg) \
     ((void) ((condition) ? (void)0 : \
              ::gmx::internal::assertHandler(#condition, msg, \
-                                            BOOST_CURRENT_FUNCTION, __FILE__, __LINE__)))
+                                            GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
 #endif
 /*! \def GMX_ASSERT
  * \brief

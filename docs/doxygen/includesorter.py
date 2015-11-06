@@ -108,7 +108,7 @@ class GroupedSorter(object):
             'functional', 'iomanip', 'ios', 'iosfwd', 'iostream', 'istream', 'iterator',
             'limits', 'list', 'map', 'memory', 'new', 'numeric', 'ostream',
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
-            'typeinfo', 'vector', 'utility']
+            'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
 
     def __init__(self, style='pub-priv', absolute=False):
         """Initialize a sorted with the given style."""
