@@ -50,12 +50,14 @@ MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
 "#include <map>
 #include <memory>
 #include <utility>
+#include <regex>
 class a { explicit operator bool() {return true;} };
 int main() {
   typedef std::unique_ptr<int> intPointer;
   intPointer p(new int(10));
   std::map<int, std::unique_ptr<int>> m;
   m.insert(std::make_pair(5, std::move(p)));
+  std::regex r(\"[[:space:]]+text\");
 }" ${VARIABLE})
     set(CMAKE_REQUIRED_FLAGS "")
     if(${VARIABLE})
