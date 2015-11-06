@@ -665,7 +665,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
     if (!bOk)
     {
         report_error(stderr, name, "warning: not registered");
-        return EINVAL;
+        return -1;
     }
     return 0;
 }
