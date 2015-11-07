@@ -266,24 +266,6 @@ static void printCopyright(FILE *fp)
 }
 
 
-void gmx_thanx(FILE *fp)
-{
-    char cq[1024];
-    int  cqnum = -1;
-
-    /* protect the audience from suggestive discussions */
-    cool_quote(cq, 1023, &cqnum);
-
-    if (cqnum >= 0)
-    {
-        fprintf(fp, "\ngcq#%d: %s\n\n", cqnum, cq);
-    }
-    else
-    {
-        fprintf(fp, "\n%s\n\n", cq);
-    }
-}
-
 typedef struct {
     const char *key;
     const char *author;
@@ -654,39 +636,6 @@ void please_cite(FILE *fp, const char *key)
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
     fflush(fp);
 }
-
-const char *GromacsVersion()
-{
-    return gmx_version();
-}
-
-const char *ShortProgram(void)
-{
-    const char *programName = NULL;
-
-    try
-    {
-        // TODO: Use the display name once it doesn't break anything.
-        programName = gmx::getProgramContext().programName();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    return programName;
-}
-
-const char *Program(void)
-{
-    const char *programName = NULL;
-
-    try
-    {
-        programName = gmx::getProgramContext().fullBinaryPath();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    return programName;
-}
-
 
 extern void gmx_print_version_info_cuda_gpu(FILE *fp);
 

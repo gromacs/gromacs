@@ -60,7 +60,6 @@
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/gmxlib/df_history.h"
 #include "gromacs/gmxlib/energyhistory.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -71,6 +70,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -1566,7 +1566,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     bhost   = gmx_strdup(BUILD_HOST);
 
     double_prec = GMX_CPT_BUILD_DP;
-    fprog       = gmx_strdup(Program());
+    fprog       = gmx_strdup(gmx::getProgramContext().fullBinaryPath());
 
     ftime   = &(timebuf[0]);
 
@@ -1755,7 +1755,7 @@ static void check_match(FILE *fplog,
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
     check_int   (fplog, "Double prec.", GMX_CPT_BUILD_DP, double_prec, &mm);
-    check_string(fplog, "Program name", Program(), fprog, &mm);
+    check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), fprog, &mm);
 
     check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
     if (cr->nnodes > 1)

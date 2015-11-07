@@ -42,12 +42,12 @@
 #include "tng/tng_io.h"
 #endif
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -123,7 +123,7 @@ void gmx_tng_open(const char       *filename,
 #endif
         sprintf(programInfo, "%.100s, %.128s%.24s",
                 gmx::getProgramContext().displayName(),
-                GromacsVersion(), precisionString);
+                gmx_version(), precisionString);
         if (mode == 'w')
         {
             tng_first_program_name_set(*tng, programInfo);

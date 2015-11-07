@@ -37,18 +37,7 @@
 #ifndef _copyrite_h
 #define _copyrite_h
 
-#include <stdio.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Has to be a function, so we can get version number from the build system */
-const char *GromacsVersion(void);
-
-const char *Program(void);
-
-const char *ShortProgram(void);
+#include <cstdio>
 
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This
@@ -65,14 +54,8 @@ void
 cool_quote(char *retstring, int retsize, int *cqnum);
 
 void
-gmx_thanx(FILE *fp);
-
-void
 please_cite(FILE *fp, const char *key);
 /* Print a message asking to cite something... */
-
-#ifdef __cplusplus
-}
 
 namespace gmx
 {
@@ -154,8 +137,6 @@ void printBinaryInformation(FILE                            *fp,
                             const IProgramContext           &programContext,
                             const BinaryInformationSettings &settings);
 
-} // namespace gmx;
+}     // namespace gmx
 
 #endif
-
-#endif  /* _copyright_h */

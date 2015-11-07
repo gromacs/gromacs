@@ -268,6 +268,9 @@ class CommandLineModuleManager::Impl
         processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
                              int *argc, char ***argv);
 
+        //! Prints the footer at the end of execution.
+        void printThanks(FILE *fp);
+
         /*! \brief
          * Maps module names to module objects.
          *
@@ -418,6 +421,23 @@ CommandLineModuleManager::Impl::processCommonOptions(
     return module;
 }
 
+void CommandLineModuleManager::Impl::printThanks(FILE *fp)
+{
+    char cq[1024];
+    int  cqnum = -1;
+
+    cool_quote(cq, 1023, &cqnum);
+
+    if (cqnum >= 0)
+    {
+        fprintf(fp, "\ngcq#%d: %s\n\n", cqnum, cq);
+    }
+    else
+    {
+        fprintf(fp, "\n%s\n\n", cq);
+    }
+}
+
 /********************************************************************
  * CommandLineModuleManager
  */
@@ -556,7 +576,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (!bQuiet)
     {
-        gmx_thanx(stderr);
+        impl_->printThanks(stderr);
     }
     return rc;
 }

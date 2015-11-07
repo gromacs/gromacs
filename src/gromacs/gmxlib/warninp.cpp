@@ -40,7 +40,6 @@
 
 #include <cstring>
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -187,9 +186,9 @@ void done_warning(warninp_t wi, int f_errno, const char *file, int line)
     if (wi->maxwarn >= 0 && wi->nwarn_warn > wi->maxwarn)
     {
         gmx_fatal(f_errno, file, line,
-                  "Too many warnings (%d), %s terminated.\n"
+                  "Too many warnings (%d).\n"
                   "If you are sure all warnings are harmless, use the -maxwarn option.",
-                  wi->nwarn_warn, ShortProgram());
+                  wi->nwarn_warn);
     }
 
     sfree(wi);

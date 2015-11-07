@@ -384,7 +384,6 @@ int gmx_anadock(int argc, char *argv[])
 
     cluster_em_all(fp, npdbf, pdbf, bFree, bRMS, cutoff);
 
-    gmx_thanx(fp);
     gmx_ffclose(fp);
 
     return 0;

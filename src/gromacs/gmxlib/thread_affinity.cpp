@@ -51,7 +51,6 @@
 
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -62,6 +61,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
 static int
@@ -492,7 +492,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
             {
                 md_print_warn(cr, fplog,
                               "Overriding thread affinity set outside %s\n",
-                              ShortProgram());
+                              gmx::getProgramContext().displayName());
             }
         }
 

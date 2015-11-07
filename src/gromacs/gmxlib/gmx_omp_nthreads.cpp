@@ -44,7 +44,6 @@
 #include <cstring>
 
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -52,6 +51,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/programcontext.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */
@@ -139,7 +139,8 @@ static void pick_module_nthreads(FILE *fplog, int m,
         if (!bOMP)
         {
             gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
-                        modth_env_var[m], nth, ShortProgram());
+                        modth_env_var[m], nth,
+                        gmx::getProgramContext().displayName());
         }
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
@@ -299,7 +300,7 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
         if (!bOMP && (std::strncmp(env, "1", 1) != 0))
         {
             gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
-                        ShortProgram());
+                        gmx::getProgramContext().displayName());
         }
         else
         {
