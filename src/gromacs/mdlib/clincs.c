@@ -1705,7 +1705,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             dhdlambda += lincsd->th[th].dhdlambda;
         }
-        if (econqCoord)
+        if (econq == econqCoord)
         {
             /* dhdlambda contains dH/dlambda*dt^2, correct for this */
             dhdlambda /= ir->delta_t*ir->delta_t;
