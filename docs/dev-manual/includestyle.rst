@@ -20,7 +20,7 @@ between each group, and headers within each group sorted alphabetically.
    enforced.
 5. This is followed by other system headers: platform-specific headers such as
    ``<unistd.h>``, as well as external libraries such as
-   ``<boost/exception_ptr.hpp>``.
+   ``<gtest/gtest.h>``.
 6. |Gromacs|-specific libraries from ``src/external/``, such as
    ``"thread_mpi/threads.h"``.
 7. |Gromacs|-specific headers that are not internal to the including module,
@@ -38,7 +38,7 @@ other headers with angle brackets (``<stdio.h>``).  Headers under ``src/external
 are generally included with quotes (whenever the include path is relative to
 ``src/``, as well as for thread-MPI and TNG), but larger third-party entities are
 included as if they were provided by the system.  The latter group currently
-includes boost and gtest/gmock.
+includes gtest/gmock.
 
 If there are any conditionally included headers (typically, only when some
 #defines from ``config.h`` are set), these should be included at the end of

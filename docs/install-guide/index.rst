@@ -311,9 +311,6 @@ Optional build components
 -------------------------
 * Compiling to run on NVIDIA GPUs requires CUDA_
 * Compiling to run on AMD GPUs requires OpenCL_
-* An external Boost library can be used to provide better
-  implementation support for smart pointers and exception handling,
-  but the |Gromacs| source bundles a subset of Boost 1.55.0 as a fallback
 * Hardware-optimized BLAS and LAPACK libraries are useful
   for a few of the |Gromacs| utilities focused on normal modes and
   matrix manipulation, but they do not provide any benefits for normal
