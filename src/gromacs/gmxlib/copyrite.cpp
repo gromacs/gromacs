@@ -53,7 +53,6 @@
 #if HAVE_EXTRAE
 #include <extrae_user_events.h>
 #endif
-#include <boost/version.hpp>
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -727,14 +726,6 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
             __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
-#ifdef GMX_EXTERNAL_BOOST
-    const bool bExternalBoost = true;
-#else
-    const bool bExternalBoost = false;
-#endif
-    fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
-            BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
-            bExternalBoost ? " (external)" : " (internal)");
 #if defined(GMX_GPU)
 #ifdef GMX_USE_OPENCL
     fprintf(fp, "OpenCL include dir: %s\n", OPENCL_INCLUDE_DIR);

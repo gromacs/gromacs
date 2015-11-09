@@ -14,7 +14,7 @@ This file contains the licenses for the following bodies of code:
 4. thread_mpi
 5. Blas
 6. Lapack
-7. Subset of Boost C++ library
+7. Parts of Boost C++ library
 8. Google Test and Google Mock
 9. Sun XDR implementation (External Data Representation)
 10. Sun FDLIBM (Freely Distributable Maths Library)
@@ -1049,10 +1049,10 @@ better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
 
-7. Subset of Boost C++ library
-==============================
+7. Parts of Boost C++ library
+=============================
 
-   Files: src/external/boost/boost/*
+   Files: src/gromacs/utility/current_functin.h
 
 Boost Software License - Version 1.0 - August 17th, 2003
 

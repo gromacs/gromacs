@@ -207,18 +207,6 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_EXTERNAL_LAPACK
 
-.. cmake:: GMX_EXTERNAL_BOOST
-
-   If ``ON``, |GROMACS| is compiled against Boost headers found in the system.
-   If ``OFF``, a subset of Boost headers found in :file:`src/external/boost/`
-   is used instead.
-
-   Default is ``ON`` if external Boost library can be found, ``OFF`` otherwise.
-
-   The Boost headers are also used in installed headers and affect the API/ABI,
-   so using the internal Boost can cause compatibility issues if compiling
-   other software that uses both |GROMACS| and Boost.
-
 .. cmake:: GMX_EXTERNAL_TNG
 
 .. cmake:: GMX_FFT_LIBRARY

@@ -160,8 +160,7 @@ used:
 <dl>
 <dt>`GROMACS_INCLUDE_DIRS`</dt>
 <dd>List of include directories necessary to compile against the \Gromacs
-headers.  Currently, this includes the path to \Gromacs headers, as well as the
-path to Boost headers that were used to compile \Gromacs.</dd>
+headers.  Currently, this includes the path to \Gromacs headers.</dd>
 <dt>`GROMACS_LIBRARIES`</dt>
 <dd>List of libraries to link with to link against \Gromacs.
 Under the hood, this uses imported CMake targets to represent `libgromacs`.</dd>
