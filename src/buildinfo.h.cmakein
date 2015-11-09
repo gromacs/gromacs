@@ -96,9 +96,6 @@
 /** CUDA nvcc compiler flags */
 #define CUDA_NVCC_COMPILER_FLAGS "@CUDA_NVCC_COMPILER_FLAGS@"
 
-/** Whether external Boost was used for compiling */
-#cmakedefine GMX_EXTERNAL_BOOST
-
 /** OpenCL include dir */
 #define OPENCL_INCLUDE_DIR "@OPENCL_INCLUDE_DIR@"
 

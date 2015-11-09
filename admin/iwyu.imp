@@ -1,5 +1,4 @@
 [
-{ include: ["<boost/smart_ptr/shared_ptr.hpp>", "private", "<boost/shared_ptr.hpp>", "public"] },
 { include: ["<xmmintrin.h>", "public", "<emmintrin.h>", "public"] },
 { include: ["<emmintrin.h>", "public", "<pmmintrin.h>", "public"] },
 { include: ["<pmmintrin.h>", "public", "<smmintrin.h>", "public"] },
