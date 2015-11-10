@@ -1127,21 +1127,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
             pr_swap(fp, indent, ir->swap);
         }
 
-        /* AdResS PARAMETERS */
-        PS("adress", EBOOL(ir->bAdress));
-        if (ir->bAdress)
-        {
-            PS("adress-type", EADRESSTYPE(ir->adress->type));
-            PR("adress-const-wf", ir->adress->const_wf);
-            PR("adress-ex-width", ir->adress->ex_width);
-            PR("adress-hy-width", ir->adress->hy_width);
-            PR("adress-ex-forcecap", ir->adress->ex_forcecap);
-            PS("adress-interface-correction", EADRESSICTYPE(ir->adress->icor));
-            PS("adress-site", EADRESSSITETYPE(ir->adress->site));
-            pr_rvec(fp, indent, "adress-reference-coords", ir->adress->refs, DIM, TRUE);
-            PS("adress-do-hybridpairs", EBOOL(ir->adress->do_hybridpairs));
-        }
-
         /* USER-DEFINED THINGIES */
         PI("userint1", ir->userint1);
         PI("userint2", ir->userint2);

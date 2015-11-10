@@ -100,7 +100,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
-#include "adress.h"
 #include "nbnxn_gpu.h"
 
 void print_time(FILE                     *out,
@@ -1539,8 +1538,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     double     mu[2*DIM];
     gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool   bDoLongRangeNS, bDoForces, bSepLRF;
-    gmx_bool   bDoAdressWF;
-    t_pbc      pbc;
     float      cycles_pme, cycles_force;
 
     start  = 0;
@@ -1572,9 +1569,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     bDoForces      = (flags & GMX_FORCE_FORCES);
     bSepLRF        = ((inputrec->nstcalclr > 1) && bDoForces &&
                       (flags & GMX_FORCE_SEPLRF) && (flags & GMX_FORCE_DO_LR));
-
-    /* should probably move this to the forcerec since it doesn't change */
-    bDoAdressWF   = ((fr->adress_type != eAdressOff));
 
     if (bStateChanged)
     {
@@ -1672,33 +1666,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcMOVEX);
         dd_move_x(cr->dd, box, x);
         wallcycle_stop(wcycle, ewcMOVEX);
-    }
-
-    /* update adress weight beforehand */
-    if (bStateChanged && bDoAdressWF)
-    {
-        /* need pbc for adress weight calculation with pbc_dx */
-        set_pbc(&pbc, inputrec->ePBC, box);
-        if (fr->adress_site == eAdressSITEcog)
-        {
-            update_adress_weights_cog(top->idef.iparams, top->idef.il, x, fr, mdatoms,
-                                      inputrec->ePBC == epbcNONE ? NULL : &pbc);
-        }
-        else if (fr->adress_site == eAdressSITEcom)
-        {
-            update_adress_weights_com(fplog, cg0, cg1, &(top->cgs), x, fr, mdatoms,
-                                      inputrec->ePBC == epbcNONE ? NULL : &pbc);
-        }
-        else if (fr->adress_site == eAdressSITEatomatom)
-        {
-            update_adress_weights_atom_per_atom(cg0, cg1, &(top->cgs), x, fr, mdatoms,
-                                                inputrec->ePBC == epbcNONE ? NULL : &pbc);
-        }
-        else
-        {
-            update_adress_weights_atom(cg0, cg1, &(top->cgs), x, fr, mdatoms,
-                                       inputrec->ePBC == epbcNONE ? NULL : &pbc);
-        }
     }
 
     if (NEED_MUTOT(*inputrec))
@@ -1878,13 +1845,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             calc_f_el(MASTER(cr) ? field : NULL,
                       start, homenr, mdatoms->chargeA, fr->f_novirsum,
                       inputrec->ex, inputrec->et, t);
-        }
-
-        if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
-        {
-            /* Compute thermodynamic force in hybrid AdResS region */
-            adress_thermo_force(start, homenr, x, fr->f_novirsum, fr, mdatoms,
-                                inputrec->ePBC == epbcNONE ? NULL : &pbc);
         }
 
         /* Communicate the forces */
@@ -2833,11 +2793,6 @@ void init_md(FILE *fplog,
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));
     }
 
-    if (ir->bAdress)
-    {
-        please_cite(fplog, "Fritsch12");
-        please_cite(fplog, "Junghans10");
-    }
     /* Initiate variables */
     clear_mat(force_vir);
     clear_mat(shake_vir);

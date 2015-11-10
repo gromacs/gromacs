@@ -218,11 +218,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         {
             srenew(md->bQM, md->nalloc);
         }
-        if (ir->bAdress)
-        {
-            srenew(md->wf, md->nalloc);
-            srenew(md->tf_table_index, md->nalloc);
-        }
     }
 
     alook = gmx_mtop_atomlookup_init(mtop);
@@ -396,26 +391,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 else
                 {
                     md->bQM[i]      = FALSE;
-                }
-            }
-            /* Initialize AdResS weighting functions to adressw */
-            if (ir->bAdress)
-            {
-                md->wf[i]           = 1.0;
-                /* if no tf table groups specified, use default table */
-                md->tf_table_index[i] = DEFAULT_TF_TABLE;
-                if (ir->adress->n_tf_grps > 0)
-                {
-                    /* if tf table groups specified, tf is only applied to thoose energy groups*/
-                    md->tf_table_index[i] = NO_TF_TABLE;
-                    /* check wether atom is in one of the relevant energy groups and assign a table index */
-                    for (g = 0; g < ir->adress->n_tf_grps; g++)
-                    {
-                        if (md->cENER[i] == ir->adress->tf_table_index[g])
-                        {
-                            md->tf_table_index[i] = g;
-                        }
-                    }
                 }
             }
         }

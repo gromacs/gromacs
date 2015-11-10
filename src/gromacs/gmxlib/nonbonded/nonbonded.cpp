@@ -49,7 +49,6 @@
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
-#include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/names.h"
@@ -244,14 +243,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     vdw      = gmx_nbkernel_vdw_names[nl->ivdw];
     vdw_mod  = eintmod_names[nl->ivdwmod];
     geom     = gmx_nblist_geometry_names[nl->igeometry];
-
-    if (nl->type == GMX_NBLIST_INTERACTION_ADRESS)
-    {
-        nl->kernelptr_vf       = (void *) gmx_nb_generic_adress_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_generic_adress_kernel;
-        nl->simd_padding_width = 1;
-        return;
-    }
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {

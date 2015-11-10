@@ -1309,8 +1309,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (!(ir->vdw_modifier == eintmodNONE || ir->vdw_modifier == eintmodPOTSHIFT))
         {
-            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s a\
-nd %s",
+            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s and %s",
                     evdw_names[ir->vdwtype],
                     eintmod_names[eintmodPOTSHIFT],
                     eintmod_names[eintmodNONE]);
@@ -1445,22 +1444,7 @@ nd %s",
 
     if (ir->bAdress)
     {
-        if (ir->cutoff_scheme != ecutsGROUP)
-        {
-            warning_error(wi, "AdresS simulation supports only cutoff-scheme=group");
-        }
-        if (!EI_SD(ir->eI))
-        {
-            warning_error(wi, "AdresS simulation supports only stochastic dynamics");
-        }
-        if (ir->epc != epcNO)
-        {
-            warning_error(wi, "AdresS simulation does not support pressure coupling");
-        }
-        if (EEL_FULL(ir->coulombtype))
-        {
-            warning_error(wi, "AdresS simulation does not support long-range electrostatics");
-        }
+        gmx_fatal(FARGS, "AdResS simulations are no longer supported");
     }
 }
 
@@ -1873,6 +1857,17 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("nstdihreout");
     REM_TYPE("nstcheckpoint");
     REM_TYPE("optimize-fft");
+    REM_TYPE("adress_type");
+    REM_TYPE("adress_const_wf");
+    REM_TYPE("adress_ex_width");
+    REM_TYPE("adress_hy_width");
+    REM_TYPE("adress_ex_forcecap");
+    REM_TYPE("adress_interface_correction");
+    REM_TYPE("adress_site");
+    REM_TYPE("adress_reference_coords");
+    REM_TYPE("adress_tf_grp_names");
+    REM_TYPE("adress_cg_grp_names");
+    REM_TYPE("adress_do_hybridpairs");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -2338,14 +2333,8 @@ void get_ir(const char *mdparin, const char *mdparout,
         RTYPE("threshold", ir->swap->threshold, 1.0);
     }
 
-    /* AdResS defined thingies */
-    CCTYPE ("AdResS parameters");
-    EETYPE("adress",       ir->bAdress, yesno_names);
-    if (ir->bAdress)
-    {
-        snew(ir->adress, 1);
-        read_adressparams(&ninp, &inp, ir->adress, wi);
-    }
+    /* AdResS is no longer supported, but we need mdrun to be able to refuse to run old AdResS .tpr files */
+    EETYPE("adress", ir->bAdress, yesno_names);
 
     /* User defined thingies */
     CCTYPE ("User defined thingies");
@@ -3817,11 +3806,6 @@ void do_index(const char* mdparin, const char *ndx,
     decode_cos(is->efield_yt, &(ir->et[YY]));
     decode_cos(is->efield_z, &(ir->ex[ZZ]));
     decode_cos(is->efield_zt, &(ir->et[ZZ]));
-
-    if (ir->bAdress)
-    {
-        do_adress_index(ir->adress, groups, gnames, &(ir->opts), wi);
-    }
 
     for (i = 0; (i < grps->nr); i++)
     {

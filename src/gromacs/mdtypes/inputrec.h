@@ -453,9 +453,9 @@ typedef struct t_inputrec {
     int             QMconstraints; /* constraints on QM bonds                      */
     int             QMMMscheme;    /* Scheme: ONIOM or normal                      */
     real            scalefactor;   /* factor for scaling the MM charges in QM calc.*/
-                                   /* parameter needed for AdResS simulation       */
-    gmx_bool        bAdress;       /* Is AdResS enabled ? */
-    t_adress       *adress;        /* The data for adress simulations */
+
+    /* Fields for removed features go here (better caching) */
+    gmx_bool        bAdress;
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX] != 0 || (ir).deform[YY][YY] != 0 || (ir).deform[ZZ][ZZ] != 0 || (ir).deform[YY][XX] != 0 || (ir).deform[ZZ][XX] != 0 || (ir).deform[ZZ][YY] != 0)

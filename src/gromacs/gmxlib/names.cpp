@@ -258,24 +258,12 @@ const char *eMultentOpt_names[eMultentOptNR+1] = {
     "multiple_entries", "no", "use_last", NULL
 };
 
-const char *eAdresstype_names[eAdressNR+1] = {
-    "off", "constant", "xsplit", "sphere", NULL
-};
-
-const char *eAdressICtype_names[eAdressICNR+1] = {
-    "off", "thermoforce", NULL
-};
-
-const char *eAdressSITEtype_names[eAdressSITENR+1] = {
-    "com", "cog", "atom", "atomperatom", NULL
-};
-
 const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1] = {
     "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle", "Water4-Water4", "CG-CG", NULL
 };
 
 const char *gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR+1] = {
-    "Standard", "Free_Energy", "Adress", NULL
+    "Standard", "Free_Energy", NULL
 };
 
 const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
