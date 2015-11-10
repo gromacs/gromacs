@@ -90,10 +90,4 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
 /* Return a table for GB calculations */
 t_forcetable make_gb_table(const t_forcerec              *fr);
 
-/* Read a table for AdResS Thermo Force calculations */
-t_forcetable make_atf_table(FILE                          *out,
-                            const t_forcerec              *fr,
-                            const char                    *fn,
-                            matrix                         box);
-
 #endif  /* GMX_TABLES_FORCETABLE_H */
