@@ -196,6 +196,8 @@ int check_times(real t);
 #define TRX_NEED_F    (1<<5)
 /* Useful for reading natoms from a trajectory without skipping */
 #define TRX_DONT_SKIP (1<<6)
+#define TRX_SKIP_VIR  (1<<7)
+
 
 /* For trxframe.not_ok */
 #define HEADER_NOT_OK (1<<0)

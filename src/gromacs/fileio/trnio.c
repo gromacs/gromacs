@@ -130,6 +130,9 @@ static gmx_bool do_trnheader(t_fileio *fio, gmx_bool bRead, t_trnheader *sh, gmx
     sh->bDouble = (nFloatSize(sh) == sizeof(double));
     gmx_fio_setprecision(fio, sh->bDouble);
 
+    if(bRead) {
+	sh->pener_size=sh->vir_size;
+    }
     if (bRead && bFirst)
     {
         fprintf(stderr, "(%s precision)\n", sh->bDouble ? "double" : "single");
@@ -180,10 +183,12 @@ static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, box, DIM);
     }
+#if 0
     if (sh->vir_size != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
     }
+#endif 
     if (sh->pres_size != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
@@ -199,7 +204,9 @@ static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
     if (sh->f_size   != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, f, sh->natoms);
+    if (sh->pener_size   != 0)
         bOK = bOK && gmx_fio_ndo_real(fio, pener, sh->natoms);
+    if (sh->vir_size   != 0)
         bOK = bOK && gmx_fio_ndo_rvec(fio, vir, sh->natoms);
     }
 
@@ -219,6 +226,8 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
         sh->x_size   = ((x) ? (*natoms*sizeof(x[0])) : 0);
         sh->v_size   = ((v) ? (*natoms*sizeof(v[0])) : 0);
         sh->f_size   = ((f) ? (*natoms*sizeof(f[0])) : 0);
+        sh->pener_size   = ((vir) ? (*natoms*sizeof(pener[0])) : 0);
+        sh->vir_size   = ((vir) ? (*natoms*sizeof(vir[0])) : 0);
         sh->natoms   = *natoms;
         sh->step     = *step;
         sh->nre      = 0;

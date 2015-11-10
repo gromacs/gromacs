@@ -66,13 +66,14 @@ typedef struct           /* This struct describes the order and the	*/
     int       ir_size;   /* Backward compatibility		        */
     int       e_size;    /* Backward compatibility		        */
     int       box_size;  /* Non zero if a box is present			*/
-    int       vir_size;  /* Backward compatibility		        */
     int       pres_size; /* Backward compatibility		        */
     int       top_size;  /* Backward compatibility		        */
     int       sym_size;  /* Backward compatibility		        */
     int       x_size;    /* Non zero if coordinates are present		*/
     int       v_size;    /* Non zero if velocities are present		*/
     int       f_size;    /* Non zero if forces are present		*/
+    int       vir_size;    /* Non zero if particle  virial is present	*/
+    int       pener_size;    /* Non zero if particle energy is present  */
 
     int       natoms;    /* The total number of atoms			*/
     int       step;      /* Current step number				*/

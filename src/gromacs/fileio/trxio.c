@@ -293,6 +293,8 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->x         = NULL;
         fr->v         = NULL;
         fr->f         = NULL;
+        fr->pener     = NULL;
+        fr->vir       = NULL;
         clear_mat(fr->box);
         fr->bPBC   = FALSE;
         fr->ePBC   = -1;
@@ -644,7 +646,6 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
 {
     t_trnheader sh;
     gmx_bool    bOK, bRet;
-
     bRet = FALSE;
 
     if (fread_trnheader(status->fio, &sh, &bOK))
@@ -680,8 +681,10 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             if (fr->f == NULL)
             { // SAW
                 snew(fr->f, sh.natoms);
-                snew(fr->pener, sh.natoms);
-                snew(fr->vir, sh.natoms);
+		if(!(fr->flags & TRX_SKIP_VIR)) { 
+                	snew(fr->pener, sh.natoms);
+                	snew(fr->vir, sh.natoms);
+		}
             }
             fr->bF = sh.f_size > 0;
         }

@@ -703,17 +703,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* if rerunMD then read coordinates and velocities from input trajectory */
     if (bRerunMD)
     {
+	int flags=TRX_NEED_X | TRX_READ_V;
         if (getenv("GMX_FORCE_UPDATE"))
         {
             bForceUpdate = TRUE;
         }
+        if (getenv("GMX_SKIP_VIR")) { 
+	    flags = flags | TRX_SKIP_VIR;
+	}
 
         rerun_fr.natoms = 0;
         if (MASTER(cr))
         {
             bNotLastFrame = read_first_frame(oenv, &status,
                                              opt2fn("-rerun", nfile, fnm),
-                                             &rerun_fr, TRX_NEED_X | TRX_READ_V);
+                                             &rerun_fr, flags);
             if (rerun_fr.natoms != top_global->natoms)
             {
                 gmx_fatal(FARGS,
