@@ -336,18 +336,6 @@ enum {
     efbposresCYLINDERX, efbposresCYLINDERY, efbposresCYLINDERZ, efbposresNR
 };
 
-enum {
-    eAdressOff, eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
-};
-
-enum {
-    eAdressICOff, eAdressICThermoForce, eAdressICNR
-};
-
-enum {
-    eAdressSITEcom, eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
-};
-
 
 /* The interactions contained in a (possibly merged) table
  * for computing electrostatic, VDW repulsion and/or VDW dispersion
@@ -432,7 +420,6 @@ enum gmx_nblist_interaction_type
 {
     GMX_NBLIST_INTERACTION_STANDARD,
     GMX_NBLIST_INTERACTION_FREE_ENERGY,
-    GMX_NBLIST_INTERACTION_ADRESS,
     GMX_NBLIST_INTERACTION_NR
 };
 

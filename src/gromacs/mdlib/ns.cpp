@@ -65,8 +65,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "adress.h"
-
 /*
  *    E X C L U S I O N   H A N D L I N G
  */
@@ -269,10 +267,6 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     {
         nbl = &(fr->nblists[i]);
 
-        if ((fr->adress_type != eAdressOff) && (i >= fr->nnblists/2))
-        {
-            type = GMX_NBLIST_INTERACTION_ADRESS;
-        }
         init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ], &nbl->nlist_lr[eNL_VDWQQ],
                     maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
         init_nblist(log, &nbl->nlist_sr[eNL_VDW], &nbl->nlist_lr[eNL_VDW],
@@ -1077,263 +1071,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             close_i_nblist(vdw_free);
             close_i_nblist(coul_free);
             close_i_nblist(vdwc_free);
-        }
-    }
-}
-
-static void
-put_in_list_adress(gmx_bool              bHaveVdW[],
-                   int                   ngid,
-                   t_mdatoms     *       md,
-                   int                   icg,
-                   int                   jgid,
-                   int                   nj,
-                   atom_id               jjcg[],
-                   atom_id               index[],
-                   t_excl                bExcl[],
-                   int                   shift,
-                   t_forcerec     *      fr,
-                   gmx_bool              bLR,
-                   gmx_bool              bDoVdW,
-                   gmx_bool              bDoCoul,
-                   int       gmx_unused  solvent_opt)
-{
-    /* The a[] index has been removed,
-     * to put it back in i_atom should be a[i0] and jj should be a[jj].
-     */
-    t_nblist  *   vdwc;
-    t_nblist  *   vdw;
-    t_nblist  *   coul;
-    t_nblist  *   vdwc_adress  = NULL;
-    t_nblist  *   vdw_adress   = NULL;
-    t_nblist  *   coul_adress  = NULL;
-
-    int           i, j, jcg, igid, gid, nbl_ind, nbl_ind_adress;
-    atom_id       jj, jj0, jj1, i_atom;
-    int           i0, nicg;
-
-    int          *cginfo;
-    int          *type;
-    real         *charge;
-    real         *wf;
-    real          qi;
-    gmx_bool      bNotEx;
-    gmx_bool      bDoVdW_i, bDoCoul_i;
-    gmx_bool      b_hybrid;
-    t_nblist     *nlist, *nlist_adress;
-    gmx_bool      bEnergyGroupCG;
-
-    /* Copy some pointers */
-    cginfo  = fr->cginfo;
-    charge  = md->chargeA;
-    type    = md->typeA;
-    wf      = md->wf;
-
-    /* Get atom range */
-    i0     = index[icg];
-    nicg   = index[icg+1]-i0;
-
-    /* Get the i charge group info */
-    igid   = GET_CGINFO_GID(cginfo[icg]);
-
-    if (md->nPerturbed)
-    {
-        gmx_fatal(FARGS, "AdResS does not support free energy pertubation\n");
-    }
-
-    /* Unpack pointers to neighbourlist structs */
-    if (fr->nnblists == 2)
-    {
-        nbl_ind        = 0;
-        nbl_ind_adress = 1;
-    }
-    else
-    {
-        nbl_ind        = fr->gid2nblists[GID(igid, jgid, ngid)];
-        nbl_ind_adress = nbl_ind+fr->nnblists/2;
-    }
-    if (bLR)
-    {
-        nlist        = fr->nblists[nbl_ind].nlist_lr;
-        nlist_adress = fr->nblists[nbl_ind_adress].nlist_lr;
-    }
-    else
-    {
-        nlist        = fr->nblists[nbl_ind].nlist_sr;
-        nlist_adress = fr->nblists[nbl_ind_adress].nlist_sr;
-    }
-
-
-    vdwc = &nlist[eNL_VDWQQ];
-    vdw  = &nlist[eNL_VDW];
-    coul = &nlist[eNL_QQ];
-
-    vdwc_adress = &nlist_adress[eNL_VDWQQ];
-    vdw_adress  = &nlist_adress[eNL_VDW];
-    coul_adress = &nlist_adress[eNL_QQ];
-
-    /* We do not support solvent optimization with AdResS for now.
-       For this we would need hybrid solvent-other kernels */
-
-    /* no solvent as i charge group */
-    /* Loop over the atoms in the i charge group */
-    for (i = 0; i < nicg; i++)
-    {
-        i_atom  = i0+i;
-        gid     = GID(igid, jgid, ngid);
-        qi      = charge[i_atom];
-
-        /* Create new i_atom for each energy group */
-        if (bDoVdW && bDoCoul)
-        {
-            new_i_nblist(vdwc, i_atom, shift, gid);
-            new_i_nblist(vdwc_adress, i_atom, shift, gid);
-
-        }
-        if (bDoVdW)
-        {
-            new_i_nblist(vdw, i_atom, shift, gid);
-            new_i_nblist(vdw_adress, i_atom, shift, gid);
-
-        }
-        if (bDoCoul)
-        {
-            new_i_nblist(coul, i_atom, shift, gid);
-            new_i_nblist(coul_adress, i_atom, shift, gid);
-        }
-        bDoVdW_i  = (bDoVdW  && bHaveVdW[type[i_atom]]);
-        bDoCoul_i = (bDoCoul && qi != 0);
-
-        /* Here we find out whether the energy groups interaction belong to a
-         * coarse-grained (vsite) or atomistic interaction. Note that, beacuse
-         * interactions between coarse-grained and other (atomistic) energygroups
-         * are excluded automatically by grompp, it is sufficient to check for
-         * the group id of atom i (igid) */
-        bEnergyGroupCG = !egp_explicit(fr, igid);
-
-        if (bDoVdW_i || bDoCoul_i)
-        {
-            /* Loop over the j charge groups */
-            for (j = 0; (j < nj); j++)
-            {
-                jcg = jjcg[j];
-
-                /* Check for large charge groups */
-                if (jcg == icg)
-                {
-                    jj0 = i0 + i + 1;
-                }
-                else
-                {
-                    jj0 = index[jcg];
-                }
-
-                jj1 = index[jcg+1];
-                /* Finally loop over the atoms in the j-charge group */
-                for (jj = jj0; jj < jj1; jj++)
-                {
-                    bNotEx = NOTEXCL(bExcl, i, jj);
-
-                    /* Now we have to exclude interactions which will be zero
-                     * anyway due to the AdResS weights (in previous implementations
-                     * this was done in the force kernel). This is necessary as
-                     * pure interactions (those with b_hybrid=false, i.e. w_i*w_j==1 or 0)
-                     * are put into neighbour lists which will be passed to the
-                     * standard (optimized) kernels for speed. The interactions with
-                     * b_hybrid=true are placed into the _adress neighbour lists and
-                     * processed by the generic AdResS kernel.
-                     */
-                    if ( (bEnergyGroupCG &&
-                          wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS ) ||
-                         ( !bEnergyGroupCG && wf[jj] <= GMX_REAL_EPS ) )
-                    {
-                        continue;
-                    }
-
-                    b_hybrid = !((wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS) ||
-                                 (wf[i_atom] <= GMX_REAL_EPS && wf[jj] <= GMX_REAL_EPS));
-
-                    if (bNotEx)
-                    {
-                        if (!bDoVdW_i)
-                        {
-                            if (charge[jj] != 0)
-                            {
-                                if (!b_hybrid)
-                                {
-                                    add_j_to_nblist(coul, jj, bLR);
-                                }
-                                else
-                                {
-                                    add_j_to_nblist(coul_adress, jj, bLR);
-                                }
-                            }
-                        }
-                        else if (!bDoCoul_i)
-                        {
-                            if (bHaveVdW[type[jj]])
-                            {
-                                if (!b_hybrid)
-                                {
-                                    add_j_to_nblist(vdw, jj, bLR);
-                                }
-                                else
-                                {
-                                    add_j_to_nblist(vdw_adress, jj, bLR);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (bHaveVdW[type[jj]])
-                            {
-                                if (charge[jj] != 0)
-                                {
-                                    if (!b_hybrid)
-                                    {
-                                        add_j_to_nblist(vdwc, jj, bLR);
-                                    }
-                                    else
-                                    {
-                                        add_j_to_nblist(vdwc_adress, jj, bLR);
-                                    }
-                                }
-                                else
-                                {
-                                    if (!b_hybrid)
-                                    {
-                                        add_j_to_nblist(vdw, jj, bLR);
-                                    }
-                                    else
-                                    {
-                                        add_j_to_nblist(vdw_adress, jj, bLR);
-                                    }
-
-                                }
-                            }
-                            else if (charge[jj] != 0)
-                            {
-                                if (!b_hybrid)
-                                {
-                                    add_j_to_nblist(coul, jj, bLR);
-                                }
-                                else
-                                {
-                                    add_j_to_nblist(coul_adress, jj, bLR);
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-
-            close_i_nblist(vdw);
-            close_i_nblist(coul);
-            close_i_nblist(vdwc);
-            close_i_nblist(vdw_adress);
-            close_i_nblist(coul_adress);
-            close_i_nblist(vdwc_adress);
         }
     }
 }
@@ -2356,15 +2093,6 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                     {
                         continue;
                     }
-                    /* Adress: an explicit cg that has a weigthing function of 0 is excluded
-                     *  from the neigbour list as it will not interact  */
-                    if (fr->adress_type != eAdressOff)
-                    {
-                        if (md->wf[cgs->index[icg]] <= GMX_REAL_EPS && egp_explicit(fr, igid))
-                        {
-                            continue;
-                        }
-                    }
                     /* Get shift vector */
                     shift = XYZ2IS(tx, ty, tz);
 #ifdef NS5DB
@@ -2764,20 +2492,13 @@ int search_neighbours(FILE *log, t_forcerec *fr,
     }
     debug_gmx();
 
-    if (fr->adress_type == eAdressOff)
+    if (!fr->ns.bCGlist)
     {
-        if (!fr->ns.bCGlist)
-        {
-            put_in_list = put_in_list_at;
-        }
-        else
-        {
-            put_in_list = put_in_list_cg;
-        }
+        put_in_list = put_in_list_at;
     }
     else
     {
-        put_in_list = put_in_list_adress;
+        put_in_list = put_in_list_cg;
     }
 
     /* Do the core! */
