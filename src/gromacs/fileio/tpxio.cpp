@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -99,6 +100,7 @@ enum tpxv {
     tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
     tpxv_IntermolecularBondeds,                              /**< permit inter-molecular bonded interactions in the topology */
     tpxv_CompElWithSwapLayerOffset,                          /**< added parameters for improved CompEl setups */
+    tpxv_RemoveAdress,                                       /**< removed support for AdResS */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -1477,43 +1479,37 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_real(fio, ir->userreal3);
     gmx_fio_do_real(fio, ir->userreal4);
 
-    /* AdResS stuff */
-    if (file_version >= 77)
+    /* AdResS is removed, but we need to be able to read old files,
+       and let mdrun refuse to run them */
+    if (file_version >= 77 && file_version < tpxv_RemoveAdress)
     {
         gmx_fio_do_gmx_bool(fio, ir->bAdress);
         if (ir->bAdress)
         {
-            if (bRead)
-            {
-                snew(ir->adress, 1);
-            }
-            gmx_fio_do_int(fio, ir->adress->type);
-            gmx_fio_do_real(fio, ir->adress->const_wf);
-            gmx_fio_do_real(fio, ir->adress->ex_width);
-            gmx_fio_do_real(fio, ir->adress->hy_width);
-            gmx_fio_do_int(fio, ir->adress->icor);
-            gmx_fio_do_int(fio, ir->adress->site);
-            gmx_fio_do_rvec(fio, ir->adress->refs);
-            gmx_fio_do_int(fio, ir->adress->n_tf_grps);
-            gmx_fio_do_real(fio, ir->adress->ex_forcecap);
-            gmx_fio_do_int(fio, ir->adress->n_energy_grps);
-            gmx_fio_do_int(fio, ir->adress->do_hybridpairs);
+            int  idum, numThermoForceGroups, numEnergyGroups;
+            real rdum;
+            rvec rvecdum;
+            gmx_fio_do_int(fio, idum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_int(fio, idum);
+            gmx_fio_do_int(fio, idum);
+            gmx_fio_do_rvec(fio, rvecdum);
+            gmx_fio_do_int(fio, numThermoForceGroups);
+            gmx_fio_do_real(fio, rdum);
+            gmx_fio_do_int(fio, numEnergyGroups);
+            gmx_fio_do_int(fio, idum);
 
-            if (bRead)
+            if (numThermoForceGroups > 0)
             {
-                snew(ir->adress->tf_table_index, ir->adress->n_tf_grps);
+                std::vector<int> idumn(numThermoForceGroups);
+                gmx_fio_ndo_int(fio, idumn.data(), idumn.size());
             }
-            if (ir->adress->n_tf_grps > 0)
+            if (numEnergyGroups > 0)
             {
-                gmx_fio_ndo_int(fio, ir->adress->tf_table_index, ir->adress->n_tf_grps);
-            }
-            if (bRead)
-            {
-                snew(ir->adress->group_explicit, ir->adress->n_energy_grps);
-            }
-            if (ir->adress->n_energy_grps > 0)
-            {
-                gmx_fio_ndo_int(fio, ir->adress->group_explicit, ir->adress->n_energy_grps);
+                std::vector<int> idumn(numEnergyGroups);
+                gmx_fio_ndo_int(fio, idumn.data(), idumn.size());
             }
         }
     }

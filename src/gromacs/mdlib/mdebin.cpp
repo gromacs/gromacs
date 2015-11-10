@@ -309,27 +309,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
-    if (ir->bAdress && !debug)
-    {
-        for (i = 0; i < F_NRE; i++)
-        {
-            md->bEner[i] = FALSE;
-            if (i == F_EKIN)
-            {
-                md->bEner[i] = TRUE;
-            }
-            if (i == F_TEMP)
-            {
-                md->bEner[i] = TRUE;
-            }
-        }
-        md->bVir   = FALSE;
-        md->bPress = FALSE;
-        md->bSurft = FALSE;
-        md->bMu    = FALSE;
-    }
-
     md->f_nre = 0;
     for (i = 0; i < F_NRE; i++)
     {
@@ -453,23 +432,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    n = groups->grps[egcENER].nr;
-    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
-    if (!ir->bAdress)
-    {
-        /*standard simulation*/
-        md->nEg = n;
-        md->nE  = (n*(n+1))/2;
-    }
-    else if (!debug)
-    {
-        /*AdResS simulation*/
-        md->nU    = 0;
-        md->nEg   = 0;
-        md->nE    = 0;
-        md->nEc   = 0;
-        md->isvir = FALSE;
-    }
+    n       = groups->grps[egcENER].nr;
+    md->nEg = n;
+    md->nE  = (n*(n+1))/2;
+
     snew(md->igrp, md->nE);
     if (md->nE > 1)
     {

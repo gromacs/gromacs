@@ -183,7 +183,6 @@ static void printCopyright(FILE *fp)
         "Aldert van Buuren",
         "Rudi van Drunen",
         "Anton Feenstra",
-        "Sebastian Fritsch",
         "Gerrit Groenhof",
         "Christoph Junghans",
         "Anca Hamuraru",

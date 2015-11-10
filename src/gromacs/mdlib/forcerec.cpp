@@ -1466,37 +1466,6 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
-static void make_adress_tf_tables(FILE *fp,
-                                  t_forcerec *fr, const t_inputrec *ir,
-                                  const char *tabfn, const gmx_mtop_t *mtop,
-                                  matrix     box)
-{
-    char buf[STRLEN];
-    int  i, j;
-
-    if (tabfn == NULL)
-    {
-        gmx_fatal(FARGS, "No thermoforce table file given. Use -tabletf to specify a file\n");
-        return;
-    }
-
-    snew(fr->atf_tabs, ir->adress->n_tf_grps);
-
-    sprintf(buf, "%s", tabfn);
-    for (i = 0; i < ir->adress->n_tf_grps; i++)
-    {
-        j = ir->adress->tf_table_index[i]; /* get energy group index */
-        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "tf_%s.%s",
-                *(mtop->groups.grpname[mtop->groups.grps[egcENER].nm_ind[j]]), ftp2ext(efXVG));
-        if (fp)
-        {
-            fprintf(fp, "loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[i], buf);
-        }
-        fr->atf_tabs[i] = make_atf_table(fp, fr, buf, box);
-    }
-
-}
-
 gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
 {
     gmx_bool bAllvsAll;
@@ -2312,7 +2281,6 @@ void init_forcerec(FILE              *fp,
                    const t_commrec   *cr,
                    matrix             box,
                    const char        *tabfn,
-                   const char        *tabafn,
                    const char        *tabpfn,
                    const char        *tabbfn,
                    const char        *nbpu_opt,
@@ -2367,37 +2335,9 @@ void init_forcerec(FILE              *fp,
         fr->n_tpi = 0;
     }
 
-    /* Copy AdResS parameters */
     if (ir->bAdress)
     {
-        fr->adress_type           = ir->adress->type;
-        fr->adress_const_wf       = ir->adress->const_wf;
-        fr->adress_ex_width       = ir->adress->ex_width;
-        fr->adress_hy_width       = ir->adress->hy_width;
-        fr->adress_icor           = ir->adress->icor;
-        fr->adress_site           = ir->adress->site;
-        fr->adress_ex_forcecap    = ir->adress->ex_forcecap;
-        fr->adress_do_hybridpairs = ir->adress->do_hybridpairs;
-
-
-        snew(fr->adress_group_explicit, ir->adress->n_energy_grps);
-        for (i = 0; i < ir->adress->n_energy_grps; i++)
-        {
-            fr->adress_group_explicit[i] = ir->adress->group_explicit[i];
-        }
-
-        fr->n_adress_tf_grps = ir->adress->n_tf_grps;
-        snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
-        for (i = 0; i < fr->n_adress_tf_grps; i++)
-        {
-            fr->adress_tf_table_index[i] = ir->adress->tf_table_index[i];
-        }
-        copy_rvec(ir->adress->refs, fr->adress_refs);
-    }
-    else
-    {
-        fr->adress_type           = eAdressOff;
-        fr->adress_do_hybridpairs = FALSE;
+        gmx_fatal(FARGS, "AdResS simulations are no longer supported");
     }
 
     /* Copy the user determined parameters */
@@ -2833,8 +2773,7 @@ void init_forcerec(FILE              *fp,
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       IR_ELEC_FIELD(*ir) ||
-                       (fr->adress_icor != eAdressICOff)
+                       IR_ELEC_FIELD(*ir)
                        );
 
     if (fr->cutoff_scheme == ecutsGROUP &&
@@ -3056,11 +2995,6 @@ void init_forcerec(FILE              *fp,
         }
     }
 
-    if (ir->adress)
-    {
-        fr->nnblists *= 2;
-    }
-
     snew(fr->nblists, fr->nnblists);
 
     /* This code automatically gives table length tabext without cut-off's,
@@ -3075,10 +3009,6 @@ void init_forcerec(FILE              *fp,
         if (bSomeNormalNbListsAreInUse)
         {
             make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
-            if (ir->adress)
-            {
-                make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
-            }
             if (!bMakeSeparate14Table)
             {
                 fr->tab14 = fr->nblists[0].table_elec_vdw;
@@ -3109,13 +3039,6 @@ void init_forcerec(FILE              *fp,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
-                        if (ir->adress)
-                        {
-                            make_nbf_tables(fp, fr, rtab, tabfn,
-                                            *mtop->groups.grpname[nm_ind[egi]],
-                                            *mtop->groups.grpname[nm_ind[egj]],
-                                            &fr->nblists[fr->nnblists/2+m]);
-                        }
                         m++;
                     }
                     else if (fr->nnblists > 1)
@@ -3142,24 +3065,6 @@ void init_forcerec(FILE              *fp,
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
         fr->tab14 = make_tables(fp, fr, tabpfn, rtab,
                                 GMX_MAKETABLES_14ONLY);
-    }
-
-    /* Read AdResS Thermo Force table if needed */
-    if (fr->adress_icor == eAdressICThermoForce)
-    {
-        /* old todo replace */
-
-        if (ir->adress->n_tf_grps > 0)
-        {
-            make_adress_tf_tables(fp, fr, ir, tabfn, mtop, box);
-
-        }
-        else
-        {
-            /* load the default table */
-            snew(fr->atf_tabs, 1);
-            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp, fr, tabafn, box);
-        }
     }
 
     /* Wall stuff */
@@ -3232,12 +3137,6 @@ void init_forcerec(FILE              *fp,
     if (cr->duty & DUTY_PP)
     {
         gmx_nonbonded_setup(fr, bGenericKernelOnly);
-        /*
-           if (ir->bAdress)
-            {
-                gmx_setup_adress_kernels(fp,bGenericKernelOnly);
-            }
-         */
     }
 
     /* Initialize the thread working data for bonded interactions */

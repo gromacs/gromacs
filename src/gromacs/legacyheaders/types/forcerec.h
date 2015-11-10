@@ -443,22 +443,6 @@ typedef struct t_forcerec {
     double t_wait;
     int    timesteps;
 
-    /* parameter needed for AdResS simulation */
-    int             adress_type;
-    gmx_bool        badress_tf_full_box;
-    real            adress_const_wf;
-    real            adress_ex_width;
-    real            adress_hy_width;
-    int             adress_icor;
-    int             adress_site;
-    rvec            adress_refs;
-    int             n_adress_tf_grps;
-    int           * adress_tf_table_index;
-    int            *adress_group_explicit;
-    t_forcetable *  atf_tabs;
-    real            adress_ex_forcecap;
-    gmx_bool        adress_do_hybridpairs;
-
     /* User determined parameters, copied from the inputrec */
     int  userint1;
     int  userint2;
