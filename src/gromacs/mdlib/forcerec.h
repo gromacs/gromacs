@@ -97,10 +97,9 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  mtop        Molecular topology
  * \param[in]  cr          Communication structures
  * \param[in]  box         Simulation box
- * \param[in]  tabfn       Table potential file
- * \param[in]  tabafn      Table potential file for angles
- * \param[in]  tabpfn      Table potential file for proper dihedrals
- * \param[in]  tabbfn      Table potential file for bonds
+ * \param[in]  tabfn       Table potential file for non-bonded interactions
+ * \param[in]  tabpfn      Table potential file for pair interactions
+ * \param[in]  tabbfn      Table potential file for bonded interactions
  * \param[in]  nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
@@ -113,7 +112,6 @@ void init_forcerec(FILE                   *fplog,
                    const t_commrec        *cr,
                    matrix                  box,
                    const char             *tabfn,
-                   const char             *tabafn,
                    const char             *tabpfn,
                    const char             *tabbfn,
                    const char             *nbpu_opt,

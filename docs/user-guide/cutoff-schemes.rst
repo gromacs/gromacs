@@ -61,7 +61,6 @@ implicit solvent                      yes          no
 free energy perturbed non-bondeds     yes          yes
 energy group contributions            yes          only on CPU
 energy group exclusions               yes          no
-AdResS multi-scale                    yes          no
 OpenMP multi-threading                only PME     all
 native GPU support                    no           yes
 Coulomb PME                           yes          yes
