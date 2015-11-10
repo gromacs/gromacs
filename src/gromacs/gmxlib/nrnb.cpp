@@ -84,7 +84,6 @@ static const t_nrnb_data nbdata[eNRNB] = {
 
     { "NB Generic kernel",               1 },
     { "NB Generic charge grp kernel",    1 },
-    { "NB Generic AdResS kernel",        1 },
     { "NB Free energy kernel",           1 },
     { "NB All-vs-all",                   1 },
     { "NB All-vs-all, GB",               1 },

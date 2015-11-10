@@ -81,9 +81,6 @@ typedef struct t_mdebin {
     gmx_bool            bMTTK;
     gmx_bool            bMu; /* true if dipole is calculated */
     gmx_bool            bDiagPres;
-    gmx_bool            bVir;
-    gmx_bool            bPress;
-    gmx_bool            bSurft;
     int                 f_nre;
     int                 epc;
     real                ref_p;
