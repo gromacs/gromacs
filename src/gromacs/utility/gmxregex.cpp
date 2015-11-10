@@ -112,6 +112,58 @@ class Regex::Impl
         regex_t                 regex_;
 };
 #elif HAVE_CXX11_REGEX
+//! Helper function to transform the std error code into a string that gmx::Regex can report
+std::string getRegexErrorString(std::regex_constants::error_type code)
+{
+    using namespace std::regex_constants;
+    std::string errorString;
+    switch (code)
+    {
+        case error_collate:
+            errorString = "The expression contained an invalid collating element name.";
+            break;
+        case error_ctype:
+            errorString = "The expression contained an invalid character class name.";
+            break;
+        case error_escape:
+            errorString = "The expression contained an invalid escaped character, or a trailing escape.";
+            break;
+        case error_backref:
+            errorString = "The expression contained an invalid back reference.";
+            break;
+        case error_brack:
+            errorString = "The expression contained mismatched brackets ([ and ]).";
+            break;
+        case error_paren:
+            errorString = "The expression contained mismatched parentheses (( and )).";
+            break;
+        case error_brace:
+            errorString = "The expression contained mismatched braces ({ and }).";
+            break;
+        case error_badbrace:
+            errorString = "The expression contained an invalid range between braces ({ and }).";
+            break;
+        case error_range:
+            errorString = "The expression contained an invalid character range.";
+            break;
+        case error_space:
+            errorString = "There was insufficient memory to convert the expression into a finite state machine.";
+            break;
+        case error_badrepeat:
+            errorString = "The expression contained a repeat specifier (one of *?+{) that was not preceded by a valid regular expression.";
+            break;
+        case error_complexity:
+            errorString = "The complexity of an attempted match against a regular expression exceeded a pre-set level.";
+            break;
+        case error_stack:
+            errorString = "There was insufficient memory to determine whether the regular expression could match the specified character sequence.";
+            break;
+        default:
+            break;
+    }
+    return errorString;
+}
+
 class Regex::Impl
 {
     public:
@@ -119,21 +171,20 @@ class Regex::Impl
         try : regex_(value, std::regex::nosubs | std::regex::extended)
         {
         }
-        catch (const std::regex_error &)
+        catch (const std::regex_error &ex)
         {
-            // TODO: Better error messages.
-            GMX_THROW(InvalidInputError(formatString(
-                                                "Error in regular expression \"%s\"", value)));
+            GMX_THROW(InvalidInputError(formatString("Error in regular expression \"%s\": %s",
+                                                     value, getRegexErrorString(ex.code()).c_str())));
         }
+
         explicit Impl(const std::string &value)
         try : regex_(value, std::regex::nosubs | std::regex::extended)
         {
         }
-        catch (const std::regex_error &)
+        catch (const std::regex_error &ex)
         {
-            // TODO: Better error messages.
-            GMX_THROW(InvalidInputError(formatString(
-                                                "Error in regular expression \"%s\"", value)));
+            GMX_THROW(InvalidInputError(formatString("Error in regular expression \"%s\": %s",
+                                                     value.c_str(), getRegexErrorString(ex.code()).c_str())));
         }
 
         bool match(const char *value) const
@@ -189,6 +240,12 @@ Regex::Regex(const char *value)
 Regex::Regex(const std::string &value)
     : impl_(new Impl(value))
 {
+}
+
+Regex &Regex::operator=(Regex &&old)
+{
+    impl_ = std::move(old.impl_);
+    return *this;
 }
 
 Regex::~Regex()

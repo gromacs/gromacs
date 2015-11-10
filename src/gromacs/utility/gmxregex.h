@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,15 +76,24 @@ bool regexMatch(const std::string &str, const Regex &regex);
  *
  * This class provides a simple interface for regular expression construction.
  * regexMatch() is used to match the regular expression against a string.
- * POSIX extended regular expression syntax is used.
+ * POSIX extended regular expression syntax is used. Returning sub-expression
+ * matches is not supported at this time.
  *
  * Currently, isSupported() will return true if either
  *
  *  -# POSIX regular expression header <regex.h> is available, or
- *  -# C++11 header \<regex> is available (e.g., new enough MSVC has this).
+ *  -# C++11 header \<regex> is available (e.g. new enough MSVC has this).
  *
  * In other cases, isSupported() returns false and calling other
  * constructors than the default constructor throws an exception.
+ *
+ * \todo It would be nice to use std::regex alone, but regex wasn't
+ * implemented in gcc until verison 4.9. Perhaps bundling PCRE2 is
+ * a better way forward.
+ *
+ * When you add a new kind of regular-expression match, please check and
+ * update the unit tests to cover the kind of functionality your match
+ * needs to work.
  *
  * \see regexMatch()
  *
@@ -123,6 +132,32 @@ class Regex
         explicit Regex(const std::string &value);
         //! Frees memory allocated for the regular expression.
         ~Regex();
+        /*! \brief Move assignment operator
+         *
+         * This is useful for code that needs to catch
+         * construction-time exceptions, e.g.
+         *
+         * \code
+           Regex r;
+           try
+           {
+             r = Regex("whatever");
+           }
+           catch (...)
+           {
+             death_horror("regex 'whatever' did not compile");
+           }
+           try
+           {
+             regexMatch("no match", r);
+           }
+           catch (...)
+           {
+             death_horror("regex failed to match");
+           }
+         * \endcode
+         */
+        Regex &operator=(Regex &&old);
 
     private:
         class Impl;
