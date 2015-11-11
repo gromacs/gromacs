@@ -48,6 +48,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
@@ -63,7 +64,6 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"

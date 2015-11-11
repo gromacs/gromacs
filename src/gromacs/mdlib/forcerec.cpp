@@ -50,11 +50,11 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/ewald.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"

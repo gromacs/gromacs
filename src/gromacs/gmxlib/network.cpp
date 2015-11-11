@@ -45,7 +45,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"

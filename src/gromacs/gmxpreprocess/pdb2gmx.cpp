@@ -45,6 +45,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
@@ -61,7 +62,6 @@
 #include "gromacs/gmxpreprocess/ter_db.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/xlate.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
