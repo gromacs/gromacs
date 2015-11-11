@@ -48,12 +48,12 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/utilities.h"

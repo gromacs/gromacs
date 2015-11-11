@@ -57,7 +57,7 @@ struct t_atoms;
 struct t_block;
 struct t_topology;
 
-typedef struct
+struct t_tpxheader
 {
     int   bIr;       /* Non zero if input_rec is present		*/
     int   bBox;      /* Non zero if a box is present			*/
@@ -77,7 +77,7 @@ typedef struct
        vary through a simulation, and cannot be completely described
        though a single lambda variable, or even a single state
        index. Eventually, should probably be a vector. MRS*/
-} t_tpxheader;
+};
 
 /*
  * These routines handle reading and writing of preprocessed
