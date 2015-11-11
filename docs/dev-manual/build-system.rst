@@ -190,6 +190,16 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_BUILD_SHARED_EXE
 
+.. cmake:: GMX_COMPILER_WARNINGS
+
+   If set ``ON``, various compiler warnings are enabled for compilers that
+   Jenkins uses for verification.
+   Defaults to ``OFF`` when building from a source tarball so that users
+   compiling with versions not tested on Jenkins are not exposed to our rather
+   aggressive warning flags that can trigger a lot of warnings with, e.g., new
+   versions of the compilers we use.
+   When building from a git repository, defaults to ``ON``.
+
 .. cmake:: GMX_CYCLE_SUBCOUNTERS
 
 .. cmake:: GMX_DATA_INSTALL_DIR
@@ -285,6 +295,7 @@ Variables affecting the ``all`` target
 
    If set ``ON``, the ``all`` target will include also the test binaries using
    Google Test (if :cmake:`GMX_BUILD_UNITTESTS` is ``ON``).
+   Also, :cmake:`GMX_COMPILER_WARNINGS` is always enabled.
    In the future, other developer convenience features (as well as features
    inconvenient for a general user) can be added to the set controlled by this
    variable.
