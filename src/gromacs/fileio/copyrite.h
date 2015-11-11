@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _copyrite_h
-#define _copyrite_h
+#ifndef GMX_FILEIO_COPYRITE_H
+#define GMX_FILEIO_COPYRITE_H
 
 #include <cstdio>
 
@@ -62,7 +62,7 @@ namespace gmx
 
 class IProgramContext;
 
-/*! \brief
+/*! \libinternal\brief
  * Settings for printBinaryInformation().
  *
  * This class is used to specify what printBinaryInformation() prints.

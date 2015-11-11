@@ -40,12 +40,12 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/linearalgebra/eigensolver.h"
