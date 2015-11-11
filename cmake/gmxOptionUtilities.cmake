@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -187,6 +187,28 @@ endmacro()
 macro(GMX_DEPENDENT_OPTION NAME DESCRIPTION DEFAULT CONDITIONS)
     gmx_dependent_cache_variable(${NAME} "${DESCRIPTION}" BOOL "${DEFAULT}" "${CONDITIONS}")
 endmacro()
+
+# Sets a boolean variable based on conditions
+#
+# Usage:
+#   gmx_set_boolean(VAR CONDITIONS)
+#
+# Sets VAR to ON if all conditions listed in CONDITIONS are true, otherwise
+# VAR is set OFF.
+#
+# See gmx_add_cache_dependency() on how to specify the conditions.
+#
+function (GMX_SET_BOOLEAN NAME CONDITIONS)
+    set(${NAME} ON)
+    foreach(_cond ${CONDITIONS})
+        string(REGEX REPLACE " +" ";" _cond_as_list ${_cond})
+        if (${_cond_as_list})
+        else()
+            set(${NAME} OFF)
+        endif()
+    endforeach()
+    set(${NAME} ${${NAME}} PARENT_SCOPE)
+endfunction()
 
 # Checks if one or more cache variables have changed
 #

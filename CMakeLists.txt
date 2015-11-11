@@ -139,12 +139,8 @@ include(gmxOptionUtilities)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-if(GMX_TARGET_FUJITSU_SPARC64)
-    # Fujitsu only has SIMD in double precision, so this will be faster
-    set(GMX_DOUBLE_DEFAULT ON)
-else()
-    set(GMX_DOUBLE_DEFAULT OFF)
-endif()
+# Fujitsu only has SIMD in double precision, so this will be faster
+gmx_set_boolean(GMX_DOUBLE_DEFAULT GMX_TARGET_FUJITSU_SPARC64)
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
 option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
 mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
@@ -263,6 +259,14 @@ option(GMX_DEVELOPER_BUILD
     "Enable Developer convenience features: always build unit-tests"
     OFF)
 mark_as_advanced(GMX_DEVELOPER_BUILD)
+
+gmx_set_boolean(GMX_COMPILER_WARNINGS_DEFAULT "NOT SOURCE_IS_SOURCE_DISTRIBUTION")
+option(GMX_COMPILER_WARNINGS
+    "Enable a default set of compiler warnings"
+    ${GMX_COMPILER_WARNINGS_DEFAULT})
+mark_as_advanced(GMX_COMPILER_WARNINGS)
+# Always turn on compiler warnings with a developer build.
+gmx_add_cache_dependency(GMX_COMPILER_WARNINGS BOOL "NOT GMX_DEVELOPER_BUILD" ON)
 
 option(GMX_BUILD_SHARED_EXE
     "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
@@ -391,10 +395,7 @@ endif()
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
-set(GMX_USE_NICE 0)
-if (HAVE_UNISTD_H AND HAVE_NICE)
-    set(GMX_USE_NICE 1)
-endif()
+gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
 
 # Management of GROMACS options for specific toolchains should go
 # here. Because the initial settings for some of the main options have
