@@ -37,7 +37,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/genborn.h"
+#include "genborn.h"
 
 #include <string.h>
 

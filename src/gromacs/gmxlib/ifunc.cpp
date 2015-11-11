@@ -39,8 +39,8 @@
 
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdlib/genborn.h"
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
     {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}
