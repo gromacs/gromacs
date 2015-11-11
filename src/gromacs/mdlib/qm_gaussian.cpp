@@ -46,7 +46,6 @@
 #include <string.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -55,6 +54,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

@@ -50,6 +50,8 @@
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -89,7 +91,7 @@ static void do_box_rel(t_inputrec *ir, matrix box_rel, matrix b, gmx_bool bInit)
 
 void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b)
 {
-    if (PRESERVE_SHAPE(*ir))
+    if (inputrecPreserveShape(ir))
     {
         do_box_rel(ir, box_rel, b, FALSE);
     }
@@ -102,7 +104,7 @@ void set_box_rel(t_inputrec *ir, t_state *state)
 
     clear_mat(state->box_rel);
 
-    if (PRESERVE_SHAPE(*ir))
+    if (inputrecPreserveShape(ir))
     {
         do_box_rel(ir, state->box_rel, state->box, TRUE);
     }

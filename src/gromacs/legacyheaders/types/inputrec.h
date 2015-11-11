@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/swap/enums.h"
 #include "gromacs/topology/atom_id.h"
@@ -50,6 +49,12 @@
 extern "C" {
 #endif
 
+/* FEP coupling types */
+enum {
+    efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
+};
+extern const char *efpt_names[efptNR+1];
+extern const char *efpt_singular_names[efptNR+1];
 
 typedef struct {
     int   n;    /* Number of terms				*/
@@ -453,25 +458,23 @@ typedef struct t_inputrec {
     t_adress       *adress;        /* The data for adress simulations */
 } t_inputrec;
 
-#define DEFORM(ir) ((ir).deform[XX][XX] != 0 || (ir).deform[YY][YY] != 0 || (ir).deform[ZZ][ZZ] != 0 || (ir).deform[YY][XX] != 0 || (ir).deform[ZZ][XX] != 0 || (ir).deform[ZZ][YY] != 0)
+//#define DEFORM(ir) inputrecDeform(&(ir))
 
-#define DYNAMIC_BOX(ir) ((ir).epc != epcNO || (ir).eI == eiTPI || DEFORM(ir))
+//DYNAMIC_BOX(ir) inputrecDynamicBox(&(ir))
 
-#define PRESERVE_SHAPE(ir) ((ir).epc != epcNO && (ir).deform[XX][XX] == 0 && ((ir).epct == epctISOTROPIC || (ir).epct == epctSEMIISOTROPIC))
+//PRESERVE_SHAPE(ir) inputrecPreserveShape(&(ir))
 
-#define NEED_MUTOT(ir) (((ir).coulombtype == eelEWALD || EEL_PME((ir).coulombtype)) && ((ir).ewald_geometry == eewg3DC || (ir).epsilon_surface != 0))
+//#define NEED_MUTOT(ir) inputrecNeedMutot(&(ir))
 
-#define IR_TWINRANGE(ir) ((ir).rlist > 0 && ((ir).rlistlong == 0 || (ir).rlistlong > (ir).rlist))
+//IR_TWINRANGE(ir) inputrecTwinRange(&(ir))
 
-#define IR_ELEC_FIELD(ir) ((ir).ex[XX].n > 0 || (ir).ex[YY].n > 0 || (ir).ex[ZZ].n > 0)
+//IR_ELEC_FIELD(ir) inputrecElecFIELD(&(ir))
 
-#define IR_EXCL_FORCES(ir) (EEL_FULL((ir).coulombtype) || (EEL_RF((ir).coulombtype) && (ir).coulombtype != eelRF_NEC) || (ir).implicit_solvent != eisNO)
-/* use pointer definitions of ir here, since that's what's usually used in the code */
-#define IR_NPT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && (((ir)->epc == epcMTTK) && ((ir)->etc == etcNOSEHOOVER)))
+//#define IR_EXCL_FORCES(ir) inputrecExclFORCES(&(ir))
 
-#define IR_NVT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((!((ir)->epc == epcMTTK)) && ((ir)->etc == etcNOSEHOOVER)))
+//#define //#define IR_NVT_TROTTER(ir) inputrecNvtTrotter(ir)
 
-#define IR_NPH_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && (((ir)->epc == epcMTTK) && (!(((ir)->etc == etcNOSEHOOVER)))))
+//#define IR_NPH_TROTTER(ir) inputrecyNphTrotter(ir)
 
 #ifdef __cplusplus
 }

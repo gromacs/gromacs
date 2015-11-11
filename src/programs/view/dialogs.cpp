@@ -48,7 +48,7 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
