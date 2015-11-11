@@ -2721,7 +2721,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             dhdlambda += lincsd->task[th].dhdlambda;
         }
-        if (econqCoord)
+        if (econq == econqCoord)
         {
             /* dhdlambda contains dH/dlambda*dt^2, correct for this */
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
