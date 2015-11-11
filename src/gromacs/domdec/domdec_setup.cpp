@@ -51,10 +51,11 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -625,7 +626,7 @@ static real optimize_ncells(FILE *fplog,
     {
         /* For Ewald exclusions pbc_dx is not called */
         bExcl_pbcdx =
-            (IR_EXCL_FORCES(*ir) && !EEL_FULL(ir->coulombtype));
+            (inputrecExclForces(ir) && !EEL_FULL(ir->coulombtype));
         pbcdxr = (double)n_bonded_dx(mtop, bExcl_pbcdx)/(double)mtop->natoms;
     }
     else

@@ -42,6 +42,7 @@
 
 #include <algorithm>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -320,4 +321,61 @@ void done_inputrec(t_inputrec *ir)
         done_pull_params(ir->pull);
         sfree(ir->pull);
     }
+}
+
+gmx_bool inputrecDeform(const t_inputrec *ir)
+{
+    return (ir->deform[XX][XX] != 0 || ir->deform[YY][YY] != 0 || ir->deform[ZZ][ZZ] != 0 ||
+            ir->deform[YY][XX] != 0 || ir->deform[ZZ][XX] != 0 || ir->deform[ZZ][YY] != 0);
+}
+
+gmx_bool inputrecDynamicBox(const t_inputrec *ir)
+{
+    return (ir->epc != epcNO || ir->eI == eiTPI || inputrecDeform(ir));
+}
+
+gmx_bool inputrecPreserveShape(const t_inputrec *ir)
+{
+    return  (ir->epc != epcNO && ir->deform[XX][XX] == 0 &&
+             (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
+}
+
+gmx_bool inputrecNeedMutot(const t_inputrec *ir)
+{
+    return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype)) &&
+            (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
+}
+
+gmx_bool inputrecTwinRange(const t_inputrec *ir)
+{
+    return (ir->rlist > 0 && (ir->rlistlong == 0 || ir->rlistlong > ir->rlist));
+}
+
+gmx_bool inputrecElecField(const t_inputrec *ir)
+{
+    return (ir->ex[XX].n > 0 || ir->ex[YY].n > 0 || ir->ex[ZZ].n > 0);
+}
+
+gmx_bool inputrecExclForces(const t_inputrec *ir)
+{
+    return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype)) ||
+            ir->implicit_solvent != eisNO);
+}
+
+gmx_bool inputrecNptTrotter(const t_inputrec *ir)
+{
+    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+             (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+}
+
+gmx_bool inputrecNvtTrotter(const t_inputrec *ir)
+{
+    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+             (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+}
+
+gmx_bool inputrecNphTrotter(const t_inputrec *ir)
+{
+    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+             (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }

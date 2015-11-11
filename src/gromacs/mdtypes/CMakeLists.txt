@@ -39,5 +39,6 @@ gmx_install_headers(
     energy.h
     inputrec.h
     mdatom.h
+    md_enums.h
     state.h
 )
