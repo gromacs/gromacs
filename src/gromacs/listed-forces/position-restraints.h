@@ -65,6 +65,18 @@ struct t_lambda;
 struct t_nrnb;
 struct t_pbc;
 
+/* flat-bottom posres geometries */
+enum {
+    efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
+    efbposresCYLINDERX, efbposresCYLINDERY, efbposresCYLINDERZ, efbposresNR
+};
+
+enum {
+    erscNO, erscALL, erscCOM, erscNR
+};
+extern const char *erefscaling_names[erscNR+1];
+#define EREFSCALINGTYPE(e) enum_name(e, erscNR, erefscaling_names)
+
 /*! \brief Helper function that wraps calls to posres */
 void
 posres_wrapper(t_nrnb             *nrnb,

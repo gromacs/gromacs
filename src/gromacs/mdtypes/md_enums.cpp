@@ -36,37 +36,22 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/names.h"
+#include "md_enums.h"
 
-
-/* note: these arrays should correspond to enums in include/types/enums.h */
+/* note: these arrays should correspond to enums in md_enums.h */
 
 const char *ens_names[ensNR+1] =
 {
-    "Grid", "Simple", NULL
+    "Grid", "Simple", nullptr
 };
 
 const char *ei_names[eiNR+1] =
 {
-    "md", "steep", "cg", "bd", "sd2", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", NULL
-};
-
-const char *bool_names[BOOL_NR+1] =
-{
-    "FALSE", "TRUE", NULL
-};
-
-const char *yesno_names[BOOL_NR+1] =
-{
-    "no", "yes", NULL
-};
-
-const char *ptype_str[eptNR+1] = {
-    "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
+    "md", "steep", "cg", "bd", "sd2", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", nullptr
 };
 
 const char *ecutscheme_names[ecutsNR+1] = {
-    "Verlet", "Group", NULL
+    "Verlet", "Group", nullptr
 };
 
 const char *eel_names[eelNR+1] = {
@@ -74,211 +59,189 @@ const char *eel_names[eelNR+1] = {
     "PME", "Ewald", "P3M-AD", "Poisson", "Switch", "Shift", "User",
     "Generalized-Born", "Reaction-Field-nec", "Encad-shift",
     "PME-User", "PME-Switch", "PME-User-Switch",
-    "Reaction-Field-zero", NULL
+    "Reaction-Field-zero", nullptr
 };
 
 const char *eewg_names[eewgNR+1] = {
-    "3d", "3dc", NULL
+    "3d", "3dc", nullptr
 };
 
 const char *eljpme_names[eljpmeNR+1] = {
-    "Geometric", "Lorentz-Berthelot", NULL
+    "Geometric", "Lorentz-Berthelot", nullptr
 };
 
 const char *evdw_names[evdwNR+1] = {
     "Cut-off", "Switch", "Shift", "User", "Encad-shift",
-    "PME", NULL
+    "PME", nullptr
 };
 
 const char *econstr_names[econtNR+1] = {
-    "Lincs", "Shake", NULL
+    "Lincs", "Shake", nullptr
 };
 
 const char *eintmod_names[eintmodNR+1] = {
-    "Potential-shift-Verlet", "Potential-shift", "None", "Potential-switch", "Exact-cutoff", "Force-switch", NULL
-};
-
-const char *egrp_nm[egNR+1] = {
-    "Coul-SR", "LJ-SR", "Buck-SR", "Coul-LR", "LJ-LR", "Buck-LR",
-    "Coul-14", "LJ-14", NULL
+    "Potential-shift-Verlet", "Potential-shift", "None", "Potential-switch", "Exact-cutoff", "Force-switch", nullptr
 };
 
 const char *etcoupl_names[etcNR+1] = {
-    "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-massive", "V-rescale", NULL
+    "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-massive", "V-rescale", nullptr
 }; /* yes is alias for berendsen */
 
 const char *epcoupl_names[epcNR+1] = {
-    "No", "Berendsen", "Parrinello-Rahman", "Isotropic", "MTTK", NULL
+    "No", "Berendsen", "Parrinello-Rahman", "Isotropic", "MTTK", nullptr
 }; /* isotropic is alias for berendsen */
 
 const char *epcoupltype_names[epctNR+1] = {
-    "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL
-};
-
-const char *erefscaling_names[erscNR+1] = {
-    "No", "All", "COM", NULL
+    "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", nullptr
 };
 
 const char *edisre_names[edrNR+1] = {
-    "No", "Simple", "Ensemble", NULL
+    "No", "Simple", "Ensemble", nullptr
 };
 
 const char *edisreweighting_names[edrwNR+1] = {
-    "Conservative", "Equal", NULL
+    "Conservative", "Equal", nullptr
 };
 
 const char *enbf_names[eNBF_NR+1] = {
-    "", "LJ", "Buckingham", NULL
+    "", "LJ", "Buckingham", nullptr
 };
 
 const char *ecomb_names[eCOMB_NR+1] = {
-    "", "Geometric", "Arithmetic", "GeomSigEps", NULL
-};
-
-const char *gtypes[egcNR+1] = {
-    "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-    "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", NULL
+    "", "Geometric", "Arithmetic", "GeomSigEps", nullptr
 };
 
 const char *esimtemp_names[esimtempNR+1] = {
-    "geometric", "exponential", "linear", NULL
+    "geometric", "exponential", "linear", nullptr
 };
 
 const char *efep_names[efepNR+1] = {
-    "no", "yes", "static", "slow-growth", "expanded", NULL
-};
-
-const char *efpt_names[efptNR+1] = {
-    "fep-lambdas", "mass-lambdas", "coul-lambdas", "vdw-lambdas", "bonded-lambdas", "restraint-lambdas", "temperature-lambdas", NULL
-};
-
-const char *efpt_singular_names[efptNR+1] = {
-    "fep-lambda", "mass-lambda", "coul-lambda", "vdw-lambda", "bonded-lambda", "restraint-lambda", "temperature-lambda", NULL
+    "no", "yes", "static", "slow-growth", "expanded", nullptr
 };
 
 const char *edHdLPrintEnergy_names[edHdLPrintEnergyNR+1] = {
-    "no", "total", "potential", "yes", NULL
+    "no", "total", "potential", "yes", nullptr
 };
 
 const char *elamstats_names[elamstatsNR+1] = {
-    "no", "metropolis-transition", "barker-transition", "minvar", "wang-landau", "weighted-wang-landau", NULL
+    "no", "metropolis-transition", "barker-transition", "minvar", "wang-landau", "weighted-wang-landau", nullptr
 };
 
 const char *elmcmove_names[elmcmoveNR+1] = {
-    "no", "metropolis", "barker", "gibbs", "metropolized-gibbs", NULL
+    "no", "metropolis", "barker", "gibbs", "metropolized-gibbs", nullptr
 };
 
 const char *elmceq_names[elmceqNR+1] = {
-    "no", "yes", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL
+    "no", "yes", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", nullptr
 };
 
 const char *separate_dhdl_file_names[esepdhdlfileNR+1] = {
-    "yes", "no", NULL
+    "yes", "no", nullptr
 };
 
 const char *dhdl_derivatives_names[edhdlderivativesNR+1] = {
-    "yes", "no", NULL
+    "yes", "no", nullptr
 };
 
 const char *esol_names[esolNR+1] = {
-    "No", "SPC", "TIP4p", NULL
+    "No", "SPC", "TIP4p", nullptr
 };
 
 const char *edispc_names[edispcNR+1] = {
-    "No", "EnerPres", "Ener", "AllEnerPres", "AllEner", NULL
+    "No", "EnerPres", "Ener", "AllEnerPres", "AllEner", nullptr
 };
 
 const char *ecm_names[ecmNR+1] = {
-    "Linear", "Angular", "None", NULL
+    "Linear", "Angular", "None", nullptr
 };
 
 const char *eann_names[eannNR+1] = {
-    "No", "Single", "Periodic", NULL
+    "No", "Single", "Periodic", nullptr
 };
 
 const char *eis_names[eisNR+1] = {
-    "No", "GBSA", NULL
+    "No", "GBSA", nullptr
 };
 
 const char *egb_names[egbNR+1] = {
-    "Still", "HCT", "OBC", NULL
+    "Still", "HCT", "OBC", nullptr
 };
 
 const char *esa_names[esaNR+1] = {
-    "Ace-approximation", "None", "Still", NULL
+    "Ace-approximation", "None", "Still", nullptr
 };
 
 const char *ewt_names[ewtNR+1] = {
-    "9-3", "10-4", "table", "12-6", NULL
+    "9-3", "10-4", "table", "12-6", nullptr
 };
 
 const char *epull_names[epullNR+1] = {
-    "umbrella", "constraint", "constant-force", "flat-bottom", NULL
+    "umbrella", "constraint", "constant-force", "flat-bottom", nullptr
 };
 
 const char *epullg_names[epullgNR+1] = {
-    "distance", "direction", "cylinder", "direction-periodic", "direction-relative", NULL
+    "distance", "direction", "cylinder", "direction-periodic", "direction-relative", nullptr
 };
 
 const char *erotg_names[erotgNR+1] = {
-    "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex-t", "flex2", "flex2-t", NULL
+    "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex-t", "flex2", "flex2-t", nullptr
 };
 
 const char *erotg_fitnames[erotgFitNR+1] = {
-    "rmsd", "norm", "potential", NULL
+    "rmsd", "norm", "potential", nullptr
 };
 
 const char *eSwapTypes_names[eSwapTypesNR+1] = {
-    "no", "X", "Y", "Z", NULL
+    "no", "X", "Y", "Z", nullptr
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {
     "AM1", "PM3", "RHF",
     "UHF", "DFT", "B3LYP", "MP2", "CASSCF", "B3LYPLAN",
-    "DIRECT", NULL
+    "DIRECT", nullptr
 };
 
 const char *eQMbasis_names[eQMbasisNR+1] = {
     "STO3G", "STO-3G", "3-21G",
     "3-21G*", "3-21+G*", "6-21G",
     "6-31G", "6-31G*", "6-31+G*",
-    "6-311G", NULL
+    "6-311G", nullptr
 };
 
 const char *eQMMMscheme_names[eQMMMschemeNR+1] = {
-    "normal", "ONIOM", NULL
+    "normal", "ONIOM", nullptr
 };
 
 const char *eMultentOpt_names[eMultentOptNR+1] = {
-    "multiple_entries", "no", "use_last", NULL
+    "multiple_entries", "no", "use_last", nullptr
 };
 
 const char *eAdresstype_names[eAdressNR+1] = {
-    "off", "constant", "xsplit", "sphere", NULL
+    "off", "constant", "xsplit", "sphere", nullptr
 };
 
 const char *eAdressICtype_names[eAdressICNR+1] = {
-    "off", "thermoforce", NULL
+    "off", "thermoforce", nullptr
 };
 
 const char *eAdressSITEtype_names[eAdressSITENR+1] = {
-    "com", "cog", "atom", "atomperatom", NULL
+    "com", "cog", "atom", "atomperatom", nullptr
 };
 
 const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1] = {
-    "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle", "Water4-Water4", "CG-CG", NULL
+    "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle", "Water4-Water4", "CG-CG", nullptr
 };
 
 const char *gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR+1] = {
-    "Standard", "Free_Energy", "Adress", NULL
+    "Standard", "Free_Energy", "Adress", nullptr
 };
 
 const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1] =
 {
-    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", NULL
+    "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", nullptr
 };
 
 const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1] =
 {
-    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", "LJEwald", NULL
+    "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", "LJEwald", nullptr
 };

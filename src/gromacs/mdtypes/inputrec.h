@@ -91,4 +91,24 @@ void init_inputrec(t_inputrec *ir);
  */
 void done_inputrec(t_inputrec *ir);
 
+gmx_bool inputrecDeform(const t_inputrec *ir);
+
+gmx_bool inputrecDynamicBox(const t_inputrec *ir);
+
+gmx_bool inputrecPreserveShape(const t_inputrec *ir);
+
+gmx_bool inputrecNeedMutot(const t_inputrec *ir);
+
+gmx_bool inputrecTwinRange(const t_inputrec *ir);
+
+gmx_bool inputrecElecField(const t_inputrec *ir);
+
+gmx_bool inputrecExclForces(const t_inputrec *ir);
+
+gmx_bool inputrecNptTrotter(const t_inputrec *ir);
+
+gmx_bool inputrecNvtTrotter(const t_inputrec *ir);
+
+gmx_bool inputrecNphTrotter(const t_inputrec *ir);
+
 #endif
