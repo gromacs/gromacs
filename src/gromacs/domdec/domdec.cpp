@@ -100,6 +100,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/real.h"
@@ -174,28 +175,28 @@ static void ddindex2xyz(ivec nc, int ind, ivec xyz)
     xyz[ZZ] = ind % nc[ZZ];
 }
 
-static int ddcoord2ddnodeid(gmx_domdec_t *dd, ivec c)
+int ddCoord2ddRank(const gmx_domdec_t *dd, ivec coord)
 {
-    int ddindex;
-    int ddnodeid = -1;
+    int ddIndex;
+    int ddRank = -1;
 
-    ddindex = dd_index(dd->nc, c);
+    ddIndex = dd_index(dd->nc, coord);
     if (dd->comm->bCartesianPP_PME)
     {
-        ddnodeid = dd->comm->ddindex2ddnodeid[ddindex];
+        ddRank = dd->comm->ddindex2ddnodeid[ddIndex];
     }
     else if (dd->comm->bCartesianPP)
     {
 #if GMX_MPI
-        MPI_Cart_rank(dd->mpi_comm_all, c, &ddnodeid);
+        MPI_Cart_rank(dd->mpi_comm_all, coord, &ddRank);
 #endif
     }
     else
     {
-        ddnodeid = ddindex;
+        ddRank = ddIndex;
     }
 
-    return ddnodeid;
+    return ddRank;
 }
 
 static gmx_bool dynamic_dd_box(const gmx_ddbox_t *ddbox, const t_inputrec *ir)
@@ -2199,46 +2200,6 @@ static void make_dd_indices(gmx_domdec_t *dd,
     }
 }
 
-/* Construct the local to global and global to local atom indices,
- * starting at index at_start up to, but not including, DD-zone nzone.
- */
-static void make_global_atom_index(gmx_domdec_t *dd, int at_start, int nzone)
-{
-    int          zone, at0, at1, at, at_gl;
-    int         *zone2at, *index_gl, *gatindex;
-
-    if (dd->nat_tot > dd->gatindex_nalloc)
-    {
-        dd->gatindex_nalloc = over_alloc_dd(dd->nat_tot);
-        srenew(dd->gatindex, dd->gatindex_nalloc);
-    }
-
-    zone2at  = dd->comm->zones.at_range;
-    index_gl = dd->index_gl;
-    gatindex = dd->gatindex;
-
-    /* Make the local to global and global to local atom index */
-    for (zone = 0; zone < nzone; zone++)
-    {
-        if (zone == 0)
-        {
-            at0 = at_start;
-        }
-        else
-        {
-            at0 = zone2at[zone];
-        }
-        at1     = zone2at[zone+1];
-
-        for (at = at0; at < at1; at++)
-        {
-            at_gl        = index_gl[at];
-            gatindex[at] = at_gl;
-            ga2la_set(dd->ga2la, at_gl, at, zone);
-        }
-    }
-}
-
 static int check_bLocalCG(gmx_domdec_t *dd, int ncg_sys, const char *bLocalCG,
                           const char *where)
 {
@@ -3463,6 +3424,7 @@ static void realloc_comm_ind(gmx_domdec_t *dd, ivec npulse)
             }
             cd->np_nalloc = np;
         }
+
         cd->np = np;
     }
 }
@@ -5489,23 +5451,18 @@ static void make_load_communicators(gmx_domdec_t gmx_unused *dd)
 #endif
 }
 
-/*! \brief Sets up the relation between neighboring domains and zones */
 static void setup_neighbor_relations(gmx_domdec_t *dd)
 {
-    int                     d, dim, i, j, m;
-    ivec                    tmp, s;
-    gmx_domdec_zones_t     *zones;
-    gmx_domdec_ns_ranges_t *izone;
-
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        dim = dd->dim[d];
+        int  dim = dd->dim[d];
+        ivec tmp;
         copy_ivec(dd->ci, tmp);
         tmp[dim]           = (tmp[dim] + 1) % dd->nc[dim];
-        dd->neighbor[d][0] = ddcoord2ddnodeid(dd, tmp);
+        dd->neighbor[d][0] = ddCoord2ddRank(dd, tmp);
         copy_ivec(dd->ci, tmp);
         tmp[dim]           = (tmp[dim] - 1 + dd->nc[dim]) % dd->nc[dim];
-        dd->neighbor[d][1] = ddcoord2ddnodeid(dd, tmp);
+        dd->neighbor[d][1] = ddCoord2ddRank(dd, tmp);
         if (debug)
         {
             fprintf(debug, "DD rank %d neighbor ranks in dir %d are + %d - %d\n",
@@ -5519,62 +5476,26 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
     int nizone = (1 << std::max(dd->ndim - 1, 0));
     assert(nizone >= 1 && nizone <= DD_MAXIZONE);
 
-    zones = &dd->comm->zones;
+    gmx_domdec_comm_t  *comm  = dd->comm;
+    gmx_domdec_zones_t *zones = &comm->zones;
 
-    for (i = 0; i < nzone; i++)
+    for (int z = 0; z < nzone; z++)
     {
-        m = 0;
-        clear_ivec(zones->shift[i]);
-        for (d = 0; d < dd->ndim; d++)
+        int m = 0;
+        clear_ivec(zones->shift[z]);
+        for (int d = 0; d < dd->ndim; d++)
         {
-            zones->shift[i][dd->dim[d]] = ddZoneOrder[i][m++];
+            zones->shift[z][dd->dim[d]] = ddZoneOrder[z][m++];
         }
-    }
-
-    /* Set up the static part of the halo communication information:
-     * how the zones are linked (neighbors) and PBC information.
-     */
-    for (i = 1; i < nzone; i++)
-    {
-        domain_comm_t *domain_bw = &dd->comm->domain_backward[i];
-        domain_comm_t *domain_fw = &dd->comm->domain_forward[i];
-        ivec           shift     = { 0, 0, 0 };
-
-        for (d = 0; d < DIM; d++)
-        {
-            tmp[d] = (dd->ci[d] - zones->shift[i][d] + dd->nc[d]) % dd->nc[d];
-        }
-        domain_bw->rank = ddcoord2ddnodeid(dd, tmp);
-
-        for (d = 0; d < DIM; d++)
-        {
-            tmp[d] = (dd->ci[d] + zones->shift[i][d]) % dd->nc[d];
-        }
-        domain_fw->rank = ddcoord2ddnodeid(dd, tmp);
-
-        /* We store the PBC information in the backward comm struct */
-        domain_bw->bPBC = FALSE;
-        for (d = 0; d < DIM; d++)
-        {
-            if (zones->shift[i][d] != 0 && dd->ci[d] == 0)
-            {
-                domain_bw->bPBC = TRUE;
-
-                shift[d]        = 1;
-            }
-        }
-        domain_bw->shift_ind    = IVEC2IS(shift);
-
-        domain_bw->bScrew       = (dd->bScrewPBC &&
-                                   zones->shift[i][XX] != 0 && dd->ci[XX] == 0);
     }
 
     zones->n = nzone;
-    for (i = 0; i < nzone; i++)
+    ivec s;
+    for (int z = 0; z < nzone; z++)
     {
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
-            s[d] = dd->ci[d] - zones->shift[i][d];
+            s[d] = dd->ci[d] - zones->shift[z][d];
             if (s[d] < 0)
             {
                 s[d] += dd->nc[d];
@@ -5586,18 +5507,18 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
         }
     }
     zones->nizone = nizone;
-    for (i = 0; i < zones->nizone; i++)
+    for (int z = 0; z < zones->nizone; z++)
     {
-        assert(ddNonbondedZonePairRanges[i][0] == i);
+        assert(ddNonbondedZonePairRanges[z][0] == z);
 
-        izone     = &zones->izone[i];
-        /* dd_zp3 is for 3D decomposition, for fewer dimensions use only
-         * j-zones up to nzone.
+        gmx_domdec_ns_ranges_t *izone = &zones->izone[z];
+        /* ddNonbondedZonePairRanges is for 3D decomposition,
+         * for fewer dimensions use only j-zones up to nzone.
          */
-        izone->j0 = std::min(ddNonbondedZonePairRanges[i][1], nzone);
-        izone->j1 = std::min(ddNonbondedZonePairRanges[i][2], nzone);
+        izone->j0 = std::min(ddNonbondedZonePairRanges[z][1], nzone);
+        izone->j1 = std::min(ddNonbondedZonePairRanges[z][2], nzone);
 
-        for (dim = 0; dim < DIM; dim++)
+        for (int dim = 0; dim < DIM; dim++)
         {
             if (dd->nc[dim] == 1)
             {
@@ -5610,9 +5531,9 @@ static void setup_neighbor_relations(gmx_domdec_t *dd)
                 /* Determine the min/max j-zone shift wrt the i-zone */
                 izone->shift0[dim] = 1;
                 izone->shift1[dim] = -1;
-                for (j = izone->j0; j < izone->j1; j++)
+                for (int j = izone->j0; j < izone->j1; j++)
                 {
-                    int shift_diff = zones->shift[j][dim] - zones->shift[i][dim];
+                    int shift_diff = zones->shift[j][dim] - zones->shift[z][dim];
                     if (shift_diff < izone->shift0[dim])
                     {
                         izone->shift0[dim] = shift_diff;
@@ -6397,22 +6318,12 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     comm->cellsize_limit = 0;
     comm->bBondComm      = FALSE;
 
-    if (ir->cutoff_scheme == ecutsVERLET)
-    {
-        /* The halo communication is with only one cell, so cells can't be
-         * smaller than the cut-off length.
-         */
-        comm->cellsize_limit = ir->rlist;
-    }
-    else
-    {
-        /* Atoms should be able to move by up to half the list buffer size (if > 0)
-         * within nstlist steps. Since boundaries are allowed to displace by half
-         * a cell size, DD cells should be at least the size of the list buffer.
-         */
-        comm->cellsize_limit = std::max(comm->cellsize_limit,
-                                        ir->rlist - std::max(ir->rvdw, ir->rcoulomb));
-    }
+    /* Atoms should be able to move by up to half the list buffer size (if > 0)
+     * within nstlist steps. Since boundaries are allowed to displace by half
+     * a cell size, DD cells should be at least the size of the list buffer.
+     */
+    comm->cellsize_limit = std::max(comm->cellsize_limit,
+                                    ir->rlist - std::max(ir->rvdw, ir->rcoulomb));
 
     if (comm->bInterCGBondeds)
     {
@@ -6936,12 +6847,12 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
 
     if (bDynLoadBal)
     {
-        fprintf(fplog, "The maximum number of communication pulses is:");
+        fprintf(fplog, "The maximum communication range is:");
         for (d = 0; d < dd->ndim; d++)
         {
             fprintf(fplog, " %c %d", dim2char(dd->dim[d]), comm->cd[d].np_dlb);
         }
-        fprintf(fplog, "\n");
+        fprintf(fplog, " domains\n");
         fprintf(fplog, "The minimum size for domain decomposition cells is %.3f nm\n", comm->cellsize_limit);
         fprintf(fplog, "The requested allowed shrink of DD cells (option -dds) is: %.2f\n", dlb_scale);
         fprintf(fplog, "The allowed shrink of domain decomposition cells is:");
@@ -6967,12 +6878,12 @@ static void print_dd_settings(FILE *fplog, gmx_domdec_t *dd,
     else
     {
         set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY, np);
-        fprintf(fplog, "The initial number of communication pulses is:");
+        fprintf(fplog, "The initial communication range is:");
         for (d = 0; d < dd->ndim; d++)
         {
             fprintf(fplog, " %c %d", dim2char(dd->dim[d]), np[dd->dim[d]]);
         }
-        fprintf(fplog, "\n");
+        fprintf(fplog, " domains\n");
         fprintf(fplog, "The initial domain decomposition cell size is:");
         for (d = 0; d < DIM; d++)
         {

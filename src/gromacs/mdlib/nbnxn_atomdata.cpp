@@ -914,9 +914,6 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
                                        const nbnxn_search_t nbs,
                                        const real          *charge)
 {
-    int                 i;
-    real               *q;
-
     for (int g = 0; g < ngrid; g++)
     {
         const nbnxn_grid_t * grid = &nbs->grid[g];
@@ -930,7 +927,8 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
 
             if (nbat->XFormat == nbatXYZQ)
             {
-                q = nbat->x + ash*STRIDE_XYZQ + ZZ + 1;
+                real *q = nbat->x + ash*STRIDE_XYZQ + ZZ + 1;
+                int   i;
                 for (i = 0; i < na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
@@ -945,7 +943,8 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t    *nbat,
             }
             else
             {
-                q = nbat->q + ash;
+                real *q = nbat->q + ash;
+                int   i;
                 for (i = 0; i < na; i++)
                 {
                     *q = charge[nbs->a[ash+i]];
@@ -972,8 +971,8 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
                                     int                  ngrid,
                                     const nbnxn_search_t nbs)
 {
-    real               *q;
-    int                 stride_q, nsubc;
+    real *q;
+    int   stride_q, nsubc;
 
     if (nbat->XFormat == nbatXYZQ)
     {

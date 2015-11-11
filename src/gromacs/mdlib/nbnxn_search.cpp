@@ -290,7 +290,6 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
                        int                        nthread_max)
 {
     nbnxn_search_t nbs;
-    int            ngrid;
 
     snew(nbs, 1);
     *nbs_ptr = nbs;
@@ -300,7 +299,7 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
     nbs->DomDec = (n_dd_cells != NULL);
 
     clear_ivec(nbs->dd_dim);
-    ngrid = 1;
+    int nzone = 1;
     if (nbs->DomDec)
     {
         nbs->zones = zones;
@@ -310,13 +309,12 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
             if ((*n_dd_cells)[d] > 1)
             {
                 nbs->dd_dim[d] = 1;
-                /* Each grid matches a DD zone */
-                ngrid *= 2;
+                nzone         *= 2;
             }
         }
     }
 
-    nbnxn_grids_init(nbs, ngrid);
+    nbnxn_grids_init(nbs, nzone);
 
     nbs->cell        = NULL;
     nbs->cell_nalloc = 0;
@@ -3132,8 +3130,8 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
     return ci_block;
 }
 
-/* Generates the part of pair-list nbl assigned to our thread */
-static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
+/* Generates grid-pair part of pair-list nbl assigned to our thread */
+static void nbnxn_make_pairlist_grid(const nbnxn_search_t nbs,
                                      const nbnxn_grid_t *gridi,
                                      const nbnxn_grid_t *gridj,
                                      nbnxn_search_work_t *work,
@@ -3732,7 +3730,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         }
     }
 
-    work->ndistc = ndistc;
+    work->ndistc += ndistc;
 
     nbs_cycle_stop(&work->cc[enbsCCsearch]);
 
@@ -3907,9 +3905,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          int                   nb_kernel_type,
                          t_nrnb               *nrnb)
 {
-    nbnxn_grid_t      *gridi, *gridj;
     gmx_bool           bGPUCPU;
-    int                nzi, zj0, zj1;
+    int                nzi;
     int                nsubpair_target;
     float              nsubpair_tot_est;
     int                nnbl;
@@ -3971,8 +3968,6 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     {
         /* Only zone (grid) 0 vs 0 */
         nzi = 1;
-        zj0 = 0;
-        zj1 = 1;
     }
     else
     {
@@ -4003,9 +3998,14 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 
     for (int zi = 0; zi < nzi; zi++)
     {
-        gridi = &nbs->grid[zi];
+        int zj0, zj1;
 
-        if (NONLOCAL_I(iloc))
+        if (LOCAL_I(iloc))
+        {
+            zj0 = 0;
+            zj1 = 1;
+        }
+        else
         {
             zj0 = nbs->zones->izone[zi].j0;
             zj1 = nbs->zones->izone[zi].j1;
@@ -4014,13 +4014,15 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 zj0++;
             }
         }
-        for (int zj = zj0; zj < zj1; zj++)
+
+        for (int gi = nbs->zone2grid[zi]; gi < nbs->zone2grid[zi + 1]; gi++)
         {
-            gridj = &nbs->grid[zj];
+            const nbnxn_grid_t *gridi = &nbs->grid[gi];
 
             if (debug)
             {
-                fprintf(debug, "ns search grid %d vs %d\n", zi, zj);
+                fprintf(debug, "ns search grid %d vs zones %d - %d\n",
+                        gi, zj0, zj1 - 1);
             }
 
             nbs_cycle_start(&nbs->cc[enbsCCsearch]);
@@ -4048,8 +4050,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                     /* Re-init the thread-local work flag data before making
                      * the first list (not an elegant conditional).
                      */
-                    if (nbat->bUseBufferFlags && ((zi == 0 && zj == 0) ||
-                                                  (bGPUCPU && zi == 0 && zj == 1)))
+                    if (nbat->bUseBufferFlags && ((gi == 0 && zj0 == 0) ||
+                                                  (bGPUCPU && gi == 0 && zj0 == 1)))
                     {
                         init_buffer_flags(&nbs->work[th].buffer_flags, nbat->natoms);
                     }
@@ -4058,19 +4060,26 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                     {
                         clear_pairlist(nbl[th]);
                     }
+                    nbs->work[th].ndistc = 0;
 
-                    /* Divide the i super cell equally over the nblists */
-                    nbnxn_make_pairlist_part(nbs, gridi, gridj,
-                                             &nbs->work[th], nbat, excl,
-                                             rlist,
-                                             nb_kernel_type,
-                                             ci_block,
-                                             nbat->bUseBufferFlags,
-                                             nsubpair_target,
-                                             progBal, nsubpair_tot_est,
-                                             th, nnbl,
-                                             nbl[th],
-                                             nbl_list->nbl_fep[th]);
+                    /* Loop over all j-grids in all j-zones of gridi */
+                    for (int gj = nbs->zone2grid[zj0]; gj < nbs->zone2grid[zj1]; gj++)
+                    {
+                        const nbnxn_grid_t *gridj = &nbs->grid[gj];
+
+                        /* Divide the i cells equally over threads/nblists */
+                        nbnxn_make_pairlist_grid(nbs, gridi, gridj,
+                                                 &nbs->work[th], nbat, excl,
+                                                 rlist,
+                                                 nb_kernel_type,
+                                                 ci_block,
+                                                 nbat->bUseBufferFlags,
+                                                 nsubpair_target,
+                                                 progBal, nsubpair_tot_est,
+                                                 th, nnbl,
+                                                 nbl[th],
+                                                 nbl_list->nbl_fep[th]);
+                    }
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
