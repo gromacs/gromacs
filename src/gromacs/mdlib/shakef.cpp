@@ -42,6 +42,7 @@
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_shakedata

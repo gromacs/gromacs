@@ -51,17 +51,18 @@
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -313,11 +314,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "rlistlong can not be shorter than rlist");
         }
-        if (IR_TWINRANGE(*ir) && ir->nstlist == 0)
+        if (inputrecTwinRange(ir) && ir->nstlist == 0)
         {
             warning_error(wi, "Can not have nstlist == 0 with twin-range interactions");
         }
-        if (IR_TWINRANGE(*ir) && EI_VV(ir->eI))
+        if (inputrecTwinRange(ir) && EI_VV(ir->eI))
         {
             sprintf(warn_buf, "Twin-range interactions are not supported with integrator %s.", ei_names[ir->eI]);
             warning_error(wi, warn_buf);
@@ -555,7 +556,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 ir->nstpcouple = ir_optimal_nstpcouple(ir);
             }
         }
-        if (IR_TWINRANGE(*ir))
+        if (inputrecTwinRange(ir))
         {
             check_nst("nstcalclr", ir->nstcalclr,
                       "nstcalcenergy", &ir->nstcalcenergy, wi);
@@ -785,7 +786,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (IR_TWINRANGE(*ir))
+        if (inputrecTwinRange(ir))
         {
             sprintf(err_buf, "nstdhdl must be divisible by nstcalclr");
             CHECK(ir->fepvals->nstdhdl > 0 &&
@@ -1341,13 +1342,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         if (ir_coulomb_is_zero_at_cutoff(ir) && ir->rlistlong <= ir->rcoulomb)
         {
             sprintf(warn_buf, "For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
-                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+                    inputrecTwinRange(ir) ? "rlistlong" : "rlist");
             warning_note(wi, warn_buf);
         }
         if (ir_vdw_switched(ir) && (ir->rlistlong <= ir->rvdw))
         {
             sprintf(warn_buf, "For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
-                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+                    inputrecTwinRange(ir) ? "rlistlong" : "rlist");
             warning_note(wi, warn_buf);
         }
     }
@@ -4372,7 +4373,7 @@ void double_check(t_inputrec *ir, matrix box,
             warning_error(wi, warn_buf);
         }
 
-        if (IR_TWINRANGE(*ir) && ir->nstlist > 1)
+        if (inputrecTwinRange(ir) && ir->nstlist > 1)
         {
             sprintf(warn_buf, "With twin-range cut-off's and SHAKE the virial and the pressure are incorrect.");
             if (ir->epc == epcNO)

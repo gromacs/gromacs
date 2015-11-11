@@ -38,7 +38,6 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 #define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
@@ -46,6 +45,7 @@
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/qmmmrec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -62,6 +62,41 @@ struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
 struct t_nblist;
+
+/* The interactions contained in a (possibly merged) table
+ * for computing electrostatic, VDW repulsion and/or VDW dispersion
+ * contributions.
+ */
+enum gmx_table_interaction
+{
+    GMX_TABLE_INTERACTION_ELEC,
+    GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWDISP,
+    GMX_TABLE_INTERACTION_NR
+};
+
+/* Different formats for table data. Cubic spline tables are typically stored
+ * with the four Y,F,G,H intermediate values (check tables.c for format), which
+ * makes it easy to load with a single 4-way SIMD instruction too.
+ * Linear tables only need one value per table point, or two if both V and F
+ * are calculated. However, with SIMD instructions this makes the loads unaligned,
+ * and in that case we store the data as F, D=F(i+1)-F(i), V, and then a blank value,
+ * which again makes it possible to load as a single instruction.
+ */
+enum gmx_table_format
+{
+    GMX_TABLE_FORMAT_CUBICSPLINE_YFGH,
+    GMX_TABLE_FORMAT_LINEAR_VF,
+    GMX_TABLE_FORMAT_LINEAR_V,
+    GMX_TABLE_FORMAT_LINEAR_F,
+    GMX_TABLE_FORMAT_LINEAR_FDV0,
+    GMX_TABLE_FORMAT_NR
+};
+
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -152,6 +187,7 @@ enum {
     egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
     egCOUL14, egLJ14, egGB, egNR
 };
+extern const char *egrp_nm[egNR+1];
 
 typedef struct gmx_grppairener_t {
     int   nener;      /* The number of energy group pairs     */

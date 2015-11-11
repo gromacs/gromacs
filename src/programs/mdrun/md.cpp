@@ -59,7 +59,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
@@ -95,6 +94,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -278,7 +278,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* md-vv uses averaged full step velocities for T-control
        md-vv-avek uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
-    bTrotter = (EI_VV(ir->eI) && (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir)));
+    bTrotter = (EI_VV(ir->eI) && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNphTrotter(ir)));
 
     if (bRerunMD)
     {
@@ -357,7 +357,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
     }
 
-    if (DEFORM(*ir))
+    if (inputrecDeform(ir))
     {
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
         set_deform_reference_box(upd,
@@ -519,7 +519,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
     }
 
-    if (IR_TWINRANGE(*ir) && repl_ex_nst % ir->nstcalclr != 0)
+    if (inputrecTwinRange(ir) && repl_ex_nst % ir->nstcalclr != 0)
     {
         /* We should exchange at nstcalclr steps to get correct integration */
         gmx_fatal(FARGS, "The replica exchange period (%d) is not divisible by nstcalclr (%d)", repl_ex_nst, ir->nstcalclr);
@@ -535,7 +535,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         nstfep = ir->fepvals->nstdhdl;
         if (ir->bExpanded)
         {
-            if (IR_TWINRANGE(*ir) &&
+            if (inputrecTwinRange(ir) &&
                 ir->expandedvals->nstexpanded % ir->nstcalclr != 0)
             {
                 gmx_fatal(FARGS, "nstexpanded should be divisible by nstcalclr");
@@ -547,7 +547,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
         }
         /* We checked divisibility of repl_ex_nst and nstcalclr above */
-        if (IR_TWINRANGE(*ir) && nstfep % ir->nstcalclr != 0)
+        if (inputrecTwinRange(ir) && nstfep % ir->nstcalclr != 0)
         {
             gmx_incons("nstfep not divisible by nstcalclr");
         }
@@ -936,7 +936,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 bMasterState = FALSE;
                 /* Correct the new box if it is too skewed */
-                if (DYNAMIC_BOX(*ir))
+                if (inputrecDynamicBox(ir))
                 {
                     if (correct_box(fplog, step, state->box, graph))
                     {
@@ -1023,7 +1023,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
                   do_per_step(step, nstglobalcomm) ||
-                  (EI_VV(ir->eI) && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)));
+                  (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
@@ -1035,7 +1035,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         force_flags = (GMX_FORCE_STATECHANGED |
-                       ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
+                       ((inputrecDynamicBox(ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
                        GMX_FORCE_SEPLRF |
                        (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
@@ -1136,8 +1136,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * Think about ways around this in the future?
              * For now, keep this choice in comments.
              */
-            /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
-            /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
+            /*bPres = (ir->eI==eiVV || inputrecNptTrotter(ir)); */
+            /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && inputrecNptTrotter(ir)));*/
             bPres = TRUE;
             bTemp = ((ir->eI == eiVV && (!bInitStep)) || (ir->eI == eiVVAK));
             if (bCalcEner && ir->eI == eiVVAK)
@@ -1180,7 +1180,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     copy_mat(shake_vir, state->svir_prev);
                     copy_mat(force_vir, state->fvir_prev);
-                    if (IR_NVT_TROTTER(ir) && ir->eI == eiVV)
+                    if (inputrecNvtTrotter(ir) && ir->eI == eiVV)
                     {
                         /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
                         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, NULL, (ir->eI == eiVV), FALSE);
