@@ -49,7 +49,6 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -63,6 +62,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/copyrite.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx

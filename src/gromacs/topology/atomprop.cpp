@@ -45,9 +45,9 @@
 #include <cmath>
 
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
+#include "gromacs/utility/copyrite.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

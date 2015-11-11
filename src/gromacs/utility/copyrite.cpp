@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/copyrite.h"
+#include "copyrite.h"
 
 #include "config.h"
 

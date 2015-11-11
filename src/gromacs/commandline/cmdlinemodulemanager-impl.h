@@ -49,9 +49,9 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/copyrite.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx

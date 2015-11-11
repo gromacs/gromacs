@@ -47,7 +47,6 @@
 #include "gromacs/gmxlib/calcgrid.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -57,6 +56,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/copyrite.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
