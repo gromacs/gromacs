@@ -39,8 +39,8 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/swap/enums.h"
 #include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -50,6 +50,12 @@
 extern "C" {
 #endif
 
+/* FEP coupling types */
+enum {
+    efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
+};
+extern const char *efpt_names[efptNR+1];
+extern const char *efpt_singular_names[efptNR+1];
 
 typedef struct {
     int   n;    /* Number of terms				*/

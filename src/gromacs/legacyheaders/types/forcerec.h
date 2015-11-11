@@ -38,9 +38,9 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 #define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/ns.h"
@@ -152,6 +152,7 @@ enum {
     egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
     egCOUL14, egLJ14, egGB, egNR
 };
+extern const char *egrp_nm[egNR+1];
 
 typedef struct gmx_grppairener_t {
     int   nener;      /* The number of energy group pairs     */

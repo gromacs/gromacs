@@ -45,7 +45,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -55,6 +54,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"

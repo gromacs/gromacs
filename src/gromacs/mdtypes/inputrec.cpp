@@ -46,6 +46,14 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+const char *efpt_names[efptNR+1] = {
+    "fep-lambdas", "mass-lambdas", "coul-lambdas", "vdw-lambdas", "bonded-lambdas", "restraint-lambdas", "temperature-lambdas", nullptr
+};
+
+const char *efpt_singular_names[efptNR+1] = {
+    "fep-lambda", "mass-lambda", "coul-lambda", "vdw-lambda", "bonded-lambda", "restraint-lambda", "temperature-lambda", nullptr
+};
+
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
  */
