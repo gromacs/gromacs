@@ -43,10 +43,11 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.

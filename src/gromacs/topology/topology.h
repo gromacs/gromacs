@@ -53,6 +53,8 @@ enum {
     egcORFIT, egcQMMM,
     egcNR
 };
+/* Names corresponding to groups */
+extern const char *gtypes[egcNR+1];
 
 typedef struct gmx_moltype_t
 {
