@@ -47,7 +47,6 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
@@ -59,6 +58,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/nsgrid.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"

@@ -51,7 +51,6 @@
 #include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
@@ -61,6 +60,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -70,6 +70,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Different default (c) and SIMD instructions interaction-specific kernels */

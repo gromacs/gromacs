@@ -51,10 +51,10 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"

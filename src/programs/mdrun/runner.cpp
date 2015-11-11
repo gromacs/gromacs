@@ -71,7 +71,6 @@
 #include "gromacs/gmxlib/thread_affinity.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -89,6 +88,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/tpi.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -955,7 +955,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     init_orires(fplog, mtop, state->x, inputrec, cr, &(fcd->orires),
                 state);
 
-    if (DEFORM(*inputrec))
+    if (inputrecDeform(inputrec))
     {
         /* Store the deform reference box before reading the checkpoint */
         if (SIMMASTER(cr))

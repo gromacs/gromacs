@@ -38,6 +38,7 @@
 #ifndef _mdatom_h
 #define _mdatom_h
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
