@@ -60,12 +60,12 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_USE_PLUGINS

@@ -48,13 +48,13 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 static void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)

@@ -36,8 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/names.h"
+#include "names.h"
 
+#include "gromacs/utility/enums.h"
 
 /* note: these arrays should correspond to enums in include/types/enums.h */
 

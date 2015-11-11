@@ -42,7 +42,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/utilities.h"
@@ -52,6 +51,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],

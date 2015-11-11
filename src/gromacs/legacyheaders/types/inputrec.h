@@ -39,11 +39,11 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/swap/enums.h"
 #include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enums.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus

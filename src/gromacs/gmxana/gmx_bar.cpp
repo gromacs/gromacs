@@ -47,7 +47,6 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/mdebin.h"
@@ -56,6 +55,7 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

@@ -70,7 +70,6 @@
 #include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
@@ -89,6 +88,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

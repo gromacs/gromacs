@@ -57,11 +57,11 @@
 #include "gromacs/correlationfunctions/manyautocorrelation.h"
 #include "gromacs/correlationfunctions/polynomials.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

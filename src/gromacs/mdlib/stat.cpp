@@ -42,7 +42,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -59,6 +58,7 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_global_stat

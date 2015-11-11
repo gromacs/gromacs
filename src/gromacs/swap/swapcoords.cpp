@@ -52,7 +52,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vec.h"
@@ -64,6 +63,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

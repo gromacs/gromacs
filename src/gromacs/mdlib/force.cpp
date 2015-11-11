@@ -50,7 +50,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 void ns(FILE              *fp,

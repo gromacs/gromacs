@@ -54,7 +54,6 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/main.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {

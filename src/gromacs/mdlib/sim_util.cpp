@@ -59,7 +59,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
@@ -97,6 +96,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 

@@ -72,7 +72,6 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -101,6 +100,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"

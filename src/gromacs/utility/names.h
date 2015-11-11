@@ -34,17 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _names_h
-#define _names_h
+/*! \file
+ * \brief
+ * Declares names corresponding to variable types for printing.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_NAMES_H
+#define GMX_UTILITY_NAMES_H
 
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* All string arrays are NULL terminated, and therefore have an
  * extra argument (the +1)
@@ -157,8 +160,4 @@ extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 #define EADRESSSITETYPE(e) ENUM_NAME(e, eAdressSITENR, eAdressSITEtype_names)
 #define ELJPMECOMBNAMES(e) ENUM_NAME(e, eljpmeNR, eljpme_names)
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _names_h */

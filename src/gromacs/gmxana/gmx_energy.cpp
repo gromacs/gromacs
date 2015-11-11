@@ -53,7 +53,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;

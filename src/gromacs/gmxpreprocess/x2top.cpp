@@ -52,7 +52,6 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
@@ -64,6 +63,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 char atp[7] = "HCNOSX";

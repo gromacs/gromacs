@@ -34,11 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Declares enumerated types used throught the code.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_ENUMS_H
+#define GMX_UTILITY_ENUMS_H
 
-#ifndef ENUMS_H_
-#define ENUMS_H_
-
-/* note: these enums should correspond to the names in gmxlib/names.c */
+/* note: these enums should correspond to the names in utility/names.cpp */
 
 enum {
     etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
@@ -436,4 +443,4 @@ enum gmx_nblist_interaction_type
     GMX_NBLIST_INTERACTION_NR
 };
 
-#endif /* ENUMS_H_ */
+#endif /* GMX_UTILITY_ENUMS_H */

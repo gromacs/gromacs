@@ -41,7 +41,6 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -58,6 +57,7 @@
 #include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 #define NTROTTERPARTS 3

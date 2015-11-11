@@ -52,12 +52,12 @@
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atype,

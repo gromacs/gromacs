@@ -48,7 +48,6 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atom_id.h"
@@ -57,6 +56,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 
