@@ -39,8 +39,8 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/swap/enums.h"
 #include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
