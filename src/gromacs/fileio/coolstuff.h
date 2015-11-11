@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,22 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_FILEIO_COOLSTUFF_H
+#define GMX_FILEIO_COOLSTUFF_H
 
-#include "gmxpre.h"
+/* For both bromacs() and cool_quote() you have to provide a pointer to
+ * a string of reasonable length (say 256) and the string length. This
+ * is necessary to make the routines threadsafe and avoid allocating
+ * a new string each time. The retstring pointer will be the return value.
+ */
+void
+bromacs(char *retstring, int retsize);
 
-#include <stdio.h>
+/* For cool_quote, the number of the quote used will be returned in cqnum
+ * if it is non-NULL.
+ */
+void
+cool_quote(char *retstring, int retsize, int *cqnum);
 
-#include "buildinfo.h"
-
-void gmx_print_version_info_cuda_gpu(FILE *fp)
-{
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
-}
+#endif

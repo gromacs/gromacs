@@ -50,7 +50,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/ewald.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
@@ -87,6 +86,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "nbnxn_gpu_jit_support.h"

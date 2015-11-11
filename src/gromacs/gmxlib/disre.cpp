@@ -47,7 +47,6 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -61,6 +60,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,

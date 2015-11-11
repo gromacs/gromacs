@@ -43,7 +43,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/coolstuff.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"

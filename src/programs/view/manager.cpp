@@ -49,7 +49,6 @@
 #include <unistd.h> // for usleep()
 #endif
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"

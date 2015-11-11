@@ -44,7 +44,6 @@
 #include <math.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
@@ -53,6 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #define PROBABILITYCUTOFF 100

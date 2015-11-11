@@ -43,7 +43,7 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/coolstuff.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/topology/atoms.h"

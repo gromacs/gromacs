@@ -38,7 +38,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
@@ -50,6 +49,7 @@
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_mdoutf {

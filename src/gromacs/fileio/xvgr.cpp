@@ -41,10 +41,11 @@
 #include <cctype>
 #include <cstring>
 
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/coolstuff.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
