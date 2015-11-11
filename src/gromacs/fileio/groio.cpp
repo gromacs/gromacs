@@ -43,9 +43,9 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"

@@ -42,9 +42,9 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/topology.h"

@@ -49,9 +49,9 @@
 #include <time.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/inputrec.h"

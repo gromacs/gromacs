@@ -38,7 +38,7 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/units.h"

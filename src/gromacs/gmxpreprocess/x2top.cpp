@@ -42,6 +42,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
@@ -51,7 +52,6 @@
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/listed-forces/bonded.h"

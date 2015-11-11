@@ -42,12 +42,12 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxlib/calcgrid.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"

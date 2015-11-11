@@ -44,8 +44,8 @@
 
 #include <cmath>
 
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/cstringutil.h"

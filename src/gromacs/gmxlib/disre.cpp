@@ -47,8 +47,8 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/gmxlib/main.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
