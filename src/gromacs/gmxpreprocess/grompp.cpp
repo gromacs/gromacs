@@ -70,13 +70,15 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -391,7 +393,7 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
             nshells++;
         }
     }
-    if (IR_TWINRANGE(*ir) && (nshells > 0))
+    if (inputrecTwinRange(ir) && (nshells > 0))
     {
         snprintf(warn_buf, STRLEN,
                  "The combination of using shells and a twin-range cut-off is not supported");

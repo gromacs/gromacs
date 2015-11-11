@@ -43,6 +43,10 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
+const char *ptype_str[eptNR+1] = {
+    "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
+};
+
 void init_atom(t_atoms *at)
 {
     at->nr        = 0;

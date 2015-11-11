@@ -48,7 +48,6 @@
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/units.h"
@@ -57,6 +56,8 @@
 #include "gromacs/mdlib/mdebin_bar.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/mtop_util.h"
@@ -317,12 +318,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     md->bDiagPres      = !TRICLINIC(ir->ref_p);
     md->ref_p          = (ir->ref_p[XX][XX]+ir->ref_p[YY][YY]+ir->ref_p[ZZ][ZZ])/DIM;
     md->bTricl         = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
-    md->bDynBox        = DYNAMIC_BOX(*ir);
+    md->bDynBox        = inputrecDynamicBox(ir);
     md->etc            = ir->etc;
-    md->bNHC_trotter   = IR_NVT_TROTTER(ir);
+    md->bNHC_trotter   = inputrecNvtTrotter(ir);
     md->bPrintNHChains = ir->bPrintNHChains;
-    md->bMTTK          = (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir));
-    md->bMu            = NEED_MUTOT(*ir);
+    md->bMTTK          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir));
+    md->bMu            = inputrecNeedMutot(ir);
 
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
