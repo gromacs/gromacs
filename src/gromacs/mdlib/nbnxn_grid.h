@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,8 @@ struct nbnxn_grid_dimensions_t {
     real atom_density;
 };
 
-/* Allocate and initialize ngrid pair search grids in nbs */
-void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
+/* Allocate and initialize the pair search grids for all zones in nbs */
+void nbnxn_grids_init(nbnxn_search_t nbs, int nzone);
 
 /* Put the atoms on the pair search grid.
  * Only atoms a0 to a1 in x are put on the grid.
@@ -64,7 +64,7 @@ void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
  */
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        int ePBC, matrix box,
-                       int dd_zone,
+                       int grid_ind,
                        const nbnxn_grid_dimensions_t *dimensions,
                        int a0, int a1,
                        const int *atinfo,
@@ -109,16 +109,17 @@ void nbnxn_get_local_grid_column(nbnxn_search_t nbs, int cx, int cy,
                                  int *nbb, nbnxn_bb_t **bb, float **bbz,
                                  int *atom_start, int *bb_natoms, int *natoms);
 
-/* Set all the passed parameters after zone in the grid for zone in nbs.
+/* Set all the passed parameters for a grid/domain corresponding to dd_zone,
  * Note that this does not set the atom indices (not required for non-local)
  * and the bounding boxes (need to be calculated later).
  */
-void nbnxn_set_zone_grid(nbnxn_search_t nbs,
-                         int zone,
-                         int ncx, int ncy,
-                         rvec corner0, rvec corner1,
-                         real column_size_x, real column_size_y,
-                         const int *cxy_natoms);
+void nbnxn_set_grid_parameters(nbnxn_search_t nbs,
+                               int dd_zone,
+                               int atom_start, int natoms,
+                               int ncx, int ncy,
+                               rvec corner0, rvec corner1,
+                               real column_size_x, real column_size_y,
+                               const int *cxy_natoms);
 
 /* Return the order indices *a of the atoms on the ns grid, size n */
 void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n);
