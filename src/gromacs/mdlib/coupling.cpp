@@ -43,7 +43,6 @@
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/units.h"
@@ -52,6 +51,8 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/energy.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
@@ -1102,7 +1103,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
 
     if (ir->eI == eiVV)
     {
-        if (IR_NPT_TROTTER(ir))
+        if (inputrecNptTrotter(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
@@ -1124,14 +1125,14 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
 
         }
-        else if (IR_NVT_TROTTER(ir))
+        else if (inputrecNvtTrotter(ir))
         {
             /* This is the easy version - there are only two calls, both the same.
                Otherwise, even easier -- no calls  */
             trotter_seq[2][0] = etrtNHC;
             trotter_seq[3][0] = etrtNHC;
         }
-        else if (IR_NPH_TROTTER(ir))
+        else if (inputrecNphTrotter(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
@@ -1153,7 +1154,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     }
     else if (ir->eI == eiVVAK)
     {
-        if (IR_NPT_TROTTER(ir))
+        if (inputrecNptTrotter(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
@@ -1174,14 +1175,14 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* The second half trotter update */
             trotter_seq[4][0] = etrtNHC;
         }
-        else if (IR_NVT_TROTTER(ir))
+        else if (inputrecNvtTrotter(ir))
         {
             /* This is the easy version - there is only one call, both the same.
                Otherwise, even easier -- no calls  */
             trotter_seq[1][0] = etrtNHC;
             trotter_seq[4][0] = etrtNHC;
         }
-        else if (IR_NPH_TROTTER(ir))
+        else if (inputrecNphTrotter(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
@@ -1291,7 +1292,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         }
     }
 
-    if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
+    if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
     {
         /* add the energy from the barostat thermostat chain */
         for (i = 0; i < state->nnhpres; i++)
@@ -1334,7 +1335,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 
             if (nd > 0.0)
             {
-                if (IR_NVT_TROTTER(ir))
+                if (inputrecNvtTrotter(ir))
                 {
                     /* contribution from the thermal momenta of the NH chain */
                     for (j = 0; j < nh; j++)
