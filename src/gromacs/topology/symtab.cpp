@@ -43,7 +43,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

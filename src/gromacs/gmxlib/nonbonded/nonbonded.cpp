@@ -46,6 +46,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
@@ -53,7 +54,6 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nblist.h"
