@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-
-#ifndef _genborn_h
-#define _genborn_h
+#ifndef GMX_MDLIB_GENBORN_H
+#define GMX_MDLIB_GENBORN_H
 
 #include "gromacs/math/vectypes.h"
 
@@ -54,10 +52,6 @@ struct t_mdatoms;
 struct t_nblist;
 struct t_nrnb;
 struct t_pbc;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
@@ -105,8 +99,4 @@ make_gb_nblist(struct t_commrec *cr, int gb_algorithm,
 void
 make_local_gb(const struct t_commrec *cr, struct gmx_genborn_t *born, int gb_algorithm);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* _genborn_h */
