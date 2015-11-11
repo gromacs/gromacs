@@ -49,6 +49,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"

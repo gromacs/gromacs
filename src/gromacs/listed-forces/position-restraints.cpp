@@ -62,6 +62,10 @@
 
 struct gmx_wallcycle;
 
+const char *erefscaling_names[erscNR+1] = {
+    "No", "All", "COM", nullptr
+};
+
 namespace
 {
 
