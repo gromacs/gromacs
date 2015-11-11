@@ -45,7 +45,6 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -56,6 +55,8 @@
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -379,7 +380,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bTemp)
     {
         /* Sum the kinetic energies of the groups & calc temp */
-        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
+        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with inputrecNptTrotter */
         /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).
            Leap with AveVel is not supported; it's not clear that it will actually work.
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
@@ -644,7 +645,7 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
                                t_inputrec *ir, gmx_mtop_t *mtop)
 {
     /* Check required for old tpx files */
-    if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
+    if (inputrecTwinRange(ir) && ir->nstlist > 1 &&
         ir->nstcalcenergy % ir->nstlist != 0)
     {
         md_print_warn(cr, fplog, "Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies\n");
@@ -677,7 +678,7 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
         }
     }
 
-    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
+    if (EI_VV(ir->eI) && inputrecTwinRange(ir) && ir->nstlist > 1)
     {
         gmx_fatal(FARGS, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
     }
@@ -753,7 +754,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     if (ir->ePBC != epbcNONE)
     {
         state->flags |= (1<<estBOX);
-        if (PRESERVE_SHAPE(*ir))
+        if (inputrecPreserveShape(ir))
         {
             state->flags |= (1<<estBOX_REL);
         }
@@ -763,7 +764,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         }
         if (ir->epc != epcNO)
         {
-            if (IR_NPT_TROTTER(ir) || (IR_NPH_TROTTER(ir)))
+            if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
             {
                 state->nnhpres = 1;
                 state->flags  |= (1<<estNHPRES_XI);

@@ -67,15 +67,16 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/imd/imdsocket.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -994,7 +995,7 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
 
             /* Catch all rule for the remaining IMD types which we don't expect */
             default:
-                fprintf(stderr, " %s Received unexpected %s.\n", IMDstr, ENUM_NAME((int)itype, IMD_NR, eIMDType_names));
+                fprintf(stderr, " %s Received unexpected %s.\n", IMDstr, enum_name((int)itype, IMD_NR, eIMDType_names));
                 imd_fatal(IMDsetup, "Terminating connection\n");
                 break;
         } /* end switch */

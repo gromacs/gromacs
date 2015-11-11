@@ -58,6 +58,7 @@
 #include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
