@@ -96,6 +96,9 @@ int ddglatnr(const gmx_domdec_t *dd, int i);
 /*! \brief Return a block struct for the charge groups of the whole system */
 t_block *dd_charge_groups_global(struct gmx_domdec_t *dd);
 
+/*! \brief Return the DD rank corresponding to a DD domain coordinate */
+int ddCoord2ddRank(const gmx_domdec_t *dd, ivec coord);
+
 /*! \brief Store the global cg indices of the home cgs in state,
  *
  * This means it can be reset, even after a new DD partitioning.

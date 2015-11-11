@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,6 +128,8 @@ typedef struct {
     rvec          c0;               /* The lower corner of the (local) grid        */
     rvec          c1;               /* The upper corner of the (local) grid        */
     rvec          size;             /* c1 - c0                                     */
+    int           atom_start;       /* Start of atom range put on this grid */
+    int           atom_end;         /* End of atom range put on this grid */
     real          atom_density;     /* The atom number density for the local grid  */
 
     gmx_bool      bSimple;          /* Is this grid simple or super/sub            */
@@ -258,8 +260,11 @@ typedef struct nbnxn_search {
     ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
     struct gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
 
+    int                        nzone;           /* The number of DD zones */
+    int                        zone2grid[9];    /* Entries zone to zone+1 give the range of grid used for each zone */
     int                        ngrid;           /* The number of grids, equal to #DD-zones    */
     nbnxn_grid_t              *grid;            /* Array of grids, size ngrid                 */
+    int                        grid_nalloc;     /* Allocation size of grid */
     int                       *cell;            /* Actual allocated cell array for all grids  */
     int                        cell_nalloc;     /* Allocation size of cell                    */
     int                       *a;               /* Atom index for grid, the inverse of cell   */

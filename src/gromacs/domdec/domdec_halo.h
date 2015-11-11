@@ -56,22 +56,30 @@
 
 struct gmx_ddbox_t;
 
-/*! \brief Set up the eighth-shell halo coordinate/force communcation
+/*! \brief Set up the eighth-shell halo coordinate/force communcation.
  *
  * Set up the eighth-shell halo communcation for non-bonded + bonded
  * interactions
  * \p bCellsChanged indicates if the domain decomposition cells changed,
  * either due to dynamic load balancing or pressure scaling.
  *
- * \param[in,out] dd     Pointer to the domain decomposition setup.
- * \param[in]     box    Unit-cell matrix.
- * \param[in]     ddbox  Domain decomposition unit-cell and PBC data.
- * \param[in]     fr     Pointr to the force record struct.
- * \param[in]     bCellsChanged Tells if the domain decomposition cells changed.
+ * \param[in,out] dd     Pointer to the domain decomposition setup
+ * \param[in]     box    Unit-cell matrix
+ * \param[in]     ddbox  Domain decomposition unit-cell and PBC data
+ * \param[in]     fr     Pointer to the force record struct
+ * \param[in]     bCellsChanged Tells if the domain decomposition cells changed
  */
 void setup_halo_communication(gmx_domdec_t *dd,
                               const matrix box, const gmx_ddbox_t *ddbox,
                               t_forcerec *fr,
                               gmx_bool bCellsChanged);
+
+/*! \brief Construct the local to global and global to local atom indices.
+ *
+ * \param[in,out] dd       Pointer to the domain decomposition setup
+ * \param[in]     at_start Build index starting from local index at_start
+ * \param[in]     zone_end Build index up to, but not including zone zone_end
+ */
+void make_global_atom_index(gmx_domdec_t *dd, int at_start, int zone_end);
 
 #endif
