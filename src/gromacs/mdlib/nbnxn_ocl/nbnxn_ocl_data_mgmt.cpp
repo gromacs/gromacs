@@ -48,10 +48,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/legacyheaders/types/enums.h"
+
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/gmxlib/ocl_tools/oclutils.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"

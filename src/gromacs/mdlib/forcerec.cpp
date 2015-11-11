@@ -57,7 +57,6 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -80,6 +79,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
@@ -90,6 +90,11 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "nbnxn_gpu_jit_support.h"
+
+const char *egrp_nm[egNR+1] = {
+    "Coul-SR", "LJ-SR", "Buck-SR", "Coul-LR", "LJ-LR", "Buck-LR",
+    "Coul-14", "LJ-14", NULL
+};
 
 t_forcerec *mk_forcerec(void)
 {
