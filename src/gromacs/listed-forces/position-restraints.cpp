@@ -53,6 +53,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/idef.h"

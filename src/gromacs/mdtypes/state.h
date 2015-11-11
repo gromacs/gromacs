@@ -37,8 +37,8 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 

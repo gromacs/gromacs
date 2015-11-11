@@ -42,10 +42,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
