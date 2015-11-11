@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -197,20 +197,22 @@ typedef struct
     real p1_1;    /* The top value of the first cell in this zone           */
 } gmx_ddzone_t;
 
-/*! \brief The zone to zone atoms and pair-search grid communication setup
+/*! \brief The domain to domain atoms and pair-search grid communication setup
  *
  * In this struct we put all non-pointer elements at the start,
  * so we can communicate them with one MPI call.
+ * NOTE: don't change gmx_bool to bool, since that might be smaller than int.
  */
-struct zone_comm_t {
+struct domain_comm_t {
     int      rank;              /**< The rank we communicate with */
-    gmx_bool bPBC;              /**< Do we communicate over PBC? */
+    int      pbc_bits;          /**< Bits 0,1,2 set if we communicate over PBC in x,y,z */
     gmx_bool bScrew;            /**< Do we need screw PBC? */
     int      shift_ind;         /**< Shift vector index for PBC */
     int      ncx;               /**< Grid size along x */
     int      ncy;               /**< Grid size along y */
     int      natoms;            /**< The number of atoms to communicate */
     ivec     rCheckBonded;      /**< The receiver should check bonded distances */
+    int      offset;            /**< Atom offset for x recv & f send buffers */
     rvec     corner0;           /**< Lower grid corner */
     rvec     corner1;           /**< Upper grid corner */
     real     size_x;            /**< Grid cell sizes along x */
@@ -218,20 +220,21 @@ struct zone_comm_t {
     int     *column_natoms;     /**< The number of atoms per grid column */
     int      ncolumn;           /**< The number of columns to send */
     int     *column_atom_range; /**< The atom range per column, size: 2 * \p ncolumn */
+    int      column_nalloc;     /**< Allocation size of column_natoms, column_atom_range */
     int     *index_gl;          /**< Global atom indices */
     int     *atominfo;          /**< Atom information flags */
     rvec    *at_buf;            /**< Atom vector send+recv buffer */
-    int      column_nalloc;     /**< Allocation size of column_natoms, column_atom_range */
-    int      at_nalloc;         /**< Allocation size of index_gl, at_buf */
+    int      at_nalloc;         /**< Allocation size of index_gl, atominfo at_buf */
 };
 
 /*! \brief MPI zone communication struct, needed to group MPI requests */
 typedef struct {
 #ifdef GMX_MPI
     /** We store the requests of all zones in one array to pass to MPI_Waitall */
-    MPI_Request request[DD_MAXZONE];
+    MPI_Request *request;  /**< MPI requests */
+    int          nalloc;   /**< Allocation size of request */
 #endif
-    int         nrequest; /**< The number of outstanding requests */
+    int          nrequest; /**< The number of outstanding requests */
 } zones_mpi_dir_t;
 
 /*! \brief MPI zone communication struct, needed to group MPI requests */
@@ -333,10 +336,12 @@ struct gmx_domdec_comm_t
     gmx_domdec_zones_t zones;
 
     /* The eighth shell x/f communication, backward & forward along the grid */
-    zone_comm_t  zone_backward[DD_MAXZONE]; /**< Setup for communicating x backward */
-    zone_comm_t  zone_forward[DD_MAXZONE];  /**< Setup for communicating f forward */
-    zones_mpi_t  zones_mpi_x;               /**< MPI data for x communication */
-    zones_mpi_t  zones_mpi_f;               /**< MPI data for f communication */
+    ivec           ndhalo;          /**< Number of domains to communicate with, indexed with the DD dimension index */
+    domain_comm_t *domain_backward; /**< Setup for communicating x backward */
+    domain_comm_t *domain_forward;  /**< Setup for communicating f forward */
+    int            domain_nalloc;   /**< Allocation size of domain_backward and domain_forward */
+    zones_mpi_t    zones_mpi_x;     /**< MPI data for x communication */
+    zones_mpi_t    zones_mpi_f;     /**< MPI data for f communication */
 
     /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
      * cell boundaries of neighboring cells for staggered grids when using
