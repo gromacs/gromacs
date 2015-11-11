@@ -613,12 +613,6 @@ static real optimize_ncells(FILE *fplog,
 
     limit      = cellsize_limit;
 
-    if (ir->cutoff_scheme == ecutsVERLET)
-    {
-        /* The Verlet scheme does not support multiple comm. pulses */
-        limit  = std::max(limit, ir->rlist);
-    }
-
     dd->nc[XX] = 1;
     dd->nc[YY] = 1;
     dd->nc[ZZ] = 1;

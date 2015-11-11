@@ -65,25 +65,38 @@ struct gmx_domdec_zones_t;
 
 static void nbnxn_grid_init(nbnxn_grid_t * grid)
 {
-    grid->cxy_na      = NULL;
-    grid->cxy_ind     = NULL;
-    grid->cxy_nalloc  = 0;
-    grid->bb          = NULL;
-    grid->bbj         = NULL;
-    grid->nc_nalloc   = 0;
+    grid->cxy_na           = NULL;
+    grid->cxy_ind          = NULL;
+    grid->cxy_nalloc       = 0;
+    grid->nsubc            = NULL;
+    grid->bbcz             = NULL;
+    grid->bb               = NULL;
+    grid->bbj              = NULL;
+    grid->pbb              = NULL;
+    grid->flags            = NULL;
+    grid->fep              = NULL;
+    grid->nc_nalloc        = 0;
+    grid->bbcz_simple      = NULL;
+    grid->flags_simple     = NULL;
+    grid->nc_nalloc_simple = 0;
 }
 
-void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid)
+void nbnxn_grids_init(nbnxn_search_t nbs, int nzone)
 {
-    int g;
+    nbs->nzone = nzone;
 
-    nbs->ngrid = ngrid;
-
-    snew(nbs->grid, nbs->ngrid);
-    for (g = 0; g < nbs->ngrid; g++)
+    nbs->grid_nalloc = nzone;
+    snew(nbs->grid, nbs->grid_nalloc);
+    for (int g = 0; g < nbs->grid_nalloc; g++)
     {
         nbnxn_grid_init(&nbs->grid[g]);
     }
+    /* Here we only initiate zone2grid and ngrid for the home zone.
+     * The non-home zone info is set in nbnxn_set_grid_parameters.
+     */
+    nbs->zone2grid[0] = 0;
+    nbs->zone2grid[1] = 1;
+    nbs->ngrid        = 1;
 }
 
 static real grid_atom_density(int n, const rvec corner0, const rvec corner1)
@@ -283,6 +296,8 @@ static void grid_realloc_bb_flags(nbnxn_grid_t *grid, gmx_bool bFEP, int nc_max)
             }
             else
             {
+                assert(grid->na_cj > 0);
+
                 sfree_aligned(grid->bbj);
                 snew_aligned(grid->bbj, grid->nc_nalloc*grid->na_c/grid->na_cj, 16);
             }
@@ -322,7 +337,7 @@ static void grid_realloc_bb_flags(nbnxn_grid_t *grid, gmx_bool bFEP, int nc_max)
  * or easier, allocate at least n*SGSF elements.
  */
 static void sort_atoms(int dim, gmx_bool Backwards,
-                       int gmx_unused dd_zone,
+                       int gmx_unused grid_ind,
                        int *a, int n, rvec *x,
                        real h0, real invh, int n_per_h,
                        int *sort)
@@ -363,7 +378,7 @@ static void sort_atoms(int dim, gmx_bool Backwards,
 
 #ifndef NDEBUG
         /* As we can have rounding effect, we use > iso >= here */
-        if (zi < 0 || (dd_zone == 0 && zi > n_per_h*SORT_GRID_OVERSIZE))
+        if (zi < 0 || (grid_ind == 0 && zi > n_per_h*SORT_GRID_OVERSIZE))
         {
             gmx_fatal(FARGS, "(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d*%d\n",
                       a[i], 'x'+dim, x[a[i]][dim], h0, invh, zi,
@@ -1015,7 +1030,7 @@ static void fill_cell(const nbnxn_search_t nbs,
 
 /* Spatially sort the atoms within one grid column */
 static void sort_columns_simple(const nbnxn_search_t nbs,
-                                int dd_zone,
+                                int grid_ind,
                                 nbnxn_grid_t *grid,
                                 int a0, int a1,
                                 const int *atinfo,
@@ -1042,10 +1057,10 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
         int ncz = grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy];
         int ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
 
-        if (dd_zone == 0)
+        if (grid_ind == 0)
         {
             /* Sort the atoms within each x,y column on z coordinate */
-            sort_atoms(ZZ, FALSE, dd_zone,
+            sort_atoms(ZZ, FALSE, grid_ind,
                        nbs->a+ash, na, x,
                        grid->c0[ZZ],
                        1.0/grid->size[ZZ], ncz*grid->na_sc,
@@ -1063,8 +1078,8 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 
             fill_cell(nbs, grid, nbat,
                       ash_c, ash_c+na_c, atinfo, x,
-                      grid->na_sc*cx + (dd_zone >> 2),
-                      grid->na_sc*cy + (dd_zone & 3),
+                      grid->na_sc*cx + (grid_ind >> 2),
+                      grid->na_sc*cy + (grid_ind & 3),
                       grid->na_sc*cz,
                       NULL);
 
@@ -1090,7 +1105,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 
 /* Spatially sort the atoms within one grid column */
 static void sort_columns_supersub(const nbnxn_search_t nbs,
-                                  int dd_zone,
+                                  int grid_ind,
                                   nbnxn_grid_t *grid,
                                   int a0, int a1,
                                   const int *atinfo,
@@ -1123,10 +1138,10 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         int ncz = grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy];
         int ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
 
-        if (dd_zone == 0)
+        if (grid_ind == 0)
         {
             /* Sort the atoms within each x,y column on z coordinate */
-            sort_atoms(ZZ, FALSE, dd_zone,
+            sort_atoms(ZZ, FALSE, grid_ind,
                        nbs->a+ash, na, x,
                        grid->c0[ZZ],
                        1.0/grid->size[ZZ], ncz*grid->na_sc,
@@ -1152,7 +1167,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                 grid->nsubc[c] = std::min(GPU_NSUBCELL, (na_c+grid->na_c-1)/grid->na_c);
 
                 /* Store the z-boundaries of the super cell */
-                if (dd_zone == 0)
+                if (grid_ind == 0)
                 {
                     /* The particles are now sorted on z: use first and last */
                     grid->bbcz[c*NNBSBB_D  ] = x[nbs->a[ash_z]][ZZ];
@@ -1177,10 +1192,10 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
             }
 
 #if GPU_NSUBCELL_Y > 1
-            if (dd_zone == 0)
+            if (grid_ind == 0)
             {
                 /* Sort the atoms along y */
-                sort_atoms(YY, (sub_z & 1), dd_zone,
+                sort_atoms(YY, (sub_z & 1), grid_ind,
                            nbs->a+ash_z, na_z, x,
                            grid->c0[YY]+cy*grid->sy,
                            grid->inv_sy, subdiv_z,
@@ -1194,10 +1209,10 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                 int na_y  = std::min(subdiv_y, na-(ash_y-ash));
 
 #if GPU_NSUBCELL_X > 1
-                if (dd_zone == 0)
+                if (grid_ind == 0)
                 {
                     /* Sort the atoms along x */
-                    sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1), dd_zone,
+                    sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1), grid_ind,
                                nbs->a+ash_y, na_y, x,
                                grid->c0[XX]+cx*grid->sx,
                                grid->inv_sx, subdiv_y,
@@ -1212,8 +1227,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
                     fill_cell(nbs, grid, nbat,
                               ash_x, ash_x+na_x, atinfo, x,
-                              grid->na_c*(cx*GPU_NSUBCELL_X+sub_x) + (dd_zone >> 2),
-                              grid->na_c*(cy*GPU_NSUBCELL_Y+sub_y) + (dd_zone & 3),
+                              grid->na_c*(cx*GPU_NSUBCELL_X+sub_x) + (grid_ind >> 2),
+                              grid->na_c*(cy*GPU_NSUBCELL_Y+sub_y) + (grid_ind & 3),
                               grid->na_c*sub_z,
                               bb_work_aligned);
                 }
@@ -1230,9 +1245,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
 /* Determine in which grid column atoms should go */
 static void calc_column_indices(nbnxn_grid_t *grid,
-                                int a0, int a1,
                                 rvec *x,
-                                int dd_zone, const int *move,
+                                int grid_ind, const int *move,
                                 int thread, int nthread,
                                 int *cell,
                                 int *cxy_na)
@@ -1243,9 +1257,12 @@ static void calc_column_indices(nbnxn_grid_t *grid,
         cxy_na[i] = 0;
     }
 
+    int a0 = grid->atom_start;
+    int a1 = grid->atom_end;
+
     int n0 = a0 + static_cast<int>((thread+0)*(a1 - a0))/nthread;
     int n1 = a0 + static_cast<int>((thread+1)*(a1 - a0))/nthread;
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
         /* Home zone */
         for (int i = n0; i < n1; i++)
@@ -1322,13 +1339,12 @@ static void calc_column_indices(nbnxn_grid_t *grid,
 
 /* Determine in which grid cells the atoms should go */
 static void calc_cell_indices(const nbnxn_search_t nbs,
-                              int dd_zone,
-                              nbnxn_grid_t *grid,
-                              int a0, int a1,
-                              const int *atinfo,
-                              rvec *x,
-                              const int *move,
-                              nbnxn_atomdata_t *nbat)
+                              int                  grid_ind,
+                              nbnxn_grid_t        *grid,
+                              const int           *atinfo,
+                              rvec                *x,
+                              const int           *move,
+                              nbnxn_atomdata_t    *nbat)
 {
     int   n0, n1;
     int   cx, cy, cxy, ncz_max = 0, ncz;
@@ -1337,15 +1353,18 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 
     nthread = gmx_omp_nthreads_get(emntPairsearch);
 
+    int a0 = grid->atom_start;
+    int a1 = grid->atom_end;
+
     /* For non-local zones we already have the indices */
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
 #pragma omp parallel for num_threads(nthread) schedule(static)
         for (int thread = 0; thread < nthread; thread++)
         {
             try
             {
-                calc_column_indices(grid, a0, a1, x, dd_zone, move,
+                calc_column_indices(grid, x, grid_ind, move,
                                     thread, nthread,
                                     nbs->cell, nbs->work[thread].cxy_na);
             }
@@ -1391,7 +1410,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         fprintf(debug, "ns na_sc %d na_c %d super-cells: %d x %d y %d z %.1f maxz %d\n",
                 grid->na_sc, grid->na_c, grid->nc,
                 grid->ncx, grid->ncy, grid->nc/((double)(grid->ncx*grid->ncy)),
-                dd_zone == 0 ? ncz_max : -1);
+                grid_ind == 0 ? ncz_max : -1);
         if (gmx_debug_at)
         {
             int i = 0;
@@ -1407,7 +1426,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         }
     }
 
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
         /* Make sure the work array for sorting is large enough */
         if (ncz_max*grid->na_sc*SGSF > nbs->work[0].sort_work_nalloc)
@@ -1464,14 +1483,16 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         {
             if (grid->bSimple)
             {
-                sort_columns_simple(nbs, dd_zone, grid, a0, a1, atinfo, x, nbat,
+                sort_columns_simple(nbs, grid_ind, grid, a0, a1,
+                                    atinfo, x, nbat,
                                     ((thread+0)*grid->ncx*grid->ncy)/nthread,
                                     ((thread+1)*grid->ncx*grid->ncy)/nthread,
                                     nbs->work[thread].sort_work);
             }
             else
             {
-                sort_columns_supersub(nbs, dd_zone, grid, a0, a1, atinfo, x, nbat,
+                sort_columns_supersub(nbs, grid_ind, grid, a0, a1,
+                                      atinfo, x, nbat,
                                       ((thread+0)*grid->ncx*grid->ncy)/nthread,
                                       ((thread+1)*grid->ncx*grid->ncy)/nthread,
                                       nbs->work[thread].sort_work);
@@ -1528,15 +1549,12 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
 /* Set the atom order for a non-local grid for zone.
  * The grid sizes have been set up before in nbnxn_set_zone_grid.
  */
-static void calc_grid_atom_order(nbnxn_search_t nbs, int zone,
+static void calc_grid_atom_order(nbnxn_search_t nbs, int grid_ind,
                                  int at_start, int gmx_unused at_end)
 {
-    nbnxn_grid_t *grid;
-    int           nat_tot_max, at, cxy;
+    nbnxn_grid_t *grid = &nbs->grid[grid_ind];
 
-    grid = &nbs->grid[zone];
-
-    nat_tot_max = (grid->cell0 + grid->nc)*grid->na_sc;
+    int           nat_tot_max = (grid->cell0 + grid->nc)*grid->na_sc;
 
     if (nat_tot_max > nbs->cell_nalloc)
     {
@@ -1550,8 +1568,8 @@ static void calc_grid_atom_order(nbnxn_search_t nbs, int zone,
         srenew(nbs->a, nbs->a_nalloc);
     }
 
-    at = at_start;
-    for (cxy = 0; cxy < grid->ncx*grid->ncy; cxy++)
+    int at = at_start;
+    for (int cxy = 0; cxy < grid->ncx*grid->ncy; cxy++)
     {
         int ci = grid->cxy_ind[cxy]*grid->na_sc;
         for (int i = 0; i < grid->cxy_na[cxy]; i++)
@@ -1569,7 +1587,7 @@ static void calc_grid_atom_order(nbnxn_search_t nbs, int zone,
  */
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        int ePBC, matrix box,
-                       int dd_zone,
+                       int grid_ind,
                        const nbnxn_grid_corners_density_t *corners_density,
                        int a0, int a1,
                        const int *atinfo,
@@ -1583,7 +1601,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
     int           n;
     int           nc_max_grid, nc_max;
 
-    grid = &nbs->grid[dd_zone];
+    grid = &nbs->grid[grid_ind];
 
     nbs_cycle_start(&nbs->cc[enbsCCgrid]);
 
@@ -1596,20 +1614,28 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     nbat->na_c = grid->na_c;
 
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
-        grid->cell0 = 0;
+        /* Reset the grid count (in case of DD) */
+        nbs->ngrid       = 1;
+
+        grid->atom_start = a0;
+        grid->atom_end   = a1;
+
+        grid->cell0      = 0;
     }
     else
     {
+        /* Continue the cell count from the end of the previous grid */
+        const nbnxn_grid_t *grid_prev = &nbs->grid[grid_ind - 1];
         grid->cell0 =
-            (nbs->grid[dd_zone-1].cell0 + nbs->grid[dd_zone-1].nc)*
-            nbs->grid[dd_zone-1].na_sc/grid->na_sc;
+            (grid_prev->cell0 + grid_prev->nc)*grid_prev->na_sc/grid->na_sc;
     }
 
-    n = a1 - a0;
+    //n = a1 - a0;
+    n = grid->atom_end - grid->atom_start;
 
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
         nbs->ePBC = ePBC;
         copy_mat(box, nbs->box);
@@ -1630,7 +1656,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
         nbs->natoms_local    = a1 - nmoved;
         /* We assume that nbnxn_put_on_grid is called first
-         * for the local atoms (dd_zone=0).
+         * for the local atoms (grid-ind=0).
          */
         nbs->natoms_nonlocal = a1 - nmoved;
 
@@ -1642,14 +1668,14 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
     }
     else
     {
-        calc_grid_atom_order(nbs, dd_zone, a0, a1);
+        //calc_grid_atom_order(nbs, grid_ind, a0, a1);
 
-        nbs->natoms_nonlocal = std::max(nbs->natoms_nonlocal, a1);
+        //nbs->natoms_nonlocal = std::max(nbs->natoms_nonlocal, a1);
 
         nc_max = grid->cell0 + grid->nc;
     }
 
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
         /* We always use the home zone (grid[0]) for setting the cell size,
          * since determining densities for non-local zones is difficult.
@@ -1687,9 +1713,9 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
         nbnxn_atomdata_realloc(nbat, nc_max*grid->na_sc+NBNXN_BUFFERFLAG_SIZE);
     }
 
-    calc_cell_indices(nbs, dd_zone, grid, a0, a1, atinfo, x, move, nbat);
+    calc_cell_indices(nbs, grid_ind, grid, atinfo, x, move, nbat);
 
-    if (dd_zone == 0)
+    if (grid_ind == 0)
     {
         nbat->natoms_local = nbat->natoms;
     }
@@ -1705,12 +1731,13 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
                                 int                              nb_kernel_type,
                                 nbnxn_atomdata_t                *nbat)
 {
-    for (int zone = 1; zone < zones->n; zone++)
+    for (int grid_ind = 1; grid_ind < nbs->ngrid; grid_ind++)
     {
+        /* TODO: Fix cg_range[] */
         nbnxn_put_on_grid(nbs, nbs->ePBC, NULL,
-                          zone, NULL,
-                          zones->cg_range[zone],
-                          zones->cg_range[zone+1],
+                          grid_ind, NULL,
+                          zones->cg_range[grid_ind],
+                          zones->cg_range[grid_ind + 1],
                           atinfo,
                           x,
                           0, NULL,
@@ -1887,15 +1914,35 @@ void nbnxn_get_local_grid_column(nbnxn_search_t nbs, int cx, int cy,
     col->natoms     = grid->cxy_na[cxy];
 }
 
-void nbnxn_set_domain_grid(nbnxn_search_t           nbs,
-                           int                      zone,
-                           const nbnxn_grid_dims_t *dims,
-                           const int               *column_natoms)
+void nbnxn_set_grid_parameters(nbnxn_search_t           nbs,
+                               int                      dd_zone,
+                               const nbnxn_grid_dims_t *dims,
+                               int                      atom_start,
+                               const int               *column_natoms)
 {
-    nbnxn_grid_t *grid;
-    int           cxy;
+    /* The ngrid, zone2grid and cell0 assignments assume that this
+     * function is called in order for the DD zones and first for
+     * the closest neighbor domain in the zone. This call can be skipped
+     * (in case of empty grids) for any following domains in the zone.
+     */
+    int grid_ind = nbs->ngrid;
+    assert(grid_ind == nbs->zone2grid[dd_zone] ||
+           grid_ind == nbs->zone2grid[dd_zone + 1]);
 
-    grid = &nbs->grid[zone];
+    if (grid_ind + 1 > nbs->grid_nalloc)
+    {
+        nbs->grid_nalloc++;
+        srenew(nbs->grid, nbs->grid_nalloc);
+        nbnxn_grid_init(&nbs->grid[grid_ind]);
+    }
+
+    nbnxn_grid_t *grid = &nbs->grid[grid_ind];
+
+    /* Th next two lines and the cell0 assignment below assume that this
+     * function is called in order for the DD zones and ranges.
+     */
+    nbs->ngrid                  = grid_ind + 1;
+    nbs->zone2grid[dd_zone + 1] = nbs->ngrid;
 
     /* Copy the cluster sizes from the home zone */
     grid->na_c      = nbs->grid[0].na_c;
@@ -1903,8 +1950,11 @@ void nbnxn_set_domain_grid(nbnxn_search_t           nbs,
     grid->na_sc     = nbs->grid[0].na_sc;
     grid->na_c_2log = nbs->grid[0].na_c_2log;
 
-    /* The cell count continues after the previous grid/zone */
-    grid->cell0 = nbs->grid[zone-1].cell0 + nbs->grid[zone-1].nc;
+    /* Continue the cell count from the end of the previous grid */
+    assert(grid_ind > 0);
+    const nbnxn_grid_t *grid_prev = &nbs->grid[grid_ind - 1];
+    grid->cell0 =
+        (grid_prev->cell0 + grid_prev->nc)*grid_prev->na_sc/grid->na_sc;
 
     grid->ncx     = dims->ncolumn_x;
     grid->ncy     = dims->ncolumn_y;
@@ -1922,9 +1972,10 @@ void nbnxn_set_domain_grid(nbnxn_search_t           nbs,
         srenew(grid->cxy_na, grid->cxy_nalloc);
         srenew(grid->cxy_ind, grid->cxy_nalloc);
     }
+    assert(grid->cxy_ind != NULL);
 
     grid->cxy_ind[0] = 0;
-    for (cxy = 0; cxy < grid->ncx*grid->ncy; cxy++)
+    for (int cxy = 0; cxy < grid->ncx*grid->ncy; cxy++)
     {
         int nc_column;
 
@@ -1938,6 +1989,14 @@ void nbnxn_set_domain_grid(nbnxn_search_t           nbs,
         grid->cxy_ind[cxy+1] = grid->cxy_ind[cxy] + nc_column;
     }
     grid->nc = grid->cxy_ind[grid->ncx*grid->ncy];
+
+    grid->atom_start = atom_start;
+    grid->atom_end   = atom_start + dims->natoms;
+    /* TODO: Remove the last two arguments */
+    calc_grid_atom_order(nbs, grid_ind, atom_start, atom_start + dims->natoms);
+
+    nbs->natoms_nonlocal = std::max(nbs->natoms_nonlocal,
+                                    atom_start + dims->natoms);
 }
 
 void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n)
