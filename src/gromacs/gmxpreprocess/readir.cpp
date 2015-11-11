@@ -47,10 +47,10 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/inputrec.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/ifunc.h"

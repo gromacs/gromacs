@@ -35,17 +35,9 @@
 #ifndef GMX_INPUTREC_H
 #define GMX_INPUTREC_H
 
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
-
-
+struct t_inputrec;
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
@@ -98,10 +90,5 @@ void init_inputrec(t_inputrec *ir);
  * \param[in] ir The data structure
  */
 void done_inputrec(t_inputrec *ir);
-
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif
