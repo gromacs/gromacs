@@ -53,7 +53,6 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/splitter.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -66,6 +65,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_constr {

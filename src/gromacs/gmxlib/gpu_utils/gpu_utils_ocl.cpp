@@ -51,11 +51,11 @@
 #endif
 
 #include <memory.h>
+#include "gromacs/legacyheaders/types/enums.h"
 
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/gmxlib/gpu_utils/ocl_compiler.h"
 #include "gromacs/gmxlib/ocl_tools/oclutils.h"
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

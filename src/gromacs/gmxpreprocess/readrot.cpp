@@ -38,12 +38,12 @@
 
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *RotStr = "Enforced rotation:";

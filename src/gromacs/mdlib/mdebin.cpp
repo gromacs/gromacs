@@ -47,7 +47,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -62,6 +61,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };

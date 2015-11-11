@@ -51,7 +51,6 @@
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -60,6 +59,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "3dview.h"

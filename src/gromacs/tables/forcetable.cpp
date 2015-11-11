@@ -43,7 +43,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/math/units.h"
@@ -52,6 +51,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 /* All the possible (implemented) table functions */

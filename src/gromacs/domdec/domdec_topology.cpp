@@ -56,7 +56,6 @@
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "domdec_constraints.h"

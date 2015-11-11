@@ -55,7 +55,6 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/mdtypes/state.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,

@@ -58,7 +58,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
@@ -68,6 +67,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 //! longest file names allowed in input files

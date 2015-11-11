@@ -41,7 +41,6 @@
 
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -49,6 +48,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 

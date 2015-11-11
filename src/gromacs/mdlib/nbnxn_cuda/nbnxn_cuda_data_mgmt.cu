@@ -47,12 +47,12 @@
 #include <stdlib.h>
 
 #include <cuda_profiler_api.h>
+#include "gromacs/legacyheaders/types/enums.h"
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"

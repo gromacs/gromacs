@@ -43,7 +43,6 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
@@ -53,6 +52,7 @@
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

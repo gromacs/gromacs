@@ -44,7 +44,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -62,6 +61,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

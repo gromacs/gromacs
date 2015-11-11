@@ -60,7 +60,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
@@ -85,6 +84,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 //! Global max algorithm

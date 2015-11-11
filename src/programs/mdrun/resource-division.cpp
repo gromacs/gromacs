@@ -47,11 +47,11 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/names.h"
 
 
 /* DISCLAIMER: All the atom count and thread numbers below are heuristic.

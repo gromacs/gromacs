@@ -47,7 +47,6 @@
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */

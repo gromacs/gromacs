@@ -39,10 +39,10 @@
 #include <string.h>
 
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 #define MAXPTR 254

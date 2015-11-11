@@ -39,12 +39,12 @@
 
 #include "vcm.h"
 
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)

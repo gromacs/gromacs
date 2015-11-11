@@ -35,10 +35,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef ENUMS_H_
-#define ENUMS_H_
+#ifndef GMX_UTILITY_ENUMS_H
+#define GMX_UTILITY_ENUMS_H
 
-/* note: these enums should correspond to the names in gmxlib/names.c */
+/* note: these enums should correspond to the names in utility/names.cpp */
 
 enum {
     etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
@@ -436,4 +436,4 @@ enum gmx_nblist_interaction_type
     GMX_NBLIST_INTERACTION_NR
 };
 
-#endif /* ENUMS_H_ */
+#endif /* GMX_UTILITY_ENUMS_H */

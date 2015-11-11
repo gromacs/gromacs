@@ -47,7 +47,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -60,6 +59,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/names.h"
 #include "gromacs/utility/smalloc.h"
 
 
