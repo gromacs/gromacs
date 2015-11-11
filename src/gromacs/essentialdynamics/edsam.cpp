@@ -42,20 +42,15 @@
 #include <string.h>
 #include <time.h>
 
-#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
-#include "gromacs/mdlib/update.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"

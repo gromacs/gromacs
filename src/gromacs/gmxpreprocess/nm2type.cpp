@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -52,7 +53,6 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"

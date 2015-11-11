@@ -41,7 +41,7 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
