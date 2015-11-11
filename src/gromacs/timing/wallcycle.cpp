@@ -543,8 +543,8 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 #endif
             cycles[ewcNR+i]   = static_cast<double>(wc->wcsc[i].c);
         }
+        nsum += ewcsNR;
     }
-    nsum += ewcsNR;
 
 #ifdef GMX_MPI
     if (cr->nnodes > 1)
