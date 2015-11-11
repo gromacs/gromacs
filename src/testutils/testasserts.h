@@ -68,6 +68,19 @@ namespace gmx
 namespace test
 {
 
+namespace internal
+{
+//! \cond internal
+/*! \internal
+ * \brief
+ * Called for an expected exception from EXPECT_THROW_GMX().
+ *
+ * \param[in] ex  Exception that was thrown.
+ */
+void processExpectedException(const std::exception &ex);
+//! \endcond
+}
+
 //! \libinternal \addtogroup module_testutils
 //! \{
 
@@ -99,8 +112,9 @@ namespace test
         try { \
             GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
         } \
-        catch (expected_exception const &) { \
+        catch (expected_exception const &ex) { \
             gmx_caught_expected = true; \
+            ::gmx::test::internal::processExpectedException(ex); \
         } \
         catch (std::exception const &ex) { \
             gmx_ar << "Expected: " #statement " throws an exception of type " \
