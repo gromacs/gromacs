@@ -47,7 +47,7 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"

@@ -49,8 +49,8 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/utilities.h"
