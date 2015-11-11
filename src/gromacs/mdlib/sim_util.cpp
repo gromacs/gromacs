@@ -51,7 +51,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/disre.h"
@@ -102,6 +101,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 

@@ -40,10 +40,10 @@
 #include <cmath>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/sfactor.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_saxs(int argc, char *argv[])

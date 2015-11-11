@@ -17,3 +17,4 @@ topology -> gmxlib
 pbcutil -> fileio
 pbcutil -> gmxlib
 listed-forces -> mdlib
+utility -> math

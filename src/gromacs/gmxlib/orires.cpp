@@ -40,7 +40,6 @@
 
 #include <cmath>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
@@ -57,6 +56,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
