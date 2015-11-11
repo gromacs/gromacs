@@ -34,24 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_COPYRITE_H
-#define GMX_FILEIO_COPYRITE_H
+/*! \libinternal \file
+ * \brief Helper functionality for information about the currently running binary
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_BINARYINFORMATION_H
+#define GMX_UTILITY_BINARYINFORMATION_H
 
 #include <cstdio>
-
-void
-please_cite(FILE *fp, const char *key);
-/* Print a message asking to cite something... */
 
 namespace gmx
 {
 
 class IProgramContext;
 
-/*! \libinternal\brief
+/*! \libinternal \brief
  * Settings for printBinaryInformation().
  *
  * This class is used to specify what printBinaryInformation() prints.
+ *
+ * \ingroup module_utility
+ * \inlibraryapi
  */
 class BinaryInformationSettings
 {

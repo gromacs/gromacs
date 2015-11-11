@@ -42,7 +42,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
