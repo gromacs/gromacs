@@ -37,7 +37,7 @@
 
 #include "df_history.h"
 
-#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/smalloc.h"
 
 void init_df_history(df_history_t *dfhist, int nlambda)
