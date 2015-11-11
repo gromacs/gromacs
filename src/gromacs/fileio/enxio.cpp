@@ -47,6 +47,8 @@
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1196,7 +1198,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
             bufi = *(groups->grpname[ni]);
             for (j = 0; (j < state->nhchainlength); j++)
             {
-                if (IR_NVT_TROTTER(ir))
+                if (inputrecNvtTrotter(ir))
                 {
                     sprintf(cns, "-%d", j);
                 }
@@ -1209,7 +1211,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
         }
         fprintf(stderr, "\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n", state->ngtc, fn);
 
-        if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
+        if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
         {
             for (i = 0; i < state->nnhpres; i++)
             {

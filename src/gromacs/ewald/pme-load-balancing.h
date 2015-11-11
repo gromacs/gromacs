@@ -47,9 +47,9 @@
 #define GMX_EWALD_PME_LOAD_BALANCING_H
 
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct t_commrec;

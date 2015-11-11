@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,36 +34,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_PBCUTIL_BOXUTILITIES_H
-#define GMX_PBCUTIL_BOXUTILITIES_H
+/*! \file
+ * \brief
+ * Declares names corresponding to variable types for printing.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_NAMES_H
+#define GMX_UTILITY_NAMES_H
 
-#include <stdio.h>
-
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
 
-struct t_state;
-
-/*! \brief Make sure the relative box shape remains the same
+/*! \brief Return a string from a list of strings
  *
- * This function ensures that the relative box dimensions are
- * preserved, which otherwise might diffuse away due to rounding
- * errors in pressure coupling or the deform option.
- *
- * \param[in] ir      Input record
- * \param[in] box_rel Relative box
- * \param[out] b      The corrected box
+ * If index if within 0 .. max_index-1 returns the corresponding string
+ * or UNDEFINED otherwise, in other words this is a range-check that does
+ * not crash.
+ * \param[in] index     The index in the array
+ * \param[in] max_index The length of the array
+ * \param[in] names     The array
+ * \return the correct string or UNDEFINED
  */
-void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
+const char *enum_name(int index, int max_index, const char *names[]);
 
-/*! \brief Determine the relative box components
- *
- * Set state->box_rel used in mdrun to preserve the box shape
- * \param[in] ir       Input record
- * \param[inout] state Structure containing the box
+/* All string arrays are NULL terminated, and therefore have an
+ * extra argument (the +1)
+ * these should correspond to names.c and include/types/enums.h
  */
-void set_box_rel(struct t_inputrec *ir, t_state *state);
+extern const char *yesno_names[BOOL_NR+1];
+extern const char *bool_names[BOOL_NR+1];
+#define EBOOL(e)       enum_name(e, BOOL_NR, bool_names)
 
 #endif

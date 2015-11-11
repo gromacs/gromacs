@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_MTOP_UTIL_H
 #define GMX_TOPOLOGY_MTOP_UTIL_H
 
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_localtop_t;
