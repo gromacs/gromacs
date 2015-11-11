@@ -44,12 +44,12 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/units.h"

@@ -34,24 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_FILEIO_TXTDUMP_H
+#define GMX_FILEIO_TXTDUMP_H
 
-#ifndef _txtdump_h
-#define _txtdump_h
+#include <cstdio>
 
-
-#include <stdio.h>
-
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
 
+struct gmx_mtop_t;
+struct t_atoms;
 struct t_atomtypes;
+struct t_block;
 struct t_blocka;
 struct t_commrec;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct t_idef;
+struct t_inputrec;
+struct t_topology;
+struct t_tpxheader;
 
 #define LINE_WIDTH  80
 #define RMARGIN     10
@@ -104,8 +104,4 @@ void pr_header(FILE *fp, int indent, const char *title, t_tpxheader *sh);
 
 void pr_commrec(FILE *fp, int indent, struct t_commrec *cr);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* _txtdump_h */
+#endif  /* GMX_FILEIO_TXTDUMP_H */
