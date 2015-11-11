@@ -59,7 +59,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -80,6 +79,7 @@
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
@@ -90,6 +90,11 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "nbnxn_gpu_jit_support.h"
+
+const char *egrp_nm[egNR+1] = {
+    "Coul-SR", "LJ-SR", "Buck-SR", "Coul-LR", "LJ-LR", "Buck-LR",
+    "Coul-14", "LJ-14", NULL
+};
 
 t_forcerec *mk_forcerec(void)
 {
@@ -2777,7 +2782,7 @@ void init_forcerec(FILE              *fp,
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       IR_ELEC_FIELD(*ir)
+                       inputrecElecField(ir)
                        );
 
     if (fr->cutoff_scheme == ecutsGROUP &&

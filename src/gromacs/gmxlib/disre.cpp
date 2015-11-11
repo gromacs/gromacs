@@ -53,6 +53,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"

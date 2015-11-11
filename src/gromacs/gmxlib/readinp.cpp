@@ -47,7 +47,7 @@
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/warninp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"

@@ -47,9 +47,12 @@
 #include "gromacs/gmxlib/gmx_detect_hardware.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 

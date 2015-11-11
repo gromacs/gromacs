@@ -44,6 +44,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
 void

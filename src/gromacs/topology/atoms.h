@@ -46,10 +46,13 @@ extern "C" {
 
 struct t_symtab;
 
+/* The particle type */
 enum {
     eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
-/* The particle type */
+
+/* The particle type names */
+extern const char *ptype_str[eptNR+1];
 
 typedef struct t_atom
 {

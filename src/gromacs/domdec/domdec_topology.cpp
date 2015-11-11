@@ -57,12 +57,13 @@
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -815,7 +816,7 @@ void dd_make_reverse_top(FILE *fplog,
      * excluded pair should appear exactly once.
      */
     rt->bExclRequired = (ir->cutoff_scheme == ecutsGROUP &&
-                         IR_EXCL_FORCES(*ir));
+                         inputrecExclForces(ir));
 
     int nexcl, mb;
 
@@ -2716,7 +2717,7 @@ void dd_bonded_cg_distance(FILE *fplog,
     bonded_distance_t  bd_2b = { 0, -1, -1, -1 };
     bonded_distance_t  bd_mb = { 0, -1, -1, -1 };
 
-    bExclRequired = IR_EXCL_FORCES(*ir);
+    bExclRequired = inputrecExclForces(ir);
 
     vsite = init_vsite(mtop, NULL, TRUE);
 

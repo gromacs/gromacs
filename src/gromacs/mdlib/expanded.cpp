@@ -50,7 +50,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calcmu.h"
@@ -58,6 +57,8 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1338,7 +1339,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
             }
         }
 
-        if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir))
+        if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir))
         {
             /* we need to recalculate the masses if the temperature has changed */
             init_npt_masses(ir, state, MassQ, FALSE);
