@@ -34,14 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_COPYRITE_H
-#define GMX_FILEIO_COPYRITE_H
+/*! \file
+ * \brief Helper functionality for information about the currently running binary
+ *
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_BINARYINFORMATION_H
+#define GMX_UTILITY_BINARYINFORMATION_H
 
 #include <cstdio>
-
-void
-please_cite(FILE *fp, const char *key);
-/* Print a message asking to cite something... */
 
 namespace gmx
 {

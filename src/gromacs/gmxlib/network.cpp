@@ -46,7 +46,6 @@
 #include <cstring>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"

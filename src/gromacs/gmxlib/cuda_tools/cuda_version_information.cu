@@ -35,7 +35,9 @@
 
 #include "gmxpre.h"
 
-#include <stdio.h>
+#include "cuda_version_information.h"
+
+#include <cstdio>
 
 #include "buildinfo.h"
 

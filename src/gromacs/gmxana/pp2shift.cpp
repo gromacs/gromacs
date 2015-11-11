@@ -41,12 +41,12 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
