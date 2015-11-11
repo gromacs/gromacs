@@ -49,7 +49,6 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -60,6 +59,8 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -1315,7 +1316,7 @@ void update_tcouple(gmx_int64_t       step,
 
     /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec)))
+        !(inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec)))
     {
         /* We should only couple after a step where energies were determined (for leapfrog versions)
            or the step energies are determined, for velocity verlet versions */
@@ -1382,7 +1383,7 @@ void update_pcouple(FILE             *fplog,
     int        i;
 
     /* if using Trotter pressure, we do this in coupling.c, so we leave it false. */
-    if (inputrec->epc != epcNO && (!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))))
+    if (inputrec->epc != epcNO && (!(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))))
     {
         /* We should only couple after a step where energies were determined */
         bPCouple = (inputrec->nstpcouple == 1 ||
@@ -1861,7 +1862,7 @@ void update_box(FILE             *fplog,
             break;
     }
 
-    if (DEFORM(*inputrec))
+    if (inputrecDeform(inputrec))
     {
         deform(upd, start, homenr, state->x, state->box, inputrec, step);
     }

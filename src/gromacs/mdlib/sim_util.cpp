@@ -61,7 +61,6 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -84,6 +83,8 @@
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -791,7 +792,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         update_forcerec(fr, box);
 
-        if (NEED_MUTOT(*inputrec))
+        if (inputrecNeedMutot(inputrec))
         {
             /* Calculate total (local) dipole moment in a temporary common array.
              * This makes it possible to sum them over nodes faster.
@@ -1036,7 +1037,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             dd_move_x(cr->dd, box, x);
 
             /* When we don't need the total dipole we sum it in global_stat */
-            if (bStateChanged && NEED_MUTOT(*inputrec))
+            if (bStateChanged && inputrecNeedMutot(inputrec))
             {
                 gmx_sumd(2*DIM, mu, cr);
             }
@@ -1074,7 +1075,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
-    if (bStateChanged && NEED_MUTOT(*inputrec))
+    if (bStateChanged && inputrecNeedMutot(inputrec))
     {
         if (PAR(cr))
         {
@@ -1441,7 +1442,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        if (IR_ELEC_FIELD(*inputrec))
+        if (inputrecElecField(inputrec))
         {
             /* Compute forces due to electric field */
             calc_f_el(MASTER(cr) ? field : NULL,
@@ -1574,7 +1575,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     {
         update_forcerec(fr, box);
 
-        if (NEED_MUTOT(*inputrec))
+        if (inputrecNeedMutot(inputrec))
         {
             /* Calculate total (local) dipole moment in a temporary common array.
              * This makes it possible to sum them over nodes faster.
@@ -1668,9 +1669,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcMOVEX);
     }
 
-    if (NEED_MUTOT(*inputrec))
+    if (inputrecNeedMutot(inputrec))
     {
-
         if (bStateChanged)
         {
             if (PAR(cr))
@@ -1839,7 +1839,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        if (IR_ELEC_FIELD(*inputrec))
+        if (inputrecElecField(inputrec))
         {
             /* Compute forces due to electric field */
             calc_f_el(MASTER(cr) ? field : NULL,
