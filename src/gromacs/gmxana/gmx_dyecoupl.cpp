@@ -36,7 +36,6 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -47,6 +46,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_dyecoupl(int argc, char *argv[])

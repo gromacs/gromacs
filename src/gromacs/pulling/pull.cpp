@@ -51,7 +51,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

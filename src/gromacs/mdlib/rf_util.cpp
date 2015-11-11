@@ -38,7 +38,6 @@
 
 #include <cmath>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
@@ -49,6 +48,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 
 real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                         const t_mdatoms *mdatoms, const t_blocka *excl,

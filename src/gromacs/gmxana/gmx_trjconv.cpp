@@ -45,7 +45,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/groio.h"

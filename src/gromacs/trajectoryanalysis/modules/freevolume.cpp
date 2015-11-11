@@ -48,7 +48,6 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -64,6 +63,7 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/pleasecite.h"
 
 namespace gmx
 {
