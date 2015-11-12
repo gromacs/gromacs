@@ -45,11 +45,12 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <string>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for usleep()
 #endif
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
@@ -57,10 +58,12 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "3dview.h"
 #include "nmol.h"
@@ -203,7 +206,6 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
               const char *status)
 {
     gmx_atomprop_t    aps;
-    char              buf[256], quote[256];
     t_tpxheader       sh;
     t_atoms          *at;
     bool             *bB;
@@ -241,9 +243,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
                   trajectory, man->natom);
     }
 
-    cool_quote(quote, 255, NULL);
-    std::sprintf(buf, "%s: %s", *man->top.name, quote);
-    man->title.text = gmx_strdup(buf);
+    man->title.text = gmx_strdup(gmx::formatString("%s: %s", *man->top.name, gmx::getCoolQuote().c_str()).c_str());
     man->view       = init_view(man->box);
     at              = &(man->top.atoms);
     aps             = gmx_atomprop_init();
