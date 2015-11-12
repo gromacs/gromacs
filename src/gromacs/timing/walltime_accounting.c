@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -193,10 +193,12 @@ walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_account
 double
 gmx_gettime()
 {
-#if defined HAVE_CLOCK_GETTIME && _POSIX_TIMERS >= 0
+#if defined HAVE_CLOCK_GETTIME && _POSIX_TIMERS >= 0 && !(defined __bgq__ && defined __clang__)
     /* Mac and Windows do not support this. For added fun, Windows
      * defines _POSIX_TIMERS without actually providing the
-     * implementation. */
+     * implementation. The BlueGene/Q CNK only supports gettimeofday,
+     * and bgclang doesn't provide a fully functional implementation
+     * for clock_gettime (unlike xlc). */
     struct timespec t;
     double          seconds;
 
@@ -207,6 +209,7 @@ gmx_gettime()
 #elif defined HAVE_GETTIMEOFDAY
     // Note that gettimeofday() is deprecated by POSIX, but since Mac
     // and Windows do not yet support POSIX, we are still stuck.
+    // Also, this is the only supported API call on Bluegene/Q.
     struct timeval t;
     double         seconds;
 
