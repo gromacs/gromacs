@@ -40,6 +40,27 @@
 
 /* note: these enums should correspond to the names in gmxlib/names.c */
 
+/*! \brief The two compartments for CompEL setups. */
+enum eCompartment {
+    eCompA, eCompB, eCompNR
+};
+
+/*! \brief The positive and negative ions CompEL setups.
+ *
+ * Future versions of the protocol might consider more than two types of ions.
+ */
+enum eIontype {
+    eIonNEG, eIonPOS, eIonNR
+};
+
+/*! \brief The channels that define with their COM the compartment boundaries in CompEL setups.
+ *
+ * In principle one could also use modified setups with more than two channels.
+ */
+enum eChannel {
+    eChan0, eChan1, eChanNR
+};
+
 enum {
     etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
 }; /* yes is an alias for berendsen */

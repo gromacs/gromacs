@@ -32,10 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TOPOLOGY_ATOM_ID_H
-#define GMX_TOPOLOGY_ATOM_ID_H
+/*! \file
+ * \brief
+ * Basic type for atoms. \Gromacs.
+ *
+ * \inpublicapi
+ * \ingroup module_topology
+ */
+#ifndef GMX_UTILITY_ATOM_ID_H
+#define GMX_UTILITY_ATOM_ID_H
 
-typedef int         atom_id;      /* To indicate an atoms id         */
-#define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */
+//! To indicate an atoms id
+typedef int         atom_id;
+
+//! Use this to indicate invalid atid
+#define NO_ATID     (atom_id)(~0)
 
 #endif
