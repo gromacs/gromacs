@@ -41,9 +41,7 @@
 #include "config.h"
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <ctime>
 
 #include <algorithm>
 
@@ -58,108 +56,13 @@
 
 #include "buildinfo.h"
 #include "gromacs/fft/fft.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-static gmx_bool be_cool(void)
-{
-    /* Yes, it is bad to check the environment variable every call,
-     * but we dont call this routine often, and it avoids using
-     * a mutex for locking the variable...
-     */
-#if GMX_COOL_QUOTES
-    return (getenv("GMX_NO_QUOTES") == NULL);
-#else
-    /*be uncool*/
-    return FALSE;
-#endif
-}
-
-static void pukeit(const char *db, const char *defstring, char *retstring,
-                   int retsize, int *cqnum)
-{
-    FILE     *fp;
-    char    **help;
-    int       i, nhlp;
-    gmx_rng_t rng;
-
-    if (be_cool() && ((fp = low_libopen(db, FALSE)) != NULL))
-    {
-        nhlp = fget_lines(fp, &help);
-        /* for libraries we can use the low-level close routines */
-        gmx_ffclose(fp);
-        rng    = gmx_rng_init(gmx_rng_make_seed());
-        *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
-        gmx_rng_destroy(rng);
-        if (std::strlen(help[*cqnum]) >= STRLEN)
-        {
-            help[*cqnum][STRLEN-1] = '\0';
-        }
-        std::strncpy(retstring, help[*cqnum], retsize);
-        for (i = 0; (i < nhlp); i++)
-        {
-            sfree(help[i]);
-        }
-        sfree(help);
-    }
-    else
-    {
-        *cqnum = -1;
-        std::strncpy(retstring, defstring, retsize);
-    }
-}
-
-void bromacs(char *retstring, int retsize)
-{
-    int dum;
-
-    pukeit("bromacs.dat",
-           "Groningen Machine for Chemical Simulation",
-           retstring, retsize, &dum);
-}
-
-void cool_quote(char *retstring, int retsize, int *cqnum)
-{
-    char *tmpstr;
-    char *ptr;
-    int   tmpcq, *p;
-
-    if (cqnum != NULL)
-    {
-        p = cqnum;
-    }
-    else
-    {
-        p = &tmpcq;
-    }
-
-    /* protect audience from explicit lyrics */
-    snew(tmpstr, retsize+1);
-    pukeit("gurgle.dat", "Thanx for Using GROMACS - Have a Nice Day",
-           tmpstr, retsize-2, p);
-
-    if ((ptr = std::strchr(tmpstr, '_')) != NULL)
-    {
-        *ptr = '\0';
-        ptr++;
-        sprintf(retstring, "\"%s\" %s", tmpstr, ptr);
-    }
-    else
-    {
-        std::strcpy(retstring, tmpstr);
-    }
-    sfree(tmpstr);
-}
 
 static int centeringOffset(int width, int length)
 {

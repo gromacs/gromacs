@@ -39,14 +39,15 @@
 #include "config.h"
 
 #include <cstdio>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -304,7 +305,6 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     matrix                box;
     t_trxframe            fr;
     t_trxstatus          *status;
-    char                  quote[256];
 
     snew(gmx, 1);
     snew(gmx->wd, 1);
@@ -319,8 +319,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     /* Creates a simple window */
     w0 = DisplayWidth(x11->disp, x11->screen)-132;
     h0 = DisplayHeight(x11->disp, x11->screen)-140;
-    bromacs(quote, 255);
-    InitWin(gmx->wd, 0, 0, w0, h0, 3, quote);
+    InitWin(gmx->wd, 0, 0, w0, h0, 3, gmx::bromacs().c_str());
     gmx->wd->self = XCreateSimpleWindow(x11->disp, x11->root,
                                         gmx->wd->x, gmx->wd->y,
                                         gmx->wd->width, gmx->wd->height,
