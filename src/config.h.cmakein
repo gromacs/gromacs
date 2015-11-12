@@ -56,6 +56,12 @@
 /* Use FFTW3 FFT library */
 #cmakedefine01 GMX_FFT_FFTW3
 
+/* Use MKL FFT library */
+#cmakedefine01 GMX_FFT_MKL
+
+/* Use built in fftpack FFT library */
+#cmakedefine01 GMX_FFT_FFTPACK
+
 /* Target platform is x86 or x86_64 */
 #cmakedefine GMX_TARGET_X86
 
