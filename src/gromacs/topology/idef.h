@@ -38,7 +38,7 @@
 #define GMX_TOPOLOGY_IDEF_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/atom_id.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus

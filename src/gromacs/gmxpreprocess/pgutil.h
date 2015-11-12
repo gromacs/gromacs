@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
