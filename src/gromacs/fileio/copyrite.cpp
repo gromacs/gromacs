@@ -45,6 +45,10 @@
 
 #include <algorithm>
 
+#if GMX_FFT_FFTW3
+/* Needed for its detailed description string */
+#include <fftw3.h>
+#endif
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
@@ -55,7 +59,6 @@
 /* This file is completely threadsafe - keep it that way! */
 
 #include "buildinfo.h"
-#include "gromacs/fft/fft.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
@@ -589,7 +592,7 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt_impl(x)));
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
-    fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
+    fprintf(fp, "FFT library:        %s\n", GMX_FFT_DESCRIPTION_STRING);
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
 #else
