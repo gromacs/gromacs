@@ -101,6 +101,14 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     set(GMX_FFT_FFTW3 1)
+    if(GMX_NATIVE_WINDOWS)
+        set(GMX_FFT_DESCRIPTION_STRING "\"fftw3\"")
+    else()
+        # ${LOWERFFTW}_version is a const char * provided by libfftw3,
+        # which will work so long as the file needing to write this
+        # text does #include <fftw3.h> first
+        set(GMX_FFT_DESCRIPTION_STRING "${LOWERFFTW}_version")
+    endif()
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
@@ -153,9 +161,11 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     set(GMX_FFT_MKL 1)
     set(HAVE_LIBMKL 1)
 
+    set(GMX_FFT_DESCRIPTION_STRING "\"Intel MKL\"")
     set(FFT_STATUS_MESSAGE "Using external FFT library - Intel MKL")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     set(GMX_FFT_FFTPACK 1)
+    set(GMX_FFT_DESCRIPTION_STRING "\"fftpack (built-in)\"")
     set(FFT_STATUS_MESSAGE "Using internal FFT library - fftpack")
 else()
     gmx_invalid_option_value(GMX_FFT_LIBRARY)
