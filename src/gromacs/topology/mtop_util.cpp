@@ -44,8 +44,8 @@
 
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
