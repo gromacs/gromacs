@@ -45,9 +45,31 @@
 
 #include <algorithm>
 
+// Define the FFT description string
+#if GMX_FFT_FFTW3
+#include <fftw3.h>
+#  if GMX_NATIVE_WINDOWS
+static const char *fftDescriptionString = "fftw3";
+#  else
+// Use the version string provided by libfftw3
+#    if GMX_DOUBLE
+static const char *fftDescriptionString = fftw_version;
+#    else
+static const char *fftDescriptionString = fftwf_version;
+#    endif
+#  endif
+#endif
+#if GMX_FFT_MKL
+static const char *fftDescriptionString = "Intel MKL";
+#endif
+#if GMX_FFT_FFTPACK
+static const char *fftDescriptionString = "fftpack (built-in)";
+#endif
+
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
+
 #if HAVE_EXTRAE
 #include <extrae_user_events.h>
 #endif
@@ -55,7 +77,6 @@
 /* This file is completely threadsafe - keep it that way! */
 
 #include "buildinfo.h"
-#include "gromacs/fft/fft.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
@@ -590,7 +611,7 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt_impl(x)));
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
-    fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
+    fprintf(fp, "FFT library:        %s\n", fftDescriptionString);
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
 #else
