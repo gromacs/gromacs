@@ -43,7 +43,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
@@ -53,6 +52,7 @@
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -263,7 +263,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            gmx_conect conect, gmx_bool bTerSepChains)
 {
     gmx_conect_t     *gc = (gmx_conect_t *)conect;
-    char              resnm[6], nm[6], pukestring[100];
+    char              resnm[6], nm[6];
     atom_id           i, ii;
     int               resind, resnr;
     enum PDB_record   type;
@@ -278,8 +278,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
     gmx_residuetype_init(&rt);
 
-    bromacs(pukestring, 99);
-    fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : pukestring);
+    fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) )
     {
         gmx_write_pdb_box(out, ePBC, box);
