@@ -171,7 +171,7 @@ std::string findFullBinaryPath(const std::string            &invokedName,
  */
 bool isAcceptableLibraryPath(const std::string &path)
 {
-    return Path::exists(Path::join(path, "gurgle.dat"));
+    return Path::exists(Path::join(path, "residuetypes.dat"));
 }
 
 /*! \brief

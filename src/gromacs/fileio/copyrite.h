@@ -39,20 +39,6 @@
 
 #include <cstdio>
 
-/* For both bromacs() and cool_quote() you have to provide a pointer to
- * a string of reasonable length (say 256) and the string length. This
- * is necessary to make the routines threadsafe and avoid allocating
- * a new string each time. The retstring pointer will be the return value.
- */
-void
-bromacs(char *retstring, int retsize);
-
-/* For cool_quote, the number of the quote used will be returned in cqnum
- * if it is non-NULL.
- */
-void
-cool_quote(char *retstring, int retsize, int *cqnum);
-
 void
 please_cite(FILE *fp, const char *key);
 /* Print a message asking to cite something... */
