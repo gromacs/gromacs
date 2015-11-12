@@ -75,7 +75,7 @@
 #define GMX_SELECTION_CENTEROFMASS_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 
 struct t_block;
 struct t_blocka;

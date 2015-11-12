@@ -39,7 +39,7 @@
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_output_env_t;

@@ -39,7 +39,7 @@
 
 #include "invblock.h"
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

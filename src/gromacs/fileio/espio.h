@@ -39,7 +39,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 
 struct t_atoms;
 struct t_topology;

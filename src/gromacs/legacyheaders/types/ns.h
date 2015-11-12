@@ -40,7 +40,7 @@
 
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/nsgrid.h"
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus

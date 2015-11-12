@@ -65,7 +65,7 @@
 
 #include <string>
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 #include "gromacs/topology/block.h"
 
 namespace gmx

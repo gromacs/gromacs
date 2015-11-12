@@ -43,8 +43,8 @@
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/atom_id.h"
 #include "gromacs/random/random.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"

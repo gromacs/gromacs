@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/mdtypes/atom_id.h"
 
 #ifdef __cplusplus
 extern "C" {

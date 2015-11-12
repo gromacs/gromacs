@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,39 +34,15 @@
  */
 /*! \file
  * \brief
- * Enumerated types used in the "Computational Electrophysiology" module.
+ * Basic type for atoms. \Gromacs.
  *
- * The following enums are mainly used for indexing arrays and when
- * looping over the available ions, channels, or compartments. This hopefully
- * adds to the code's readability because it makes clear which object is dealt
- * with in a block of code.
- *
- * \author Carsten Kutzner <ckutzne@gwdg.de>
- * \inlibraryapi
- * \ingroup module_swap
+ * \inpublicapi
+ * \ingroup module_mdtypes
  */
-#ifndef GMX_SWAP_ENUMS_H
-#define GMX_SWAP_ENUMS_H
+#ifndef GMX_UTILITY_ATOM_ID_H
+#define GMX_UTILITY_ATOM_ID_H
 
-/*! \brief The two compartments for CompEL setups. */
-enum eCompartment {
-    eCompA, eCompB, eCompNR
-};
-
-/*! \brief The positive and negative ions CompEL setups.
- *
- * Future versions of the protocol might consider more than two types of ions.
- */
-enum eIontype {
-    eIonNEG, eIonPOS, eIonNR
-};
-
-/*! \brief The channels that define with their COM the compartment boundaries in CompEL setups.
- *
- * In principle one could also use modified setups with more than two channels.
- */
-enum eChannel {
-    eChan0, eChan1, eChanNR
-};
+typedef int         atom_id;      /* To indicate an atoms id         */
+#define NO_ATID     (atom_id)(~0) /* Use this to indicate invalid atid */
 
 #endif
