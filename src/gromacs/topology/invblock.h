@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_INVBLOCK_H
 #define GMX_TOPOLOGY_INVBLOCK_H
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/atom_id.h"
 
 struct t_block;
 struct t_blocka;

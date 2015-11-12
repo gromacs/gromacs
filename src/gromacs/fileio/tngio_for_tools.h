@@ -39,7 +39,7 @@
 
 #include "tng/tng_io_fwd.h"
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 

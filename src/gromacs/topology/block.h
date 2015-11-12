@@ -37,7 +37,7 @@
 #ifndef GMX_TOPOLOGY_BLOCK_H
 #define GMX_TOPOLOGY_BLOCK_H
 
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus

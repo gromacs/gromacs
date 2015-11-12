@@ -45,8 +45,8 @@
  * are based on the lower level routines in gmxfio.c
  *
  **************************************************************/
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/mdtypes/inputrec.h"
 
 #ifdef __cplusplus
 extern "C" {

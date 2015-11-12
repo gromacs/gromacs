@@ -38,7 +38,7 @@
 #define GMX_FILEIO_CONFIO_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* For reading coordinate files it is assumed that enough memory
