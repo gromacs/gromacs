@@ -40,8 +40,8 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
