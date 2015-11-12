@@ -370,6 +370,7 @@ def check_all(tree, reporter, check_ignored):
         check_member(memberobj, reporter, check_ignored)
 
     check_cycles(ModuleDependencyGraph(tree), reporter)
+    tree.report_unused_cycle_suppressions(reporter)
 
 def main():
     """Run the checking script."""

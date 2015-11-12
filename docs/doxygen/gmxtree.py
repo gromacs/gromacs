@@ -494,6 +494,7 @@ class ModuleDependency(object):
         self._includedfiles = []
         self._cyclesuppression = None
         self._is_test_only_dependency = True
+        self.suppression_used = True
 
     def add_included_file(self, includedfile):
         """Add IncludedFile that is part of this dependency."""
@@ -505,9 +506,11 @@ class ModuleDependency(object):
     def set_cycle_suppression(self):
         """Set suppression on cycles containing this dependency."""
         self._cyclesuppression = True
+        self.suppression_used = False
 
     def is_cycle_suppressed(self):
         """Return whether cycles containing this dependency are suppressed."""
+        self.suppression_used = True
         return self._cyclesuppression is not None
 
     def is_test_only_dependency(self):
@@ -1038,9 +1041,14 @@ class GromacsTree(object):
                     continue
                 for dep in firstmodule.get_dependencies():
                     if dep.get_other_module() == secondmodule:
-                        # TODO: Check that each suppression is actually part of
-                        # a cycle.
                         dep.set_cycle_suppression()
+
+    def report_unused_cycle_suppressions(self, reporter):
+        """Reports unused cycle suppressions."""
+        for module in self.get_modules():
+            for dep in module.get_dependencies():
+                if not dep.suppression_used:
+                    reporter.cyclic_issue("unused cycle suppression: {0} -> {1}".format(module.get_name()[7:], dep.get_other_module().get_name()[7:]))
 
     def get_object(self, docobj):
         """Get tree object for a Doxygen XML object."""
