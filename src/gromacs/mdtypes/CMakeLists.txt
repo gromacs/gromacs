@@ -36,5 +36,6 @@ file(GLOB MDTYPES_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MDTYPES_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
+    inputrec.h
     state.h
-    )
+)
