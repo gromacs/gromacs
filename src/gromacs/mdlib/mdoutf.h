@@ -39,8 +39,8 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 

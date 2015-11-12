@@ -42,7 +42,6 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
