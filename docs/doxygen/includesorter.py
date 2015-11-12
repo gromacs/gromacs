@@ -106,7 +106,7 @@ class GroupedSorter(object):
     _std_c_cpp_headers = ['c' + x[:-2] for x in _std_c_headers]
     _std_cpp_headers = ['algorithm', 'deque', 'exception', 'fstream',
             'functional', 'iomanip', 'ios', 'iosfwd', 'iostream', 'istream', 'iterator',
-            'limits', 'list', 'map', 'memory', 'new', 'numeric', 'ostream',
+            'limits', 'list', 'map', 'memory', 'new', 'numeric', 'ostream', 'random',
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
             'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
 
