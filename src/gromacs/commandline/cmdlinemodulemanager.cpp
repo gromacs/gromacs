@@ -53,11 +53,11 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -423,19 +423,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
 
 void CommandLineModuleManager::Impl::printThanks(FILE *fp)
 {
-    char cq[1024];
-    int  cqnum = -1;
-
-    cool_quote(cq, 1023, &cqnum);
-
-    if (cqnum >= 0)
-    {
-        fprintf(fp, "\ngcq#%d: %s\n\n", cqnum, cq);
-    }
-    else
-    {
-        fprintf(fp, "\n%s\n\n", cq);
-    }
+    fprintf(fp, "\n%s\n\n", getCoolQuote().c_str());
 }
 
 /********************************************************************
