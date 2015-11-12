@@ -41,10 +41,13 @@
 #include <cctype>
 #include <cstring>
 
+#include <string>
+
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -231,7 +234,7 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
                  const char *yaxis, int exvg_graph_type,
                  const gmx_output_env_t *oenv)
 {
-    char   pukestr[100], buf[STRLEN];
+    char buf[STRLEN];
 
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -248,8 +251,7 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         fprintf(fp, "# %s is part of G R O M A C S:\n#\n",
                 output_env_get_program_display_name(oenv));
-        bromacs(pukestr, 99);
-        fprintf(fp, "# %s\n#\n", pukestr);
+        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
         fprintf(fp, "@    title \"%s\"\n", xvgrstr(title, oenv, buf, STRLEN));
         fprintf(fp, "@    xaxis  label \"%s\"\n",
                 xvgrstr(xaxis, oenv, buf, STRLEN));

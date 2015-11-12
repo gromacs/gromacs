@@ -45,7 +45,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
@@ -1261,7 +1260,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     gmx_residuetype_t*rt;
     const char       *top_fn;
     char              fn[256], itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
-    char              molname[STRLEN], title[STRLEN], quote[STRLEN];
+    char              molname[STRLEN], title[STRLEN];
     char             *c, forcefield[STRLEN], ffdir[STRLEN];
     char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
     char             *watermodel;
@@ -2159,8 +2158,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             {
                 sprintf(fn, "chain_%c.pdb", cc->chainid);
             }
-            cool_quote(quote, 255, NULL);
-            write_sto_conf(fn, quote, pdba, x, NULL, ePBC, box);
+            write_sto_conf(fn, "", pdba, x, NULL, ePBC, box);
         }
     }
 
