@@ -43,8 +43,6 @@
 
 #include "cmdlineinit.h"
 
-#include "config.h"
-
 #include <cstring>
 
 #include <memory>
@@ -52,8 +50,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/datafilefinder.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
@@ -77,31 +74,34 @@ std::unique_ptr<CommandLineProgramContext> g_commandLineContext;
 //! Global library data file finder that respects GMXLIB.
 std::unique_ptr<DataFileFinder>            g_libFileFinder;
 
-#ifdef GMX_LIB_MPI
-void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
+void broadcastArguments(int *argc, char ***argv)
 {
-    gmx_bcast(sizeof(*argc), argc, cr);
+    if (gmx_node_num() <= 1)
+    {
+        return;
+    }
+    gmx_broadcast_world(sizeof(*argc), argc);
 
-    if (!MASTER(cr))
+    const bool isMaster = (gmx_node_rank() == 0);
+    if (!isMaster)
     {
         snew(*argv, *argc+1);
     }
     for (int i = 0; i < *argc; i++)
     {
         int len;
-        if (MASTER(cr))
+        if (isMaster)
         {
             len = std::strlen((*argv)[i])+1;
         }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
+        gmx_broadcast_world(sizeof(len), &len);
+        if (!isMaster)
         {
             snew((*argv)[i], len);
         }
-        gmx_bcast(len, (*argv)[i], cr);
+        gmx_broadcast_world(len, (*argv)[i]);
     }
 }
-#endif
 
 //! \}
 
@@ -112,20 +112,9 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
     gmx::init(argc, argv);
     GMX_RELEASE_ASSERT(!g_commandLineContext,
                        "initForCommandLine() calls cannot be nested");
-#ifdef GMX_LIB_MPI
-    // TODO: Rewrite this to not use t_commrec once there is clarity on
-    // the approach for MPI in C++ code.
     // TODO: Consider whether the argument broadcast would better be done
     // in CommandLineModuleManager.
-    t_commrec cr;
-    std::memset(&cr, 0, sizeof(cr));
-
-    gmx_fill_commrec_from_mpi(&cr);
-    if (PAR(&cr))
-    {
-        broadcastArguments(&cr, argc, argv);
-    }
-#endif
+    broadcastArguments(argc, argv);
     try
     {
         g_commandLineContext.reset(new CommandLineProgramContext(*argc, *argv));
