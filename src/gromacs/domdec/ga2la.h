@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,16 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _gmx_ga2la_h
-#define _gmx_ga2la_h
+/*! \libinternal \file
+ * \brief
+ * Defines structures and functions for mapping from global to local atom
+ * indices.
+ *
+ * \inlibraryapi
+ * \ingroup module_domdec
+ */
+#ifndef GMX_DOMDEC_GA2LA_H
+#define GMX_DOMDEC_GA2LA_H
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct {
     int  la;
@@ -349,8 +353,4 @@ static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la, int a_gl)
     return FALSE;
 }
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* _gmx_ga2la_h */
