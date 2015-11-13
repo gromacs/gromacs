@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/nonbonded.h"
+#include "nonbonded.h"
 
 #include "config.h"
 
