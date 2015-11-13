@@ -39,13 +39,14 @@
 #define GMX_LEGACYHEADERS_TYPES_NS_H
 
 #include "gromacs/legacyheaders/types/nblist.h"
-#include "gromacs/legacyheaders/types/nsgrid.h"
 #include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_grid;
 
 enum {
     eNL_VDWQQ, eNL_VDW, eNL_QQ,
@@ -66,7 +67,7 @@ typedef struct {
 typedef struct gmx_ns_t {
     gmx_bool      bCGlist;
     atom_id      *simple_aaj;
-    t_grid       *grid;
+    struct t_grid*grid;
     t_excl       *bexcl;
     gmx_bool     *bHaveVdW;
     t_ns_buf    **ns_buf;
