@@ -136,7 +136,7 @@ int gmx_vanhove(int argc, char *argv[])
     rvec             *xtop, *x, **sx;
     int               isize, nalloc, nallocn;
     t_trxstatus      *status;
-    atom_id          *index;
+    int              *index;
     char             *grpname;
     int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
     real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;

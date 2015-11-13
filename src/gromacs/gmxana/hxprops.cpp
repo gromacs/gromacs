@@ -96,7 +96,7 @@ real ellipticity(int nres, t_bb bb[])
     return ell;
 }
 
-real ahx_len(int gnx, atom_id index[], rvec x[])
+real ahx_len(int gnx, int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     rvec dx;
@@ -106,7 +106,7 @@ real ahx_len(int gnx, atom_id index[], rvec x[])
     return norm(dx);
 }
 
-real radius(FILE *fp, int nca, atom_id ca_index[], rvec x[])
+real radius(FILE *fp, int nca, int ca_index[], rvec x[])
 /* Assume we have all the backbone */
 {
     real dl2, dlt;
@@ -149,7 +149,7 @@ static real rot(rvec x1, rvec x2)
     return dphi;
 }
 
-real twist(int nca, atom_id caindex[], rvec x[])
+real twist(int nca, int caindex[], rvec x[])
 {
     real pt, dphi;
     int  i, a0, a1;
@@ -172,7 +172,7 @@ real twist(int nca, atom_id caindex[], rvec x[])
     return (pt/(nca-1));
 }
 
-real ca_phi(int gnx, atom_id index[], rvec x[])
+real ca_phi(int gnx, int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real phi, phitot;
@@ -202,7 +202,7 @@ real ca_phi(int gnx, atom_id index[], rvec x[])
     return (phitot/(gnx-4.0));
 }
 
-real dip(int nbb, atom_id bbind[], rvec x[], t_atom atom[])
+real dip(int nbb, int bbind[], rvec x[], t_atom atom[])
 {
     int  i, m, ai;
     rvec dipje;
@@ -221,7 +221,7 @@ real dip(int nbb, atom_id bbind[], rvec x[], t_atom atom[])
     return norm(dipje);
 }
 
-real rise(int gnx, atom_id index[], rvec x[])
+real rise(int gnx, int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real z, z0, ztot;
@@ -325,7 +325,7 @@ static void set_ahcity(int nbb, t_bb bb[])
 }
 
 t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
-              int *nall, atom_id **index,
+              int *nall, int **index,
               char ***atomname, t_atom atom[],
               t_resinfo *resinfo)
 {
@@ -555,8 +555,8 @@ static void check_ahx(int nres, t_bb bb[],
     *hend   = h1sav;
 }
 
-void do_start_end(int nres, t_bb bb[], int *nbb, atom_id bbindex[],
-                  int *nca, atom_id caindex[],
+void do_start_end(int nres, t_bb bb[], int *nbb, int bbindex[],
+                  int *nca, int caindex[],
                   gmx_bool bRange, int rStart, int rEnd)
 {
     int    i, j, hstart = 0, hend = 0;

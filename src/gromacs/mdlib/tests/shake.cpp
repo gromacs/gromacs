@@ -48,7 +48,7 @@
 namespace
 {
 
-/*! \brief Stride of the vector of atom_id used to describe each SHAKE
+/*! \brief Stride of the vector of int used to describe each SHAKE
  * constraint
  *
  * Like other such code, SHAKE is hard-wired to use t_ilist.iatoms as
@@ -61,7 +61,7 @@ const int constraintStride = 3;
 /*! \brief Compute the displacements between pairs of constrained
  * atoms described in the iatom "topology". */
 std::vector<real>
-computeDisplacements(const std::vector<atom_id> &iatom,
+computeDisplacements(const std::vector<int>     &iatom,
                      const std::vector<real>    &positions)
 {
     assert(0 == iatom.size() % constraintStride);
@@ -87,7 +87,7 @@ computeDisplacements(const std::vector<atom_id> &iatom,
  *
  * The reduced mass is m = 1/(1/m_i + 1/m_j)) */
 std::vector<real>
-computeHalfOfReducedMasses(const std::vector<atom_id> &iatom,
+computeHalfOfReducedMasses(const std::vector<int>     &iatom,
                            const std::vector<real>    &inverseMasses)
 {
     int               numConstraints = iatom.size() / constraintStride;
@@ -158,7 +158,7 @@ class ShakeTest : public ::testing::Test
         //! Run the test
         void runTest(size_t gmx_unused           numAtoms,
                      size_t                      numConstraints,
-                     const std::vector<atom_id> &iatom,
+                     const std::vector<int>     &iatom,
                      const std::vector<real>    &constrainedDistances,
                      const std::vector<real>    &inverseMasses,
                      const std::vector<real>    &positions)
@@ -174,7 +174,7 @@ class ShakeTest : public ::testing::Test
                 {
                     // Check that the topology refers to atoms that have masses and positions
                     assert(iatom[i*constraintStride + j] >= 0);
-                    assert(iatom[i*constraintStride + j] < static_cast<atom_id>(numAtoms));
+                    assert(iatom[i*constraintStride + j] < static_cast<int>(numAtoms));
                 }
             }
             std::vector<real> distanceSquaredTolerances;
@@ -244,7 +244,7 @@ TEST_F(ShakeTest, ConstrainsOneBond)
     int                  numAtoms       = 2;
     int                  numConstraints = 1;
 
-    std::vector<atom_id> iatom;
+    std::vector<int>     iatom;
     iatom.push_back(-1); // unused
     iatom.push_back(0);  // i atom index
     iatom.push_back(1);  // j atom index
@@ -265,7 +265,7 @@ TEST_F(ShakeTest, ConstrainsTwoDisjointBonds)
     int                  numAtoms       = 4;
     int                  numConstraints = 2;
 
-    std::vector<atom_id> iatom;
+    std::vector<int>     iatom;
     iatom.push_back(-1); // unused
     iatom.push_back(0);  // i atom index
     iatom.push_back(1);  // j atom index
@@ -291,7 +291,7 @@ TEST_F(ShakeTest, ConstrainsTwoBondsWithACommonAtom)
     int                  numAtoms       = 3;
     int                  numConstraints = 2;
 
-    std::vector<atom_id> iatom;
+    std::vector<int>     iatom;
     iatom.push_back(-1); // unused
     iatom.push_back(0);  // i atom index
     iatom.push_back(1);  // j atom index
@@ -317,7 +317,7 @@ TEST_F(ShakeTest, ConstrainsThreeBondsWithCommonAtoms)
     int                  numAtoms       = 4;
     int                  numConstraints = 3;
 
-    std::vector<atom_id> iatom;
+    std::vector<int>     iatom;
     iatom.push_back(-1); // unused
     iatom.push_back(0);  // i atom index
     iatom.push_back(1);  // j atom index

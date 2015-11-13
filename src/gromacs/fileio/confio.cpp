@@ -64,7 +64,7 @@
 void write_sto_conf_indexed(const char *outfile, const char *title,
                             t_atoms *atoms,
                             rvec x[], rvec *v, int ePBC, matrix box,
-                            atom_id nindex, atom_id index[])
+                            int nindex, int index[])
 {
     FILE       *out;
     int         ftp;

@@ -50,7 +50,6 @@
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -63,7 +62,7 @@
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
-static gmx_bool *bKeepIt(int gnx, int natoms, atom_id index[])
+static gmx_bool *bKeepIt(int gnx, int natoms, int index[])
 {
     gmx_bool *b;
     int       i;
@@ -78,9 +77,9 @@ static gmx_bool *bKeepIt(int gnx, int natoms, atom_id index[])
     return b;
 }
 
-static atom_id *invind(int gnx, int natoms, atom_id index[])
+static int *invind(int gnx, int natoms, int index[])
 {
-    atom_id *inv;
+    int     *inv;
     int      i;
 
     snew(inv, natoms);
@@ -96,7 +95,7 @@ static atom_id *invind(int gnx, int natoms, atom_id index[])
 static void reduce_block(gmx_bool bKeep[], t_block *block,
                          const char *name)
 {
-    atom_id *index;
+    int     *index;
     int      i, j, newi, newj;
 
     snew(index, block->nr);
@@ -124,10 +123,10 @@ static void reduce_block(gmx_bool bKeep[], t_block *block,
     block->nr    = newi;
 }
 
-static void reduce_blocka(atom_id invindex[], gmx_bool bKeep[], t_blocka *block,
+static void reduce_blocka(int invindex[], gmx_bool bKeep[], t_blocka *block,
                           const char *name)
 {
-    atom_id *index, *a;
+    int     *index, *a;
     int      i, j, k, newi, newj;
 
     snew(index, block->nr);
@@ -160,7 +159,7 @@ static void reduce_blocka(atom_id invindex[], gmx_bool bKeep[], t_blocka *block,
     block->nra   = newj;
 }
 
-static void reduce_rvec(int gnx, atom_id index[], rvec vv[])
+static void reduce_rvec(int gnx, int index[], rvec vv[])
 {
     rvec *ptr;
     int   i;
@@ -177,7 +176,7 @@ static void reduce_rvec(int gnx, atom_id index[], rvec vv[])
     sfree(ptr);
 }
 
-static void reduce_atom(int gnx, atom_id index[], t_atom atom[], char ***atomname,
+static void reduce_atom(int gnx, int index[], t_atom atom[], char ***atomname,
                         int *nres, t_resinfo *resinfo)
 {
     t_atom    *ptr;
@@ -217,7 +216,7 @@ static void reduce_atom(int gnx, atom_id index[], t_atom atom[], char ***atomnam
     sfree(rinfo);
 }
 
-static void reduce_ilist(atom_id invindex[], gmx_bool bKeep[],
+static void reduce_ilist(int invindex[], gmx_bool bKeep[],
                          t_ilist *il, int nratoms, const char *name)
 {
     t_iatom *ia;
@@ -258,12 +257,12 @@ static void reduce_ilist(atom_id invindex[], gmx_bool bKeep[],
     }
 }
 
-static void reduce_topology_x(int gnx, atom_id index[],
+static void reduce_topology_x(int gnx, int index[],
                               gmx_mtop_t *mtop, rvec x[], rvec v[])
 {
     t_topology   top;
     gmx_bool    *bKeep;
-    atom_id     *invindex;
+    int         *invindex;
     int          i;
 
     top      = gmx_mtop_t_to_t_topology(mtop);
@@ -310,7 +309,7 @@ static void reduce_topology_x(int gnx, atom_id index[],
     mtop->natoms                 = top.atoms.nr;
 }
 
-static void zeroq(atom_id index[], gmx_mtop_t *mtop)
+static void zeroq(int index[], gmx_mtop_t *mtop)
 {
     int mt, i;
 
@@ -368,7 +367,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     matrix            newbox;
     int               gnx;
     char             *grpname;
-    atom_id          *index = NULL;
+    int              *index = NULL;
     int               nre;
     gmx_enxnm_t      *enm     = NULL;
     t_enxframe       *fr_ener = NULL;

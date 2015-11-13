@@ -106,7 +106,7 @@ int *res_natm(t_atoms *atoms)
 }
 
 static void calc_mat(int nres, int natoms, int rndx[],
-                     rvec x[], atom_id *index,
+                     rvec x[], int *index,
                      real trunc, real **mdmat, int **nmat, int ePBC, matrix box)
 {
     int   i, j, resi, resj;
@@ -207,7 +207,7 @@ int gmx_mdmat(int argc, char *argv[])
     int               ePBC;
     t_atoms           useatoms;
     int               isize;
-    atom_id          *index;
+    int              *index;
     char             *grpname;
     int              *rndx, *natm, prevres, newres;
 

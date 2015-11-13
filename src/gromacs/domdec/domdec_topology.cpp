@@ -522,7 +522,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt,
     int            ftype, nral, i, j, nlink, link;
     const t_ilist *il;
     t_iatom       *ia;
-    atom_id        a;
+    int            a;
     int            nint;
     gmx_bool       bVSite;
 

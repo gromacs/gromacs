@@ -1176,7 +1176,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      */
     int
         i, j, l, k = 0, jmax, qm_max = 0, qm_nr = 0, nratoms = 0, link_nr = 0, link_max = 0;
-    atom_id
+    int
        *qm_arr = NULL, *link_arr = NULL, a1, a2, a3, a4, ftype = 0;
     t_blocka
         qmexcl;

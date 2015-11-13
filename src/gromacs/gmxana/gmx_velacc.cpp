@@ -61,7 +61,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void index_atom2mol(int *n, atom_id *index, t_block *mols)
+static void index_atom2mol(int *n, int *index, t_block *mols)
 {
     int nat, i, nmol, mol, j;
 
@@ -207,7 +207,7 @@ int gmx_velacc(int argc, char *argv[])
     matrix          box;
     gmx_bool        bTPS = FALSE, bTop = FALSE;
     int             gnx;
-    atom_id        *index;
+    int            *index;
     char           *grpname;
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.

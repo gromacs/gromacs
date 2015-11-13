@@ -39,27 +39,26 @@
 
 #include "invblock.h"
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-atom_id *make_invblock(const t_block *block, int nr)
+int *make_invblock(const t_block *block, int nr)
 {
     int      i, j;
-    atom_id *invblock;
+    int     *invblock;
 
     snew(invblock, nr+1);
     /* Mark unused numbers */
     for (i = 0; i <= nr; i++)
     {
-        invblock[i] = NO_ATID;
+        invblock[i] = -1;
     }
     for (i = 0; (i < block->nr); i++)
     {
         for (j = block->index[i]; (j < block->index[i+1]); j++)
         {
-            if (invblock[j] == NO_ATID)
+            if (invblock[j] == -1)
             {
                 invblock[j] = i;
             }
@@ -74,22 +73,22 @@ atom_id *make_invblock(const t_block *block, int nr)
     return invblock;
 }
 
-atom_id *make_invblocka(const t_blocka *block, int nr)
+int *make_invblocka(const t_blocka *block, int nr)
 {
     int      i, j;
-    atom_id *invblock;
+    int     *invblock;
 
     snew(invblock, nr+1);
     /* Mark unused numbers */
     for (i = 0; i <= nr; i++)
     {
-        invblock[i] = NO_ATID;
+        invblock[i] = -1;
     }
     for (i = 0; (i < block->nr); i++)
     {
         for (j = block->index[i]; (j < block->index[i+1]); j++)
         {
-            if (invblock[block->a[j]] == NO_ATID)
+            if (invblock[block->a[j]] == -1)
             {
                 invblock[block->a[j]] = i;
             }

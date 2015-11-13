@@ -65,8 +65,8 @@
 
 typedef struct {
     int     nnucl;
-    atom_id shell;               /* The shell id				*/
-    atom_id nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
+    int     shell;               /* The shell id				*/
+    int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
     /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
     real    k;                   /* force constant		        */
     real    k_1;                 /* 1 over force constant		*/
@@ -316,11 +316,11 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     /* Initiate the shell structures */
     for (i = 0; (i < nshell); i++)
     {
-        shell[i].shell = NO_ATID;
+        shell[i].shell = -1;
         shell[i].nnucl = 0;
-        shell[i].nucl1 = NO_ATID;
-        shell[i].nucl2 = NO_ATID;
-        shell[i].nucl3 = NO_ATID;
+        shell[i].nucl1 = -1;
+        shell[i].nucl2 = -1;
+        shell[i].nucl3 = -1;
         /* shell[i].bInterCG=FALSE; */
         shell[i].k_1   = 0;
         shell[i].k     = 0;
@@ -360,7 +360,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                     nra   = interaction_function[ftype].nratoms;
 
                     /* Check whether we have a bond with a shell */
-                    aS = NO_ATID;
+                    aS = -1;
 
                     switch (bondtypes[j])
                     {
@@ -388,7 +388,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                     }
 
-                    if (aS != NO_ATID)
+                    if (aS != -1)
                     {
                         qS = atom[aS].q;
 
@@ -399,7 +399,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "nsi is %d should be within 0 - %d. aS = %d",
                                       nsi, nshell, aS);
                         }
-                        if (shell[nsi].shell == NO_ATID)
+                        if (shell[nsi].shell == -1)
                         {
                             shell[nsi].shell = a_offset + aS;
                             ns++;
@@ -409,15 +409,15 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "Weird stuff in %s, %d", __FILE__, __LINE__);
                         }
 
-                        if      (shell[nsi].nucl1 == NO_ATID)
+                        if      (shell[nsi].nucl1 == -1)
                         {
                             shell[nsi].nucl1 = a_offset + aN;
                         }
-                        else if (shell[nsi].nucl2 == NO_ATID)
+                        else if (shell[nsi].nucl2 == -1)
                         {
                             shell[nsi].nucl2 = a_offset + aN;
                         }
-                        else if (shell[nsi].nucl3 == NO_ATID)
+                        else if (shell[nsi].nucl3 == -1)
                         {
                             shell[nsi].nucl3 = a_offset + aN;
                         }

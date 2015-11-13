@@ -60,7 +60,7 @@
 void
 calc_principal_axes(t_topology *   top,
                     rvec *         x,
-                    atom_id *      index,
+                    int     *      index,
                     int            n,
                     matrix         axes,
                     rvec           inertia)
@@ -95,7 +95,7 @@ int gmx_principal(int argc, char *argv[])
     int               natoms;
     char             *grpname;
     int               i, gnx;
-    atom_id          *index;
+    int              *index;
     rvec              moi;
     FILE        *     axis1;
     FILE        *     axis2;

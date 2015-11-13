@@ -60,7 +60,7 @@
 #include "gromacs/utility/smalloc.h"
 
 
-static void calc_dist(int nind, atom_id index[], rvec x[], int ePBC, matrix box,
+static void calc_dist(int nind, int index[], rvec x[], int ePBC, matrix box,
                       real **d)
 {
     int      i, j;
@@ -82,7 +82,7 @@ static void calc_dist(int nind, atom_id index[], rvec x[], int ePBC, matrix box,
     }
 }
 
-static void calc_dist_tot(int nind, atom_id index[], rvec x[],
+static void calc_dist_tot(int nind, int index[], rvec x[],
                           int ePBC, matrix box,
                           real **d, real **dtot, real **dtot2,
                           gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
@@ -280,9 +280,9 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 }
 
 static int analyze_noe_equivalent(const char *eq_fn,
-                                  t_atoms *atoms, int isize, atom_id *index,
+                                  t_atoms *atoms, int isize, int *index,
                                   gmx_bool bSumH,
-                                  atom_id *noe_index, t_noe_gr *noe_gr)
+                                  int *noe_index, t_noe_gr *noe_gr)
 {
     int       i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
     char     *anmi, *anmj, **nnm;
@@ -464,7 +464,7 @@ static char *noe2scale(real r3, real r6, real rmax)
     return buf;
 }
 
-static void calc_noe(int isize, atom_id *noe_index,
+static void calc_noe(int isize, int *noe_index,
                      real **dtot1_3, real **dtot1_6, int gnr, t_noe **noe)
 {
     int i, j, gi, gj;
@@ -667,7 +667,7 @@ int gmx_rmsdist(int argc, char *argv[])
 
     t_trxstatus      *status;
     int               isize, gnr = 0;
-    atom_id          *index, *noe_index;
+    int              *index, *noe_index;
     char             *grpname;
     real            **d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
     real            **dtot1_3 = NULL, **dtot1_6 = NULL;

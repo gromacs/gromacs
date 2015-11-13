@@ -1585,7 +1585,7 @@ int gmx_dipoles(int argc, char *argv[])
     };
     int              *gnx;
     int               nFF[2];
-    atom_id         **grpindex;
+    int             **grpindex;
     char            **grpname = NULL;
     gmx_bool          bGkr, bMU, bSlab;
     t_filenm          fnm[] = {

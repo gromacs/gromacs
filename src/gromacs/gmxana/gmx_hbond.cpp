@@ -122,7 +122,7 @@ static gmx_bool    bDebug = FALSE;
 typedef struct {
     int      nr;
     int      maxnr;
-    atom_id *atoms;
+    int     *atoms;
 } t_ncell;
 
 typedef struct {
@@ -131,7 +131,7 @@ typedef struct {
 } t_gridcell;
 
 typedef int     t_icell[grNR];
-typedef atom_id h_id[MAXHYDRO];
+typedef int h_id[MAXHYDRO];
 
 typedef struct {
     int      history[MAXHYDRO];
@@ -154,9 +154,9 @@ typedef struct {
 
 typedef struct {
     int      nra, max_nra;
-    atom_id *acc;             /* Atom numbers of the acceptors     */
-    int     *grp;             /* Group index                       */
-    int     *aptr;            /* Map atom number to acceptor index */
+    int     *acc;         /* Atom numbers of the acceptors     */
+    int     *grp;         /* Group index                       */
+    int     *aptr;        /* Map atom number to acceptor index */
 } t_acceptors;
 
 typedef struct {
@@ -356,7 +356,7 @@ static void inc_nhbonds(t_donors *ddd, int d, int h)
     }
 }
 
-static int _acceptor_index(t_acceptors *a, int grp, atom_id i,
+static int _acceptor_index(t_acceptors *a, int grp, int i,
                            const char *file, int line)
 {
     int ai = a->aptr[i];
@@ -377,7 +377,7 @@ static int _acceptor_index(t_acceptors *a, int grp, atom_id i,
 }
 #define acceptor_index(a, grp, i) _acceptor_index(a, grp, i, __FILE__, __LINE__)
 
-static int _donor_index(t_donors *d, int grp, atom_id i, const char *file, int line)
+static int _donor_index(t_donors *d, int grp, int i, const char *file, int line)
 {
     int di = d->dptr[i];
 
@@ -588,7 +588,7 @@ static char *mkatomname(t_atoms *atoms, int i)
     return buf;
 }
 
-static void gen_datable(atom_id *index, int isize, unsigned char *datable, int natoms)
+static void gen_datable(int *index, int isize, unsigned char *datable, int natoms)
 {
     /* Generates table of all atoms and sets the ingroup bit for atoms in index[] */
     int i;
@@ -630,7 +630,7 @@ static void add_acc(t_acceptors *a, int ia, int grp)
 }
 
 static void search_acceptors(t_topology *top, int isize,
-                             atom_id *index, t_acceptors *a, int grp,
+                             int *index, t_acceptors *a, int grp,
                              gmx_bool bNitAcc,
                              gmx_bool bContact, gmx_bool bDoIt, unsigned char *datable)
 {
@@ -732,14 +732,14 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
     }
 }
 
-static void search_donors(t_topology *top, int isize, atom_id *index,
+static void search_donors(t_topology *top, int isize, int *index,
                           t_donors *ddd, int grp, gmx_bool bContact, gmx_bool bDoIt,
                           unsigned char *datable)
 {
     int            i, j;
     t_functype     func_type;
     t_ilist       *interaction;
-    atom_id        nr1, nr2, nr3;
+    int            nr1, nr2, nr3;
 
     if (!ddd->dptr)
     {
@@ -927,7 +927,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                        ivec ngrid, t_gridcell ***grid)
 {
     int         i, m, gr, xi, yi, zi, nr;
-    atom_id    *ad;
+    int        *ad;
     ivec        grididx;
     rvec        invdelta, dshell;
     t_ncell    *newgrid;
@@ -2534,7 +2534,7 @@ int gmx_hbond(int argc, char *argv[])
     int                   npargs, natoms, nframes = 0, shatom;
     int                  *isize;
     char                **grpnames;
-    atom_id             **index;
+    int                 **index;
     rvec                 *x, hbox;
     matrix                box;
     real                  t, ccut, dist = 0.0, ang = 0.0;
@@ -2767,7 +2767,7 @@ int gmx_hbond(int argc, char *argv[])
     if (rshell > 0)
     {
         int      shisz;
-        atom_id *shidx;
+        int     *shidx;
         char    *shgrpnm;
         /* get index group with atom for shell */
         do

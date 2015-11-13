@@ -157,7 +157,7 @@ static void check_viol(FILE *log,
                        t_ilist *disres, t_iparams forceparams[],
                        rvec x[], rvec f[],
                        t_pbc *pbc, t_graph *g, t_dr_result dr[],
-                       int clust_id, int isize, atom_id index[], real vvindex[],
+                       int clust_id, int isize, int index[], real vvindex[],
                        t_fcdata *fcd)
 {
     t_iatom         *forceatoms;
@@ -372,7 +372,7 @@ static void dump_viol(FILE *log, int ndr, t_dr_stats *drs, gmx_bool bLinear)
     }
 }
 
-static gmx_bool is_core(int i, int isize, atom_id index[])
+static gmx_bool is_core(int i, int isize, int index[])
 {
     int      kk;
     gmx_bool bIC = FALSE;
@@ -387,7 +387,7 @@ static gmx_bool is_core(int i, int isize, atom_id index[])
 
 static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
                        t_iparams ip[], t_dr_result *dr,
-                       int isize, atom_id index[], t_atoms *atoms)
+                       int isize, int index[], t_atoms *atoms)
 {
     int         i, j, nra;
     t_dr_stats *drs;
@@ -437,7 +437,7 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
 
 static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
                              t_iparams ip[], t_blocka *clust, t_dr_result dr[],
-                             char *clust_name[], int isize, atom_id index[])
+                             char *clust_name[], int isize, int index[])
 {
     int         i, j, k, nra, mmm = 0;
     double      sumV, maxV, sumVT3, sumVT6, maxVT3, maxVT6;
@@ -534,7 +534,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
     int        n_res, a_offset, mb, mol, a;
     t_atoms   *atoms;
     int        i, j, nra, nratoms, tp, ri, rj, index, nlabel, label;
-    atom_id    ai, aj, *ptr;
+    int        ai, aj, *ptr;
     real     **matrix, *t_res, hi, *w_dr, rav, rviol;
     t_rgb      rlo = { 1, 1, 1 };
     t_rgb      rhi = { 0, 0, 0 };
@@ -704,7 +704,7 @@ int gmx_disre(int argc, char *argv[])
     matrix            box;
     gmx_bool          bPDB;
     int               isize;
-    atom_id          *index = NULL, *ind_fit = NULL;
+    int              *index = NULL, *ind_fit = NULL;
     char             *grpname;
     t_cluster_ndx    *clust = NULL;
     t_dr_result       dr, *dr_clust = NULL;

@@ -72,26 +72,26 @@
  */
 
 #ifdef DEBUG
-static void SETEXCL_(t_excl e[], atom_id i, atom_id j)
+static void SETEXCL_(t_excl e[], int i, int j)
 {
     e[j] = e[j] | (1<<i);
 }
-static void RMEXCL_(t_excl e[], atom_id i, atom_id j)
+static void RMEXCL_(t_excl e[], int i, int j)
 {
     e[j] = e[j] & ~(1<<i);
 }
-static gmx_bool ISEXCL_(t_excl e[], atom_id i, atom_id j)
+static gmx_bool ISEXCL_(t_excl e[], int i, int j)
 {
     return (gmx_bool)(e[j] & (1<<i));
 }
-static gmx_bool NOTEXCL_(t_excl e[], atom_id i, atom_id j)
+static gmx_bool NOTEXCL_(t_excl e[], int i, int j)
 {
     return !(ISEXCL(e, i, j));
 }
 #else
-#define SETEXCL(e, i, j) (e)[((atom_id) (j))] |= (1<<((atom_id) (i)))
-#define RMEXCL(e, i, j)  (e)[((atom_id) (j))] &= (~(1<<((atom_id) (i))))
-#define ISEXCL(e, i, j)  (gmx_bool) ((e)[((atom_id) (j))] & (1<<((atom_id) (i))))
+#define SETEXCL(e, i, j) (e)[((int) (j))] |= (1<<((int) (i)))
+#define RMEXCL(e, i, j)  (e)[((int) (j))] &= (~(1<<((int) (i))))
+#define ISEXCL(e, i, j)  (gmx_bool) ((e)[((int) (j))] & (1<<((int) (i))))
 #define NOTEXCL(e, i, j) !(ISEXCL(e, i, j))
 #endif
 
@@ -365,7 +365,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
 
 
 
-static gmx_inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
+static gmx_inline void new_i_nblist(t_nblist *nlist, int i_atom, int shift, int gid)
 {
     int    nri = nlist->nri;
 
@@ -482,7 +482,7 @@ static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnb
 }
 
 
-static gmx_inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool bLR)
+static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom, gmx_bool bLR)
 {
     int nrj = nlist->nrj;
 
@@ -504,7 +504,7 @@ static gmx_inline void add_j_to_nblist(t_nblist *nlist, atom_id j_atom, gmx_bool
 }
 
 static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
-                                          atom_id j_start, int j_end,
+                                          int j_start, int j_end,
                                           t_excl *bexcl, gmx_bool i_is_j,
                                           gmx_bool bLR)
 {
@@ -557,8 +557,8 @@ typedef void
                    int                   icg,
                    int                   jgid,
                    int                   nj,
-                   atom_id               jjcg[],
-                   atom_id               index[],
+                   int                   jjcg[],
+                   int                   index[],
                    t_excl                bExcl[],
                    int                   shift,
                    t_forcerec     *      fr,
@@ -574,8 +574,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                int                   icg,
                int                   jgid,
                int                   nj,
-               atom_id               jjcg[],
-               atom_id               index[],
+               int                   jjcg[],
+               int                   index[],
                t_excl                bExcl[],
                int                   shift,
                t_forcerec     *      fr,
@@ -597,7 +597,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     t_nblist  *   coul_ww    = NULL;
 
     int           i, j, jcg, igid, gid, nbl_ind;
-    atom_id       jj, jj0, jj1, i_atom;
+    int           jj, jj0, jj1, i_atom;
     int           i0, nicg;
 
     int          *cginfo;
@@ -1088,8 +1088,8 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
                    int                   icg,
                    int                   jgid,
                    int                   nj,
-                   atom_id               jjcg[],
-                   atom_id               index[],
+                   int                   jjcg[],
+                   int                   index[],
                    t_excl                bExcl[],
                    int                   shift,
                    t_forcerec     *      fr,
@@ -1109,7 +1109,7 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
     t_nblist  *   coul_adress  = NULL;
 
     int           i, j, jcg, igid, gid, nbl_ind, nbl_ind_adress;
-    atom_id       jj, jj0, jj1, i_atom;
+    int           jj, jj0, jj1, i_atom;
     int           i0, nicg;
 
     int          *cginfo;
@@ -1345,8 +1345,8 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
                  int                              icg,
                  int                              jgid,
                  int                              nj,
-                 atom_id                          jjcg[],
-                 atom_id                          index[],
+                 int                              jjcg[],
+                 int                              index[],
                  t_excl                           bExcl[],
                  int                              shift,
                  t_forcerec                *      fr,
@@ -1357,7 +1357,7 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
 {
     t_nblist  *   coul;
     int           i, j, jcg, igid, gid;
-    atom_id       jj, jj0, jj1, i_atom;
+    int           jj, jj0, jj1, i_atom;
     int           i0, nicg;
     gmx_bool      bNotEx;
 
@@ -1410,8 +1410,8 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
                int                              icg,
                int                              jgid,
                int                              nj,
-               atom_id                          jjcg[],
-               atom_id                          index[],
+               int                              jjcg[],
+               int                              index[],
                t_excl                           bExcl[],
                int                              shift,
                t_forcerec                *      fr,
@@ -1472,10 +1472,10 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
     close_i_nblist(vdwc);
 }
 
-static void setexcl(atom_id start, atom_id end, t_blocka *excl, gmx_bool b,
+static void setexcl(int start, int end, t_blocka *excl, gmx_bool b,
                     t_excl bexcl[])
 {
-    atom_id i, k;
+    int i, k;
 
     if (b)
     {
@@ -1638,7 +1638,7 @@ static real calc_image_rect(rvec xi, rvec xj, rvec box_size,
     return r2;
 }
 
-static void add_simple(t_ns_buf * nsbuf, int nrj, atom_id cg_j,
+static void add_simple(t_ns_buf * nsbuf, int nrj, int cg_j,
                        gmx_bool bHaveVdW[], int ngid, t_mdatoms *md,
                        int icg, int jgid, t_block *cgs, t_excl bexcl[],
                        int shift, t_forcerec *fr, put_in_list_t *put_in_list)
@@ -1655,7 +1655,7 @@ static void add_simple(t_ns_buf * nsbuf, int nrj, atom_id cg_j,
 }
 
 static void ns_inner_tric(rvec x[], int icg, int *i_egp_flags,
-                          int njcg, atom_id jcg[],
+                          int njcg, int jcg[],
                           matrix box, rvec b_inv, real rcut2,
                           t_block *cgs, t_ns_buf **ns_buf,
                           gmx_bool bHaveVdW[], int ngid, t_mdatoms *md,
@@ -1665,7 +1665,7 @@ static void ns_inner_tric(rvec x[], int icg, int *i_egp_flags,
     int       shift;
     int       j, nrj, jgid;
     int      *cginfo = fr->cginfo;
-    atom_id   cg_j, *cgindex;
+    int       cg_j, *cgindex;
 
     cgindex = cgs->index;
     shift   = CENTRAL;
@@ -1687,7 +1687,7 @@ static void ns_inner_tric(rvec x[], int icg, int *i_egp_flags,
 }
 
 static void ns_inner_rect(rvec x[], int icg, int *i_egp_flags,
-                          int njcg, atom_id jcg[],
+                          int njcg, int jcg[],
                           gmx_bool bBox, rvec box_size, rvec b_inv, real rcut2,
                           t_block *cgs, t_ns_buf **ns_buf,
                           gmx_bool bHaveVdW[], int ngid, t_mdatoms *md,
@@ -1697,7 +1697,7 @@ static void ns_inner_rect(rvec x[], int icg, int *i_egp_flags,
     int       shift;
     int       j, nrj, jgid;
     int      *cginfo = fr->cginfo;
-    atom_id   cg_j, *cgindex;
+    int       cg_j, *cgindex;
 
     cgindex = cgs->index;
     if (bBox)
@@ -1745,7 +1745,7 @@ static int ns_simple_core(t_forcerec *fr,
                           gmx_localtop_t *top,
                           t_mdatoms *md,
                           matrix box, rvec box_size,
-                          t_excl bexcl[], atom_id *aaj,
+                          t_excl bexcl[], int *aaj,
                           int ngid, t_ns_buf **ns_buf,
                           put_in_list_t *put_in_list, gmx_bool bHaveVdW[])
 {
@@ -1754,7 +1754,7 @@ static int ns_simple_core(t_forcerec *fr,
     int          nsearch, icg, igid, nn;
     int         *cginfo;
     t_ns_buf    *nsbuf;
-    /* atom_id  *i_atoms; */
+    /* int  *i_atoms; */
     t_block     *cgs  = &(top->cgs);
     t_blocka    *excl = &(top->excls);
     rvec         b_inv;
@@ -2088,12 +2088,12 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                        gmx_bool bDoLongRange, gmx_bool bMakeQMMMnblist)
 {
     gmx_ns_t     *ns;
-    atom_id     **nl_lr_ljc, **nl_lr_one, **nl_sr;
+    int         **nl_lr_ljc, **nl_lr_one, **nl_sr;
     int          *nlr_ljc, *nlr_one, *nsr;
     gmx_domdec_t *dd;
     t_block      *cgs    = &(top->cgs);
     int          *cginfo = fr->cginfo;
-    /* atom_id *i_atoms,*cgsindex=cgs->index; */
+    /* int *i_atoms,*cgsindex=cgs->index; */
     ivec          sh0, sh1, shp;
     int           cell_x, cell_y, cell_z;
     int           d, tx, ty, tz, dx, dy, dz, cj;

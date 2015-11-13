@@ -267,7 +267,7 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                      const rvec x[], const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist)
 {
-    atom_id         ai, aj;
+    int             ai, aj;
     int             fa, res, pair;
     int             type, npair, np;
     rvec            dx;
@@ -377,7 +377,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     const real      sixth       = 1.0/6.0;
     const real      seven_three = 7.0/3.0;
 
-    atom_id         ai, aj;
+    int             ai, aj;
     int             fa, res, npair, p, pair, ki = CENTRAL, m;
     int             type;
     rvec            dx;

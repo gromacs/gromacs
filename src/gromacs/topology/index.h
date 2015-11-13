@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -49,7 +48,7 @@ extern "C" {
 struct t_atoms;
 struct t_blocka;
 
-void check_index(char *gname, int n, atom_id index[],
+void check_index(char *gname, int n, int index[],
                  char *traj, int natoms);
 /* Checks if any index is smaller than zero or larger than natoms,
  * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)
@@ -60,7 +59,7 @@ struct t_blocka *init_index(const char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
 void rd_index(const char *statfile, int ngrps, int isize[],
-              atom_id *index[], char *grpnames[]);
+              int *index[], char *grpnames[]);
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
  * nr of groups, total nr of atoms
@@ -68,7 +67,7 @@ void rd_index(const char *statfile, int ngrps, int isize[],
  *
  * The function opens a file, reads ngrps groups, asks the
  * user for group numbers, and puts the resulting sizes in
- * isize, the atom_id s in index and the names of
+ * isize, the int s in index and the names of
  * the groups in grpnames.
  *
  * It is also assumed, that when ngrps groups are requested
@@ -77,11 +76,11 @@ void rd_index(const char *statfile, int ngrps, int isize[],
  */
 
 void rd_index_nrs(char *statfile, int ngrps, int isize[],
-                  atom_id *index[], char *grpnames[], int grpnr[]);
+                  int *index[], char *grpnames[], int grpnr[]);
 /* the same but also reads the number of the selected group*/
 
 void get_index(struct t_atoms *atoms, const char *fnm, int ngrps,
-               int isize[], atom_id *index[], char *grpnames[]);
+               int isize[], int *index[], char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
  * for the atoms in *atoms.
@@ -91,7 +90,7 @@ typedef struct {
     int               maxframe;
     char            **grpname;
     struct t_blocka  *clust;
-    atom_id          *inv_clust;
+    int              *inv_clust;
 } t_cluster_ndx;
 
 t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
@@ -100,7 +99,7 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx);
 void write_index(const char *outf, struct t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(struct t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name);
+void add_grp(struct t_blocka *b, char ***gnames, int nra, int a[], const char *name);
 /* Ads group a with name name to block b and namelist gnames */
 
 void analyse(struct t_atoms *atoms, struct t_blocka *gb, char ***gn,

@@ -100,7 +100,7 @@ int gmx_nmens(int argc, char *argv[])
     const char         *indexfile;
     int                 i, j, d, s, v;
     int                 nout, *iout, noutvec, *outvec;
-    atom_id            *index;
+    int                *index;
     real                rfac, rhalf, jr;
     gmx_output_env_t   *oenv;
     gmx_rng_t           rng;

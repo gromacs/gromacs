@@ -934,7 +934,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     int         i, f, n, ftype, nrfp;
     double      c[4], dum;
     real        cr[4];
-    atom_id     ai, aj;
+    int         ai, aj;
     t_nbparam  *nbp;
     gmx_bool    bId;
     char        errbuf[256];
@@ -2415,7 +2415,7 @@ void push_excl(char *line, t_block2 *b2)
 void b_to_b2(t_blocka *b, t_block2 *b2)
 {
     int     i;
-    atom_id j, a;
+    int     j, a;
 
     for (i = 0; (i < b->nr); i++)
     {
@@ -2431,7 +2431,7 @@ void b_to_b2(t_blocka *b, t_block2 *b2)
 void b2_to_b(t_block2 *b2, t_blocka *b)
 {
     int     i, nra;
-    atom_id j;
+    int     j;
 
     nra = 0;
     for (i = 0; (i < b2->nr); i++)
@@ -2449,13 +2449,13 @@ void b2_to_b(t_block2 *b2, t_blocka *b)
 
 static int icomp(const void *v1, const void *v2)
 {
-    return (*((atom_id *) v1))-(*((atom_id *) v2));
+    return (*((int *) v1))-(*((int *) v2));
 }
 
 void merge_excl(t_blocka *excl, t_block2 *b2)
 {
     int     i, k;
-    atom_id j;
+    int     j;
     int     nra;
 
     if (!b2->nr)

@@ -615,7 +615,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             const t_mdatoms gmx_unused *md, t_fcdata *fcd,
             int gmx_unused *global_atom_index)
 {
-    atom_id             ai, aj;
+    int                 ai, aj;
     int                 fa, d, i, type, ex, power, ki = CENTRAL;
     ivec                dt;
     real                r2, invr, invr2, fc, smooth_fc, dev, devins, pfac;

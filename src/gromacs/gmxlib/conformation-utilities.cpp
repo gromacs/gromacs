@@ -85,7 +85,7 @@ static void low_rotate_conf(int natom, rvec *x, real alfa, real beta, real gamma
     }
 }
 
-static void low_rotate_conf_indexed(int nindex, atom_id *index, rvec *x, real alfa, real beta, real gamma)
+static void low_rotate_conf_indexed(int nindex, int *index, rvec *x, real alfa, real beta, real gamma)
 {
     int  i;
     rvec x_old;

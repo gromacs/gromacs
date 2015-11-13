@@ -88,7 +88,7 @@ typedef struct {
     eObject           eO;     /* The type of object			*/
     eVisible          eV;     /* Visibility status of the object	*/
     unsigned long     color;  /* The color (only when eV==evSpecial)    */
-    atom_id           ai, aj; /* The atom_id for i (and j if bond)	*/
+    int               ai, aj; /* The int for i (and j if bond)	*/
     real              z;      /* The Z-coordinate for depht cueing	*/
 } t_object;
 

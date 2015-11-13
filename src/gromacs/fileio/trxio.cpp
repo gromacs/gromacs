@@ -312,7 +312,7 @@ void set_trxframe_ePBC(t_trxframe *fr, int ePBC)
 }
 
 int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
-                           const atom_id *ind, gmx_conect gc)
+                           const int *ind, gmx_conect gc)
 {
     char  title[STRLEN];
     rvec *xout = NULL, *vout = NULL, *fout = NULL;
@@ -463,7 +463,7 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
                                       const char       *infile,
                                       const int         natoms,
                                       const gmx_mtop_t *mtop,
-                                      const atom_id    *index,
+                                      const int        *index,
                                       const char       *index_group_name)
 {
     if (filemode != 'w' && filemode != 'a')
@@ -588,7 +588,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
     return 0;
 }
 
-int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
+int write_trx(t_trxstatus *status, int nind, const int *ind, t_atoms *atoms,
               int step, real time, matrix box, rvec x[], rvec *v,
               gmx_conect gc)
 {

@@ -39,7 +39,6 @@
 
 #include "tng/tng_io_fwd.h"
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -60,7 +59,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              tng_trajectory_t        *out,
                              int                      nAtoms,
                              const struct gmx_mtop_t *mtop,
-                             const atom_id           *index,
+                             const int               *index,
                              const char              *indexGroupName);
 
 /*! \brief Write a trxframe to a TNG file
@@ -82,7 +81,7 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
  * selection group. */
 void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
                                  const int        nind,
-                                 const atom_id   *ind,
+                                 const int       *ind,
                                  const char      *name);
 
 /*! \brief Read the first/next TNG frame. */
