@@ -49,7 +49,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 
-gmx_bool gmx_mpi_initialized(void)
+bool gmx_mpi_initialized()
 {
 #ifndef GMX_MPI
     return 0;
@@ -61,7 +61,7 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-int gmx_node_num(void)
+int gmx_node_num()
 {
 #ifndef GMX_MPI
     return 1;
@@ -78,7 +78,7 @@ int gmx_node_num(void)
 #endif
 }
 
-int gmx_node_rank(void)
+int gmx_node_rank()
 {
 #ifndef GMX_MPI
     return 0;
@@ -95,7 +95,7 @@ int gmx_node_rank(void)
 #endif
 }
 
-static int mpi_hostname_hash(void)
+static int mpi_hostname_hash()
 {
     int hash_int;
 
@@ -141,7 +141,7 @@ static uint64_t Kernel_GetJobID();
 #endif
 #include <spi/include/kernel/location.h>
 
-static int bgq_nodenum(void)
+static int bgq_nodenum()
 {
     int           hostnum;
     Personality_t personality;
@@ -153,7 +153,7 @@ static int bgq_nodenum(void)
        threads, so 0 <= T <= 63 (but the maximum value of T depends on
        the confituration of ranks and OpenMP threads per
        node). However, T is irrelevant for computing a suitable return
-       value for gmx_hostname_num().
+       value for gmx_physicalnode_id_hash().
      */
     hostnum  = personality.Network_Config.Acoord;
     hostnum *= personality.Network_Config.Bnodes;
@@ -191,7 +191,7 @@ static int bgq_nodenum(void)
 }
 #endif
 
-int gmx_physicalnode_id_hash(void)
+int gmx_physicalnode_id_hash()
 {
     int hash;
 
@@ -219,6 +219,16 @@ int gmx_physicalnode_id_hash(void)
     }
 
     return hash;
+}
+
+void gmx_broadcast_world(int size, void *buffer)
+{
+#ifdef GMX_MPI
+    MPI_Bcast(buffer, size, MPI_BYTE, 0, MPI_COMM_WORLD);
+#else
+    GMX_UNUSED_VALUE(size);
+    GMX_UNUSED_VALUE(buffer);
+#endif
 }
 
 #ifdef GMX_LIB_MPI
