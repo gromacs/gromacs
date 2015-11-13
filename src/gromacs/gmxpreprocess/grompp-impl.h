@@ -38,7 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -59,16 +58,16 @@ typedef struct {
  */
 
 typedef struct {
-    atom_id    a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
+    int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
     /* i = a[0] (ai), j = a[1] (aj))	*/
     real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
     char       s[MAXSLEN];       /* A string (instead of parameters),    *
                                   * read from the .rtp file in pdb2gmx   */
-    atom_id   &ai() { return a[0]; }
-    atom_id   &aj() { return a[1]; }
-    atom_id   &ak() { return a[2]; }
-    atom_id   &al() { return a[3]; }
-    atom_id   &am() { return a[4]; }
+    int   &ai() { return a[0]; }
+    int   &aj() { return a[1]; }
+    int   &ak() { return a[2]; }
+    int   &al() { return a[3]; }
+    int   &am() { return a[4]; }
 
     real      &c0() { return c[0]; }
     real      &c1() { return c[1]; }
@@ -93,8 +92,8 @@ typedef struct {
 } t_params;
 
 typedef struct {
-    int            nr;          /* The number of exclusions             */
-    atom_id       *e;           /* The excluded atoms                   */
+    int            nr;      /* The number of exclusions             */
+    int           *e;       /* The excluded atoms                   */
 } t_excls;
 
 typedef struct {

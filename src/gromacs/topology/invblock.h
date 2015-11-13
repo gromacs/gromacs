@@ -37,17 +37,16 @@
 #ifndef GMX_TOPOLOGY_INVBLOCK_H
 #define GMX_TOPOLOGY_INVBLOCK_H
 
-#include "gromacs/topology/atom_id.h"
 
 struct t_block;
 struct t_blocka;
 
-atom_id *make_invblock(const struct t_block *block, int nr);
+int *make_invblock(const struct t_block *block, int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */
 
-atom_id *make_invblocka(const struct t_blocka *block, int nr);
+int *make_invblocka(const struct t_blocka *block, int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */

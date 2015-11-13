@@ -63,8 +63,8 @@ static void copy_atom(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2)
     *atoms2->atomname[a2] = gmx_strdup(*atoms1->atomname[a1]);
 }
 
-static atom_id pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
-                               const char *searchtype, gmx_bool bAllowMissing)
+static int pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
+                           const char *searchtype, gmx_bool bAllowMissing)
 {
     int  i;
 

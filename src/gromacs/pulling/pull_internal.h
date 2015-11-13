@@ -70,7 +70,7 @@ typedef struct
 
     int           nat_loc;    /* Number of local pull atoms */
     int           nalloc_loc; /* Allocation size for ind_loc and weight_loc */
-    atom_id      *ind_loc;    /* Local pull indices */
+    int          *ind_loc;    /* Local pull indices */
     real         *weight_loc; /* Weights for the local indices */
 
     real          mwscale;    /* mass*weight scaling factor 1/sum w m */

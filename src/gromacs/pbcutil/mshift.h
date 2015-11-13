@@ -40,7 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -62,7 +61,7 @@ typedef struct t_graph {
     int          at_start;  /* The first connected atom in this graph       */
     int          at_end;    /* The last+1 connected atom in this graph      */
     int         *nedge;     /* For each node the number of edges            */
-    atom_id    **edge;      /* For each node, the actual edges (bidirect.)  */
+    int        **edge;      /* For each node, the actual edges (bidirect.)  */
     gmx_bool     bScrewPBC; /* Screw boundary conditions                    */
     ivec        *ishift;    /* Shift for each particle                      */
     int          negc;

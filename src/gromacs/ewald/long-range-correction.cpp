@@ -75,7 +75,7 @@ void ewald_LRcorrection(int start, int end,
                         real *dvdlambda_q, real *dvdlambda_lj)
 {
     int         i, i1, i2, j, k, m, iv, jv, q;
-    atom_id    *AA;
+    int        *AA;
     double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
     double      Vexcl_lj;
     real        one_4pi_eps;

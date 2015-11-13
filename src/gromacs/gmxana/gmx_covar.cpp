@@ -129,7 +129,7 @@ int gmx_covar(int argc, char *argv[])
     const char       *asciifile, *xpmfile, *xpmafile;
     char              str[STRLEN], *fitname, *ananame;
     int               d, dj, nfit;
-    atom_id          *index, *ifit;
+    int              *index, *ifit;
     gmx_bool          bDiffMass1, bDiffMass2;
     char              timebuf[STRLEN];
     t_rgb             rlo, rmi, rhi;

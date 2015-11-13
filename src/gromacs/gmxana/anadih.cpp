@@ -674,7 +674,7 @@ void calc_distribution_props(int nh, int histo[], real start,
 }
 
 static void calc_angles(struct t_pbc *pbc,
-                        int n3, atom_id index[], real ang[], rvec x_s[])
+                        int n3, int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
     rvec r_ij, r_kj;
@@ -728,7 +728,7 @@ static real calc_fraction(real angles[], int nangles)
 }
 
 static void calc_dihs(struct t_pbc *pbc,
-                      int n4, atom_id index[], real ang[], rvec x_s[])
+                      int n4, int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
@@ -809,7 +809,7 @@ void read_ang_dih(const char *trj_fn,
                   gmx_bool bAngles, gmx_bool bSaveAll, gmx_bool bRb, gmx_bool bPBC,
                   int maxangstat, int angstat[],
                   int *nframes, real **time,
-                  int isize, atom_id index[],
+                  int isize, int index[],
                   real **trans_frac,
                   real **aver_angle,
                   real *dih[],

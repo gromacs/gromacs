@@ -555,7 +555,7 @@ nsc_dclm_pbc(const rvec *coords, const ConstArrayRef<real> &radius, int nat,
              real *value_of_area, real **at_area,
              real *value_of_vol,
              real **lidots, int *nu_dots,
-             atom_id index[], AnalysisNeighborhood *nb,
+             int index[], AnalysisNeighborhood *nb,
              const t_pbc *pbc)
 {
     const real dotarea = FOURPI/(real) n_dot;
@@ -799,7 +799,7 @@ void SurfaceAreaCalculator::setCalculateSurfaceDots(bool bDots)
 
 void SurfaceAreaCalculator::calculate(
         const rvec *x, const t_pbc *pbc,
-        int nat, atom_id index[], int flags, real *area, real *volume,
+        int nat, int index[], int flags, real *area, real *volume,
         real **at_area, real **lidots, int *n_dots) const
 {
     flags |= impl_->flags_;

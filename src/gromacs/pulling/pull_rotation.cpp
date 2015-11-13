@@ -128,15 +128,15 @@ typedef struct gmx_enfrot
 /* Global enforced rotation data for a single rotation group                  */
 typedef struct gmx_enfrotgrp
 {
-    real     degangle;      /* Rotation angle in degrees                      */
-    matrix   rotmat;        /* Rotation matrix                                */
-    atom_id *ind_loc;       /* Local rotation indices                         */
-    int      nat_loc;       /* Number of local group atoms                    */
-    int      nalloc_loc;    /* Allocation size for ind_loc and weight_loc     */
+    real     degangle;   /* Rotation angle in degrees                      */
+    matrix   rotmat;     /* Rotation matrix                                */
+    int     *ind_loc;    /* Local rotation indices                         */
+    int      nat_loc;    /* Number of local group atoms                    */
+    int      nalloc_loc; /* Allocation size for ind_loc and weight_loc     */
 
-    real     V;             /* Rotation potential for this rotation group     */
-    rvec    *f_rot_loc;     /* Array to store the forces on the local atoms
-                               resulting from enforced rotation potential     */
+    real     V;          /* Rotation potential for this rotation group     */
+    rvec    *f_rot_loc;  /* Array to store the forces on the local atoms
+                            resulting from enforced rotation potential     */
 
     /* Collective coordinates for the whole rotation group */
     real  *xc_ref_length;   /* Length of each x_rotref vector after x_rotref

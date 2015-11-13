@@ -65,7 +65,6 @@
 
 #include <string>
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/block.h"
 
 namespace gmx
@@ -100,7 +99,7 @@ struct gmx_ana_index_t
     /** Number of atoms. */
     int                 isize;
     /** List of atoms. */
-    atom_id            *index;
+    int                *index;
     /** Number of items allocated for \p index. */
     int                 nalloc_index;
 };
@@ -227,7 +226,7 @@ void
 gmx_ana_index_clear(gmx_ana_index_t *g);
 /** Constructs a \c gmx_ana_index_t from given values. */
 void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, int nalloc);
+gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc);
 /** Creates a simple index group from the first to the \p natoms'th atom. */
 void
 gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms);

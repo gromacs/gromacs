@@ -1001,7 +1001,7 @@ static void check_vsite_constraints(t_params *plist,
                                     int cftype, int vsite_type[])
 {
     int       i, k, n;
-    atom_id   atom;
+    int       atom;
     t_params *ps;
 
     n  = 0;
@@ -1030,7 +1030,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 {
     int          ftype, i, j, k, m, n, nvsite, nOut, kept_i;
     int          nconverted, nremoved;
-    atom_id      atom, oatom, at1, at2;
+    int          atom, oatom, at1, at2;
     gmx_bool     bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
     t_params    *ps;
 
@@ -1047,7 +1047,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     for (i = 0; (i < ps->nr); i++) /* for all bonds in the plist */
     {
         int            vsnral      = 0;
-        const atom_id *first_atoms = NULL;
+        const int     *first_atoms = NULL;
 
         bKeep   = FALSE;
         bRemove = FALSE;
@@ -1120,7 +1120,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                         {
                             for (m = 0; (m < vsnral) && !bKeep; m++)
                             {
-                                const atom_id *atoms;
+                                const int *atoms;
 
                                 bPresent = FALSE;
                                 atoms    = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
@@ -1295,7 +1295,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                                at2vsitecon_t *at2vc)
 {
     int          i, j, k, m, n, nvsite, kept_i;
-    atom_id      atom, at1, at2;
+    int          atom, at1, at2;
     gmx_bool     bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
     t_params    *ps;
 
@@ -1304,7 +1304,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
     for (i = 0; (i < ps->nr); i++) /* for all angles in the plist */
     {
         int            vsnral      = 0;
-        const atom_id *first_atoms = NULL;
+        const int     *first_atoms = NULL;
 
         bKeep    = FALSE;
         bAll3FAD = TRUE;
@@ -1332,7 +1332,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                     {
                         for (m = 0; (m < vsnral) && !bKeep; m++)
                         {
-                            const atom_id *atoms;
+                            const int *atoms;
 
                             bPresent = FALSE;
                             atoms    = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
@@ -1440,8 +1440,8 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     {
         int            k, m, n, nvsite;
         int            vsnral      = 0;
-        const atom_id *first_atoms = NULL;
-        atom_id        atom;
+        const int     *first_atoms = NULL;
+        int            atom;
         gmx_bool       bKeep, bUsed, bPresent;
 
 
@@ -1476,7 +1476,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                     {
                         for (m = 0; (m < vsnral) && !bKeep; m++)
                         {
-                            const atom_id *atoms;
+                            const int *atoms;
 
                             bPresent = FALSE;
                             atoms    = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;

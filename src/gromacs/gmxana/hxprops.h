@@ -77,15 +77,15 @@ enum {
     efhAHX,  efhNR
 };
 
-extern real ahx_len(int gnx, atom_id index[], rvec x[]);
+extern real ahx_len(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern real ellipticity(int nres, t_bb bb[]);
 
-extern real radius(FILE *fp, int nca, atom_id ca_index[], rvec x[]);
+extern real radius(FILE *fp, int nca, int ca_index[], rvec x[]);
 /* Assume we have calphas */
 
-extern real twist(int nca, atom_id caindex[], rvec x[]);
+extern real twist(int nca, int caindex[], rvec x[]);
 /* Calculate the twist of the helix */
 
 extern real pprms(FILE *fp, int nbb, t_bb bb[]);
@@ -93,12 +93,12 @@ extern real pprms(FILE *fp, int nbb, t_bb bb[]);
  * and the distance per residue
  */
 
-extern real ca_phi(int gnx, atom_id index[], rvec x[]);
+extern real ca_phi(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
-extern real dip(int nbb, atom_id bbind[], rvec x[], t_atom atom[]);
+extern real dip(int nbb, int bbind[], rvec x[], t_atom atom[]);
 
-extern real rise(int gnx, atom_id index[], rvec x[]);
+extern real rise(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern void av_hblen(FILE *fp3, FILE *fp3a,
@@ -110,12 +110,12 @@ extern void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
                       real t, int nres, t_bb bb[]);
 
 extern t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
-                     int *nall, atom_id **index,
+                     int *nall, int **index,
                      char ***atomname, t_atom atom[],
                      t_resinfo *resinfo);
 
 extern void do_start_end(int nres, t_bb bb[], int *nbb,
-                         atom_id bbindex[], int *nca, atom_id caindex[],
+                         int bbindex[], int *nca, int caindex[],
                          gmx_bool bRange, int rStart, int rEnd);
 
 extern void calc_hxprops(int nres, t_bb bb[], rvec x[]);

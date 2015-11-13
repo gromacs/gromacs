@@ -153,7 +153,7 @@ int gmx_g_angle(int argc, char *argv[])
     FILE              *out;
     real               dt;
     int                isize;
-    atom_id           *index;
+    int               *index;
     char              *grpname;
     real               maxang, S2, norm_fac, maxstat;
     unsigned long      mode;

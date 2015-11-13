@@ -70,7 +70,7 @@
 #define FLAGS (TRX_READ_X | TRX_READ_V | TRX_READ_F)
 
 static void scan_trj_files(char **fnms, int nfiles, real *readtime,
-                           real *timestep, atom_id imax,
+                           real *timestep, int imax,
                            const gmx_output_env_t *oenv)
 {
     /* Check start time of all files */
@@ -103,7 +103,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
         }
         else
         {
-            if (imax == NO_ATID)
+            if (imax == -1)
             {
                 if (natoms != fr.natoms)
                 {
@@ -309,7 +309,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
 
 static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
                      real **value, real *time, real dt_remd, int isize,
-                     atom_id index[], real dt, const gmx_output_env_t *oenv)
+                     int index[], real dt, const gmx_output_env_t *oenv)
 {
     int           i, j, k, natoms, nnn;
     t_trxstatus **fp_in, **fp_out;
@@ -486,7 +486,7 @@ int gmx_trjcat(int argc, char *argv[])
     gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0, j;
-    atom_id          *index = NULL, imax;
+    int              *index = NULL, imax;
     char             *grpname;
     real            **val = NULL, *t = NULL, dt_remd;
     int               n, nset, ftpout = -1, prevEndStep = 0, filetype;
@@ -512,7 +512,7 @@ int gmx_trjcat(int argc, char *argv[])
     bDeMux = ftp2bSet(efXVG, NFILE, fnm);
     bSort  = bSort && !bDeMux;
 
-    imax = NO_ATID;
+    imax = -1;
     if (bIndex)
     {
         printf("Select group for output\n");

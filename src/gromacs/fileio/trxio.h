@@ -81,7 +81,7 @@ int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
 int write_trxframe_indexed(t_trxstatus *status, struct t_trxframe *fr, int nind,
-                           const atom_id *ind, gmx_conect gc);
+                           const int *ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
 int write_trxframe(t_trxstatus *status, struct t_trxframe *fr, gmx_conect gc);
@@ -94,7 +94,7 @@ int write_trxframe(t_trxstatus *status, struct t_trxframe *fr, gmx_conect gc);
  * gc is important for pdb file writing only and may be NULL.
  */
 
-int write_trx(t_trxstatus *status, int nind, const atom_id *ind, struct t_atoms *atoms,
+int write_trx(t_trxstatus *status, int nind, const int *ind, struct t_atoms *atoms,
               int step, real time, matrix box, rvec x[], rvec *v,
               gmx_conect gc);
 /* Write an indexed frame to a TRX file.
@@ -109,7 +109,7 @@ void trjtools_gmx_prepare_tng_writing(const char               *filename,
                                       const char               *infile,
                                       const int                 natoms,
                                       const struct gmx_mtop_t  *mtop,
-                                      const atom_id            *index,
+                                      const int                *index,
                                       const char               *index_group_name);
 /* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
  * some data, e.g. molecule system, will be copied over from *in to *out.

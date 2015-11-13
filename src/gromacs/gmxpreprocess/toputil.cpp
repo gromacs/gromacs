@@ -383,7 +383,7 @@ void print_blocka(FILE *out, const char *szName,
 
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
-    atom_id     i;
+    int         i;
     gmx_bool    have_excl;
     int         j;
 

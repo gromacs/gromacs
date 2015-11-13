@@ -52,7 +52,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 int
-gmx_calc_cog(t_topology * /* top */, rvec x[], int nrefat, atom_id index[], rvec xout)
+gmx_calc_cog(t_topology * /* top */, rvec x[], int nrefat, int index[], rvec xout)
 {
     int                 m, ai;
 
@@ -78,7 +78,7 @@ gmx_calc_cog(t_topology * /* top */, rvec x[], int nrefat, atom_id index[], rvec
  * mass are calculated, and hence a topology with masses is required.
  */
 int
-gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
+gmx_calc_com(t_topology *top, rvec x[], int nrefat, int index[], rvec xout)
 {
     int                 m, j, ai;
     real                mass, mtot;
@@ -113,7 +113,7 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
  * \returns    0 on success, EINVAL if \p top is NULL.
  */
 int
-gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout)
+gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, int index[], rvec fout)
 {
     int                 m, j, ai;
     real                mass, mtot;
@@ -140,7 +140,7 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
 }
 
 int
-gmx_calc_com_f(t_topology * /* top */, rvec f[], int nrefat, atom_id index[], rvec fout)
+gmx_calc_com_f(t_topology * /* top */, rvec f[], int nrefat, int index[], rvec fout)
 {
     clear_rvec(fout);
     for (int m = 0; m < nrefat; ++m)
@@ -166,7 +166,7 @@ gmx_calc_com_f(t_topology * /* top */, rvec f[], int nrefat, atom_id index[], rv
  * Other parameters are passed unmodified to these functions.
  */
 int
-gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
+gmx_calc_comg(t_topology *top, rvec x[], int nrefat, int index[],
               bool bMass, rvec xout)
 {
     if (bMass)
@@ -194,7 +194,7 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
  * Other parameters are passed unmodified to these functions.
  */
 int
-gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, atom_id index[],
+gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, int index[],
                 bool bMass, rvec fout)
 {
     if (bMass)
@@ -221,7 +221,7 @@ gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, atom_id index[],
  */
 int
 gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
-                 int nrefat, atom_id index[], rvec xout)
+                 int nrefat, int index[], rvec xout)
 {
     const real          tol = 1e-4;
     bool                bChanged;
@@ -278,7 +278,7 @@ gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
  */
 int
 gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
-                 int nrefat, atom_id index[], rvec xout)
+                 int nrefat, int index[], rvec xout)
 {
     const real          tol = 1e-4;
     bool                bChanged;
@@ -353,7 +353,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
  */
 int
 gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
-                  int nrefat, atom_id index[], bool bMass, rvec xout)
+                  int nrefat, int index[], bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -367,7 +367,7 @@ gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
 
 
 int
-gmx_calc_cog_block(t_topology * /* top */, rvec x[], t_block *block, atom_id index[],
+gmx_calc_cog_block(t_topology * /* top */, rvec x[], t_block *block, int index[],
                    rvec xout[])
 {
     int                 b, i, ai;
@@ -398,7 +398,7 @@ gmx_calc_cog_block(t_topology * /* top */, rvec x[], t_block *block, atom_id ind
  * mass are calculated, and hence a topology with masses is required.
  */
 int
-gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
+gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, int index[],
                    rvec xout[])
 {
     int                 b, i, ai, d;
@@ -438,7 +438,7 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  * \returns    0 on success, EINVAL if \p top is NULL.
  */
 int
-gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
+gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, int index[],
                      rvec fout[])
 {
     int                 b, i, ai, d;
@@ -470,7 +470,7 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
 }
 
 int
-gmx_calc_com_f_block(t_topology * /* top */, rvec f[], t_block *block, atom_id index[],
+gmx_calc_com_f_block(t_topology * /* top */, rvec f[], t_block *block, int index[],
                      rvec fout[])
 {
     for (int b = 0; b < block->nr; ++b)
@@ -502,7 +502,7 @@ gmx_calc_com_f_block(t_topology * /* top */, rvec f[], t_block *block, atom_id i
  * Other parameters are passed unmodified to these functions.
  */
 int
-gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
+gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, int index[],
                     bool bMass, rvec xout[])
 {
     if (bMass)
@@ -530,7 +530,7 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  * Other parameters are passed unmodified to these functions.
  */
 int
-gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
+gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, int index[],
                       bool bMass, rvec fout[])
 {
     if (bMass)

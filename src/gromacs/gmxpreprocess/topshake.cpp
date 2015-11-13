@@ -81,7 +81,7 @@ static void copy_bond (t_params *pr, int to, int from)
     }
 }
 
-static int count_hydrogens (char ***atomname, int nra, atom_id a[])
+static int count_hydrogens (char ***atomname, int nra, int a[])
 {
     int  i, nh;
 

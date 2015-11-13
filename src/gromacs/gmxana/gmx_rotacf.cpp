@@ -85,7 +85,7 @@ int gmx_rotacf(int argc, char *argv[])
 
     t_trxstatus      *status;
     int               isize;
-    atom_id          *index;
+    int              *index;
     char             *grpname;
     rvec             *x, *x_s;
     matrix            box;

@@ -101,7 +101,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     const char  *in_trajfile, *out_xvgrkfile = NULL, *out_xvginstefffile = NULL, *out_xvgrhistfile = NULL, *out_xvgkhistfile = NULL, *out_datfile = NULL;
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
-    atom_id     *donindex, *accindex;
+    int         *donindex, *accindex;
     char        *grpnm;
     t_trxstatus *status;
     t_trxframe   fr;

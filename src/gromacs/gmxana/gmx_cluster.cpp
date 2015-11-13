@@ -773,7 +773,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
     clust->ncl = k-1;
 }
 
-rvec **read_whole_trj(const char *fn, int isize, atom_id index[], int skip,
+rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
                       int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;
@@ -996,8 +996,8 @@ static void ana_trans(t_clusters *clust, int nf,
 static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              int natom, t_atoms *atoms, rvec *xtps,
                              real *mass, rvec **xx, real *time,
-                             int ifsize, atom_id *fitidx,
-                             int iosize, atom_id *outidx,
+                             int ifsize, int *fitidx,
+                             int iosize, int *outidx,
                              const char *trxfn, const char *sizefn,
                              const char *transfn, const char *ntransfn,
                              const char *clustidfn, gmx_bool bAverage,
@@ -1421,7 +1421,7 @@ int gmx_cluster(int argc, char *argv[])
     real              *eigenvectors;
 
     int                isize = 0, ifsize = 0, iosize = 0;
-    atom_id           *index = NULL, *fitidx = NULL, *outidx = NULL;
+    int               *index = NULL, *fitidx = NULL, *outidx = NULL;
     char              *grpname;
     real               rmsd, **d1, **d2, *time = NULL, time_invfac, *mass = NULL;
     char               buf[STRLEN], buf1[80], title[STRLEN];

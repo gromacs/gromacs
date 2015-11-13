@@ -713,7 +713,7 @@ static void sort_pdbatoms(t_restp restp[],
     int          i, j;
     t_restp     *rptr;
     t_pdbindex  *pdbi;
-    atom_id     *a;
+    int         *a;
     char        *atomnm;
 
     pdba   = *pdbaptr;

@@ -57,7 +57,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
-                         atom_id index[], rvec xref, int ePBC)
+                         int index[], rvec xref, int ePBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -159,7 +159,7 @@ int gmx_spol(int argc, char *argv[])
 
     FILE        *fp;
     int         *isize, nrefgrp;
-    atom_id    **index, *molindex;
+    int        **index, *molindex;
     char       **grpname;
     real         rmin2, rmax2, rcut, rcut2, rdx2 = 0, rtry2, qav, q, dip2, invbw;
     int          nbin, i, m, mol, a0, a1, a, d;

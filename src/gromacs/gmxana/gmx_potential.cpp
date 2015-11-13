@@ -98,7 +98,7 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
     return;
 }
 
-void calc_potential(const char *fn, atom_id **index, int gnx[],
+void calc_potential(const char *fn, int **index, int gnx[],
                     double ***slPotential, double ***slCharge,
                     double ***slField, int *nslices,
                     t_topology *top, int ePBC,
@@ -453,7 +453,7 @@ int gmx_potential(int argc, char *argv[])
     int        *ngx;                           /* sizes of groups            */
     t_topology *top;                           /* topology        */
     int         ePBC;
-    atom_id   **index;                         /* indices for all groups     */
+    int       **index;                         /* indices for all groups     */
     t_filenm    fnm[] = {                      /* files for g_order       */
         { efTRX, "-f", NULL,  ffREAD },        /* trajectory file             */
         { efNDX, NULL, NULL,  ffREAD },        /* index file          */

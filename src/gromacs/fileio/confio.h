@@ -38,7 +38,6 @@
 #define GMX_FILEIO_CONFIO_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* For reading coordinate files it is assumed that enough memory
@@ -55,7 +54,7 @@ struct t_topology;
 void write_sto_conf_indexed(const char *outfile, const char *title,
                             struct t_atoms *atoms,
                             rvec x[], rvec *v, int ePBC, matrix box,
-                            atom_id nindex, atom_id index[]);
+                            int nindex, int index[]);
 /* like write_sto_conf, but indexed */
 
 void write_sto_conf(const char *outfile, const char *title,
