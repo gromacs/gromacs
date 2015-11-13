@@ -41,7 +41,7 @@
 #include <cmath>
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
