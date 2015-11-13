@@ -48,11 +48,11 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"

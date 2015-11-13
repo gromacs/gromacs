@@ -41,8 +41,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
