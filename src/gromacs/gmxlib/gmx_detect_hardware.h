@@ -32,9 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_HARDWARE_DETECT_H
-#define GMX_HARDWARE_DETECT_H
+#ifndef GMX_GMXLIB_DETECT_HARDWARE_H
+#define GMX_GMXLIB_DETECT_HARDWARE_H
 
 #include <cstdio>
 
@@ -43,14 +42,8 @@
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_hw_info_t;
+struct gmx_hw_opt_t;
 struct t_commrec;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
 
 /*! \brief Return whether mdrun can use more than one GPU per node
  *
@@ -64,38 +57,33 @@ gmx_bool gmx_multiple_gpu_per_node_supported();
  * example. */
 gmx_bool gmx_gpu_sharing_supported();
 
-/* the init and consistency functions depend on commrec that may not be
-   consistent in cuda because MPI types don't exist there.  */
-#ifndef __CUDACC__
 /* Construct the global hwinfo structure and return a pointer to
    it. Caller is responsible for freeing this pointer. */
-gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const struct t_commrec *cr,
+gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs);
 
 /* Print information about the detected hardware to fplog (if != NULL)
  * and to stderr the master rank.
  */
-void gmx_print_detected_hardware(FILE *fplog, const struct t_commrec *cr,
+void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_hw_info_t *hwinfo);
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
-void gmx_select_gpu_ids(FILE *fplog, const struct t_commrec *cr,
+void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
                         const gmx_gpu_info_t *gpu_info,
                         gmx_bool bForceUseGPU,
                         gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(FILE                       *fplog,
-                                      const struct gmx_hw_info_t *hwinfo,
-                                      const struct t_commrec     *cr,
-                                      const struct gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool                    bUseGPU);
-#endif
-
+void gmx_check_hw_runconf_consistency(FILE                *fplog,
+                                      const gmx_hw_info_t *hwinfo,
+                                      const t_commrec     *cr,
+                                      const gmx_hw_opt_t  *hw_opt,
+                                      gmx_bool             bUseGPU);
 
 /* Check whether a GPU is shared among ranks, and return the number of shared
    gpus
@@ -105,10 +93,4 @@ void gmx_check_hw_runconf_consistency(FILE                       *fplog,
    returns: The number of GPUs shared among ranks, or 0 */
 int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt);
 
-
-#ifdef __cplusplus
-}
 #endif
-
-
-#endif /* GMX_HARDWARE_DETECT_H */
