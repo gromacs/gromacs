@@ -62,7 +62,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
+static void norm_princ(t_atoms *atoms, int isize, int *index, int natoms,
                        rvec *x)
 {
     int  i, m;
@@ -247,7 +247,7 @@ int gmx_rms(int argc, char *argv[])
     gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = NULL;
     int               ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
         0;
-    atom_id          *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
+    int              *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
         NULL;
     char             *gn_fit, **gn_rms;
     t_rgb             rlo, rhi;

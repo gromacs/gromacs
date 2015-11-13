@@ -310,7 +310,7 @@ int gmx_tcaf(int argc, char *argv[])
     matrix            box;
     gmx_bool          bTop;
     int               gnx;
-    atom_id          *index, *atndx = NULL, at;
+    int              *index, *atndx = NULL, at;
     char             *grpname;
     char              title[256];
     real              t0, t1, dt, m, mtot, sysmass, rho, sx, cx;

@@ -39,7 +39,6 @@
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_output_env_t;
@@ -74,7 +73,7 @@ double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, doubl
 
 int return_atom_type (const char *name, gmx_structurefactors_t *gsf);
 
-void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, atom_id * index,
+void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, int * index,
                       int isize, struct t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf);
 
 int do_scattering_intensity (const char* fnTPS, const char* fnNDX,

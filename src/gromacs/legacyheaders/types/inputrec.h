@@ -42,7 +42,6 @@
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/swap/enums.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -102,11 +101,11 @@ typedef struct t_grpopts {
 } t_grpopts;
 
 typedef struct {
-    int         nat;        /* Number of atoms in the pull group */
-    atom_id    *ind;        /* The global atoms numbers */
-    int         nweight;    /* The number of weights (0 or nat) */
-    real       *weight;     /* Weights (use all 1 when weight==NULL) */
-    atom_id     pbcatom;    /* The reference atom for pbc (global number) */
+    int         nat;     /* Number of atoms in the pull group */
+    int        *ind;     /* The global atoms numbers */
+    int         nweight; /* The number of weights (0 or nat) */
+    real       *weight;  /* Weights (use all 1 when weight==NULL) */
+    int         pbcatom; /* The reference atom for pbc (global number) */
 } t_pull_group;
 
 typedef struct {
@@ -220,7 +219,7 @@ typedef struct {
     int         eType;             /* Rotation type for this group                  */
     int         bMassW;            /* Use mass-weighed positions?                   */
     int         nat;               /* Number of atoms in the group                  */
-    atom_id    *ind;               /* The global atoms numbers                      */
+    int        *ind;               /* The global atoms numbers                      */
     rvec       *x_ref;             /* The reference positions                       */
     rvec        vec;               /* The normalized rotation vector                */
     real        rate;              /* Rate of rotation (degree/ps)                  */
@@ -253,7 +252,7 @@ struct t_gmx_IMD;
 
 typedef struct t_IMD {
     int               nat;   /* Number of interactive atoms                   */
-    atom_id          *ind;   /* The global indices of the interactive atoms   */
+    int              *ind;   /* The global indices of the interactive atoms   */
     struct t_gmx_IMD *setup; /* Stores non-inputrec IMD data                  */
 } t_IMD;
 
@@ -265,9 +264,9 @@ typedef struct t_swapcoords {
     int              nat;                 /* Number of atoms in the ion group             */
     int              nat_split[2];        /* Number of atoms in the split group           */
     int              nat_sol;             /* Number of atoms in the solvent group         */
-    atom_id         *ind;                 /* The global ion group atoms numbers           */
-    atom_id         *ind_split[2];        /* Split groups for compartment partitioning    */
-    atom_id         *ind_sol;             /* The global solvent group atom numbers        */
+    int             *ind;                 /* The global ion group atoms numbers           */
+    int             *ind_split[2];        /* Split groups for compartment partitioning    */
+    int             *ind_sol;             /* The global solvent group atom numbers        */
     gmx_bool         massw_split[2];      /* Use mass-weighted positions in split group?  */
     real             cyl0r, cyl1r;        /* Split cylinders defined by radius, upper and */
     real             cyl0u, cyl1u;        /* ... lower extension. The split cylinders de- */

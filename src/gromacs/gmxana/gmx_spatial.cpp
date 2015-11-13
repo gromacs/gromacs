@@ -141,7 +141,7 @@ int gmx_spatial(int argc, char *argv[])
     t_atoms          *atoms;
     int               natoms;
     char             *grpnm, *grpnmp;
-    atom_id          *index, *indexp;
+    int              *index, *indexp;
     int               i, nidx, nidxp;
     int               v;
     int               j, k;

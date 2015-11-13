@@ -144,8 +144,8 @@ typedef struct t_gmx_IMD
 
     int        nat;                  /**< Number of atoms that can be pulled via IMD. */
     int        nat_loc;              /**< Part of the atoms that are local.           */
-    atom_id   *ind;                  /**< Global indices of the IMD atoms.            */
-    atom_id   *ind_loc;              /**< Local indices of the IMD atoms.             */
+    int       *ind;                  /**< Global indices of the IMD atoms.            */
+    int       *ind_loc;              /**< Local indices of the IMD atoms.             */
     int        nalloc_loc;           /**< Allocation size for ind_loc.                */
     rvec      *xa;                   /**< Positions for all IMD atoms assembled on
                                           the master node.                            */
@@ -179,7 +179,7 @@ typedef struct t_gmx_IMD
     float          *vmd_forces;      /**< The VMD forces flat in memory.              */
     int             nforces;         /**< Number of actual MD forces;
                                           this gets communicated to the clients.      */
-    atom_id        *f_ind;           /**< Force indices.                              */
+    int            *f_ind;           /**< Force indices.                              */
     rvec           *f;               /**< The IMD pulling forces.                     */
 
     char           *forcesendbuf;    /**< Buffer for force sending.                   */
@@ -193,9 +193,9 @@ typedef struct t_gmx_IMD
     /* The next block is used on the master node only to reduce the output
      * without sacrificing information. If any of these values changes,
      * we need to write output */
-    int       old_nforces;           /**< Old value for nforces.                      */
-    atom_id  *old_f_ind;             /**< Old values for force indices.               */
-    rvec     *old_forces;            /**< Old values for IMD pulling forces.          */
+    int       old_nforces;       /**< Old value for nforces.                      */
+    int      *old_f_ind;         /**< Old values for force indices.               */
+    rvec     *old_forces;        /**< Old values for IMD pulling forces.          */
 
 } t_gmx_IMD_setup;
 
@@ -1078,7 +1078,7 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
     int      gstart, gend, count;
     t_block  gmols, lmols;
     int      nat;
-    atom_id *ind;
+    int     *ind;
 
     gmols = top_global->mols;
     nat   = IMDsetup->nat;

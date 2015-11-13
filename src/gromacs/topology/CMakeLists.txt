@@ -36,7 +36,6 @@ file(GLOB TOPOLOGY_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
-    atom_id.h
     atomprop.h
     atoms.h
     block.h

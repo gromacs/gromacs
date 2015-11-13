@@ -115,7 +115,7 @@ int gmx_morph(int argc, char *argv[])
     FILE             *fp    = NULL;
     int               i, isize, is_lsq, nat1, nat2;
     t_trxstatus      *status;
-    atom_id          *index, *index_lsq, *index_all, *dummy;
+    int              *index, *index_lsq, *index_all, *dummy;
     rvec             *x1, *x2, *xx;
     matrix            box;
     real              rms1, rms2, fac, *mass;

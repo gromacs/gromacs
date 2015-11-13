@@ -56,13 +56,13 @@
 
 /* information about scaling center */
 typedef struct {
-    rvec      xmin;       /* smallest coordinates of all embedded molecules */
-    rvec      xmax;       /* largest coordinates of all embedded molecules */
-    rvec     *geom_cent;  /* scaling center of each independent molecule to embed */
-    int       pieces;     /* number of molecules to embed independently */
-    int      *nidx;       /* n atoms for every independent embedded molecule (index in subindex) */
-    atom_id **subindex;   /* atomids for independent molecule *
-                           * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
+    rvec      xmin;      /* smallest coordinates of all embedded molecules */
+    rvec      xmax;      /* largest coordinates of all embedded molecules */
+    rvec     *geom_cent; /* scaling center of each independent molecule to embed */
+    int       pieces;    /* number of molecules to embed independently */
+    int      *nidx;      /* n atoms for every independent embedded molecule (index in subindex) */
+    int     **subindex;  /* atomids for independent molecule *
+                          * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
 } pos_ins_t;
 
 /* variables needed in do_md */
@@ -379,7 +379,7 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     t_block *mem_a;
     real     z, zmin, zmax, mem_area;
     gmx_bool bNew;
-    atom_id *mol_id;
+    int     *mol_id;
     int      type = 0, block = 0;
 
     nmol  = count = 0;
@@ -691,7 +691,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 {
     int             i, j, k, n, rm, mol_id, at, block;
     rvec           *x_tmp, *v_tmp;
-    atom_id        *list, *new_mols;
+    int            *list, *new_mols;
     unsigned char  *new_egrp[egcNR];
     gmx_bool        bRM;
     int             RMmolblock;

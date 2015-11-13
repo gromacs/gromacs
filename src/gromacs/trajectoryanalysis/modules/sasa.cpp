@@ -93,9 +93,9 @@ namespace
 struct t_conect
 {
     //! Index of the second nearest neighbor dot.
-    atom_id  aa;
+    int      aa;
     //! Index of the nearest neighbor dot.
-    atom_id  ab;
+    int      ab;
     //! Squared distance to `aa`.
     real     d2a;
     //! Squared distance to `ab`.
@@ -110,14 +110,14 @@ struct t_conect
  * \param[in]     j  Index of the other surface dot to add to the array.
  * \param[in]     d2 Squared distance between `i` and `j`.
  */
-void add_rec(t_conect c[], atom_id i, atom_id j, real d2)
+void add_rec(t_conect c[], int i, int j, real d2)
 {
-    if (c[i].aa == NO_ATID)
+    if (c[i].aa == -1)
     {
         c[i].aa  = j;
         c[i].d2a = d2;
     }
-    else if (c[i].ab == NO_ATID)
+    else if (c[i].ab == -1)
     {
         c[i].ab  = j;
         c[i].d2b = d2;
@@ -167,7 +167,7 @@ void do_conect(const char *fn, int n, rvec x[])
     snew(c, n);
     for (i = 0; (i < n); i++)
     {
-        c[i].aa = c[i].ab = NO_ATID;
+        c[i].aa = c[i].ab = -1;
     }
 
     for (i = 0; (i < n); i++)
@@ -183,7 +183,7 @@ void do_conect(const char *fn, int n, rvec x[])
     fp = gmx_ffopen(fn, "a");
     for (i = 0; (i < n); i++)
     {
-        if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
+        if ((c[i].aa == -1) || (c[i].ab == -1))
         {
             fprintf(stderr, "Warning dot %d has no conections\n", i+1);
         }

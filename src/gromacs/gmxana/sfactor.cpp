@@ -51,7 +51,6 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -333,7 +332,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
 }
 
 
-extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, atom_id * index,
+extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, int * index,
                              int isize, t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf)
 /* given the group's index, return the (continuous) array of atoms */
 {
@@ -447,7 +446,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     int                     i, *isize, flags = TRX_READ_X, **index_atp;
     t_trxstatus            *status;
     char                  **grpname;
-    atom_id               **index;
+    int                   **index;
     t_topology              top;
     int                     ePBC;
     t_trxframe              fr;

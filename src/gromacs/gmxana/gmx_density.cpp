@@ -129,7 +129,7 @@ int get_electrons(t_electron **eltab, const char *fn)
     return nr;
 }
 
-void center_coords(t_atoms *atoms, atom_id *index_center, int ncenter,
+void center_coords(t_atoms *atoms, int *index_center, int ncenter,
                    matrix box, rvec x0[])
 {
     int  i, k, m;
@@ -167,12 +167,12 @@ void center_coords(t_atoms *atoms, atom_id *index_center, int ncenter,
     }
 }
 
-void calc_electron_density(const char *fn, atom_id **index, int gnx[],
+void calc_electron_density(const char *fn, int **index, int gnx[],
                            double ***slDensity, int *nslices, t_topology *top,
                            int ePBC,
                            int axis, int nr_grps, real *slWidth,
                            t_electron eltab[], int nr, gmx_bool bCenter,
-                           atom_id *index_center, int ncenter,
+                           int *index_center, int ncenter,
                            gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
@@ -326,10 +326,10 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-void calc_density(const char *fn, atom_id **index, int gnx[],
+void calc_density(const char *fn, int **index, int gnx[],
                   double ***slDensity, int *nslices, t_topology *top, int ePBC,
                   int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
-                  atom_id *index_center, int ncenter,
+                  int *index_center, int ncenter,
                   gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
@@ -661,8 +661,8 @@ int gmx_density(int argc, char *argv[])
     t_electron        *el_tab;         /* tabel with nr. of electrons*/
     t_topology        *top;            /* topology               */
     int                ePBC;
-    atom_id           *index_center;   /* index for centering group  */
-    atom_id          **index;          /* indices for all groups     */
+    int               *index_center;   /* index for centering group  */
+    int              **index;          /* indices for all groups     */
     int                i;
 
     t_filenm           fnm[] = { /* files for g_density       */

@@ -62,7 +62,7 @@
 
 static const int NOTSET = -9368163;
 
-void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
+void calc_rm_cm(int isize, int index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
     int  i, d;
     real tm, m;
@@ -86,7 +86,7 @@ void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
     }
 }
 
-int build_res_index(int isize, atom_id index[], t_atom atom[], int rindex[])
+int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
 {
     int i, r;
 
@@ -105,7 +105,7 @@ int build_res_index(int isize, atom_id index[], t_atom atom[], int rindex[])
     return r;
 }
 
-int find_res_end(int i, int isize, atom_id index[], t_atoms *atoms)
+int find_res_end(int i, int isize, int index[], t_atoms *atoms)
 {
     int rnr;
 
@@ -126,9 +126,9 @@ int debug_strcmp(char s1[], char s2[])
     return std::strcmp(s1, s2);
 }
 
-int find_next_match_atoms_in_res(int *i1, atom_id index1[],
+int find_next_match_atoms_in_res(int *i1, int index1[],
                                  int m1, char **atnms1[],
-                                 int *i2, atom_id index2[],
+                                 int *i2, int index2[],
                                  int m2, char **atnms2[])
 {
     int      dx, dy, dmax, cmp;
@@ -308,7 +308,7 @@ static int find_next_match_res(int *rnr1, int isize1,
     return cmp;
 }
 
-int find_first_atom_in_res(int rnr, int isize, atom_id index[], t_atom atom[])
+int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
 {
     int i;
 
@@ -328,8 +328,8 @@ int find_first_atom_in_res(int rnr, int isize, atom_id index[], t_atom atom[])
     }
 }
 
-void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
-                         int *isize2, atom_id index2[], t_atoms *atoms2)
+void find_matching_names(int *isize1, int index1[], t_atoms *atoms1,
+                         int *isize2, int index2[], t_atoms *atoms2)
 {
     int        i1, i2, ii1, ii2, m1, m2;
     int        atcmp, rescmp;
@@ -531,7 +531,7 @@ int gmx_confrms(int argc, char *argv[])
     int               ePBC1, ePBC2;
     t_atoms          *atoms1, *atoms2;
     int               warn = 0;
-    atom_id           at;
+    int               at;
     real             *w_rls, mass, totmass;
     rvec             *x1, *v1, *x2, *v2, *fit_x;
     matrix            box1, box2;
@@ -547,7 +547,7 @@ int gmx_confrms(int argc, char *argv[])
     /* variables for fit */
     char    *groupnames1, *groupnames2;
     int      isize1, isize2;
-    atom_id *index1, *index2;
+    int     *index1, *index2;
     real     rms, msd, minmsd, maxmsd;
     real    *msds;
 

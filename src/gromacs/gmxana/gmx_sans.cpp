@@ -131,7 +131,7 @@ int gmx_sans(int argc, char *argv[])
     int                                   natoms;
     real                                  t;
     char                                **grpname = NULL;
-    atom_id                              *index   = NULL;
+    int                                  *index   = NULL;
     int                                   isize;
     int                                   i;
     char                                 *hdr            = NULL;

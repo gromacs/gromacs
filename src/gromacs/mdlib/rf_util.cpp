@@ -63,7 +63,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
     const real *chargeA, *chargeB;
     real        ek, ec, L1, qiA, qiB, qqA, qqB, qqL, v;
     rvec        dx, df;
-    atom_id    *AA;
+    int        *AA;
     ivec        dt;
     int         start = 0;
     int         end   = mdatoms->homenr;

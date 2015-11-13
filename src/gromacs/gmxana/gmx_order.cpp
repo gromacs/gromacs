@@ -75,7 +75,7 @@
 
 static void find_nearest_neighbours(int ePBC,
                                     int natoms, matrix box,
-                                    rvec x[], int maxidx, atom_id index[],
+                                    rvec x[], int maxidx, int index[],
                                     real *sgmean, real *skmean,
                                     int nslice, int slice_dim,
                                     real sgslice[], real skslice[],
@@ -265,7 +265,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     rvec        *xtop, *x;
     matrix       box;
     real         sg, sk;
-    atom_id    **index;
+    int        **index;
     char       **grpname;
     int          i, *isize, ng, nframes;
     real        *sg_slice, *sg_slice_tot, *sk_slice, *sk_slice_tot;
@@ -346,7 +346,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
 
 
 /* Print name of first atom in all groups in index file */
-static void print_types(atom_id index[], atom_id a[], int ngrps,
+static void print_types(int index[], int a[], int ngrps,
                         char *groups[], t_topology *top)
 {
     int i;
@@ -370,7 +370,7 @@ static void check_length(real length, int a, int b)
     }
 }
 
-void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
+void calc_order(const char *fn, int *index, int *a, rvec **order,
                 real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
                 gmx_bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
                 gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
@@ -403,7 +403,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
     rvec         direction, com, dref, dvec;
     int          comsize, distsize;
-    atom_id     *comidx  = NULL, *distidx = NULL;
+    int         *comidx  = NULL, *distidx = NULL;
     char        *grpname = NULL;
     t_pbc        pbc;
     real         arcdist, tmpdist;
@@ -833,7 +833,7 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
     xvgrclose(slOrd);
 }
 
-void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, gmx_output_env_t *oenv)
+void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, gmx_output_env_t *oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -949,7 +949,7 @@ int gmx_order(int argc, char *argv[])
                        axis = 0;                      /* normal axis                */
     t_topology       *top;                            /* topology         */
     int               ePBC;
-    atom_id          *index,                          /* indices for a              */
+    int              *index,                          /* indices for a              */
     *a;                                               /* atom numbers in each group */
     t_blocka         *block;                          /* data from index file       */
     t_filenm          fnm[] = {                       /* files for g_order    */

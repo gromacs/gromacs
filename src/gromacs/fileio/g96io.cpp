@@ -337,7 +337,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
 }
 
 void write_g96_conf(FILE *out, t_trxframe *fr,
-                    int nindex, const atom_id *index)
+                    int nindex, const int *index)
 {
     t_atoms *atoms;
     int      nout, i, a;

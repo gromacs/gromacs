@@ -38,7 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -51,14 +50,14 @@ struct t_atoms;
  * when bondtype="check" no error/warning is issued.
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
-atom_id search_atom(const char *type, int start,
-                    t_atoms *atoms,
-                    const char *bondtype, gmx_bool bAllowMissing);
+int search_atom(const char *type, int start,
+                t_atoms *atoms,
+                const char *bondtype, gmx_bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.
  */
-atom_id
+int
 search_res_atom(const char *type, int resind,
                 t_atoms *atoms,
                 const char *bondtype, gmx_bool bAllowMissing);

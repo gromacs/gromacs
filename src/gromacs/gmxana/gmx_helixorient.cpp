@@ -85,8 +85,8 @@ int gmx_helixorient(int argc, char *argv[])
 
     int               i, j, teller = 0;
     int               iCA, iSC;
-    atom_id          *ind_CA;
-    atom_id          *ind_SC;
+    int              *ind_CA;
+    int              *ind_SC;
     char             *gn_CA;
     char             *gn_SC;
     rvec              v1, v2;

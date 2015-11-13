@@ -40,7 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -61,7 +60,7 @@ int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
 void write_hconf_indexed_p(FILE *out, const char *title, struct t_atoms *atoms,
-                           int nx, const atom_id index[], int ndec,
+                           int nx, const int index[], int ndec,
                            rvec *x, rvec *v, matrix box);
 
 void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop, int pr,

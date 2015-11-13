@@ -65,7 +65,7 @@
 #include "3dview.h"
 #include "nmol.h"
 
-static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
+static void add_object(t_manager *man, eObject eO, int ai, int aj)
 {
     srenew(man->obj, ++man->nobj);
     man->obj[man->nobj-1].eO    = eO;
@@ -140,7 +140,7 @@ static void add_bpl(t_manager *man, t_idef *idef, bool bB[])
     }
 }
 
-static atom_id which_atom(t_manager *man, int x, int y)
+static int which_atom(t_manager *man, int x, int y)
 {
 #define DELTA 5
     int  i;
@@ -152,19 +152,19 @@ static atom_id which_atom(t_manager *man, int x, int y)
         {
             if (man->bVis[i])
             {
-                return (atom_id) i;
+                return (int) i;
             }
         }
     }
-    return NO_ATID;
+    return -1;
 }
 
 static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
 {
-    atom_id         ai;
+    int             ai;
     unsigned long   col;
 
-    if ((ai = which_atom(man, x, y)) != NO_ATID)
+    if ((ai = which_atom(man, x, y)) != -1)
     {
         x = man->ix[ai][XX];
         y = man->ix[ai][YY];
@@ -278,7 +278,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     {
         if (!bB[i])
         {
-            add_object(man, eOSingle, (atom_id) i, 0);
+            add_object(man, eOSingle, (int) i, 0);
         }
     }
     sfree(bB);
@@ -702,7 +702,7 @@ void done_man(t_x11 *x11, t_manager *man)
 void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
 {
     int      i;
-    atom_id  j;
+    int      j;
 
     for (i = 0; (i < man->natom); i++)
     {

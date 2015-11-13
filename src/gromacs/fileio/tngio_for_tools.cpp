@@ -57,7 +57,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              tng_trajectory_t        *output,
                              int                      nAtoms,
                              const gmx_mtop_t        *mtop,
-                             const atom_id           *index,
+                             const int               *index,
                              const char              *indexGroupName)
 {
 #ifdef GMX_USE_TNG
@@ -331,7 +331,7 @@ static real getDistanceScaleFactor(tng_trajectory_t in)
 
 void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
                                  const int        nind,
-                                 const atom_id   *ind,
+                                 const int       *ind,
                                  const char      *name)
 {
 #ifdef GMX_USE_TNG
