@@ -69,7 +69,6 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/ns.h"
-#include "gromacs/legacyheaders/types/nsgrid.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
