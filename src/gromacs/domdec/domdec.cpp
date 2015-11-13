@@ -49,6 +49,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -56,7 +57,6 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"

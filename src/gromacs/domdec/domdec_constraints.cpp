@@ -51,8 +51,8 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
