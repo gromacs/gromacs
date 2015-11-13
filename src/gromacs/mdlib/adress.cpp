@@ -131,7 +131,7 @@ update_adress_weights_com(FILE gmx_unused    * fplog,
 {
     int            icg, k, k0, k1, d;
     real           nrcg, inv_ncg, mtot, inv_mtot;
-    atom_id *      cgindex;
+    int     *      cgindex;
     rvec           ix;
     int            adresstype;
     real           adressr, adressw;
@@ -266,7 +266,7 @@ void update_adress_weights_atom_per_atom(
         t_pbc *              pbc)
 {
     int            icg, k, k0, k1;
-    atom_id *      cgindex;
+    int     *      cgindex;
     int            adresstype;
     real           adressr, adressw;
     rvec *         ref;
@@ -459,7 +459,7 @@ update_adress_weights_atom(int                  cg0,
                            t_pbc *              pbc)
 {
     int            icg, k, k0, k1;
-    atom_id *      cgindex;
+    int     *      cgindex;
     int            adresstype;
     real           adressr, adressw;
     rvec *         ref;

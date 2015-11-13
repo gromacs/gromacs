@@ -40,7 +40,6 @@
 
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/nsgrid.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -60,12 +59,12 @@ enum {
 typedef struct {
     int     ncg;
     int     nj;
-    atom_id jcg[MAX_CG];
+    int     jcg[MAX_CG];
 } t_ns_buf;
 
 typedef struct gmx_ns_t {
     gmx_bool      bCGlist;
-    atom_id      *simple_aaj;
+    int          *simple_aaj;
     t_grid       *grid;
     t_excl       *bexcl;
     gmx_bool     *bHaveVdW;
@@ -73,10 +72,10 @@ typedef struct gmx_ns_t {
     gmx_bool     *bExcludeAlleg;
     int           nra_alloc;
     int           cg_alloc;
-    atom_id     **nl_sr;
+    int         **nl_sr;
     int          *nsr;
-    atom_id     **nl_lr_ljc;
-    atom_id     **nl_lr_one;
+    int         **nl_lr_ljc;
+    int         **nl_lr_one;
     int          *nlr_ljc;
     int          *nlr_one;
     /* the nblists should probably go in here */

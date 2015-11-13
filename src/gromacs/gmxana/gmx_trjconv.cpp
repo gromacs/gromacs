@@ -76,14 +76,14 @@ enum {
 
 
 static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
-                             rvec x[], atom_id index[], matrix box)
+                             rvec x[], int index[], matrix box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
     real      fac, min_dist2;
     rvec      dx, xtest, box_center;
     int       nmol, imol_center;
-    atom_id  *molind;
+    int      *molind;
     gmx_bool *bMol, *bTmp;
     rvec     *m_com, *m_shift;
     t_pbc     pbc;
@@ -268,7 +268,7 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
                                     int natoms, t_atom atom[],
                                     int ePBC, matrix box, rvec x[])
 {
-    atom_id i, j;
+    int     i, j;
     int     d;
     rvec    com, new_com, shift, box_center;
     real    m;
@@ -333,7 +333,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
                                    int natoms, t_atom atom[],
                                    int ePBC, matrix box, rvec x[])
 {
-    atom_id          i, j, res_start, res_end;
+    int              i, j, res_start, res_end;
     int              d, presnr;
     real             m;
     double           mtot;
@@ -402,7 +402,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
     }
 }
 
-static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, atom_id ci[])
+static void center_x(int ecenter, rvec x[], matrix box, int n, int nc, int ci[])
 {
     int  i, m, ai;
     rvec cmin, cmax, box_center, dx;
@@ -875,12 +875,12 @@ int gmx_trjconv(int argc, char *argv[])
     int               ePBC  = -1;
     t_atoms          *atoms = NULL, useatoms;
     matrix            top_box;
-    atom_id          *index, *cindex;
+    int              *index, *cindex;
     char             *grpnm;
     int              *frindex, nrfri;
     char             *frname;
     int               ifit, my_clust = -1;
-    atom_id          *ind_fit;
+    int              *ind_fit;
     char             *gn_fit;
     t_cluster_ndx    *clust           = NULL;
     t_trxstatus     **clust_status    = NULL;
@@ -1128,7 +1128,7 @@ int gmx_trjconv(int argc, char *argv[])
         if (opt2bSet("-fr", NFILE, fnm))
         {
             printf("Select groups of frame number indices:\n");
-            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, (atom_id **)&frindex, &frname);
+            rd_index(opt2fn("-fr", NFILE, fnm), 1, &nrfri, (int **)&frindex, &frname);
             if (debug)
             {
                 for (i = 0; i < nrfri; i++)
@@ -1404,7 +1404,7 @@ int gmx_trjconv(int argc, char *argv[])
                         my_clust = clust->inv_clust[frame];
                     }
                     if ((my_clust < 0) || (my_clust >= clust->clust->nr) ||
-                        (my_clust == NO_ATID))
+                        (my_clust == -1))
                     {
                         my_clust = -1;
                     }

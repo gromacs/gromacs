@@ -63,10 +63,10 @@ static const int NOTSET = -92637;
 
 gmx_bool         bCase = FALSE;
 
-static int or_groups(atom_id nr1, atom_id *at1, atom_id nr2, atom_id *at2,
-                     atom_id *nr, atom_id *at)
+static int or_groups(int nr1, int *at1, int nr2, int *at2,
+                     int *nr, int *at)
 {
-    atom_id  i1, i2, max = 0;
+    int      i1, i2, max = 0;
     gmx_bool bNotIncr;
 
     *nr = 0;
@@ -123,10 +123,10 @@ static int or_groups(atom_id nr1, atom_id *at1, atom_id nr2, atom_id *at2,
     return *nr;
 }
 
-static int and_groups(atom_id nr1, atom_id *at1, atom_id nr2, atom_id *at2,
-                      atom_id *nr, atom_id *at)
+static int and_groups(int nr1, int *at1, int nr2, int *at2,
+                      int *nr, int *at)
 {
-    atom_id i1, i2;
+    int i1, i2;
 
     *nr = 0;
     for (i1 = 0; i1 < nr1; i1++)
@@ -294,8 +294,8 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
     return (*nr) != -1;
 }
 
-static int select_atomnumbers(char **string, t_atoms *atoms, atom_id n1,
-                              atom_id *nr, atom_id *index, char *gname)
+static int select_atomnumbers(char **string, t_atoms *atoms, int n1,
+                              int *nr, int *index, char *gname)
 {
     char    buf[STRLEN];
     int     i, up;
@@ -358,8 +358,8 @@ static int select_atomnumbers(char **string, t_atoms *atoms, atom_id n1,
 }
 
 static int select_residuenumbers(char **string, t_atoms *atoms,
-                                 atom_id n1, char c,
-                                 atom_id *nr, atom_id *index, char *gname)
+                                 int n1, char c,
+                                 int *nr, int *index, char *gname)
 {
     char       buf[STRLEN];
     int        i, j, up;
@@ -431,8 +431,8 @@ static int select_residuenumbers(char **string, t_atoms *atoms,
 }
 
 static int select_residueindices(char **string, t_atoms *atoms,
-                                 atom_id n1, char c,
-                                 atom_id *nr, atom_id *index, char *gname)
+                                 int n1, char c,
+                                 int *nr, int *index, char *gname)
 {
     /*this should be similar to select_residuenumbers except select by index (sequential numbering in file)*/
     /*resind+1 for 1-indexing*/
@@ -507,7 +507,7 @@ static int select_residueindices(char **string, t_atoms *atoms,
 
 
 static gmx_bool atoms_from_residuenumbers(t_atoms *atoms, int group, t_blocka *block,
-                                          atom_id *nr, atom_id *index, char *gname)
+                                          int *nr, int *index, char *gname)
 {
     int i, j, j0, j1, resnr, nres;
 
@@ -577,11 +577,11 @@ static gmx_bool comp_name(char *name, char *search)
 }
 
 static int select_chainnames(t_atoms *atoms, int n_names, char **names,
-                             atom_id *nr, atom_id *index)
+                             int *nr, int *index)
 {
     char    name[2];
     int     j;
-    atom_id i;
+    int     i;
 
     name[1] = 0;
     *nr     = 0;
@@ -611,11 +611,11 @@ static int select_chainnames(t_atoms *atoms, int n_names, char **names,
 }
 
 static int select_atomnames(t_atoms *atoms, int n_names, char **names,
-                            atom_id *nr, atom_id *index, gmx_bool bType)
+                            int *nr, int *index, gmx_bool bType)
 {
     char   *name;
     int     j;
-    atom_id i;
+    int     i;
 
     *nr = 0;
     for (i = 0; i < atoms->nr; i++)
@@ -651,11 +651,11 @@ static int select_atomnames(t_atoms *atoms, int n_names, char **names,
 }
 
 static int select_residuenames(t_atoms *atoms, int n_names, char **names,
-                               atom_id *nr, atom_id *index)
+                               int *nr, int *index)
 {
     char   *name;
     int     j;
-    atom_id i;
+    int     i;
 
     *nr = 0;
     for (i = 0; i < atoms->nr; i++)
@@ -682,7 +682,7 @@ static int select_residuenames(t_atoms *atoms, int n_names, char **names,
     return *nr;
 }
 
-static void copy2block(int n, atom_id *index, t_blocka *block)
+static void copy2block(int n, int *index, t_blocka *block)
 {
     int i, n0;
 
@@ -710,7 +710,7 @@ static void make_gname(int n, char **names, char *gname)
     }
 }
 
-static void copy_group(int g, t_blocka *block, atom_id *nr, atom_id *index)
+static void copy_group(int g, t_blocka *block, int *nr, int *index)
 {
     int i, i0;
 
@@ -769,7 +769,7 @@ static void split_group(t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
 {
     char    buf[STRLEN], *name;
     int     i, resind;
-    atom_id a, n0, n1;
+    int     a, n0, n1;
 
     printf("Splitting group %d '%s' into %s\n", sel_nr, (*gn)[sel_nr],
            bAtom ? "atoms" : "residues");
@@ -812,7 +812,7 @@ static int split_chain(t_atoms *atoms, rvec *x,
 {
     char    buf[STRLEN];
     int     j, nchain;
-    atom_id i, a, natoms, *start = NULL, *end = NULL, ca_start, ca_end;
+    int     i, a, natoms, *start = NULL, *end = NULL, ca_start, ca_end;
     rvec    vec;
 
     natoms   = atoms->nr;
@@ -928,12 +928,12 @@ static gmx_bool check_have_atoms(t_atoms *atoms, char *string)
 
 static gmx_bool parse_entry(char **string, int natoms, t_atoms *atoms,
                             t_blocka *block, char ***gn,
-                            atom_id *nr, atom_id *index, char *gname)
+                            int *nr, int *index, char *gname)
 {
     static char   **names, *ostring;
     static gmx_bool bFirst = TRUE;
     int             j, n_names, sel_nr1;
-    atom_id         i, nr1, *index1;
+    int             i, nr1, *index1;
     char            c;
     gmx_bool        bRet, bCompl;
 
@@ -1163,7 +1163,7 @@ static void edit_index(int natoms, t_atoms *atoms, rvec *x, t_blocka *block, cha
     char            inp_string[STRLEN], *string;
     char            gname[STRLEN], gname1[STRLEN], gname2[STRLEN];
     int             i, i0, i1, sel_nr, sel_nr2, newgroup;
-    atom_id         nr, nr1, nr2, *index, *index1, *index2;
+    int             nr, nr1, nr2, *index, *index1, *index2;
     gmx_bool        bAnd, bOr, bPrintOnce;
 
     if (bFirst)

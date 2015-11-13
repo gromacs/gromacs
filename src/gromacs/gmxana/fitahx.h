@@ -46,8 +46,8 @@ extern "C"
 {
 #endif
 
-real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
-             rvec x[], int nca, atom_id caindex[], gmx_bool bFit);
+real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
+             rvec x[], int nca, int caindex[], gmx_bool bFit);
 
 #ifdef __cplusplus
 }

@@ -517,7 +517,7 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 }
 
 static void append_interaction(t_ilist *ilist,
-                               int type, int nral, atom_id a[MAXATOMLIST])
+                               int type, int nral, int a[MAXATOMLIST])
 {
     int i, where1;
 

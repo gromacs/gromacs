@@ -502,8 +502,8 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                     const char *projfile, const char *twodplotfile,
                     const char *threedplotfile, const char *filterfile, int skip,
                     const char *extremefile, gmx_bool bExtrAll, real extreme,
-                    int nextr, t_atoms *atoms, int natoms, atom_id *index,
-                    gmx_bool bFit, rvec *xref, int nfit, atom_id *ifit, real *w_rls,
+                    int nextr, t_atoms *atoms, int natoms, int *index,
+                    gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
                     real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
                     int noutvec, int *outvec, gmx_bool bSplit,
@@ -515,7 +515,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
     t_trxstatus *status;
     int          noutvec_extr, imin, imax;
     real        *pmin, *pmax;
-    atom_id     *all_at;
+    int         *all_at;
     matrix       box;
     rvec        *xread, *x;
     real         t, inp, **inprod = NULL;
@@ -1081,7 +1081,7 @@ int gmx_anaeig(int argc, char *argv[])
     const char       *indexfile;
     int               i, j, d;
     int               nout, *iout, noutvec, *outvec, nfit;
-    atom_id          *index = NULL, *ifit = NULL;
+    int              *index = NULL, *ifit = NULL;
     const char       *VecFile, *Vec2File, *topfile;
     const char       *EigFile, *Eig2File;
     const char       *CompFile, *RmsfFile, *ProjOnVecFile;

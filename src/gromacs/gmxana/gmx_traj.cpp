@@ -63,7 +63,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
+static void low_print_data(FILE *fp, real time, rvec x[], int n, int *index,
                            gmx_bool bDim[], const char *sffmt)
 {
     int i, ii, d;
@@ -95,7 +95,7 @@ static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
 }
 
 static void average_data(rvec x[], rvec xav[], real *mass,
-                         int ngrps, int isize[], atom_id **index)
+                         int ngrps, int isize[], int **index)
 {
     int    g, i, ind, d;
     real   m;
@@ -147,7 +147,7 @@ static void average_data(rvec x[], rvec xav[], real *mass,
 }
 
 static void print_data(FILE *fp, real time, rvec x[], real *mass, gmx_bool bCom,
-                       int ngrps, int isize[], atom_id **index, gmx_bool bDim[],
+                       int ngrps, int isize[], int **index, gmx_bool bDim[],
                        const char *sffmt)
 {
     static rvec *xav = NULL;
@@ -168,7 +168,7 @@ static void print_data(FILE *fp, real time, rvec x[], real *mass, gmx_bool bCom,
 }
 
 static void write_trx_x(t_trxstatus *status, t_trxframe *fr, real *mass, gmx_bool bCom,
-                        int ngrps, int isize[], atom_id **index)
+                        int ngrps, int isize[], int **index)
 {
     static rvec    *xav   = NULL;
     static t_atoms *atoms = NULL;
@@ -208,7 +208,7 @@ static void write_trx_x(t_trxstatus *status, t_trxframe *fr, real *mass, gmx_boo
     }
 }
 
-static void make_legend(FILE *fp, int ngrps, int isize, atom_id index[],
+static void make_legend(FILE *fp, int ngrps, int isize, int index[],
                         char **name, gmx_bool bCom, gmx_bool bMol, gmx_bool bDim[],
                         const gmx_output_env_t *oenv)
 {
@@ -259,7 +259,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, atom_id index[],
     sfree(leg);
 }
 
-static real ekrot(rvec x[], rvec v[], real mass[], int isize, atom_id index[])
+static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
 {
     static real **TCM = NULL, **L;
     double        tm, m0, lxx, lxy, lxz, lyy, lyz, lzz, ekrot;
@@ -351,7 +351,7 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, atom_id index[])
     return ekrot;
 }
 
-static real ektrans(rvec v[], real mass[], int isize, atom_id index[])
+static real ektrans(rvec v[], real mass[], int isize, int index[])
 {
     dvec   mvcom;
     double mtot;
@@ -372,7 +372,7 @@ static real ektrans(rvec v[], real mass[], int isize, atom_id index[])
     return dnorm2(mvcom)/(mtot*2);
 }
 
-static real temp(rvec v[], real mass[], int isize, atom_id index[])
+static real temp(rvec v[], real mass[], int isize, int index[])
 {
     double ekin2;
     int    i, j;
@@ -420,14 +420,14 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
 
 static void write_pdb_bfac(const char *fname, const char *xname,
                            const char *title, t_atoms *atoms, int ePBC, matrix box,
-                           int isize, atom_id *index, int nfr_x, rvec *x,
+                           int isize, int *index, int nfr_x, rvec *x,
                            int nfr_v, rvec *sum,
                            gmx_bool bDim[], real scale_factor,
                            const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     real        max, len2, scale;
-    atom_id     maxi;
+    int         maxi;
     int         i, m, onedim;
 
     if ((nfr_x == 0) || (nfr_v == 0))
@@ -538,7 +538,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
     }
 }
 
-static void update_histo(int gnx, atom_id index[], rvec v[],
+static void update_histo(int gnx, int index[], rvec v[],
                          int *nhisto, int **histo, real binwidth)
 {
     int  i, m, in, nnn;
@@ -674,8 +674,8 @@ int gmx_traj(int argc, char *argv[])
     int               nr_xfr, nr_vfr, nr_ffr;
     char            **grpname;
     int              *isize0, *isize;
-    atom_id         **index0, **index;
-    atom_id          *atndx;
+    int             **index0, **index;
+    int              *atndx;
     t_block          *mols;
     gmx_bool          bTop, bOX, bOXT, bOV, bOF, bOB, bOT, bEKT, bEKR, bCV, bCF;
     gmx_bool          bDim[4], bDum[4], bVD;

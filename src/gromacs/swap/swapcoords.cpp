@@ -126,27 +126,27 @@ typedef struct swap_compartment
  */
 typedef struct swap_group
 {
-    int               nat;                    /**< Number of atoms in the group                    */
-    int               apm;                    /**< Number of atoms in each molecule                */
-    atom_id          *ind;                    /**< Global atom indices of the group                */
-    atom_id          *ind_loc;                /**< Local atom indices of the group                 */
-    int               nat_loc;                /**< Number of local group atoms                     */
-    int               nalloc_loc;             /**< Allocation size for ind_loc                     */
-    rvec             *xc;                     /**< Collective array of group atom positions        */
-    ivec             *xc_shifts;              /**< Current (collective) shifts                     */
-    ivec             *xc_eshifts;             /**< Extra shifts since last DD step                 */
-    rvec             *xc_old;                 /**< Old (collective) positions                      */
-    real             *qc;                     /**< Collective array of charges                     */
-    int              *c_ind_loc;              /**< Position of local atoms in the
-                                                   collective array, [0..nat_loc]                  */
-    real             *m;                      /**< Masses (can be omitted)                         */
-    unsigned char    *comp_from;              /**< (Collective) Stores from which compartment this
-                                                   atom has come. This way we keep track of through
-                                                   which channel an ion permeates (only used for
-                                                   the ion group)                                  */
-    unsigned char    *comp_now;               /**< In which compartment this ion is now            */
-    unsigned char    *channel_label;          /**< Which channel was passed at last by this ion?   */
-    rvec              center;                 /**< Center of the group; COM if masses are used     */
+    int               nat;                /**< Number of atoms in the group                    */
+    int               apm;                /**< Number of atoms in each molecule                */
+    int              *ind;                /**< Global atom indices of the group                */
+    int              *ind_loc;            /**< Local atom indices of the group                 */
+    int               nat_loc;            /**< Number of local group atoms                     */
+    int               nalloc_loc;         /**< Allocation size for ind_loc                     */
+    rvec             *xc;                 /**< Collective array of group atom positions        */
+    ivec             *xc_shifts;          /**< Current (collective) shifts                     */
+    ivec             *xc_eshifts;         /**< Extra shifts since last DD step                 */
+    rvec             *xc_old;             /**< Old (collective) positions                      */
+    real             *qc;                 /**< Collective array of charges                     */
+    int              *c_ind_loc;          /**< Position of local atoms in the
+                                               collective array, [0..nat_loc]                  */
+    real             *m;                  /**< Masses (can be omitted)                         */
+    unsigned char    *comp_from;          /**< (Collective) Stores from which compartment this
+                                               atom has come. This way we keep track of through
+                                               which channel an ion permeates (only used for
+                                               the ion group)                                  */
+    unsigned char    *comp_now;           /**< In which compartment this ion is now            */
+    unsigned char    *channel_label;      /**< Which channel was passed at last by this ion?   */
+    rvec              center;             /**< Center of the group; COM if masses are used     */
 } t_group;
 
 
@@ -1026,8 +1026,8 @@ static void check_swap_groups(t_swap *s, int nat, gmx_bool bVerbose)
 {
     t_group  *g;
     int       i, j;
-    atom_id  *nGroup    = NULL; /* This array counts for each atom in the MD system to
-                                   how many swap groups it belongs (should be 0 or 1!) */
+    int      *nGroup    = NULL; /* This array counts for each atom in the MD system to
+                                       how many swap groups it belongs (should be 0 or 1!) */
     int       ind       = -1;
     int       nMultiple = 0;    /* Number of atoms belonging to multiple groups */
 

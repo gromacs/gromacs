@@ -226,7 +226,7 @@ int gmx_rotmat(int argc, char *argv[])
     char             *grpname;
     int               gnx;
     gmx_rmpbc_t       gpbc = NULL;
-    atom_id          *index;
+    int              *index;
     gmx_output_env_t *oenv;
     real             *w_rls;
     const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };

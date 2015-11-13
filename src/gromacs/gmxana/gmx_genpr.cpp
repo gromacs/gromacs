@@ -115,7 +115,7 @@ int gmx_genpr(int argc, char *argv[])
     FILE             *out;
     int               igrp;
     real              d, dd, lo, hi;
-    atom_id          *ind_grp;
+    int              *ind_grp;
     const char       *xfn, *nfn;
     char             *gn_grp;
     matrix            box;

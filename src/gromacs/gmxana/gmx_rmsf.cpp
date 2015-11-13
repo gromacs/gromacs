@@ -107,7 +107,7 @@ void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 }
 
 static void average_residues(double f[], double **U, int uind,
-                             int isize, atom_id index[], real w_rls[],
+                             int isize, int index[], real w_rls[],
                              t_atoms *atoms)
 {
     int    i, j, start;
@@ -239,13 +239,13 @@ int gmx_rmsf(int argc, char *argv[])
     int               resind;
 
     gmx_bool          bReadPDB;
-    atom_id          *index;
+    int              *index;
     int               isize;
     char             *grpnames;
 
     real              bfac, pdb_bfac, *Uaver;
     double          **U, *xav;
-    atom_id           aid;
+    int               aid;
     rvec             *rmsd_x = NULL;
     double           *rmsf, invcount, totmass;
     int               d;

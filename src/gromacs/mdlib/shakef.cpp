@@ -119,7 +119,7 @@ static void pv(FILE *log, char *s, rvec x)
  *                                             problematic constraint if the input was malformed
  *
  * \todo Make SHAKE use better data structures, in particular for iatom. */
-void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
+void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             const real constraint_distance_squared[], real positions[],
             const real initial_displacements[], const real half_of_reduced_mass[], real omega,
             const real invmass[], const real distance_squared_tolerance[],
@@ -504,7 +504,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     return TRUE;
 }
 
-void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
+void crattle(int iatom[], int ncon, int *nnit, int maxnit,
              real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
              real invmass[], real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
              int *nerror, real invdt)

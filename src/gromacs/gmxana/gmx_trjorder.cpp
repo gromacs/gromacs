@@ -58,7 +58,7 @@
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
-    atom_id i;
+    int     i;
     real    d2;
 } t_order;
 
@@ -137,7 +137,7 @@ int gmx_trjorder(int argc, char *argv[])
     int               natoms, nwat, ncut;
     char            **grpname;
     int               i, j, d, *isize, isize_ref = 0, isize_sol;
-    atom_id           sa, sr, *swi, **index, *ind_ref = NULL, *ind_sol;
+    int               sa, sr, *swi, **index, *ind_ref = NULL, *ind_sol;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
         { efTRX, "-f", NULL, ffREAD  },

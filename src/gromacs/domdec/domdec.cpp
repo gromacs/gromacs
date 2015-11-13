@@ -3611,7 +3611,7 @@ static void distribute_cg(FILE *fplog,
     rvec                 cg_cm;
     ivec                 ind;
     real                 nrcg, inv_ncg, pos_d;
-    atom_id             *cgindex;
+    int                 *cgindex;
     gmx_bool             bScrew;
 
     ma = dd->ma;
@@ -4358,7 +4358,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     real               pos_d;
     matrix             tcm;
     rvec              *cg_cm = NULL, cell_x0, cell_x1, limitd, limit0, limit1;
-    atom_id           *cgindex;
+    int               *cgindex;
     cginfo_mb_t       *cginfo_mb;
     gmx_domdec_comm_t *comm;
     int               *moved;

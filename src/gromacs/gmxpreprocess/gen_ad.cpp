@@ -276,7 +276,7 @@ static void cpparam(t_param *dest, t_param *src)
     }
 }
 
-static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
+static void set_p(t_param *p, int ai[4], real *c, char *s)
 {
     int j;
 
@@ -304,12 +304,7 @@ static int int_comp(const void *a, const void *b)
     return (*(int *)a) - (*(int *)b);
 }
 
-static int atom_id_comp(const void *a, const void *b)
-{
-    return (*(atom_id *)a) - (*(atom_id *)b);
-}
-
-static int eq_imp(atom_id a1[], atom_id a2[])
+static int eq_imp(int a1[], int a2[])
 {
     int b1[4], b2[4];
     int j;
@@ -378,7 +373,7 @@ static void sort_id(int nr, t_param ps[])
     }
 }
 
-static int n_hydro(atom_id a[], char ***atomname)
+static int n_hydro(int a[], char ***atomname)
 {
     int  i, nh = 0;
     char c0, c1, *aname;
@@ -516,7 +511,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
 {
     t_rbondeds   *impropers;
     int           nimproper, i, j, k, start, ninc, nalloc;
-    atom_id       ai[MAXATOMLIST];
+    int           ai[MAXATOMLIST];
     gmx_bool      bStop;
 
     ninc   = 500;
@@ -539,7 +534,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                     ai[k] = search_atom(impropers->b[j].a[k], start,
                                         atoms,
                                         "improper", bAllowMissing);
-                    if (ai[k] == NO_ATID)
+                    if (ai[k] == -1)
                     {
                         bStop = TRUE;
                     }
@@ -599,7 +594,7 @@ gmx_bool is_hydro(t_atoms *atoms, int ai)
 }
 
 static void get_atomnames_min(int n, char **anm,
-                              int resind, t_atoms *atoms, atom_id *a)
+                              int resind, t_atoms *atoms, int *a)
 {
     int m;
 
@@ -626,7 +621,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
                       gmx_bool bAllowMissing)
 {
     int         r;
-    atom_id     a, astart, i1, i2, itmp;
+    int         a, astart, i1, i2, itmp;
     t_rbondeds *hbexcl;
     int         e;
     char       *anm;
@@ -647,7 +642,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
                 anm = hbexcl->b[e].a[1];
                 i2  = search_atom(anm, astart, atoms,
                                   "exclusion", bAllowMissing);
-                if (i1 != NO_ATID && i2 != NO_ATID)
+                if (i1 != -1 && i2 != -1)
                 {
                     if (i1 > i2)
                     {
@@ -669,7 +664,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
     {
         if (excls[a].nr > 1)
         {
-            qsort(excls[a].e, excls[a].nr, (size_t)sizeof(atom_id), atom_id_comp);
+            qsort(excls[a].e, excls[a].nr, (size_t)sizeof(int), int_comp);
         }
     }
 }
@@ -1080,7 +1075,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         res++;
                     }
                     ang[nang].a[k] = search_res_atom(p, res, atoms, "angle", TRUE);
-                    bFound         = (ang[nang].a[k] != NO_ATID);
+                    bFound         = (ang[nang].a[k] != -1);
                 }
                 ang[nang].c0() = NOTSET;
                 ang[nang].c1() = NOTSET;
@@ -1125,7 +1120,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         res++;
                     }
                     dih[ndih].a[k] = search_res_atom(p, res, atoms, "dihedral", TRUE);
-                    bFound         = (dih[ndih].a[k] != NO_ATID);
+                    bFound         = (dih[ndih].a[k] != -1);
                 }
                 for (m = 0; m < MAXFORCEPARAM; m++)
                 {

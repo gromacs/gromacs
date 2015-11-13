@@ -60,7 +60,7 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Print name of first atom in all groups in index file */
-static void print_types(atom_id index[], atom_id a[], int ngrps,
+static void print_types(int index[], int a[], int ngrps,
                         char *groups[], t_topology *top)
 {
     int i;
@@ -86,7 +86,7 @@ static void check_length(real length, int a, int b)
 
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
-                                  rvec x[], int maxidx, atom_id index[],
+                                  rvec x[], int maxidx, int index[],
                                   real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
                                   real ***sggrid, real ***skgrid)
@@ -285,7 +285,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     rvec         *xtop, *x;
     matrix        box;
     real          sg, sk, sgintf;
-    atom_id     **index   = NULL;
+    int         **index   = NULL;
     char        **grpname = NULL;
     int           i, j, k, n, *isize, ng, nslicez, framenr;
     real       ***sg_grid = NULL, ***sk_grid = NULL, ***sg_fravg = NULL, ***sk_fravg = NULL, ****sk_4d = NULL, ****sg_4d = NULL;

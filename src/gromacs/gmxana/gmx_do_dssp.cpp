@@ -502,7 +502,7 @@ int gmx_do_dssp(int argc, char *argv[])
     matrix             box = {{0}};
     int                gnx;
     char              *grpnm, *ss_str;
-    atom_id           *index;
+    int               *index;
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = NULL, *av_area, *norm_av_area;

@@ -62,10 +62,10 @@
  *
  ************************************************************/
 
-static void add_gbond(t_graph *g, atom_id a0, atom_id a1)
+static void add_gbond(t_graph *g, int a0, int a1)
 {
     int         i;
-    atom_id     inda0, inda1;
+    int         inda0, inda1;
     gmx_bool    bFound;
 
     inda0  = a0 - g->at_start;
@@ -316,7 +316,7 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
 {
     int      i, e;
     int      nchanged;
-    atom_id  at_i, *at_i2;
+    int      at_i, *at_i2;
     gmx_bool bMultiPart;
 
     /* Initialize the part array with all entries different */

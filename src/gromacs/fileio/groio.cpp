@@ -461,7 +461,7 @@ static void write_hconf_box(FILE *out, int pr, matrix box)
 }
 
 void write_hconf_indexed_p(FILE *out, const char *title, t_atoms *atoms,
-                           int nx, const atom_id index[], int pr,
+                           int nx, const int index[], int pr,
                            rvec *x, rvec *v, matrix box)
 {
     char resnm[6], nm[6], format[100];
@@ -561,7 +561,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
 void write_hconf_p(FILE *out, const char *title, t_atoms *atoms, int pr,
                    rvec *x, rvec *v, matrix box)
 {
-    atom_id *aa;
+    int     *aa;
     int      i;
 
     snew(aa, atoms->nr);

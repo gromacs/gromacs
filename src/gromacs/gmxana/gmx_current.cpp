@@ -350,7 +350,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        int ePBC, t_topology top, t_trxframe fr, real temp,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
-                       atom_id *index0, int indexm[], real mass2[],
+                       int *index0, int indexm[], real mass2[],
                        real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;
@@ -810,7 +810,7 @@ int gmx_current(int argc, char *argv[])
     t_trxframe             fr;
     real                  *mass2 = NULL;
     matrix                 box;
-    atom_id               *index0;
+    int                   *index0;
     int                   *indexm = NULL;
     int                    isize;
     t_trxstatus           *status;

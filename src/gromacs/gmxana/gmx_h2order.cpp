@@ -63,10 +63,10 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
+void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
                   real **slOrder, real *slWidth, int *nslices,
                   t_topology *top, int ePBC,
-                  int axis, gmx_bool bMicel, atom_id micel[], int nmic,
+                  int axis, gmx_bool bMicel, int micel[], int nmic,
                   const gmx_output_env_t *oenv)
 {
     rvec *x0,            /* coordinates with pbc */
@@ -296,7 +296,7 @@ int gmx_h2order(int argc, char *argv[])
                        nmic = 0;            /* nr. of atoms in micelle    */
     t_topology        *top;                 /* topology           */
     int                ePBC;
-    atom_id           *index,               /* indices for solvent group  */
+    int               *index,               /* indices for solvent group  */
     *micelle                  = NULL;
     gmx_bool           bMicel =  FALSE;     /* think we're a micel        */
     t_filenm           fnm[]  = {           /* files for g_order      */

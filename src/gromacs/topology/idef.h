@@ -38,7 +38,6 @@
 #define GMX_TOPOLOGY_IDEF_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
@@ -53,7 +52,7 @@ extern "C" {
 #define NR_CBTDIHS   6
 #define NR_FOURDIHS     4
 
-typedef atom_id t_iatom;
+typedef int t_iatom;
 
 /* this MUST correspond to the
    t_interaction_function[F_NRE] in gmxlib/ifunc.c */

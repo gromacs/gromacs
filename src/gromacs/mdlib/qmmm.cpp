@@ -471,7 +471,7 @@ void init_QMMMrec(t_commrec  *cr,
      */
 
     gmx_groups_t            *groups;
-    atom_id                 *qm_arr = NULL, vsite, ai, aj;
+    int                     *qm_arr = NULL, vsite, ai, aj;
     int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l, nrvsite2 = 0;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;

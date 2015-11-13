@@ -39,7 +39,6 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 
 struct t_atoms;
 struct t_topology;
@@ -50,7 +49,7 @@ void gmx_espresso_read_conf(const char *infile,
 int get_espresso_coordnum(const char *infile);
 
 void write_espresso_conf_indexed(FILE *out, const char *title,
-                                 t_atoms *atoms, int nx, atom_id *index,
+                                 t_atoms *atoms, int nx, int *index,
                                  rvec *x, rvec *v, matrix box);
 
 #endif

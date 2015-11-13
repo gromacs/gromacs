@@ -37,14 +37,13 @@
 #ifndef GMX_TOPOLOGY_BLOCK_H
 #define GMX_TOPOLOGY_BLOCK_H
 
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* the block structure points into an array (usually of atom_ids).
+/* the block structure points into an array (usually of ints).
    It is a list of starting indices for objects of consecutive ids, such
    as molecules.
    For example, if this block denotes molecules, then the first molecule
@@ -55,16 +54,16 @@ extern "C" {
 typedef struct t_block
 {
     int      nr;           /* The number of blocks          */
-    atom_id *index;        /* Array of indices (dim: nr+1)  */
+    int     *index;        /* Array of indices (dim: nr+1)  */
     int      nalloc_index; /* The allocation size for index */
 } t_block;
 
 typedef struct t_blocka
 {
     int      nr;    /* The number of blocks              */
-    atom_id *index; /* Array of indices in a (dim: nr+1) */
+    int     *index; /* Array of indices in a (dim: nr+1) */
     int      nra;   /* The number of atoms               */
-    atom_id *a;     /* Array of atom numbers in each group  */
+    int     *a;     /* Array of atom numbers in each group  */
     /* (dim: nra)                           */
     /* Block i (0<=i<nr) runs from          */
     /* index[i] to index[i+1]-1. There will */

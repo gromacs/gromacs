@@ -66,7 +66,7 @@ enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
 };
 
-static int calcMoleculesInIndexGroup(t_block *mols, int natoms, atom_id *index, int nindex)
+static int calcMoleculesInIndexGroup(t_block *mols, int natoms, int *index, int nindex)
 {
     int   i    = 0;
     int   mol  = 0;
@@ -281,7 +281,7 @@ int gmx_dos(int argc, char *argv[])
     double              cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
     double              wCdiff, wSdiff, wAdiff, wEdiff;
     int                 grpNatoms;
-    atom_id            *index;
+    int                *index;
     char               *grpname;
     double              invNormalize;
     gmx_bool            normalizeAutocorrelation;

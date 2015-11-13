@@ -86,7 +86,7 @@ static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
     axis[c1] = ax[c0]*tmp[c0] + ax[c1]*tmp[c1];
 }
 
-static void calc_axes(rvec x[], t_atom atom[], int gnx[], atom_id *index[],
+static void calc_axes(rvec x[], t_atom atom[], int gnx[], int *index[],
                       gmx_bool bRot, t_bundle *bun)
 {
     int   end, i, div, d;
@@ -236,7 +236,7 @@ int gmx_bundle(int argc, char *argv[])
     /* FIXME: The constness should not be cast away */
     char             *anm = (char *)"CA", *rnm = (char *)"GLY";
     int               i, gnx[MAX_ENDS];
-    atom_id          *index[MAX_ENDS];
+    int              *index[MAX_ENDS];
     t_bundle          bun;
     gmx_bool          bKink;
     rvec              va, vb, vc, vr, vl;

@@ -96,7 +96,7 @@ void t_trans(matrix trans, real d[], real **ev)
 }
 #endif
 
-void principal_comp(int n, atom_id index[], t_atom atom[], rvec x[],
+void principal_comp(int n, int index[], t_atom atom[], rvec x[],
                     matrix trans, rvec d)
 {
     int      i, j, ai, m, nrot;
@@ -197,7 +197,7 @@ void principal_comp(int n, atom_id index[], t_atom atom[], rvec x[],
     sfree(ev);
 }
 
-void rotate_atoms(int gnx, atom_id *index, rvec x[], matrix trans)
+void rotate_atoms(int gnx, int *index, rvec x[], matrix trans)
 {
     real   xt, yt, zt;
     int    i, ii;
@@ -214,7 +214,7 @@ void rotate_atoms(int gnx, atom_id *index, rvec x[], matrix trans)
     }
 }
 
-real calc_xcm(rvec x[], int gnx, atom_id *index, t_atom *atom, rvec xcm,
+real calc_xcm(rvec x[], int gnx, int *index, t_atom *atom, rvec xcm,
               gmx_bool bQ)
 {
     int  i, ii, m;
@@ -254,7 +254,7 @@ real calc_xcm(rvec x[], int gnx, atom_id *index, t_atom *atom, rvec xcm,
     return tm;
 }
 
-real sub_xcm(rvec x[], int gnx, atom_id *index, t_atom atom[], rvec xcm,
+real sub_xcm(rvec x[], int gnx, int *index, t_atom atom[], rvec xcm,
              gmx_bool bQ)
 {
     int  i, ii;
@@ -269,7 +269,7 @@ real sub_xcm(rvec x[], int gnx, atom_id *index, t_atom atom[], rvec xcm,
     return tm;
 }
 
-void add_xcm(rvec x[], int gnx, atom_id *index, rvec xcm)
+void add_xcm(rvec x[], int gnx, int *index, rvec xcm)
 {
     int  i, ii;
 
@@ -280,7 +280,7 @@ void add_xcm(rvec x[], int gnx, atom_id *index, rvec xcm)
     }
 }
 
-void orient_princ(t_atoms *atoms, int isize, atom_id *index,
+void orient_princ(t_atoms *atoms, int isize, int *index,
                   int natoms, rvec x[], rvec *v, rvec d)
 {
     int     i, m;

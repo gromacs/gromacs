@@ -259,12 +259,12 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
 void write_pdbfile_indexed(FILE *out, const char *title,
                            t_atoms *atoms, rvec x[],
                            int ePBC, matrix box, char chainid,
-                           int model_nr, atom_id nindex, const atom_id index[],
+                           int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains)
 {
     gmx_conect_t     *gc = (gmx_conect_t *)conect;
     char              resnm[6], nm[6], pukestring[100];
-    atom_id           i, ii;
+    int               i, ii;
     int               resind, resnr;
     enum PDB_record   type;
     unsigned char     resic, ch;
@@ -413,7 +413,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 void write_pdbfile(FILE *out, const char *title, t_atoms *atoms, rvec x[],
                    int ePBC, matrix box, char chainid, int model_nr, gmx_conect conect, gmx_bool bTerSepChains)
 {
-    atom_id i, *index;
+    int i, *index;
 
     snew(index, atoms->nr);
     for (i = 0; i < atoms->nr; i++)

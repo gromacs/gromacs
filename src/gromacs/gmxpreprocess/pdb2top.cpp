@@ -738,7 +738,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
                        int nssbonds, t_ssbond *ssbonds, gmx_bool bAllowMissing)
 {
     int     i, ri, rj;
-    atom_id ai, aj;
+    int     ai, aj;
 
     for (i = 0; (i < nssbonds); i++)
     {
@@ -748,7 +748,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
                              "special bond", bAllowMissing);
         aj = search_res_atom(ssbonds[i].a2, rj, atoms,
                              "special bond", bAllowMissing);
-        if ((ai == NO_ATID) || (aj == NO_ATID))
+        if ((ai == -1) || (aj == -1))
         {
             gmx_fatal(FARGS, "Trying to make impossible special bond (%s-%s)!",
                       ssbonds[i].a1, ssbonds[i].a2);
@@ -763,7 +763,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                      real long_bond_dist, real short_bond_dist)
 {
     int         resind, i, j, k;
-    atom_id     ai, aj;
+    int         ai, aj;
     real        dist2, long_bond_dist2, short_bond_dist2;
     const char *ptr;
 
@@ -794,7 +794,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                              ptr, TRUE);
             aj = search_atom(hb[resind].rb[ebtsBONDS].b[j].a[1], i, atoms,
                              ptr, TRUE);
-            if (ai != NO_ATID && aj != NO_ATID)
+            if (ai != -1 && aj != -1)
             {
                 dist2 = distance2(x[ai], x[aj]);
                 if (dist2 > long_bond_dist2)
@@ -866,7 +866,7 @@ static int pcompar(const void *a, const void *b)
 static void clean_bonds(t_params *ps)
 {
     int     i, j;
-    atom_id a;
+    int     a;
 
     if (ps->nr > 0)
     {
@@ -1417,7 +1417,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     t_resinfo  *resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
     gmx_bool    bAddCMAP;
-    atom_id     cmap_atomid[NUM_CMAP_ATOMS];
+    int         cmap_atomid[NUM_CMAP_ATOMS];
     int         cmap_chainnum = -1, this_residue_index;
 
     if (debug)
@@ -1463,11 +1463,11 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
 
                 cmap_atomid[k] = search_atom(pname,
                                              i, atoms, ptr, TRUE);
-                bAddCMAP = bAddCMAP && (cmap_atomid[k] != NO_ATID);
+                bAddCMAP = bAddCMAP && (cmap_atomid[k] != -1);
                 if (!bAddCMAP)
                 {
                     /* This break is necessary, because cmap_atomid[k]
-                     * == NO_ATID cannot be safely used as an index
+                     * == -1 cannot be safely used as an index
                      * into the atom array. */
                     break;
                 }

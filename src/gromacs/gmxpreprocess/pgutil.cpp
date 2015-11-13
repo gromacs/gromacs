@@ -86,9 +86,9 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
     }
 }
 
-atom_id search_atom(const char *type, int start,
-                    t_atoms *atoms,
-                    const char *bondtype, gmx_bool bAllowMissing)
+int search_atom(const char *type, int start,
+                t_atoms *atoms,
+                const char *bondtype, gmx_bool bAllowMissing)
 {
     int             i, resind = -1;
     gmx_bool        bPrevious, bNext;
@@ -120,7 +120,7 @@ atom_id search_atom(const char *type, int start,
         {
             if (anm[i] && gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (atom_id) i;
+                return (int) i;
             }
         }
         if (!(bNext && at[start].resind == at[natoms-1].resind))
@@ -140,7 +140,7 @@ atom_id search_atom(const char *type, int start,
         {
             if (gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (atom_id) i;
+                return (int) i;
             }
         }
         if (start > 0)
@@ -148,10 +148,10 @@ atom_id search_atom(const char *type, int start,
             atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
         }
     }
-    return NO_ATID;
+    return -1;
 }
 
-atom_id
+int
 search_res_atom(const char *type, int resind,
                 t_atoms *atoms,
                 const char *bondtype, gmx_bool bAllowMissing)
@@ -166,7 +166,7 @@ search_res_atom(const char *type, int resind,
         }
     }
 
-    return NO_ATID;
+    return -1;
 }
 
 
