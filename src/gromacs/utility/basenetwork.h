@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,14 +44,6 @@
 #ifndef GMX_UTILITY_BASENETWORK_H
 #define GMX_UTILITY_BASENETWORK_H
 
-#include <stddef.h>
-
-#include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief
  * Returns whether MPI has been initialized.
  *
@@ -63,7 +55,7 @@ extern "C" {
  * thread start where the return value is different depending on compilation
  * options.
  */
-gmx_bool gmx_mpi_initialized(void);
+bool gmx_mpi_initialized();
 
 /*! \brief
  * Returns the number of nodes.
@@ -74,7 +66,7 @@ gmx_bool gmx_mpi_initialized(void);
  * expected: for thread-MPI, at that point they should behave as if the run was
  * serial.
  */
-int gmx_node_num(void);
+int gmx_node_num();
 
 /*! \brief
  * Returns the rank of the node.
@@ -85,7 +77,7 @@ int gmx_node_num(void);
  * for thread-MPI, at that point the only thread of execution should behave as
  * if it the master node.
  */
-int gmx_node_rank(void);
+int gmx_node_rank();
 
 /*! \brief
  * Return a non-negative hash that is, hopefully, unique for each physical
@@ -93,26 +85,14 @@ int gmx_node_rank(void);
  *
  * This hash is useful for determining hardware locality.
  */
-int gmx_physicalnode_id_hash(void);
+int gmx_physicalnode_id_hash();
 
 /*! \brief
- * Returns an integer characteristic of and, hopefully, unique to each
- * physical node in the MPI system.
- *
- * If the first part of the MPI hostname (up to the first dot) ends with a
- * number, returns this number.  If the first part of the MPI hostname does not
- * ends in a number (0-9 characters), returns 0.
- *
- * \todo
- * This function should be fully replaced by gmx_physicalnode_id_hash().
+ * Broadcasts given data from rank zero to all other ranks.
  */
-int gmx_hostname_num(void);
+void gmx_broadcast_world(int size, void *buffer);
 
 /** Abort the parallel run */
 void gmx_abort(int errorno);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
