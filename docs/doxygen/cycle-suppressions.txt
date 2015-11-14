@@ -13,7 +13,6 @@ mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
 legacyheaders -> swap
-legacyheaders -> fileio
 timing -> legacyheaders
 timing -> gmxlib
 topology -> fileio
