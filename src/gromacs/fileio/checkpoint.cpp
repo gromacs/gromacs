@@ -64,7 +64,6 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"

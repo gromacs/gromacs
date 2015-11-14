@@ -68,7 +68,6 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
