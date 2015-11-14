@@ -42,7 +42,7 @@
 #include <math.h>
 
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/vec.h"

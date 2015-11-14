@@ -39,7 +39,7 @@
 #include "groupcoord.h"
 
 #include "gromacs/domdec/ga2la.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"

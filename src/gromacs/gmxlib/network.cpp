@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/network.h"
+#include "network.h"
 
 #include "config.h"
 

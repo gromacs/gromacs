@@ -42,6 +42,7 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
+struct gmx_multisim_t;
 struct gmx_signalling_t;
 struct t_trxframe;
 

@@ -39,18 +39,14 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct t_commrec;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
@@ -65,7 +61,7 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          int                     mdrun_flags,
                          const t_commrec        *cr,
                          const t_inputrec       *ir,
-                         struct gmx_mtop_t      *mtop,
+                         gmx_mtop_t             *mtop,
                          const gmx_output_env_t *oenv,
                          gmx_wallcycle_t         wcycle);
 
@@ -100,7 +96,7 @@ void done_mdoutf(gmx_mdoutf_t of);
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
                                       int mdof_flags,
-                                      struct gmx_mtop_t *top_global,
+                                      gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
                                       rvec *f_local, rvec *f_global);
@@ -111,9 +107,5 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 #define MDOF_X_COMPRESSED (1<<3)
 #define MDOF_CPT          (1<<4)
 #define MDOF_IMD          (1<<5)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

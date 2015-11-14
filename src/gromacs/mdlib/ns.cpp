@@ -48,9 +48,9 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
@@ -2179,8 +2179,6 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     }
 #endif
 
-    debug_gmx();
-
     if (fr->n_tpi)
     {
         /* We only want a list for the test particle */
@@ -2512,8 +2510,6 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
      * since we now save the proper long-range lists for later evaluation.
      */
 
-    debug_gmx();
-
     /* Close neighbourlists */
     close_neighbor_lists(fr, bMakeQMMMnblist);
 
@@ -2702,7 +2698,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
     {
         ns_realloc_natoms(ns, cgs->index[cgs->nr]);
     }
-    debug_gmx();
 
     /* Reset the neighbourlists */
     reset_neighbor_lists(fr, TRUE, TRUE);
@@ -2725,7 +2720,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             grid_first(log, grid, NULL, NULL, box, grid_x0, grid_x1,
                        fr->rlistlong, grid_dens);
         }
-        debug_gmx();
 
         start = 0;
         end   = cgs->nr;
@@ -2742,7 +2736,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
-            debug_gmx();
         }
 
         calc_elemnr(grid, start, end, cgs->nr);
@@ -2762,7 +2755,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
          */
         fill_grid(NULL, ns->grid, fr->hcg, fr->hcg-1, fr->hcg, fr->cg_cm);
     }
-    debug_gmx();
 
     if (fr->adress_type == eAdressOff)
     {
@@ -2812,7 +2804,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                                  ns->bexcl, ns->simple_aaj,
                                  ngid, ns->ns_buf, put_in_list, ns->bHaveVdW);
     }
-    debug_gmx();
 
 #ifdef DEBUG
     pr_nsblock(log);

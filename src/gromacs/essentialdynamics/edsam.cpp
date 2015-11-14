@@ -44,6 +44,7 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"

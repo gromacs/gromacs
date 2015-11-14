@@ -40,8 +40,8 @@
 #include "vcm.h"
 
 #include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"

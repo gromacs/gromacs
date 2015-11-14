@@ -47,7 +47,7 @@
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -216,8 +216,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
 
-    debug_gmx();
-
     if (!bAppendFiles)
     {
         fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
@@ -256,7 +254,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
     fprintf(fp, "\n");
 
     fflush(fp);
-    debug_gmx();
 
     *fplog = fp;
 }
