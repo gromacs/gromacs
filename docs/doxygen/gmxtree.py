@@ -1042,6 +1042,9 @@ class GromacsTree(object):
                 for dep in firstmodule.get_dependencies():
                     if dep.get_other_module() == secondmodule:
                         dep.set_cycle_suppression()
+                        break
+                else:
+                    self._reporter.cyclic_issue("unused cycle suppression: {0}".format(line))
 
     def report_unused_cycle_suppressions(self, reporter):
         """Reports unused cycle suppressions."""
