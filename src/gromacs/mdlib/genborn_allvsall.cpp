@@ -42,7 +42,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/units.h"

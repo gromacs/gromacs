@@ -51,6 +51,7 @@
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/linearalgebra/nrjac.h"

@@ -52,8 +52,8 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
@@ -699,5 +699,4 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
             wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }
     }
-    debug_gmx();
 }

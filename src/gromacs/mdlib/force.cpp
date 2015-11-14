@@ -50,9 +50,9 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/listed-forces/listed-forces.h"
@@ -180,8 +180,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     {
         box_size[i] = box[i][i];
     }
-
-    debug_gmx();
 
     /* do QMMM first if requested */
     if (fr->bQMMM)
@@ -325,9 +323,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
     }
 
-    debug_gmx();
-
-
     if (debug)
     {
         pr_rvecs(debug, 0, "fshift after SR", fr->fshift, SHIFTS);
@@ -372,7 +367,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
          */
         set_pbc_dd(&pbc, fr->ePBC, cr->dd, TRUE, box);
     }
-    debug_gmx();
 
     do_force_listed(wcycle, box, ir->fepvals, cr->ms,
                     idef, (const rvec *) x, hist, f, fr,
@@ -625,13 +619,11 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         }
     }
     where();
-    debug_gmx();
 
     if (debug)
     {
         print_nrnb(debug, nrnb);
     }
-    debug_gmx();
 
 #ifdef GMX_MPI
     if (TAKETIME)

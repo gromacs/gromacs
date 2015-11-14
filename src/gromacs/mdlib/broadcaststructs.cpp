@@ -40,7 +40,7 @@
 #include <string.h>
 
 #include "gromacs/gmxlib/main.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/inputrec.h"

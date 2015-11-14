@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _network_h
-#define _network_h
-
+#ifndef GMX_GMXLIB_NETWORK_H
+#define GMX_GMXLIB_NETWORK_H
 
 /*
  * This module defines the interface of the actual communication routines.
@@ -46,10 +44,6 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_domdec_t;
 struct gmx_multisim_t;
@@ -132,17 +126,4 @@ gmx_fatal_collective(int f_errno, const char *file, int line,
  * for all processes.
  */
 
-/* This doesn't currently work if enabled (needs some header cleanup). */
-#ifdef DEBUG_GMX
-#define debug_gmx() do { FILE *fp = debug ? debug : stderr; \
-                         if (bDebugMode()) { fprintf(fp, "rank=%d, %s  %d\n", gmx_mpi_initialized() ? gmx_node_rank() : -1, __FILE__, __LINE__); } fflush(fp); } while (0)
-#else
-#define debug_gmx()
 #endif
-
-#ifdef __cplusplus
-}
-#endif
-
-
-#endif  /* _network_h */

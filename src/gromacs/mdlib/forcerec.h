@@ -37,7 +37,6 @@
 #ifndef GMX_MDLIB_FORCEREC_H
 #define GMX_MDLIB_FORCEREC_H
 
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/mdlib/genborn.h"
@@ -45,6 +44,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct t_commrec;
 struct t_fcdata;
 
 /*! \brief Create a new forcerec structure */

@@ -48,7 +48,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -683,7 +683,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         fprintf(debug, "Filling grid from %d to %d\n", cg0, cg1);
     }
 
-    debug_gmx();
     if (dd_zones == NULL)
     {
         for (cg = cg0; cg < cg1; cg++)
@@ -809,7 +808,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
             }
         }
     }
-    debug_gmx();
 
 }
 

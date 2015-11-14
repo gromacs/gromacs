@@ -55,13 +55,13 @@
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/orires.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -2842,6 +2842,4 @@ void init_md(FILE *fplog,
     clear_mat(force_vir);
     clear_mat(shake_vir);
     clear_rvec(mu_tot);
-
-    debug_gmx();
 }

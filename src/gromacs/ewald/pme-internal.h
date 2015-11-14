@@ -58,12 +58,12 @@
 #include <stdio.h>
 
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
 
+struct t_commrec;
 struct t_inputrec;
 
 //@{

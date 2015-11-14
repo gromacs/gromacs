@@ -47,11 +47,11 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -3247,7 +3247,6 @@ void do_index(const char* mdparin, const char *ndx,
     {
         fprintf(stderr, "processing index file...\n");
     }
-    debug_gmx();
     if (ndx == NULL)
     {
         snew(grps, 1);

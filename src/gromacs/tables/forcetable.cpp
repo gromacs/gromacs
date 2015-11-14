@@ -44,7 +44,6 @@
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"

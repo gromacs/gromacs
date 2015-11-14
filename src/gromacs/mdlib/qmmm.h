@@ -34,22 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_QMMM_H
+#define GMX_MDLIB_QMMM_H
 
-#ifndef _QMMM_h
-#define _QMMM_h
-
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tgroup.h"
 
 struct gmx_localtop_t;
+struct gmx_mtop_t;
+struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
+struct t_mdatoms;
 struct t_QMMMrec;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void atomic_number(int nr, char ***atomtype, int *nucnum);
 
@@ -92,8 +89,4 @@ real calculate_QMMM(t_commrec *cr,
  * called by system().
  */
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _QMMM_h */

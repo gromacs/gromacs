@@ -54,9 +54,9 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/md_logging.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
@@ -332,7 +332,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     ekind->cosacc.cos_accel = ir->cos_accel;
 
     gstat = global_stat_init(ir);
-    debug_gmx();
 
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog,
@@ -529,8 +528,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
     }
 
-    debug_gmx();
-
     if (IR_TWINRANGE(*ir) && repl_ex_nst % ir->nstcalclr != 0)
     {
         /* We should exchange at nstcalclr steps to get correct integration */
@@ -682,7 +679,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 #endif
 
-    debug_gmx();
     /***********************************************************
      *
      *             Loop over MD steps
@@ -1805,7 +1801,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     }
     /* End of main MD loop */
-    debug_gmx();
 
     /* Closing TNG files can include compressing data. Therefore it is good to do that
      * before stopping the time measurements. */
@@ -1835,7 +1830,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     done_mdoutf(outf);
-    debug_gmx();
 
     if (bPMETune)
     {
