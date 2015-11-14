@@ -47,9 +47,9 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

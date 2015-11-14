@@ -46,7 +46,7 @@
  *
  **************************************************************/
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/mdtypes/state.h"
 
 #ifdef __cplusplus
 extern "C" {
