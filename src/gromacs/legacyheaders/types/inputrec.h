@@ -41,7 +41,6 @@
 
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/swap/enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
