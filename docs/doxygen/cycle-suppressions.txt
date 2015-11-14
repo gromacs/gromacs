@@ -12,7 +12,6 @@ mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
-legacyheaders -> swap
 timing -> legacyheaders
 timing -> gmxlib
 topology -> fileio

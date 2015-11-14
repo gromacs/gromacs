@@ -41,8 +41,8 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdtypes/state.h"
 
 struct gmx_constr;
 struct gmx_ekindata_t;
