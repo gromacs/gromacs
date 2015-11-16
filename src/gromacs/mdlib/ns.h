@@ -88,8 +88,7 @@ int search_neighbours(FILE *log, t_forcerec *fr, matrix box,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
-                      gmx_bool bFillGrid,
-                      gmx_bool bDoLongRangeNS);
+                      gmx_bool bFillGrid);
 
 
 /* Debugging routines from wnblist.c */

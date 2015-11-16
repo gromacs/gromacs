@@ -108,13 +108,12 @@ typedef struct
 
 typedef struct
 {
-    int             nr_inputfiles;  /* The number of tpr and mdp input files */
-    gmx_int64_t     orig_sim_steps; /* Number of steps to be done in the real simulation */
-    gmx_int64_t     orig_init_step; /* Init step for the real simulation */
-    real           *rcoulomb;       /* The coulomb radii [0...nr_inputfiles] */
-    real           *rvdw;           /* The vdW radii */
-    real           *rlist;          /* Neighbourlist cutoff radius */
-    real           *rlistlong;
+    int             nr_inputfiles;   /* The number of tpr and mdp input files */
+    gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation */
+    gmx_int64_t     orig_init_step;  /* Init step for the real simulation */
+    real           *rcoulomb;        /* The coulomb radii [0...nr_inputfiles] */
+    real           *rvdw;            /* The vdW radii */
+    real           *rlist;           /* Neighbourlist cutoff radius */
     int            *nkx, *nky, *nkz;
     real           *fsx, *fsy, *fsz; /* Fourierspacing in x,y,z dimension */
 } t_inputinfo;
@@ -1035,10 +1034,6 @@ static void make_benchmark_tprs(
     {
         fprintf(fp, "   rlist                : %f nm\n", ir->rlist);
     }
-    if (ir->rlistlong != max_cutoff(ir->rvdw, ir->rcoulomb))
-    {
-        fprintf(fp, "   rlistlong            : %f nm\n", ir->rlistlong);
-    }
 
     /* Print a descriptive line about the tpr settings tested */
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
@@ -1052,10 +1047,6 @@ static void make_benchmark_tprs(
     if (EPME_SWITCHED(ir->coulombtype))
     {
         fprintf(fp, "     rlist");
-    }
-    if (ir->rlistlong != max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb)) )
-    {
-        fprintf(fp, " rlistlong");
     }
     fprintf(fp, "  tpr file\n");
 
@@ -1093,7 +1084,7 @@ static void make_benchmark_tprs(
             /* Adjust other radii since various conditions need to be fulfilled */
             if (eelPME == ir->coulombtype)
             {
-                /* plain PME, rcoulomb must be equal to rlist */
+                /* plain PME, rcoulomb must be equal to rlist TODO only in the group scheme? */
                 ir->rlist = ir->rcoulomb;
             }
             else
@@ -1118,9 +1109,6 @@ static void make_benchmark_tprs(
                     ir->rvdw = std::max(info->rvdw[0], ir->rlist);
                 }
             }
-
-            ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
-
         } /* end of "if (j != 0)" */
 
         /* for j==0: Save the original settings
@@ -1131,7 +1119,6 @@ static void make_benchmark_tprs(
         info->nky[j]       = ir->nky;
         info->nkz[j]       = ir->nkz;
         info->rlist[j]     = ir->rlist;
-        info->rlistlong[j] = ir->rlistlong;
         info->fsx[j]       = fac*fourierspacing;
         info->fsy[j]       = fac*fourierspacing;
         info->fsz[j]       = fac*fourierspacing;
@@ -1165,15 +1152,11 @@ static void make_benchmark_tprs(
         {
             fprintf(fp, "%10f", ir->rlist);
         }
-        if (info->rlistlong[0] != max_cutoff(info->rlist[0], max_cutoff(info->rvdw[0], info->rcoulomb[0])) )
-        {
-            fprintf(fp, "%10f", ir->rlistlong);
-        }
         fprintf(fp, "  %-14s\n", fn_bench_tprs[j]);
 
         /* Make it clear to the user that some additional settings were modified */
         if (!gmx_within_tol(ir->rvdw, info->rvdw[0], GMX_REAL_EPS)
-            || !gmx_within_tol(ir->rlistlong, info->rlistlong[0], GMX_REAL_EPS) )
+            || !gmx_within_tol(ir->rlist, info->rlist[0], GMX_REAL_EPS) )
         {
             bNote = TRUE;
         }
@@ -2591,7 +2574,6 @@ int gmx_tune_pme(int argc, char *argv[])
         snew(info->rcoulomb, ntprs);
         snew(info->rvdw, ntprs);
         snew(info->rlist, ntprs);
-        snew(info->rlistlong, ntprs);
         snew(info->nkx, ntprs);
         snew(info->nky, ntprs);
         snew(info->nkz, ntprs);

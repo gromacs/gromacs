@@ -91,7 +91,6 @@ typedef struct {
 
     /* Cut-off */
     real rlist;
-    real rlistlong;
 
     /* PME/Ewald */
     real ewaldcoeff_q;
