@@ -643,10 +643,6 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
     {
         donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
     }
-    if (flags & GMX_FORCE_DO_LR)
-    {
-        donb_flags |= GMX_NONBONDED_DO_LR;
-    }
 
     kernel_data.flags  = donb_flags;
     kernel_data.lambda = lambda;
@@ -749,7 +745,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     int                 start, homenr;
     double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool            bDoLongRange, bDoForces, bSepLRF, bUseGPU, bUseOrEmulGPU;
+    gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
     float               cycles_pme, cycles_force, cycles_wait_gpu;
@@ -781,9 +777,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
-    bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DO_LR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
-    bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
 
@@ -1104,7 +1098,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Reset energies */
-    reset_enerdata(fr, bNS, enerd, MASTER(cr));
+    reset_enerdata(enerd);
     clear_rvecs(SHIFTS, fr->fshift);
 
     if (DOMAINDECOMP(cr) && !(cr->duty & DUTY_PME))
@@ -1159,10 +1153,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         /* Clear the short- and long-range forces */
         clear_rvecs(fr->natoms_force_constr, f);
-        if (bSepLRF && do_per_step(step, inputrec->nstcalclr))
-        {
-            clear_rvecs(fr->natoms_force_constr, fr->f_twin);
-        }
 
         clear_rvec(fr->vir_diag_posres);
     }
@@ -1262,22 +1252,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
+                      x, hist, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
-
-    if (bSepLRF)
-    {
-        if (do_per_step(step, inputrec->nstcalclr))
-        {
-            /* Add the long range forces to the short range forces */
-            for (i = 0; i < fr->natoms_force_constr; i++)
-            {
-                rvec_add(fr->f_twin[i], f[i], f[i]);
-            }
-        }
-    }
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1341,13 +1319,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Communicate the forces */
         wallcycle_start(wcycle, ewcMOVEF);
         dd_move_f(cr->dd, f, fr->fshift);
-        if (bSepLRF)
-        {
-            /* We should not update the shift forces here,
-             * since f_twin is already included in f.
-             */
-            dd_move_f(cr->dd, fr->f_twin, NULL);
-        }
         wallcycle_stop(wcycle, ewcMOVEF);
     }
 
@@ -1458,15 +1429,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
-
-            if (bSepLRF)
-            {
-                wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
-                               nrnb,
-                               &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
-                wallcycle_stop(wcycle, ewcVSITESPREAD);
-            }
         }
 
         if (flags & GMX_FORCE_VIRIAL)
@@ -1537,7 +1499,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     int        start, homenr;
     double     mu[2*DIM];
     gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
-    gmx_bool   bDoLongRangeNS, bDoForces, bSepLRF;
+    gmx_bool   bDoForces;
     float      cycles_pme, cycles_force;
 
     start  = 0;
@@ -1561,14 +1523,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     bStateChanged  = (flags & GMX_FORCE_STATECHANGED);
     bNS            = (flags & GMX_FORCE_NS) && (fr->bAllvsAll == FALSE);
-    /* Should we update the long-range neighborlists at this step? */
-    bDoLongRangeNS = fr->bTwinRange && bNS;
     /* Should we perform the long-range nonbonded evaluation inside the neighborsearching? */
     bFillGrid      = (bNS && bStateChanged);
     bCalcCGCM      = (bFillGrid && !DOMAINDECOMP(cr));
     bDoForces      = (flags & GMX_FORCE_FORCES);
-    bSepLRF        = ((inputrec->nstcalclr > 1) && bDoForces &&
-                      (flags & GMX_FORCE_SEPLRF) && (flags & GMX_FORCE_DO_LR));
 
     if (bStateChanged)
     {
@@ -1700,7 +1658,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
     /* Reset energies */
-    reset_enerdata(fr, bNS, enerd, MASTER(cr));
+    reset_enerdata(enerd);
     clear_rvecs(SHIFTS, fr->fshift);
 
     if (bNS)
@@ -1716,8 +1674,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         /* Do the actual neighbour searching */
         ns(fplog, fr, box,
            groups, top, mdatoms,
-           cr, nrnb, bFillGrid,
-           bDoLongRangeNS);
+           cr, nrnb, bFillGrid);
 
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -1781,10 +1738,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
         /* Clear the short- and long-range forces */
         clear_rvecs(fr->natoms_force_constr, f);
-        if (bSepLRF && do_per_step(step, inputrec->nstcalclr))
-        {
-            clear_rvecs(fr->natoms_force_constr, fr->f_twin);
-        }
 
         clear_rvec(fr->vir_diag_posres);
     }
@@ -1802,24 +1755,12 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
+                      x, hist, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
                       flags,
                       &cycles_pme);
-
-    if (bSepLRF)
-    {
-        if (do_per_step(step, inputrec->nstcalclr))
-        {
-            /* Add the long range forces to the short range forces */
-            for (i = 0; i < fr->natoms_force_constr; i++)
-            {
-                rvec_add(fr->f_twin[i], f[i], f[i]);
-            }
-        }
-    }
 
     cycles_force = wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1864,13 +1805,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             {
                 dd_move_f(cr->dd, fr->f_novirsum, NULL);
             }
-            if (bSepLRF)
-            {
-                /* We should not update the shift forces here,
-                 * since f_twin is already included in f.
-                 */
-                dd_move_f(cr->dd, fr->f_twin, NULL);
-            }
             wallcycle_stop(wcycle, ewcMOVEF);
         }
 
@@ -1883,15 +1817,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
-
-            if (bSepLRF)
-            {
-                wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
-                               nrnb,
-                               &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
-                wallcycle_stop(wcycle, ewcVSITESPREAD);
-            }
         }
 
         if (flags & GMX_FORCE_VIRIAL)

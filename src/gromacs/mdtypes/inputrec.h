@@ -340,8 +340,6 @@ typedef struct t_inputrec {
     int             andersen_seed;           /* Random seed for Andersen thermostat (obsolete) */
     real            verletbuf_tol;           /* Per atom pair energy drift tolerance (kJ/mol/ps/atom) for list buffer  */
     real            rlist;                   /* short range pairlist cut-off (nm)		*/
-    real            rlistlong;               /* long range pairlist cut-off (nm)		*/
-    int             nstcalclr;               /* Frequency of evaluating direct space long-range interactions */
     real            rtpi;                    /* Radius for test particle insertion           */
     int             coulombtype;             /* Type of electrostatics treatment             */
     int             coulomb_modifier;        /* Modify the Coulomb interaction              */
@@ -435,7 +433,8 @@ typedef struct t_inputrec {
     real            scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
-    gmx_bool        bAdress;
+    gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
+    bool            useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX] != 0 || (ir).deform[YY][YY] != 0 || (ir).deform[ZZ][ZZ] != 0 || (ir).deform[YY][XX] != 0 || (ir).deform[ZZ][XX] != 0 || (ir).deform[ZZ][YY] != 0)
@@ -445,8 +444,6 @@ typedef struct t_inputrec {
 #define PRESERVE_SHAPE(ir) ((ir).epc != epcNO && (ir).deform[XX][XX] == 0 && ((ir).epct == epctISOTROPIC || (ir).epct == epctSEMIISOTROPIC))
 
 #define NEED_MUTOT(ir) (((ir).coulombtype == eelEWALD || EEL_PME((ir).coulombtype)) && ((ir).ewald_geometry == eewg3DC || (ir).epsilon_surface != 0))
-
-#define IR_TWINRANGE(ir) ((ir).rlist > 0 && ((ir).rlistlong == 0 || (ir).rlistlong > (ir).rlist))
 
 #define IR_ELEC_FIELD(ir) ((ir).ex[XX].n > 0 || (ir).ex[YY].n > 0 || (ir).ex[ZZ].n > 0)
 

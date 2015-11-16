@@ -320,13 +320,13 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 }
 
 void do_nonbonded(t_forcerec *fr,
-                  rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
+                  rvec x[], rvec f_shortrange[], t_mdatoms *mdatoms, t_blocka *excl,
                   gmx_grppairener_t *grppener,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
 {
     t_nblist *        nlist;
-    int               n, n0, n1, i, i0, i1, range;
+    int               n, n0, n1, i, i0, i1;
     t_nblists *       nblists;
     nb_kernel_data_t  kernel_data;
     nb_kernel_t *     kernelptr = NULL;
@@ -382,10 +382,7 @@ void do_nonbonded(t_forcerec *fr,
         kernel_data.table_vdw               = &nblists->table_vdw;
         kernel_data.table_elec_vdw          = &nblists->table_elec_vdw;
 
-        for (range = 0; range < 2; range++)
         {
-            /* Are we doing short/long-range? */
-            if (range == 0)
             {
                 /* Short-range */
                 if (!(flags & GMX_NONBONDED_DO_SR))
@@ -397,19 +394,6 @@ void do_nonbonded(t_forcerec *fr,
                 kernel_data.energygrp_polarization  = grppener->ener[egGB];
                 nlist = nblists->nlist_sr;
                 f                                   = f_shortrange;
-            }
-            else
-            {
-                /* Long-range */
-                if (!(flags & GMX_NONBONDED_DO_LR))
-                {
-                    continue;
-                }
-                kernel_data.energygrp_elec          = grppener->ener[egCOULLR];
-                kernel_data.energygrp_vdw           = grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR];
-                kernel_data.energygrp_polarization  = grppener->ener[egGB];
-                nlist = nblists->nlist_lr;
-                f                                   = f_longrange;
             }
 
             for (i = i0; (i < i1); i++)

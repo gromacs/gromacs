@@ -6494,7 +6494,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     dd->bInterCGcons    = inter_charge_group_constraints(mtop);
     dd->bInterCGsettles = inter_charge_group_settles(mtop);
 
-    if (ir->rlistlong == 0)
+    if (ir->rlist == 0)
     {
         /* Set the cut-off to some very large value,
          * so we don't need if statements everywhere in the code.
@@ -6504,7 +6504,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        comm->cutoff   = ir->rlistlong;
+        comm->cutoff   = ir->rlist;
     }
     comm->cutoff_mbody = 0;
 
@@ -6516,7 +6516,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
      * a cell size, DD cells should be at least the size of the list buffer.
      */
     comm->cellsize_limit = std::max(comm->cellsize_limit,
-                                    ir->rlistlong - std::max(ir->rvdw, ir->rcoulomb));
+                                    ir->rlist - std::max(ir->rvdw, ir->rcoulomb));
 
     if (comm->bInterCGBondeds)
     {
@@ -9413,7 +9413,7 @@ void dd_partition_system(FILE                *fplog,
             copy_ivec(fr->ns.grid->n, ncells_old);
             grid_first(fplog, fr->ns.grid, dd, &ddbox,
                        state_local->box, cell_ns_x0, cell_ns_x1,
-                       fr->rlistlong, grid_density);
+                       fr->rlist, grid_density);
             break;
         case ecutsVERLET:
             nbnxn_get_ncells(fr->nbv->nbs, &ncells_old[XX], &ncells_old[YY]);
@@ -9599,10 +9599,10 @@ void dd_partition_system(FILE                *fplog,
     }
 
     /* Set the number of atoms required for the force calculation.
-     * Forces need to be constrained when using a twin-range setup
-     * or with energy minimization. For simple simulations we could
-     * avoid some allocation, zeroing and copying, but this is
-     * probably not worth the complications ande checking.
+     * Forces need to be constrained when doing energy
+     * minimization. For simple simulations we could avoid some
+     * allocation, zeroing and copying, but this is probably not worth
+     * the complications and checking.
      */
     forcerec_set_ranges(fr, dd->ncg_home, dd->ncg_tot,
                         dd->nat_tot, comm->nat[ddnatCON], nat_f_novirsum);

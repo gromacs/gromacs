@@ -69,7 +69,7 @@ virtual sites                         yes          yes
 User-supplied tabulated interactions  yes          no
 Buckingham VdW interactions           yes          no
 rcoulomb != rvdw                      yes          no
-twin-range                            yes          no
+twin-range                            no           no
 ====================================  ============ =======
 
 Performance
