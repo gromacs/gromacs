@@ -546,7 +546,7 @@ static const char *getFftDescriptionString()
     return "fftw3";
 #  else
     // Use the version string provided by libfftw3
-#    if GMX_DOUBLE
+#    ifdef GMX_DOUBLE
     return fftw_version;
 #    else
     return fftwf_version;
