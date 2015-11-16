@@ -102,6 +102,7 @@ enum tpxv {
     tpxv_CompElWithSwapLayerOffset,                          /**< added parameters for improved CompEl setups */
     tpxv_CompElPolyatomicIonsAndMultipleIonTypes,            /**< CompEl now can handle polyatomic ions and more than two types of ions */
     tpxv_RemoveAdress,                                       /**< removed support for AdResS */
+    tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -180,7 +181,7 @@ static const t_ftupd ftupd[] = {
     { 72, F_NPSOLVATION       },
     { 41, F_LJC14_Q           },
     { 41, F_LJC_PAIRS_NB      },
-    { 32, F_BHAM_LR           },
+    { 32, F_BHAM_LR_NOLONGERUSED },
     { 32, F_RF_EXCL           },
     { 32, F_COUL_RECIP        },
     { 93, F_LJ_RECIP          },
@@ -1069,16 +1070,13 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_real(fio, ir->rlist);
     if (file_version >= 67)
     {
-        gmx_fio_do_real(fio, ir->rlistlong);
+        real dummy_rlistlong;
+        gmx_fio_do_real(fio, dummy_rlistlong);
     }
     if (file_version >= 82 && file_version != 90)
     {
-        gmx_fio_do_int(fio, ir->nstcalclr);
-    }
-    else
-    {
-        /* Calculate at NS steps */
-        ir->nstcalclr = ir->nstlist;
+        int dummy_nstcalclr;
+        gmx_fio_do_int(fio, dummy_nstcalclr);
     }
     gmx_fio_do_int(fio, ir->coulombtype);
     if (file_version < 32 && ir->coulombtype == eelRF)
@@ -1106,10 +1104,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     gmx_fio_do_real(fio, ir->rvdw_switch);
     gmx_fio_do_real(fio, ir->rvdw);
-    if (file_version < 67)
-    {
-        ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
-    }
     gmx_fio_do_int(fio, ir->eDispCorr);
     gmx_fio_do_real(fio, ir->epsilon_r);
     if (file_version >= 37)

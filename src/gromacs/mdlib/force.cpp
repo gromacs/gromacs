@@ -79,8 +79,7 @@ void ns(FILE              *fp,
         t_mdatoms         *md,
         t_commrec         *cr,
         t_nrnb            *nrnb,
-        gmx_bool           bFillGrid,
-        gmx_bool           bDoLongRangeNS)
+        gmx_bool           bFillGrid)
 {
     int     nsearch;
 
@@ -90,13 +89,8 @@ void ns(FILE              *fp,
         init_neighbor_list(fp, fr, md->homenr);
     }
 
-    if (fr->bTwinRange)
-    {
-        fr->nlr = 0;
-    }
-
     nsearch = search_neighbours(fp, fr, box, top, groups, cr, nrnb, md,
-                                bFillGrid, bDoLongRangeNS);
+                                bFillGrid);
     if (debug)
     {
         fprintf(debug, "nsearch = %d\n", nsearch);
@@ -138,7 +132,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_mdatoms  *md,
                        rvec       x[],      history_t  *hist,
                        rvec       f[],
-                       rvec       f_longrange[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
                        gmx_localtop_t *top,
@@ -247,13 +240,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
         }
-        if (flags & GMX_FORCE_DO_LR)
-        {
-            donb_flags |= GMX_NONBONDED_DO_LR;
-        }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, f, f_longrange, md, excl,
+        do_nonbonded(fr, x, f, md, excl,
                      &enerd->grpp, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
 
@@ -271,7 +260,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, f, f_longrange, md, excl,
+                do_nonbonded(fr, x, f, md, excl,
                              &(enerd->foreign_grpp), nrnb,
                              lam_i, dvdl_dum, -1, -1,
                              (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
@@ -735,8 +724,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     epot[F_LJ]       = sum_v(grpp->nener, grpp->ener[egLJSR]);
     epot[F_LJ14]     = sum_v(grpp->nener, grpp->ener[egLJ14]);
     epot[F_COUL14]   = sum_v(grpp->nener, grpp->ener[egCOUL14]);
-    epot[F_COUL_LR]  = sum_v(grpp->nener, grpp->ener[egCOULLR]);
-    epot[F_LJ_LR]    = sum_v(grpp->nener, grpp->ener[egLJLR]);
     /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
     epot[F_GBPOL]   += sum_v(grpp->nener, grpp->ener[egGB]);
 
@@ -744,7 +731,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
  * and has been added earlier
  */
     epot[F_BHAM]     = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
-    epot[F_BHAM_LR]  = sum_v(grpp->nener, grpp->ener[egBHAMLR]);
 
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)
@@ -813,10 +799,6 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
      * For the constraints this is not exact, but we have no other option
      * without literally changing the lengths and reevaluating the energies at each step.
      * (try to remedy this post 4.6 - MRS)
-     * For the non-bonded LR term we assume that the soft-core (if present)
-     * no longer affects the energy beyond the short-range cut-off,
-     * which is a very good approximation (except for exotic settings).
-     * (investigate how to overcome this post 4.6 - MRS)
      */
     if (fepvals->separate_dvdl[efptBONDED])
     {
@@ -877,26 +859,16 @@ void reset_foreign_enerdata(gmx_enerdata_t *enerd)
     }
 }
 
-void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
-                    gmx_enerdata_t *enerd,
-                    gmx_bool bMaster)
+void reset_enerdata(gmx_enerdata_t *enerd)
 {
-    gmx_bool bKeepLR;
     int      i, j;
 
-    /* First reset all energy components, except for the long range terms
-     * on the master at non neighbor search steps, since the long range
-     * terms have already been summed at the last neighbor search step.
-     */
-    bKeepLR = (fr->bTwinRange && !bNS);
+    /* First reset all energy components. */
     for (i = 0; (i < egNR); i++)
     {
-        if (!(bKeepLR && bMaster && (i == egCOULLR || i == egLJLR)))
+        for (j = 0; (j < enerd->grpp.nener); j++)
         {
-            for (j = 0; (j < enerd->grpp.nener); j++)
-            {
-                enerd->grpp.ener[i][j] = 0.0;
-            }
+            enerd->grpp.ener[i][j] = 0.0;
         }
     }
     for (i = 0; i < efptNR; i++)
@@ -910,8 +882,6 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
     {
         enerd->term[i] = 0.0;
     }
-    /* Initialize the dVdlambda term with the long range contribution */
-    /* Initialize the dvdl term with the long range contribution */
     enerd->term[F_DVDL]            = 0.0;
     enerd->term[F_DVDL_COUL]       = 0.0;
     enerd->term[F_DVDL_VDW]        = 0.0;

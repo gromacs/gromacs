@@ -99,7 +99,7 @@ const char *eintmod_names[eintmodNR+1] = {
 };
 
 const char *egrp_nm[egNR+1] = {
-    "Coul-SR", "LJ-SR", "Buck-SR", "Coul-LR", "LJ-LR", "Buck-LR",
+    "Coul-SR", "LJ-SR", "Buck-SR",
     "Coul-14", "LJ-14", NULL
 };
 

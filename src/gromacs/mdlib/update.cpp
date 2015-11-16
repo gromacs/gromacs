@@ -1439,78 +1439,6 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
     return upd->xp;
 }
 
-static void combine_forces(gmx_update_t upd,
-                           int nstcalclr,
-                           gmx_constr_t constr,
-                           t_inputrec *ir, t_mdatoms *md, t_idef *idef,
-                           t_commrec *cr,
-                           gmx_int64_t step,
-                           t_state *state, gmx_bool bMolPBC,
-                           int start, int nrend,
-                           rvec f[], rvec f_lr[],
-                           tensor *vir_lr_constr,
-                           t_nrnb *nrnb)
-{
-    int  i, d;
-
-    /* f contains the short-range forces + the long range forces
-     * which are stored separately in f_lr.
-     */
-
-    if (constr != NULL && vir_lr_constr != NULL &&
-        !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
-    {
-        /* We need to constrain the LR forces separately,
-         * because due to the different pre-factor for the SR and LR
-         * forces in the update algorithm, we have to correct
-         * the constraint virial for the nstcalclr-1 extra f_lr.
-         * Constrain only the additional LR part of the force.
-         */
-        rvec *xp;
-        real  fac;
-        int   gf = 0;
-
-        xp  = get_xprime(state, upd);
-
-        fac = (nstcalclr - 1)*ir->delta_t*ir->delta_t;
-
-        for (i = 0; i < md->homenr; i++)
-        {
-            if (md->cFREEZE != NULL)
-            {
-                gf = md->cFREEZE[i];
-            }
-            for (d = 0; d < DIM; d++)
-            {
-                if ((md->ptype[i] != eptVSite) &&
-                    (md->ptype[i] != eptShell) &&
-                    !ir->opts.nFreeze[gf][d])
-                {
-                    xp[i][d] = state->x[i][d] + fac*f_lr[i][d]*md->invmass[i];
-                }
-                else
-                {
-                    xp[i][d] = state->x[i][d];
-                }
-            }
-        }
-        constrain(NULL, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
-                  state->x, xp, xp, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, vir_lr_constr, nrnb, econqForce);
-    }
-
-    /* Add nstcalclr-1 times the LR force to the sum of both forces
-     * and store the result in forces_lr.
-     */
-    for (i = start; i < nrend; i++)
-    {
-        for (d = 0; d < DIM; d++)
-        {
-            f_lr[i][d] = f[i][d] + (nstcalclr - 1)*f_lr[i][d];
-        }
-    }
-}
-
 void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
@@ -1875,11 +1803,7 @@ void update_coords(FILE             *fplog,
                    t_inputrec       *inputrec,  /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
-                   gmx_bool          bMolPBC,
                    rvec             *f,    /* forces on home particles */
-                   gmx_bool          bDoLR,
-                   rvec             *f_lr,
-                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -1887,13 +1811,10 @@ void update_coords(FILE             *fplog,
                    gmx_bool          bInitStep,
                    int               UpdatePart,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
-                   t_nrnb           *nrnb,
-                   gmx_constr_t      constr,
-                   t_idef           *idef)
+                   gmx_constr_t      constr)
 {
     gmx_bool          bNH, bPR, bDoConstr = FALSE;
     double            dt, alpha;
-    rvec             *force;
     int               start, homenr, nrend;
     rvec             *xprime;
     int               nth, th;
@@ -1929,28 +1850,10 @@ void update_coords(FILE             *fplog,
     bNH = inputrec->etc == etcNOSEHOOVER;
     bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
 
-    if (bDoLR && inputrec->nstcalclr > 1)
-    {
-        GMX_RELEASE_ASSERT(!EI_VV(inputrec->eI), "The twin-range setup is not supported by velocity-Verlet integrators");
-        /* Store the total force + nstcalclr-1 times the LR force
-         * in forces_lr, so it can be used in a normal update algorithm
-         * to produce twin time stepping.
-         */
-        combine_forces(upd,
-                       inputrec->nstcalclr, constr, inputrec, md, idef, cr,
-                       step, state, bMolPBC,
-                       start, nrend, f, f_lr, vir_lr_constr, nrnb);
-        force = f_lr;
-    }
-    else
-    {
-        force = f;
-    }
-
     /* ############# START The update of velocities and positions ######### */
     where();
     dump_it_all(fplog, "Before update",
-                state->natoms, state->x, xprime, state->v, force);
+                state->natoms, state->x, xprime, state->v, f);
 
     if (inputrec->eI == eiSD2)
     {
@@ -1991,7 +1894,7 @@ void update_coords(FILE             *fplog,
                                      inputrec->opts.nFreeze,
                                      md->invmass, md->ptype,
                                      md->cFREEZE, md->cACC, md->cTC,
-                                     state->x, xprime, state->v, force, M,
+                                     state->x, xprime, state->v, f, M,
                                      bNH, bPR);
                     }
                     else
@@ -1999,7 +1902,7 @@ void update_coords(FILE             *fplog,
                         do_update_visc(start_th, end_th, dt,
                                        ekind->tcstat, state->nosehoover_vxi,
                                        md->invmass, md->ptype,
-                                       md->cTC, state->x, xprime, state->v, force, M,
+                                       md->cTC, state->x, xprime, state->v, f, M,
                                        state->box,
                                        ekind->cosacc.cos_accel,
                                        ekind->cosacc.vcos,
@@ -2013,7 +1916,7 @@ void update_coords(FILE             *fplog,
                                   inputrec->opts.acc, inputrec->opts.nFreeze,
                                   md->invmass, md->ptype,
                                   md->cFREEZE, md->cACC, md->cTC,
-                                  state->x, xprime, state->v, force,
+                                  state->x, xprime, state->v, f,
                                   inputrec->opts.ngtc, inputrec->opts.ref_t,
                                   bDoConstr, TRUE,
                                   step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -2027,7 +1930,7 @@ void update_coords(FILE             *fplog,
                                   inputrec->opts.acc, inputrec->opts.nFreeze,
                                   md->invmass, md->ptype,
                                   md->cFREEZE, md->cACC, md->cTC,
-                                  state->x, xprime, state->v, force, state->sd_X,
+                                  state->x, xprime, state->v, f, state->sd_X,
                                   inputrec->opts.tau_t,
                                   TRUE, step, inputrec->ld_seed,
                                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -2036,7 +1939,7 @@ void update_coords(FILE             *fplog,
                     do_update_bd(start_th, end_th, dt,
                                  inputrec->opts.nFreeze, md->invmass, md->ptype,
                                  md->cFREEZE, md->cTC,
-                                 state->x, xprime, state->v, force,
+                                 state->x, xprime, state->v, f,
                                  inputrec->bd_fric,
                                  upd->sd->bd_rf,
                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -2052,7 +1955,7 @@ void update_coords(FILE             *fplog,
                                              inputrec->opts.acc, inputrec->opts.nFreeze,
                                              md->invmass, md->ptype,
                                              md->cFREEZE, md->cACC,
-                                             state->v, force,
+                                             state->v, f,
                                              (bNH || bPR), state->veta, alpha);
                             break;
                         case etrtPOSITION:
