@@ -102,7 +102,7 @@ void gmx_sumf_sim(int nr, float r[], const struct gmx_multisim_t *ms);
 void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define gmx_sum       gmx_sumd
 #define gmx_sum_sim   gmx_sumd_sim
 #else

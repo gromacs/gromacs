@@ -194,7 +194,7 @@ const char *getFftDescriptionString()
     return "fftw3";
 #  else
     // Use the version string provided by libfftw3
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     return fftw_version;
 #    else
     return fftwf_version;
@@ -223,7 +223,7 @@ void gmx_print_version_info(FILE *fp)
         fprintf(fp, "Branched from:      %s\n", base_hash);
     }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     fprintf(fp, "Precision:          double\n");
 #else
     fprintf(fp, "Precision:          single\n");
@@ -320,7 +320,7 @@ void printBinaryInformation(FILE                            *fp,
     const char *prefix          = settings.prefix_;
     const char *suffix          = settings.suffix_;
     const char *precisionString = "";
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
     const char *const name = programContext.displayName();

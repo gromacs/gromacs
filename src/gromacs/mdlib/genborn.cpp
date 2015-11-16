@@ -978,7 +978,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     }
 
     /* Switch for determining which algorithm to use for Born radii calculation */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 
     switch (ir->gb_algorithm)
     {

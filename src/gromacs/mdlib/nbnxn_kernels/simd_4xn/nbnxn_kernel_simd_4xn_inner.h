@@ -388,7 +388,7 @@
 #endif
 
     /* Calculate 1/r */
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     rinv_S0     = invsqrt(rsq_S0);
     rinv_S1     = invsqrt(rsq_S1);
     rinv_S2     = invsqrt(rsq_S2);

@@ -214,7 +214,7 @@ static void print_converged(FILE *fp, const char *alg, real ftol,
                 alg, ftol, gmx_step_str(count, buf));
     }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     fprintf(fp, "Potential Energy  = %21.14e\n", epot);
     fprintf(fp, "Maximum force     = %21.14e on atom %d\n", fmax, nfmax+1);
     fprintf(fp, "Norm of force     = %21.14e\n", fnorm);
@@ -2660,7 +2660,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
         stepsize = ustep/s_min->fmax;
 
         /* Check if stepsize is too small, with 1 nm as a characteristic length */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         if (count == nsteps || ustep < 1e-12)
 #else
         if (count == nsteps || ustep < 1e-6)
@@ -2799,7 +2799,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     snew(fneg, natoms);
     snew(dfdx, natoms);
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     if (bIsMaster)
     {
         fprintf(stderr,
@@ -2945,7 +2945,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             if (!bIsMaster)
             {
 #ifdef GMX_MPI
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define mpi_type MPI_DOUBLE
 #else
 #define mpi_type MPI_FLOAT

@@ -193,7 +193,7 @@
 
     /* Load masks for topology exclusion masking. filter_stride is
        static const, so the conditional will be optimized away. */
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     exclusion_filter = nbat->simd_exclusion_filter64;
 #else
     exclusion_filter = nbat->simd_exclusion_filter;

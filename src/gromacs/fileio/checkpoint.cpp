@@ -85,7 +85,7 @@
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define GMX_CPT_BUILD_DP 1
 #else
 #define GMX_CPT_BUILD_DP 0
@@ -286,7 +286,7 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 
 static void do_cpt_real_err(XDR *xd, real *f)
 {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     bool_t res = xdr_double(xd, f);
 #else
     bool_t res = xdr_float(xd, f);
@@ -321,7 +321,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
                              FILE *list, int erealtype)
 {
     bool_t  res = 0;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     int     dtc = xdr_datatype_float;
 #else
     int     dtc = xdr_datatype_double;

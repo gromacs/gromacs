@@ -85,7 +85,7 @@ class AutocorrTest : public ::testing::Test
         AutocorrTest( )
             : checker_(refData_.rootChecker())
         {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-6));
 #else
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-3));

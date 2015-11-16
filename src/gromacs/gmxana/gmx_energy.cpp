@@ -2523,7 +2523,7 @@ int gmx_energy(int argc, char *argv[])
                     if (ndisre > 0)
                     {
                         GMX_RELEASE_ASSERT(blk_disre != NULL, "Trying to dereference NULL blk_disre pointer");
- #ifndef GMX_DOUBLE
+ #if !GMX_DOUBLE
                         float  *disre_rt     =     blk_disre->sub[0].fval;
                         float  *disre_rm3tav = blk_disre->sub[1].fval;
  #else
@@ -2614,7 +2614,7 @@ int gmx_energy(int argc, char *argv[])
                     blk = find_block_id_enxframe(fr, enx_i, NULL);
                     if (bORIRE && blk)
                     {
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                         xdr_datatype dt = xdr_datatype_float;
 #else
                         xdr_datatype dt = xdr_datatype_double;
@@ -2625,7 +2625,7 @@ int gmx_energy(int argc, char *argv[])
                         {
                             gmx_fatal(FARGS, "Orientational restraints read in incorrectly");
                         }
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                         vals = blk->sub[0].fval;
 #else
                         vals = blk->sub[0].dval;
@@ -2672,7 +2672,7 @@ int gmx_energy(int argc, char *argv[])
                     blk = find_block_id_enxframe(fr, enxORT, NULL);
                     if (bOTEN && blk)
                     {
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                         xdr_datatype dt = xdr_datatype_float;
 #else
                         xdr_datatype dt = xdr_datatype_double;
@@ -2683,7 +2683,7 @@ int gmx_energy(int argc, char *argv[])
                         {
                             gmx_fatal(FARGS, "Orientational restraints read in incorrectly");
                         }
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                         vals = blk->sub[0].fval;
 #else
                         vals = blk->sub[0].dval;

@@ -211,6 +211,25 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_DOUBLE
 
+   Many part of GROMACS are implemented in terms of "real" precision,
+   which is actually either a single- or double-precision type,
+   according to the value of this flag. Some parts of the code
+   deliberately use single- or double-precision types, and these are
+   unaffected by this setting. See reference manual for further
+   information.
+
+.. cmake:: GMX_RELAXED_DOUBLE_PRECISION
+
+   Permit a double-precision configuration to compute some quantities
+   to single-precision accuracy. Particularly on architectures where
+   only double-precision SIMD is available (e.g. Sparc machines such
+   as the K computer), it is faster to default to ``GMX_DOUBLE=ON``
+   and use SIMD than to use ``GMX_DOUBLE=OFF`` and use no
+   SIMD. However, if the user does not need full double precision,
+   then some optimizations can achieve the equivalent of
+   single-precision results (e.g. fewer Newton-Raphson iterations for
+   a reciprocal square root computation).
+
 .. cmake:: GMX_EXTRAE
 
 .. cmake:: GMX_EXTERNAL_BLAS

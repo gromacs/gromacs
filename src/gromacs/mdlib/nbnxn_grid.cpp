@@ -405,7 +405,7 @@ static void sort_atoms(int dim, gmx_bool Backwards,
     }
 }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define R2F_D(x) ((float)((x) >= 0 ? ((1-GMX_FLOAT_EPS)*(x)) : ((1+GMX_FLOAT_EPS)*(x))))
 #define R2F_U(x) ((float)((x) >= 0 ? ((1+GMX_FLOAT_EPS)*(x)) : ((1-GMX_FLOAT_EPS)*(x))))
 #else

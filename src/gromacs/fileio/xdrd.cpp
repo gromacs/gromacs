@@ -43,7 +43,7 @@
 
 int xdr_real(XDR *xdrs, real *r)
 {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     float f;
     int   ret;
 
@@ -59,7 +59,7 @@ int xdr_real(XDR *xdrs, real *r)
 
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     float *ffp;
     float  fprec;
     int    i, ret, isize;

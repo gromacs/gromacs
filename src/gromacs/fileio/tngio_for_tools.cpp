@@ -82,7 +82,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                                                                      const char*,
                                                                      const char,
                                                                      const char);
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
 #else
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
