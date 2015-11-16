@@ -336,8 +336,6 @@ typedef struct t_inputrec {
     int             andersen_seed;           /* Random seed for Andersen thermostat (obsolete) */
     real            verletbuf_tol;           /* Per atom pair energy drift tolerance (kJ/mol/ps/atom) for list buffer  */
     real            rlist;                   /* short range pairlist cut-off (nm)		*/
-    real            rlistlong;               /* long range pairlist cut-off (nm)		*/
-    int             nstcalclr;               /* Frequency of evaluating direct space long-range interactions */
     real            rtpi;                    /* Radius for test particle insertion           */
     int             coulombtype;             /* Type of electrostatics treatment             */
     int             coulomb_modifier;        /* Modify the Coulomb interaction              */
@@ -431,7 +429,8 @@ typedef struct t_inputrec {
     real            scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
-    gmx_bool        bAdress;
+    gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
+    gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
 } t_inputrec;
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);

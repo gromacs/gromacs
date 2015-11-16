@@ -2003,47 +2003,12 @@ type selectors (termed {\tt vdwtype} and {\tt coulombtype}) and two
 parameters, for a total of six non-bonded interaction parameters. See
 the User Guide for a complete description of these parameters.
 
-The neighbor searching (NS) can be performed using a single-range, or a twin-range 
-approach. Since the former is merely a special case of the latter, we will 
-discuss the more general twin-range. In this case, NS is described by two
-radii: {\tt rlist} and max({\tt rcoulomb},{\tt rvdw}).
-Usually one builds the neighbor list every 10 time steps
-or every 20 fs (parameter {\tt nstlist}). In the neighbor list, all interaction 
-pairs that  fall within {\tt rlist} are stored. Furthermore, the 
-interactions between pairs that do not
-fall within {\tt rlist} but do fall within max({\tt rcoulomb},{\tt rvdw})
-are computed during NS.  The
-forces and energy are stored separately and added to short-range forces
-at every time step between successive NS. If {\tt rlist} = 
-max({\tt rcoulomb},{\tt rvdw}), no forces
-are evaluated during neighbor list generation.
-The \normindex{virial} is calculated from the sum of the short- and
-long-range forces.
-This means that the virial can be slightly asymmetrical at non-NS steps.
-When mdrun is compiled to use mixed precision, the virial is almost always asymmetrical because the
-off-diagonal elements are about as large as each element in the sum.
-In most cases this is not really a problem, since the fluctuations in the
-virial can be 2 orders of magnitude larger than the average.
-
-Except for the plain cut-off,
-all of the interaction functions in \tabref{funcparm}
-require that neighbor searching be done with a larger radius than the $r_c$
+In the group cut-off scheme, all of the interaction functions in \tabref{funcparm}
+require that neighbor searching be done with a radius at least as large as the $r_c$
 specified for the functional form, because of the use of charge groups.
 The extra radius is typically of the order of 0.25 nm (roughly the 
 largest distance between two atoms in a charge group plus the distance a 
 charge group can diffuse within neighbor list updates).
-
-%If your charge groups are very large it may be interesting to turn off charge
-%groups, by setting the option 
-%{\tt bAtomList = yes} in your {\tt grompp.mdp} file.
-%In this case only a small extra radius to account for diffusion needs to be 
-%added (0.1 nm). Do not however use this together with the plain cut-off
-%method, as it will generate large artifacts (\secref{cg}).
-%In summary, there are four parameters that describe NS behavior:
-%{\tt nstlist} (update frequency in number of time steps),
-%{\tt bAtomList} (whether or not charge groups are used to generate neighbor list, the default is to use charge groups, so {\tt bAtomList = no}),
-%{\tt rshort} and {\tt rlong} which are the two radii {\rs} and {\rl}
-%described above.
 
 \begin{table}[ht]
 \centering
