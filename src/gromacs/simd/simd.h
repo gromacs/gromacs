@@ -323,7 +323,7 @@ gmx_simd4_align_d(double *p)
  * that conversions float-to-double and v.v. are not included here since they
  * are not precision-dependent - find them in the implementation files.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 /* Double floating-point. The documentation is in the float part below */
 #    define gmx_simd_real_t                  gmx_simd_double_t
 #    define gmx_simd_load_r                  gmx_simd_load_d

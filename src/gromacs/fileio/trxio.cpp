@@ -117,7 +117,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
 {
     int  r;
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     /* since t is float, we can not use double precision for bRmod */
     bDouble = FALSE;
 #endif

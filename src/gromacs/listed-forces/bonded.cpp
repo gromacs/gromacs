@@ -83,7 +83,7 @@
 // a bit of a hack in the two files that use it. It will be replaced with the
 // new generic functionality after version 5.1
 
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 static gmx_inline void gmx_simdcall
 gmx_hack_simd_transpose4_r(gmx_simd_double_t *row0,
                            gmx_simd_double_t *row1,

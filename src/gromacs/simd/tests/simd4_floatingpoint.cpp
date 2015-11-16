@@ -298,7 +298,7 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4Dotproduct3R)
 {
     gmx_simd4_real_t v1 = setSimd4RealFrom3R(1, 4, 5);
     gmx_simd4_real_t v2 = setSimd4RealFrom3R(3, 8, 2);
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     EXPECT_DOUBLE_EQ(45.0, gmx_simd4_dotproduct3_r(v1, v2));
 #    else
     EXPECT_FLOAT_EQ(45.0, gmx_simd4_dotproduct3_r(v1, v2));

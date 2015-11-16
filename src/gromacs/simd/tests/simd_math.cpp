@@ -102,7 +102,7 @@ SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simd
     int                          i, iter;
     int                          niter   = s_nPoints/GMX_SIMD_REAL_WIDTH;
     int                          npoints = niter*GMX_SIMD_REAL_WIDTH;
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     union {
         double r; gmx_int64_t i;
     } conv0, conv1;
@@ -397,7 +397,7 @@ TEST_F(SimdMathTest, gmxSimdCosR)
 /*! \brief Function wrapper for tan(x), with argument/return in default Gromacs precision */
 real ref_tan(real x)
 {
-#if (defined(__ibmxl__) || defined(__xlC__)) && !defined(GMX_DOUBLE)
+#if (defined(__ibmxl__) || defined(__xlC__)) && !GMX_DOUBLE
     /* xlC (both version 12 and 13) has some strange behaviour where tan(x) with a float argument incorrectly
      * returns -0.0 for the argument 0.0 at -O3 optimization. tanf() seems to avoid it.
      */
@@ -494,7 +494,7 @@ real ref_pmecorrF(real x)
 TEST_F(SimdMathTest, gmxSimdPmecorrForceR)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     setUlpTol((gmx_int64_t)(5e-10/GMX_REAL_EPS));
 #else
     setUlpTol((gmx_int64_t)(5e-6/GMX_REAL_EPS));
@@ -516,7 +516,7 @@ real ref_pmecorrV(real x)
 TEST_F(SimdMathTest, gmxSimdPmecorrPotentialR)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     setUlpTol((gmx_int64_t)(5e-10/GMX_REAL_EPS));
 #else
     setUlpTol((gmx_int64_t)(5e-6/GMX_REAL_EPS));

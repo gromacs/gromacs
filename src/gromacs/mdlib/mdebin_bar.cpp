@@ -247,7 +247,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             blk->sub[2].nr = dh->ndh;
 /* For F@H for now. */
 #undef GMX_DOUBLE
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
             blk->sub[2].type = xdr_datatype_float;
             for (i = 0; i < dh->ndh; i++)
             {
@@ -263,7 +263,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         else
         {
             blk->sub[2].nr = 0;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
             blk->sub[2].type = xdr_datatype_float;
             blk->sub[2].fval = NULL;
 #else

@@ -105,7 +105,7 @@
 /*! \def gmx_real_fullprecision_pfmt
  * \brief Format string for full `real` precision.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 
 #ifndef HAVE_REAL
 typedef double      real;

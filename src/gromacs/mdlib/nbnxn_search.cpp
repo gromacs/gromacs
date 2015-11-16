@@ -3019,7 +3019,7 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
     rbb2 = std::max(0.0, rlist - 0.5*std::sqrt(bbx*bbx + bby*bby));
     rbb2 = rbb2 * rbb2;
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     return rbb2;
 #else
     return (float)((1+GMX_FLOAT_EPS)*rbb2);

@@ -200,7 +200,7 @@ typedef struct {
  * but too small will result in overhead.
  * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define NBNXN_BUFFERFLAG_SIZE   8
 #else
 #define NBNXN_BUFFERFLAG_SIZE  16
