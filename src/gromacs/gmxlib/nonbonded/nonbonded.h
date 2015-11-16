@@ -62,7 +62,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 
 
 
-#define GMX_NONBONDED_DO_LR             (1<<0)
 #define GMX_NONBONDED_DO_FORCE          (1<<1)
 #define GMX_NONBONDED_DO_SHIFTFORCE     (1<<2)
 #define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1<<3)
@@ -71,7 +70,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 
 void
 do_nonbonded(t_forcerec *fr,
-             rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *md, t_blocka *excl,
+             rvec x[], rvec f_shortrange[], t_mdatoms *md, t_blocka *excl,
              gmx_grppairener_t *grppener,
              t_nrnb *nrnb, real *lambda, real dvdlambda[],
              int nls, int eNL, int flags);

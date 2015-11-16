@@ -943,8 +943,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PS("periodic-molecules", EBOOL(ir->bPeriodicMols));
         PR("verlet-buffer-tolerance", ir->verletbuf_tol);
         PR("rlist", ir->rlist);
-        PR("rlistlong", ir->rlistlong);
-        PR("nstcalclr", ir->nstcalclr);
 
         /* Options for electrostatics and VdW */
         PS("coulombtype", EELTYPE(ir->coulombtype));

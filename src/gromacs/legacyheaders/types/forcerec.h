@@ -61,8 +61,39 @@ struct nonbonded_verlet_t;
 struct bonded_threading_t;
 struct t_forcetable;
 struct t_nblist;
-struct t_nblists;
-struct t_QMMMrec;
+
+/* Structure describing the data in a single table */
+typedef struct
+{
+    enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
+    enum gmx_table_format       format;      /* Interpolation type and data format */
+
+    real                        r;           /* range of the table */
+    int                         n;           /* n+1 is the number of table points */
+    real                        scale;       /* distance (nm) between two table points */
+    real *                      data;        /* the actual table data */
+
+    /* Some information about the table layout. This can also be derived from the interpolation
+     * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
+     * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
+     * It is always true that stride = formatsize*ninteractions
+     */
+    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
+} t_forcetable;
+
+typedef struct
+{
+    t_forcetable   table_elec;
+    t_forcetable   table_vdw;
+    t_forcetable   table_elec_vdw;
+
+    /* The actual neighbor lists, short and long range, see enum above
+     * for definition of neighborlist indices.
+     */
+    t_nblist nlist_sr[eNL_NR];
+} t_nblists;
 
 /* macros for the cginfo data in forcerec
  *
@@ -116,7 +147,7 @@ enum {
 };
 
 enum {
-    egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
+    egCOULSR, egLJSR, egBHAMSR,
     egCOUL14, egLJ14, egGB, egNR
 };
 extern const char *egrp_nm[egNR+1];
@@ -196,7 +227,7 @@ typedef struct t_forcerec {
     /* Cut-Off stuff.
      * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
      */
-    real rlist, rlistlong;
+    real rlist;
 
     /* Dielectric constant resp. multiplication factor for charges */
     real zsquare, temp;
@@ -297,15 +328,6 @@ typedef struct t_forcerec {
     int natoms_force_constr;
     /* The allocation size of vectors of size natoms_force */
     int nalloc_force;
-
-    /* Twin Range stuff, f_twin has size natoms_force */
-    gmx_bool bTwinRange;
-    int      nlr;
-    rvec    *f_twin;
-    /* Constraint virial correction for multiple time
-       stepping. Supported for the group scheme when not using
-       velocity-Verlet integrators. */
-    tensor   vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres

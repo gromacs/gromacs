@@ -523,7 +523,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             fprintf(fp, "%s\n\n", buf);
         }
         ir->rlist     = rlist_new;
-        ir->rlistlong = rlist_new;
     }
 }
 
@@ -560,7 +559,6 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                         ls.cluster_size_i, ls.cluster_size_j);
             }
             ir->rlist     = rlist_new;
-            ir->rlistlong = rlist_new;
         }
     }
 

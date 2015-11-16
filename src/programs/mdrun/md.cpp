@@ -230,7 +230,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bTemp, bPres, bTrotter;
-    gmx_bool          bUpdateDoLR;
     real              dvdl_constr;
     rvec             *cbuf        = NULL;
     int               cbuf_nalloc = 0;
@@ -288,8 +287,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         ir->nstcalcenergy = 1;
         nstglobalcomm     = 1;
     }
-
-    check_ir_old_tpx_versions(cr, fplog, ir, top_global);
 
     nstglobalcomm   = check_nstglobalcomm(fplog, cr, nstglobalcomm, ir);
     bGStatEveryStep = (nstglobalcomm == 1);
@@ -518,37 +515,18 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
     }
 
-    if (inputrecTwinRange(ir) && repl_ex_nst % ir->nstcalclr != 0)
-    {
-        /* We should exchange at nstcalclr steps to get correct integration */
-        gmx_fatal(FARGS, "The replica exchange period (%d) is not divisible by nstcalclr (%d)", repl_ex_nst, ir->nstcalclr);
-    }
-
     if (ir->efep != efepNO)
     {
         /* Set free energy calculation frequency as the greatest common
-         * denominator of nstdhdl and repl_ex_nst.
-         * Check for nstcalclr with twin-range, since we need the long-range
-         * contribution to the free-energy at the correct (nstcalclr) steps.
-         */
+         * denominator of nstdhdl and repl_ex_nst. */
         nstfep = ir->fepvals->nstdhdl;
         if (ir->bExpanded)
         {
-            if (inputrecTwinRange(ir) &&
-                ir->expandedvals->nstexpanded % ir->nstcalclr != 0)
-            {
-                gmx_fatal(FARGS, "nstexpanded should be divisible by nstcalclr");
-            }
             nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
         }
         if (repl_ex_nst > 0)
         {
             nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
-        }
-        /* We checked divisibility of repl_ex_nst and nstcalclr above */
-        if (inputrecTwinRange(ir) && nstfep % ir->nstcalclr != 0)
-        {
-            gmx_incons("nstfep not divisible by nstcalclr");
         }
     }
 
@@ -707,7 +685,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     gmx_fatal(FARGS, "Rerun trajectory frame step %d time %f does not contain a box, while pbc is used", rerun_fr.step, rerun_fr.time);
                 }
-                if (max_cutoff2(ir->ePBC, rerun_fr.box) < sqr(fr->rlistlong))
+                if (max_cutoff2(ir->ePBC, rerun_fr.box) < sqr(fr->rlist))
                 {
                     gmx_fatal(FARGS, "Rerun trajectory frame step %d time %f has too small box dimensions", rerun_fr.step, rerun_fr.time);
                 }
@@ -882,7 +860,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         else
         {
-            /* Determine whether or not to do Neighbour Searching and LR */
+            /* Determine whether or not to do Neighbour Searching */
             bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
         }
 
@@ -1036,19 +1014,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((inputrecDynamicBox(ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
-                       GMX_FORCE_SEPLRF |
                        (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
                        (bCalcEner ? GMX_FORCE_ENERGY : 0) |
                        (bDoFEP ? GMX_FORCE_DHDL : 0)
                        );
-
-        if (fr->bTwinRange)
-        {
-            if (do_per_step(step, ir->nstcalclr))
-            {
-                force_flags |= GMX_FORCE_DO_LR;
-            }
-        }
 
         if (shellfc)
         {
@@ -1107,10 +1076,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
-                          f, FALSE, NULL, NULL, fcd,
+            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
-                          cr, nrnb, constr, &top->idef);
+                          cr, constr);
 
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
             {
@@ -1385,10 +1353,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if (EI_VV(ir->eI))
             {
                 /* velocity half-step update */
-                update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                              FALSE, NULL, NULL, fcd,
+                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, FALSE, etrtVELOCITY2,
-                              cr, nrnb, constr, &top->idef);
+                              cr, constr);
             }
 
             /* Above, initialize just copies ekinh into ekin,
@@ -1406,11 +1373,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 copy_rvecn(state->x, cbuf, 0, state->natoms);
             }
-            bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr) && !EI_VV(ir->eI));
 
-            update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                          bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
-                          ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+                          ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
@@ -1418,12 +1383,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
-
-            if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
-            {
-                /* Correct the virial for multiple time stepping */
-                m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
-            }
 
             if (ir->eI == eiVVAK)
             {
@@ -1440,9 +1399,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* now we know the scaling, we can compute the positions again again */
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
-                update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                              FALSE, NULL, NULL, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+                              ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
