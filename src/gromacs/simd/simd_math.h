@@ -4081,7 +4081,7 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
 
 
 /* Set defines based on default Gromacs precision */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 /* Documentation in single branch below */
 
 #    define gmx_simd_sum4_r           gmx_simd_sum4_d

@@ -324,13 +324,20 @@ if(GMX_SIMD STREQUAL "AVX_256"
     # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
 endif()
 
-
+# Implement double-precision option. This is complicated because we
+# need installed headers to use the precision mode of the build that
+# produced the library, but cannot use config.h in that case. We also
+# want such variables to always have a definition, because #if is more
+# robust than #ifdef. So, we put this value on the compiler command
+# line in all cases.
 if(GMX_DOUBLE)
-    add_definitions(-DGMX_DOUBLE)
-    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
-    if(GMX_RELAXED_DOUBLE_PRECISION)
-        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
-    endif()
+    set(GMX_DOUBLE_VALUE 1)
+    add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
+    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
+    # GMX_RELAXED_DOUBLE_PRECISION does not need to be handled here,
+    # because no installed header needs it
+else()
+    set(GMX_DOUBLE_VALUE 0)
 endif()
 if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")

@@ -71,7 +71,7 @@ extern "C" {
 /* To avoid NaN when excluded atoms are at zero distance, we add a small
  * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.
  */
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
 #define NBNXN_AVOID_SING_R2_INC  1.0e-12f
 #else
 /* The double prec. x86 SIMD kernels use a single prec. invsqrt, so > 1e-38 */

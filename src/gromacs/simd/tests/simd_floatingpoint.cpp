@@ -220,7 +220,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdFractionR)
 TEST_F(SimdFloatingpointTest, gmxSimdGetExponentR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(60.0, -41.0, 54.0), gmx_simd_get_exponent_r(rSimd_Exp));
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(587.0, -462.0, 672.0), gmx_simd_get_exponent_r(rSimd_ExpDouble));
 #endif
 }
@@ -230,7 +230,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdGetMantissaR)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.219097320577810839026256,
                                               1.166738027848349235071623,
                                               1.168904015004464724825084), gmx_simd_get_mantissa_r(rSimd_Exp));
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.241261238952345623563251,
                                               1.047294723759123852359232,
                                               1.856066204750275957395734), gmx_simd_get_mantissa_r(rSimd_ExpDouble));
@@ -244,7 +244,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdSetExponentR)
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
                             gmx_simd_set_exponent_r(setSimdRealFrom3R(60.0, -41.0, 54.0)));
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
                             gmx_simd_set_exponent_r(setSimdRealFrom3R(587.0, -462.0, 672.0)));
 #endif

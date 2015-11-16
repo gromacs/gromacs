@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -200,7 +200,7 @@ typedef struct {
  * but too small will result in overhead.
  * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define NBNXN_BUFFERFLAG_SIZE   8
 #else
 #define NBNXN_BUFFERFLAG_SIZE  16

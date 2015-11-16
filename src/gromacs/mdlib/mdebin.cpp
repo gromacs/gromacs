@@ -1350,7 +1350,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     add_subblocks_enxblock(&(fr.block[b]), 1);
                     fr.block[b].id        = id[b];
                     fr.block[b].sub[0].nr = nr[b];
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                     fr.block[b].sub[0].type = xdr_datatype_float;
                     fr.block[b].sub[0].fval = block[b];
 #else
@@ -1370,7 +1370,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     fr.block[db].id        = enxDISRE;
                     fr.block[db].sub[0].nr = ndisre;
                     fr.block[db].sub[1].nr = ndisre;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                     fr.block[db].sub[0].type = xdr_datatype_float;
                     fr.block[db].sub[1].type = xdr_datatype_float;
                     fr.block[db].sub[0].fval = disre_rt;

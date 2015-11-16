@@ -45,7 +45,7 @@
 void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 {
 #ifdef USE_SGI_FFT
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
   static    zomplex   *coeff;
 #else
   static    complex   *coeff;
@@ -69,7 +69,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 #ifdef USE_SGI_FFT
   if (bFirst) {
     fprintf(fp,"Going to use SGI optimized FFT routines.\n");
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     coeff  = zfft3di(nx,ny,nz,NULL);
 #else
     coeff  = cfft3di(nx,ny,nz,NULL);
@@ -78,7 +78,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,gmx_bool bFirst)
   }
   la1 = nx;
   la2 = ny;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
   zfft3d(1,nx,ny,nz,(zomplex *)cptr,la1,la2,coeff);
 #else
   cfft3d(1,nx,ny,nz,(complex *)cptr,la1,la2,coeff);
@@ -88,7 +88,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 #endif
   
 #ifdef USE_SGI_FFT
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
   zfft3d(-1,nx,ny,nz,(zomplex *)cptr,la1,la2,coeff);
 #else
   cfft3d(-1,nx,ny,nz,(complex *)cptr,la1,la2,coeff);
@@ -101,7 +101,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 {
 #ifdef USE_SGI_FFT
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
   static    double *coeff;
 #else
   static    float *coeff;
@@ -125,7 +125,7 @@ void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,gmx_bool bFirst)
 #ifdef USE_SGI_FFT
   if (bFirst) {
     fprintf(fp,"Going to use SGI optimized FFT routines.\n");
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     coeff  = dfft3di(nx,ny,nz,NULL);
 #else
     coeff  = sfft3di(nx,ny,nz,NULL);
@@ -135,7 +135,7 @@ void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,gmx_bool bFirst)
   job = 1;
   la1 = nx+2;
   la2 = ny;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
   dzfft3d(job,nx,ny,nz,cptr,la1,la2,coeff);
 #else
   scfft3d(job,nx,ny,nz,cptr,la1,la2,coeff);
@@ -147,7 +147,7 @@ void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,gmx_bool bFirst)
   job = -1;
   
 #ifdef USE_SGI_FFT
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
   zdfft3d(job,nx,ny,nz,cptr,la1,la2,coeff);
 #else
   csfft3d(job,nx,ny,nz,cptr,la1,la2,coeff);

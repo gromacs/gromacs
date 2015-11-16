@@ -80,7 +80,7 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
     size_t                        i;
 
     union {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         double r; gmx_int64_t i;
 #else
         float  r; gmx_int32_t i;
