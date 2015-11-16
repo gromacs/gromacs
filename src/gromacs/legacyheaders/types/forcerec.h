@@ -117,7 +117,7 @@ enum {
 };
 
 enum {
-    egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
+    egCOULSR, egLJSR, egBHAMSR,
     egCOUL14, egLJ14, egGB, egNR
 };
 extern const char *egrp_nm[egNR+1];
@@ -197,7 +197,7 @@ typedef struct t_forcerec {
     /* Cut-Off stuff.
      * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
      */
-    real rlist, rlistlong;
+    real rlist;
 
     /* Dielectric constant resp. multiplication factor for charges */
     real zsquare, temp;
@@ -298,15 +298,6 @@ typedef struct t_forcerec {
     int natoms_force_constr;
     /* The allocation size of vectors of size natoms_force */
     int nalloc_force;
-
-    /* Twin Range stuff, f_twin has size natoms_force */
-    gmx_bool bTwinRange;
-    int      nlr;
-    rvec    *f_twin;
-    /* Constraint virial correction for multiple time
-       stepping. Supported for the group scheme when not using
-       velocity-Verlet integrators. */
-    tensor   vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres

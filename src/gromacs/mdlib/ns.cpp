@@ -127,8 +127,8 @@ void reallocate_nblist(t_nblist *nl)
 }
 
 
-static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
-                        int maxsr, int maxlr,
+static void init_nblist(FILE *log, t_nblist *nl_sr,
+                        int maxsr,
                         int ivdw, int ivdwmod,
                         int ielec, int ielecmod,
                         int igeometry, int type,
@@ -136,16 +136,14 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
 {
     t_nblist *nl;
     int       homenr;
-    int       i;
 
-    for (i = 0; (i < 2); i++)
     {
-        nl     = (i == 0) ? nl_sr : nl_lr;
-        homenr = (i == 0) ? maxsr : maxlr;
+        nl     = nl_sr;
+        homenr = maxsr;
 
         if (nl == NULL)
         {
-            continue;
+            return;
         }
 
 
@@ -165,7 +163,7 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
         }
 
         /* This will also set the simd_padding_width field */
-        gmx_nonbonded_set_kernel_pointers( (i == 0) ? log : NULL, nl, bElecAndVdwSwitchDiffers);
+        gmx_nonbonded_set_kernel_pointers(log, nl, bElecAndVdwSwitchDiffers);
 
         /* maxnri is influenced by the number of shifts (maximum is 8)
          * and the number of energy groups.
@@ -188,20 +186,15 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
 
         if (debug)
         {
-            fprintf(debug, "Initiating neighbourlist (ielec=%d, ivdw=%d, type=%d) for %s interactions,\nwith %d SR, %d LR atoms.\n",
-                    nl->ielec, nl->ivdw, nl->type, gmx_nblist_geometry_names[nl->igeometry], maxsr, maxlr);
+            fprintf(debug, "Initiating neighbourlist (ielec=%d, ivdw=%d, type=%d) for %s interactions,\nwith %d SR atoms.\n",
+                    nl->ielec, nl->ivdw, nl->type, gmx_nblist_geometry_names[nl->igeometry], maxsr);
         }
     }
 }
 
 void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
 {
-    /* Make maxlr tunable! (does not seem to be a big difference though)
-     * This parameter determines the number of i particles in a long range
-     * neighbourlist. Too few means many function calls, too many means
-     * cache trashing.
-     */
-    int        maxsr, maxsr_wat, maxlr, maxlr_wat;
+    int        maxsr, maxsr_wat;
     int        ielec, ivdw, ielecmod, ivdwmod, type;
     int        igeometry_def, igeometry_w, igeometry_ww;
     int        i;
@@ -221,15 +214,6 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
      * The numbers seem very accurate, but they are uncritical.
      */
     maxsr_wat = std::min(fr->nWatMol, (homenr+2)/3);
-    if (fr->bTwinRange)
-    {
-        maxlr     = 50;
-        maxlr_wat = std::min(maxsr_wat, maxlr);
-    }
-    else
-    {
-        maxlr = maxlr_wat = 0;
-    }
 
     /* Determine the values for ielec/ivdw. */
     ielec                    = fr->nbkernel_elec_interaction;
@@ -268,20 +252,20 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     {
         nbl = &(fr->nblists[i]);
 
-        init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ], &nbl->nlist_lr[eNL_VDWQQ],
-                    maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
-        init_nblist(log, &nbl->nlist_sr[eNL_VDW], &nbl->nlist_lr[eNL_VDW],
-                    maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, igeometry_def, type, bElecAndVdwSwitchDiffers);
-        init_nblist(log, &nbl->nlist_sr[eNL_QQ], &nbl->nlist_lr[eNL_QQ],
-                    maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
-        init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATER], &nbl->nlist_lr[eNL_VDWQQ_WATER],
-                    maxsr_wat, maxlr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
-        init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATER], &nbl->nlist_lr[eNL_QQ_WATER],
-                    maxsr_wat, maxlr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
-        init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATERWATER], &nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-                    maxsr_wat, maxlr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
-        init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATERWATER], &nbl->nlist_lr[eNL_QQ_WATERWATER],
-                    maxsr_wat, maxlr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ],
+                    maxsr, ivdw, ivdwmod, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_VDW],
+                    maxsr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, igeometry_def, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_QQ],
+                    maxsr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_def, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATER],
+                    maxsr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATER],
+                    maxsr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_w, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_WATERWATER],
+                    maxsr_wat, ivdw, ivdwmod, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
+        init_nblist(log, &nbl->nlist_sr[eNL_QQ_WATERWATER],
+                    maxsr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
 
         /* Did we get the solvent loops so we can use optimized water kernels? */
         if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == NULL
@@ -298,12 +282,12 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
 
         if (fr->efep != efepNO)
         {
-            init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_FREE], &nbl->nlist_lr[eNL_VDWQQ_FREE],
-                        maxsr, maxlr, ivdw, ivdwmod, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
-            init_nblist(log, &nbl->nlist_sr[eNL_VDW_FREE], &nbl->nlist_lr[eNL_VDW_FREE],
-                        maxsr, maxlr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
-            init_nblist(log, &nbl->nlist_sr[eNL_QQ_FREE], &nbl->nlist_lr[eNL_QQ_FREE],
-                        maxsr, maxlr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
+            init_nblist(log, &nbl->nlist_sr[eNL_VDWQQ_FREE],
+                        maxsr, ivdw, ivdwmod, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
+            init_nblist(log, &nbl->nlist_sr[eNL_VDW_FREE],
+                        maxsr, ivdw, ivdwmod, GMX_NBKERNEL_ELEC_NONE, eintmodNONE, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
+            init_nblist(log, &nbl->nlist_sr[eNL_QQ_FREE],
+                        maxsr, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_FREE_ENERGY, bElecAndVdwSwitchDiffers);
         }
     }
     /* QMMM MM list */
@@ -313,8 +297,8 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
         {
             snew(fr->QMMMlist, 1);
         }
-        init_nblist(log, fr->QMMMlist, NULL,
-                    maxsr, maxlr, 0, 0, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD, bElecAndVdwSwitchDiffers);
+        init_nblist(log, fr->QMMMlist,
+                    maxsr, 0, 0, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD, bElecAndVdwSwitchDiffers);
     }
 
     if (log != NULL)
@@ -335,7 +319,7 @@ static void reset_nblist(t_nblist *nl)
     }
 }
 
-static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bResetLR)
+static void reset_neighbor_lists(t_forcerec *fr)
 {
     int n, i;
 
@@ -349,14 +333,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
     {
         for (i = 0; i < eNL_NR; i++)
         {
-            if (bResetSR)
-            {
-                reset_nblist( &(fr->nblists[n].nlist_sr[i]) );
-            }
-            if (bResetLR)
-            {
-                reset_nblist( &(fr->nblists[n].nlist_lr[i]) );
-            }
+            reset_nblist( &(fr->nblists[n].nlist_sr[i]) );
         }
     }
 }
@@ -475,13 +452,12 @@ static gmx_inline void close_neighbor_lists(t_forcerec *fr, gmx_bool bMakeQMMMnb
         for (i = 0; (i < eNL_NR); i++)
         {
             close_nblist(&(fr->nblists[n].nlist_sr[i]));
-            close_nblist(&(fr->nblists[n].nlist_lr[i]));
         }
     }
 }
 
 
-static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom, gmx_bool bLR)
+static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom)
 {
     int nrj = nlist->nrj;
 
@@ -491,8 +467,8 @@ static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom, gmx_bool bLR
 
         if (gmx_debug_at)
         {
-            fprintf(debug, "Increasing %s nblist (ielec=%d,ivdw=%d,type=%d,igeometry=%d) j size to %d\n",
-                    bLR ? "LR" : "SR", nlist->ielec, nlist->ivdw, nlist->type, nlist->igeometry, nlist->maxnrj);
+            fprintf(debug, "Increasing SR nblist (ielec=%d,ivdw=%d,type=%d,igeometry=%d) j size to %d\n",
+                    nlist->ielec, nlist->ivdw, nlist->type, nlist->igeometry, nlist->maxnrj);
         }
 
         srenew(nlist->jjnr, nlist->maxnrj);
@@ -504,8 +480,7 @@ static gmx_inline void add_j_to_nblist(t_nblist *nlist, int j_atom, gmx_bool bLR
 
 static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
                                           int j_start, int j_end,
-                                          t_excl *bexcl, gmx_bool i_is_j,
-                                          gmx_bool bLR)
+                                          t_excl *bexcl, gmx_bool i_is_j)
 {
     int nrj = nlist->nrj;
     int j;
@@ -515,8 +490,8 @@ static gmx_inline void add_j_to_nblist_cg(t_nblist *nlist,
         nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
         if (gmx_debug_at)
         {
-            fprintf(debug, "Increasing %s nblist (ielec=%d,ivdw=%d,type=%d,igeometry=%d) j size to %d\n",
-                    bLR ? "LR" : "SR", nlist->ielec, nlist->ivdw, nlist->type, nlist->igeometry, nlist->maxnrj);
+            fprintf(debug, "Increasing SR nblist (ielec=%d,ivdw=%d,type=%d,igeometry=%d) j size to %d\n",
+                    nlist->ielec, nlist->ivdw, nlist->type, nlist->igeometry, nlist->maxnrj);
         }
 
         srenew(nlist->jjnr, nlist->maxnrj);
@@ -561,7 +536,6 @@ typedef void
                    t_excl                bExcl[],
                    int                   shift,
                    t_forcerec     *      fr,
-                   gmx_bool              bLR,
                    gmx_bool              bDoVdW,
                    gmx_bool              bDoCoul,
                    int                   solvent_opt);
@@ -578,7 +552,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                t_excl                bExcl[],
                int                   shift,
                t_forcerec     *      fr,
-               gmx_bool              bLR,
                gmx_bool              bDoVdW,
                gmx_bool              bDoCoul,
                int                   solvent_opt)
@@ -659,14 +632,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     {
         nbl_ind = fr->gid2nblists[GID(igid, jgid, ngid)];
     }
-    if (bLR)
-    {
-        nlist = fr->nblists[nbl_ind].nlist_lr;
-    }
-    else
-    {
-        nlist = fr->nblists[nbl_ind].nlist_sr;
-    }
+    nlist = fr->nblists[nbl_ind].nlist_sr;
 
     if (iwater != esolNO)
     {
@@ -724,18 +690,18 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     if (!bDoCoul)
                     {
                         /* VdW only - only first atoms in each water interact */
-                        add_j_to_nblist(vdw, jj0, bLR);
+                        add_j_to_nblist(vdw, jj0);
                     }
                     else
                     {
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
-                            add_j_to_nblist(coul_ww, jj0, bLR);
+                            add_j_to_nblist(coul_ww, jj0);
                         }
                         else
                         {
-                            add_j_to_nblist(vdwc_ww, jj0, bLR);
+                            add_j_to_nblist(vdwc_ww, jj0);
                         }
                     }
                 }
@@ -745,18 +711,18 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     if (!bDoCoul)
                     {
                         /* VdW only - only first atoms in each water interact */
-                        add_j_to_nblist(vdw, jj0, bLR);
+                        add_j_to_nblist(vdw, jj0);
                     }
                     else
                     {
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
-                            add_j_to_nblist(coul_ww, jj0, bLR);
+                            add_j_to_nblist(coul_ww, jj0);
                         }
                         else
                         {
-                            add_j_to_nblist(vdwc_ww, jj0, bLR);
+                            add_j_to_nblist(vdwc_ww, jj0);
                         }
                     }
                 }
@@ -776,7 +742,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             if (charge[jj] != 0)
                             {
-                                add_j_to_nblist(coul, jj, bLR);
+                                add_j_to_nblist(coul, jj);
                             }
                         }
                     }
@@ -786,7 +752,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             if (bHaveVdW[type[jj]])
                             {
-                                add_j_to_nblist(vdw, jj, bLR);
+                                add_j_to_nblist(vdw, jj);
                             }
                         }
                     }
@@ -800,16 +766,16 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                             {
                                 if (charge[jj] != 0)
                                 {
-                                    add_j_to_nblist(vdwc, jj, bLR);
+                                    add_j_to_nblist(vdwc, jj);
                                 }
                                 else
                                 {
-                                    add_j_to_nblist(vdw, jj, bLR);
+                                    add_j_to_nblist(vdw, jj);
                                 }
                             }
                             else if (charge[jj] != 0)
                             {
-                                add_j_to_nblist(coul, jj, bLR);
+                                add_j_to_nblist(coul, jj);
                             }
                         }
                     }
@@ -876,14 +842,14 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                                 {
                                     if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul, jj, bLR);
+                                        add_j_to_nblist(coul, jj);
                                     }
                                 }
                                 else if (!bDoCoul_i)
                                 {
                                     if (bHaveVdW[type[jj]])
                                     {
-                                        add_j_to_nblist(vdw, jj, bLR);
+                                        add_j_to_nblist(vdw, jj);
                                     }
                                 }
                                 else
@@ -892,16 +858,16 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                                     {
                                         if (charge[jj] != 0)
                                         {
-                                            add_j_to_nblist(vdwc, jj, bLR);
+                                            add_j_to_nblist(vdwc, jj);
                                         }
                                         else
                                         {
-                                            add_j_to_nblist(vdw, jj, bLR);
+                                            add_j_to_nblist(vdw, jj);
                                         }
                                     }
                                     else if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul, jj, bLR);
+                                        add_j_to_nblist(coul, jj);
                                     }
                                 }
                             }
@@ -1003,14 +969,14 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                                     {
                                         if (charge[jj] != 0 || chargeB[jj] != 0)
                                         {
-                                            add_j_to_nblist(coul_free, jj, bLR);
+                                            add_j_to_nblist(coul_free, jj);
                                         }
                                     }
                                     else if (!bDoCoul_i)
                                     {
                                         if (bHaveVdW[type[jj]] || bHaveVdW[typeB[jj]])
                                         {
-                                            add_j_to_nblist(vdw_free, jj, bLR);
+                                            add_j_to_nblist(vdw_free, jj);
                                         }
                                     }
                                     else
@@ -1019,16 +985,16 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                                         {
                                             if (charge[jj] != 0 || chargeB[jj] != 0)
                                             {
-                                                add_j_to_nblist(vdwc_free, jj, bLR);
+                                                add_j_to_nblist(vdwc_free, jj);
                                             }
                                             else
                                             {
-                                                add_j_to_nblist(vdw_free, jj, bLR);
+                                                add_j_to_nblist(vdw_free, jj);
                                             }
                                         }
                                         else if (charge[jj] != 0 || chargeB[jj] != 0)
                                         {
-                                            add_j_to_nblist(coul_free, jj, bLR);
+                                            add_j_to_nblist(coul_free, jj);
                                         }
                                     }
                                 }
@@ -1037,14 +1003,14 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                                     /* This is done whether or not bWater is set */
                                     if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul, jj, bLR);
+                                        add_j_to_nblist(coul, jj);
                                     }
                                 }
                                 else if (!bDoCoul_i_sol)
                                 {
                                     if (bHaveVdW[type[jj]])
                                     {
-                                        add_j_to_nblist(vdw, jj, bLR);
+                                        add_j_to_nblist(vdw, jj);
                                     }
                                 }
                                 else
@@ -1053,16 +1019,16 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                                     {
                                         if (charge[jj] != 0)
                                         {
-                                            add_j_to_nblist(vdwc, jj, bLR);
+                                            add_j_to_nblist(vdwc, jj);
                                         }
                                         else
                                         {
-                                            add_j_to_nblist(vdw, jj, bLR);
+                                            add_j_to_nblist(vdw, jj);
                                         }
                                     }
                                     else if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul, jj, bLR);
+                                        add_j_to_nblist(coul, jj);
                                     }
                                 }
                             }
@@ -1092,7 +1058,6 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
                  t_excl                           bExcl[],
                  int                              shift,
                  t_forcerec                *      fr,
-                 gmx_bool                         bLR,
                  gmx_bool  gmx_unused             bDoVdW,
                  gmx_bool  gmx_unused             bDoCoul,
                  int       gmx_unused             solvent_opt)
@@ -1136,7 +1101,7 @@ put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
                     bNotEx = NOTEXCL(bExcl, i, jj);
                     if (bNotEx)
                     {
-                        add_j_to_nblist(coul, jj, bLR);
+                        add_j_to_nblist(coul, jj);
                     }
                 }
             }
@@ -1157,7 +1122,6 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
                t_excl                           bExcl[],
                int                              shift,
                t_forcerec                *      fr,
-               gmx_bool                         bLR,
                gmx_bool   gmx_unused            bDoVdW,
                gmx_bool   gmx_unused            bDoCoul,
                int        gmx_unused            solvent_opt)
@@ -1181,14 +1145,7 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
     {
         nbl_ind = fr->gid2nblists[gid];
     }
-    if (bLR)
-    {
-        vdwc = &fr->nblists[nbl_ind].nlist_lr[eNL_VDWQQ];
-    }
-    else
-    {
-        vdwc = &fr->nblists[nbl_ind].nlist_sr[eNL_VDWQQ];
-    }
+    vdwc = &fr->nblists[nbl_ind].nlist_sr[eNL_VDWQQ];
 
     /* Make a new neighbor list for charge group icg.
      * Currently simply one neighbor list is made with LJ and Coulomb.
@@ -1207,7 +1164,7 @@ put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
             /* Here we add the j charge group jcg to the list,
              * exclusions are also added to the list.
              */
-            add_j_to_nblist_cg(vdwc, index[jcg], index[jcg+1], bExcl, icg == jcg, bLR);
+            add_j_to_nblist_cg(vdwc, index[jcg], index[jcg+1], bExcl, icg == jcg);
         }
     }
 
@@ -1388,7 +1345,7 @@ static void add_simple(t_ns_buf * nsbuf, int nrj, int cg_j,
     if (nsbuf->nj + nrj > MAX_CG)
     {
         put_in_list(bHaveVdW, ngid, md, icg, jgid, nsbuf->ncg, nsbuf->jcg,
-                    cgs->index, bexcl, shift, fr, FALSE, TRUE, TRUE, fr->solvent_opt);
+                    cgs->index, bexcl, shift, fr, TRUE, TRUE, fr->solvent_opt);
         /* Reset buffer contents */
         nsbuf->ncg = nsbuf->nj = 0;
     }
@@ -1563,7 +1520,7 @@ static int ns_simple_core(t_forcerec *fr,
                 if (nsbuf->ncg > 0)
                 {
                     put_in_list(bHaveVdW, ngid, md, icg, nn, nsbuf->ncg, nsbuf->jcg,
-                                cgs->index, bexcl, k, fr, FALSE, TRUE, TRUE, fr->solvent_opt);
+                                cgs->index, bexcl, k, fr, TRUE, TRUE, fr->solvent_opt);
                     nsbuf->ncg = nsbuf->nj = 0;
                 }
             }
@@ -1682,87 +1639,32 @@ static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
  ****************************************************/
 
 
-static void get_cutoff2(t_forcerec *fr, gmx_bool bDoLongRange,
-                        real *rvdw2, real *rcoul2,
-                        real *rs2, real *rm2, real *rl2)
+static void get_cutoff2(t_forcerec *fr, real *rs2)
 {
     *rs2 = sqr(fr->rlist);
-
-    if (bDoLongRange && fr->bTwinRange)
-    {
-        /* With plain cut-off or RF we need to make the list exactly
-         * up to the cut-off and the cut-off's can be different,
-         * so we can not simply set them to rlistlong.
-         * To keep this code compatible with (exotic) old cases,
-         * we also create lists up to rvdw/rcoulomb for PME and Ewald.
-         * The interaction check should correspond to:
-         * !ir_vdw/coulomb_might_be_zero_at_cutoff from inputrec.c.
-         */
-        if (((fr->vdwtype == evdwCUT || fr->vdwtype == evdwPME) &&
-             fr->vdw_modifier == eintmodNONE) ||
-            fr->rvdw <= fr->rlist)
-        {
-            *rvdw2  = sqr(fr->rvdw);
-        }
-        else
-        {
-            *rvdw2  = sqr(fr->rlistlong);
-        }
-        if (((fr->eeltype == eelCUT ||
-              (EEL_RF(fr->eeltype) && fr->eeltype != eelRF_ZERO) ||
-              fr->eeltype == eelPME ||
-              fr->eeltype == eelEWALD) &&
-             fr->coulomb_modifier == eintmodNONE) ||
-            fr->rcoulomb <= fr->rlist)
-        {
-            *rcoul2 = sqr(fr->rcoulomb);
-        }
-        else
-        {
-            *rcoul2 = sqr(fr->rlistlong);
-        }
-    }
-    else
-    {
-        /* Workaround for a gcc -O3 or -ffast-math problem */
-        *rvdw2  = *rs2;
-        *rcoul2 = *rs2;
-    }
-    *rm2 = std::min(*rvdw2, *rcoul2);
-    *rl2 = std::max(*rvdw2, *rcoul2);
 }
 
 static void init_nsgrid_lists(t_forcerec *fr, int ngid, gmx_ns_t *ns)
 {
-    real rvdw2, rcoul2, rs2, rm2, rl2;
+    real rs2;
     int  j;
 
-    get_cutoff2(fr, TRUE, &rvdw2, &rcoul2, &rs2, &rm2, &rl2);
+    get_cutoff2(fr, &rs2);
 
     /* Short range buffers */
     snew(ns->nl_sr, ngid);
     /* Counters */
     snew(ns->nsr, ngid);
-    snew(ns->nlr_ljc, ngid);
-    snew(ns->nlr_one, ngid);
-
-    /* Always allocate both list types, since rcoulomb might now change with PME load balancing */
-    /* Long range VdW and Coul buffers */
-    snew(ns->nl_lr_ljc, ngid);
-    /* Long range VdW or Coul only buffers */
-    snew(ns->nl_lr_one, ngid);
 
     for (j = 0; (j < ngid); j++)
     {
         snew(ns->nl_sr[j], MAX_CG);
-        snew(ns->nl_lr_ljc[j], MAX_CG);
-        snew(ns->nl_lr_one[j], MAX_CG);
     }
     if (debug)
     {
         fprintf(debug,
-                "ns5_core: rs2 = %g, rm2 = %g, rl2 = %g (nm^2)\n",
-                rs2, rm2, rl2);
+                "ns5_core: rs2 = %g (nm^2)\n",
+                rs2);
     }
 }
 
@@ -1774,11 +1676,11 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                        t_mdatoms *md,
                        put_in_list_t *put_in_list,
                        gmx_bool bHaveVdW[],
-                       gmx_bool bDoLongRange, gmx_bool bMakeQMMMnblist)
+                       gmx_bool bMakeQMMMnblist)
 {
     gmx_ns_t     *ns;
-    int         **nl_lr_ljc, **nl_lr_one, **nl_sr;
-    int          *nlr_ljc, *nlr_one, *nsr;
+    int         **nl_sr;
+    int          *nsr;
     gmx_domdec_t *dd;
     t_block      *cgs    = &(top->cgs);
     int          *cginfo = fr->cginfo;
@@ -1797,9 +1699,8 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     int           cg0, cg1, icg = -1, cgsnr, i0, igid, naaj, max_jcg;
     int           jcg0, jcg1, jjcg, cgj0, jgid;
     int          *grida, *gridnra, *gridind;
-    gmx_bool      rvdw_lt_rcoul, rcoul_lt_rvdw;
     rvec         *cgcm, grid_offset;
-    real          r2, rs2, rvdw2, rcoul2, rm2, rl2, XI, YI, ZI, tmp1, tmp2;
+    real          r2, rs2, XI, YI, ZI, tmp1, tmp2;
     int          *i_egp_flags;
     gmx_bool      bDomDec, bTriclinicX, bTriclinicY;
     ivec          ncpddc;
@@ -1818,23 +1719,10 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
 
     cgsnr    = cgs->nr;
 
-    get_cutoff2(fr, bDoLongRange, &rvdw2, &rcoul2, &rs2, &rm2, &rl2);
-
-    rvdw_lt_rcoul = (rvdw2 >= rcoul2);
-    rcoul_lt_rvdw = (rcoul2 >= rvdw2);
-
-    if (bMakeQMMMnblist)
-    {
-        rm2 = rl2;
-        rs2 = rl2;
-    }
+    get_cutoff2(fr, &rs2);
 
     nl_sr     = ns->nl_sr;
     nsr       = ns->nsr;
-    nl_lr_ljc = ns->nl_lr_ljc;
-    nl_lr_one = ns->nl_lr_one;
-    nlr_ljc   = ns->nlr_ljc;
-    nlr_one   = ns->nlr_one;
 
     /* Unpack arrays */
     cgcm    = fr->cg_cm;
@@ -1894,7 +1782,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         else
         {
             if (d == XX &&
-                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < std::sqrt(rl2))
+                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < std::sqrt(rs2))
             {
                 shp[d] = 2;
             }
@@ -1988,7 +1876,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
             ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
             /* Calculate range of cells in Z direction that have the shift tz */
             zgi = cell_z + tz*Nz;
-            get_dx_dd(Nz, gridz, rl2, zgi, ZI-grid_offset[ZZ],
+            get_dx_dd(Nz, gridz, rs2, zgi, ZI-grid_offset[ZZ],
                       ncpddc[ZZ], sh0[ZZ], sh1[ZZ], &dz0, &dz1, dcz2);
             if (dz0 > dz1)
             {
@@ -2006,7 +1894,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                 {
                     ygi = cell_y + ty*Ny;
                 }
-                get_dx_dd(Ny, gridy, rl2, ygi, YI-grid_offset[YY],
+                get_dx_dd(Ny, gridy, rs2, ygi, YI-grid_offset[YY],
                           ncpddc[YY], sh0[YY], sh1[YY], &dy0, &dy1, dcy2);
                 if (dy0 > dy1)
                 {
@@ -2024,7 +1912,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                     {
                         xgi = cell_x + tx*Nx;
                     }
-                    get_dx_dd(Nx, gridx, rl2, xgi, XI-grid_offset[XX],
+                    get_dx_dd(Nx, gridx, rs2, xgi, XI-grid_offset[XX],
                               ncpddc[XX], sh0[XX], sh1[XX], &dx0, &dx1, dcx2);
                     if (dx0 > dx1)
                     {
@@ -2038,8 +1926,6 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                     for (nn = 0; (nn < ngid); nn++)
                     {
                         nsr[nn]      = 0;
-                        nlr_ljc[nn]  = 0;
-                        nlr_one[nn]  = 0;
                     }
 #ifdef NS5DB
                     fprintf(log, "shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
@@ -2050,7 +1936,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
 #endif
                     for (dx = dx0; (dx <= dx1); dx++)
                     {
-                        tmp1 = rl2 - dcx2[dx];
+                        tmp1 = rs2 - dcx2[dx];
                         for (dy = dy0; (dy <= dy1); dy++)
                         {
                             tmp2 = tmp1 - dcy2[dy];
@@ -2090,50 +1976,23 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                                                 (jjcg < max_jcg))
                                             {
                                                 r2 = calc_dx2(XI, YI, ZI, cgcm[jjcg]);
-                                                if (r2 < rl2)
+                                                if (r2 < rs2)
                                                 {
                                                     /* jgid = gid[cgsatoms[cgsindex[jjcg]]]; */
                                                     jgid = GET_CGINFO_GID(cginfo[jjcg]);
                                                     /* check energy group exclusions */
                                                     if (!(i_egp_flags[jgid] & EGP_EXCL))
                                                     {
-                                                        if (r2 < rs2)
+                                                        if (nsr[jgid] >= MAX_CG)
                                                         {
-                                                            if (nsr[jgid] >= MAX_CG)
-                                                            {
-                                                                /* Add to short-range list */
-                                                                put_in_list(bHaveVdW, ngid, md, icg, jgid,
-                                                                            nsr[jgid], nl_sr[jgid],
-                                                                            cgs->index, /* cgsatoms, */ bexcl,
-                                                                            shift, fr, FALSE, TRUE, TRUE, fr->solvent_opt);
-                                                                nsr[jgid] = 0;
-                                                            }
-                                                            nl_sr[jgid][nsr[jgid]++] = jjcg;
+                                                            /* Add to short-range list */
+                                                            put_in_list(bHaveVdW, ngid, md, icg, jgid,
+                                                                        nsr[jgid], nl_sr[jgid],
+                                                                        cgs->index, /* cgsatoms, */ bexcl,
+                                                                        shift, fr, TRUE, TRUE, fr->solvent_opt);
+                                                            nsr[jgid] = 0;
                                                         }
-                                                        else if (r2 < rm2)
-                                                        {
-                                                            if (nlr_ljc[jgid] >= MAX_CG)
-                                                            {
-                                                                /* Add to LJ+coulomb long-range list */
-                                                                put_in_list(bHaveVdW, ngid, md, icg, jgid,
-                                                                            nlr_ljc[jgid], nl_lr_ljc[jgid], top->cgs.index,
-                                                                            bexcl, shift, fr, TRUE, TRUE, TRUE, fr->solvent_opt);
-                                                                nlr_ljc[jgid] = 0;
-                                                            }
-                                                            nl_lr_ljc[jgid][nlr_ljc[jgid]++] = jjcg;
-                                                        }
-                                                        else
-                                                        {
-                                                            if (nlr_one[jgid] >= MAX_CG)
-                                                            {
-                                                                /* Add to long-range list with only coul, or only LJ */
-                                                                put_in_list(bHaveVdW, ngid, md, icg, jgid,
-                                                                            nlr_one[jgid], nl_lr_one[jgid], top->cgs.index,
-                                                                            bexcl, shift, fr, TRUE, rvdw_lt_rcoul, rcoul_lt_rvdw, fr->solvent_opt);
-                                                                nlr_one[jgid] = 0;
-                                                            }
-                                                            nl_lr_one[jgid][nlr_one[jgid]++] = jjcg;
-                                                        }
+                                                        nl_sr[jgid][nsr[jgid]++] = jjcg;
                                                     }
                                                 }
                                                 nns++;
@@ -2151,21 +2010,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                         {
                             put_in_list(bHaveVdW, ngid, md, icg, nn, nsr[nn], nl_sr[nn],
                                         cgs->index, /* cgsatoms, */ bexcl,
-                                        shift, fr, FALSE, TRUE, TRUE, fr->solvent_opt);
-                        }
-
-                        if (nlr_ljc[nn] > 0)
-                        {
-                            put_in_list(bHaveVdW, ngid, md, icg, nn, nlr_ljc[nn],
-                                        nl_lr_ljc[nn], top->cgs.index,
-                                        bexcl, shift, fr, TRUE, TRUE, TRUE, fr->solvent_opt);
-                        }
-
-                        if (nlr_one[nn] > 0)
-                        {
-                            put_in_list(bHaveVdW, ngid, md, icg, nn, nlr_one[nn],
-                                        nl_lr_one[nn], top->cgs.index,
-                                        bexcl, shift, fr, TRUE, rvdw_lt_rcoul, rcoul_lt_rvdw, fr->solvent_opt);
+                                        shift, fr, TRUE, TRUE, fr->solvent_opt);
                         }
                     }
                 }
@@ -2319,8 +2164,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
-                      gmx_bool bFillGrid,
-                      gmx_bool bDoLongRangeNS)
+                      gmx_bool bFillGrid)
 {
     t_block            *cgs = &(top->cgs);
     rvec                box_size, grid_x0, grid_x1;
@@ -2347,14 +2191,14 @@ int search_neighbours(FILE *log, t_forcerec *fr,
 
     if (fr->ePBC != epbcNONE)
     {
-        if (sqr(fr->rlistlong) >= max_cutoff2(fr->ePBC, box))
+        if (sqr(fr->rlist) >= max_cutoff2(fr->ePBC, box))
         {
             gmx_fatal(FARGS, "One of the box vectors has become shorter than twice the cut-off length or box_yy-|box_zy| or box_zz has become smaller than the cut-off.");
         }
         if (!bGrid)
         {
             min_size = std::min(box_size[XX], std::min(box_size[YY], box_size[ZZ]));
-            if (2*fr->rlistlong >= min_size)
+            if (2*fr->rlist >= min_size)
             {
                 gmx_fatal(FARGS, "One of the box diagonal elements has become smaller than twice the cut-off length.");
             }
@@ -2367,7 +2211,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
     }
 
     /* Reset the neighbourlists */
-    reset_neighbor_lists(fr, TRUE, TRUE);
+    reset_neighbor_lists(fr);
 
     if (bGrid && bFillGrid)
     {
@@ -2385,7 +2229,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                                   cgs->nr, fr->cg_cm, grid_x0, grid_x1, &grid_dens);
 
             grid_first(log, grid, NULL, NULL, box, grid_x0, grid_x1,
-                       fr->rlistlong, grid_dens);
+                       fr->rlist, grid_dens);
         }
 
         start = 0;
@@ -2439,7 +2283,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         nsearch = nsgrid_core(cr, fr, box, ngid, top,
                               grid, ns->bexcl, ns->bExcludeAlleg,
                               md, put_in_list, ns->bHaveVdW,
-                              bDoLongRangeNS, FALSE);
+                              FALSE);
 
         /* neighbour searching withouth QMMM! QM atoms have zero charge in
          * the classical calculation. The charge-charge interaction
@@ -2455,7 +2299,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             nsearch += nsgrid_core(cr, fr, box, ngid, top,
                                    grid, ns->bexcl, ns->bExcludeAlleg,
                                    md, put_in_list_qmmm, ns->bHaveVdW,
-                                   bDoLongRangeNS, TRUE);
+                                   TRUE);
         }
     }
     else
@@ -2470,7 +2314,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
 #endif
 
     inc_nrnb(nrnb, eNR_NS, nsearch);
-    /* inc_nrnb(nrnb,eNR_LR,fr->nlr); */
 
     return nsearch;
 }

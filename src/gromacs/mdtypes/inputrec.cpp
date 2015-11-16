@@ -346,11 +346,6 @@ gmx_bool inputrecNeedMutot(const t_inputrec *ir)
             (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
 }
 
-gmx_bool inputrecTwinRange(const t_inputrec *ir)
-{
-    return (ir->rlist > 0 && (ir->rlistlong == 0 || ir->rlistlong > ir->rlist));
-}
-
 gmx_bool inputrecElecField(const t_inputrec *ir)
 {
     return (ir->ex[XX].n > 0 || ir->ex[YY].n > 0 || ir->ex[ZZ].n > 0);

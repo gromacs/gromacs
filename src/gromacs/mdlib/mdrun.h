@@ -93,10 +93,6 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
                                int fep_state, int frequency, gmx_int64_t step);
 
-/* check the version */
-void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
-                               t_inputrec *ir, gmx_mtop_t *mtop);
-
 /* Allocate and initialize node-local state entries. */
 void set_state_entries(t_state *state, const t_inputrec *ir);
 
