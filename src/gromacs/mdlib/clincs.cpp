@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -367,6 +367,7 @@ typedef struct gmx_lincsdata {
     gmx_bitmask_t  *atf;          /* atom flags for thread parallelization */
     int             atf_nalloc;   /* allocation size of atf */
     gmx_bool        bTaskDep;     /* are the LINCS tasks interdependent? */
+    gmx_bool        bTaskDepTri;  /* are there triangle constraints that cross task borders? */
     /* arrays for temporary storage in the LINCS algorithm */
     rvec           *tmpv;
     real           *tmpncc;
@@ -509,6 +510,15 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
             rhs1 = rhs2;
             rhs2 = swap;
         } /* nrec*(ntriangle + ncc_triangle*2) flops */
+
+        if (lincsd->bTaskDepTri)
+        {
+            /* The constraints triangles are decoupled from each other,
+             * but constraints in one triangle cross thread task borders.
+             * We could probably avoid this with more advanced setup code.
+             */
+#pragma omp barrier
+        }
     }
 }
 
@@ -1351,13 +1361,15 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 static void set_lincs_matrix_task(struct gmx_lincsdata *li,
                                   lincs_task_t         *li_task,
                                   const real           *invmass,
-                                  int                  *ncc_triangle)
+                                  int                  *ncc_triangle,
+                                  int                  *nCrossTaskTriangles)
 {
     int        i;
 
     /* Construct the coupling coefficient matrix blmf */
-    li_task->ntriangle = 0;
-    *ncc_triangle      = 0;
+    li_task->ntriangle   = 0;
+    *ncc_triangle        = 0;
+    *nCrossTaskTriangles = 0;
     for (i = li_task->b0; i < li_task->b1; i++)
     {
         int a1, a2, n;
@@ -1407,12 +1419,16 @@ static void set_lincs_matrix_task(struct gmx_lincsdata *li,
                     if (kk != i && kk != k &&
                         (li->bla[2*kk] == end || li->bla[2*kk+1] == end))
                     {
-                        /* If we are using multiple tasks for LINCS,
-                         * the calls to check_assign_triangle should have
-                         * put all constraints in the triangle in our task.
+                        /* Check if the constraints in this triangle actually
+                         * belong to a different task. We still assign them
+                         * here, since it's convenient for the triangle
+                         * iterations, but we then need an extra barrier.
                          */
-                        assert(k  >= li_task->b0 && k  < li_task->b1);
-                        assert(kk >= li_task->b0 && kk < li_task->b1);
+                        if (k  < li_task->b0 || k  >= li_task->b1 ||
+                            kk < li_task->b0 || kk >= li_task->b1)
+                        {
+                            (*nCrossTaskTriangles)++;
+                        }
 
                         if (li_task->ntriangle == 0 ||
                             li_task->triangle[li_task->ntriangle - 1] < i)
@@ -1454,22 +1470,29 @@ void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
     }
 
     /* Construct the coupling coefficient matrix blmf */
-    int th, ntriangle = 0, ncc_triangle = 0;
-#pragma omp parallel for reduction(+: ntriangle, ncc_triangle) num_threads(li->ntask) schedule(static)
+    int th, ntriangle = 0, ncc_triangle = 0, nCrossTaskTriangles = 0;
+#pragma omp parallel for reduction(+: ntriangle, ncc_triangle, nCrossTaskTriangles) num_threads(li->ntask) schedule(static)
     for (th = 0; th < li->ntask; th++)
     {
-        set_lincs_matrix_task(li, &li->task[th], invmass, &ncc_triangle);
+        set_lincs_matrix_task(li, &li->task[th], invmass,
+                              &ncc_triangle, &nCrossTaskTriangles);
         ntriangle = li->task[th].ntriangle;
     }
     li->ntriangle    = ntriangle;
     li->ncc_triangle = ncc_triangle;
+    li->bTaskDepTri  = (nCrossTaskTriangles > 0);
 
     if (debug)
     {
-        fprintf(debug, "Of the %d constraints %d participate in triangles\n",
+        fprintf(debug, "The %d constraints participate in %d triangles\n",
                 li->nc, li->ntriangle);
-        fprintf(debug, "There are %d couplings of which %d in triangles\n",
+        fprintf(debug, "There are %d constraint couplings, of which %d in triangles\n",
                 li->ncc, li->ncc_triangle);
+        if (li->ntriangle > 0 && li->ntask > 1)
+        {
+            fprintf(debug, "%d constraint triangles contain constraints assigned to different tasks\n",
+                    nCrossTaskTriangles);
+        }
     }
 
     /* Set matlam,
