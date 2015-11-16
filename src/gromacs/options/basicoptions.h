@@ -772,7 +772,7 @@ class EnumOptionInfo : public OptionInfo
  * Generally, new would be better using DoubleOption, but this is provided for
  * cases where the output value needs to be of type `real` for some reason.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 typedef DoubleOption     RealOption;
 typedef DoubleOptionInfo RealOptionInfo;
 #else

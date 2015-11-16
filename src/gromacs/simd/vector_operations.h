@@ -271,7 +271,7 @@ gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double
 #endif /* GMX_SIMD4_HAVE_DOUBLE */
 
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 /* Documented for the single branch below */
 #    define gmx_simd_iprod_r      gmx_simd_iprod_d
 #    define gmx_simd_norm2_r      gmx_simd_norm2_d

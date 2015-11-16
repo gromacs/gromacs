@@ -380,7 +380,7 @@
 #endif
 
     /* Calculate 1/r */
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     rinv_S0     = gmx_simd_invsqrt_r(rsq_S0);
     rinv_S1     = gmx_simd_invsqrt_r(rsq_S1);
     rinv_S2     = gmx_simd_invsqrt_r(rsq_S2);

@@ -1634,7 +1634,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * In single precision, this is faster on Bulldozer.
          */
 #if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || GMX_SIMD_IBM_QPX
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -2891,7 +2891,7 @@ void init_forcerec(FILE              *fp,
     /* Generate the GB table if needed */
     if (fr->bGB)
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         fr->gbtabscale = 2000;
 #else
         fr->gbtabscale = 500;

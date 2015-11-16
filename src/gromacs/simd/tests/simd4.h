@@ -80,7 +80,7 @@ extern const gmx_simd4_real_t rSimd4_m2p25;     //!< Negative value that rounds 
 extern const gmx_simd4_real_t rSimd4_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const gmx_simd4_real_t rSimd4_Exp;
-#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const gmx_simd4_real_t rSimd4_ExpDouble;
 #    endif

@@ -46,7 +46,7 @@ static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
    (padded) array. Only strides of 2 and 4 are currently supported. */
 #if defined GMX_NBNXN_SIMD_2XNN
 static const int nbfp_stride = 4;
-#elif defined GMX_DOUBLE
+#elif GMX_DOUBLE
 static const int nbfp_stride = 2;
 #else
 static const int nbfp_stride = 4;
@@ -395,7 +395,7 @@ gmx_mm_transpose_sum4_pr(gmx_simd_real_t in0, gmx_simd_real_t in1,
 }
 #endif
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 /* In double precision it can be faster to first calculate single precision
  * square roots for two double precision registers at once and then use
  * double precision Newton-Raphson iteration to reach full double precision.

@@ -324,14 +324,32 @@ if(GMX_SIMD STREQUAL "AVX_256"
     # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
 endif()
 
-
+# Implement double-precision options. This is complicated because we
+# need installed headers to use the precision mode of the build that
+# produced the library, but cannot use config.h in that case. We also
+# want these variables to always have a definition, because #if is
+# more robust than #ifdef. So, we put these values on the compiler
+# command line in all cases.
+#
+# TODO Perhaps installing a gromacs/gromacs.h would permit a better solution?
 if(GMX_DOUBLE)
-    add_definitions(-DGMX_DOUBLE)
-    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
+    set(GMX_DOUBLE_VALUE 1)
     if(GMX_RELAXED_DOUBLE_PRECISION)
-        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
+        set(GMX_RELAXED_DOUBLE_PRECISION_VALUE 1)
+    else()
+        set(GMX_RELAXED_DOUBLE_PRECISION_VALUE 0)
     endif()
+else()
+    set(GMX_DOUBLE_VALUE 0)
+    set(GMX_RELAXED_DOUBLE_PRECISION_VALUE 0)
 endif()
+foreach(_definition
+        "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}"
+        "-DGMX_RELAXED_DOUBLE_PRECISION=${GMX_RELAXED_DOUBLE_PRECISION_VALUE}")
+    add_definitions("${_definition}")
+    list(APPEND INSTALLED_HEADER_DEFINITIONS "${_definition}")
+endforeach()
+
 if(GMX_SOFTWARE_INVSQRT)
     list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
 endif()
