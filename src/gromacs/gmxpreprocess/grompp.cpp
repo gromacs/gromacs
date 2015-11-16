@@ -393,12 +393,6 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
             nshells++;
         }
     }
-    if (inputrecTwinRange(ir) && (nshells > 0))
-    {
-        snprintf(warn_buf, STRLEN,
-                 "The combination of using shells and a twin-range cut-off is not supported");
-        warning_error(wi, warn_buf);
-    }
     if ((nshells > 0) && (ir->nstcalcenergy != 1))
     {
         set_warning_line(wi, "unknown", -1);
@@ -1393,16 +1387,15 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     printf("Calculated rlist for %dx%d atom pair-list as %.3f nm, buffer size %.3f nm\n",
            1, 1, rlist_1x1, rlist_1x1-std::max(ir->rvdw, ir->rcoulomb));
 
-    ir->rlistlong = ir->rlist;
     printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
            ls.cluster_size_i, ls.cluster_size_j,
            ir->rlist, ir->rlist-std::max(ir->rvdw, ir->rcoulomb));
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
-    if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
+    if (sqr(ir->rlist) >= max_cutoff2(ir->ePBC, box))
     {
-        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, std::sqrt(max_cutoff2(ir->ePBC, box)));
+        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlist, std::sqrt(max_cutoff2(ir->ePBC, box)));
     }
 }
 

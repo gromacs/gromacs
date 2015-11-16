@@ -103,6 +103,7 @@ enum tpxv {
     tpxv_CompElPolyatomicIonsAndMultipleIonTypes,            /**< CompEl now can handle polyatomic ions and more than two types of ions */
     tpxv_RemoveAdress,                                       /**< removed support for AdResS */
     tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
+    tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -181,7 +182,7 @@ static const t_ftupd ftupd[] = {
     { 72, F_NPSOLVATION       },
     { 41, F_LJC14_Q           },
     { 41, F_LJC_PAIRS_NB      },
-    { 32, F_BHAM_LR           },
+    { 32, F_BHAM_LR_NOLONGERUSED },
     { 32, F_RF_EXCL           },
     { 32, F_COUL_RECIP        },
     { 93, F_LJ_RECIP          },
@@ -1102,18 +1103,43 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->verletbuf_tol = 0;
     }
     gmx_fio_do_real(fio, ir->rlist);
-    if (file_version >= 67)
+    if (file_version >= 67 && file_version < tpxv_RemoveTwinRange)
     {
-        gmx_fio_do_real(fio, ir->rlistlong);
-    }
-    if (file_version >= 82 && file_version != 90)
-    {
-        gmx_fio_do_int(fio, ir->nstcalclr);
+        if (bRead)
+        {
+            // Reading such a file version could invoke the twin-range
+            // scheme, about which mdrun should give a fatal error.
+            real dummy_rlistlong = -1;
+            gmx_fio_do_real(fio, dummy_rlistlong);
+
+            if (ir->rlist > 0 && (dummy_rlistlong == 0 || dummy_rlistlong > ir->rlist))
+            {
+                // Get mdrun to issue an error (regardless of
+                // ir->cutoff_scheme).
+                ir->useTwinRange = true;
+            }
+            else
+            {
+                // grompp used to set rlistlong actively. Users were
+                // probably also confused and set rlistlong == rlist.
+                // However, in all remaining cases, it is safe to let
+                // mdrun proceed normally.
+                ir->useTwinRange = false;
+            }
+        }
     }
     else
     {
-        /* Calculate at NS steps */
-        ir->nstcalclr = ir->nstlist;
+        // No need to read or write anything
+        ir->useTwinRange = false;
+    }
+    if (file_version >= 82 && file_version != 90)
+    {
+        // Multiple time-stepping is no longer enabled, but the old
+        // support required the twin-range scheme, for which mdrun
+        // already emits a fatal error.
+        int dummy_nstcalclr = -1;
+        gmx_fio_do_int(fio, dummy_nstcalclr);
     }
     gmx_fio_do_int(fio, ir->coulombtype);
     if (file_version < 32 && ir->coulombtype == eelRF)
@@ -1141,10 +1167,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     gmx_fio_do_real(fio, ir->rvdw_switch);
     gmx_fio_do_real(fio, ir->rvdw);
-    if (file_version < 67)
-    {
-        ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
-    }
     gmx_fio_do_int(fio, ir->eDispCorr);
     gmx_fio_do_real(fio, ir->epsilon_r);
     if (file_version >= 37)

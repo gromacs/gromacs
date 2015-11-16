@@ -45,12 +45,8 @@
 #define GMX_FORCE_DYNAMICBOX   (1<<1)
 /* Do neighbor searching */
 #define GMX_FORCE_NS           (1<<2)
-/* Update long-range neighborlists */
-#define GMX_FORCE_LRNS         (1<<3)
 /* Calculate listed energies/forces (e.g. bonds, restraints, 1-4, FEP non-bonded) */
 #define GMX_FORCE_LISTED       (1<<4)
-/* Store long-range forces in a separate array */
-#define GMX_FORCE_SEPLRF       (1<<5)
 /* Calculate non-bonded energies/forces */
 #define GMX_FORCE_NONBONDED    (1<<6)
 /* Calculate forces (not only energies) */
@@ -61,8 +57,6 @@
 #define GMX_FORCE_ENERGY       (1<<9)
 /* Calculate dHdl */
 #define GMX_FORCE_DHDL         (1<<10)
-/* Calculate long-range energies/forces */
-#define GMX_FORCE_DO_LR        (1<<11)
 
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)

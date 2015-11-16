@@ -787,7 +787,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, NULL, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
-             (bNS ? GMX_FORCE_NS | GMX_FORCE_DO_LR : 0));
+             (bNS ? GMX_FORCE_NS : 0));
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
