@@ -47,7 +47,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/mutex.h"
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define FFTWPREFIX(name) fftw_ ## name
 #else
 #define FFTWPREFIX(name) fftwf_ ## name

@@ -491,7 +491,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      * are of equal size.
      */
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*simd_width;
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     snew_aligned(nbat->simd_exclusion_filter64, simd_excl_size,   NBNXN_MEM_ALIGN);
 #else
     snew_aligned(nbat->simd_exclusion_filter, simd_excl_size,   NBNXN_MEM_ALIGN);
@@ -500,7 +500,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
     for (int j = 0; j < simd_excl_size; j++)
     {
         /* Set the consecutive bits for masking pair exclusions */
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
         nbat->simd_exclusion_filter64[j]     = (1U << j);
 #else
         nbat->simd_exclusion_filter[j]       = (1U << j);

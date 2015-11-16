@@ -106,7 +106,7 @@ gmx_load_simd_2xnn_interactions(int                  excl,
 #elif GMX_SIMD_HAVE_LOGICAL
     union
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         std::int64_t i;
 #else
         std::int32_t i;

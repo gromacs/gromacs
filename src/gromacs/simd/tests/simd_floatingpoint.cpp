@@ -243,7 +243,7 @@ TEST_F(SimdFloatingpointTest, frexp)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);
 
 
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     fraction = frexp(rSimd_ExpDouble, &exponent);
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.6206306194761728178832527,
@@ -262,7 +262,7 @@ TEST_F(SimdFloatingpointTest, ldexp)
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
                             ldexp(one, setSimdIntFrom3I(60, -41, 54)));
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
                             ldexp(one, setSimdIntFrom3I(587, -462, 672)));
 #endif

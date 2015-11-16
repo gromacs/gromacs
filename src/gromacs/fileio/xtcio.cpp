@@ -53,7 +53,7 @@
 
 static int xdr_r2f(XDR *xdrs, real *r, gmx_bool gmx_unused bRead)
 {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     float f;
     int   ret;
 
@@ -135,7 +135,7 @@ static int xtc_header(XDR *xd, int *magic, int *natoms, int *step, real *time,
 static int xtc_coord(XDR *xd, int *natoms, matrix box, rvec *x, real *prec, gmx_bool bRead)
 {
     int    i, j, result;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     float *ftmp;
     float  fprec;
 #endif
@@ -155,7 +155,7 @@ static int xtc_coord(XDR *xd, int *natoms, matrix box, rvec *x, real *prec, gmx_
         return result;
     }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     /* allocate temp. single-precision array */
     snew(ftmp, (*natoms)*DIM);
 
