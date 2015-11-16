@@ -154,7 +154,7 @@ static gmx_inline real gmx_software_invsqrt(real x)
     unsigned int exp, fract;
     real         lu;
     real         y;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     real         y2;
 #endif
 
@@ -165,7 +165,7 @@ static gmx_inline real gmx_software_invsqrt(real x)
     lu               = result.fval;
 
     y = (half*lu*(three-((x*lu)*lu)));
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     y2 = (half*y*(three-((x*y)*y)));
 
     return y2;                  /* 10 Flops */
@@ -179,7 +179,7 @@ static gmx_inline real gmx_software_invsqrt(real x)
 #endif /* gmx_invsqrt */
 
 #ifndef INVSQRT_DONE
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 #        ifdef HAVE_RSQRT
 #            define gmx_invsqrt_impl(x)     rsqrt(x)
 #        else
@@ -485,7 +485,7 @@ static gmx_inline real norm(const rvec a)
 {
     /* This is ugly, but we deliberately do not define gmx_sqrt() and handle the
      * float/double case here instead to avoid gmx_sqrt() being accidentally used. */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     return dnorm(a);
 #elif defined HAVE_SQRTF
     return sqrtf(iprod(a, a));

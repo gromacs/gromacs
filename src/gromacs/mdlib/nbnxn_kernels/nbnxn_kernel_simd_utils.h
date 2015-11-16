@@ -76,7 +76,7 @@ prepare_table_load_buffer(const int gmx_unused *array)
 /* Set the stride for the lookup of the two LJ parameters from their
  * (padded) array. We use the minimum supported SIMD memory alignment.
  */
-#if defined GMX_DOUBLE
+#if GMX_DOUBLE
 static const int nbfp_stride = 2;
 #else
 static const int nbfp_stride = 4;
@@ -88,14 +88,14 @@ static const int nbfp_stride = 4;
 static gmx_inline int *
 prepare_table_load_buffer(int gmx_unused *array)
 {
-#if GMX_SIMD_REAL_WIDTH >= 8 || (defined GMX_DOUBLE && GMX_SIMD_REAL_WIDTH >= 4)
+#if GMX_SIMD_REAL_WIDTH >= 8 || (GMX_DOUBLE && GMX_SIMD_REAL_WIDTH >= 4)
     return gmx_simd_align_i(array);
 #else
     return NULL;
 #endif
 }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #if GMX_SIMD_REAL_WIDTH == 2
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_128d.h"
 #else
@@ -141,8 +141,8 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
  * reuse the simd real type and the four instructions we need.
  */
 #if GMX_SIMD_REAL_WIDTH == 4 && \
-    !((!defined GMX_DOUBLE && GMX_SIMD4_HAVE_FLOAT) || \
-    (defined GMX_DOUBLE && GMX_SIMD4_HAVE_DOUBLE))
+    !((!GMX_DOUBLE && GMX_SIMD4_HAVE_FLOAT) || \
+    (GMX_DOUBLE && GMX_SIMD4_HAVE_DOUBLE))
 #define gmx_simd4_real_t    gmx_simd_real_t
 #define gmx_simd4_load_r    gmx_simd_load_r
 #define gmx_simd4_store_r   gmx_simd_store_r
