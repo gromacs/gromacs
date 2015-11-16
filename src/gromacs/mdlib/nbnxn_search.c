@@ -4397,6 +4397,9 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         nsp_est_nl =
             sqr(grid->atom_density/grid->na_c)*
             nonlocal_vol2(nbs->zones, ls, r_eff_sup);
+        if (iloc == 1)
+            printf("r_eff_sup %.3f vol2 %.3f nsp_est_nl %.1f\n",
+                   r_eff_sup, nonlocal_vol2(nbs->zones, ls, r_eff_sup), nsp_est_nl);
     }
 
     if (LOCAL_I(iloc))
