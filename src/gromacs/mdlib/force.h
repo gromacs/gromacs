@@ -140,10 +140,8 @@ void destroy_enerdata(gmx_enerdata_t *enerd);
 void reset_foreign_enerdata(gmx_enerdata_t *enerd);
 /* Resets only the foreign energy data */
 
-void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
-                    gmx_enerdata_t *enerd,
-                    gmx_bool bMaster);
-/* Resets the energy data, if bNS=TRUE also zeros the long-range part */
+void reset_enerdata(gmx_enerdata_t *enerd);
+/* Resets the energy data */
 
 void sum_epot(gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
@@ -189,8 +187,7 @@ void ns(FILE              *fplog,
         t_mdatoms         *md,
         t_commrec         *cr,
         t_nrnb            *nrnb,
-        gmx_bool           bFillGrid,
-        gmx_bool           bDoLongRangeNS);
+        gmx_bool           bFillGrid);
 /* Call the neighborsearcher */
 
 void do_force_lowlevel(t_forcerec   *fr,
@@ -203,7 +200,6 @@ void do_force_lowlevel(t_forcerec   *fr,
                        rvec         x[],
                        history_t    *hist,
                        rvec         f_shortrange[],
-                       rvec         f_longrange[],
                        gmx_enerdata_t *enerd,
                        t_fcdata     *fcd,
                        gmx_localtop_t *top,

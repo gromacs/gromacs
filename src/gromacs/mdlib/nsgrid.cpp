@@ -475,11 +475,11 @@ static void set_grid_ncg(t_grid *grid, int ncg)
 void grid_first(FILE *fplog, t_grid *grid,
                 gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                 matrix box, rvec izones_x0, rvec izones_x1,
-                real rlistlong, real grid_density)
+                real rlist, real grid_density)
 {
     int    i, m;
 
-    set_grid_sizes(box, izones_x0, izones_x1, rlistlong, dd, ddbox, grid, grid_density);
+    set_grid_sizes(box, izones_x0, izones_x1, rlist, dd, ddbox, grid, grid_density);
 
     grid->ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 

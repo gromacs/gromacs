@@ -95,11 +95,7 @@ void update_coords(FILE              *fplog,
                    t_inputrec        *inputrec, /* input record and box stuff	*/
                    t_mdatoms         *md,
                    t_state           *state,
-                   gmx_bool           bMolPBC,
                    rvec              *f, /* forces on home particles */
-                   gmx_bool           bDoLR,
-                   rvec              *f_lr,
-                   tensor            *vir_lr_constr,
                    t_fcdata          *fcd,
                    gmx_ekindata_t    *ekind,
                    matrix             M,
@@ -107,9 +103,7 @@ void update_coords(FILE              *fplog,
                    gmx_bool           bInitStep,
                    int                bUpdatePart,
                    t_commrec         *cr, /* these shouldn't be here -- need to think about it */
-                   t_nrnb            *nrnb,
-                   gmx_constr        *constr,
-                   t_idef            *idef);
+                   gmx_constr        *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
