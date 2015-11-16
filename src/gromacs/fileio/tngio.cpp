@@ -119,7 +119,7 @@ void gmx_tng_open(const char       *filename,
 
         char        programInfo[256];
         const char *precisionString = "";
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         precisionString = " (double precision)";
 #endif
         sprintf(programInfo, "%.100s %.128s%.24s",
@@ -367,7 +367,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                                                                      const char*,
                                                                      const char,
                                                                      const char);
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
 #else
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
@@ -730,7 +730,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                                                            const char*,
                                                            const char,
                                                            const char);
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     static write_data_func_pointer           write_data           = tng_util_generic_with_time_double_write;
 #else
     static write_data_func_pointer           write_data           = tng_util_generic_with_time_write;

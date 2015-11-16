@@ -35,8 +35,9 @@ src/gromacs/mdlib/nbnxn_search_simd_4xn.h: warning: should include "simd.h"
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 
-# These would be nice to fix, but can wait for later
+# These would be nice to fix, but can wait for later / deletion / rewrites
 src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: includes "config.h" unnecessarily
+src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: should include "config.h"
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.cpp: warning: includes "config.h" unnecessarily

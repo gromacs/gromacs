@@ -85,12 +85,6 @@
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
 
-#ifdef GMX_DOUBLE
-#define GMX_CPT_BUILD_DP 1
-#else
-#define GMX_CPT_BUILD_DP 0
-#endif
-
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
  * The state data format itself is backward and forward compatible.
@@ -286,7 +280,7 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 
 static void do_cpt_real_err(XDR *xd, real *f)
 {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     bool_t res = xdr_double(xd, f);
 #else
     bool_t res = xdr_float(xd, f);
@@ -321,7 +315,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
                              FILE *list, int erealtype)
 {
     bool_t  res = 0;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     int     dtc = xdr_datatype_float;
 #else
     int     dtc = xdr_datatype_double;
@@ -1589,7 +1583,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     buser   = gmx_strdup(BUILD_USER);
     bhost   = gmx_strdup(BUILD_HOST);
 
-    double_prec = GMX_CPT_BUILD_DP;
+    double_prec = GMX_DOUBLE;
     fprog       = gmx_strdup(gmx::getProgramContext().fullBinaryPath());
 
     ftime   = &(timebuf[0]);
@@ -1777,7 +1771,7 @@ static void check_match(FILE *fplog,
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
-    check_int   (fplog, "Double prec.", GMX_CPT_BUILD_DP, double_prec, &mm);
+    check_int   (fplog, "Double prec.", GMX_DOUBLE, double_prec, &mm);
     check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), fprog, &mm);
 
     check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
@@ -1888,7 +1882,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
 
     if (bAppendOutputFiles &&
-        file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
+        file_version >= 13 && double_prec != GMX_DOUBLE)
     {
         gmx_fatal(FARGS, "Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
     }

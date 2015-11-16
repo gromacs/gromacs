@@ -102,7 +102,7 @@ class SimdBaseTest : public ::testing::Test
          * exponentials, logarithms, and error functions.
          */
         SimdBaseTest() :
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
             ulpTol_((1LL << (2 + std::numeric_limits<double>::digits-GMX_SIMD_ACCURACY_BITS_DOUBLE))),
 #else
             ulpTol_((1LL << (2 + std::numeric_limits<float>::digits-GMX_SIMD_ACCURACY_BITS_SINGLE))),

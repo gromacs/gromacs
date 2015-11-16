@@ -78,7 +78,7 @@ const SimdReal rSimd_m3p75    = setSimdRealFrom1R(-3.75);
 const SimdReal rSimd_Exp      = setSimdRealFrom3R( 1.4055235171027452623914516e+18,
                                                    5.3057102734253445623914516e-13,
                                                    -2.1057102745623934534514516e+16);
-#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 const SimdReal rSimd_ExpDouble = setSimdRealFrom3R( 6.287393598732017379054414e+176,
                                                     8.794495252903116023030553e-140,

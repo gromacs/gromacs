@@ -421,7 +421,7 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     /* Conversion factor for reference vs SIMD kernel performance.
      * The factor is about right for SSE2/4, but should be 2 higher for AVX256.
      */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     const real     nbnxn_refkernel_fac = 4.0;
 #else
     const real     nbnxn_refkernel_fac = 8.0;

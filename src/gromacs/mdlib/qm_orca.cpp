@@ -192,20 +192,12 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
             fprintf(LJCoeff, "%d\n", qm->nrQMatoms);
             for (i = 0; i < qm->nrQMatoms; i++)
             {
-#ifdef GMX_DOUBLE
-                fprintf(LJCoeff, "%10.7lf  %10.7lf\n", qm->c6[i], qm->c12[i]);
-#else
                 fprintf(LJCoeff, "%10.7f  %10.7f\n", qm->c6[i], qm->c12[i]);
-#endif
             }
             fprintf(LJCoeff, "%d\n", mm->nrMMatoms);
             for (i = 0; i < mm->nrMMatoms; i++)
             {
-#ifdef GMX_DOUBLE
-                fprintf(LJCoeff, "%10.7lf  %10.7lf\n", mm->c6[i], mm->c12[i]);
-#else
                 fprintf(LJCoeff, "%10.7f  %10.7f\n", mm->c6[i], mm->c12[i]);
-#endif
             }
             fclose(LJCoeff);
         }
@@ -226,19 +218,11 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         {
             atomNr = qm->atomicnumberQM[i];
         }
-#ifdef GMX_DOUBLE
-        fprintf(out, "%3d %10.7lf  %10.7lf  %10.7lf\n",
-                atomNr,
-                qm->xQM[i][XX]/0.1,
-                qm->xQM[i][YY]/0.1,
-                qm->xQM[i][ZZ]/0.1);
-#else
         fprintf(out, "%3d %10.7f  %10.7f  %10.7f\n",
                 atomNr,
                 qm->xQM[i][XX]/0.1,
                 qm->xQM[i][YY]/0.1,
                 qm->xQM[i][ZZ]/0.1);
-#endif
     }
     fprintf(out, "*\n");
 
@@ -253,19 +237,11 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         fprintf(pcFile, "%d\n", mm->nrMMatoms);
         for (i = 0; i < mm->nrMMatoms; i++)
         {
-#ifdef GMX_DOUBLE
-            fprintf(pcFile, "%8.4lf %10.7lf  %10.7lf  %10.7lf\n",
-                    mm->MMcharges[i],
-                    mm->xMM[i][XX]/0.1,
-                    mm->xMM[i][YY]/0.1,
-                    mm->xMM[i][ZZ]/0.1);
-#else
             fprintf(pcFile, "%8.4f %10.7f  %10.7f  %10.7f\n",
                     mm->MMcharges[i],
                     mm->xMM[i][XX]/0.1,
                     mm->xMM[i][YY]/0.1,
                     mm->xMM[i][ZZ]/0.1);
-#endif
         }
         fprintf(pcFile, "\n");
         fclose(pcFile);
@@ -316,7 +292,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
             {
                 gmx_fatal(FARGS, "Unexpected end of ORCA output");
             }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
             sscanf(buf, "%d%lf%lf%lf\n",
                    &atnum,
                    &qm->xQM[i][XX],
@@ -355,7 +331,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
     {
         gmx_fatal(FARGS, "Unexpected end of ORCA output");
     }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     sscanf(buf, "%lf\n", &QMener);
 #else
     sscanf(buf, "%f\n", &QMener);
@@ -381,7 +357,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         if (i%3 == 0)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][XX]);
@@ -431,7 +407,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
             {
                 gmx_fatal(FARGS, "Unexpected end of ORCA output");
             }
-    #ifdef GMX_DOUBLE
+    #if GMX_DOUBLE
             sscanf(buf, "%lf%lf%lf\n",
                    &MMgrad[i][XX],
                    &MMgrad[i][YY],

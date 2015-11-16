@@ -57,7 +57,7 @@ double MPI_Wtime();
 #include <fftw3.h>
 #endif
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
 #define FFTW(x) fftwf_ ## x
 #else
 #define FFTW(x) fftw_ ## x

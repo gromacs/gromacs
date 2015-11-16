@@ -86,7 +86,7 @@ struct gmx_domdec_zones_t;
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
 
-#    ifndef GMX_DOUBLE
+#    if !GMX_DOUBLE
 /* Single precision BBs + coordinates, we can also load coordinates with SIMD */
 #        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 #    endif
