@@ -52,6 +52,9 @@
 #       the typical policy is to increase it at the start of the development
 #       cycle for each major/minor version change, but not for patch releases,
 #       even if the latter may not always be fully binary compatible.
+#       Table of historical values
+#         GROMACS     5.0    0
+#         GROMACS     5.1    1
 #   LIBRARY_SOVERSION_MINOR so minor version for the built libraries.
 #       Should be increased for each release that changes only the implementation.
 #       In GROMACS, the typical policy is to increase it for each patch version
@@ -253,7 +256,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # each release. It's hard to test because it is only used for
 # REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
 # been placed on the server.
-set(REGRESSIONTEST_MD5SUM "298db2fa20a6f4b02e758687ebf48ee8" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "614a74e9b143bda5476f87f4ce08eec0" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_MINOR}*100 + ${GMX_VERSION_PATCH}")
