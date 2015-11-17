@@ -373,8 +373,20 @@ calc_one_bond(int thread,
         /* TODO The execution time for pairs might be nice to account
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
-        v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
-                     pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
+#if GMX_SIMD_HAVE_REAL
+        if (ftype == F_LJ14 &&
+            fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype) &&
+            !bCalcEnerVir && fr->efep == efepNO)
+        {
+            do_pairs_noener_simd(nbn, iatoms+nb0, idef->iparams,
+                                 x, f, pbc, md, fr);
+        }
+        else
+#endif
+        {
+            v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
+                         pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
+        }
     }
 
     if (thread == 0)
