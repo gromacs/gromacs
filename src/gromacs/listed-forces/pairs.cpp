@@ -52,6 +52,10 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc-simd.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
+#include "gromacs/simd/vector_operations.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -523,3 +527,106 @@ do_pairs(int ftype, int nbonds,
     }
     return 0.0;
 }
+
+#if GMX_SIMD_HAVE_REAL
+
+/* As do_pairs(), but using SIMD to calculate many pairs at once.
+ * This routine only supports ftype=F_LJ14.
+ * This routine does not calculate energies and shift forces.
+ * This routine does not support user tables or FEP.
+ */
+void
+do_pairs_noener_simd(int nbonds,
+                     const t_iatom iatoms[], const t_iparams iparams[],
+                     const rvec x[], rvec f[],
+                     const struct t_pbc *pbc,
+                     const t_mdatoms *md,
+                     const t_forcerec *fr)
+{
+    const int  nfa1 = 1 + 2;
+    pbc_simd_t pbc_simd;
+
+    set_pbc_simd(pbc, &pbc_simd);
+
+    SimdReal six    = simdSet1(6.0);
+    SimdReal twelve = simdSet1(12.0);
+    SimdReal ef     = simdSet1(fr->epsfac*fr->fudgeQQ);
+
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) coeff[3*GMX_SIMD_REAL_WIDTH];
+
+    /* nbonds is #pairs*nfa1, here we step GMX_SIMD_REAL_WIDTH pairs */
+    for (int i = 0; (i < nbonds); i += GMX_SIMD_REAL_WIDTH*nfa1)
+    {
+        /* Collect atoms for GMX_SIMD_REAL_WIDTH pairs.
+         * iu indexes into iatoms, we should not let iu go beyond nbonds.
+         */
+        int ai[GMX_SIMD_REAL_WIDTH], aj[GMX_SIMD_REAL_WIDTH];
+        int iu = i;
+        for (int s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
+        {
+            int itype = iatoms[iu];
+            ai[s]     = iatoms[iu + 1];
+            aj[s]     = iatoms[iu + 2];
+
+            if (iu + nfa1 < nbonds)
+            {
+                coeff[0*GMX_SIMD_REAL_WIDTH + s] = iparams[itype].lj14.c6A;
+                coeff[1*GMX_SIMD_REAL_WIDTH + s] = iparams[itype].lj14.c12A;
+                coeff[2*GMX_SIMD_REAL_WIDTH + s] = md->chargeA[ai[s]]*md->chargeA[aj[s]];
+                /* Pad the coordinate index with the last atom pair */
+                iu += nfa1;
+            }
+            else
+            {
+                /* Pad the coefficient arrays with zeros to get zero forces */
+                coeff[0*GMX_SIMD_REAL_WIDTH + s] = 0;
+                coeff[1*GMX_SIMD_REAL_WIDTH + s] = 0;
+                coeff[2*GMX_SIMD_REAL_WIDTH + s] = 0;
+            }
+        }
+
+        /* Load the coordinates */
+        SimdReal xi, yi, zi;
+        SimdReal xj, yj, zj;
+        simdGatherLoadUTranspose<3>(x[0], ai, &xi, &yi, &zi);
+        simdGatherLoadUTranspose<3>(x[0], aj, &xj, &yj, &zj);
+        SimdReal dx    = simdSub(xi, xj);
+        SimdReal dy    = simdSub(yi, yj);
+        SimdReal dz    = simdSub(zi, zj);
+
+        SimdReal c6    = simdLoad(coeff + 0*GMX_SIMD_REAL_WIDTH);
+        SimdReal c12   = simdLoad(coeff + 1*GMX_SIMD_REAL_WIDTH);
+        SimdReal qq    = simdLoad(coeff + 2*GMX_SIMD_REAL_WIDTH);
+
+        /* We could save these operations by storing 6*C6,12*C12 */
+        c6             = simdMul(six, c6);
+        c12            = simdMul(twelve, c12);
+
+        pbc_correct_dx_simd(&dx, &dy, &dz, &pbc_simd);
+
+        SimdReal rsq   = simdCalcRsq(dx, dy, dz);
+        SimdReal rinv  = simdInvsqrt(rsq);
+        SimdReal rinv2 = simdMul(rinv, rinv);
+        SimdReal rinv6 = simdMul(rinv2, simdMul(rinv2, rinv2));
+
+        /* Calculate the Coulomb force * r */
+        SimdReal cfr   = simdMul(simdMul(ef, qq), rinv);
+
+        /* Calculate the LJ force * r and add it to the Coulomb part */
+        SimdReal fr    = simdFmadd(simdFmsub(c12, rinv6, c6), rinv6, cfr);
+
+        SimdReal finvr = simdMul(fr, rinv2);
+        SimdReal fx    = simdMul(finvr, dx);
+        SimdReal fy    = simdMul(finvr, dy);
+        SimdReal fz    = simdMul(finvr, dz);
+
+        /* Add the pair forces to the force array.
+         * Note that here we might add multiple force components for some atoms
+         * due to the SIMD padding. But the extra force components are zero.
+         */
+        simdTransposeScatterIncrUF<3>(f[0], ai, fx, fy, fz);
+        simdTransposeScatterDecrUF<3>(f[0], aj, fx, fy, fz);
+    }
+}
+
+#endif /* GMX_SIMD_HAVE_REAL */
