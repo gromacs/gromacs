@@ -679,17 +679,6 @@ Electrostatics
       :mdp:`Reaction-Field-zero` computationally more expensive than
       normal reaction-field.
 
-   .. mdp-value:: Reaction-Field-nec
-
-      The same as :mdp-value:`coulombtype=Reaction-Field`, but
-      implemented as in |Gromacs| versions before 3.3. No
-      reaction-field correction is applied to excluded atom pairs and
-      self pairs. The 1-4 interactions are calculated using a
-      reaction-field. The missing correction due to the excluded pairs
-      that do not have a 1-4 interaction is up to a few percent of the
-      total electrostatic energy and causes a minor difference in the
-      forces and the pressure.
-
    .. mdp-value:: Shift
 
       Analogous to :mdp-value:`vdwtype=Shift` for :mdp:`vdwtype`. You

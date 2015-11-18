@@ -1193,9 +1193,6 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     {
         switch (fr->eeltype)
         {
-            case eelRF_NEC:
-                eltype = eelRF;
-                break;
             case eelUSER:
             case eelPMEUSER:
             case eelPMEUSERSWITCH:
@@ -1244,9 +1241,6 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
             break;
         case eelRF:
         case eelGRF:
-        case eelRF_NEC:
-            tabsel[etiCOUL] = etabRF;
-            break;
         case eelRF_ZERO:
             tabsel[etiCOUL] = etabRF_ZERO;
             break;

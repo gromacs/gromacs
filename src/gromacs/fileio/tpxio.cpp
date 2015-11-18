@@ -1083,7 +1083,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->coulombtype);
     if (file_version < 32 && ir->coulombtype == eelRF)
     {
-        ir->coulombtype = eelRF_NEC;
+        ir->coulombtype = eelRF_NEC_UNSUPPORTED;
     }
     if (file_version >= 81)
     {

@@ -2334,6 +2334,12 @@ void init_forcerec(FILE              *fp,
         fr->n_tpi = 0;
     }
 
+    if (ir->coulombtype == eelRF_NEC_UNSUPPORTED)
+    {
+        gmx_fatal(FARGS, "%s electrostatics is no longer supported",
+                  eel_names[ir->coulombtype]);
+    }
+
     if (ir->bAdress)
     {
         gmx_fatal(FARGS, "AdResS simulations are no longer supported");
@@ -2550,7 +2556,6 @@ void init_forcerec(FILE              *fp,
 
         case eelRF:
         case eelGRF:
-        case eelRF_NEC:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
             break;
 

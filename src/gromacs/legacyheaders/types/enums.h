@@ -102,7 +102,7 @@ enum eintmod {
  */
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
-    eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT,
+    eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
     eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
 };
 
@@ -111,7 +111,7 @@ enum {
     eewg3D, eewg3DC, eewgNR
 };
 
-#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC || (e) == eelRF_ZERO )
+#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC_UNSUPPORTED || (e) == eelRF_ZERO )
 
 #define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
 #define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == eelEWALD)

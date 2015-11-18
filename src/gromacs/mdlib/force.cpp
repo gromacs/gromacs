@@ -601,21 +601,18 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
     else
     {
-        /* Is there a reaction-field exclusion correction needed? */
-        if (EEL_RF(fr->eeltype) && eelRF_NEC != fr->eeltype)
+        /* Is there a reaction-field exclusion correction needed?
+         * With the Verlet scheme, exclusion forces are calculated
+         * in the non-bonded kernel.
+         */
+        if (ir->cutoff_scheme != ecutsVERLET && EEL_RF(fr->eeltype))
         {
-            /* With the Verlet scheme, exclusion forces are calculated
-             * in the non-bonded kernel.
-             */
-            if (ir->cutoff_scheme != ecutsVERLET)
-            {
-                real dvdl_rf_excl      = 0;
-                enerd->term[F_RF_EXCL] =
-                    RF_excl_correction(fr, graph, md, excl, x, f,
-                                       fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
+            real dvdl_rf_excl      = 0;
+            enerd->term[F_RF_EXCL] =
+                RF_excl_correction(fr, graph, md, excl, x, f,
+                                   fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
-                enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
-            }
+            enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
         }
     }
     where();

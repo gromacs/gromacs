@@ -254,6 +254,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     set_warning_line(wi, mdparin, -1);
 
+    if (ir->coulombtype == eelRF_NEC_UNSUPPORTED)
+    {
+        sprintf(warn_buf, "%s electrostatics is no longer supported",
+                eel_names[eelRF_NEC_UNSUPPORTED]);
+        warning_error(wi, warn_buf);
+    }
+
     /* BASIC CUT-OFF STUFF */
     if (ir->rcoulomb < 0)
     {
@@ -362,8 +369,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
         }
-        if (!(ir->coulombtype == eelCUT ||
-              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+        if (!(ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype) ||
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");

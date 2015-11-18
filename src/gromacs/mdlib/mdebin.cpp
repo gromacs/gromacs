@@ -216,7 +216,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
         else if (i == F_RF_EXCL)
         {
-            md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC && ir->cutoff_scheme == ecutsGROUP);
+            md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == ecutsGROUP);
         }
         else if (i == F_COUL_RECIP)
         {
