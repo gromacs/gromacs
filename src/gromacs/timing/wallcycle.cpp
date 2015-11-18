@@ -48,6 +48,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
