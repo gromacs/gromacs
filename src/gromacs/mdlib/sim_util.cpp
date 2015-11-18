@@ -92,6 +92,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
