@@ -42,7 +42,7 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"

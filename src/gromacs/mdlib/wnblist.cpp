@@ -44,8 +44,8 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/ns.h"

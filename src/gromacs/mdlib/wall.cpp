@@ -42,8 +42,7 @@
 #include <algorithm>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"

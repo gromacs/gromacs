@@ -49,11 +49,11 @@
 
 #include <stdio.h>
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc-simd.h"

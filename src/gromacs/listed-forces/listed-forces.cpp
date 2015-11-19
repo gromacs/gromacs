@@ -53,8 +53,8 @@
 
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
