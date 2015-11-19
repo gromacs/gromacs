@@ -39,10 +39,10 @@
 #define _nb_free_energy_h_
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/mdatom.h"
 
 struct t_forcerec;
 
