@@ -40,11 +40,11 @@
 #include "gromacs/utility/real.h"
 
 struct t_energy {
-    //! \brief The current energy.
+    //! The current energy.
     real   e;
-    //! \brief The running average of the energy
+    //! The running average of the energy
     double eav;
-    //! \brief The sum of energies until now.
+    //! The sum of energies until now.
     double esum;
 };
 
