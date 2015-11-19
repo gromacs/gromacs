@@ -39,9 +39,9 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 

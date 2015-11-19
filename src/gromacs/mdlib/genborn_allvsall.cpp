@@ -44,10 +44,10 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/genborn.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
