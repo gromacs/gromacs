@@ -34,24 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_TYPES_ENERGY_H
-#define GMX_TYPES_ENERGY_H
+#ifndef GMX_MDTYPES_ENERGY_H
+#define GMX_MDTYPES_ENERGY_H
 
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct {
-    real   e;    /* The current energy.					*/
-    double eav;  /* The running average                     */
-    double esum; /* The sum of energies until now.			*/
-} t_energy;
-
-#ifdef __cplusplus
-}
-#endif
+struct t_energy {
+    //! The current energy.
+    real   e;
+    //! The running average of the energy
+    double eav;
+    //! The sum of energies until now.
+    double esum;
+};
 
 #endif
