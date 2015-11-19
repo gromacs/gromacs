@@ -43,7 +43,7 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

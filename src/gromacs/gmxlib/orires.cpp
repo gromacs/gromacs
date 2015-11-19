@@ -46,7 +46,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"

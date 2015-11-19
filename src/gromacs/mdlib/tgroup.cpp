@@ -44,7 +44,7 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/group.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/update.h"

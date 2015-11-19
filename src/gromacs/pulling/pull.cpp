@@ -56,7 +56,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/mdrun.h"
