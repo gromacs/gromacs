@@ -60,9 +60,9 @@
 
 #include <stdio.h>
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"

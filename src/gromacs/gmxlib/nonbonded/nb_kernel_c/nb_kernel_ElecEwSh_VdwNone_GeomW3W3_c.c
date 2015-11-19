@@ -43,7 +43,7 @@
 
 #include "../nb_kernel.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEwSh_VdwNone_GeomW3W3_VF_c

@@ -42,7 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
 #include "kernelutil_x86_avx_256_double.h"
 

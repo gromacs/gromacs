@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/nrnb.h"
+#include "nrnb.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -45,7 +45,6 @@
 
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 

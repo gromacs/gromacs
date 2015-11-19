@@ -43,9 +43,9 @@
 #include <cstdio>
 
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/inputrec.h"

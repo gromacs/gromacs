@@ -70,7 +70,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"

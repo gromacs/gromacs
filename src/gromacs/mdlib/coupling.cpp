@@ -42,11 +42,10 @@
 
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
