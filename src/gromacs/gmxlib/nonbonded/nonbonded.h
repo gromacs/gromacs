@@ -39,9 +39,9 @@
 
 #include <stdio.h>
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/nblist.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/block.h"

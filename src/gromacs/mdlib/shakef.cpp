@@ -39,7 +39,7 @@
 #include <math.h>
 
 #include "gromacs/fileio/txtdump.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/utility/smalloc.h"
