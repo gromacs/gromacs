@@ -132,6 +132,10 @@ Performance and Run Control
         to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
         Cannot be set simultaneously with ``GMX_NO_CUDA_STREAMSYNC``.
 
+``GMX_DISABLE_CUDALAUNCH``
+        disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
+        Should only be used for benchmarking purposes.
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
