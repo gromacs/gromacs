@@ -218,7 +218,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     }
 
 #ifdef GMX_MPI
-#  ifdef GMX_GPU
+#  if GMX_GPU != GMX_GPU_NONE
 #    ifdef GMX_THREAD_MPI
     int         numGpusNeeded = g_numThreads;
 #    else   /* Must be real MPI */

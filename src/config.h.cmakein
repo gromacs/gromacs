@@ -230,8 +230,12 @@
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
 
-/* Use GPU native acceleration */
-#cmakedefine GMX_GPU
+/* Define constants useful for handling GPU support */
+#define GMX_GPU_NONE   0
+#define GMX_GPU_CUDA   1
+#define GMX_GPU_OPENCL 2
+/* Which kind of GPU support is configured */
+#define GMX_GPU @GMX_GPU_STRING@
 
 /* CUDA runtime API version (identical to CUDART_VERSION from cuda_runtime_api.h) */
 #cmakedefine GMX_CUDA_VERSION @GMX_CUDA_VERSION@
