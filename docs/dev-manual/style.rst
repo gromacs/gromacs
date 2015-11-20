@@ -8,6 +8,8 @@ Style guidelines
    includestyle
    naming
    language-features
+   error-handling
+   library-structure
 
 :doc:`formatting`
   Guidelines for indentation and other code formatting.
@@ -17,6 +19,10 @@ Style guidelines
   Naming conventions for files and various code constructs.
 :doc:`language-features`
   Allowed language features.
+:doc:`error-handling`
+  How to handle errors at run time
+:doc:`library-structure`
+  How we are constructing ``libgromacs``
 :ref:`dev-doxygen-guidelines`
   Guidelines for using Doxygen to document the source code are currently in a
   section on the page on general Doxygen usage.
