@@ -72,8 +72,6 @@ const char *gmx_version_git_full_hash(void);
  */
 const char *gmx_version_git_central_base_hash(void);
 
-extern "C" {
-
 /*! \brief
  * Defined if ``libgromacs`` has been compiled in double precision.
  *
@@ -91,8 +89,10 @@ void gmx_is_double_precision();
  *
  * \ingroup module_utility
  */
+
 void gmx_is_single_precision();
 
-}
+/*! \brief Return a string describing what kind of GPU suport was configured in the build. */
+const char *getGpuImplementationString();
 
 #endif
