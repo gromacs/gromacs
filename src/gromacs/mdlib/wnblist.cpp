@@ -49,6 +49,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"

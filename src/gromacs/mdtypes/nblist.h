@@ -34,15 +34,64 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _nblist_h
-#define _nblist_h
+#ifndef GMX_MDTYPES_NBLIST_H
+#define GMX_MDTYPES_NBLIST_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 typedef unsigned long t_excl;
+
+/* The interactions contained in a (possibly merged) table
+ * for computing electrostatic, VDW repulsion and/or VDW dispersion
+ * contributions.
+ */
+enum gmx_table_interaction
+{
+    GMX_TABLE_INTERACTION_ELEC,
+    GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWEXPREP_VDWDISP,
+    GMX_TABLE_INTERACTION_ELEC_VDWDISP,
+    GMX_TABLE_INTERACTION_NR
+};
+
+/* Different formats for table data. Cubic spline tables are typically stored
+ * with the four Y,F,G,H intermediate values (check tables.c for format), which
+ * makes it easy to load with a single 4-way SIMD instruction too.
+ * Linear tables only need one value per table point, or two if both V and F
+ * are calculated. However, with SIMD instructions this makes the loads unaligned,
+ * and in that case we store the data as F, D=F(i+1)-F(i), V, and then a blank value,
+ * which again makes it possible to load as a single instruction.
+ */
+enum gmx_table_format
+{
+    GMX_TABLE_FORMAT_CUBICSPLINE_YFGH,
+    GMX_TABLE_FORMAT_LINEAR_VF,
+    GMX_TABLE_FORMAT_LINEAR_V,
+    GMX_TABLE_FORMAT_LINEAR_F,
+    GMX_TABLE_FORMAT_LINEAR_FDV0,
+    GMX_TABLE_FORMAT_NR
+};
+
+enum {
+    eNL_VDWQQ, eNL_VDW, eNL_QQ,
+    eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE,
+    eNL_VDWQQ_WATER, eNL_QQ_WATER,
+    eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER,
+    eNL_NR
+};
+
+#define MAX_CG 1024
+
+typedef struct {
+    int     ncg;
+    int     nj;
+    int     jcg[MAX_CG];
+} t_ns_buf;
+
 
 /* The maximum charge group size because of minimum size of t_excl
  * could be 32 bits.
@@ -92,7 +141,6 @@ typedef struct t_nblist
 
 } t_nblist;
 
-
 /* For atom I =  nblist->iinr[N] (0 <= N < nblist->nri) there can be
  * several neighborlists (N's), for different energy groups (gid) and
  * different shifts (shift).
@@ -109,8 +157,59 @@ typedef struct t_nblist
  * Clear?
  */
 
-#ifdef __cplusplus
-}
-#endif
+/* Structure describing the data in a single table */
+typedef struct t_forcetable
+{
+    enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
+    enum gmx_table_format       format;      /* Interpolation type and data format */
 
-#endif
+    real                        r;           /* range of the table */
+    int                         n;           /* n+1 is the number of table points */
+    real                        scale;       /* distance (nm) between two table points */
+    real *                      data;        /* the actual table data */
+
+    /* Some information about the table layout. This can also be derived from the interpolation
+     * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
+     * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
+     * It is always true that stride = formatsize*ninteractions
+     */
+    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
+} t_forcetable;
+
+typedef struct t_nblists
+{
+    struct t_forcetable   *table_elec;
+    struct t_forcetable   *table_vdw;
+    struct t_forcetable   *table_elec_vdw;
+
+    /* The actual neighbor lists, short and long range, see enum above
+     * for definition of neighborlist indices.
+     */
+    struct t_nblist nlist_sr[eNL_NR];
+    struct t_nblist nlist_lr[eNL_NR];
+} t_nblists;
+
+typedef struct gmx_ns_t {
+    gmx_bool      bCGlist;
+    int          *simple_aaj;
+    struct t_grid*grid;
+    t_excl       *bexcl;
+    gmx_bool     *bHaveVdW;
+    t_ns_buf    **ns_buf;
+    gmx_bool     *bExcludeAlleg;
+    int           nra_alloc;
+    int           cg_alloc;
+    int         **nl_sr;
+    int          *nsr;
+    int         **nl_lr_ljc;
+    int         **nl_lr_one;
+    int          *nlr_ljc;
+    int          *nlr_one;
+    /* the nblists should probably go in here */
+    gmx_bool      nblist_initialized; /* has the nblist been initialized?  */
+    int           dump_nl;            /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
+} gmx_ns_t;
+
+#endif /* GMX_MDTYPES_NBLIST_H */

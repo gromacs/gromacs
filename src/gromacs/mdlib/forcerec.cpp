@@ -1314,35 +1314,37 @@ static void make_nbf_tables(FILE *fp,
      * the table data to be aligned to 16-byte. The pointers could be freed
      * but currently aren't.
      */
-    nbl->table_elec.interaction   = GMX_TABLE_INTERACTION_ELEC;
-    nbl->table_elec.format        = nbl->table_elec_vdw.format;
-    nbl->table_elec.r             = nbl->table_elec_vdw.r;
-    nbl->table_elec.n             = nbl->table_elec_vdw.n;
-    nbl->table_elec.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_elec.formatsize    = nbl->table_elec_vdw.formatsize;
-    nbl->table_elec.ninteractions = 1;
-    nbl->table_elec.stride        = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
-    snew_aligned(nbl->table_elec.data, nbl->table_elec.stride*(nbl->table_elec.n+1), 32);
+    snew(nbl->table_elec, 1);
+    nbl->table_elec->interaction   = GMX_TABLE_INTERACTION_ELEC;
+    nbl->table_elec->format        = nbl->table_elec_vdw->format;
+    nbl->table_elec->r             = nbl->table_elec_vdw->r;
+    nbl->table_elec->n             = nbl->table_elec_vdw->n;
+    nbl->table_elec->scale         = nbl->table_elec_vdw->scale;
+    nbl->table_elec->formatsize    = nbl->table_elec_vdw->formatsize;
+    nbl->table_elec->ninteractions = 1;
+    nbl->table_elec->stride        = nbl->table_elec->formatsize * nbl->table_elec->ninteractions;
+    snew_aligned(nbl->table_elec->data, nbl->table_elec->stride*(nbl->table_elec->n+1), 32);
 
-    nbl->table_vdw.interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
-    nbl->table_vdw.format        = nbl->table_elec_vdw.format;
-    nbl->table_vdw.r             = nbl->table_elec_vdw.r;
-    nbl->table_vdw.n             = nbl->table_elec_vdw.n;
-    nbl->table_vdw.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_vdw.formatsize    = nbl->table_elec_vdw.formatsize;
-    nbl->table_vdw.ninteractions = 2;
-    nbl->table_vdw.stride        = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
-    snew_aligned(nbl->table_vdw.data, nbl->table_vdw.stride*(nbl->table_vdw.n+1), 32);
+    snew(nbl->table_vdw, 1);
+    nbl->table_vdw->interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
+    nbl->table_vdw->format        = nbl->table_elec_vdw->format;
+    nbl->table_vdw->r             = nbl->table_elec_vdw->r;
+    nbl->table_vdw->n             = nbl->table_elec_vdw->n;
+    nbl->table_vdw->scale         = nbl->table_elec_vdw->scale;
+    nbl->table_vdw->formatsize    = nbl->table_elec_vdw->formatsize;
+    nbl->table_vdw->ninteractions = 2;
+    nbl->table_vdw->stride        = nbl->table_vdw->formatsize * nbl->table_vdw->ninteractions;
+    snew_aligned(nbl->table_vdw->data, nbl->table_vdw->stride*(nbl->table_vdw->n+1), 32);
 
-    for (i = 0; i <= nbl->table_elec_vdw.n; i++)
+    for (i = 0; i <= nbl->table_elec_vdw->n; i++)
     {
         for (j = 0; j < 4; j++)
         {
-            nbl->table_elec.data[4*i+j] = nbl->table_elec_vdw.data[12*i+j];
+            nbl->table_elec->data[4*i+j] = nbl->table_elec_vdw->data[12*i+j];
         }
         for (j = 0; j < 8; j++)
         {
-            nbl->table_vdw.data[8*i+j] = nbl->table_elec_vdw.data[12*i+4+j];
+            nbl->table_vdw->data[8*i+j] = nbl->table_elec_vdw->data[12*i+4+j];
         }
     }
 }
@@ -3141,7 +3143,8 @@ void init_forcerec(FILE              *fp,
     fr->timesteps = 0;
 
     /* Initialize neighbor search */
-    init_ns(fp, cr, &fr->ns, fr, mtop);
+    snew(fr->ns, 1);
+    init_ns(fp, cr, fr->ns, fr, mtop);
 
     if (cr->duty & DUTY_PP)
     {
@@ -3193,7 +3196,7 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
        pr_int(fp,fr->hcg);*/
     for (i = 0; i < fr->nnblists; i++)
     {
-        pr_int(fp, fr->nblists[i].table_elec_vdw.n);
+        pr_int(fp, fr->nblists[i].table_elec_vdw->n);
     }
     pr_real(fp, fr->rcoulomb_switch);
     pr_real(fp, fr->rcoulomb);

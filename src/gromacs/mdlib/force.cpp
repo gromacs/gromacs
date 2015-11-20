@@ -85,7 +85,7 @@ void ns(FILE              *fp,
     int     nsearch;
 
 
-    if (!fr->ns.nblist_initialized)
+    if (!fr->ns->nblist_initialized)
     {
         init_neighbor_list(fp, fr, md->homenr);
     }
@@ -107,9 +107,9 @@ void ns(FILE              *fp,
        count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
        &(top->idef),opts->ngener);
      */
-    if (fr->ns.dump_nl > 0)
+    if (fr->ns->dump_nl > 0)
     {
-        dump_nblist(fp, cr, fr, fr->ns.dump_nl);
+        dump_nblist(fp, cr, fr, fr->ns->dump_nl);
     }
 }
 
@@ -219,7 +219,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
         if (bBornRadii)
         {
-            calc_gb_rad(cr, fr, ir, top, x, &(fr->gblist), born, md, nrnb);
+            calc_gb_rad(cr, fr, ir, top, x, fr->gblist, born, md, nrnb);
         }
 
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);

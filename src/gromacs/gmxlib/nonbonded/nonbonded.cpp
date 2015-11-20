@@ -53,12 +53,12 @@
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -377,9 +377,9 @@ void do_nonbonded(t_forcerec *fr,
         /* cppcheck-suppress duplicateExpression */
         assert(etiNR == 3);
 
-        kernel_data.table_elec              = &nblists->table_elec;
-        kernel_data.table_vdw               = &nblists->table_vdw;
-        kernel_data.table_elec_vdw          = &nblists->table_elec_vdw;
+        kernel_data.table_elec              = nblists->table_elec;
+        kernel_data.table_vdw               = nblists->table_vdw;
+        kernel_data.table_elec_vdw          = nblists->table_elec_vdw;
 
         for (range = 0; range < 2; range++)
         {
