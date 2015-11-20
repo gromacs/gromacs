@@ -66,6 +66,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -76,47 +77,32 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 
-#ifdef GMX_GPU
+/* Note that some of the following arrays must match the "GPU support
+ * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
+ * array entry. */
 
-static const bool  bGPUBinary = TRUE;
+/* CUDA supports everything. Our current OpenCL implementation only
+ * supports using exactly one GPU per PP rank, so sharing is
+ * impossible */
+static const bool gpuSharingSupport[] = { false, true, false };
+static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
 
-#  ifdef GMX_USE_OPENCL
-
-static const char *gpu_implementation       = "OpenCL";
-/* Our current OpenCL implementation only supports using exactly one
- * GPU per PP rank, so sharing is impossible */
-static const bool bGpuSharingSupported      = false;
-/* Our current OpenCL implementation seems to handle concurrency
- * correctly with thread-MPI. The AMD OpenCL runtime does not seem to
- * support creating a context from more than one real MPI rank on the
- * same node (it segfaults when you try).
+/* CUDA supports everything. Our current OpenCL implementation seems
+ * to handle concurrency correctly with thread-MPI. The AMD OpenCL
+ * runtime does not seem to support creating a context from more than
+ * one real MPI rank on the same node (it segfaults when you try).
  */
-#    ifdef GMX_THREAD_MPI
-static const bool bMultiGpuPerNodeSupported = true;
-#    else /* GMX_THREAD_MPI */
-/* Real MPI and no MPI */
-static const bool bMultiGpuPerNodeSupported = false;
-#    endif
-
-#  else /* GMX_USE_OPENCL */
-
-// Our CUDA implementation supports everything
-static const char *gpu_implementation        = "CUDA";
-static const bool  bGpuSharingSupported      = true;
-static const bool  bMultiGpuPerNodeSupported = true;
-
-#  endif /* GMX_USE_OPENCL */
-
-#else    /* GMX_GPU */
-
-// Not compiled with GPU support
-static const bool  bGPUBinary                = false;
-static const char *gpu_implementation        = "non-GPU";
-static const bool  bGpuSharingSupported      = false;
-static const bool  bMultiGpuPerNodeSupported = false;
-
-#endif /* GMX_GPU */
+static const bool multiGpuSupport[] = {
+    false, true,
+#ifdef GMX_THREAD_MPI
+    true,
+#else
+    false, /* Real MPI and no MPI */
+#endif
+};
+static const bool bMultiGpuPerNodeSupported = multiGpuSupport[GMX_GPU];
 
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
 const char * const gpu_detect_res_str[egpuNR] =
@@ -498,7 +484,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                         !gmx_multiple_gpu_per_node_supported())
                     {
                         reasonForLimit  = "can be used by ";
-                        reasonForLimit += gpu_implementation;
+                        reasonForLimit += getGpuImplementationString();
                         reasonForLimit += " in GROMACS";
                     }
                     else
@@ -1188,11 +1174,11 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
                                        &gpu_opt->dev_use);
         if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
         {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", gpu_implementation);
+            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
         }
         if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
         {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", gpu_implementation);
+            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
         }
         if (gpu_opt->n_dev_use == 0)
         {

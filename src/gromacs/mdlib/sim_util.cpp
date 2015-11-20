@@ -106,21 +106,8 @@
 
 #include "nbnxn_gpu.h"
 
-#if defined(GMX_GPU)
-#if defined(GMX_USE_OPENCL)
-// Have OpenCL support
-static const bool useCuda   = false;
-static const bool useOpenCL = true;
-#else
-// Have CUDA support
-static const bool useCuda   = true;
-static const bool useOpenCL = false;
-#endif
-#else
-// No GPU support
-static const bool useCuda   = false;
-static const bool useOpenCL = false;
-#endif
+static const bool useCuda   = GMX_GPU == GMX_GPU_CUDA;
+static const bool useOpenCL = GMX_GPU == GMX_GPU_OPENCL;
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
