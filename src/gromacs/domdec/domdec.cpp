@@ -65,7 +65,6 @@
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -83,6 +82,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -4600,7 +4600,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         }
         else
         {
-            moved = fr->ns.grid->cell_index;
+            moved = fr->ns->grid->cell_index;
         }
 
         clear_and_mark_ind(dd->ncg_home, move,
@@ -8769,9 +8769,9 @@ static int dd_sort_order(gmx_domdec_t *dd, t_forcerec *fr, int ncg_home_old)
 
     sort = dd->comm->sort;
 
-    a = fr->ns.grid->cell_index;
+    a = fr->ns->grid->cell_index;
 
-    moved = NSGRID_SIGNAL_MOVED_FAC*fr->ns.grid->ncells;
+    moved = NSGRID_SIGNAL_MOVED_FAC*fr->ns->grid->ncells;
 
     if (ncg_home_old >= 0)
     {
@@ -9009,9 +9009,9 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
         /* Copy the sorted ns cell indices back to the ns grid struct */
         for (i = 0; i < dd->ncg_home; i++)
         {
-            fr->ns.grid->cell_index[i] = cgsort[i].nsc;
+            fr->ns->grid->cell_index[i] = cgsort[i].nsc;
         }
-        fr->ns.grid->nr = dd->ncg_home;
+        fr->ns->grid->nr = dd->ncg_home;
     }
 }
 
@@ -9409,8 +9409,8 @@ void dd_partition_system(FILE                *fplog,
     switch (fr->cutoff_scheme)
     {
         case ecutsGROUP:
-            copy_ivec(fr->ns.grid->n, ncells_old);
-            grid_first(fplog, fr->ns.grid, dd, &ddbox,
+            copy_ivec(fr->ns->grid->n, ncells_old);
+            grid_first(fplog, fr->ns->grid, dd, &ddbox,
                        state_local->box, cell_ns_x0, cell_ns_x1,
                        fr->rlistlong, grid_density);
             break;
@@ -9458,10 +9458,10 @@ void dd_partition_system(FILE                *fplog,
                 nbnxn_get_ncells(fr->nbv->nbs, &ncells_new[XX], &ncells_new[YY]);
                 break;
             case ecutsGROUP:
-                fill_grid(&comm->zones, fr->ns.grid, dd->ncg_home,
+                fill_grid(&comm->zones, fr->ns->grid, dd->ncg_home,
                           0, dd->ncg_home, fr->cg_cm);
 
-                copy_ivec(fr->ns.grid->n, ncells_new);
+                copy_ivec(fr->ns->grid->n, ncells_new);
                 break;
             default:
                 gmx_incons("unimplemented");

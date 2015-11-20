@@ -110,8 +110,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_sparc64_hpc_ace_double
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
@@ -411,8 +411,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_sparc64_hpc_ace_double
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */

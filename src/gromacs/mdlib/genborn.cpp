@@ -54,6 +54,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/genborn_allvsall.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -271,7 +272,8 @@ int init_gb(gmx_genborn_t **p_born,
     /* snew(born->dasurf,natoms); */
 
     /* Initialize the gb neighbourlist */
-    init_gb_nblist(natoms, &(fr->gblist));
+    snew(fr->gblist, 1);
+    init_gb_nblist(natoms, fr->gblist);
 
     /* Do the Vsites exclusions (if any) */
     for (i = 0; i < natoms; i++)
@@ -1361,7 +1363,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     /* Calculate the bonded GB-interactions using either table or analytical formula */
     enerd->term[F_GBPOL]       += gb_bonds_tab(x, f, fr->fshift, md->chargeA, &(fr->gbtabscale),
-                                               fr->invsqrta, fr->dvda, fr->gbtab.data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+                                               fr->invsqrta, fr->dvda, fr->gbtab->data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
     enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, fr->epsfac);
@@ -1382,13 +1384,13 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
         return;
     }
 
-    calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda,
+    calc_gb_chainrule(fr->natoms_force, fr->gblist, fr->dadx, fr->dvda,
                       x, f, fr->fshift, fr->shift_vec, gb_algorithm, born);
 
     if (!fr->bAllvsAll)
     {
         /* 9 flops for outer loop, 15 for inner */
-        inc_nrnb(nrnb, eNR_BORN_CHAINRULE, fr->gblist.nri*9+fr->gblist.nrj*15);
+        inc_nrnb(nrnb, eNR_BORN_CHAINRULE, fr->gblist->nri*9+fr->gblist->nrj*15);
     }
 }
 
@@ -1563,10 +1565,10 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
     }
 
     /* Zero out some counters */
-    fr->gblist.nri = 0;
-    fr->gblist.nrj = 0;
+    fr->gblist->nri = 0;
+    fr->gblist->nrj = 0;
 
-    fr->gblist.jindex[0] = fr->gblist.nri;
+    fr->gblist->jindex[0] = fr->gblist->nri;
 
     for (i = 0; i < fr->natoms_force; i++)
     {
@@ -1577,23 +1579,23 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
             /* Only add those atoms that actually have neighbours */
             if (born->use[i] != 0)
             {
-                fr->gblist.iinr[fr->gblist.nri]  = i;
-                fr->gblist.shift[fr->gblist.nri] = list->shift;
-                fr->gblist.nri++;
+                fr->gblist->iinr[fr->gblist->nri]  = i;
+                fr->gblist->shift[fr->gblist->nri] = list->shift;
+                fr->gblist->nri++;
 
                 for (k = 0; k < list->naj; k++)
                 {
                     /* Memory allocation for jjnr */
-                    if (fr->gblist.nrj >= fr->gblist.maxnrj)
+                    if (fr->gblist->nrj >= fr->gblist->maxnrj)
                     {
-                        fr->gblist.maxnrj += over_alloc_large(fr->gblist.maxnrj);
+                        fr->gblist->maxnrj += over_alloc_large(fr->gblist->maxnrj);
 
                         if (debug)
                         {
-                            fprintf(debug, "Increasing GB neighbourlist j size to %d\n", fr->gblist.maxnrj);
+                            fprintf(debug, "Increasing GB neighbourlist j size to %d\n", fr->gblist->maxnrj);
                         }
 
-                        srenew(fr->gblist.jjnr, fr->gblist.maxnrj);
+                        srenew(fr->gblist->jjnr, fr->gblist->maxnrj);
                     }
 
                     /* Put in list */
@@ -1601,10 +1603,10 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                     {
                         gmx_incons("i == list->aj[k]");
                     }
-                    fr->gblist.jjnr[fr->gblist.nrj++] = list->aj[k];
+                    fr->gblist->jjnr[fr->gblist->nrj++] = list->aj[k];
                 }
 
-                fr->gblist.jindex[fr->gblist.nri] = fr->gblist.nrj;
+                fr->gblist->jindex[fr->gblist->nri] = fr->gblist->nrj;
             }
         }
     }

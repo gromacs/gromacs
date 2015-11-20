@@ -98,8 +98,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_c
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = fr->gbtab.scale;
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = fr->gbtab->scale;
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
 
     outeriter        = 0;
@@ -310,8 +310,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_c
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = fr->gbtab.scale;
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = fr->gbtab->scale;
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
 
     outeriter        = 0;
