@@ -561,6 +561,10 @@ static const char *getFftDescriptionString()
 #endif
 };
 
+/* Note this array must match the "enumeration" in src/config.h.cmakein */
+static const char *gpuImplementationStrings[] = { "disabled", "CUDA", "OpenCL" };
+static const char *gpuImplementation = gpuImplementationStrings[GMX_GPU];
+
 static void gmx_print_version_info(FILE *fp)
 {
     fprintf(fp, "GROMACS version:    %s\n", gmx_version());
@@ -594,16 +598,7 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "OpenMP support:     disabled\n");
 #endif
-#ifdef GMX_GPU
-    fprintf(fp, "GPU support:        enabled\n");
-#else
-    fprintf(fp, "GPU support:        disabled\n");
-#endif
-#if defined(GMX_GPU) && defined(GMX_USE_OPENCL)
-    fprintf(fp, "OpenCL support:     enabled\n");
-#else
-    fprintf(fp, "OpenCL support:     disabled\n");
-#endif
+    fprintf(fp, "GPU support:        %s\n", gpuImplementation);
     /* A preprocessor trick to avoid duplicating logic from vec.h */
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
@@ -649,14 +644,13 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
             __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
-#if defined(GMX_GPU)
-#ifdef GMX_USE_OPENCL
+#if GMX_GPU == GMX_GPU_OPENCL
     fprintf(fp, "OpenCL include dir: %s\n", OPENCL_INCLUDE_DIR);
     fprintf(fp, "OpenCL library:     %s\n", OPENCL_LIBRARY);
     fprintf(fp, "OpenCL version:     %s\n", OPENCL_VERSION_STRING);
-#else
-    gmx_print_version_info_cuda_gpu(fp);
 #endif
+#if GMX_GPU == GMX_GPU_CUDA
+    gmx_print_version_info_cuda_gpu(fp);
 #endif
 }
 
