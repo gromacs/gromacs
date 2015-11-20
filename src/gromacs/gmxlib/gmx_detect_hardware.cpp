@@ -76,47 +76,33 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 
-#ifdef GMX_GPU
+/* Note that this array (and some which follow) must match the "GPU
+ * support enumeration" in src/config.h.cmakein */
+static const char *gpuImplementationStrings[] = { "non-GPU", "CUDA", "OpenCL" };
+static const char *gpu_implementation = gpuImplementationStrings[GMX_GPU];
 
-static const bool  bGPUBinary = TRUE;
+/* CUDA supports everything. Our current OpenCL implementation only
+ * supports using exactly one GPU per PP rank, so sharing is
+ * impossible */
+static const bool gpuSharingSupport[] = { false, true, false };
+static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
 
-#  ifdef GMX_USE_OPENCL
-
-static const char *gpu_implementation       = "OpenCL";
-/* Our current OpenCL implementation only supports using exactly one
- * GPU per PP rank, so sharing is impossible */
-static const bool bGpuSharingSupported      = false;
-/* Our current OpenCL implementation seems to handle concurrency
- * correctly with thread-MPI. The AMD OpenCL runtime does not seem to
- * support creating a context from more than one real MPI rank on the
- * same node (it segfaults when you try).
+/* CUDA supports everything. Our current OpenCL implementation seems
+ * to handle concurrency correctly with thread-MPI. The AMD OpenCL
+ * runtime does not seem to support creating a context from more than
+ * one real MPI rank on the same node (it segfaults when you try).
  */
-#    ifdef GMX_THREAD_MPI
-static const bool bMultiGpuPerNodeSupported = true;
-#    else /* GMX_THREAD_MPI */
-/* Real MPI and no MPI */
-static const bool bMultiGpuPerNodeSupported = false;
-#    endif
-
-#  else /* GMX_USE_OPENCL */
-
-// Our CUDA implementation supports everything
-static const char *gpu_implementation        = "CUDA";
-static const bool  bGpuSharingSupported      = true;
-static const bool  bMultiGpuPerNodeSupported = true;
-
-#  endif /* GMX_USE_OPENCL */
-
-#else    /* GMX_GPU */
-
-// Not compiled with GPU support
-static const bool  bGPUBinary                = false;
-static const char *gpu_implementation        = "non-GPU";
-static const bool  bGpuSharingSupported      = false;
-static const bool  bMultiGpuPerNodeSupported = false;
-
-#endif /* GMX_GPU */
+static const bool multiGpuSupport[] = {
+    false, true,
+#ifdef GMX_THREAD_MPI
+    true,
+#else
+    false, /* Real MPI and no MPI */
+#endif
+};
+static const bool bMultiGpuPerNodeSupported = multiGpuSupport[GMX_GPU];
 
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
 const char * const gpu_detect_res_str[egpuNR] =
