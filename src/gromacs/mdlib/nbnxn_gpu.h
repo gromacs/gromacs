@@ -48,6 +48,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,7 +70,8 @@ GPU_FUNC_QUALIFIER
 void nbnxn_gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused               *nb,
                              const struct nbnxn_atomdata_t gmx_unused *nbdata,
                              int gmx_unused                            flags,
-                             int gmx_unused                            iloc) GPU_FUNC_TERM
+                             int gmx_unused                            iloc,
+                             gmx_wallcycle_t                           wcycle) GPU_FUNC_TERM
 
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
@@ -79,7 +81,8 @@ GPU_FUNC_QUALIFIER
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
                               const struct nbnxn_atomdata_t gmx_unused *nbatom,
                               int                    gmx_unused         flags,
-                              int                    gmx_unused         aloc) GPU_FUNC_TERM
+                              int                    gmx_unused         aloc,
+                              gmx_wallcycle_t                           wcycle) GPU_FUNC_TERM
 
 /*! \brief
  * Wait for the asynchronously launched nonbonded calculations and data
@@ -91,7 +94,8 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
                             int             gmx_unused  aloc,
                             real            gmx_unused *e_lj,
                             real            gmx_unused *e_el,
-                            rvec            gmx_unused *fshift) GPU_FUNC_TERM
+                            rvec            gmx_unused *fshift,
+                            gmx_wallcycle_t             wcycle) GPU_FUNC_TERM
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
