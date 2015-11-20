@@ -38,7 +38,6 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 #define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 
-#include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/qmmmrec.h"
@@ -56,6 +55,7 @@ extern "C" {
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
+struct gmx_genborn_t;
 struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
@@ -365,7 +365,7 @@ typedef struct t_forcerec {
     /* Implicit solvent - overlap for HCT model */
     real                 *atype_S_hct;
     /* Generalized born interaction data */
-    gmx_genborn_t        *born;
+    struct gmx_genborn_t *born;
 
     /* Table scale for GB */
     real gbtabscale;
