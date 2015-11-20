@@ -42,8 +42,6 @@
 #include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/nblist.h"
-#include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/qmmmrec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
@@ -58,44 +56,13 @@ extern "C" {
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
+struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+struct t_forcetable;
 struct t_nblist;
-
-/* Structure describing the data in a single table */
-typedef struct
-{
-    enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
-    enum gmx_table_format       format;      /* Interpolation type and data format */
-
-    real                        r;           /* range of the table */
-    int                         n;           /* n+1 is the number of table points */
-    real                        scale;       /* distance (nm) between two table points */
-    real *                      data;        /* the actual table data */
-
-    /* Some information about the table layout. This can also be derived from the interpolation
-     * type and the table interactions, but it is convenient to have here for sanity checks, and it makes it
-     * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
-     * It is always true that stride = formatsize*ninteractions
-     */
-    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
-    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
-    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
-} t_forcetable;
-
-typedef struct
-{
-    t_forcetable   table_elec;
-    t_forcetable   table_vdw;
-    t_forcetable   table_elec_vdw;
-
-    /* The actual neighbor lists, short and long range, see enum above
-     * for definition of neighborlist indices.
-     */
-    t_nblist nlist_sr[eNL_NR];
-    t_nblist nlist_lr[eNL_NR];
-} t_nblists;
+struct t_nblists;
 
 /* macros for the cginfo data in forcerec
  *
@@ -266,10 +233,10 @@ typedef struct t_forcerec {
     real fudgeQQ;
 
     /* Table stuff */
-    gmx_bool     bcoultab;
-    gmx_bool     bvdwtab;
+    gmx_bool             bcoultab;
+    gmx_bool             bvdwtab;
     /* The normal tables are in the nblists struct(s) below */
-    t_forcetable tab14; /* for 1-4 interactions only */
+    struct t_forcetable *tab14; /* for 1-4 interactions only */
 
     /* PPPM & Shifting stuff */
     int   coulomb_modifier;
@@ -309,17 +276,17 @@ typedef struct t_forcerec {
     rvec        *shift_vec;
 
     /* The neighborlists including tables */
-    int                        nnblists;
-    int                       *gid2nblists;
-    t_nblists                 *nblists;
+    int                               nnblists;
+    int                              *gid2nblists;
+    struct t_nblists                 *nblists;
 
-    int                        cutoff_scheme; /* group- or Verlet-style cutoff */
-    gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-    struct nonbonded_verlet_t *nbv;
+    int                               cutoff_scheme; /* group- or Verlet-style cutoff */
+    gmx_bool                          bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    struct nonbonded_verlet_t        *nbv;
 
     /* The wall tables (if used) */
-    int            nwall;
-    t_forcetable **wall_tab;
+    int                   nwall;
+    struct t_forcetable **wall_tab;
 
     /* The number of charge groups participating in do_force_lowlevel */
     int ncg_force;
@@ -381,23 +348,23 @@ typedef struct t_forcerec {
     real fc_stepsize;
 
     /* Generalized born implicit solvent */
-    gmx_bool       bGB;
+    gmx_bool              bGB;
     /* Generalized born stuff */
-    real           gb_epsilon_solvent;
+    real                  gb_epsilon_solvent;
     /* Table data for GB */
-    t_forcetable   gbtab;
+    struct t_forcetable  *gbtab;
     /* VdW radius for each atomtype (dim is thus ntype) */
-    real          *atype_radius;
+    real                 *atype_radius;
     /* Effective radius (derived from effective volume) for each type */
-    real          *atype_vol;
+    real                 *atype_vol;
     /* Implicit solvent - surface tension for each atomtype */
-    real          *atype_surftens;
+    real                 *atype_surftens;
     /* Implicit solvent - radius for GB calculation */
-    real          *atype_gb_radius;
+    real                 *atype_gb_radius;
     /* Implicit solvent - overlap for HCT model */
-    real          *atype_S_hct;
+    real                 *atype_S_hct;
     /* Generalized born interaction data */
-    gmx_genborn_t *born;
+    gmx_genborn_t        *born;
 
     /* Table scale for GB */
     real gbtabscale;
@@ -407,9 +374,9 @@ typedef struct t_forcerec {
      * (for use in the SA calculation) and the lr list will contain
      * for each atom all atoms 1-4 or greater (for use in the GB calculation)
      */
-    t_nblist gblist_sr;
-    t_nblist gblist_lr;
-    t_nblist gblist;
+    struct t_nblist *gblist_sr;
+    struct t_nblist *gblist_lr;
+    struct t_nblist *gblist;
 
     /* Inverse square root of the Born radii for implicit solvent */
     real *invsqrta;
@@ -428,14 +395,14 @@ typedef struct t_forcerec {
     gmx_bool n_tpi;
 
     /* Neighbor searching stuff */
-    gmx_ns_t ns;
+    struct gmx_ns_t *ns;
 
     /* QMMM stuff */
     gmx_bool         bQMMM;
     t_QMMMrec       *qr;
 
     /* QM-MM neighborlists */
-    t_nblist QMMMlist;
+    struct t_nblist        *QMMMlist;
 
     /* Limit for printing large forces, negative is don't print */
     real print_force;

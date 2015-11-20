@@ -48,6 +48,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
@@ -88,7 +89,7 @@ void make_wall_tables(FILE *fplog,
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
-                *tab = make_tables(fplog, fr, buf, 0, GMX_MAKETABLES_FORCEUSER);
+                tab = make_tables(fplog, fr, buf, 0, GMX_MAKETABLES_FORCEUSER);
                 /* Since wall have no charge, we can compress the table */
                 for (int i = 0; i <= tab->n; i++)
                 {

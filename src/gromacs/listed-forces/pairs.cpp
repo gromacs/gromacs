@@ -49,6 +49,7 @@
 
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -410,7 +411,7 @@ do_pairs(int ftype, int nbonds,
        the table layout, which should be made explicit in future
        cleanup. */
     GMX_ASSERT(etiNR == 3, "Pair-interaction code that uses GROMACS interaction tables supports exactly 3 tables");
-    GMX_ASSERT(fr->tab14.interaction == GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+    GMX_ASSERT(fr->tab14->interaction == GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
                "Pair interaction kernels need a table with Coulomb, repulsion and dispersion entries");
 
     bFreeEnergy = FALSE;
@@ -470,13 +471,13 @@ do_pairs(int ftype, int nbonds,
         }
         r2           = norm2(dx);
 
-        if (r2 >= fr->tab14.r*fr->tab14.r)
+        if (r2 >= fr->tab14->r*fr->tab14->r)
         {
             /* This check isn't race free. But it doesn't matter because if a race occurs the only
              * disadvantage is that the warning is printed twice */
             if (warned_rlimit == FALSE)
             {
-                warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->tab14.r);
+                warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->tab14->r);
                 warned_rlimit = TRUE;
             }
             continue;
@@ -490,7 +491,7 @@ do_pairs(int ftype, int nbonds,
             c12B             = iparams[itype].lj14.c12B*12.0;
 
             fscal            = free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
-                                                           fr->tab14.scale, fr->tab14.data, fr->tab14.stride,
+                                                           fr->tab14->scale, fr->tab14->data, fr->tab14->stride,
                                                            qq, c6, c12, qqB, c6B, c12B,
                                                            LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
                                                            fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
@@ -498,7 +499,7 @@ do_pairs(int ftype, int nbonds,
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal            = evaluate_single(r2, fr->tab14.scale, fr->tab14.data, fr->tab14.stride, qq, c6, c12, &velec, &vvdw);
+            fscal            = evaluate_single(r2, fr->tab14->scale, fr->tab14->data, fr->tab14->stride, qq, c6, c12, &velec, &vvdw);
         }
 
         energygrp_elec[gid]  += velec;
