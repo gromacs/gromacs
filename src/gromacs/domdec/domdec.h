@@ -170,7 +170,8 @@ void set_dd_parameters(FILE *fplog, struct gmx_domdec_t *dd, real dlb_scale,
  * This could fail when trying to increase the cut-off,
  * then FALSE will be returned and the cut-off is not modified.
  */
-gmx_bool change_dd_cutoff(struct t_commrec *cr, t_state *state, t_inputrec *ir,
+gmx_bool change_dd_cutoff(struct t_commrec *cr,
+                          t_state *state, const t_inputrec *ir,
                           real cutoff_req );
 
 /*! \brief Limit DLB to preserve the option of returning to the current cut-off.
@@ -386,13 +387,14 @@ real dd_choose_grid(FILE *fplog,
 
 /*! \brief Set the box and PBC data in \p ddbox */
 void set_ddbox(struct gmx_domdec_t *dd, gmx_bool bMasterState, struct t_commrec *cr_sum,
-               t_inputrec *ir, matrix box,
-               gmx_bool bCalcUnboundedSize, t_block *cgs, rvec *x,
+               const t_inputrec *ir, const matrix box,
+               gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                struct gmx_ddbox_t *ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(struct t_commrec *cr, ivec *dd_nc,
-                  t_inputrec *ir, matrix box, t_block *cgs, rvec *x,
+void set_ddbox_cr(struct t_commrec *cr, const ivec *dd_nc,
+                  const t_inputrec *ir, const matrix box,
+                  const t_block *cgs, const rvec *x,
                   struct gmx_ddbox_t *ddbox);
 
 #ifdef __cplusplus
