@@ -34,17 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_LEGACYHEADERS_TYPES_GROUP_H
-#define GMX_LEGACYHEADERS_TYPES_GROUP_H
+#ifndef GMX_MDTYPES_GROUP_H
+#define GMX_MDTYPES_GROUP_H
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 typedef struct {
     real    Th;             /* Temperature at half step        */
@@ -89,9 +84,5 @@ typedef struct gmx_ekindata_t {
 } gmx_ekindata_t;
 
 #define GID(igid, jgid, gnr) ((igid < jgid) ? (igid*gnr+jgid) : (jgid*gnr+igid))
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
