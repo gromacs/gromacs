@@ -16,6 +16,7 @@ this page.
    doxygen
    reportstyle
    commitstyle
+   error-handling
 
 :doc:`formatting`
   Guidelines for indentation and other code formatting.
@@ -25,6 +26,8 @@ this page.
   Naming conventions for files and various code constructs.
 :doc:`language-features`
   Allowed language features.
+:doc:`error-handling`
+  How to handle errors at run time
 :ref:`dev-doxygen-guidelines`
   Guidelines for using Doxygen to document the source code are currently in a
   section on the page on general Doxygen usage.
