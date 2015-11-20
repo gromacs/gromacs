@@ -233,7 +233,7 @@ static int ddcoord2ddnodeid(gmx_domdec_t *dd, ivec c)
     return ddnodeid;
 }
 
-static gmx_bool dynamic_dd_box(gmx_ddbox_t *ddbox, t_inputrec *ir)
+static gmx_bool dynamic_dd_box(const gmx_ddbox_t *ddbox, const t_inputrec *ir)
 {
     return (ddbox->nboundeddim < DIM || DYNAMIC_BOX(*ir));
 }
@@ -7245,7 +7245,7 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
 }
 
 static gmx_bool test_dd_cutoff(t_commrec *cr,
-                               t_state *state, t_inputrec *ir,
+                               t_state *state, const t_inputrec *ir,
                                real cutoff_req)
 {
     gmx_domdec_t *dd;
@@ -7314,7 +7314,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
     return TRUE;
 }
 
-gmx_bool change_dd_cutoff(t_commrec *cr, t_state *state, t_inputrec *ir,
+gmx_bool change_dd_cutoff(t_commrec *cr, t_state *state, const t_inputrec *ir,
                           real cutoff_req)
 {
     gmx_bool bCutoffAllowed;
