@@ -107,6 +107,7 @@ if (SPHINX_FOUND)
         dev-manual/commitstyle.rst
         dev-manual/documentation-generation.rst
         dev-manual/doxygen.rst
+        dev-manual/error-handling.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
