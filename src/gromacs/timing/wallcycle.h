@@ -72,6 +72,14 @@ enum {
     ewcsEWALD_CORRECTION,
     ewcsNB_X_BUF_OPS,
     ewcsNB_F_BUF_OPS,
+    ewcsCU_RT_H2D_XQ,
+    ewcsCU_RT_NB_KERNEL,
+    ewcsCU_RT_D2H_F,
+    ewcsCU_RT_D2H_E_FS,
+    ewcsCU_RT_SSYNC,
+    ewcsCU_RT_CLEAR,
+    ewcsCU_RT_H2D_ATOMDATA,
+    ewcsCU_RT_H2D_PLIST,
     ewcsNR
 };
 

@@ -618,7 +618,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
 void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                              const nbnxn_pairlist_t *h_plist,
-                             int                     iloc)
+                             int                     iloc,
+                             gmx_wallcycle_t         wcycle)
 {
     char          sbuf[STRLEN];
     cudaError_t   stat;
@@ -646,6 +647,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
+    wallcycle_start(wcycle, ewcsCU_RT_H2D_PLIST);
     cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
                         &d_plist->nsci, &d_plist->sci_nalloc,
                         h_plist->nsci,
@@ -660,6 +662,7 @@ void nbnxn_gpu_init_pairlist(gmx_nbnxn_cuda_t       *nb,
                         &d_plist->nexcl, &d_plist->excl_nalloc,
                         h_plist->nexcl,
                         stream, true);
+    wallcycle_stop(wcycle, ewcsCU_RT_H2D_PLIST);
 
     if (bDoTime)
     {
@@ -724,7 +727,8 @@ void nbnxn_gpu_clear_outputs(gmx_nbnxn_cuda_t *nb, int flags)
 }
 
 void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
-                             const struct nbnxn_atomdata_t *nbat)
+                             const struct nbnxn_atomdata_t *nbat,
+                             gmx_wallcycle_t                wcycle)
 {
     cudaError_t    stat;
     int            nalloc, natoms;
@@ -779,8 +783,10 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
         nbnxn_cuda_clear_f(nb, nalloc);
     }
 
+    wallcycle_start(wcycle, ewcsCU_RT_H2D_ATOMDATA);
     cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
                       natoms*sizeof(*d_atdat->atom_types), ls);
+    wallcycle_stop(wcycle, ewcsCU_RT_H2D_ATOMDATA);
 
     if (bDoTime)
     {

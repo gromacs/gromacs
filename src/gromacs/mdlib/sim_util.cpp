@@ -553,7 +553,7 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         case nbnxnk8x8x8_GPU:
-            nbnxn_gpu_launch_kernel(fr->nbv->gpu_nbv, nbvg->nbat, flags, ilocality);
+            nbnxn_gpu_launch_kernel(fr->nbv->gpu_nbv, nbvg->nbat, flags, ilocality, wcycle);
             break;
 
         case nbnxnk8x8x8_PlainC:
@@ -951,7 +951,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
+            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
+                                    wcycle);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
@@ -980,7 +981,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* initialize local pair-list on the GPU */
             nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
                                     nbv->grp[eintLocal].nbl_lists.nbl[0],
-                                    eintLocal);
+                                    eintLocal,
+                                    wcycle);
         }
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -1051,7 +1053,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 /* initialize non-local pair-list on the GPU */
                 nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
                                         nbv->grp[eintNonlocal].nbl_lists.nbl[0],
-                                        eintNonlocal);
+                                        eintNonlocal,
+                                        wcycle);
             }
             wallcycle_stop(wcycle, ewcNS);
         }
@@ -1092,10 +1095,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
             nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintNonlocal].nbat,
-                                     flags, eatNonlocal);
+                                     flags, eatNonlocal, wcycle);
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
-                                 flags, eatLocal);
+                                 flags, eatLocal, wcycle);
         cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -1324,7 +1327,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                       fr->fshift);
+                                       fr->fshift,
+                                       wcycle);
                 cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
                 cycles_wait_gpu += cycles_tmp;
                 cycles_force    += cycles_tmp;
@@ -1386,7 +1390,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
+                                   fr->fshift,
+                                   wcycle);
             cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             if (bDoForces && DOMAINDECOMP(cr))
@@ -1424,14 +1429,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
+                                   fr->fshift,
+                                   wcycle);
             cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
         }
         if (bUseGPU)
         {
             /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
+            wallcycle_sub_start(wcycle, ewcsCU_RT_CLEAR);
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
+            wallcycle_sub_stop(wcycle, ewcsCU_RT_CLEAR);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
         else
