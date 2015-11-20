@@ -141,6 +141,9 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
 
 /*********************************/
 
+/* XXX switch between chevron and cudaLaunch */
+static bool bUseCudaLaunchKernel = (getenv("GMX_USE_CUDA_LAUNCH") != NULL);
+
 /* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
 static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
@@ -440,7 +443,23 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     }
 
     wallcycle_sub_start(wcycle, ewcsCU_RT_NB_KERNEL);
-    nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
+
+    if (bUseCudaLaunchKernel)
+    {
+        void* kernel_args[4];
+        kernel_args[0] = adat;
+        kernel_args[1] = nbp;
+        kernel_args[2] = plist;
+        kernel_args[3] = &bCalcFshift;
+
+#if GMX_CUDA_VERSION >= 7050
+        cudaLaunchKernel((void *)nb_kernel, dim_grid, dim_block, kernel_args, shmem, stream);
+#endif
+    }
+    else
+    {
+        nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
+    }
     CU_LAUNCH_ERR("k_calc_nb");
     wallcycle_sub_stop(wcycle, ewcsCU_RT_NB_KERNEL);
 
