@@ -38,7 +38,7 @@
 include(GetCompilerInfo.cmake)
 get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
 get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_GPU AND NOT GMX_USE_OPENCL)
+if(GMX_USE_CUDA)
     GMX_SET_CUDA_NVCC_FLAGS()
     get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
 endif()
