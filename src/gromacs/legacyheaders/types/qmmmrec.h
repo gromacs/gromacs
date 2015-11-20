@@ -38,6 +38,7 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_QMMMREC_H
 #define GMX_LEGACYHEADERS_TYPES_QMMMREC_H
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
