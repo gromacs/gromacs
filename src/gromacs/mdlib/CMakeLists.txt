@@ -34,9 +34,10 @@
 
 file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.cpp nbnxn_kernels/simd_2xnn/*.cpp nbnxn_kernels/*.cpp *.cpp)
 
-if(GMX_GPU AND NOT GMX_USE_OPENCL)
+if(GMX_USE_CUDA)
     add_subdirectory(nbnxn_cuda)
-elseif(GMX_GPU AND GMX_USE_OPENCL)
+endif()
+if(GMX_USE_OPENCL)
     add_subdirectory(nbnxn_ocl)
     set(MDLIB_OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS} PARENT_SCOPE)
 endif()

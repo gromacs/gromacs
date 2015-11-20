@@ -207,15 +207,22 @@ set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 set(REQUIRED_OPENCL_MIN_VERSION 1.1)
 
 if(NOT GMX_USE_OPENCL)
-    # CUDA detection is done only if GMX_USE_OPENCL is OFF
+    # CUDA detection is done only if GMX_USE_OPENCL is OFF.
     include(gmxManageGPU)
+    set(GMX_USE_CUDA ${GMX_GPU})
+    if(GMX_GPU)
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_CUDA")
+    else()
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
+    endif()
 else()
-    #Now the OpenCL path
+    #Now the OpenCL path (for both AMD and NVIDIA)
     if(GMX_GPU)
         include(gmxManageOpenCL)
-    else(GMX_GPU)
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_OPENCL")
+    else()
         message(FATAL_ERROR "OpenCL requested but GPU option is not enabled (try -DGMX_GPU=on) ")
-    endif(GMX_GPU)
+    endif()
 endif()
 
 include(gmxDetectSimd)
@@ -267,7 +274,6 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
 
-option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
