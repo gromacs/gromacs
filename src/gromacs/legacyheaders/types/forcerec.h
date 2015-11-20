@@ -41,7 +41,6 @@
 #include "gromacs/legacyheaders/types/genborn.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/qmmmrec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/idef.h"
@@ -63,6 +62,7 @@ struct bonded_threading_t;
 struct t_forcetable;
 struct t_nblist;
 struct t_nblists;
+struct t_QMMMrec;
 
 /* macros for the cginfo data in forcerec
  *
@@ -399,8 +399,8 @@ typedef struct t_forcerec {
     struct gmx_ns_t *ns;
 
     /* QMMM stuff */
-    gmx_bool         bQMMM;
-    t_QMMMrec       *qr;
+    gmx_bool          bQMMM;
+    struct t_QMMMrec *qr;
 
     /* QM-MM neighborlists */
     struct t_nblist        *QMMMlist;
