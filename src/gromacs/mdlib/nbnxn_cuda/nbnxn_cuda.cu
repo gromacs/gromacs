@@ -309,7 +309,8 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
 void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                              const nbnxn_atomdata_t *nbatom,
                              int                     flags,
-                             int                     iloc)
+                             int                     iloc,
+                             gmx_wallcycle_t         wcycle)
 {
     cudaError_t          stat;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -365,8 +366,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* HtoD x, q */
+    wallcycle_sub_start(wcycle, ewcsCU_RT_H2D_XQ);
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
                       adat_len * sizeof(*adat->xq), stream);
+    wallcycle_sub_stop(wcycle, ewcsCU_RT_H2D_XQ);
 
     /* When we get here all misc operations issues in the local stream as well as
        the local xq H2D are done,
@@ -436,8 +439,10 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                 shmem);
     }
 
+    wallcycle_sub_start(wcycle, ewcsCU_RT_NB_KERNEL);
     nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
     CU_LAUNCH_ERR("k_calc_nb");
+    wallcycle_sub_stop(wcycle, ewcsCU_RT_NB_KERNEL);
 
     if (bDoTime)
     {
@@ -454,7 +459,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                               const nbnxn_atomdata_t *nbatom,
                               int                     flags,
-                              int                     aloc)
+                              int                     aloc,
+                              gmx_wallcycle_t         wcycle)
 {
     cudaError_t stat;
     int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -519,8 +525,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 
     /* DtoH f */
+    wallcycle_sub_start(wcycle, ewcsCU_RT_D2H_F);
     cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f + adat_begin,
                       (adat_len)*sizeof(*adat->f), stream);
+    wallcycle_sub_stop(wcycle, ewcsCU_RT_D2H_F);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -535,6 +543,11 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     /* only transfer energies in the local stream */
     if (LOCAL_I(iloc))
     {
+        if (bCalcFshift || bCalcEner)
+        {
+            wallcycle_sub_start(wcycle, ewcsCU_RT_D2H_E_FS);
+        }
+
         /* DtoH fshift */
         if (bCalcFshift)
         {
@@ -550,6 +563,11 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
             cu_copy_D2H_async(nb->nbst.e_el, adat->e_el,
                               sizeof(*nb->nbst.e_el), stream);
         }
+
+        if (bCalcFshift || bCalcEner)
+        {
+            wallcycle_sub_stop(wcycle, ewcsCU_RT_D2H_E_FS);
+        }
     }
 
     if (bDoTime)
@@ -561,7 +579,8 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
 
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
                             int flags, int aloc,
-                            real *e_lj, real *e_el, rvec *fshift)
+                            real *e_lj, real *e_el, rvec *fshift,
+                            gmx_wallcycle_t wcycle)
 {
     /* NOTE:  only implemented for single-precision at this time */
     cudaError_t stat;
@@ -607,8 +626,10 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
         return;
     }
 
+    wallcycle_sub_start(wcycle, ewcsCU_RT_SSYNC);
     stat = cudaStreamSynchronize(nb->stream[iloc]);
     CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
+    wallcycle_sub_stop(wcycle, ewcsCU_RT_SSYNC);
 
     /* timing data accumulation */
     if (nb->bDoTime)

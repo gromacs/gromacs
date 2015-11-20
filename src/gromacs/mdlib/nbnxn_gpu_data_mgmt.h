@@ -46,6 +46,7 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,12 +75,14 @@ void nbnxn_gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_init_pairlist(gmx_nbnxn_gpu_t gmx_unused               *nb,
                              const struct nbnxn_pairlist_t gmx_unused *h_nblist,
-                             int                    gmx_unused         iloc) GPU_FUNC_TERM
+                             int                    gmx_unused         iloc,
+                             gmx_wallcycle_t                           wc) GPU_FUNC_TERM
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_init_atomdata(gmx_nbnxn_gpu_t gmx_unused               *nb,
-                             const struct nbnxn_atomdata_t gmx_unused *nbat) GPU_FUNC_TERM
+                             const struct nbnxn_atomdata_t gmx_unused *nbat,
+                             gmx_wallcycle_t                           wc) GPU_FUNC_TERM
 
 /*! \brief Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed.

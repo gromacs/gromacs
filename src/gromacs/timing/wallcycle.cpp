@@ -124,6 +124,15 @@ static const char *wcsn[ewcsNR] =
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
+    /* detailed CUDA RUNTIME overhead timers */
+    "CUDA RT H2D x+q",
+    "CUDA RT NB kernel",
+    "CUDA RT D2H f",
+    "CUDA RT D2H e+fsh",
+    "CUDA RT Streamsync",
+    "CUDA RT clear",
+    "CUDA RT H2D atdat",
+    "CUDA RT H2D plist"
 };
 
 gmx_bool wallcycle_have_counter(void)
