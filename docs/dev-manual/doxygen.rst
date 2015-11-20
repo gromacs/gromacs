@@ -1,3 +1,5 @@
+.. _using Doxygen:
+
 Using Doxygen
 =============
 

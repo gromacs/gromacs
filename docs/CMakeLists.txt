@@ -101,11 +101,13 @@ if (SPHINX_FOUND)
         dev-manual/index.rst
         dev-manual/build-system.rst
         dev-manual/doxygen.rst
+        dev-manual/error-handling.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
         dev-manual/jenkins.rst
         dev-manual/language-features.rst
+        dev-manual/library-structure.rst
         dev-manual/naming.rst
         dev-manual/overview.rst
         dev-manual/relocatable-binaries.rst
