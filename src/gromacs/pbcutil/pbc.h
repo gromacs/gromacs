@@ -214,14 +214,15 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box);
  * with dd->nc[i]==1 with bSingleDir==TRUE or
  * with dd->nc[i]<=2 with bSingleDir==FALSE.
  * \param[inout] pbc The pbc information structure
- * \param[in] ePBC       The PBC identifier
- * \param[in] dd         The domain decomposition struct
- * \param[in] bSingleDir TRUE if DD communicates only in one direction along dimensions
- * \param[in] box        The box tensor
+ * \param[in] ePBC        The PBC identifier
+ * \param[in] domdecCells 3D integer vector describing the number of DD cells
+ *                        or nullptr if not using DD.
+ * \param[in] bSingleDir  TRUE if DD communicates only in one direction along dimensions
+ * \param[in] box         The box tensor
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  struct gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box);
+                  ivec domdecCells, gmx_bool bSingleDir, matrix box);
 
 /*! \brief Compute distance with PBC
  *

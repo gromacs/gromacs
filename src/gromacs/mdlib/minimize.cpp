@@ -55,6 +55,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
@@ -2952,7 +2953,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 #else
 #define mpi_type MPI_FLOAT
 #endif
-                MPI_Send(dfdx[0], natoms*DIM, mpi_type, MASTERNODE(cr), cr->nodeid,
+                MPI_Send(dfdx[0], natoms*DIM, mpi_type, MASTER(cr), cr->nodeid,
                          cr->mpi_comm_mygroup);
 #endif
             }

@@ -51,7 +51,6 @@
 
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -598,18 +597,19 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box)
 }
 
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  struct gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box)
+                  ivec domdecCells,
+                  gmx_bool bSingleDir, matrix box)
 {
     ivec nc2;
     int  npbcdim, i;
 
-    if (dd == NULL)
+    if (nullptr == domdecCells)
     {
         npbcdim = DIM;
     }
     else
     {
-        if (ePBC == epbcSCREW && dd->nc[XX] > 1)
+        if (ePBC == epbcSCREW && domdecCells[XX] > 1)
         {
             /* The rotation has been taken care of during coordinate communication */
             ePBC = epbcXYZ;
@@ -617,7 +617,7 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
         npbcdim = 0;
         for (i = 0; i < DIM; i++)
         {
-            if (dd->nc[i] <= (bSingleDir ? 1 : 2))
+            if (domdecCells[i] <= (bSingleDir ? 1 : 2))
             {
                 nc2[i] = 1;
                 if (!(ePBC == epbcXY && i == ZZ))
@@ -627,7 +627,7 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
             }
             else
             {
-                nc2[i] = dd->nc[i];
+                nc2[i] = domdecCells[i];
             }
         }
     }

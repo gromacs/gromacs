@@ -2889,7 +2889,8 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 
             if (setmode == setcellsizeslbLOCAL)
             {
-                gmx_fatal_collective(FARGS, NULL, dd, error_string);
+                gmx_fatal_collective(FARGS, dd->mpi_comm_all, DDMASTER(dd),
+                                     error_string);
             }
             else
             {
@@ -5928,7 +5929,7 @@ static void split_communicator(FILE *fplog, t_commrec *cr, int gmx_unused dd_nod
         MPI_Cart_create(cr->mpi_comm_mysim, DIM, comm->ntot, periods, reorder,
                         &comm_cart);
         MPI_Comm_rank(comm_cart, &rank);
-        if (MASTERNODE(cr) && rank != 0)
+        if (MASTER(cr) && rank != 0)
         {
             gmx_fatal(FARGS, "MPI rank 0 was renumbered by MPI_Cart_create, we do not allow this");
         }
@@ -6631,7 +6632,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
             {
                 fprintf(fplog, "ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n", acs, comm->cellsize_limit);
             }
-            gmx_fatal_collective(FARGS, cr, NULL,
+            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
                                  acs, comm->cellsize_limit);
         }
@@ -6654,7 +6655,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                     comm->dlbState != edlbsOffForever ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
-            gmx_fatal_collective(FARGS, cr, NULL,
+            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "There is no domain decomposition for %d ranks that is compatible with the given box and a minimum cell size of %g nm\n"
                                  "%s\n"
                                  "Look in the log file for details on the domain decomposition",
@@ -6673,13 +6674,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
     if (cr->nnodes - dd->nnodes != cr->npmenodes)
     {
-        gmx_fatal_collective(FARGS, cr, NULL,
+        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                              "The size of the domain decomposition grid (%d) does not match the number of ranks (%d). The total number of ranks is %d",
                              dd->nnodes, cr->nnodes - cr->npmenodes, cr->nnodes);
     }
     if (cr->npmenodes > dd->nnodes)
     {
-        gmx_fatal_collective(FARGS, cr, NULL,
+        gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                              "The number of separate PME ranks (%d) is larger than the number of PP ranks (%d), this is not supported.", cr->npmenodes, dd->nnodes);
     }
     if (cr->npmenodes > 0)
@@ -7200,7 +7201,7 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
         comm->npmenodes = 0;
         if (dd->pme_nodeid >= 0)
         {
-            gmx_fatal_collective(FARGS, NULL, dd,
+            gmx_fatal_collective(FARGS, dd->mpi_comm_all, DDMASTER(dd),
                                  "Can not have separate PME ranks without PME electrostatics");
         }
     }
