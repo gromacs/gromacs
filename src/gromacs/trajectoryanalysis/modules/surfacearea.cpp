@@ -143,7 +143,7 @@ static std::vector<real> ico_dot_arc(int densit)
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
     std::vector<real> xus(3*ndot);
-    const real        rh = icosaeder_vertices(&xus[0]);
+    const real        rh = icosaeder_vertices(xus.data());
 
     if (tess > 1)
     {
@@ -266,7 +266,7 @@ static std::vector<real> ico_dot_dod(int densit)
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
     std::vector<real> xus(3*ndot);
-    const real        rh = icosaeder_vertices(&xus[0]);
+    const real        rh = icosaeder_vertices(xus.data());
 
     tn = 12;
     /* square of the edge of an icosaeder */

@@ -367,7 +367,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                 {
                     legend.push_back(impl_->legend_[i].c_str());
                 }
-                xvgr_legend(impl_->fp_, legend.size(), &legend[0], oenv);
+                xvgr_legend(impl_->fp_, legend.size(), legend.data(), oenv);
             }
         }
     }

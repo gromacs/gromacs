@@ -620,7 +620,7 @@ Rdf::finishAnalysis(int /*nframes*/)
             invBinVolume[i]  = 1.0 / binVolume;
             prevSphereVolume = sphereVolume;
         }
-        finalRdf->scaleAllByVector(&invBinVolume[0]);
+        finalRdf->scaleAllByVector(invBinVolume.data());
 
         if (normalization_ == Normalization_Rdf)
         {

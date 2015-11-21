@@ -927,7 +927,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     if (bGrid_)
     {
         xrefAlloc_.resize(nref_);
-        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        xref_ = as_rvec_array(xrefAlloc_.data());
 
         for (int i = 0; i < nref_; ++i)
         {
@@ -940,7 +940,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     else if (refIndices_ != NULL)
     {
         xrefAlloc_.resize(nref_);
-        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        xref_ = as_rvec_array(xrefAlloc_.data());
         for (int i = 0; i < nref_; ++i)
         {
             copy_rvec(positions.x_[refIndices_[i]], xrefAlloc_[i]);

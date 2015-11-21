@@ -106,8 +106,8 @@ simdLoadStoreTester(TSimd simdLoadFn(T* mem), void simdStoreFn(T* mem, TSimd),
     std::vector<T>   src(simdWidth*5);
     std::vector<T>   dst(simdWidth*5);
     // Make sure we have memory to check both before and after the test pointers
-    T *              pCopySrc = simdAlignFn(&src[0]) + simdWidth + loadOffset;
-    T *              pCopyDst = simdAlignFn(&dst[0]) + simdWidth + storeOffset;
+    T *              pCopySrc = simdAlignFn(src.data()) + simdWidth + loadOffset;
+    T *              pCopyDst = simdAlignFn(dst.data()) + simdWidth + storeOffset;
     int              i;
 
     for (i = 0; i < simdWidth*5; i++)
@@ -126,7 +126,7 @@ simdLoadStoreTester(TSimd simdLoadFn(T* mem), void simdStoreFn(T* mem, TSimd),
     for (i = 0; i < simdWidth*5; i++)
     {
         EXPECT_EQ(src[i], (T)(1+i)) << "Side effect on source memory, i = " << i;
-        if (&dst[0]+i < pCopyDst || &dst[0]+i >= pCopyDst+simdWidth)
+        if (dst.data()+i < pCopyDst || dst.data()+i >= pCopyDst+simdWidth)
         {
             EXPECT_EQ(dst[i], (T)(-1-i)) << "Side effect on destination memory, i = " << i;
         }

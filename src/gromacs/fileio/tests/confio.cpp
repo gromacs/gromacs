@@ -104,7 +104,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void writeReferenceFile()
         {
             write_sto_conf(referenceFilename_.c_str(), *refTop_->name,
-                           &refTop_->atoms, as_rvec_array(&refX_[0]), NULL, -1,
+                           &refTop_->atoms, as_rvec_array(refX_.data()), NULL, -1,
                            refBox_);
         }
 

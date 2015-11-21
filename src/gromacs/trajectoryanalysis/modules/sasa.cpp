@@ -927,7 +927,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     real *area = NULL, *surfacedots = NULL;
     int   nsurfacedots;
     calculator_.calculate(surfaceSel.coordinates().data(), pbc,
-                          frameData.index_.size(), &frameData.index_[0], flag,
+                          frameData.index_.size(), frameData.index_.data(), flag,
                           &totarea, &totvolume, &area,
                           &surfacedots, &nsurfacedots);
     // Unpack the atomwise areas into the frameData.atomAreas_ array for easier

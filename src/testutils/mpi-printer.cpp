@@ -139,7 +139,7 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)
     }
 
     std::vector<int> bDidRankPass(size_);
-    MPI_Gather(&localPassed, 1, MPI_INT, &(bDidRankPass[0]), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&localPassed, 1, MPI_INT, bDidRankPass.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (rank_ == 0)
     {

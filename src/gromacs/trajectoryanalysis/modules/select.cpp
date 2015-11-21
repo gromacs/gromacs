@@ -724,7 +724,7 @@ Select::writeOutput()
                                                  atomIndicesSet.end());
                 t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
                 write_trxframe_indexed(status, &fr, allAtomIndices.size(),
-                                       &allAtomIndices[0], NULL);
+                                       allAtomIndices.data(), NULL);
                 close_trx(status);
                 break;
             }
@@ -739,7 +739,7 @@ Select::writeOutput()
                     }
                 }
                 t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-                write_trxframe_indexed(status, &fr, indices.size(), &indices[0], NULL);
+                write_trxframe_indexed(status, &fr, indices.size(), indices.data(), NULL);
                 close_trx(status);
                 break;
             }

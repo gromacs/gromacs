@@ -126,7 +126,7 @@ class AutocorrTest : public ::testing::Test
                     result.push_back(data_->getValue(m, i));
                 }
             }
-            real *ptr = static_cast<real*>(&(result[0]));
+            real *ptr = result.data();
             low_do_autocorr(0, 0, 0,   nrFrames_, 1,
                             get_acfnout(), &ptr, data_->getDt(), mode,
                             nrRestart, bAverage, bNormalize,

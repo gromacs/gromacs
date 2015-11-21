@@ -194,12 +194,12 @@ class ShakeTest : public ::testing::Test
             int               numIterations  = 0;
             int               numErrors      = 0;
 
-            cshake(&iatom[0], numConstraints, &numIterations,
-                   ShakeTest::maxNumIterations_, &constrainedDistancesSquared[0],
-                   &finalPositions[0], &initialDisplacements[0], &halfOfReducedMasses[0],
-                   omega_, &inverseMasses[0],
-                   &distanceSquaredTolerances[0],
-                   &lagrangianValues[0],
+            cshake(iatom.data(), numConstraints, &numIterations,
+                   ShakeTest::maxNumIterations_, constrainedDistancesSquared.data(),
+                   finalPositions.data(), initialDisplacements.data(),
+                   halfOfReducedMasses.data(), omega_, inverseMasses.data(),
+                   distanceSquaredTolerances.data(),
+                   lagrangianValues.data(),
                    &numErrors);
 
             std::vector<real> finalDisplacements    = computeDisplacements(iatom, finalPositions);

@@ -390,9 +390,9 @@ void ExclusionsHelper::generateExclusions()
         exclsIndex_.push_back(exclsAtoms_.size());
     }
     excls_.nr    = exclsIndex_.size();
-    excls_.index = &exclsIndex_[0];
+    excls_.index = exclsIndex_.data();
     excls_.nra   = exclsAtoms_.size();
-    excls_.a     = &exclsAtoms_[0];
+    excls_.a     = exclsAtoms_.data();
 }
 
 /********************************************************************
