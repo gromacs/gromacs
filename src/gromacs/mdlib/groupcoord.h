@@ -49,7 +49,11 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+
+struct gmx_ga2la_t;
+struct t_commrec;
 
 #ifdef __cplusplus
 extern "C" {

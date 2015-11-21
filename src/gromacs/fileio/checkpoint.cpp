@@ -1465,6 +1465,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
 
 void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       FILE *fplog, t_commrec *cr,
+                      ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       gmx_int64_t step, double t, t_state *state)
@@ -1479,7 +1480,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     char                *fprog;
     char                *fntemp; /* the temporary checkpoint file name */
     char                 timebuf[STRLEN];
-    int                  nppnodes, npmenodes;
+    int                  npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
     gmx_file_position_t *outputfiles;
     int                  noutputfiles;
@@ -1489,12 +1490,10 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     if (DOMAINDECOMP(cr))
     {
-        nppnodes  = cr->dd->nnodes;
         npmenodes = cr->npmenodes;
     }
     else
     {
-        nppnodes  = 1;
         npmenodes = 0;
     }
 
@@ -1597,7 +1596,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     do_cpt_header(gmx_fio_getxdr(fp), FALSE, &file_version,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes,
-                  DOMAINDECOMP(cr) ? cr->dd->nc : NULL, &npmenodes,
+                  DOMAINDECOMP(cr) ? domdecCells : NULL, &npmenodes,
                   &state->natoms, &state->ngtc, &state->nnhpres,
                   &state->nhchainlength, &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED, &state->swapstate.eSwapCoords,
