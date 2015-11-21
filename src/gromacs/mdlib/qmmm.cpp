@@ -49,6 +49,7 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
@@ -812,7 +813,10 @@ void update_QMMMrec(t_commrec      *cr,
 
 
     /*  init_pbc(box);  needs to be called first, see pbc.h */
-    set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, box);
+    ivec null_ivec;
+    clear_ivec(null_ivec);
+    set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec,
+               FALSE, box);
     /* only in standard (normal) QMMM we need the neighbouring MM
      * particles to provide a electric field of point charges for the QM
      * atoms.

@@ -60,6 +60,7 @@
 #include <unistd.h>
 #endif
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -446,7 +447,7 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
 
 void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
 {
-    gmx_ga2la_t         ga2la;
+    gmx_ga2la          *ga2la;
     t_gmx_IMD_setup    *IMDsetup;
 
 
