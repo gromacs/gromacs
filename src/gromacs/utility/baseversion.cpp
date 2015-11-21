@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,3 +52,13 @@ const char *gmx_version_git_central_base_hash()
 {
     return _gmx_central_base_hash;
 }
+
+#ifdef GMX_DOUBLE
+void gmx_is_double_precision()
+{
+}
+#else
+void gmx_is_single_precision()
+{
+}
+#endif
