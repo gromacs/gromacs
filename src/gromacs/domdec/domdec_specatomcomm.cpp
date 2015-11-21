@@ -52,6 +52,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -354,7 +355,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 int setup_specat_communication(gmx_domdec_t             *dd,
                                ind_req_t                *ireq,
                                gmx_domdec_specat_comm_t *spac,
-                               gmx_hash_t                ga2la_specat,
+                               gmx_hash                 *ga2la_specat,
                                int                       at_start,
                                int                       vbuf_fac,
                                const char               *specat_type,
