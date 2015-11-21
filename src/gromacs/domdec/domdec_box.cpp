@@ -53,6 +53,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
+#include "domdec_struct.h"
+
 /*! \brief Calculates the average and standard deviation in 3D of n charge groups */
 static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stddev,
                                 t_commrec *cr_sum)

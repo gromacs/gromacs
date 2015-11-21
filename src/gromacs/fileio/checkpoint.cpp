@@ -52,6 +52,7 @@
 #endif
 
 #include "buildinfo.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"

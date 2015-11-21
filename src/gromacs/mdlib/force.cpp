@@ -45,6 +45,7 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"

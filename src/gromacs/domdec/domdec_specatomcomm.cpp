@@ -61,6 +61,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "domdec_struct.h"
 #include "hash.h"
 
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
@@ -354,7 +355,7 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
 int setup_specat_communication(gmx_domdec_t             *dd,
                                ind_req_t                *ireq,
                                gmx_domdec_specat_comm_t *spac,
-                               gmx_hash_t                ga2la_specat,
+                               gmx_hash                 *ga2la_specat,
                                int                       at_start,
                                int                       vbuf_fac,
                                const char               *specat_type,

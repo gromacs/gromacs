@@ -878,7 +878,7 @@ void dd_make_reverse_top(FILE *fplog,
  * atom-indexing organization code with the ifunc-adding code, so that
  * they can see that nral is the same value. */
 static gmx_inline void
-add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la_t ga2la,
+add_ifunc_for_vsites(t_iatom *tiatoms, gmx_ga2la *ga2la,
                      int nral, gmx_bool bHomeA,
                      int a, int a_gl, int a_mol,
                      const t_iatom *iatoms,
@@ -1029,7 +1029,7 @@ static void add_fbposres(int mol, int a_mol, const gmx_molblock_t *molb,
 }
 
 /*! \brief Store a virtual site interaction, complex because of PBC and recursion */
-static void add_vsite(gmx_ga2la_t ga2la, const int *index, const int *rtil,
+static void add_vsite(gmx_ga2la *ga2la, const int *index, const int *rtil,
                       int ftype, int nral,
                       gmx_bool bHomeA, int a, int a_gl, int a_mol,
                       const t_iatom *iatoms,
@@ -1655,7 +1655,7 @@ static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     int             n_excl_at_max, n, count, jla0, jla1, jla;
     int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
     const t_blocka *excls;
-    gmx_ga2la_t     ga2la;
+    gmx_ga2la      *ga2la;
     int             cell;
 
     ga2la = dd->ga2la;
@@ -1789,7 +1789,7 @@ static void make_exclusions_zone(gmx_domdec_t *dd,
                                  int iz,
                                  int at_start, int at_end)
 {
-    gmx_ga2la_t ga2la;
+    gmx_ga2la  *ga2la;
     int         jla0, jla1;
     int         n_excl_at_max, n, at;
 

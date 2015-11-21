@@ -49,6 +49,7 @@
 
 #include <string>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"

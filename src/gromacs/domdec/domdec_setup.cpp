@@ -60,6 +60,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "domdec_struct.h"
+
 /*! \brief Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
 

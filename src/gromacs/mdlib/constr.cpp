@@ -46,6 +46,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/copyrite.h"

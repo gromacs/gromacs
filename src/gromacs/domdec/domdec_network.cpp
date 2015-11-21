@@ -50,8 +50,9 @@
 
 #include <string.h>
 
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "domdec_struct.h"
 
 
 /*! \brief Returns the MPI rank of the domain decomposition master rank */

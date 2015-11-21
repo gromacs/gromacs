@@ -49,6 +49,8 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/topology/block.h"
 
+#include "domdec_struct.h"
+
 /*! \cond INTERNAL */
 
 typedef struct
