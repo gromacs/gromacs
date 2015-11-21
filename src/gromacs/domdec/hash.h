@@ -67,7 +67,7 @@ struct gmx_hash_e_t
 };
 
 /*! \internal \brief Hashing helper struct */
-struct gmx_hash
+struct gmx_hash_t
 {
     public:
         //! Keys are looked up by first checking array index key%mod in hash
@@ -85,7 +85,7 @@ struct gmx_hash
 };
 
 //! Clear all the entries in the hash table.
-static void gmx_hash_clear(gmx_hash_t hash)
+static void gmx_hash_clear(gmx_hash_t *hash)
 {
     int i;
 
@@ -100,7 +100,7 @@ static void gmx_hash_clear(gmx_hash_t hash)
 }
 
 //! Reallocate hash table data structures.
-static void gmx_hash_realloc(gmx_hash_t hash, int nkey_used_estimate)
+static void gmx_hash_realloc(gmx_hash_t *hash, int nkey_used_estimate)
 {
     /* Memory requirements:
      * nkey_used_est*(2+1-2(1-e^-1/2))*3 ints
@@ -135,7 +135,7 @@ static void gmx_hash_realloc(gmx_hash_t hash, int nkey_used_estimate)
  * With the current number of keys check if the table size is still
  * good, if not optimize it with the current number of keys.
  */
-static void gmx_hash_clear_and_optimize(gmx_hash_t hash)
+static void gmx_hash_clear_and_optimize(gmx_hash_t *hash)
 {
     /* Resize the hash table when the occupation is < 1/4 or > 2/3 */
     if (hash->nkey > 0 &&
@@ -153,9 +153,9 @@ static void gmx_hash_clear_and_optimize(gmx_hash_t hash)
 }
 
 //! Initialize hash table.
-static gmx_hash_t gmx_hash_init(int nkey_used_estimate)
+static gmx_hash_t *gmx_hash_init(int nkey_used_estimate)
 {
-    gmx_hash_t hash;
+    gmx_hash_t *hash;
 
     snew(hash, 1);
     hash->hash = NULL;
@@ -168,7 +168,7 @@ static gmx_hash_t gmx_hash_init(int nkey_used_estimate)
 }
 
 //! Set the hash entry for key to value.
-static void gmx_hash_set(gmx_hash_t hash, int key, int value)
+static void gmx_hash_set(gmx_hash_t *hash, int key, int value)
 {
     int ind, ind_prev, i;
 
@@ -210,7 +210,7 @@ static void gmx_hash_set(gmx_hash_t hash, int key, int value)
 }
 
 //! Delete the hash entry for key.
-static void gmx_hash_del(gmx_hash_t hash, int key)
+static void gmx_hash_del(gmx_hash_t *hash, int key)
 {
     int ind, ind_prev;
 
@@ -249,7 +249,7 @@ static void gmx_hash_del(gmx_hash_t hash, int key)
 }
 
 //! Change the value for present hash entry for key.
-static void gmx_hash_change_value(gmx_hash_t hash, int key, int value)
+static void gmx_hash_change_value(gmx_hash_t *hash, int key, int value)
 {
     int ind;
 
@@ -270,7 +270,7 @@ static void gmx_hash_change_value(gmx_hash_t hash, int key, int value)
 }
 
 //! Change the hash value if already set, otherwise set the hash value.
-static void gmx_hash_change_or_set(gmx_hash_t hash, int key, int value)
+static void gmx_hash_change_or_set(gmx_hash_t *hash, int key, int value)
 {
     int ind;
 
@@ -293,7 +293,7 @@ static void gmx_hash_change_or_set(gmx_hash_t hash, int key, int value)
 }
 
 //! Returns if the key is present, if the key is present *value is set.
-static gmx_bool gmx_hash_get(const gmx_hash_t hash, int key, int *value)
+static gmx_bool gmx_hash_get(const gmx_hash_t *hash, int key, int *value)
 {
     int ind;
 
@@ -314,7 +314,7 @@ static gmx_bool gmx_hash_get(const gmx_hash_t hash, int key, int *value)
 }
 
 //! Returns the value or -1 if the key is not present.
-static int gmx_hash_get_minone(const gmx_hash_t hash, int key)
+static int gmx_hash_get_minone(const gmx_hash_t *hash, int key)
 {
     int ind;
 

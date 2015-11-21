@@ -67,20 +67,20 @@ typedef struct {
 } gmx_lal_t;
 
 /*! \libinternal \brief Structure for all global to local mapping information */
-typedef struct gmx_ga2la {
+struct gmx_ga2la_t {
     gmx_bool   bDirectList;        /**< Use a direct list */
     int        mod;                /**< The hash size */
     int        nalloc;             /**< The alloction size of laa or la1 */
     gmx_laa_t *laa;                /**< The direct list */
     gmx_lal_t *lal;                /**< The hash table list */
     int        start_space_search; /**< Index in lal at which to start looking for empty space */
-} t_gmx_ga2la;
+};
 
 /*! \brief Clear all the entries in the ga2la list
  *
  * \param[in,out] ga2la The global to local atom struct
  */
-static void ga2la_clear(gmx_ga2la_t ga2la)
+static void ga2la_clear(gmx_ga2la_t *ga2la)
 {
     int i;
 
@@ -108,9 +108,9 @@ static void ga2la_clear(gmx_ga2la_t ga2la)
  * \param[in] natoms_local  An estimate of the number of home+communicated atoms
  * \return a pointer to an initialized gmx_ga2la_t struct
  */
-static gmx_ga2la_t ga2la_init(int natoms_total, int natoms_local)
+static gmx_ga2la_t *ga2la_init(int natoms_total, int natoms_local)
 {
-    gmx_ga2la_t ga2la;
+    gmx_ga2la_t *ga2la;
 
     snew(ga2la, 1);
 
@@ -160,7 +160,7 @@ static gmx_ga2la_t ga2la_init(int natoms_total, int natoms_local)
  * \param[in]     a_loc The local atom index
  * \param[in]     cell  The cell index
  */
-static void ga2la_set(gmx_ga2la_t ga2la, int a_gl, int a_loc, int cell)
+static void ga2la_set(gmx_ga2la_t *ga2la, int a_gl, int a_loc, int cell)
 {
     int ind, ind_prev, i;
 
@@ -213,7 +213,7 @@ static void ga2la_set(gmx_ga2la_t ga2la, int a_gl, int a_loc, int cell)
  * \param[in,out] ga2la The global to local atom struct
  * \param[in]     a_gl  The global atom index
  */
-static void ga2la_del(gmx_ga2la_t ga2la, int a_gl)
+static void ga2la_del(gmx_ga2la_t *ga2la, int a_gl)
 {
     int ind, ind_prev;
 
@@ -262,7 +262,7 @@ static void ga2la_del(gmx_ga2la_t ga2la, int a_gl)
  * \param[in]     a_gl  The global atom index
  * \param[in]     a_loc The new local atom index
  */
-static void ga2la_change_la(gmx_ga2la_t ga2la, int a_gl, int a_loc)
+static void ga2la_change_la(gmx_ga2la_t *ga2la, int a_gl, int a_loc)
 {
     int ind;
 
@@ -297,7 +297,7 @@ static void ga2la_change_la(gmx_ga2la_t ga2la, int a_gl, int a_loc)
  * \param[out] cell  If the return value is TRUE, the zone or for atoms more than one cell away zone+nzone
  * \return if the global atom a_gl available locally
  */
-static gmx_bool ga2la_get(const gmx_ga2la_t ga2la, int a_gl, int *a_loc, int *cell)
+static gmx_bool ga2la_get(const gmx_ga2la_t *ga2la, int a_gl, int *a_loc, int *cell)
 {
     int ind;
 
@@ -333,7 +333,7 @@ static gmx_bool ga2la_get(const gmx_ga2la_t ga2la, int a_gl, int *a_loc, int *ce
  * \param[out] a_loc If the return value is TRUE, the local atom index
  * \return if the global atom a_gl is a home atom
  */
-static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la, int a_gl, int *a_loc)
+static gmx_bool ga2la_get_home(const gmx_ga2la_t *ga2la, int a_gl, int *a_loc)
 {
     int ind;
 
@@ -373,7 +373,7 @@ static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la, int a_gl, int *a_loc)
  * \param[in]  a_gl  The global atom index
  * \return if the global atom a_gl is a home atom
  */
-static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la, int a_gl)
+static gmx_bool ga2la_is_home(const gmx_ga2la_t *ga2la, int a_gl)
 {
     int ind;
 

@@ -1295,7 +1295,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     }
 }
 
-static void make_local_pull_group(gmx_ga2la_t ga2la,
+static void make_local_pull_group(gmx_ga2la_t *ga2la,
                                   pull_group_work_t *pg, int start, int end)
 {
     int i, ii;
@@ -1335,11 +1335,11 @@ static void make_local_pull_group(gmx_ga2la_t ga2la,
 
 void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
 {
-    gmx_domdec_t *dd;
-    pull_comm_t  *comm;
-    gmx_ga2la_t   ga2la;
-    gmx_bool      bMustParticipate;
-    int           g;
+    gmx_domdec_t   *dd;
+    pull_comm_t    *comm;
+    gmx_ga2la_t    *ga2la;
+    gmx_bool        bMustParticipate;
+    int             g;
 
     dd = cr->dd;
 
