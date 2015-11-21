@@ -51,6 +51,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -79,7 +80,7 @@ typedef struct gmx_domdec_constraints {
     int        con_nalloc;      /**< Allocation size for \p con_gl and \p con_nlocat */
 
     char      *gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-    gmx_hash_t ga2la;           /**< Global to local communicated constraint atom only index */
+    gmx_hash  *ga2la;           /**< Global to local communicated constraint atom only index */
 
     /* Multi-threading stuff */
     int      nthread;           /**< Number of threads used for DD constraint setup */
@@ -138,7 +139,7 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,
                      const t_blocka *at2con,
-                     const gmx_ga2la_t ga2la, gmx_bool bHomeConnect,
+                     const gmx_ga2la *ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local,
@@ -241,7 +242,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              t_ilist *ils_local,
                              ind_req_t *ireq)
 {
-    gmx_ga2la_t           ga2la;
+    gmx_ga2la            *ga2la;
     gmx_mtop_atomlookup_t alook;
     int                   settle;
     int                   nral, sa;
@@ -344,7 +345,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                  ind_req_t *ireq)
 {
     const t_blocka           *at2con;
-    gmx_ga2la_t               ga2la;
+    gmx_ga2la                *ga2la;
     gmx_mtop_atomlookup_t     alook;
     int                       ncon1;
     gmx_molblock_t           *molb;
@@ -464,7 +465,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     ind_req_t                *ireq;
     const t_blocka           *at2con_mt;
     const int               **at2settle_mt;
-    gmx_hash_t                ga2la_specat;
+    gmx_hash                 *ga2la_specat;
     int at_end, i, j;
     t_iatom                  *iap;
 
