@@ -42,10 +42,12 @@
 #include <string.h>
 #include <time.h>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"

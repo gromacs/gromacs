@@ -48,6 +48,7 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/filenm.h"

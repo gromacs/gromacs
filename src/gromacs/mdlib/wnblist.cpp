@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"

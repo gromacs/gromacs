@@ -102,11 +102,11 @@ static void ga2la_clear(gmx_ga2la_t *ga2la)
     }
 }
 
-/*! \brief Initializes and returns a pointer to a gmx_ga2la_t structure
+/*! \brief Initializes and returns a pointer to a gmx_ga2la pointer
  *
  * \param[in] natoms_total  The total number of atoms in the system
  * \param[in] natoms_local  An estimate of the number of home+communicated atoms
- * \return a pointer to an initialized gmx_ga2la_t struct
+ * \return a pointer to an initialized gmx_ga2la struct
  */
 static gmx_ga2la_t *ga2la_init(int natoms_total, int natoms_local)
 {

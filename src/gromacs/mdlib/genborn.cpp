@@ -46,6 +46,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -1513,7 +1514,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
 
     if (fr->bMolPBC)
     {
-        set_pbc_dd(&pbc, fr->ePBC, cr->dd, TRUE, box);
+        set_pbc_dd(&pbc, fr->ePBC, cr->dd->nc, TRUE, box);
     }
 
     switch (gb_algorithm)
