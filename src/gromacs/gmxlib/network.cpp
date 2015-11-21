@@ -702,7 +702,9 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 }
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,
-                          const t_commrec *cr, gmx_domdec_t *dd,
+                          const t_commrec *cr,
+                          gmx_bool domdecMaster,
+                          MPI_Comm domdecComm,
                           const char *fmt, ...)
 {
     va_list  ap;
@@ -716,14 +718,14 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     }
     else
     {
-        MPI_Comm_compare(dd->mpi_comm_all, MPI_COMM_WORLD, &result);
+        MPI_Comm_compare(domdecComm, MPI_COMM_WORLD, &result);
     }
     /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
     bFinalize = (result != MPI_UNEQUAL);
 #else
     bFinalize = TRUE;
 #endif
-    bMaster = (cr != NULL && MASTER(cr)) || (dd != NULL && DDMASTER(dd));
+    bMaster = (cr != NULL && MASTER(cr)) || (domdecMaster);
 
     va_start(ap, fmt);
     gmx_fatal_mpi_va(f_errno, file, line, bMaster, bFinalize, fmt, ap);

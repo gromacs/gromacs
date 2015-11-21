@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"

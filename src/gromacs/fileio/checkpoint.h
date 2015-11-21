@@ -62,6 +62,7 @@ struct t_trxframe;
  */
 void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       FILE *fplog, t_commrec *cr,
+                      ivec domdecCells, int nppnodes,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       gmx_int64_t step, double t,

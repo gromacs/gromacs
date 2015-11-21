@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -500,7 +501,11 @@ void construct_vsites(const gmx_vsite_t *vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step. But how often do we have vsites with full pbc?
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr != NULL ? cr->dd : NULL, FALSE, box);
+        ivec null_ivec;
+        clear_ivec(null_ivec);
+        pbc_null = set_pbc_dd(&pbc, ePBC,
+                              DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec,
+                              FALSE, box);
     }
     else
     {
@@ -1434,7 +1439,7 @@ void spread_vsite_f(gmx_vsite_t *vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step. But how often do we have vsites with full pbc?
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd->nc, FALSE, box);
     }
     else
     {
