@@ -44,8 +44,8 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
-struct gmx_domdec_t;
 struct gmx_multisim_t;
 struct t_commrec;
 
@@ -111,7 +111,7 @@ void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 
 void
 gmx_fatal_collective(int f_errno, const char *file, int line,
-                     const struct t_commrec *cr, struct gmx_domdec_t *dd,
+                     MPI_Comm comm, gmx_bool bMaster,
                      const char *fmt, ...);
 /* As gmx_fatal declared in utility/fatalerror.h,
  * but only the master process prints the error message.

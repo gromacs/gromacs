@@ -50,7 +50,7 @@
 
 #include <string.h>
 
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
 
 

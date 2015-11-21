@@ -41,6 +41,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"

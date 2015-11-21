@@ -49,6 +49,7 @@
 
 #include <string>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -1352,7 +1353,7 @@ void copyIndicesToGroup(
     {
         if (g->nat != (g->nmolReq[eCompA] + g->nmolReq[eCompB]) )
         {
-            gmx_fatal_collective(FARGS, cr, NULL,
+            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "%s Inconsistency while importing swap-related data from an old input file version.\n"
                                  "%s The requested ion counts in compartments A (%d) and B (%d)\n"
                                  "%s do not add up to the number of ions (%d) of this type for the group '%s'.\n",
