@@ -55,6 +55,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -916,7 +917,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         if (cr->npmenodes > 0)
         {
-            gmx_fatal_collective(FARGS, cr, NULL,
+            gmx_fatal_collective(FARGS, cr, FALSE, NULL,
                                  "PME-only ranks are requested, but the system does not use PME for electrostatics or LJ");
         }
 

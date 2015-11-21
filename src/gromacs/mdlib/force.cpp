@@ -45,6 +45,7 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"
@@ -365,10 +366,14 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
          */
-        set_pbc_dd(&pbc, fr->ePBC, cr->dd, TRUE, box);
+        ivec null_ivec;
+        clear_ivec(null_ivec);
+        set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec,
+                   TRUE, box);
     }
 
-    do_force_listed(wcycle, box, ir->fepvals, cr->ms,
+    do_force_listed(wcycle, box, ir->fepvals,
+                    (NULL != cr) ? cr->ms : NULL,
                     idef, (const rvec *) x, hist, f, fr,
                     &pbc, graph, enerd, nrnb, lambda, md, fcd,
                     DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,

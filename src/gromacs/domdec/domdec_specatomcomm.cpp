@@ -52,6 +52,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/types/commrec.h"

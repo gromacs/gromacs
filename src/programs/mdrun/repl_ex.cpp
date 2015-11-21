@@ -58,6 +58,9 @@
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
+//! Rank in the multisimulaiton
+#define MSRANK(ms, nodeid)  (nodeid)
+
 enum {
     ereTEMP, ereLAMBDA, ereENDSINGLE, ereTL, ereNR
 };

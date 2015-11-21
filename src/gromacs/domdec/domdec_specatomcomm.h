@@ -48,6 +48,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_hash_t;
+
 typedef struct {
     int  nsend;
     int *a;
