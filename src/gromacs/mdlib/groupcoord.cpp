@@ -52,14 +52,13 @@
  * anrs_loc[0..nr_loc]. The indices are saved in coll_ind[] for later reduction
  * in communicate_group_positions()
  */
-extern void dd_make_local_group_indices(
-        gmx_ga2la_t    ga2la,
-        const int      nr,         /* IN:  Total number of atoms in the group */
-        int            anrs[],     /* IN:  Global atom numbers of the groups atoms */
-        int           *nr_loc,     /* OUT: Number of group atoms found locally */
-        int           *anrs_loc[], /* OUT: Local atom numbers of the group  */
-        int           *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
-        int            coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
+void dd_make_local_group_indices(gmx_ga2la     *ga2la,
+                                 const int      nr,         /* IN:  Total number of atoms in the group */
+                                 int            anrs[],     /* IN:  Global atom numbers of the groups atoms */
+                                 int           *nr_loc,     /* OUT: Number of group atoms found locally */
+                                 int           *anrs_loc[], /* OUT: Local atom numbers of the group  */
+                                 int           *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
+                                 int            coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
     int  i, ii;
     int  localnr;

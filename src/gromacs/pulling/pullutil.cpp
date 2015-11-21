@@ -198,7 +198,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
     rvec          g_x, dx, dir;
     double        inv_cyl_r2;
     pull_comm_t  *comm;
-    gmx_ga2la_t   ga2la = NULL;
+    gmx_ga2la    *ga2la = NULL;
 
     comm = &pull->comm;
 

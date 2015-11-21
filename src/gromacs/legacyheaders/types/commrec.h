@@ -44,6 +44,16 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_pme_comm_n_box;
+struct gmx_domdec_comm;
+struct gmx_domdec_constraints;
+struct gmx_domdec_master;
+struct gmx_domdec_specat_comm;
+struct gmx_domdec_t;
+struct gmx_reverse_top;
+struct gmx_hash;
+struct gmx_ga2la;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,8 +61,6 @@ extern "C" {
 
 #define DD_MAXZONE  8
 #define DD_MAXIZONE 4
-
-typedef struct gmx_domdec_master *gmx_domdec_master_p_t;
 
 typedef struct {
     int  j0;     /* j-zone start               */
@@ -87,20 +95,6 @@ struct gmx_domdec_zones_t {
     /* The cg density of the home zone */
     real                   dens_zone0;
 };
-
-typedef struct gmx_ga2la *gmx_ga2la_t;
-
-typedef struct gmx_hash *gmx_hash_t;
-
-typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
-
-typedef struct gmx_domdec_constraints *gmx_domdec_constraints_p_t;
-
-typedef struct gmx_domdec_specat_comm *gmx_domdec_specat_comm_p_t;
-
-typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
-
-typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
 
 struct gmx_ddbox_t {
     int  npbcdim;
@@ -151,7 +145,7 @@ struct gmx_domdec_t {
     /* Communication with the PME only nodes */
     int                    pme_nodeid;
     gmx_bool               pme_receive_vir_ener;
-    gmx_pme_comm_n_box_p_t cnb;
+    gmx_pme_comm_n_box    *cnb;
     int                    nreq_pme;
     MPI_Request            req_pme[8];
 
@@ -171,14 +165,14 @@ struct gmx_domdec_t {
     int  neighbor[DIM][2];
 
     /* Only available on the master node */
-    gmx_domdec_master_p_t ma;
+    gmx_domdec_master *ma;
 
     /* Are there inter charge group constraints */
     gmx_bool bInterCGcons;
     gmx_bool bInterCGsettles;
 
     /* Global atom number to interaction list */
-    gmx_reverse_top_p_t reverse_top;
+    gmx_reverse_top    *reverse_top;
     int                 nbonded_global;
     int                 nbonded_local;
 
@@ -186,12 +180,12 @@ struct gmx_domdec_t {
     int  n_intercg_excl;
 
     /* Vsite stuff */
-    gmx_hash_t                 ga2la_vsite;
-    gmx_domdec_specat_comm_p_t vsite_comm;
+    gmx_hash               *ga2la_vsite;
+    gmx_domdec_specat_comm *vsite_comm;
 
     /* Constraint stuff */
-    gmx_domdec_constraints_p_t constraints;
-    gmx_domdec_specat_comm_p_t constraint_comm;
+    gmx_domdec_constraints *constraints;
+    gmx_domdec_specat_comm *constraint_comm;
 
     /* The local to gobal charge group index and local cg to local atom index */
     int   ncg_home;
@@ -212,10 +206,10 @@ struct gmx_domdec_t {
     int   gatindex_nalloc;
 
     /* Global atom number to local atom number list */
-    gmx_ga2la_t ga2la;
+    gmx_ga2la *ga2la;
 
     /* Communication stuff */
-    gmx_domdec_comm_p_t comm;
+    gmx_domdec_comm *comm;
 
     /* The partioning count, to keep track of the state */
     gmx_int64_t ddp_count;
