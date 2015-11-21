@@ -193,12 +193,12 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                              t_pbc *pbc, double t, rvec *x)
 {
     /* The size and stride per coord for the reduction buffer */
-    const int     stride = 9;
-    int           c, i, ii, m, start, end;
-    rvec          g_x, dx, dir;
-    double        inv_cyl_r2;
-    pull_comm_t  *comm;
-    gmx_ga2la_t   ga2la = NULL;
+    const int       stride = 9;
+    int             c, i, ii, m, start, end;
+    rvec            g_x, dx, dir;
+    double          inv_cyl_r2;
+    pull_comm_t    *comm;
+    gmx_ga2la_t    *ga2la = NULL;
 
     comm = &pull->comm;
 

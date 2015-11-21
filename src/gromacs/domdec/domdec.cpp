@@ -110,7 +110,7 @@
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
-typedef struct gmx_domdec_master
+struct gmx_domdec_master_t
 {
     /* The cell boundaries */
     real **cell_x;
@@ -121,7 +121,7 @@ typedef struct gmx_domdec_master
     int   *nat;    /* Number of home atoms for each node. */
     int   *ibuf;   /* Buffer for communication */
     rvec  *vbuf;   /* Buffer for state scattering and gathering */
-} gmx_domdec_master_t;
+};
 
 #define DD_NLOAD_MAX 9
 
@@ -3964,7 +3964,7 @@ static int compact_and_copy_vec_cg(int ncg, int *move,
 static int compact_ind(int ncg, int *move,
                        int *index_gl, int *cgindex,
                        int *gatindex,
-                       gmx_ga2la_t ga2la, char *bLocalCG,
+                       gmx_ga2la_t *ga2la, char *bLocalCG,
                        int *cginfo)
 {
     int cg, nat, a0, a1, a, a_gl;
@@ -4015,7 +4015,7 @@ static int compact_ind(int ncg, int *move,
 
 static void clear_and_mark_ind(int ncg, int *move,
                                int *index_gl, int *cgindex, int *gatindex,
-                               gmx_ga2la_t ga2la, char *bLocalCG,
+                               gmx_ga2la_t *ga2la, char *bLocalCG,
                                int *cell_index)
 {
     int cg, a0, a1, a;

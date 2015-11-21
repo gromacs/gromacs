@@ -132,7 +132,7 @@ struct gmx_pme_pp {
 };
 
 /*! \brief Helper struct for PP-PME communication of parameters */
-typedef struct gmx_pme_comm_n_box {
+struct gmx_pme_comm_n_box_t {
     int             natoms;     /**< Number of atoms */
     matrix          box;        /**< Box */
     int             maxshift_x; /**< Maximum shift in x direction */
@@ -147,7 +147,7 @@ typedef struct gmx_pme_comm_n_box {
     real            ewaldcoeff_q;
     real            ewaldcoeff_lj;
     //@}
-} gmx_pme_comm_n_box_t;
+};
 
 /*! \brief Helper struct for PP-PME communication of virial and energy */
 typedef struct {

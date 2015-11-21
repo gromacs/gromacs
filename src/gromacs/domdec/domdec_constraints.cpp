@@ -67,25 +67,25 @@
 #include "hash.h"
 
 /*! \brief Struct used during constraint setup with domain decomposition */
-typedef struct gmx_domdec_constraints {
+struct gmx_domdec_constraints_t {
     //! @cond Doxygen_Suppress
-    int       *molb_con_offset; /**< Offset in the constraint array for each molblock */
-    int       *molb_ncon_mol;   /**< The number of constraints per molecule for each molblock */
+    int         *molb_con_offset; /**< Offset in the constraint array for each molblock */
+    int         *molb_ncon_mol;   /**< The number of constraints per molecule for each molblock */
 
-    int        ncon;            /**< The fully local and conneced constraints */
+    int          ncon;            /**< The fully local and conneced constraints */
     /* The global constraint number, only required for clearing gc_req */
-    int       *con_gl;          /**< Global constraint indices for local constraints */
-    int       *con_nlocat;      /**< Number of local atoms (2/1/0) for each constraint */
-    int        con_nalloc;      /**< Allocation size for \p con_gl and \p con_nlocat */
+    int         *con_gl;          /**< Global constraint indices for local constraints */
+    int         *con_nlocat;      /**< Number of local atoms (2/1/0) for each constraint */
+    int          con_nalloc;      /**< Allocation size for \p con_gl and \p con_nlocat */
 
-    char      *gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-    gmx_hash_t ga2la;           /**< Global to local communicated constraint atom only index */
+    char        *gc_req;          /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
+    gmx_hash_t  *ga2la;           /**< Global to local communicated constraint atom only index */
 
     /* Multi-threading stuff */
     int      nthread;           /**< Number of threads used for DD constraint setup */
     t_ilist *ils;               /**< Constraint ilist working arrays, size \p nthread */
     //! @endcond
-} gmx_domdec_constraints_t;
+};
 
 void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
                            rvec *x0, rvec *x1, gmx_bool bX1IsCoord)
@@ -138,7 +138,7 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,
                      const t_blocka *at2con,
-                     const gmx_ga2la_t ga2la, gmx_bool bHomeConnect,
+                     const gmx_ga2la_t *ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local,
@@ -241,17 +241,17 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              t_ilist *ils_local,
                              ind_req_t *ireq)
 {
-    gmx_ga2la_t           ga2la;
-    gmx_mtop_atomlookup_t alook;
-    int                   settle;
-    int                   nral, sa;
-    int                   cg, a, a_gl, a_glsa, a_gls[3], a_locs[3];
-    int                   mb, molnr, a_mol, offset;
-    const gmx_molblock_t *molb;
-    const t_iatom        *ia1;
-    gmx_bool              a_home[3];
-    int                   nlocal;
-    gmx_bool              bAssign;
+    gmx_ga2la_t            *ga2la;
+    gmx_mtop_atomlookup_t   alook;
+    int                     settle;
+    int                     nral, sa;
+    int                     cg, a, a_gl, a_glsa, a_gls[3], a_locs[3];
+    int                     mb, molnr, a_mol, offset;
+    const gmx_molblock_t   *molb;
+    const t_iatom          *ia1;
+    gmx_bool                a_home[3];
+    int                     nlocal;
+    gmx_bool                bAssign;
 
     ga2la  = dd->ga2la;
 
@@ -343,15 +343,15 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                  t_ilist *ilc_local,
                                  ind_req_t *ireq)
 {
-    const t_blocka           *at2con;
-    gmx_ga2la_t               ga2la;
-    gmx_mtop_atomlookup_t     alook;
-    int                       ncon1;
-    gmx_molblock_t           *molb;
-    t_iatom                  *ia1, *ia2, *iap;
-    int                       nhome, cg, a, a_gl, a_mol, a_loc, b_lo, offset, mb, molnr, b_mol, i, con, con_offset;
-    gmx_domdec_constraints_t *dc;
-    gmx_domdec_specat_comm_t *dcc;
+    const t_blocka             *at2con;
+    gmx_ga2la_t                *ga2la;
+    gmx_mtop_atomlookup_t       alook;
+    int                         ncon1;
+    gmx_molblock_t             *molb;
+    t_iatom                    *ia1, *ia2, *iap;
+    int                         nhome, cg, a, a_gl, a_mol, a_loc, b_lo, offset, mb, molnr, b_mol, i, con, con_offset;
+    gmx_domdec_constraints_t   *dc;
+    gmx_domdec_specat_comm_t   *dcc;
 
     dc  = dd->constraints;
     dcc = dd->constraint_comm;
@@ -459,14 +459,14 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               gmx_constr_t constr, int nrec,
                               t_ilist *il_local)
 {
-    gmx_domdec_constraints_t *dc;
-    t_ilist                  *ilc_local, *ils_local;
-    ind_req_t                *ireq;
-    const t_blocka           *at2con_mt;
-    const int               **at2settle_mt;
-    gmx_hash_t                ga2la_specat;
+    gmx_domdec_constraints_t   *dc;
+    t_ilist                    *ilc_local, *ils_local;
+    ind_req_t                  *ireq;
+    const t_blocka             *at2con_mt;
+    const int                 **at2settle_mt;
+    gmx_hash_t                 *ga2la_specat;
     int at_end, i, j;
-    t_iatom                  *iap;
+    t_iatom                    *iap;
 
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
