@@ -46,6 +46,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/copyrite.h"
@@ -360,7 +361,11 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc, ir->ePBC, cr->dd, FALSE, box);
+        ivec null_ivec;
+        clear_ivec(null_ivec);
+        pbc_null = set_pbc_dd(&pbc, ir->ePBC,
+                              (NULL != cr->dd) ? cr->dd->nc : null_ivec,
+                              FALSE, box);
     }
     else
     {
