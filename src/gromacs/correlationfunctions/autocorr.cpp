@@ -58,12 +58,12 @@
 #include "gromacs/correlationfunctions/polynomials.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
@@ -571,7 +571,8 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
         printf("Will calculate %s of %d thingies for %d frames\n",
                title ? title : "autocorrelation", nitem, nframes);
         printf("bAver = %s, bFour = %s bNormalize= %s\n",
-               bool_names[bAver], bool_names[bFour], bool_names[bNormalize]);
+               gmx::boolToString(bAver), gmx::boolToString(bFour),
+               gmx::boolToString(bNormalize));
         printf("mode = %lu, dt = %g, nrestart = %d\n", mode, dt, nrestart);
     }
     if (bFour)

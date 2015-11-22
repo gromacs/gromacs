@@ -88,6 +88,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "nbnxn_gpu_jit_support.h"
 
@@ -2689,8 +2690,10 @@ void init_forcerec(FILE              *fp,
 
         if (fp)
         {
-            fprintf(fp, "Table routines are used for coulomb: %s\n", bool_names[fr->bcoultab]);
-            fprintf(fp, "Table routines are used for vdw:     %s\n", bool_names[fr->bvdwtab ]);
+            fprintf(fp, "Table routines are used for coulomb: %s\n",
+                    gmx::boolToString(fr->bcoultab));
+            fprintf(fp, "Table routines are used for vdw:     %s\n",
+                    gmx::boolToString(fr->bvdwtab));
         }
 
         if (fr->bvdwtab == TRUE)
@@ -3181,7 +3184,7 @@ void init_forcerec(FILE              *fp,
 
 #define pr_real(fp, r) fprintf(fp, "%s: %e\n",#r, r)
 #define pr_int(fp, i)  fprintf((fp), "%s: %d\n",#i, i)
-#define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, bool_names[b])
+#define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, gmx::boolToString(b))
 
 void pr_forcerec(FILE *fp, t_forcerec *fr)
 {

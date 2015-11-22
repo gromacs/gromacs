@@ -51,11 +51,6 @@ const char *enum_name(int index, int max_index, const char *names[])
     }
 }
 
-const char *bool_names[BOOL_NR+1] =
-{
-    "FALSE", "TRUE", nullptr
-};
-
 const char *yesno_names[BOOL_NR+1] =
 {
     "no", "yes", nullptr

@@ -61,11 +61,6 @@ const char *enum_name(int index, int max_index, const char *names[]);
 
 //! Boolean strings no or yes
 extern const char *yesno_names[BOOL_NR+1];
-//! Boolean strings false or true
-extern const char *bool_names[BOOL_NR+1];
-//! Macro to select a bool name
-#define EBOOL(e)       enum_name(e, BOOL_NR, bool_names)
-
 
 //! \brief The two compartments for CompEL setups.
 enum eCompartment {

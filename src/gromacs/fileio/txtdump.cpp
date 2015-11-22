@@ -56,6 +56,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
+
+//! Macro to select a bool name
+#define EBOOL(e)       gmx::boolToString(e)
 
 int pr_indent(FILE *fp, int n)
 {
