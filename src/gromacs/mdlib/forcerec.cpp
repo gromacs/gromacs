@@ -3063,10 +3063,7 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
-    else if ((fr->eDispCorr != edispcNO) &&
-             ((fr->vdw_modifier == eintmodPOTSWITCH) ||
-              (fr->vdw_modifier == eintmodFORCESWITCH) ||
-              (fr->vdw_modifier == eintmodPOTSHIFT)))
+    else
     {
         /* Tables might not be used for the potential modifier interactions per se, but
          * we still need them to evaluate switch/shift dispersion corrections in this case.
