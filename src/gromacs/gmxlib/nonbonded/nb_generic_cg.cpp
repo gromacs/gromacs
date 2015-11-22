@@ -86,6 +86,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     real *        VFtab;
     real *        x;
     real *        f;
+    gmx_bool      do_tab;
 
     x                   = xx[0];
     f                   = ff[0];
@@ -95,8 +96,14 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     fshift              = fr->fshift[0];
     Vc                  = kernel_data->energygrp_elec;
     Vvdw                = kernel_data->energygrp_vdw;
-    tabscale            = kernel_data->table_elec_vdw->scale;
-    VFtab               = kernel_data->table_elec_vdw->data;
+
+    do_tab = (ielec == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
+              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
+    if (do_tab)
+    {
+        tabscale         = kernel_data->table_elec_vdw->scale;
+        VFtab            = kernel_data->table_elec_vdw->data;
+    }
 
     /* avoid compiler warnings for cases that cannot happen */
     nnn                 = 0;
