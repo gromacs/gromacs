@@ -81,8 +81,7 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                          t_forcerec *fr,
                          gmx_bool bBornRadii,
                          double t, rvec mu_tot,
-                         gmx_vsite_t *vsite,
-                         FILE *fp_field);
+                         gmx_vsite_t *vsite);
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, gmx_int64_t numSteps);
