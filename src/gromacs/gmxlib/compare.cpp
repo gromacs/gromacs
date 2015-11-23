@@ -182,7 +182,7 @@ static gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
 }
 
-static void
+void
 cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)
 {
     if (!equal_real(i1, i2, ftol, abstol))
@@ -466,7 +466,7 @@ static void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol,
     }
 }
 
-static void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)
+void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)
 {
     fprintf(fp, "comparing top\n");
     if (t2)
@@ -485,8 +485,8 @@ static void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real f
     }
 }
 
-static void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
-                       int natoms0, int natoms1)
+void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
+                int natoms0, int natoms1)
 {
     int  i, j;
     char buf[32];
@@ -631,22 +631,6 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     }
 }
 
-static void cmp_cosines(FILE *fp, const char *s, const t_cosines c1[DIM], const t_cosines c2[DIM], real ftol, real abstol)
-{
-    int  i, m;
-    char buf[256];
-
-    for (m = 0; (m < DIM); m++)
-    {
-        sprintf(buf, "inputrec->%s[%d]", s, m);
-        cmp_int(fp, buf, 0, c1->n, c2->n);
-        for (i = 0; (i < std::min(c1->n, c2->n)); i++)
-        {
-            cmp_real(fp, buf, i, c1->a[i], c2->a[i], ftol, abstol);
-            cmp_real(fp, buf, i, c1->phi[i], c2->phi[i], ftol, abstol);
-        }
-    }
-}
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
@@ -728,7 +712,7 @@ static void cmp_fepvals(FILE *fp, const t_lambda *fep1, const t_lambda *fep2, re
     cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
 }
 
-static void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol)
+void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol)
 {
     fprintf(fp, "comparing inputrec\n");
 
@@ -874,11 +858,10 @@ static void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2,
     cmp_real(fp, "inputrec->userreal3", -1, ir1->userreal3, ir2->userreal3, ftol, abstol);
     cmp_real(fp, "inputrec->userreal4", -1, ir1->userreal4, ir2->userreal4, ftol, abstol);
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
-    cmp_cosines(fp, "ex", ir1->ex, ir2->ex, ftol, abstol);
-    cmp_cosines(fp, "et", ir1->et, ir2->et, ftol, abstol);
+    ir1->efield->compare(fp, ir2->efield, ftol, abstol);
 }
 
-static void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
+void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
 {
     int i;
 
@@ -889,8 +872,8 @@ static void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
     }
 }
 
-static void comp_state(const t_state *st1, const t_state *st2,
-                       gmx_bool bRMSD, real ftol, real abstol)
+void comp_state(const t_state *st1, const t_state *st2,
+                gmx_bool bRMSD, real ftol, real abstol)
 {
     int i, j, nc;
 
@@ -957,58 +940,6 @@ static void comp_state(const t_state *st1, const t_state *st2,
         {
             fprintf(stdout, "comparing v\n");
             cmp_rvecs(stdout, "v", st1->natoms, st1->v, st2->v, bRMSD, ftol, abstol);
-        }
-    }
-}
-
-void comp_tpx(const char *fn1, const char *fn2,
-              gmx_bool bRMSD, real ftol, real abstol)
-{
-    const char  *ff[2];
-    t_inputrec   ir[2];
-    t_state      state[2];
-    gmx_mtop_t   mtop[2];
-    t_topology   top[2];
-    int          i;
-
-    ff[0] = fn1;
-    ff[1] = fn2;
-    for (i = 0; i < (fn2 ? 2 : 1); i++)
-    {
-        read_tpx_state(ff[i], &(ir[i]), &state[i], &(mtop[i]));
-    }
-    if (fn2)
-    {
-        cmp_inputrec(stdout, &ir[0], &ir[1], ftol, abstol);
-        /* Convert gmx_mtop_t to t_topology.
-         * We should implement direct mtop comparison,
-         * but it might be useful to keep t_topology comparison as an option.
-         */
-        top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
-        top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
-        cmp_top(stdout, &top[0], &top[1], ftol, abstol);
-        cmp_groups(stdout, &mtop[0].groups, &mtop[1].groups,
-                   mtop[0].natoms, mtop[1].natoms);
-        comp_state(&state[0], &state[1], bRMSD, ftol, abstol);
-    }
-    else
-    {
-        if (ir[0].efep == efepNO)
-        {
-            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0].efep]);
-        }
-        else
-        {
-            if (ir[0].bPull)
-            {
-                comp_pull_AB(stdout, ir->pull, ftol, abstol);
-            }
-            /* Convert gmx_mtop_t to t_topology.
-             * We should implement direct mtop comparison,
-             * but it might be useful to keep t_topology comparison as an option.
-             */
-            top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
-            cmp_top(stdout, &top[0], NULL, ftol, abstol);
         }
     }
 }
