@@ -38,14 +38,28 @@
 #ifndef GMX_TOOLS_COMPARE_H
 #define GMX_TOOLS_COMPARE_H
 
+struct gmx_groups_t;
 struct gmx_output_env_t;
+struct t_inputrec;
+struct t_state;
+struct t_topology;
 
 /* Routines for comparing data structures from non-trajectory binary
    file formats (e.g. as used by gmx check). */
 
 void
-comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
-/* Compare two binary run input files */
+cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol);
+
+void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
+
+void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
+                int natoms0, int natoms1);
+
+void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol);
+
+void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol);
+
+void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
 
 void comp_tpx_a_and_b_states(const char *fn, real ftol, real abstol);
 /* Compare two A and B states of a free-energy run input file. */
