@@ -50,26 +50,89 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct pull_params_t;
-
-typedef struct {
-    //! Number of terms
-    int   n;
-    //! Coeffients (V / nm)
-    real *a;
-    //! Phase angles
-    real *phi;
-} t_cosines;
-
-typedef struct {
-    real E0;            /* Field strength (V/nm)                        */
-    real omega;         /* Frequency (1/ps)                             */
-    real t0;            /* Centre of the Gaussian pulse (ps)            */
-    real sigma;         /* Width of the Gaussian pulse (FWHM) (ps)      */
-} t_efield;
-
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
+
+struct gmx_output_env_t;
+struct pull_params_t;
+struct t_commrec;
+struct t_fileio;
+struct t_filenm;
+struct t_forcerec;
+struct t_inpfile;
+struct warninp;
+
+namespace gmx
+{
+
+/*! \libinternal \brief
+ * Interface for a mdrun module.
+ */
+class IInputRecExtension
+{
+    public:
+        /*! \brief Read or write tpr file
+         *
+         * \param[inout] fio Gromacs file descriptor
+         * \param[in]    bRead boolean determines whether we are reading or writing
+         */
+        virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
+
+        /*! \brief
+         * Extracts parameters from mdp file.
+         */
+        virtual void readMdp(int *ninp_p, t_inpfile **inp_p, warninp *wi) = 0;
+
+        /*! \brief Broadcast local information
+         *
+         * \param[in] cr  Communication record, gromacs structure
+         */
+        virtual void broadCast(const t_commrec *cr)     = 0;
+
+        /*! \brief compare two input record structures
+         *
+         * \param[in]    fp     File pointer
+         * \param[inout] field2 Electric field
+         * \param[in]    reltol Relative tolerance
+         * \param[in]    abstol Absolute tolerance
+         */
+        virtual void compare(FILE                          *fp,
+                             const gmx::IInputRecExtension *field2,
+                             real                           reltol,
+                             real                           abstol)  = 0;
+
+        /*! \brief Print parameters belonging to this class to a file
+         *
+         * \param[in] fp     File pointer
+         * \param[in] indent Initial indentation level for printing
+         */
+        virtual void printParameters(FILE *fp, int indent)           = 0;
+
+        /*! \brief Initiate output parameters
+         *
+         * \param[in] fplog File pointer for log messages
+         * \param[in] nfile Number of files
+         * \param[in] fnm   Array of filenames and properties
+         * \param[in] bAppendFiles Whether or not we should append to files
+         * \param[in] oenv  The output environment for xvg files
+         */
+        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                                bool bAppendFiles, const gmx_output_env_t *oenv) = 0;
+
+        //! Finalize output
+        virtual void finishOutput()               = 0;
+
+        /*! \brief Set/initiate relevant options in the forcerec structure
+         *
+         * \param[inout] fr The forcerec structure
+         */
+        virtual void initForcerec(t_forcerec *fr) = 0;
+
+    protected:
+        ~IInputRecExtension() {}
+};
+
+} // namespace gmx
 
 typedef struct t_grpopts {
     int       ngtc;           /* # T-Coupl groups                        */
@@ -371,32 +434,31 @@ struct t_inputrec
     struct pull_t        *pull_work;         /* The COM pull force calculation data structure; TODO this pointer should live somewhere else */
 
     /* Enforced rotation data */
-    gmx_bool        bRot;                    /* Calculate enforced rotation potential(s)?    */
-    t_rot          *rot;                     /* The data for enforced rotation potentials    */
+    gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
+    t_rot                   *rot;            /* The data for enforced rotation potentials    */
 
-    int             eSwapCoords;             /* Do ion/water position exchanges (CompEL)?    */
-    t_swapcoords   *swap;
+    int                      eSwapCoords;    /* Do ion/water position exchanges (CompEL)?    */
+    t_swapcoords            *swap;
 
-    gmx_bool        bIMD;                    /* Allow interactive MD sessions for this .tpr? */
-    t_IMD          *imd;                     /* Interactive molecular dynamics               */
+    gmx_bool                 bIMD;           /* Allow interactive MD sessions for this .tpr? */
+    t_IMD                   *imd;            /* Interactive molecular dynamics               */
 
-    real            cos_accel;               /* Acceleration for viscosity calculation       */
-    tensor          deform;                  /* Triclinic deformation velocities (nm/ps)     */
-    int             userint1;                /* User determined parameters                   */
-    int             userint2;
-    int             userint3;
-    int             userint4;
-    real            userreal1;
-    real            userreal2;
-    real            userreal3;
-    real            userreal4;
-    t_grpopts       opts;          /* Group options				*/
-    t_cosines       ex[DIM];       /* Electric field stuff	(spatial part)		*/
-    t_cosines       et[DIM];       /* Electric field stuff	(time part)		*/
-    gmx_bool        bQMMM;         /* QM/MM calculation                            */
-    int             QMconstraints; /* constraints on QM bonds                      */
-    int             QMMMscheme;    /* Scheme: ONIOM or normal                      */
-    real            scalefactor;   /* factor for scaling the MM charges in QM calc.*/
+    real                     cos_accel;      /* Acceleration for viscosity calculation       */
+    tensor                   deform;         /* Triclinic deformation velocities (nm/ps)     */
+    int                      userint1;       /* User determined parameters                   */
+    int                      userint2;
+    int                      userint3;
+    int                      userint4;
+    real                     userreal1;
+    real                     userreal2;
+    real                     userreal3;
+    real                     userreal4;
+    t_grpopts                opts;          /* Group options				*/
+    gmx::IInputRecExtension *efield;        /* Applied electric field                       */
+    gmx_bool                 bQMMM;         /* QM/MM calculation                            */
+    int                      QMconstraints; /* constraints on QM bonds                      */
+    int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */
+    real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
     gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
@@ -464,8 +526,6 @@ gmx_bool inputrecPreserveShape(const t_inputrec *ir);
 gmx_bool inputrecNeedMutot(const t_inputrec *ir);
 
 gmx_bool inputrecTwinRange(const t_inputrec *ir);
-
-gmx_bool inputrecElecField(const t_inputrec *ir);
 
 gmx_bool inputrecExclForces(const t_inputrec *ir);
 
