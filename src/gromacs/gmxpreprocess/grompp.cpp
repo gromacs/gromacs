@@ -48,6 +48,7 @@
 
 #include <sys/types.h>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/confio.h"
@@ -1628,7 +1629,8 @@ int gmx_grompp(int argc, char *argv[])
     };
 
     /* Initiate some variables */
-    snew(ir, 1);
+    ElectricField ef;
+    ir = new_inputrec(&ef);
     snew(opts, 1);
     init_ir(ir, opts);
 
