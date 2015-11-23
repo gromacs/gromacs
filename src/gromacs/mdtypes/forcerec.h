@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,9 +46,20 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-#if 0
-} /* fixes auto-indentation problems */
+
+struct t_commrec;
+
+struct IForceProvider
+{
+    public:
+        virtual void calculateForces(const t_commrec *cr,
+                                     int  start, int homenr,
+                                     real charge[], rvec f[],
+                                     double t) = 0;
+
+    protected:
+        ~IForceProvider() {}
+};
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
@@ -418,10 +429,12 @@ typedef struct t_forcerec {
     struct bonded_threading_t *bonded_threading;
 
     /* Ewald correction thread local virial and energy data */
-    int                  nthread_ewc;
-    ewald_corr_thread_t *ewc_t;
+    int                    nthread_ewc;
+    ewald_corr_thread_t   *ewc_t;
     /* Ewald charge correction load distribution over the threads */
-    int                 *excl_load;
+    int                   *excl_load;
+
+    struct IForceProvider *efield;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

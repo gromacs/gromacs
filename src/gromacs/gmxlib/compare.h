@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,14 +38,28 @@
 #ifndef GMX_TOOLS_COMPARE_H
 #define GMX_TOOLS_COMPARE_H
 
+struct gmx_groups_t;
 struct gmx_output_env_t;
+struct t_inputrec;
+struct t_state;
+struct t_topology;
 
 /* Routines for comparing data structures from non-trajectory binary
    file formats (e.g. as used by gmx check). */
 
 void
-comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
-/* Compare two binary run input files */
+cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol);
+
+void cmp_top(FILE *fp, t_topology *t1, t_topology *t2, real ftol, real abstol);
+
+void cmp_groups(FILE *fp, gmx_groups_t *g0, gmx_groups_t *g1,
+                int natoms0, int natoms1);
+
+void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, real abstol);
+
+void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol);
+
+void comp_state(t_state *st1, t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
 
 void
 comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *fn2,
