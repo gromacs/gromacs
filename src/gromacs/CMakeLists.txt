@@ -100,6 +100,7 @@ endif()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
+add_subdirectory(applied-forces)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(domdec)

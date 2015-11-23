@@ -38,6 +38,7 @@
 
 #include <cmath>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
@@ -426,7 +427,8 @@ int gmx_convert_tpr(int argc, char *argv[])
     top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
-    snew(ir, 1);
+    ElectricField ef;
+    ir = new_inputrec(&ef);
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
     run_t    = ir->init_step*ir->delta_t + ir->init_t;

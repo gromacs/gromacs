@@ -984,8 +984,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          t_forcerec *fr,
                          gmx_bool bBornRadii,
                          double t, rvec mu_tot,
-                         gmx_vsite_t *vsite,
-                         FILE *fp_field)
+                         gmx_vsite_t *vsite)
 {
     int        nshell;
     t_shell   *shell;
@@ -1113,7 +1112,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              state->box, state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
-             fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
+             fr, vsite, mu_tot, t, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
     sf_dir = 0;
@@ -1215,7 +1214,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
-                 fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
+                 fr, vsite, mu_tot, t, NULL, bBornRadii,
                  force_flags);
 
         if (gmx_debug_at)
