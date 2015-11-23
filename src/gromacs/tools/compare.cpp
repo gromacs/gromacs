@@ -50,6 +50,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/mdlib/electricfield.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -181,7 +182,7 @@ static gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
 }
 
-static void
+void
 cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)
 {
     if (!equal_real(i1, i2, ftol, abstol))
@@ -620,22 +621,6 @@ static void cmp_grpopts(FILE *fp, t_grpopts *opt1, t_grpopts *opt2, real ftol, r
     }
 }
 
-static void cmp_cosines(FILE *fp, const char *s, t_cosines c1[DIM], t_cosines c2[DIM], real ftol, real abstol)
-{
-    int  i, m;
-    char buf[256];
-
-    for (m = 0; (m < DIM); m++)
-    {
-        sprintf(buf, "inputrec->%s[%d]", s, m);
-        cmp_int(fp, buf, 0, c1->n, c2->n);
-        for (i = 0; (i < std::min(c1->n, c2->n)); i++)
-        {
-            cmp_real(fp, buf, i, c1->a[i], c2->a[i], ftol, abstol);
-            cmp_real(fp, buf, i, c1->phi[i], c2->phi[i], ftol, abstol);
-        }
-    }
-}
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
@@ -865,8 +850,7 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_real(fp, "inputrec->userreal3", -1, ir1->userreal3, ir2->userreal3, ftol, abstol);
     cmp_real(fp, "inputrec->userreal4", -1, ir1->userreal4, ir2->userreal4, ftol, abstol);
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
-    cmp_cosines(fp, "ex", ir1->ex, ir2->ex, ftol, abstol);
-    cmp_cosines(fp, "et", ir1->et, ir2->et, ftol, abstol);
+    ir1->efield->compare(fp, ir2->efield, ftol, abstol);
 }
 
 static void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
