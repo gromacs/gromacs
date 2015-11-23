@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include <array>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -216,74 +217,6 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
     for (i = start; (i < end); i++)
     {
         rvec_inc(f[i], flr[i]);
-    }
-}
-
-/*
- * calc_f_el calculates forces due to an electric field.
- *
- * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
- *
- * Et[] contains the parameters for the time dependent
- * part of the field.
- * Ex[] contains the parameters for
- * the spatial dependent part of the field.
- * The function should return the energy due to the electric field
- * (if any) but for now returns 0.
- *
- * WARNING:
- * There can be problems with the virial.
- * Since the field is not self-consistent this is unavoidable.
- * For neutral molecules the virial is correct within this approximation.
- * For neutral systems with many charged molecules the error is small.
- * But for systems with a net charge or a few charged molecules
- * the error can be significant when the field is high.
- * Solution: implement a self-consistent electric field into PME.
- */
-static void calc_f_el(FILE *fp, int  start, int homenr,
-                      real charge[], rvec f[],
-                      t_cosines Ex[], t_cosines Et[], double t)
-{
-    rvec Ext;
-    real t0;
-    int  i, m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (Et[m].n > 0)
-        {
-            if (Et[m].n == 3)
-            {
-                t0     = Et[m].a[1];
-                Ext[m] = std::cos(Et[m].a[0]*(t-t0))*std::exp(-gmx::square(t-t0)/(2.0*gmx::square(Et[m].a[2])));
-            }
-            else
-            {
-                Ext[m] = std::cos(Et[m].a[0]*t);
-            }
-        }
-        else
-        {
-            Ext[m] = 1.0;
-        }
-        if (Ex[m].n > 0)
-        {
-            /* Convert the field strength from V/nm to MD-units */
-            Ext[m] *= Ex[m].a[0]*FIELDFAC;
-            for (i = start; (i < start+homenr); i++)
-            {
-                f[i][m] += charge[i]*Ext[m];
-            }
-        }
-        else
-        {
-            Ext[m] = 0;
-        }
-    }
-    if (fp != NULL)
-    {
-        fprintf(fp, "%10g  %10g  %10g  %10g #FIELD\n", t,
-                Ext[XX]/FIELDFAC, Ext[YY]/FIELDFAC, Ext[ZZ]/FIELDFAC);
     }
 }
 
@@ -1424,13 +1357,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        if (inputrecElecField(inputrec))
-        {
-            /* Compute forces due to electric field */
-            calc_f_el(MASTER(cr) ? field : NULL,
-                      start, homenr, mdatoms->chargeA, fr->f_novirsum,
-                      inputrec->ex, inputrec->et, t);
-        }
+        /* Compute forces due to electric field */
+        calc_f_el(MASTER(cr) ? field : nullptr,
+                  start, homenr,
+                  mdatoms->chargeA, fr->f_novirsum,
+                  inputrec->efield, t);
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=f later.
@@ -1791,13 +1722,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        if (inputrecElecField(inputrec))
-        {
-            /* Compute forces due to electric field */
-            calc_f_el(MASTER(cr) ? field : NULL,
-                      start, homenr, mdatoms->chargeA, fr->f_novirsum,
-                      inputrec->ex, inputrec->et, t);
-        }
+        /* Compute forces due to electric field */
+        calc_f_el(MASTER(cr) ? field : nullptr,
+                  start, homenr, mdatoms->chargeA, fr->f_novirsum,
+                  inputrec->efield, t);
 
         /* Communicate the forces */
         if (DOMAINDECOMP(cr))
@@ -2737,7 +2665,7 @@ void init_md(FILE *fplog,
             please_cite(fplog, "Goga2012");
         }
     }
-    if ((ir->et[XX].n > 0) || (ir->et[YY].n > 0) || (ir->et[ZZ].n > 0))
+    if (ir->efield->applyField())
     {
         please_cite(fplog, "Caleman2008a");
     }

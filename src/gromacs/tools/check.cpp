@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
@@ -47,13 +48,13 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/gmxlib/compare.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/tools/compare.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
@@ -147,16 +148,20 @@ static void tpx2params(FILE *fp, t_inputrec *ir)
 static void tpx2methods(const char *tpx, const char *tex)
 {
     FILE         *fp;
-    t_inputrec    ir;
+    t_inputrec   *ir;
     t_state       state;
     gmx_mtop_t    mtop;
+    ElectricField ef;
 
-    read_tpx_state(tpx, &ir, &state, &mtop);
+    ir = new_inputrec(&ef);
+    read_tpx_state(tpx, ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
     tpx2system(fp, &mtop);
-    tpx2params(fp, &ir);
+    tpx2params(fp, ir);
     gmx_fio_fclose(fp);
+    done_inputrec(ir);
+    sfree(ir);
 }
 
 static void chk_coords(int frame, int natoms, rvec *x, matrix box, real fac, real tol)
@@ -288,12 +293,14 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     gmx_mtop_t       mtop;
     gmx_localtop_t  *top = NULL;
     t_state          state;
-    t_inputrec       ir;
+    t_inputrec      *ir;
+    ElectricField    ef;
 
+    ir = new_inputrec(&ef);
     if (tpr)
     {
-        read_tpx_state(tpr, &ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+        read_tpx_state(tpr, ir, &state, &mtop);
+        top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -360,7 +367,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top->idef, ir.ePBC, fr.x, fr.box, tol);
+            chk_bonds(&top->idef, ir->ePBC, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {
@@ -410,6 +417,8 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     PRINTITEM ( "Velocities", bV );
     PRINTITEM ( "Forces",     bF );
     PRINTITEM ( "Box",        bBox );
+    done_inputrec(ir);
+    sfree(ir);
 }
 
 void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)

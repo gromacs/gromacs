@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,24 +50,10 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
-    //! Number of terms
-    int   n;
-    //! Coeffients (V / nm)
-    real *a;
-    //! Phase angles
-    real *phi;
-} t_cosines;
-
-typedef struct {
-    real E0;            /* Field strength (V/nm)                        */
-    real omega;         /* Frequency (1/ps)                             */
-    real t0;            /* Centre of the Gaussian pulse (ps)            */
-    real sigma;         /* Width of the Gaussian pulse (FWHM) (ps)      */
-} t_efield;
-
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
+
+class ElectricField;
 
 typedef struct t_grpopts {
     int       ngtc;           /* # T-Coupl groups                        */
@@ -247,7 +233,8 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-typedef struct t_inputrec {
+struct t_inputrec
+{
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -388,8 +375,7 @@ typedef struct t_inputrec {
     real            userreal3;
     real            userreal4;
     t_grpopts       opts;          /* Group options				*/
-    t_cosines       ex[DIM];       /* Electric field stuff	(spatial part)		*/
-    t_cosines       et[DIM];       /* Electric field stuff	(time part)		*/
+    ElectricField  *efield;        /* Applied electric field                       */
     gmx_bool        bQMMM;         /* QM/MM calculation                            */
     int             QMconstraints; /* constraints on QM bonds                      */
     int             QMMMscheme;    /* Scheme: ONIOM or normal                      */
@@ -398,7 +384,7 @@ typedef struct t_inputrec {
     /* Fields for removed features go here (better caching) */
     gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
     gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
-} t_inputrec;
+};
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
@@ -436,13 +422,12 @@ gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir);
  */
 gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir);
 
-/*! \brief Initiate input record structure
+/*! \brief Create a new inputrec with memory allocated
  *
- * Initialiazes all the arrays and pointers to NULL.
- *
- * \param[in] ir Inputrec must be pre-allocated
+ * \param[in] efield Pointer to electrid field structure
+ * \return Pointer to inputrec structure.
  */
-void init_inputrec(t_inputrec *ir);
+t_inputrec *new_inputrec(ElectricField *efield);
 
 /*! \brief Free memory from input record.
  *
@@ -464,8 +449,6 @@ gmx_bool inputrecPreserveShape(const t_inputrec *ir);
 gmx_bool inputrecNeedMutot(const t_inputrec *ir);
 
 gmx_bool inputrecTwinRange(const t_inputrec *ir);
-
-gmx_bool inputrecElecField(const t_inputrec *ir);
 
 gmx_bool inputrecExclForces(const t_inputrec *ir);
 

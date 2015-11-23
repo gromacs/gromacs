@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
 
 #include "mdoutf.h"
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -195,7 +196,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         }
 
         if (opt2bSet("-field", nfile, fnm) &&
-            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
+            (ir->efield->applyField()))
         {
             if (bAppendFiles)
             {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -182,7 +183,7 @@ static gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
 }
 
-static void
+void
 cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)
 {
     if (!equal_real(i1, i2, ftol, abstol))
@@ -621,22 +622,6 @@ static void cmp_grpopts(FILE *fp, t_grpopts *opt1, t_grpopts *opt2, real ftol, r
     }
 }
 
-static void cmp_cosines(FILE *fp, const char *s, t_cosines c1[DIM], t_cosines c2[DIM], real ftol, real abstol)
-{
-    int  i, m;
-    char buf[256];
-
-    for (m = 0; (m < DIM); m++)
-    {
-        sprintf(buf, "inputrec->%s[%d]", s, m);
-        cmp_int(fp, buf, 0, c1->n, c2->n);
-        for (i = 0; (i < std::min(c1->n, c2->n)); i++)
-        {
-            cmp_real(fp, buf, i, c1->a[i], c2->a[i], ftol, abstol);
-            cmp_real(fp, buf, i, c1->phi[i], c2->phi[i], ftol, abstol);
-        }
-    }
-}
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
@@ -864,8 +849,7 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_real(fp, "inputrec->userreal3", -1, ir1->userreal3, ir2->userreal3, ftol, abstol);
     cmp_real(fp, "inputrec->userreal4", -1, ir1->userreal4, ir2->userreal4, ftol, abstol);
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
-    cmp_cosines(fp, "ex", ir1->ex, ir2->ex, ftol, abstol);
-    cmp_cosines(fp, "et", ir1->et, ir2->et, ftol, abstol);
+    ir1->efield->compare(fp, ir2->efield, ftol, abstol);
 }
 
 static void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
@@ -954,22 +938,25 @@ static void comp_state(t_state *st1, t_state *st2,
 void comp_tpx(const char *fn1, const char *fn2,
               gmx_bool bRMSD, real ftol, real abstol)
 {
-    const char  *ff[2];
-    t_inputrec   ir[2];
-    t_state      state[2];
-    gmx_mtop_t   mtop[2];
-    t_topology   top[2];
-    int          i;
+    const char   *ff[2];
+    t_inputrec   *ir[2];
+    t_state       state[2];
+    gmx_mtop_t    mtop[2];
+    t_topology    top[2];
+    int           i;
+    ElectricField ef1, ef2;
 
+    ir[0] = new_inputrec(&ef1);
+    ir[1] = new_inputrec(&ef2);
     ff[0] = fn1;
     ff[1] = fn2;
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
-        read_tpx_state(ff[i], &(ir[i]), &state[i], &(mtop[i]));
+        read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
     }
     if (fn2)
     {
-        cmp_inputrec(stdout, &ir[0], &ir[1], ftol, abstol);
+        cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
         /* Convert gmx_mtop_t to t_topology.
          * We should implement direct mtop comparison,
          * but it might be useful to keep t_topology comparison as an option.
@@ -983,15 +970,15 @@ void comp_tpx(const char *fn1, const char *fn2,
     }
     else
     {
-        if (ir[0].efep == efepNO)
+        if (ir[0]->efep == efepNO)
         {
-            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0].efep]);
+            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0]->efep]);
         }
         else
         {
-            if (ir[0].bPull)
+            if (ir[0]->bPull)
             {
-                comp_pull_AB(stdout, ir->pull, ftol, abstol);
+                comp_pull_AB(stdout, ir[0]->pull, ftol, abstol);
             }
             /* Convert gmx_mtop_t to t_topology.
              * We should implement direct mtop comparison,
@@ -1001,6 +988,10 @@ void comp_tpx(const char *fn1, const char *fn2,
             cmp_top(stdout, &top[0], NULL, ftol, abstol);
         }
     }
+    done_inputrec(ir[0]);
+    done_inputrec(ir[1]);
+    sfree(ir[0]);
+    sfree(ir[1]);
 }
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
