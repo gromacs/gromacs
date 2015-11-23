@@ -2821,9 +2821,12 @@ void init_forcerec(FILE                *fp,
 
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       inputrecElecField(ir)
-                       );
+                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
+
+    /* Initialization call after setting bF_NoVirSum,
+     * since it efield->initForcerec also sets this to true.
+     */
+    ir->efield->initForcerec(fr);
 
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
