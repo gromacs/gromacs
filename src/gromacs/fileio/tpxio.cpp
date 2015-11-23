@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
@@ -926,11 +927,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         /* Give a warning about features that are not accessible */
         fprintf(stderr, "Note: file tpx version %d, software tpx version %d\n",
                 file_version, tpx_version);
-    }
-
-    if (bRead)
-    {
-        init_inputrec(ir);
     }
 
     if (file_version == 0)
@@ -1860,22 +1856,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->wall_ewald_zfac  = 3;
     }
     /* Cosine stuff for electric fields */
-    for (j = 0; (j < DIM); j++)
-    {
-        gmx_fio_do_int(fio, ir->ex[j].n);
-        gmx_fio_do_int(fio, ir->et[j].n);
-        if (bRead)
-        {
-            snew(ir->ex[j].a,  ir->ex[j].n);
-            snew(ir->ex[j].phi, ir->ex[j].n);
-            snew(ir->et[j].a,  ir->et[j].n);
-            snew(ir->et[j].phi, ir->et[j].n);
-        }
-        gmx_fio_ndo_real(fio, ir->ex[j].a,  ir->ex[j].n);
-        gmx_fio_ndo_real(fio, ir->ex[j].phi, ir->ex[j].n);
-        gmx_fio_ndo_real(fio, ir->et[j].a,  ir->et[j].n);
-        gmx_fio_ndo_real(fio, ir->et[j].phi, ir->et[j].n);
-    }
+    ir->efield->doTpxIO(fio, bRead);
 
     /* Swap ions */
     if (file_version >= tpxv_ComputationalElectrophysiology)
@@ -3371,7 +3352,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
                   gmx_bool bXVallocated)
 {
     t_tpxheader     tpx;
-    t_inputrec      dum_ir;
     gmx_mtop_t      dum_top;
     gmx_bool        TopOnlyOK;
     int             file_version, file_generation;
@@ -3471,9 +3451,13 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             }
             else
             {
-                do_inputrec(fio, &dum_ir, bRead, file_version,
+                ElectricField ef;
+                t_inputrec   *dum_ir = new_inputrec(&ef);
+
+                do_inputrec(fio, dum_ir, bRead, file_version,
                             mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                done_inputrec(&dum_ir);
+                done_inputrec(dum_ir);
+                sfree(dum_ir);
             }
 
         }

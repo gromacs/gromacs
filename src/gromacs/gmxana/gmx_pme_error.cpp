@@ -40,6 +40,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -1152,7 +1153,8 @@ int gmx_pme_error(int argc, char *argv[])
     /* Read in the tpr file and open logfile for reading */
     if (MASTER(cr))
     {
-        snew(ir, 1);
+        ElectricField ef;
+        ir = new_inputrec(&ef);
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
 
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");
