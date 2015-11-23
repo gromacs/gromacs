@@ -66,9 +66,6 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          gmx_wallcycle_t         wcycle);
 
 /*! \brief Getter for file pointer */
-FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);
-
-/*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
@@ -85,7 +82,7 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
 void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
-void done_mdoutf(gmx_mdoutf_t of);
+void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir);
 
 /*! \brief Routine that writes trajectory-like frames.
  *

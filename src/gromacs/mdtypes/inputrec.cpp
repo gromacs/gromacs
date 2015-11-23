@@ -251,12 +251,16 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-void init_inputrec(t_inputrec *ir)
+t_inputrec *new_inputrec(gmx::IInputRecExtension *efield)
 {
-    std::memset(ir, 0, sizeof(*ir));
+    t_inputrec *ir;
+
+    snew(ir, 1);
     snew(ir->fepvals, 1);
     snew(ir->expandedvals, 1);
     snew(ir->simtempvals, 1);
+    ir->efield = efield;
+    return ir;
 }
 
 static void done_pull_group(t_pull_group *pgrp)
@@ -283,28 +287,6 @@ static void done_pull_params(pull_params_t *pull)
 
 void done_inputrec(t_inputrec *ir)
 {
-    int m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (ir->ex[m].a)
-        {
-            sfree(ir->ex[m].a);
-        }
-        if (ir->ex[m].phi)
-        {
-            sfree(ir->ex[m].phi);
-        }
-        if (ir->et[m].a)
-        {
-            sfree(ir->et[m].a);
-        }
-        if (ir->et[m].phi)
-        {
-            sfree(ir->et[m].phi);
-        }
-    }
-
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
     sfree(ir->opts.annealing);
@@ -472,40 +454,6 @@ static void pr_matrix(FILE *fp, int indent, const char *title, const rvec *m,
     else
     {
         pr_rvecs(fp, indent, title, m, DIM);
-    }
-}
-
-static void pr_cosine(FILE *fp, int indent, const char *title, const t_cosines *cos,
-                      gmx_bool bMDPformat)
-{
-    int j;
-
-    if (bMDPformat)
-    {
-        fprintf(fp, "%s = %d\n", title, cos->n);
-    }
-    else
-    {
-        indent = pr_title(fp, indent, title);
-        pr_indent(fp, indent);
-        fprintf(fp, "n = %d\n", cos->n);
-        if (cos->n > 0)
-        {
-            pr_indent(fp, indent+2);
-            fprintf(fp, "a =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->a[j]);
-            }
-            fprintf(fp, "\n");
-            pr_indent(fp, indent+2);
-            fprintf(fp, "phi =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->phi[j]);
-            }
-            fprintf(fp, "\n");
-        }
     }
 }
 
@@ -1006,12 +954,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         }
 
         /* ELECTRIC FIELDS */
-        pr_cosine(fp, indent, "E-x", &(ir->ex[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-xt", &(ir->et[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-y", &(ir->ex[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-yt", &(ir->et[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-z", &(ir->ex[ZZ]), bMDPformat);
-        pr_cosine(fp, indent, "E-zt", &(ir->et[ZZ]), bMDPformat);
+        ir->efield->printParameters(fp, indent);
 
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
@@ -1058,11 +1001,6 @@ gmx_bool inputrecNeedMutot(const t_inputrec *ir)
 {
     return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype)) &&
             (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
-}
-
-gmx_bool inputrecElecField(const t_inputrec *ir)
-{
-    return (ir->ex[XX].n > 0 || ir->ex[YY].n > 0 || ir->ex[ZZ].n > 0);
 }
 
 gmx_bool inputrecExclForces(const t_inputrec *ir)

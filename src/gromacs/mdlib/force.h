@@ -166,7 +166,7 @@ void do_force(FILE *log, t_commrec *cr,
               real *lambda, struct t_graph *graph,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
-              double t, FILE *field, struct gmx_edsam *ed,
+              double t, struct gmx_edsam *ed,
               gmx_bool bBornRadii,
               int flags);
 

@@ -50,24 +50,44 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
-    //! Number of terms
-    int   n;
-    //! Coeffients (V / nm)
-    real *a;
-    //! Phase angles
-    real *phi;
-} t_cosines;
-
-typedef struct {
-    real E0;            /* Field strength (V/nm)                        */
-    real omega;         /* Frequency (1/ps)                             */
-    real t0;            /* Centre of the Gaussian pulse (ps)            */
-    real sigma;         /* Width of the Gaussian pulse (FWHM) (ps)      */
-} t_efield;
-
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
+
+struct gmx_output_env_t;
+struct t_commrec;
+struct t_fileio;
+struct t_filenm;
+struct t_forcerec;
+struct warninp;
+
+namespace gmx
+{
+
+class IInputRecExtension
+{
+    public:
+        virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
+        virtual void broadCast(const t_commrec *cr)     = 0;
+        virtual void compare(FILE                          *fp,
+                             const gmx::IInputRecExtension *field2,
+                             real                           reltol,
+                             real                           abstol)  = 0;
+        virtual void printParameters(FILE *fp, int indent)           = 0;
+        virtual void decodeMdp(int         dim,
+                               const char *staticField,
+                               const char *dynamicField,
+                               warninp    *wi) = 0;
+
+        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                                bool bAppendFiles, const gmx_output_env_t *oenv) = 0;
+        virtual void finishOutput()               = 0;
+        virtual void initForcerec(t_forcerec *fr) = 0;
+
+    protected:
+        ~IInputRecExtension() {}
+};
+
+} // namespace gmx
 
 typedef struct t_grpopts {
     int       ngtc;           /* # T-Coupl groups                        */
@@ -247,7 +267,8 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-typedef struct t_inputrec {
+struct t_inputrec
+{
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -368,37 +389,36 @@ typedef struct t_inputrec {
     struct pull_t        *pull_work;         /* The COM pull force calculation data structure; TODO this pointer should live somewhere else */
 
     /* Enforced rotation data */
-    gmx_bool        bRot;                    /* Calculate enforced rotation potential(s)?    */
-    t_rot          *rot;                     /* The data for enforced rotation potentials    */
+    gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
+    t_rot                   *rot;            /* The data for enforced rotation potentials    */
 
-    int             eSwapCoords;             /* Do ion/water position exchanges (CompEL)?    */
-    t_swapcoords   *swap;
+    int                      eSwapCoords;    /* Do ion/water position exchanges (CompEL)?    */
+    t_swapcoords            *swap;
 
-    gmx_bool        bIMD;                    /* Allow interactive MD sessions for this .tpr? */
-    t_IMD          *imd;                     /* Interactive molecular dynamics               */
+    gmx_bool                 bIMD;           /* Allow interactive MD sessions for this .tpr? */
+    t_IMD                   *imd;            /* Interactive molecular dynamics               */
 
-    real            cos_accel;               /* Acceleration for viscosity calculation       */
-    tensor          deform;                  /* Triclinic deformation velocities (nm/ps)     */
-    int             userint1;                /* User determined parameters                   */
-    int             userint2;
-    int             userint3;
-    int             userint4;
-    real            userreal1;
-    real            userreal2;
-    real            userreal3;
-    real            userreal4;
-    t_grpopts       opts;          /* Group options				*/
-    t_cosines       ex[DIM];       /* Electric field stuff	(spatial part)		*/
-    t_cosines       et[DIM];       /* Electric field stuff	(time part)		*/
-    gmx_bool        bQMMM;         /* QM/MM calculation                            */
-    int             QMconstraints; /* constraints on QM bonds                      */
-    int             QMMMscheme;    /* Scheme: ONIOM or normal                      */
-    real            scalefactor;   /* factor for scaling the MM charges in QM calc.*/
+    real                     cos_accel;      /* Acceleration for viscosity calculation       */
+    tensor                   deform;         /* Triclinic deformation velocities (nm/ps)     */
+    int                      userint1;       /* User determined parameters                   */
+    int                      userint2;
+    int                      userint3;
+    int                      userint4;
+    real                     userreal1;
+    real                     userreal2;
+    real                     userreal3;
+    real                     userreal4;
+    t_grpopts                opts;          /* Group options				*/
+    gmx::IInputRecExtension *efield;        /* Applied electric field                       */
+    gmx_bool                 bQMMM;         /* QM/MM calculation                            */
+    int                      QMconstraints; /* constraints on QM bonds                      */
+    int                      QMMMscheme;    /* Scheme: ONIOM or normal                      */
+    real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
     gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
     gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
-} t_inputrec;
+};
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
@@ -436,13 +456,12 @@ gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir);
  */
 gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir);
 
-/*! \brief Initiate input record structure
+/*! \brief Create a new inputrec with memory allocated
  *
- * Initialiazes all the arrays and pointers to NULL.
- *
- * \param[in] ir Inputrec must be pre-allocated
+ * \param[in] efield Pointer to electrid field structure
+ * \return Pointer to inputrec structure.
  */
-void init_inputrec(t_inputrec *ir);
+t_inputrec *new_inputrec(gmx::IInputRecExtension *efield);
 
 /*! \brief Free memory from input record.
  *
@@ -464,8 +483,6 @@ gmx_bool inputrecPreserveShape(const t_inputrec *ir);
 gmx_bool inputrecNeedMutot(const t_inputrec *ir);
 
 gmx_bool inputrecTwinRange(const t_inputrec *ir);
-
-gmx_bool inputrecElecField(const t_inputrec *ir);
 
 gmx_bool inputrecExclForces(const t_inputrec *ir);
 
