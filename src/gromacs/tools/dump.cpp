@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
@@ -76,23 +77,27 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
     t_state       state;
-    t_inputrec    ir;
+    t_inputrec   *ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     gmx_groups_t *groups;
     t_topology    top;
 
     read_tpxheader(fn, &tpx, TRUE);
-
+    if (tpx.bIr)
+    {
+        ElectricField efield;
+        ir = new_inputrec(&efield);
+    }
     read_tpx_state(fn,
-                   tpx.bIr  ? &ir : NULL,
+                   ir,
                    &state,
                    tpx.bTop ? &mtop : NULL);
 
     if (mdpfn && tpx.bIr)
     {
         gp = gmx_fio_fopen(mdpfn, "w");
-        pr_inputrec(gp, 0, NULL, &(ir), TRUE);
+        pr_inputrec(gp, 0, NULL, ir, TRUE);
         gmx_fio_fclose(gp);
     }
 
@@ -107,7 +112,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
         {
             indent = 0;
             pr_title(stdout, indent, fn);
-            pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &(ir) : NULL, FALSE);
+            pr_inputrec(stdout, 0, "inputrec", ir, FALSE);
 
             pr_tpxheader(stdout, indent, "header", &(tpx));
 
@@ -163,6 +168,10 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
             sfree(gcount[i]);
         }
         sfree(gcount);
+    }
+    if (tpx.bIr)
+    {
+        done_inputrec(ir);
     }
     done_state(&state);
 }

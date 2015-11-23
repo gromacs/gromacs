@@ -46,6 +46,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
@@ -3013,49 +3014,6 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(nrdf_vcm_sub);
 }
 
-static void decode_cos(char *s, t_cosines *cosine)
-{
-    char   *t;
-    char    format[STRLEN], f1[STRLEN];
-    double  a, phi;
-    int     i;
-
-    t = gmx_strdup(s);
-    trim(t);
-
-    cosine->n   = 0;
-    cosine->a   = NULL;
-    cosine->phi = NULL;
-    if (strlen(t))
-    {
-        sscanf(t, "%d", &(cosine->n));
-        if (cosine->n <= 0)
-        {
-            cosine->n = 0;
-        }
-        else
-        {
-            snew(cosine->a, cosine->n);
-            snew(cosine->phi, cosine->n);
-
-            sprintf(format, "%%*d");
-            for (i = 0; (i < cosine->n); i++)
-            {
-                strcpy(f1, format);
-                strcat(f1, "%lf%lf");
-                if (sscanf(t, f1, &a, &phi) < 2)
-                {
-                    gmx_fatal(FARGS, "Invalid input for electric field shift: '%s'", t);
-                }
-                cosine->a[i]   = a;
-                cosine->phi[i] = phi;
-                strcat(format, "%*lf%*lf");
-            }
-        }
-    }
-    sfree(t);
-}
-
 static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
                             const char *option, const char *val, int flag)
 {
@@ -3774,12 +3732,9 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
-    decode_cos(is->efield_x, &(ir->ex[XX]));
-    decode_cos(is->efield_xt, &(ir->et[XX]));
-    decode_cos(is->efield_y, &(ir->ex[YY]));
-    decode_cos(is->efield_yt, &(ir->et[YY]));
-    decode_cos(is->efield_z, &(ir->ex[ZZ]));
-    decode_cos(is->efield_zt, &(ir->et[ZZ]));
+    ir->efield->decodeMdp(XX, is->efield_x, is->efield_xt, wi);
+    ir->efield->decodeMdp(YY, is->efield_y, is->efield_yt, wi);
+    ir->efield->decodeMdp(ZZ, is->efield_z, is->efield_zt, wi);
 
     for (i = 0; (i < grps->nr); i++)
     {

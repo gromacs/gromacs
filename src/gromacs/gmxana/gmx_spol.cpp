@@ -38,6 +38,7 @@
 
 #include <cmath>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/tpxio.h"
@@ -222,7 +223,8 @@ int gmx_spol(int argc, char *argv[])
     }
 
     snew(top, 1);
-    snew(ir, 1);
+    ElectricField ef;
+    ir = new_inputrec(&ef);
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                  ir, box, &natoms, NULL, NULL, top);
 
