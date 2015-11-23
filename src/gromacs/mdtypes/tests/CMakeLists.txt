@@ -32,18 +32,5 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDTYPES_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MDTYPES_SOURCES} PARENT_SCOPE)
-
-gmx_install_headers(
-   electricfield.h
-    energy.h
-    inputrec.h
-    mdatom.h
-    md_enums.h
-    state.h
-)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+gmx_add_unit_test(MDtypeUnitTest mdtypes-test
+                  electricfield.cpp)

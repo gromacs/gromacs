@@ -49,6 +49,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/electricfield.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -586,37 +587,18 @@ static void pr_matrix(FILE *fp, int indent, const char *title, rvec *m,
     }
 }
 
-static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
-                      gmx_bool bMDPformat)
+static void pr_efield(FILE *fp, int indent,
+                      const gmx::ElectricField &efield,
+                      gmx_bool /*bMDPformat*/)
 {
-    int j;
-
-    if (bMDPformat)
+    for (int m = 0; m < DIM; m++)
     {
-        fprintf(fp, "%s = %d\n", title, cos->n);
-    }
-    else
-    {
-        indent = pr_title(fp, indent, title);
+        indent = pr_title(fp, indent, "ElectricField");
         pr_indent(fp, indent);
-        fprintf(fp, "n = %d\n", cos->n);
-        if (cos->n > 0)
-        {
-            pr_indent(fp, indent+2);
-            fprintf(fp, "a =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->a[j]);
-            }
-            fprintf(fp, "\n");
-            pr_indent(fp, indent+2);
-            fprintf(fp, "phi =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->phi[j]);
-            }
-            fprintf(fp, "\n");
-        }
+        fprintf(fp, "dim = %d a = %e omega = %g t0 = %g sigma = %g\n",
+                m, efield.a(m), efield.omega(m),
+                efield.t0(m), efield.sigma(m));
+        m++;
     }
 }
 
@@ -1117,12 +1099,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         }
 
         /* ELECTRIC FIELDS */
-        pr_cosine(fp, indent, "E-x", &(ir->ex[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-xt", &(ir->et[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-y", &(ir->ex[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-yt", &(ir->et[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-z", &(ir->ex[ZZ]), bMDPformat);
-        pr_cosine(fp, indent, "E-zt", &(ir->et[ZZ]), bMDPformat);
+        pr_efield(fp, indent, ir->efield, bMDPformat);
 
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));

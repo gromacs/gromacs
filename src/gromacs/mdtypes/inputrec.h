@@ -44,28 +44,16 @@
 #define GMX_MDTYPES_INPUTREC_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/electricfield.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
-    //! Number of terms
-    int   n;
-    //! Coeffients (V / nm)
-    real *a;
-    //! Phase angles
-    real *phi;
-} t_cosines;
-
-typedef struct {
-    real E0;            /* Field strength (V/nm)                        */
-    real omega;         /* Frequency (1/ps)                             */
-    real t0;            /* Centre of the Gaussian pulse (ps)            */
-    real sigma;         /* Width of the Gaussian pulse (FWHM) (ps)      */
-} t_efield;
-
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
+
+namespace gmx
+{
 
 typedef struct t_grpopts {
     int       ngtc;           /* # T-Coupl groups                        */
@@ -286,7 +274,8 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-typedef struct t_inputrec {
+struct t_inputrec
+{
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -387,7 +376,7 @@ typedef struct t_inputrec {
     real            fc_stepsize;             /* Stepsize for directional minimization        */
                                              /* in relax_shells                              */
     int             nstcgsteep;              /* number of steps after which a steepest       */
-                                             /* descents step is done while doing cg         */
+                                              /* descents step is done while doing cg         */
     int             nbfgscorr;               /* Number of corrections to the hessian to keep */
     int             eConstrAlg;              /* Type of constraint algorithm                 */
     int             nProjOrder;              /* Order of the LINCS Projection Algorithm      */
@@ -423,8 +412,7 @@ typedef struct t_inputrec {
     real            userreal3;
     real            userreal4;
     t_grpopts       opts;          /* Group options				*/
-    t_cosines       ex[DIM];       /* Electric field stuff	(spatial part)		*/
-    t_cosines       et[DIM];       /* Electric field stuff	(time part)		*/
+    ElectricField   efield;        /* Applied electric field                       */
     gmx_bool        bQMMM;         /* QM/MM calculation                            */
     int             QMconstraints; /* constraints on QM bonds                      */
     int             QMMMscheme;    /* Scheme: ONIOM or normal                      */
@@ -432,7 +420,7 @@ typedef struct t_inputrec {
 
     /* Fields for removed features go here (better caching) */
     gmx_bool        bAdress;
-} t_inputrec;
+};
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
@@ -505,5 +493,7 @@ gmx_bool inputrecNptTrotter(const t_inputrec *ir);
 gmx_bool inputrecNvtTrotter(const t_inputrec *ir);
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir);
+
+}
 
 #endif /* GMX_MDTYPES_INPUTREC_H */
