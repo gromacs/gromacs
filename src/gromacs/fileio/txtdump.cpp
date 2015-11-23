@@ -49,6 +49,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/electricfield.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -586,40 +587,6 @@ static void pr_matrix(FILE *fp, int indent, const char *title, rvec *m,
     }
 }
 
-static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
-                      gmx_bool bMDPformat)
-{
-    int j;
-
-    if (bMDPformat)
-    {
-        fprintf(fp, "%s = %d\n", title, cos->n);
-    }
-    else
-    {
-        indent = pr_title(fp, indent, title);
-        pr_indent(fp, indent);
-        fprintf(fp, "n = %d\n", cos->n);
-        if (cos->n > 0)
-        {
-            pr_indent(fp, indent+2);
-            fprintf(fp, "a =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->a[j]);
-            }
-            fprintf(fp, "\n");
-            pr_indent(fp, indent+2);
-            fprintf(fp, "phi =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->phi[j]);
-            }
-            fprintf(fp, "\n");
-        }
-    }
-}
-
 #define PS(t, s) pr_str(fp, indent, t, s)
 #define PI(t, s) pr_int(fp, indent, t, s)
 #define PSTEP(t, s) pr_int64(fp, indent, t, s)
@@ -1117,12 +1084,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         }
 
         /* ELECTRIC FIELDS */
-        pr_cosine(fp, indent, "E-x", &(ir->ex[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-xt", &(ir->et[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-y", &(ir->ex[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-yt", &(ir->et[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-z", &(ir->ex[ZZ]), bMDPformat);
-        pr_cosine(fp, indent, "E-zt", &(ir->et[ZZ]), bMDPformat);
+        ir->efield->printParameters(fp, indent);
 
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));

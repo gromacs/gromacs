@@ -66,6 +66,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/electricfield.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/md_support.h"
@@ -2787,7 +2788,7 @@ void init_forcerec(FILE              *fp,
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       inputrecElecField(ir)
+                       ir->efield->applyField()
                        );
 
     if (fr->cutoff_scheme == ecutsGROUP &&

@@ -46,6 +46,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/electricfield.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -183,7 +184,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         }
 
         if (opt2bSet("-field", nfile, fnm) &&
-            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
+            (ir->efield->applyField()))
         {
             if (bAppendFiles)
             {
