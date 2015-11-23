@@ -58,6 +58,7 @@ struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
 struct t_forcetable;
+struct t_inputrec;
 struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;

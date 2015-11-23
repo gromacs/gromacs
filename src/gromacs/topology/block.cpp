@@ -273,7 +273,8 @@ void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, g
                     {
                         size += fprintf(fp, ", ");
                     }
-                    if ((size) > (USE_WIDTH))
+                    // Print no more than 70 characters for readability
+                    if ((size) > 70)
                     {
                         fprintf(fp, "\n");
                         size = pr_indent(fp, indent+INDENT);
