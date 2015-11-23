@@ -2819,11 +2819,12 @@ void init_forcerec(FILE                *fp,
         init_generalized_rf(fp, mtop, ir, fr);
     }
 
+    ir->efield->initForcerec(fr);
+
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       inputrecElecField(ir)
-                       );
+                       fr->efield != nullptr);
 
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))

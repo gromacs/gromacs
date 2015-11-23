@@ -224,74 +224,6 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
     }
 }
 
-/*
- * calc_f_el calculates forces due to an electric field.
- *
- * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
- *
- * Et[] contains the parameters for the time dependent
- * part of the field.
- * Ex[] contains the parameters for
- * the spatial dependent part of the field.
- * The function should return the energy due to the electric field
- * (if any) but for now returns 0.
- *
- * WARNING:
- * There can be problems with the virial.
- * Since the field is not self-consistent this is unavoidable.
- * For neutral molecules the virial is correct within this approximation.
- * For neutral systems with many charged molecules the error is small.
- * But for systems with a net charge or a few charged molecules
- * the error can be significant when the field is high.
- * Solution: implement a self-consistent electric field into PME.
- */
-static void calc_f_el(FILE *fp, int  start, int homenr,
-                      real charge[], rvec f[],
-                      t_cosines Ex[], t_cosines Et[], double t)
-{
-    rvec Ext;
-    real t0;
-    int  i, m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (Et[m].n > 0)
-        {
-            if (Et[m].n == 3)
-            {
-                t0     = Et[m].a[1];
-                Ext[m] = std::cos(Et[m].a[0]*(t-t0))*std::exp(-gmx::square(t-t0)/(2.0*gmx::square(Et[m].a[2])));
-            }
-            else
-            {
-                Ext[m] = std::cos(Et[m].a[0]*t);
-            }
-        }
-        else
-        {
-            Ext[m] = 1.0;
-        }
-        if (Ex[m].n > 0)
-        {
-            /* Convert the field strength from V/nm to MD-units */
-            Ext[m] *= Ex[m].a[0]*FIELDFAC;
-            for (i = start; (i < start+homenr); i++)
-            {
-                f[i][m] += charge[i]*Ext[m];
-            }
-        }
-        else
-        {
-            Ext[m] = 0;
-        }
-    }
-    if (fp != NULL)
-    {
-        fprintf(fp, "%10g  %10g  %10g  %10g #FIELD\n", t,
-                Ext[XX]/FIELDFAC, Ext[YY]/FIELDFAC, Ext[ZZ]/FIELDFAC);
-    }
-}
-
 static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
@@ -796,12 +728,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          real *lambda, t_graph *graph,
                          t_forcerec *fr, interaction_const_t *ic,
                          gmx_vsite_t *vsite, rvec mu_tot,
-                         double t, FILE *field, gmx_edsam_t ed,
+                         double t, gmx_edsam_t ed,
                          gmx_bool bBornRadii,
                          int flags)
 {
     int                 cg1, i, j;
-    int                 start, homenr;
     double              mu[2*DIM];
     gmx_bool            bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
@@ -818,8 +749,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     cycles_wait_gpu = 0;
     nbv             = fr->nbv;
 
-    start  = 0;
-    homenr = mdatoms->homenr;
+    const int start  = 0;
+    const int homenr = mdatoms->homenr;
 
     clear_mat(vir_force);
 
@@ -1462,12 +1393,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        if (inputrecElecField(inputrec))
+        /* Compute forces due to electric field */
+        if (fr->efield != nullptr)
         {
-            /* Compute forces due to electric field */
-            calc_f_el(MASTER(cr) ? field : NULL,
-                      start, homenr, mdatoms->chargeA, fr->f_novirsum,
-                      inputrec->ex, inputrec->et, t);
+            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
@@ -1549,19 +1478,18 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         gmx_enerdata_t *enerd, t_fcdata *fcd,
                         real *lambda, t_graph *graph,
                         t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
-                        double t, FILE *field, gmx_edsam_t ed,
+                        double t, gmx_edsam_t ed,
                         gmx_bool bBornRadii,
                         int flags)
 {
     int        cg0, cg1, i, j;
-    int        start, homenr;
     double     mu[2*DIM];
     gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool   bDoForces;
     float      cycles_pme, cycles_force;
 
-    start  = 0;
-    homenr = mdatoms->homenr;
+    const int  start  = 0;
+    const int  homenr = mdatoms->homenr;
 
     clear_mat(vir_force);
 
@@ -1825,12 +1753,10 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        if (inputrecElecField(inputrec))
+        /* Compute forces due to electric field */
+        if (fr->efield != nullptr)
         {
-            /* Compute forces due to electric field */
-            calc_f_el(MASTER(cr) ? field : NULL,
-                      start, homenr, mdatoms->chargeA, fr->f_novirsum,
-                      inputrec->ex, inputrec->et, t);
+            fr->efield->calculateForces(cr, mdatoms, fr->f_novirsum, t);
         }
 
         /* Communicate the forces */
@@ -1931,7 +1857,7 @@ void do_force(FILE *fplog, t_commrec *cr,
               std::vector<real> *lambda, t_graph *graph,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
-              double t, FILE *field, gmx_edsam_t ed,
+              double t, gmx_edsam_t ed,
               gmx_bool bBornRadii,
               int flags)
 {
@@ -1961,7 +1887,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 lambda->data(), graph,
                                 fr, fr->ic,
                                 vsite, mu_tot,
-                                t, field, ed,
+                                t, ed,
                                 bBornRadii,
                                 flags);
             break;
@@ -1976,7 +1902,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                enerd, fcd,
                                lambda->data(), graph,
                                fr, vsite, mu_tot,
-                               t, field, ed,
+                               t, ed,
                                bBornRadii,
                                flags);
             break;
@@ -2776,10 +2702,6 @@ void init_md(FILE *fplog,
         {
             please_cite(fplog, "Goga2012");
         }
-    }
-    if ((ir->et[XX].n > 0) || (ir->et[YY].n > 0) || (ir->et[ZZ].n > 0))
-    {
-        please_cite(fplog, "Caleman2008a");
     }
     init_nrnb(nrnb);
 
