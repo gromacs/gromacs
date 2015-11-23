@@ -48,24 +48,10 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef struct {
-    //! Number of terms
-    int   n;
-    //! Coeffients (V / nm)
-    real *a;
-    //! Phase angles
-    real *phi;
-} t_cosines;
-
-typedef struct {
-    real E0;            /* Field strength (V/nm)                        */
-    real omega;         /* Frequency (1/ps)                             */
-    real t0;            /* Centre of the Gaussian pulse (ps)            */
-    real sigma;         /* Width of the Gaussian pulse (FWHM) (ps)      */
-} t_efield;
-
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
+
+class ElectricField;
 
 typedef struct t_grpopts {
     int       ngtc;           /* # T-Coupl groups                        */
@@ -286,7 +272,8 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-typedef struct t_inputrec {
+struct t_inputrec
+{
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -423,8 +410,7 @@ typedef struct t_inputrec {
     real            userreal3;
     real            userreal4;
     t_grpopts       opts;          /* Group options				*/
-    t_cosines       ex[DIM];       /* Electric field stuff	(spatial part)		*/
-    t_cosines       et[DIM];       /* Electric field stuff	(time part)		*/
+    ElectricField  *efield;        /* Applied electric field                       */
     gmx_bool        bQMMM;         /* QM/MM calculation                            */
     int             QMconstraints; /* constraints on QM bonds                      */
     int             QMMMscheme;    /* Scheme: ONIOM or normal                      */
@@ -432,7 +418,7 @@ typedef struct t_inputrec {
 
     /* Fields for removed features go here (better caching) */
     gmx_bool        bAdress;
-} t_inputrec;
+};
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
@@ -495,8 +481,6 @@ gmx_bool inputrecPreserveShape(const t_inputrec *ir);
 gmx_bool inputrecNeedMutot(const t_inputrec *ir);
 
 gmx_bool inputrecTwinRange(const t_inputrec *ir);
-
-gmx_bool inputrecElecField(const t_inputrec *ir);
 
 gmx_bool inputrecExclForces(const t_inputrec *ir);
 

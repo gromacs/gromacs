@@ -875,7 +875,7 @@ static void modify_PMEsettings(
     gmx_mtop_t    mtop;
     char          buf[200];
 
-    snew(ir, 1);
+    ir = new(t_inputrec);
     read_tpx_state(fn_best_tpr, ir, &state, &mtop);
 
     /* Reset nsteps and init_step to the value of the input .tpr file */
@@ -888,7 +888,7 @@ static void modify_PMEsettings(
     fflush(stdout);
     write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
-    sfree(ir);
+    delete ir;
 }
 
 static gmx_bool can_scale_rvdw(int vdwtype)
@@ -939,7 +939,7 @@ static void make_benchmark_tprs(
     fprintf(stdout, ".\n");
 
 
-    snew(ir, 1);
+    ir = new(t_inputrec);
     read_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
     /* Check if some kind of PME was chosen */
@@ -1186,7 +1186,7 @@ static void make_benchmark_tprs(
     }
     fflush(stdout);
     fflush(fp);
-    sfree(ir);
+    delete ir;
 }
 
 

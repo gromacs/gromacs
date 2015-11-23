@@ -55,6 +55,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdlib/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -64,8 +65,10 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -3052,47 +3055,58 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(na_vcm);
 }
 
-static void decode_cos(char *s, t_cosines *cosine)
+static void decode_field(int            dim,
+                         const char    *s,
+                         const char    *st,
+                         ElectricField *efield,
+                         warninp_t      wi)
 {
-    char   *t;
-    char    format[STRLEN], f1[STRLEN];
-    double  a, phi;
-    int     i;
-
-    t = gmx_strdup(s);
-    trim(t);
-
-    cosine->n   = 0;
-    cosine->a   = NULL;
-    cosine->phi = NULL;
-    if (strlen(t))
+    std::vector<std::string> sx  = gmx::splitString(s);
+    if (sx.size() >= 3)
     {
-        sscanf(t, "%d", &(cosine->n));
-        if (cosine->n <= 0)
+        real a, omega, t0, sigma;
+        int  n;
+        // Read old style mdp files
+        try
         {
-            cosine->n = 0;
+            char *pos;
+            n  = std::strtol(sx[0].c_str(), &pos, 10);
+            if (n > 1)
+            {
+                char warn_buf[STRLEN];
+                sprintf(warn_buf, "Only one electric field term supported for each dimension");
+                warning_error(wi, warn_buf);
+            }
+            a  = std::strtod(sx[1].c_str(), &pos);
+            t0 = std::strtod(sx[2].c_str(), &pos);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+        std::vector<std::string> sxt = gmx::splitString(st);
+        if (sxt.size() >= 3)
+        {
+            try
+            {
+                char *pos;
+                n  = std::strtol(sx[0].c_str(), &pos, 10);
+                if (n > 1)
+                {
+                    char warn_buf[STRLEN];
+                    sprintf(warn_buf, "Only one electric field term supported for each dimension");
+                    warning_error(wi, warn_buf);
+                }
+                omega = std::strtod(sx[1].c_str(), &pos);
+                sigma = std::strtod(sx[2].c_str(), &pos);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+            efield->setFieldTerm(dim, a, omega, t0, sigma);
         }
         else
         {
-            snew(cosine->a, cosine->n);
-            snew(cosine->phi, cosine->n);
-
-            sprintf(format, "%%*d");
-            for (i = 0; (i < cosine->n); i++)
-            {
-                strcpy(f1, format);
-                strcat(f1, "%lf%lf");
-                if (sscanf(t, f1, &a, &phi) < 2)
-                {
-                    gmx_fatal(FARGS, "Invalid input for electric field shift: '%s'", t);
-                }
-                cosine->a[i]   = a;
-                cosine->phi[i] = phi;
-                strcat(format, "%*lf%*lf");
-            }
+            efield->setFieldTerm(dim, a, 0, t0, 0);
         }
     }
-    sfree(t);
 }
 
 static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
@@ -3806,12 +3820,9 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
-    decode_cos(is->efield_x, &(ir->ex[XX]));
-    decode_cos(is->efield_xt, &(ir->et[XX]));
-    decode_cos(is->efield_y, &(ir->ex[YY]));
-    decode_cos(is->efield_yt, &(ir->et[YY]));
-    decode_cos(is->efield_z, &(ir->ex[ZZ]));
-    decode_cos(is->efield_zt, &(ir->et[ZZ]));
+    decode_field(XX, is->efield_x, is->efield_xt, ir->efield, wi);
+    decode_field(YY, is->efield_y, is->efield_yt, ir->efield, wi);
+    decode_field(ZZ, is->efield_z, is->efield_zt, ir->efield, wi);
 
     for (i = 0; (i < grps->nr); i++)
     {

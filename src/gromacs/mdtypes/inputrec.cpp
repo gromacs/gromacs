@@ -272,28 +272,6 @@ static void done_pull_params(pull_params_t *pull)
 
 void done_inputrec(t_inputrec *ir)
 {
-    int m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (ir->ex[m].a)
-        {
-            sfree(ir->ex[m].a);
-        }
-        if (ir->ex[m].phi)
-        {
-            sfree(ir->ex[m].phi);
-        }
-        if (ir->et[m].a)
-        {
-            sfree(ir->et[m].a);
-        }
-        if (ir->et[m].phi)
-        {
-            sfree(ir->et[m].phi);
-        }
-    }
-
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
     sfree(ir->opts.annealing);
@@ -349,11 +327,6 @@ gmx_bool inputrecNeedMutot(const t_inputrec *ir)
 gmx_bool inputrecTwinRange(const t_inputrec *ir)
 {
     return (ir->rlist > 0 && (ir->rlistlong == 0 || ir->rlistlong > ir->rlist));
-}
-
-gmx_bool inputrecElecField(const t_inputrec *ir)
-{
-    return (ir->ex[XX].n > 0 || ir->ex[YY].n > 0 || ir->ex[ZZ].n > 0);
 }
 
 gmx_bool inputrecExclForces(const t_inputrec *ir)
