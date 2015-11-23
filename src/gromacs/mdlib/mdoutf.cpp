@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,6 @@ struct gmx_mdoutf {
     int               elamstats;
     int               simulation_part;
     FILE             *fp_dhdl;
-    FILE             *fp_field;
     int               natoms_global;
     int               natoms_x_compressed;
     gmx_groups_t     *groups; /* for compressed position writing */
@@ -97,7 +96,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->tng          = NULL;
     of->tng_low_prec = NULL;
     of->fp_dhdl      = NULL;
-    of->fp_field     = NULL;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
@@ -194,21 +192,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             }
         }
 
-        if (opt2bSet("-field", nfile, fnm) &&
-            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
-        {
-            if (bAppendFiles)
-            {
-                of->fp_field = gmx_fio_fopen(opt2fn("-field", nfile, fnm),
-                                             filemode);
-            }
-            else
-            {
-                of->fp_field = xvgropen(opt2fn("-field", nfile, fnm),
-                                        "Applied electric field", "Time (ps)",
-                                        "E (V/nm)", oenv);
-            }
-        }
+        ir->efield->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -237,11 +221,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     }
 
     return of;
-}
-
-FILE *mdoutf_get_fp_field(gmx_mdoutf_t of)
-{
-    return of->fp_field;
 }
 
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of)
@@ -434,7 +413,7 @@ void mdoutf_tng_close(gmx_mdoutf_t of)
     }
 }
 
-void done_mdoutf(gmx_mdoutf_t of)
+void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir)
 {
     if (of->fp_ene != NULL)
     {
@@ -452,13 +431,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    if (of->fp_field != NULL)
-    {
-        /* This is opened sometimes with xvgropen, sometimes with
-         * gmx_fio_fopen, so we use the least common denominator for closing.
-         */
-        gmx_fio_fclose(of->fp_field);
-    }
+    ir->efield->finishOutput();
     if (of->f_global != NULL)
     {
         sfree(of->f_global);
