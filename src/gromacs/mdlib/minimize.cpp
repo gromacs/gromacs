@@ -475,7 +475,7 @@ void init_em(FILE *fplog, const char *title,
 }
 
 //! Finalize the minimization
-static void finish_em(t_commrec *cr, gmx_mdoutf_t outf,
+static void finish_em(t_commrec *cr, gmx_mdoutf_t outf, const t_inputrec *ir,
                       gmx_walltime_accounting_t walltime_accounting,
                       gmx_wallcycle_t wcycle)
 {
@@ -485,7 +485,7 @@ static void finish_em(t_commrec *cr, gmx_mdoutf_t outf,
         gmx_pme_send_finish(cr);
     }
 
-    done_mdoutf(outf);
+    done_mdoutf(outf, ir);
 
     em_time_end(walltime_accounting, wcycle);
 }
@@ -801,7 +801,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
              ems->f, force_vir, mdatoms, enerd, fcd,
-             ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, NULL, TRUE,
+             ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0));
@@ -1637,7 +1637,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr, outf, walltime_accounting, wcycle);
+    finish_em(cr, outf, inputrec, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
@@ -2465,7 +2465,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr, outf, walltime_accounting, wcycle);
+    finish_em(cr, outf, inputrec, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
@@ -2730,7 +2730,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                         s_min->epot, s_min->fmax, s_min->a_fmax, fnormn);
     }
 
-    finish_em(cr, outf, walltime_accounting, wcycle);
+    finish_em(cr, outf, inputrec, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     inputrec->nsteps = count;
@@ -2965,7 +2965,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                                &state_work->s, state_work->f, vir, mdatoms,
                                                nrnb, wcycle, graph, &top_global->groups,
                                                shellfc, fr, bBornRadii, t, mu_tot,
-                                               vsite, NULL);
+                                               vsite);
                     bNS = false;
                     step++;
                 }
@@ -3069,7 +3069,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         gmx_mtxio_write(ftp2fn(efMTX, nfile, fnm), sz, sz, full_matrix, sparse_matrix);
     }
 
-    finish_em(cr, outf, walltime_accounting, wcycle);
+    finish_em(cr, outf, inputrec, walltime_accounting, wcycle);
 
     walltime_accounting_set_nsteps_done(walltime_accounting, atom_index.size()*2);
 
