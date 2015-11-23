@@ -47,6 +47,7 @@
 #include <sys/time.h>
 #endif
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -874,7 +875,7 @@ static void modify_PMEsettings(
     gmx_mtop_t    mtop;
     char          buf[200];
 
-    snew(ir, 1);
+    ir = new_inputrec(nullptr);
     read_tpx_state(fn_best_tpr, ir, &state, &mtop);
 
     /* Reset nsteps and init_step to the value of the input .tpr file */
@@ -887,7 +888,7 @@ static void modify_PMEsettings(
     fflush(stdout);
     write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
-    sfree(ir);
+    done_inputrec(ir);
 }
 
 static gmx_bool can_scale_rvdw(int vdwtype)
@@ -937,8 +938,8 @@ static void make_benchmark_tprs(
     }
     fprintf(stdout, ".\n");
 
-
-    snew(ir, 1);
+    ElectricField ef;
+    ir = new_inputrec(&ef);
     read_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
     /* Check if some kind of PME was chosen */
@@ -1169,6 +1170,7 @@ static void make_benchmark_tprs(
     }
     fflush(stdout);
     fflush(fp);
+    done_inputrec(ir);
     sfree(ir);
 }
 
@@ -2039,20 +2041,22 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     gmx_bool     bFree;     /* Is a free energy simulation requested?         */
     gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
     gmx_bool     bSwap;     /* Is water/ion position swapping requested?      */
-    t_inputrec   ir;
+    t_inputrec  *ir;
     t_state      state;
     gmx_mtop_t   mtop;
 
 
     /* Check tpr file for options that trigger extra output files */
-    read_tpx_state(opt2fn("-s", nfile, fnm), &ir, &state, &mtop);
-    bFree = (efepNO  != ir.efep );
-    bNM   = (eiNM    == ir.eI   );
-    bSwap = (eswapNO != ir.eSwapCoords);
-    bTpi  = EI_TPI(ir.eI);
+    ElectricField ef;
+    ir = new_inputrec(&ef);
+    read_tpx_state(opt2fn("-s", nfile, fnm), ir, &state, &mtop);
+    bFree = (efepNO  != ir->efep );
+    bNM   = (eiNM    == ir->eI   );
+    bSwap = (eswapNO != ir->eSwapCoords);
+    bTpi  = EI_TPI(ir->eI);
 
     /* Set these output files on the tuning command-line */
-    if (ir.bPull)
+    if (ir->bPull)
     {
         setopt("-pf", nfile, fnm);
         setopt("-px", nfile, fnm);
@@ -2075,10 +2079,13 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
         setopt("-swap", nfile, fnm);
     }
 
-    *rcoulomb = ir.rcoulomb;
+    *rcoulomb = ir->rcoulomb;
 
     /* Return the estimate for the number of PME nodes */
-    return pme_load_estimate(&mtop, &ir, state.box);
+    float npme = pme_load_estimate(&mtop, ir, state.box);
+    done_inputrec(ir);
+    sfree(ir);
+    return npme;
 }
 
 

@@ -34,12 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Declares helper functions for dumping basic data structures as text.
+/*! \brief
+ * Declares helper functions for dumping basic data
+ * structures as text.
  *
- * \inlibraryapi
- * \ingroup module_utility
+ * \inpublicapi
  */
 #ifndef GMX_FILEIO_TXTDUMP_H
 #define GMX_FILEIO_TXTDUMP_H
@@ -49,12 +48,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-//! Line width for text dump output.
-#define LINE_WIDTH  80
-//! Right margin for text dump output.
-#define RMARGIN     10
-//! Actual line length for text dump output.
-#define USE_WIDTH   ((LINE_WIDTH)-(RMARGIN))
 //! Default indentation for text dump output.
 #define INDENT      3
 

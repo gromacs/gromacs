@@ -48,6 +48,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
@@ -2769,7 +2770,7 @@ void init_forcerec(FILE              *fp,
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       inputrecElecField(ir)
+                       ir->efield->applyField()
                        );
 
     if (fr->cutoff_scheme == ecutsGROUP &&
