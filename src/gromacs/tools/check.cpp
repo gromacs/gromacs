@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
@@ -47,13 +48,13 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/gmxlib/compare.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/tools/compare.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
@@ -85,6 +86,65 @@ typedef struct {
     float bF;
     float bBox;
 } t_fr_time;
+
+static void comp_tpx(const char *fn1, const char *fn2,
+                     gmx_bool bRMSD, real ftol, real abstol)
+{
+    const char   *ff[2];
+    t_inputrec   *ir[2];
+    t_state       state[2];
+    gmx_mtop_t    mtop[2];
+    t_topology    top[2];
+    int           i;
+    ElectricField ef1, ef2;
+
+    ir[0] = new_inputrec(&ef1);
+    ir[1] = new_inputrec(&ef2);
+    ff[0] = fn1;
+    ff[1] = fn2;
+    for (i = 0; i < (fn2 ? 2 : 1); i++)
+    {
+        read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
+    }
+    if (fn2)
+    {
+        cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
+        /* Convert gmx_mtop_t to t_topology.
+         * We should implement direct mtop comparison,
+         * but it might be useful to keep t_topology comparison as an option.
+         */
+        top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
+        top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
+        cmp_top(stdout, &top[0], &top[1], ftol, abstol);
+        cmp_groups(stdout, &mtop[0].groups, &mtop[1].groups,
+                   mtop[0].natoms, mtop[1].natoms);
+        comp_state(&state[0], &state[1], bRMSD, ftol, abstol);
+    }
+    else
+    {
+        if (ir[0]->efep == efepNO)
+        {
+            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0]->efep]);
+        }
+        else
+        {
+            if (ir[0]->bPull)
+            {
+                comp_pull_AB(stdout, ir[0]->pull, ftol, abstol);
+            }
+            /* Convert gmx_mtop_t to t_topology.
+             * We should implement direct mtop comparison,
+             * but it might be useful to keep t_topology comparison as an option.
+             */
+            top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
+            cmp_top(stdout, &top[0], NULL, ftol, abstol);
+        }
+    }
+    done_inputrec(ir[0]);
+    done_inputrec(ir[1]);
+    sfree(ir[0]);
+    sfree(ir[1]);
+}
 
 static void tpx2system(FILE *fp, const gmx_mtop_t *mtop)
 {
@@ -147,16 +207,20 @@ static void tpx2params(FILE *fp, const t_inputrec *ir)
 static void tpx2methods(const char *tpx, const char *tex)
 {
     FILE         *fp;
-    t_inputrec    ir;
+    t_inputrec   *ir;
     t_state       state;
     gmx_mtop_t    mtop;
+    ElectricField ef;
 
-    read_tpx_state(tpx, &ir, &state, &mtop);
+    ir = new_inputrec(&ef);
+    read_tpx_state(tpx, ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
     tpx2system(fp, &mtop);
-    tpx2params(fp, &ir);
+    tpx2params(fp, ir);
     gmx_fio_fclose(fp);
+    done_inputrec(ir);
+    sfree(ir);
 }
 
 static void chk_coords(int frame, int natoms, rvec *x, matrix box, real fac, real tol)
@@ -288,12 +352,14 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     gmx_mtop_t       mtop;
     gmx_localtop_t  *top = NULL;
     t_state          state;
-    t_inputrec       ir;
+    t_inputrec      *ir;
+    ElectricField    ef;
 
+    ir = new_inputrec(&ef);
     if (tpr)
     {
-        read_tpx_state(tpr, &ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+        read_tpx_state(tpr, ir, &state, &mtop);
+        top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -360,7 +426,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top->idef, ir.ePBC, fr.x, fr.box, tol);
+            chk_bonds(&top->idef, ir->ePBC, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {
@@ -410,6 +476,8 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     PRINTITEM ( "Velocities", bV );
     PRINTITEM ( "Forces",     bF );
     PRINTITEM ( "Box",        bBox );
+    done_inputrec(ir);
+    sfree(ir);
 }
 
 void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)

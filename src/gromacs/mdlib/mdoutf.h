@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,9 +66,6 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          gmx_wallcycle_t         wcycle);
 
 /*! \brief Getter for file pointer */
-FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);
-
-/*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
@@ -85,7 +82,7 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
 void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
-void done_mdoutf(gmx_mdoutf_t of);
+void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir);
 
 /*! \brief Routine that writes trajectory-like frames.
  *
