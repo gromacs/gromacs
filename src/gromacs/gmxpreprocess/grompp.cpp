@@ -1560,7 +1560,7 @@ int gmx_grompp(int argc, char *argv[])
     };
 
     /* Initiate some variables */
-    snew(ir, 1);
+    ir = new_inputrec();
     snew(opts, 1);
     init_ir(ir, opts);
 
