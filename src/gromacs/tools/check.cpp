@@ -49,12 +49,12 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/gmxlib/compare.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/tools/compare.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
@@ -146,16 +146,19 @@ static void tpx2params(FILE *fp, t_inputrec *ir)
 static void tpx2methods(const char *tpx, const char *tex)
 {
     FILE         *fp;
-    t_inputrec    ir;
+    t_inputrec   *ir;
     t_state       state;
     gmx_mtop_t    mtop;
 
-    read_tpx_state(tpx, &ir, &state, &mtop);
+    ir = new_inputrec();
+    read_tpx_state(tpx, ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
     tpx2system(fp, &mtop);
-    tpx2params(fp, &ir);
+    tpx2params(fp, ir);
     gmx_fio_fclose(fp);
+    done_inputrec(ir);
+    sfree(ir);
 }
 
 static void chk_coords(int frame, int natoms, rvec *x, matrix box, real fac, real tol)
@@ -287,12 +290,13 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     gmx_mtop_t       mtop;
     gmx_localtop_t  *top = NULL;
     t_state          state;
-    t_inputrec       ir;
+    t_inputrec      *ir;
 
+    ir = new_inputrec();
     if (tpr)
     {
-        read_tpx_state(tpr, &ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+        read_tpx_state(tpr, ir, &state, &mtop);
+        top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -359,7 +363,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top->idef, ir.ePBC, fr.x, fr.box, tol);
+            chk_bonds(&top->idef, ir->ePBC, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {
@@ -409,6 +413,8 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     PRINTITEM ( "Velocities", bV );
     PRINTITEM ( "Forces",     bF );
     PRINTITEM ( "Box",        bBox );
+    done_inputrec(ir);
+    sfree(ir);
 }
 
 void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
