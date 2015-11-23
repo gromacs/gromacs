@@ -42,6 +42,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -240,12 +241,16 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-void init_inputrec(t_inputrec *ir)
+t_inputrec *new_inputrec()
 {
-    std::memset(ir, 0, sizeof(*ir));
+    t_inputrec *ir;
+
+    snew(ir, 1);
     snew(ir->fepvals, 1);
     snew(ir->expandedvals, 1);
     snew(ir->simtempvals, 1);
+    ir->efield = new(ElectricField);
+    return ir;
 }
 
 static void done_pull_group(t_pull_group *pgrp)
@@ -272,28 +277,6 @@ static void done_pull_params(pull_params_t *pull)
 
 void done_inputrec(t_inputrec *ir)
 {
-    int m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (ir->ex[m].a)
-        {
-            sfree(ir->ex[m].a);
-        }
-        if (ir->ex[m].phi)
-        {
-            sfree(ir->ex[m].phi);
-        }
-        if (ir->et[m].a)
-        {
-            sfree(ir->et[m].a);
-        }
-        if (ir->et[m].phi)
-        {
-            sfree(ir->et[m].phi);
-        }
-    }
-
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
     sfree(ir->opts.annealing);
@@ -321,6 +304,7 @@ void done_inputrec(t_inputrec *ir)
         done_pull_params(ir->pull);
         sfree(ir->pull);
     }
+    delete ir->efield;
 }
 
 gmx_bool inputrecDeform(const t_inputrec *ir)
@@ -349,11 +333,6 @@ gmx_bool inputrecNeedMutot(const t_inputrec *ir)
 gmx_bool inputrecTwinRange(const t_inputrec *ir)
 {
     return (ir->rlist > 0 && (ir->rlistlong == 0 || ir->rlistlong > ir->rlist));
-}
-
-gmx_bool inputrecElecField(const t_inputrec *ir)
-{
-    return (ir->ex[XX].n > 0 || ir->ex[YY].n > 0 || ir->ex[ZZ].n > 0);
 }
 
 gmx_bool inputrecExclForces(const t_inputrec *ir)
