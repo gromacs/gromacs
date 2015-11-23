@@ -54,6 +54,7 @@
 
 #include <algorithm>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -701,7 +702,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
-    snew(inputrec, 1);
+    ElectricField ef;
+    inputrec = new_inputrec(&ef);
     snew(mtop, 1);
 
     if (Flags & MD_APPENDFILES)
@@ -865,6 +867,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
+        fflush(stdout);
         init_parallel(cr, inputrec, mtop);
 
         /* The master rank decided on the use of GPUs,
