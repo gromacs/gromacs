@@ -57,6 +57,16 @@ namespace gmx
  * other mdrun structures in the future) and wiring up dependencies between
  * modules that are referenced from these structures.
  *
+ * The general idea is that each module takes care of its own data rather than
+ * mdrun having to know about all the details of each type of force calculation.
+ * Initially this is applied for simple things like electric field calculations
+ * but later more complex forces will be supported too.
+ *
+ * In the simplest form, this module delivers the inputrec. The inputrec holds the
+ * information on modules inside (efield for now only). The efield (being an
+ * IInputRecExtension) has a method to initialize a forcerec which in turn has an
+ * IForceProvider that actually computes forces and energies.
+ *
  * \inlibraryapi
  * \ingroup module_mdrunutility
  */
