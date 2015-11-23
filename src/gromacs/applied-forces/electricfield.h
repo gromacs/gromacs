@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,58 +32,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Declares gmx::MDModules.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
- * \ingroup module_mdrunutility
- */
-#ifndef GMX_MDRUNUTILITY_MDMODULES_H
-#define GMX_MDRUNUTILITY_MDMODULES_H
+#ifndef GMX_APPLIED_FORCES_ELECTRICFIELD_H
+#define GMX_APPLIED_FORCES_ELECTRICFIELD_H
 
-#include "gromacs/utility/classhelpers.h"
-
-struct t_inputrec;
+#include <memory>
 
 namespace gmx
 {
 
-/*! \libinternal \brief
- * Factory for t_inputrec.
+class IInputRecExtension;
+
+/*! \brief
+ * Creates a module for an external electric field.
  *
- * This class acts as a central place for constructing t_inputrec (and possibly
- * other mdrun structures in the future) and wiring up dependencies between
- * modules that are referenced from these structures.
+ * The returned class describes the time dependent electric field that can
+ * be applied to all charges in a simulation. The field is described
+ * by the following:
+ *     E(t) = A cos(omega*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(sigma)));
+ * If sigma = 0 there is no pulse and we have instead
+ *     E(t) = A cos(omega*t)
  *
- * The general idea is that each module takes care of its own data rather than
- * mdrun having to know about all the details of each type of force calculation.
- * Initially this is applied for simple things like electric field calculations
- * but later more complex forces will be supported too.
+ * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
  *
- * \inlibraryapi
- * \ingroup module_mdrunutility
+ * WARNING:
+ * There can be problems with the virial.
+ * Since the field is not self-consistent this is unavoidable.
+ * For neutral molecules the virial is correct within this approximation.
+ * For neutral systems with many charged molecules the error is small.
+ * But for systems with a net charge or a few charged molecules
+ * the error can be significant when the field is high.
+ * Solution: implement a self-consistent electric field into PME.
  */
-class MDModules
-{
-    public:
-        MDModules();
-        ~MDModules();
-
-        /*! \brief
-         * Returns an initialized t_inputrec structure.
-         *
-         * The inputrec structure is owned by MDModules and will be destroyed
-         * with it.
-         */
-        t_inputrec *inputrec();
-
-    private:
-        class Impl;
-
-        PrivateImplPointer<Impl> impl_;
-};
+std::unique_ptr<IInputRecExtension> createElectricFieldModule();
 
 } // namespace gmx
 
