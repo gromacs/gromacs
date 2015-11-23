@@ -7,11 +7,14 @@ domdec -> mdlib
 domdec -> pulling
 domdec -> swap
 fileio -> gmxlib
+fileio -> mdlib
 gmxlib -> listed-forces
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
+mdlib -> tools
+mdtypes -> mdlib
 topology -> fileio
 topology -> legacyheaders
 pbcutil -> fileio

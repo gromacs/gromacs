@@ -700,7 +700,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
-    snew(inputrec, 1);
+    inputrec = new_inputrec();
     snew(mtop, 1);
 
     if (Flags & MD_APPENDFILES)
