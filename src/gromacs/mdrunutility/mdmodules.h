@@ -55,7 +55,28 @@ namespace gmx
  *
  * This class acts as a central place for constructing t_inputrec (and possibly
  * other mdrun structures in the future) and wiring up dependencies between
- * modules that are referenced from these structures.
+ * modules that are referenced from these structures.  This class owns all such
+ * modules, and needs to remain in existence as long as the returned data
+ * structures are in use.  Ideally, it is also the only place that creates
+ * instances of these modules (outside test code).
+ *
+ * The general idea is that each module takes care of its own data rather than
+ * mdrun having to know about all the details of each type of force calculation.
+ * Initially this is applied for simple things like electric field calculations
+ * but later more complex forces will be supported too.
+ *
+ * The current approach uses t_inputrec and IInputRecExtension to pass
+ * references to the modules to other code to avoid changing many function
+ * signatures.  Also, the current usage means that nearly every use of
+ * t_inputrec (in particular, reading it from mdp or tpr files) needs to be
+ * initialized through MDModules for correct functionality.  For the future, a
+ * better approach would be to pass around a reference to MDModules instead and
+ * call it directly for cases that are not related to t_inputrec functionality.
+ * This (and other refactoring) would allow simplifying IInputRecExtension.
+ * IForceProvider is the other interface currently used to interact with these
+ * modules.  Also, all the places where these interfaces are used should become
+ * loops over a container of these interfaces, instead of the current single
+ * pointer.
  *
  * \inlibraryapi
  * \ingroup module_mdrunutility
