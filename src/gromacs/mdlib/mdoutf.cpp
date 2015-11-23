@@ -36,6 +36,7 @@
 
 #include "mdoutf.h"
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -184,7 +185,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         }
 
         if (opt2bSet("-field", nfile, fnm) &&
-            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
+            (ir->efield->applyField()))
         {
             if (bAppendFiles)
             {
