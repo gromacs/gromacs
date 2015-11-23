@@ -44,6 +44,9 @@ struct gmx_output_env_t;
    file formats (e.g. as used by gmx check). */
 
 void
+cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol);
+
+void
 comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
 /* Compare two binary run input files */
 

@@ -39,6 +39,7 @@
 
 #include <string.h>
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
@@ -470,18 +471,6 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
     }
 }
 
-static void bc_cosines(const t_commrec *cr, t_cosines *cs)
-{
-    block_bc(cr, cs->n);
-    snew_bc(cr, cs->a, cs->n);
-    snew_bc(cr, cs->phi, cs->n);
-    if (cs->n > 0)
-    {
-        nblock_bc(cr, cs->n, cs->a);
-        nblock_bc(cr, cs->n, cs->phi);
-    }
-}
-
 static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
 {
     block_bc(cr, *pgrp);
@@ -653,8 +642,6 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
-    int      i;
-
     block_bc(cr, *inputrec);
 
     bc_grpopts(cr, &(inputrec->opts));
@@ -693,11 +680,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->imd, 1);
         bc_imd(cr, inputrec->imd);
     }
-    for (i = 0; (i < DIM); i++)
-    {
-        bc_cosines(cr, &(inputrec->ex[i]));
-        bc_cosines(cr, &(inputrec->et[i]));
-    }
+    inputrec->efield->broadCast(cr);
     if (inputrec->eSwapCoords != eswapNO)
     {
         snew_bc(cr, inputrec->swap, 1);

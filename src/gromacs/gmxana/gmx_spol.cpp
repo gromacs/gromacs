@@ -220,7 +220,7 @@ int gmx_spol(int argc, char *argv[])
     }
 
     snew(top, 1);
-    snew(ir, 1);
+    ir = new_inputrec();
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                  ir, box, &natoms, NULL, NULL, top);
 
