@@ -1155,7 +1155,7 @@ int gmx_pme_error(int argc, char *argv[])
     /* Read in the tpr file and open logfile for reading */
     if (MASTER(cr))
     {
-        snew(ir, 1);
+        ir = new(t_inputrec);
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
 
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");

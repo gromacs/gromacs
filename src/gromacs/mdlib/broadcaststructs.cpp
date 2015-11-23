@@ -469,15 +469,23 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
     }
 }
 
-static void bc_cosines(const t_commrec *cr, t_cosines *cs)
+static void bc_field(const t_commrec *cr, gmx::ElectricField &efield)
 {
-    block_bc(cr, cs->n);
-    snew_bc(cr, cs->a, cs->n);
-    snew_bc(cr, cs->phi, cs->n);
-    if (cs->n > 0)
+    rvec a, omega, sigma, t0;
+    for(int m = 0; m < DIM; m++)
     {
-        nblock_bc(cr, cs->n, cs->a);
-        nblock_bc(cr, cs->n, cs->phi);
+        a[m] = efield.a(m);
+        omega[m] = efield.omega(m);
+        sigma[m] = efield.sigma(m);
+        t0[m] = efield.t0(m);
+    }
+    nblock_bc(cr, DIM, a);
+    nblock_bc(cr, DIM, omega);
+    nblock_bc(cr, DIM, t0);
+    nblock_bc(cr, DIM, sigma);
+    for(int m = 0; m < DIM; m++)
+    {
+        efield.setFieldTerm(m, a[m], omega[m], t0[m], sigma[m]);
     }
 }
 
@@ -652,8 +660,6 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
-    int      i;
-
     block_bc(cr, *inputrec);
 
     bc_grpopts(cr, &(inputrec->opts));
@@ -692,11 +698,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->imd, 1);
         bc_imd(cr, inputrec->imd);
     }
-    for (i = 0; (i < DIM); i++)
-    {
-        bc_cosines(cr, &(inputrec->ex[i]));
-        bc_cosines(cr, &(inputrec->et[i]));
-    }
+    bc_field(cr, inputrec->efield);
     if (inputrec->eSwapCoords != eswapNO)
     {
         snew_bc(cr, inputrec->swap, 1);

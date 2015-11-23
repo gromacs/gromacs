@@ -44,25 +44,10 @@
 #define GMX_MDTYPES_INPUTREC_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/electricfield.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-typedef struct {
-    //! Number of terms
-    int   n;
-    //! Coeffients (V / nm)
-    real *a;
-    //! Phase angles
-    real *phi;
-} t_cosines;
-
-typedef struct {
-    real E0;            /* Field strength (V/nm)                        */
-    real omega;         /* Frequency (1/ps)                             */
-    real t0;            /* Centre of the Gaussian pulse (ps)            */
-    real sigma;         /* Width of the Gaussian pulse (FWHM) (ps)      */
-} t_efield;
 
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
@@ -423,8 +408,7 @@ typedef struct t_inputrec {
     real            userreal3;
     real            userreal4;
     t_grpopts       opts;          /* Group options				*/
-    t_cosines       ex[DIM];       /* Electric field stuff	(spatial part)		*/
-    t_cosines       et[DIM];       /* Electric field stuff	(time part)		*/
+    gmx::ElectricField efield;        /* Applied electric field                       */
     gmx_bool        bQMMM;         /* QM/MM calculation                            */
     int             QMconstraints; /* constraints on QM bonds                      */
     int             QMMMscheme;    /* Scheme: ONIOM or normal                      */

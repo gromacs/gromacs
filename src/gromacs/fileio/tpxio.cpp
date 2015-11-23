@@ -51,6 +51,7 @@
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -1800,19 +1801,32 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     /* Cosine stuff for electric fields */
     for (j = 0; (j < DIM); j++)
     {
-        gmx_fio_do_int(fio, ir->ex[j].n);
-        gmx_fio_do_int(fio, ir->et[j].n);
+        int n = 1, nt = 1;
+        gmx_fio_do_int(fio, n);
+        gmx_fio_do_int(fio, nt);
+        std::vector<real> a,phi,at,phit;
+        if (!bRead)
+        {
+            a.push_back(ir->efield.a(j));
+            phi.push_back(ir->efield.t0(j));
+            at.push_back(ir->efield.omega(j));
+            phit.push_back(ir->efield.sigma(j));
+        }
+        else
+        {
+            a.resize(n);
+            phi.resize(n);
+            at.resize(nt);
+            phit.resize(nt);
+        }
+        gmx_fio_ndo_real(fio, a.data(),  n);
+        gmx_fio_ndo_real(fio, phi.data(), n);
+        gmx_fio_ndo_real(fio, at.data(),  nt);
+        gmx_fio_ndo_real(fio, phit.data(), nt);
         if (bRead)
         {
-            snew(ir->ex[j].a,  ir->ex[j].n);
-            snew(ir->ex[j].phi, ir->ex[j].n);
-            snew(ir->et[j].a,  ir->et[j].n);
-            snew(ir->et[j].phi, ir->et[j].n);
+            ir->efield.setFieldTerm(j, a[0], phi[0], at[0], phit[0]);
         }
-        gmx_fio_ndo_real(fio, ir->ex[j].a,  ir->ex[j].n);
-        gmx_fio_ndo_real(fio, ir->ex[j].phi, ir->ex[j].n);
-        gmx_fio_ndo_real(fio, ir->et[j].a,  ir->et[j].n);
-        gmx_fio_ndo_real(fio, ir->et[j].phi, ir->et[j].n);
     }
 
     /* Swap ions */

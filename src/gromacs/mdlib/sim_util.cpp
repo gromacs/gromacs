@@ -235,13 +235,6 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
  *
  * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
  *
- * Et[] contains the parameters for the time dependent
- * part of the field.
- * Ex[] contains the parameters for
- * the spatial dependent part of the field.
- * The function should return the energy due to the electric field
- * (if any) but for now returns 0.
- *
  * WARNING:
  * There can be problems with the virial.
  * Since the field is not self-consistent this is unavoidable.
@@ -253,42 +246,21 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
  */
 static void calc_f_el(FILE *fp, int  start, int homenr,
                       real charge[], rvec f[],
-                      t_cosines Ex[], t_cosines Et[], double t)
+                      const gmx::ElectricField &efield,
+                      double t)
 {
     rvec Ext;
-    real t0;
-    int  i, m;
-
-    for (m = 0; (m < DIM); m++)
+    
+    for (int m = 0; (m < DIM); m++)
     {
-        if (Et[m].n > 0)
+        Ext[m] = FIELDFAC*efield.field(m, t);
+        
+        if (Ext[m] != 0)
         {
-            if (Et[m].n == 3)
-            {
-                t0     = Et[m].a[1];
-                Ext[m] = cos(Et[m].a[0]*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(Et[m].a[2])));
-            }
-            else
-            {
-                Ext[m] = cos(Et[m].a[0]*t);
-            }
-        }
-        else
-        {
-            Ext[m] = 1.0;
-        }
-        if (Ex[m].n > 0)
-        {
-            /* Convert the field strength from V/nm to MD-units */
-            Ext[m] *= Ex[m].a[0]*FIELDFAC;
-            for (i = start; (i < start+homenr); i++)
+            for (int i = start; (i < start+homenr); i++)
             {
                 f[i][m] += charge[i]*Ext[m];
             }
-        }
-        else
-        {
-            Ext[m] = 0;
         }
     }
     if (fp != NULL)
@@ -1469,7 +1441,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* Compute forces due to electric field */
             calc_f_el(MASTER(cr) ? field : NULL,
                       start, homenr, mdatoms->chargeA, fr->f_novirsum,
-                      inputrec->ex, inputrec->et, t);
+                      inputrec->efield, t);
         }
 
         /* If we have NoVirSum forces, but we do not calculate the virial,
@@ -1866,7 +1838,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             /* Compute forces due to electric field */
             calc_f_el(MASTER(cr) ? field : NULL,
                       start, homenr, mdatoms->chargeA, fr->f_novirsum,
-                      inputrec->ex, inputrec->et, t);
+                      inputrec->efield, t);
         }
 
         /* Communicate the forces */
@@ -2801,7 +2773,7 @@ void init_md(FILE *fplog,
             please_cite(fplog, "Goga2012");
         }
     }
-    if ((ir->et[XX].n > 0) || (ir->et[YY].n > 0) || (ir->et[ZZ].n > 0))
+    if (ir->efield.applyField())
     {
         please_cite(fplog, "Caleman2008a");
     }
