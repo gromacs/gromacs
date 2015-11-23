@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,61 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
+#ifndef GMX_APPLIED_FORCES_ELECTRICFIELD_H
+#define GMX_APPLIED_FORCES_ELECTRICFIELD_H
 
-#include "mdmodules.h"
-
-#include "gromacs/applied-forces/electricfield.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/utility/smalloc.h"
+#include <memory>
 
 namespace gmx
 {
 
-class MDModules::Impl
-{
-    public:
-        Impl() : ir_(nullptr)
-        {
-        }
-        ~Impl()
-        {
-            if (ir_ != nullptr)
-            {
-                done_inputrec(ir_);
-                sfree(ir_);
-            }
-        }
+class IInputRecExtension;
 
-        void ensureInputrecInitialized()
-        {
-            if (ir_ == nullptr)
-            {
-                field_ = createElectricFieldModule();
-                snew(ir_, 1);
-                snew(ir_->fepvals, 1);
-                snew(ir_->expandedvals, 1);
-                snew(ir_->simtempvals, 1);
-                ir_->efield = field_.get();
-            }
-        }
-
-        std::unique_ptr<IInputRecExtension>  field_;
-        t_inputrec                          *ir_;
-};
-
-MDModules::MDModules() : impl_(new Impl)
-{
-}
-
-MDModules::~MDModules()
-{
-}
-
-t_inputrec *MDModules::inputrec()
-{
-    impl_->ensureInputrecInitialized();
-    return impl_->ir_;
-}
+/*! \brief
+ * Creates a module for an external electric field.
+ *
+ * The returned class describes the time dependent electric field that can
+ * be applied to all charges in a simulation. The field is described
+ * by the following:
+ *     E(t) = A cos(omega*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(sigma)));
+ * If sigma = 0 there is no pulse and we have instead
+ *     E(t) = A cos(omega*t)
+ *
+ * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
+ *
+ * WARNING:
+ * There can be problems with the virial.
+ * Since the field is not self-consistent this is unavoidable.
+ * For neutral molecules the virial is correct within this approximation.
+ * For neutral systems with many charged molecules the error is small.
+ * But for systems with a net charge or a few charged molecules
+ * the error can be significant when the field is high.
+ * Solution: implement a self-consistent electric field into PME.
+ */
+std::unique_ptr<IInputRecExtension> createElectricFieldModule();
 
 } // namespace gmx
+
+#endif
