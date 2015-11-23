@@ -41,7 +41,7 @@
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -60,6 +60,7 @@ struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
 struct t_forcetable;
+class t_inputrec;
 struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;

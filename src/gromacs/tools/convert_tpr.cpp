@@ -426,7 +426,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
-    snew(ir, 1);
+    ir = new(t_inputrec);
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
     run_t    = ir->init_step*ir->delta_t + ir->init_t;
