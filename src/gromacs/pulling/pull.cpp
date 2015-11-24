@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
@@ -71,6 +72,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pullpotential.h"
 
 static std::string append_before_extension(std::string pathname,
                                            std::string to_append)
@@ -1254,7 +1257,7 @@ static void add_virial_coord(tensor vir, const pull_coord_work_t *pcrd)
     }
 }
 
-static void calc_pull_coord_force(pull_coord_work_t *pcrd,
+static void calc_pull_coord_force(pull_coord_work_t *pcrd, int coord_ind,
                                   double dev, real lambda,
                                   real *V, tensor vir, real *dVdl)
 {
@@ -1284,6 +1287,14 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             pcrd->f_scal  =   -k;
             *V           +=    k*pcrd->value;
             *dVdl        += dkdl*pcrd->value;
+            break;
+        case epullEXTERNAL:
+            assert(pcrd->func != nullptr);
+            double x, Vd;
+            x             = pcrd->value_ref + dev;
+            pcrd->func->do_potential(coord_ind, x, &Vd, &pcrd->f_scal);
+            *V           += Vd;
+            /* No free-energy contribution here */
             break;
         default:
             gmx_incons("Unsupported pull type in do_pull_pot");
@@ -1456,8 +1467,8 @@ void set_pull_coord_reference_value(struct pull_t *pull,
         copy_dvec(pcrd->f23, f23_old);
         copy_dvec(pcrd->f45, f45_old);
 
-        /* Calculate the new forces, ingnore V, vir and dVdl */
-        calc_pull_coord_force(pcrd, dev, lambda, &V, NULL, &dVdl);
+        /* Calculate the new forces, ignore V, vir and dVdl */
+        calc_pull_coord_force(pcrd, coord_ind, dev, lambda, &V, NULL, &dVdl);
 
         /* Here we determine the force correction:
          * substract the half step contribution we added already,
@@ -1494,7 +1505,7 @@ static void do_pull_pot_coord(struct pull_t *pull, int coord_ind, t_pbc *pbc,
 
     dev = get_pull_coord_deviation(pull, coord_ind, pbc, t);
 
-    calc_pull_coord_force(pcrd, dev, lambda, V, vir, dVdl);
+    calc_pull_coord_force(pcrd, coord_ind, dev, lambda, V, vir, dVdl);
 }
 
 real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
@@ -1708,6 +1719,27 @@ void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md
 
     /* Since the PBC of atoms might have changed, we need to update the PBC */
     pull->bSetPBCatoms = TRUE;
+}
+
+void register_pull_potential_function(struct pull_t                           *pull,
+                                      int                                      coord_ind,
+                                      std::string                              pull_potential_function_name)
+{
+    GMX_RELEASE_ASSERT(coord_ind >= 0 && coord_ind < pull->ncoord, "coord_ind out of range");
+
+    pull_coord_work_t *pcrd = &pull->coord[coord_ind];
+
+    GMX_RELEASE_ASSERT(pcrd->params.eType == epullEXTERNAL, "attempt to register potential function for pull coordinate without external potential");
+
+    try
+    {
+        pcrd->func = gmx::registry::pull_potentials.at(pull_potential_function_name)();
+    }
+    catch (std::out_of_range &range_exception)
+    {
+        GMX_THROW(gmx::NotImplementedError("External pull potential not implemented."));
+    }
+
 }
 
 static void init_pull_group_index(FILE *fplog, t_commrec *cr,
