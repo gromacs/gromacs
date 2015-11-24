@@ -61,6 +61,7 @@ enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
 };
 
+
 typedef struct
 {
     t_pull_group  params;
@@ -102,6 +103,9 @@ typedef struct
     dvec          f45;       /* Force for groups 4 and 5 */
     dvec          m;         /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
     dvec          n;         /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
+
+    /* Data for an externally provided pull potential function */
+    gmx::PullPotentialFunction* func;  /* Function pointer to pull potential function */
 }
 pull_coord_work_t;
 
