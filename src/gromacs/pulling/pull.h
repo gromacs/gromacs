@@ -52,9 +52,12 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +69,23 @@ struct pull_params_t;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+
+namespace gmx
+{
+    class PullPotentialData;
+}
+
+/*! \brief Registers an external pull potential function.
+ *
+ * \param[in,out] pull         The pull struct.
+ * \param[in]     coord_ind    Number of the pull coordinate.
+ * \param[in]     data         The internal data for the respective potential function.
+ * \param[in]     pull_potential_function_name The name of the pull potential function as read from the mdp file.
+ */
+void register_pull_potential_function(struct pull_t                          *pull,
+                                      int                                     coord_ind,
+                                      std::unique_ptr<gmx::PullPotentialData> data,
+                                      std::string                             pull_potential_function_name);
 
 
 /*! \brief Get the value for pull coord coord_ind.
