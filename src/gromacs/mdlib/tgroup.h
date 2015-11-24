@@ -65,9 +65,14 @@ void accumulate_u(t_commrec *cr, t_grpopts *opts,
  */
 
 real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
+              gmx_bool bEkinFromFullStepVel, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
- * return total temperature.
+ * returns total (full-step) temperature.
+ *
+ * bEkinFromFullStepVel: If TRUE, produce a full-step kinetic energy
+ * from the full-step velocities (ie. md-vv), otherwise from
+ * (averaged) half-step kinetic energies (all other integrators). The
+ * full-step KE then produces the full-step temperature.
  */
 
 void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,

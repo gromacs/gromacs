@@ -230,7 +230,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
                       bForceUpdate = FALSE, bCPT;
     gmx_bool          bMasterState;
-    int               force_flags, cglo_flags;
+    int               force_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
     int               i, m;
     t_trxstatus      *status;
@@ -577,31 +577,33 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
     }
 
-    cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
-                  | (bStopCM ? CGLO_STOPCM : 0)
-                  | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
-                  | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
-                  | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
-
+    /* TODO Can bSumEkinhOld be removed with suitable clean-up of
+       eiVVAK and/or checkpointing and/or use of MD_READ_EKIN? */
     bSumEkinhOld = FALSE;
-    compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                    NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                    constr, NULL, FALSE, state->box,
-                    NULL, &bSumEkinhOld, cglo_flags
-                    | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
-    if (ir->eI == eiVVAK)
     {
-        /* a second call to get the half step temperature initialized as well */
-        /* we do the same call as above, but turn the pressure off -- internally to
-           compute_globals, this is recognized as a velocity verlet half-step
-           kinetic energy calculation.  This minimized excess variables, but
-           perhaps loses some logic?*/
+        int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+                          | (bStopCM ? CGLO_STOPCM : 0)
+                          | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
+                          | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
+                          | (EI_VV(ir->eI) ? CGLO_EKINFROMFULLSTEPVEL : 0)
+                          | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
-                        NULL, &bSumEkinhOld,
-                        cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
+                        NULL, &bSumEkinhOld, cglo_flags
+                        | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+        if (ir->eI == eiVVAK)
+        {
+            cglo_flags = cglo_flags & ~(CGLO_STOPCM | CGLO_PRESSURE | CGLO_EKINFROMFULLSTEPVEL);
+
+            /* a second call to get the half-step temperature initialized as well */
+            compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
+                            NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                            constr, NULL, FALSE, state->box,
+                            NULL, &bSumEkinhOld,
+                            cglo_flags);
+        }
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -1163,9 +1165,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
-                                | (bStopCM ? CGLO_STOPCM : 0)
+                                | CGLO_SCALEEKIN | CGLO_EKINFROMFULLSTEPVEL
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
-                                | CGLO_SCALEEKIN
                                 );
                 /* explanation of above:
                    a) We compute Ekin at the full time step
@@ -1206,7 +1207,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                     constr, NULL, FALSE, state->box,
                                     NULL, &bSumEkinhOld,
-                                    CGLO_GSTAT | CGLO_TEMPERATURE);
+                                    CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_EKINFROMFULLSTEPVEL);
                     wallcycle_start(wcycle, ewcUPDATE);
                 }
             }
@@ -1238,8 +1239,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
         }
 
-        /* ########  END FIRST UPDATE STEP  ############## */
-        /* ########  If doing VV, we now have v(dt) ###### */
+        /* ########  END FIRST UPDATE STEP  ################ */
+        /* ########  If doing VV, we now have v(t+dt) ###### */
         if (bDoExpanded)
         {
             /* perform extended ensemble sampling in lambda - we don't
@@ -1252,10 +1253,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             copy_df_history(&state_global->dfhist, &state->dfhist);
         }
 
-        /* Now we have the energies and forces corresponding to the
-         * coordinates at time t. We must output all of this before
-         * the update.
-         */
+        /* TODO Check this.
+         *
+         * Now we have the energies and forces corresponding to the
+         * coordinates at time t. Velocities are at time t+dt (for
+         * md-vv and md-vv-avek), or t+(dt/2) (for leapfrog). We must
+         * output all of this before the update. */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
                                  outf, mdebin, ekind, f, f_global,
@@ -1407,6 +1410,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             if (ir->eI == eiVVAK)
             {
+                /* TODO md-vv-avek does the position update twice,
+                   presumably because it was an afterthought
+                   originally. Clean this up */
                 /* We probably only need md->homenr, not state->natoms */
                 if (state->natoms > cbuf_nalloc)
                 {
@@ -1438,7 +1444,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 );
                 wallcycle_start(wcycle, ewcUPDATE);
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
-                /* now we know the scaling, we can compute the positions again again */
+                /* now we know the scaling, we can compute the positions again */
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,

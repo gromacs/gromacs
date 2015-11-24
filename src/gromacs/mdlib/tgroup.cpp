@@ -243,7 +243,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
+              gmx_bool bEkinFromFullStepVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T;
@@ -271,7 +271,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
 
         if (nd > 0)
         {
-            if (bEkinAveVel)
+            if (bEkinFromFullStepVel)
             {
                 if (!bScaleEkin)
                 {
@@ -293,11 +293,13 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
             }
             m_add(tcstat->ekinf, ekind->ekin, ekind->ekin);
 
+            /* TODO If bEkinFromFullStepVel is true, then Th is
+               garbage because calc_ke_part didn't accumulate ekinh */
             tcstat->Th = calc_temp(trace(tcstat->ekinh), nd);
             tcstat->T  = calc_temp(trace(tcstat->ekinf), nd);
 
             /* after the scaling factors have been multiplied in, we can remove them */
-            if (bEkinAveVel)
+            if (bEkinFromFullStepVel)
             {
                 tcstat->ekinscalef_nhc = 1.0;
             }
@@ -320,7 +322,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
     }
     if (dekindlambda)
     {
-        if (bEkinAveVel)
+        if (bEkinFromFullStepVel)
         {
             *dekindlambda = ekind->dekindl;
         }
