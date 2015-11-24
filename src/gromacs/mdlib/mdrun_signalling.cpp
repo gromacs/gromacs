@@ -122,7 +122,7 @@ handleSignals(struct gmx_signalling_t  *gs,
             gmx_sum_sim(eglsNR, gs->mpiBuffer, cr->ms);
         }
         /* Communicate the signals from the master to the others */
-        gmx_bcast(eglsNR*sizeof(gs->mpiBuffer), gs->mpiBuffer, cr);
+        gmx_bcast(eglsNR*sizeof(gs->mpiBuffer[0]), gs->mpiBuffer, cr);
     }
     for (int i = 0; i < eglsNR; i++)
     {
