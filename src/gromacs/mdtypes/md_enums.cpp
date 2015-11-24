@@ -206,7 +206,7 @@ const char *ewt_names[ewtNR+1] = {
 };
 
 const char *epull_names[epullNR+1] = {
-    "umbrella", "constraint", "constant-force", "flat-bottom", nullptr
+    "umbrella", "constraint", "constant-force", "flat-bottom", "external-potential", nullptr
 };
 
 const char *epullg_names[epullgNR+1] = {
