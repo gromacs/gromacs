@@ -291,7 +291,7 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
         }
     }
 
-    return (*nr) != -1;
+    return (*nr) != NOTSET;
 }
 
 static int select_atomnumbers(char **string, t_atoms *atoms, int n1,
