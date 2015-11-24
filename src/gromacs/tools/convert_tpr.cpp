@@ -258,56 +258,85 @@ static void reduce_ilist(int invindex[], gmx_bool bKeep[],
     }
 }
 
-static void reduce_topology_x(int gnx, int index[],
-                              gmx_mtop_t *mtop, rvec x[], rvec v[])
+static void reduce_moltype(int gnx, int index[],
+                           int mt_offset, gmx_moltype_t *mt)
 {
-    t_topology   top;
-    gmx_bool    *bKeep;
-    int         *invindex;
-    int          i;
+    std::vector<int> index2;
 
-    top      = gmx_mtop_t_to_t_topology(mtop);
-    bKeep    = bKeepIt(gnx, top.atoms.nr, index);
-    invindex = invind(gnx, top.atoms.nr, index);
-
-    reduce_block(bKeep, &(top.cgs), "cgs");
-    reduce_block(bKeep, &(top.mols), "mols");
-    reduce_blocka(invindex, bKeep, &(top.excls), "excls");
-    reduce_rvec(gnx, index, x);
-    reduce_rvec(gnx, index, v);
-    reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname,
-                &(top.atoms.nres), top.atoms.resinfo);
-
-    for (i = 0; (i < F_NRE); i++)
+    int              natom = mt->atoms.nr;
+    for (int i = 0; (i < gnx); i++)
     {
-        reduce_ilist(invindex, bKeep, &(top.idef.il[i]),
+        if ((index[i] >= mt_offset) && (index[i] < mt_offset+mt->atoms.nr))
+        {
+            index2.push_back(index[i]-mt_offset);
+        }
+        reduce_atom(index2.size(), index2.data(), mt->atoms.atom, mt->atoms.atomname,
+                    &(mt->atoms.nres), mt->atoms.resinfo);
+    }
+    gmx_bool *bKeep    = bKeepIt(index2.size(), natom, index2.data());
+    int      *invindex = invind(index2.size(), natom, index2.data());
+    for (int i = 0; (i < F_NRE); i++)
+    {
+        reduce_ilist(invindex, bKeep, &(mt->ilist[i]),
                      interaction_function[i].nratoms,
                      interaction_function[i].name);
     }
+    reduce_block(bKeep, &(mt->cgs), "cgs");
+    reduce_blocka(invindex, bKeep, &(mt->excls), "excls");
+    sfree(bKeep);
+    sfree(invindex);
+    mt->atoms.nr = index2.size();
+}
 
-    top.atoms.nr = gnx;
-
-    mtop->nmoltype = 1;
-    snew(mtop->moltype, mtop->nmoltype);
-    mtop->moltype[0].name  = mtop->name;
-    mtop->moltype[0].atoms = top.atoms;
-    for (i = 0; i < F_NRE; i++)
+static void reduce_groups(int gnx, int index[], int natom,
+                          gmx_groups_t *groups)
+{
+    int           *invindex = invind(gnx, natom, index);
+    unsigned char *cptr;
+    snew(cptr, natom);
+    for (int i = 0; i < egcNR; i++)
     {
-        mtop->moltype[0].ilist[i] = top.idef.il[i];
+        if (groups->grpnr[i] != NULL)
+        {
+            for (int j = 0; (j < gnx); j++)
+            {
+                cptr[j] = groups->grpnr[i][index[j]];
+            }
+            for (int j = 0; (j < gnx); j++)
+            {
+                groups->grpnr[i][j] = cptr[j];
+            }
+            groups->ngrpnr[i]  = gnx;
+            groups->grps[i].nr = gnx;
+        }
     }
-    mtop->moltype[0].atoms = top.atoms;
-    mtop->moltype[0].cgs   = top.cgs;
-    mtop->moltype[0].excls = top.excls;
+    sfree(cptr);
+    sfree(invindex);
+}
 
-    mtop->nmolblock = 1;
-    snew(mtop->molblock, mtop->nmolblock);
-    mtop->molblock[0].type       = 0;
-    mtop->molblock[0].nmol       = 1;
-    mtop->molblock[0].natoms_mol = top.atoms.nr;
-    mtop->molblock[0].nposres_xA = 0;
-    mtop->molblock[0].nposres_xB = 0;
+static void reduce_topology_x(int gnx, int index[],
+                              gmx_mtop_t *mtop, rvec x[], rvec v[])
+{
+    int offset = 0;
 
-    mtop->natoms                 = top.atoms.nr;
+    for (int i = 0; i < mtop->nmolblock; i++)
+    {
+        int type = mtop->molblock[i].type;
+        reduce_moltype(gnx, index, offset, &mtop->moltype[type]);
+        offset += mtop->molblock[i].nmol*mtop->molblock[i].natoms_mol;
+        mtop->molblock[i].natoms_mol = mtop->moltype[type].atoms.nr;
+        if (mtop->molblock[i].natoms_mol == 0)
+        {
+            mtop->molblock[i].nmol = 0;
+        }
+    }
+    reduce_rvec(gnx, index, x);
+    reduce_rvec(gnx, index, v);
+    reduce_groups(gnx, index, offset, &mtop->groups);
+    gmx_bool *bKeep    = bKeepIt(gnx, offset, index);
+    reduce_block(bKeep, &(mtop->mols), "mols");
+    sfree(bKeep);
+    mtop->natoms = gnx;
 }
 
 static void zeroq(int index[], gmx_mtop_t *mtop)
@@ -345,7 +374,11 @@ int gmx_convert_tpr(int argc, char *argv[])
         "your [REF].tpx[ref] file, or when you want to make e.g. a pure C[GRK]alpha[grk] [REF].tpx[ref] file.",
         "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
         "this to work.",
-        "[BB]WARNING: this [REF].tpx[ref] file is not fully functional[bb].[PAR]",
+        "[BB]WARNING: this [REF].tpx[ref] file may not be fully functional[bb]."
+        "For instance, reducing the topology only works if all molecules of the",
+        "same type are reduced in the same way. Another certain way to make this",
+        "program fail is to interleave molecule types in the topology, e.g.",
+        "water protein water protein.[PAR]",
         "[BB]4.[bb] by setting the charges of a specified group",
         "to zero. This is useful when doing free energy estimates",
         "using the LIE (Linear Interaction Energy) method."
