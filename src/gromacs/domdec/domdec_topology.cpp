@@ -50,6 +50,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
@@ -74,6 +75,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
@@ -428,17 +430,18 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
                                      &err_top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
                  -1, state_local->x, state_local->box);
-    if (DDMASTER(dd))
+
+    std::string errorMessage;
+
+    if (ndiff_tot > 0)
     {
-        if (ndiff_tot > 0)
-        {
-            gmx_incons("One or more interactions were multiple assigned in the domain decompostion");
-        }
-        else
-        {
-            gmx_fatal(FARGS, "%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) or the two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds also see option -ddcheck", -ndiff_tot, cr->dd->nbonded_global, dd_cutoff_multibody(cr->dd), dd_cutoff_twobody(cr->dd));
-        }
+        errorMessage = "One or more interactions were assigned to multiple domains of the domain decompostion. Please report this bug.";
     }
+    else
+    {
+        errorMessage = gmx::formatString("%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) or the two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds also see option -ddcheck", -ndiff_tot, cr->dd->nbonded_global, dd_cutoff_multibody(dd), dd_cutoff_twobody(dd));
+    }
+    gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MASTER(cr), errorMessage.c_str());
 }
 
 /*! \brief Return global topology molecule information for global atom index \p i_gl */
