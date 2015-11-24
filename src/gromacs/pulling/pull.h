@@ -68,6 +68,31 @@ struct t_mdatoms;
 struct t_pbc;
 
 
+/* \brief Function type for an external pull potential function
+ *
+ * \param[in]  data      The pointer passed along to register_pull_potential_function
+ * \param[in]  coord_ind The pull coordinate index
+ * \param[in]  x         The pull coordinate value
+ * \param[out] V         The pull potential
+ * \param[out] F         The pull force
+ */
+typedef void pull_potential_t (void *data, int coord_ind, double x,
+                               double *V, double *f);
+
+
+/*! \brief Registers an external pull potential function.
+ *
+ * \param[in,out] pull         The pull struct.
+ * \param[in]     coord_ind    Number of the pull coordinate.
+ * \param[in]     function_ptr The function pointer of the pull potential function
+ * \param[in]     data         An opaque pointer to a data structure that will be passed along to the potential function.
+ */
+void register_pull_potential_function(struct pull_t    *pull,
+                                      int               coord_ind,
+                                      pull_potential_t *function_ptr,
+                                      void             *data);
+
+
 /*! \brief Get the value for pull coord coord_ind.
  *
  * \param[in,out] pull      The pull struct.

@@ -102,6 +102,9 @@ typedef struct
     dvec          f45;       /* Force for groups 4 and 5 */
     dvec          m;         /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
     dvec          n;         /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
+
+    pull_potential_t *func;  /* Function pointer for external pull potential */
+    void             *data;  /* Opaque data passed along to func */
 }
 pull_coord_work_t;
 

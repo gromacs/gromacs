@@ -1711,6 +1711,11 @@ applicable pulling coordinate.
       At distances beyond :mdp:`pull-coord1-init` a harmonic potential
       is applied, otherwise no potential is applied.
 
+   .. mdp-value:: external-potential
+
+      An external potential that needs to be provided by another
+      module.
+
 .. mdp:: pull-coord1-geometry
 
    .. mdp-value:: distance
