@@ -1010,17 +1010,17 @@ Even though the trajectory and thus potential energies are identical
 between leap-frog and velocity Verlet, the kinetic energy and
 temperature will not necessarily be the same.  Standard velocity
 Verlet uses the velocities at the $t$ to calculate the kinetic energy
-and thus the temperature only at time $t$; the kinetic energy is then a sum over all particles
+and thus the temperature only at time $t$; the kinetic energy is then a sum over all particles $i$
 \bea
-KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}\ve{v}_i(t)\right)^2 \nonumber\\ 
+KE_{\mathrm{VV}}(t) &=& \sum_i \left(\frac{1}{2m_i}\ve{v}_i(t)\right)^2 \nonumber\\
       &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)+\frac{1}{2}\ve{v}_i(t+\hDt)\right)^2,
 \eea
-with the square on the {\em outside} of the average.  Standard
+with the square on the {\em outside} of the average of the velocities at $t+\hDt$ and $t-\hDt$.  Standard
 leap-frog calculates the kinetic energy at time $t$ based on the
 average kinetic energies at the timesteps $t+\hDt$ and $t-\hDt$, or
-the sum over all particles
+the sum over all particles $i$
 \bea
-KE_{\mathrm{average}}(t) &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)^2+\frac{1}{2}\ve{v}_i(t+\hDt)^2\right),
+KE_{\mathrm{LF}}(t) &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\ve{v}_i(t-\hDt)^2+\frac{1}{2}\ve{v}_i(t+\hDt)^2\right),
 \eea
 where the square is {\em inside} the average.
 

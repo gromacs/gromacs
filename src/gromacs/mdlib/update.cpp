@@ -960,18 +960,14 @@ static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
 #endif
 }
 
+/* bEkinFromFullStepVel: If TRUE, we sum mass-weighted squared velocities into ekinf, if FALSE, into ekinh. */
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
-                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
+                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinFromFullStepVel)
 {
     int           g;
     t_grp_tcstat *tcstat  = ekind->tcstat;
     t_grp_acc    *grpstat = ekind->grpstat;
     int           nthread, thread;
-
-    /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
-       an option, but not supported now.
-       bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
-     */
 
     /* group velocities are calculated in update_ekindata and
      * accumulated in acumulate_groups.
@@ -980,7 +976,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     for (g = 0; (g < opts->ngtc); g++)
     {
         copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
-        if (bEkinAveVel)
+        if (bEkinFromFullStepVel)
         {
             clear_mat(tcstat[g].ekinf);
             tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
@@ -1058,7 +1054,22 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     {
         for (g = 0; g < opts->ngtc; g++)
         {
-            if (bEkinAveVel)
+            /* Accumulate the mass-weighted squared velocities into an
+               ekin[hf] tensor whose [hf] suffix makes explicit the
+               interpretation as full-step (integrators md-vv,
+               md-vv-avek) or half-step (all other integrators), based
+               upon the point during the update cycle that they were
+               accumulated. This is useful for implementing
+               md-vv-avek, because ekinh is needed for calculating the
+               half-step KE that will later be used to calculate the
+               full-step temperature.
+
+               TODO But does md-vv-avek actually use the full-step
+               velocity for something? If not, then there's no need
+               for both tensors (and removing one would probably
+               simplify several things, including extra calls to
+               compute_global). */
+            if (bEkinFromFullStepVel)
             {
                 m_add(tcstat[g].ekinf, ekind->ekin_work[thread][g],
                       tcstat[g].ekinf);
@@ -1076,10 +1087,11 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     inc_nrnb(nrnb, eNR_EKIN, md->homenr);
 }
 
+/* bEkinFromFullStepVel: If TRUE, we sum into ekinf, if FALSE, into ekinh. */
 static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
                               t_grpopts *opts, t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, gmx_bool bEkinAveVel)
+                              t_nrnb *nrnb, gmx_bool bEkinFromFullStepVel)
 {
     int           start = 0, homenr = md->homenr;
     int           g, d, n, m, gt = 0;
@@ -1123,7 +1135,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
             for (m = 0; (m < DIM); m++)
             {
                 /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-                if (bEkinAveVel)
+                if (bEkinFromFullStepVel)
                 {
                     tcstat[gt].ekinf[m][d] += hm*v_corrt[m]*v_corrt[d];
                 }
@@ -1150,15 +1162,16 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
 }
 
 void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
+                  gmx_ekindata_t *ekind, t_nrnb *nrnb,
+                  gmx_bool bEkinFromFullStepVel)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinFromFullStepVel);
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinFromFullStepVel);
     }
 }
 
@@ -1347,6 +1360,7 @@ void update_tcouple(gmx_int64_t       step,
                 berendsen_tcoupl(inputrec, ekind, dttc);
                 break;
             case etcNOSEHOOVER:
+                GMX_RELEASE_ASSERT(!EI_VV(inputrec->eI), "Velocity verlet integrators must not call nosehoover_tcoupl because the half-step temperature is not computed");
                 nosehoover_tcoupl(&(inputrec->opts), ekind, dttc,
                                   state->nosehoover_xi, state->nosehoover_vxi, MassQ);
                 break;

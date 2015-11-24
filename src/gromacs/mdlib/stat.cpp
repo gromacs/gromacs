@@ -159,16 +159,15 @@ void global_stat(gmx_global_stat_t gs,
     int        nener, j;
     real      *rmsd_data = NULL;
     double     nb;
-    gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
+    gmx_bool   bTemp, bEner, bPres, bConstrVir, bEkinFromFullStepVel, bReadEkin;
     bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
 
-    bVV           = EI_VV(inputrec->eI);
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bEner         = flags & CGLO_ENERGY;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrVir    = (flags & CGLO_CONSTRAINT);
-    bEkinAveVel   = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
-    bReadEkin     = (flags & CGLO_READEKIN);
+    bTemp                = flags & CGLO_TEMPERATURE;
+    bEner                = flags & CGLO_ENERGY;
+    bPres                = (flags & CGLO_PRESSURE);
+    bConstrVir           = (flags & CGLO_CONSTRAINT);
+    bEkinFromFullStepVel = (flags & CGLO_EKINFROMFULLSTEPVEL);
+    bReadEkin            = (flags & CGLO_READEKIN);
 
     rb   = gs->rb;
     itc0 = gs->itc0;
@@ -196,7 +195,7 @@ void global_stat(gmx_global_stat_t gs,
     }
 
 /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
-    if (bTemp || !bVV)
+    if (bTemp)
     {
         if (ekind)
         {
@@ -206,12 +205,14 @@ void global_stat(gmx_global_stat_t gs,
                 {
                     itc0[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
                 }
-                if (bEkinAveVel && !bReadEkin)
+                if (!bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinf[0]);
-                }
-                else if (!bReadEkin)
-                {
+                    if (bEkinFromFullStepVel)
+                    {
+                        itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    }
+                    /* TODO should there be some conditionality about
+                       the accumulation of half-step KE? */
                     itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh[0]);
                 }
             }
@@ -225,7 +226,7 @@ void global_stat(gmx_global_stat_t gs,
     }
     where();
 
-    if (bPres || !bVV)
+    if (bPres)
     {
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
@@ -310,7 +311,7 @@ void global_stat(gmx_global_stat_t gs,
     }
 
     /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
-    if (bTemp || !bVV)
+    if (bTemp)
     {
         if (ekind)
         {
@@ -320,12 +321,12 @@ void global_stat(gmx_global_stat_t gs,
                 {
                     extract_binr(rb, itc0[j], DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
                 }
-                if (bEkinAveVel && !bReadEkin)
+                if (!bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinf[0]);
-                }
-                else if (!bReadEkin)
-                {
+                    if (bEkinFromFullStepVel)
+                    {
+                        extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    }
                     extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinh[0]);
                 }
             }
@@ -334,7 +335,7 @@ void global_stat(gmx_global_stat_t gs,
             where();
         }
     }
-    if (bPres || !bVV)
+    if (bPres)
     {
         extract_binr(rb, ifv, DIM*DIM, fvir[0]);
     }
