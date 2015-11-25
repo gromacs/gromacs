@@ -1194,7 +1194,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | CGLO_ENERGY
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
-                                | (bPres ? CGLO_CONSTRAINT : 0)
                                 | CGLO_SCALEEKIN | CGLO_EKINFROMFULLSTEPVEL
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 );
@@ -1568,7 +1567,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0)
-                            | CGLO_CONSTRAINT
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                             );
             checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,

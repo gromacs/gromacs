@@ -280,7 +280,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
-             bReadEkin, bEkinFromFullStepVel, bScaleEkin, bConstrain;
+             bReadEkin, bEkinFromFullStepVel, bScaleEkin;
     real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
@@ -291,7 +291,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     bEner         = flags & CGLO_ENERGY;
     bTemp         = flags & CGLO_TEMPERATURE;
     bPres         = (flags & CGLO_PRESSURE);
-    bConstrain    = (flags & CGLO_CONSTRAINT);
     /* TODO Why is bReadEkin used here? The checkpoint restores the
        full ekindata from ekinstate, so what needs to be done? */
     bEkinFromFullStepVel = (flags & CGLO_EKINFROMFULLSTEPVEL) || bReadEkin;
@@ -331,7 +330,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      state->x, state->v, vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain)
+    if (bTemp || bStopCM || bPres || bEner)
     {
         if (!bGStat)
         {
@@ -394,7 +393,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     /* ##########  Long range energy information ###### */
 
-    if (bEner || bPres || bConstrain)
+    if (bEner || bPres)
     {
         calc_dispcorr(ir, fr, box, state->lambda[efptVDW],
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
@@ -408,10 +407,16 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     }
 
     /* ########## Now pressure ############## */
-    if (bPres || bConstrain)
+    if (bPres)
     {
-
-        m_add(force_vir, shake_vir, total_vir);
+        if (constr != NULL)
+        {
+            m_add(force_vir, shake_vir, total_vir);
+        }
+        else
+        {
+            copy_mat(force_vir, total_vir);
+        }
 
         /* Calculate pressure and apply LR correction if PPPM is used.
          * Use the box from last timestep since we already called update().

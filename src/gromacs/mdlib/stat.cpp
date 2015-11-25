@@ -166,7 +166,7 @@ void global_stat(gmx_global_stat_t gs,
     bTemp                = flags & CGLO_TEMPERATURE;
     bEner                = flags & CGLO_ENERGY;
     bPres                = (flags & CGLO_PRESSURE);
-    bConstrVir           = (flags & CGLO_CONSTRAINT);
+    bConstrVir           = (bPres && constr != NULL);
     bEkinFromFullStepVel = (flags & CGLO_EKINFROMFULLSTEPVEL);
     bReadEkin            = (flags & CGLO_READEKIN);
 

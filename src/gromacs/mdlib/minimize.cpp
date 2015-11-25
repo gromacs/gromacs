@@ -802,8 +802,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                     inputrec, NULL, NULL, NULL, 1, &terminate,
                     NULL, FALSE,
                     CGLO_ENERGY |
-                    CGLO_PRESSURE |
-                    CGLO_CONSTRAINT);
+                    CGLO_PRESSURE);
 
         wallcycle_stop(wcycle, ewcMoveE);
     }

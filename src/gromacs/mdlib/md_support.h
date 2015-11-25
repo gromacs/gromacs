@@ -62,8 +62,6 @@ struct t_trxframe;
 #define CGLO_TEMPERATURE    (1<<7)
 /* Sum the kinetic energy terms in global computation */
 #define CGLO_PRESSURE       (1<<8)
-/* Sum the constraint term in global computation */
-#define CGLO_CONSTRAINT     (1<<9)
 /* Reading ekin from the trajectory */
 #define CGLO_READEKIN       (1<<10)
 /* we need to reset the ekin rescaling factor here */
