@@ -1411,7 +1411,7 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
                warninp_t wi)
 {
     char       type[STRLEN];
-    int        nrexcl, i;
+    int        nrexcl, i, nfci;
     t_molinfo *newmol;
 
     if ((sscanf(line, "%s%d", type, &nrexcl)) != 2)
@@ -1419,15 +1419,35 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
         warning_error(wi, "Expected a molecule type name and nrexcl");
     }
 
-    /* Test if this atomtype overwrites another */
+    /* Test if this moleculetype overwrites another */
     i = 0;
+    nfci = 0;
+    /*
+     * Do first loop over moltypes to find if there more then two matches
+     */
     while (i < *nmol)
     {
         if (gmx_strcasecmp(*((*mol)[i].name), type) == 0)
         {
-            gmx_fatal(FARGS, "moleculetype %s is redefined", type);
+            nfci++;
         }
         i++;
+    }
+    i = 0;
+    if (nfci > 0)
+    {
+        /*
+         * Seems we found more then one moltype during case insensetive search
+         * so do case sensetive one!
+         */
+        while(i< *nmol)
+        {
+            if (strcmp(*((*mol)[i].name), type) == 0)
+            {
+                gmx_fatal(FARGS, "moleculetype %s is redefined", type);
+            }
+            i++;
+        }
     }
 
     (*nmol)++;
@@ -2317,10 +2337,20 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     }
 
     /* search moleculename */
+    /* check if we have more then one mol of this type */
     for (i = 0; ((i < nrmols) && gmx_strcasecmp(type, *(mols[i].name))); i++)
     {
         ;
     }
+    /* if we have more then one check for exact case sensetive match */
+    if (i>0)
+    {
+        for (i = 0; ((i < nrmols) && strcmp(type, *(mols[i].name))); i++)
+        {
+            ;
+        }
+    }
+
 
     if (i < nrmols)
     {
