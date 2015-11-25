@@ -1419,11 +1419,11 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
         warning_error(wi, "Expected a molecule type name and nrexcl");
     }
 
-    /* Test if this atomtype overwrites another */
-    i = 0;
+    /* Test if this moleculetype overwrites another */
+    i    = 0;
     while (i < *nmol)
     {
-        if (gmx_strcasecmp(*((*mol)[i].name), type) == 0)
+        if (strcmp(*((*mol)[i].name), type) == 0)
         {
             gmx_fatal(FARGS, "moleculetype %s is redefined", type);
         }
@@ -2307,6 +2307,8 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
               warninp_t wi)
 {
     int  i, copies;
+    int  nrcs, nrci;
+    int  matchci, matchcs;
     char type[STRLEN];
 
     *nrcopies = 0;
@@ -2317,10 +2319,35 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     }
 
     /* search moleculename */
-    for (i = 0; ((i < nrmols) && gmx_strcasecmp(type, *(mols[i].name))); i++)
+    nrcs    = 0;
+    nrci    = 0;
+    matchci = -1;
+    matchcs = -1;
+    for (i = 0; i < nrmols; i++)
     {
-        ;
+        if (strcmp(type, *(mols[i].name)) == 0)
+        {
+            nrcs++;
+            matchcs = i;
+        }
+        if (gmx_strcasecmp(type, *(mols[i].name)) == 0)
+        {
+            nrci++;
+            matchci = i;
+        }
     }
+
+    if ((nrci > nrcs) && (nrcs != 0))
+    {
+        // use case sensetive
+        i = matchcs;
+    }
+    else
+    {
+        // use case insensetive
+        i = matchci;
+    }
+
 
     if (i < nrmols)
     {
