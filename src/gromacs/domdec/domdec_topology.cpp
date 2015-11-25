@@ -128,10 +128,6 @@ struct gmx_reverse_top_t
     /* Work data structures for multi-threading */
     int            nthread;           /**< The number of threads to be used */
     thread_work_t *th_work;           /**< Thread work array for local topology generation */
-
-    /* Pointers only used for an error message */
-    gmx_mtop_t     *err_top_global; /**< Pointer to the global top, only used for error reporting */
-    gmx_localtop_t *err_top_local;  /**< Pointer to the local top, only used for error reporting */
     //! @endcond
 };
 
@@ -178,47 +174,42 @@ static void print_error_header(FILE *fplog, char *moltypename, int nprint)
 
 /*! \brief Help print error output when interactions are missing */
 static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
-                                          gmx_reverse_top_t *rt,
+                                          const gmx_reverse_top_t *rt,
                                           char *moltypename,
-                                          reverse_ilist_t *ril,
+                                          const reverse_ilist_t *ril,
                                           int a_start, int a_end,
                                           int nat_mol, int nmol,
-                                          t_idef *idef)
+                                          const t_idef *idef)
 {
-    int      nril_mol, *assigned, *gatindex;
-    int      ftype, ftype_j, nral, i, j_mol, j, a0, a0_mol, mol, a;
-    int      nprint;
-    t_ilist *il;
-    t_iatom *ia;
-    gmx_bool bFound;
+    int *assigned;
 
-    nril_mol = ril->index[nat_mol];
+    int  nril_mol = ril->index[nat_mol];
     snew(assigned, nmol*nril_mol);
 
-    gatindex = cr->dd->gatindex;
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    int *gatindex = cr->dd->gatindex;
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (dd_check_ftype(ftype, rt->bBCheck, rt->bConstr, rt->bSettle))
         {
-            nral = NRAL(ftype);
-            il   = &idef->il[ftype];
-            ia   = il->iatoms;
-            for (i = 0; i < il->nr; i += 1+nral)
+            int            nral = NRAL(ftype);
+            const t_ilist *il   = &idef->il[ftype];
+            const t_iatom *ia   = il->iatoms;
+            for (int i = 0; i < il->nr; i += 1+nral)
             {
-                a0     = gatindex[ia[1]];
+                int a0 = gatindex[ia[1]];
                 /* Check if this interaction is in
                  * the currently checked molblock.
                  */
                 if (a0 >= a_start && a0 < a_end)
                 {
-                    mol    = (a0 - a_start)/nat_mol;
-                    a0_mol = (a0 - a_start) - mol*nat_mol;
-                    j_mol  = ril->index[a0_mol];
-                    bFound = FALSE;
-                    while (j_mol < ril->index[a0_mol+1] && !bFound)
+                    int  mol    = (a0 - a_start)/nat_mol;
+                    int  a0_mol = (a0 - a_start) - mol*nat_mol;
+                    int  j_mol  = ril->index[a0_mol];
+                    bool found  = false;
+                    while (j_mol < ril->index[a0_mol+1] && !found)
                     {
-                        j       = mol*nril_mol + j_mol;
-                        ftype_j = ril->il[j_mol];
+                        int j       = mol*nril_mol + j_mol;
+                        int ftype_j = ril->il[j_mol];
                         /* Here we need to check if this interaction has
                          * not already been assigned, since we could have
                          * multiply defined interactions.
@@ -227,23 +218,23 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                             assigned[j] == 0)
                         {
                             /* Check the atoms */
-                            bFound = TRUE;
-                            for (a = 0; a < nral; a++)
+                            found = true;
+                            for (int a = 0; a < nral; a++)
                             {
                                 if (gatindex[ia[1+a]] !=
                                     a_start + mol*nat_mol + ril->il[j_mol+2+a])
                                 {
-                                    bFound = FALSE;
+                                    found = false;
                                 }
                             }
-                            if (bFound)
+                            if (found)
                             {
                                 assigned[j] = 1;
                             }
                         }
                         j_mol += 2 + nral_rt(ftype_j);
                     }
-                    if (!bFound)
+                    if (!found)
                     {
                         gmx_incons("Some interactions seem to be assigned multiple times");
                     }
@@ -255,16 +246,16 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
 
     gmx_sumi(nmol*nril_mol, assigned, cr);
 
-    nprint = 10;
-    i      = 0;
-    for (mol = 0; mol < nmol; mol++)
+    int nprint = 10;
+    int i      = 0;
+    for (int mol = 0; mol < nmol; mol++)
     {
-        j_mol = 0;
+        int j_mol = 0;
         while (j_mol < nril_mol)
         {
-            ftype = ril->il[j_mol];
-            nral  = NRAL(ftype);
-            j     = mol*nril_mol + j_mol;
+            int ftype = ril->il[j_mol];
+            int nral  = NRAL(ftype);
+            int j     = mol*nril_mol + j_mol;
             if (assigned[j] == 0 &&
                 !(interaction_function[ftype].flags & IF_VSITE))
             {
@@ -278,6 +269,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                             interaction_function[ftype].longname);
                     fprintf(stderr, "%20s atoms",
                             interaction_function[ftype].longname);
+                    int a;
                     for (a = 0; a < nral; a++)
                     {
                         fprintf(fplog, "%5d", ril->il[j_mol+2+a]+1);
@@ -316,7 +308,8 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
 
 /*! \brief Help print error output when interactions are missing */
 static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
-                                             gmx_mtop_t *mtop, t_idef *idef)
+                                             const gmx_mtop_t *mtop,
+                                             const t_idef *idef)
 {
     int                mb, a_start, a_end;
     gmx_molblock_t    *molb;
@@ -341,19 +334,18 @@ static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
     }
 }
 
-void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count,  gmx_mtop_t *top_global, t_state *state_local)
+void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
+                                   int local_count,
+                                   gmx_mtop_t *top_global,
+                                   const gmx_localtop_t *top_local,
+                                   t_state *state_local)
 {
     int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int             ftype, nral;
     char            buf[STRLEN];
     gmx_domdec_t   *dd;
-    gmx_mtop_t     *err_top_global;
-    gmx_localtop_t *err_top_local;
 
     dd = cr->dd;
-
-    err_top_global = dd->reverse_top->err_top_global;
-    err_top_local  = dd->reverse_top->err_top_local;
 
     if (fplog)
     {
@@ -366,7 +358,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         nral      = NRAL(ftype);
-        cl[ftype] = err_top_local->idef.il[ftype].nr/(1+nral);
+        cl[ftype] = top_local->idef.il[ftype].nr/(1+nral);
     }
 
     gmx_sumi(F_NRE, cl, cr);
@@ -392,10 +384,10 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
-                n    = gmx_mtop_ftype_count(err_top_global, ftype);
+                n    = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
                 {
-                    n += gmx_mtop_ftype_count(err_top_global, F_CONSTRNC);
+                    n += gmx_mtop_ftype_count(top_global, F_CONSTRNC);
                 }
                 ndiff = cl[ftype] - n;
                 if (ndiff != 0)
@@ -426,8 +418,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
         }
     }
 
-    print_missing_interactions_atoms(fplog, cr, err_top_global,
-                                     &err_top_local->idef);
+    print_missing_interactions_atoms(fplog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
                  -1, state_local->x, state_local->box);
 
@@ -2223,10 +2214,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     }
 
     ltop->atomtypes  = mtop->atomtypes;
-
-    /* For an error message only */
-    dd->reverse_top->err_top_global = mtop;
-    dd->reverse_top->err_top_local  = ltop;
 }
 
 void dd_sort_local_top(gmx_domdec_t *dd, t_mdatoms *mdatoms,
