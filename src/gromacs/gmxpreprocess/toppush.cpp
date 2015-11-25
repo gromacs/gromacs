@@ -1423,7 +1423,7 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
     i = 0;
     while (i < *nmol)
     {
-        if (gmx_strcasecmp(*((*mol)[i].name), type) == 0)
+        if (gmx_strcasecmp_both(*((*mol)[i].name), type) == 0)
         {
             gmx_fatal(FARGS, "moleculetype %s is redefined", type);
         }
@@ -2317,7 +2317,7 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
     }
 
     /* search moleculename */
-    for (i = 0; ((i < nrmols) && gmx_strcasecmp(type, *(mols[i].name))); i++)
+    for (i = 0; ((i < nrmols) && gmx_strcasecmp_both(type, *(mols[i].name))); i++)
     {
         ;
     }

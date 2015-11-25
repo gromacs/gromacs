@@ -105,6 +105,11 @@ int gmx_strcasecmp(const char *str1, const char *str2);
 /** Case-insensitive strncmp(). */
 int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
+/** strcmp doing case sensetive compare first,
+ * if it failes issue warning and do case insensetive compare
+ */
+int gmx_strcasecmp_both(const char *str1, const char *str2);
+
 /** Creates a duplicate of \p src. */
 char *gmx_strdup(const char *src);
 /** Duplicates first \p n characters of \p src. */

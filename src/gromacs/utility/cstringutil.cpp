@@ -292,6 +292,18 @@ int gmx_strncasecmp(const char *str1, const char *str2, int n)
     return 0;
 }
 
+int gmx_strcasecmp_both(const char *str1, const char *str2)
+{
+    int r;
+    r = strcmp(str1, str2);
+    if (r != 0)
+    {
+        gmx_warning("Case sensetive match failed! Doing case insensetive compare\n");
+        r = gmx_strcasecmp(str1, str2);
+    }
+    return r;
+}
+
 char *gmx_strdup(const char *src)
 {
     char *dest;
