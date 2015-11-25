@@ -427,7 +427,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (vout)
     {
-        set_writing_interval(tng, ir->nstvout, 3, TNG_TRAJ_VELOCITIES,
+        set_writing_interval(tng, vout, 3, TNG_TRAJ_VELOCITIES,
                              "VELOCITIES", TNG_PARTICLE_BLOCK_DATA,
                              compression);
 
@@ -440,7 +440,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (fout)
     {
-        set_writing_interval(tng, ir->nstfout, 3, TNG_TRAJ_FORCES,
+        set_writing_interval(tng, fout, 3, TNG_TRAJ_FORCES,
                              "FORCES", TNG_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
 
