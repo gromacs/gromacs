@@ -133,14 +133,14 @@
  * is always set to false after exit.
  */
 static void checkNumberOfBondedInteractions(FILE *fplog, t_commrec *cr, int totalNumberOfBondedInteractions,
-                                            gmx_mtop_t *top_global, t_state *state,
+                                            gmx_mtop_t *top_global, gmx_localtop_t *top_local, t_state *state,
                                             bool *shouldCheckNumberOfBondedInteractions)
 {
     if (*shouldCheckNumberOfBondedInteractions)
     {
         if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
         {
-            dd_print_missing_interactions(fplog, cr, totalNumberOfBondedInteractions, top_global, state); // Does not return
+            dd_print_missing_interactions(fplog, cr, totalNumberOfBondedInteractions, top_global, top_local, state); // Does not return
         }
         *shouldCheckNumberOfBondedInteractions = false;
     }
@@ -1206,7 +1206,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                    EkinAveVel because it's needed for the pressure */
                 checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
-                                                top_global, state,
+                                                top_global, top, state,
                                                 &shouldCheckNumberOfBondedInteractions);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
@@ -1567,7 +1567,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                             );
             checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
-                                            top_global, state,
+                                            top_global, top, state,
                                             &shouldCheckNumberOfBondedInteractions);
         }
 
