@@ -43,6 +43,7 @@
 
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pulling/pull_struct.h"
 #include "gromacs/topology/topology.h"
 
 static int div_nsteps(int nsteps, int nst)

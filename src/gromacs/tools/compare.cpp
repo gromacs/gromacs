@@ -51,6 +51,7 @@
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pulling/pull_struct.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"

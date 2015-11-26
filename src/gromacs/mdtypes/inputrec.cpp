@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pulling/pull_struct.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
