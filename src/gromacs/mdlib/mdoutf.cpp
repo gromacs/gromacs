@@ -112,36 +112,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 
         sprintf(filemode, bAppendFiles ? "a+" : "w+");
 
-        if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
-#ifndef GMX_FAHCORE
-            &&
-            !(EI_DYNAMICS(ir->eI) &&
-              ir->nstxout == 0 &&
-              ir->nstvout == 0 &&
-              ir->nstfout == 0)
-#endif
-            )
-        {
-            const char *filename;
-            filename = ftp2fn(efTRN, nfile, fnm);
-            switch (fn2ftp(filename))
-            {
-                case efTRR:
-                case efTRN:
-                    of->fp_trn = gmx_trr_open(filename, filemode);
-                    break;
-                case efTNG:
-                    gmx_tng_open(filename, filemode[0], &of->tng);
-                    if (filemode[0] == 'w')
-                    {
-                        gmx_tng_prepare_md_writing(of->tng, top_global, ir);
-                    }
-                    bCiteTng = TRUE;
-                    break;
-                default:
-                    gmx_incons("Invalid full precision file format");
-            }
-        }
         if (EI_DYNAMICS(ir->eI) &&
             ir->nstxout_compressed > 0)
         {
@@ -162,6 +132,43 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                     break;
                 default:
                     gmx_incons("Invalid reduced precision file format");
+            }
+        }
+        if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
+#ifndef GMX_FAHCORE
+            &&
+            !(EI_DYNAMICS(ir->eI) &&
+              ir->nstxout == 0 &&
+              ir->nstvout == 0 &&
+              ir->nstfout == 0)
+#endif
+            )
+        {
+            const char *filename;
+            filename = ftp2fn(efTRN, nfile, fnm);
+            switch (fn2ftp(filename))
+            {
+                case efTRR:
+                case efTRN:
+                    /* If there is no uncompressed coordinate output and
+                       there is compressed TNG output write forces
+                       and/or velocities to the TNG file instead. */
+                    if (ir->nstxout != 0 || ir->nstxout_compressed == 0 ||
+                        !of->tng_low_prec)
+                    {
+                        of->fp_trn = gmx_trr_open(filename, filemode);
+                    }
+                    break;
+                case efTNG:
+                    gmx_tng_open(filename, filemode[0], &of->tng);
+                    if (filemode[0] == 'w')
+                    {
+                        gmx_tng_prepare_md_writing(of->tng, top_global, ir);
+                    }
+                    bCiteTng = TRUE;
+                    break;
+                default:
+                    gmx_incons("Invalid full precision file format");
             }
         }
         if (EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
@@ -333,12 +340,28 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 }
             }
 
-            gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
-                           state_local->box,
-                           top_global->natoms,
-                           (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                           (mdof_flags & MDOF_V) ? global_v : NULL,
-                           (mdof_flags & MDOF_F) ? f_global : NULL);
+            /* If a TNG file is open for uncompressed coordinate output also write
+               velocities and forces to it. */
+            else if (of->tng)
+            {
+                gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
+                               state_local->box,
+                               top_global->natoms,
+                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                               (mdof_flags & MDOF_V) ? global_v : NULL,
+                               (mdof_flags & MDOF_F) ? f_global : NULL);
+            }
+            /* If only a TNG file is open for compressed coordinate output (no uncompressed
+               coordinate output) also write forces and velocities to it. */
+            else if (of->tng_low_prec)
+            {
+                gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
+                               state_local->box,
+                               top_global->natoms,
+                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                               (mdof_flags & MDOF_V) ? global_v : NULL,
+                               (mdof_flags & MDOF_F) ? f_global : NULL);
+            }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {

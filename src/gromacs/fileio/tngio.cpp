@@ -372,7 +372,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
 #endif
     int  xout, vout, fout;
-//     int  gcd = -1, lowest = -1;
+    int  gcd = -1, lowest = -1;
     char compression;
 
     tng_set_frames_per_frame_set(tng, bUseLossyCompression, ir);
@@ -380,8 +380,19 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     if (bUseLossyCompression)
     {
         xout        = ir->nstxout_compressed;
-        vout        = 0;
-        fout        = 0;
+
+        /* If there is no uncompressed coordinate output write forces
+           and velocities to the compressed tng file. */
+        if (ir->nstxout)
+        {
+            vout        = 0;
+            fout        = 0;
+        }
+        else
+        {
+            vout        = ir->nstvout;
+            fout        = ir->nstfout;
+        }
         compression = TNG_TNG_COMPRESSION;
     }
     else
@@ -396,34 +407,17 @@ static void set_writing_intervals(tng_trajectory_t  tng,
         set_writing_interval(tng, xout, 3, TNG_TRAJ_POSITIONS,
                              "POSITIONS", TNG_PARTICLE_BLOCK_DATA,
                              compression);
-        /* The design of TNG makes it awkward to try to write a box
-         * with multiple periodicities, which might be co-prime. Since
-         * the use cases for the box with a frame consisting only of
-         * velocities seem low, for now we associate box writing with
-         * position writing. */
-        set_writing_interval(tng, xout, 9, TNG_TRAJ_BOX_SHAPE,
-                             "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
-                             TNG_GZIP_COMPRESSION);
         /* TODO: if/when we write energies to TNG also, reconsider how
          * and when box information is written, because GROMACS
          * behaviour pre-5.0 was to write the box with every
          * trajectory frame and every energy frame, and probably
          * people depend on this. */
 
-        /* TODO: If we need to write lambda values at steps when
-         * positions (or other data) are not also being written, then
-         * code in mdoutf.c will need to match however that is
-         * organized here. */
-        set_writing_interval(tng, xout, 1, TNG_GMX_LAMBDA,
-                             "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
-                             TNG_GZIP_COMPRESSION);
-
-        /* FIXME: gcd and lowest currently not used. */
-//         gcd = greatest_common_divisor_if_positive(gcd, xout);
-//         if (lowest < 0 || xout < lowest)
-//         {
-//             lowest = xout;
-//         }
+        gcd = greatest_common_divisor_if_positive(gcd, xout);
+        if (lowest < 0 || xout < lowest)
+        {
+            lowest = xout;
+        }
     }
     if (vout)
     {
@@ -431,12 +425,11 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                              "VELOCITIES", TNG_PARTICLE_BLOCK_DATA,
                              compression);
 
-        /* FIXME: gcd and lowest currently not used. */
-//         gcd = greatest_common_divisor_if_positive(gcd, vout);
-//         if (lowest < 0 || vout < lowest)
-//         {
-//             lowest = vout;
-//         }
+        gcd = greatest_common_divisor_if_positive(gcd, vout);
+        if (lowest < 0 || vout < lowest)
+        {
+            lowest = vout;
+        }
     }
     if (fout)
     {
@@ -444,29 +437,30 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                              "FORCES", TNG_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
 
-        /* FIXME: gcd and lowest currently not used. */
-//         gcd = greatest_common_divisor_if_positive(gcd, fout);
-//         if (lowest < 0 || fout < lowest)
-//         {
-//             lowest = fout;
-//         }
+        gcd = greatest_common_divisor_if_positive(gcd, fout);
+        if (lowest < 0 || fout < lowest)
+        {
+            lowest = fout;
+        }
     }
-    /* FIXME: See above. gcd interval for lambdas is disabled. */
-//     if (gcd > 0)
-//     {
-//         /* Lambdas written at an interval of the lowest common denominator
-//          * of other output */
-//         set_writing_interval(tng, gcd, 1, TNG_GMX_LAMBDA,
-//                                  "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
-//                                  TNG_GZIP_COMPRESSION);
-//
-//         if (gcd < lowest / 10)
-//         {
-//             gmx_warning("The lowest common denominator of trajectory output is "
-//                         "every %d step(s), whereas the shortest output interval "
-//                         "is every %d steps.", gcd, lowest);
-//         }
-//     }
+    if (gcd > 0)
+    {
+        /* Lambdas and box shape written at an interval of the lowest common
+           denominator of other output */
+        set_writing_interval(tng, gcd, 1, TNG_GMX_LAMBDA,
+                             "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
+                             TNG_GZIP_COMPRESSION);
+
+        set_writing_interval(tng, gcd, 9, TNG_TRAJ_BOX_SHAPE,
+                             "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
+                             TNG_GZIP_COMPRESSION);
+        if (gcd < lowest / 10)
+        {
+            gmx_warning("The lowest common denominator of trajectory output is "
+                        "every %d step(s), whereas the shortest output interval "
+                        "is every %d steps.", gcd, lowest);
+        }
+    }
 }
 #endif
 
@@ -782,16 +776,6 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
         {
             gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
         }
-        /* TNG-MF1 compression only compresses positions and velocities. Use lossless
-         * compression for box shape regardless of output mode */
-        if (write_data(tng, step, elapsedSeconds,
-                       reinterpret_cast<const real *>(box),
-                       9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
-                       TNG_NON_PARTICLE_BLOCK_DATA,
-                       TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
-        {
-            gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
-        }
     }
 
     if (v)
@@ -821,7 +805,16 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     }
 
     /* TNG-MF1 compression only compresses positions and velocities. Use lossless
-     * compression for lambdas regardless of output mode */
+     * compression for lambdas and box shape regardless of output mode */
+    if (write_data(tng, step, elapsedSeconds,
+                   reinterpret_cast<const real *>(box),
+                   9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
+                   TNG_NON_PARTICLE_BLOCK_DATA,
+                   TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+    {
+        gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+    }
+
     if (write_data(tng, step, elapsedSeconds,
                    reinterpret_cast<const real *>(&lambda),
                    1, TNG_GMX_LAMBDA, "LAMBDAS",
