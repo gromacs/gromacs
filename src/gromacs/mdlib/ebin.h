@@ -55,10 +55,6 @@ typedef struct {
     t_energy       *e_sim;
 } t_ebin;
 
-enum {
-    eprNORMAL, eprAVER, eprRMS, eprNR
-};
-
 t_ebin *mk_ebin(void);
 /* Create an energy bin */
 
@@ -87,11 +83,10 @@ void reset_ebin_sums(t_ebin *eb);
 /* Reset the average and fluctuation sums */
 
 void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
-             int prmode, gmx_bool bPrHead);
+             gmx_bool bPrHead);
 /* Print the contents of the energy bin. If nener = -1 ALL energies from
  * index to the end will be printed. We will print nperline entries on a text
- * line (advisory <= 5). prmode may be any of the above listed enum values.
- * tsteps is used only when eprAVER or eprRMS is set.
+ * line (advisory <= 5).
  * If bPrHead than the header is printed.
  */
 
