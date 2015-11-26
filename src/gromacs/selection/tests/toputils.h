@@ -72,6 +72,8 @@ class TopologyManager
         void initUniformResidues(int residueSize);
         void initUniformMolecules(int moleculeSize);
 
+        void initFrameIndices(const ConstArrayRef<int> &index);
+
         t_topology *topology() { return top_; }
         t_trxframe *frame() { return frame_; }
 

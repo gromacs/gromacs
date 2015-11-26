@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ typedef struct t_trxframe
     int      flags;            /* flags for read_first/next_frame  */
     int      not_ok;           /* integrity flags                  */
     gmx_bool bDouble;          /* Double precision?                */
-    int      natoms;           /* number of atoms (atoms, x, v, f) */
+    int      natoms;           /* number of atoms (atoms, x, v, f, index) */
     real     t0;               /* time of the first frame, needed  *
                                 * for skipping frames with -dt     */
     real     tf;               /* internal frame time - DO NOT CHANGE */
@@ -93,6 +93,8 @@ typedef struct t_trxframe
     matrix          box;       /* the 3 box vectors                */
     gmx_bool        bPBC;
     int             ePBC;      /* the type of pbc                  */
+    gmx_bool        bIndex;
+    int            *index;     /* atom indices of contained coordinates */
     t_gmxvmdplugin* vmdplugin;
 } t_trxframe;
 
