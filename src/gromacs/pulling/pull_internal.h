@@ -52,10 +52,8 @@
 
 #include "config.h"
 
+#include "gromacs/mdtypes/pull-params.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
@@ -144,8 +142,5 @@ struct pull_t
     FILE              *out_f;        /* Output file for pull data */
 };
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif
