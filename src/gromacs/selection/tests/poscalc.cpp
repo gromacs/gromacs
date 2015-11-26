@@ -86,10 +86,12 @@ class PositionCalculationTest : public ::testing::Test
                             const char *name);
 
         void testSingleStatic(e_poscalc_t type, int flags, bool bExpectTop,
-                              const gmx::ConstArrayRef<int> &atoms);
+                              const gmx::ConstArrayRef<int> &atoms,
+                              const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
         void testSingleDynamic(e_poscalc_t type, int flags, bool bExpectTop,
                                const gmx::ConstArrayRef<int> &initAtoms,
-                               const gmx::ConstArrayRef<int> &evalAtoms);
+                               const gmx::ConstArrayRef<int> &evalAtoms,
+                               const gmx::ConstArrayRef<int> &index = gmx::EmptyArrayRef());
 
         gmx::test::TestReferenceData        data_;
         gmx::test::TestReferenceChecker     checker_;
@@ -228,7 +230,8 @@ void PositionCalculationTest::updateAndCheck(
 
 void PositionCalculationTest::testSingleStatic(
         e_poscalc_t type, int flags, bool bExpectTop,
-        const gmx::ConstArrayRef<int> &atoms)
+        const gmx::ConstArrayRef<int> &atoms,
+        const gmx::ConstArrayRef<int> &index)
 {
     t_trxframe *frame = topManager_.frame();
     if (frame->bV)
@@ -245,9 +248,13 @@ void PositionCalculationTest::testSingleStatic(
     gmx_ana_pos_t *p = initPositions(pc, NULL);
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        if (!index.empty())
+        {
+            topManager_.initFrameIndices(index);
+        }
+        pcc_.initEvaluation();
+        pcc_.initFrame(frame);
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc, p, atoms, &frameCompound, NULL);
@@ -257,7 +264,8 @@ void PositionCalculationTest::testSingleStatic(
 void PositionCalculationTest::testSingleDynamic(
         e_poscalc_t type, int flags, bool bExpectTop,
         const gmx::ConstArrayRef<int> &initAtoms,
-        const gmx::ConstArrayRef<int> &evalAtoms)
+        const gmx::ConstArrayRef<int> &evalAtoms,
+        const gmx::ConstArrayRef<int> &index)
 {
     gmx_ana_poscalc_t *pc = createCalculation(type, flags | POS_DYNAMIC);
     EXPECT_EQ(bExpectTop, gmx_ana_poscalc_requires_top(pc));
@@ -265,9 +273,13 @@ void PositionCalculationTest::testSingleDynamic(
     gmx_ana_pos_t *p = initPositions(pc, NULL);
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        if (!index.empty())
+        {
+            topManager_.initFrameIndices(index);
+        }
+        pcc_.initEvaluation();
+        pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc, p, evalAtoms, &frameCompound, NULL);
@@ -414,6 +426,21 @@ TEST_F(PositionCalculationTest, ComputesPositionMask)
 
 // TODO: Check for POS_ALL_PBC
 
+TEST_F(PositionCalculationTest, HandlesFramesWithLessAtoms)
+{
+    const int group[] = { 2, 3, 5, 6 };
+    topManager_.initAtoms(10);
+    testSingleStatic(POS_ATOM, 0, false, group, group);
+}
+
+TEST_F(PositionCalculationTest, HandlesFramesWithLessAtoms2)
+{
+    const int group[] = { 2, 3, 6, 7 };
+    const int index[] = { 1, 2, 3, 4, 6, 7 };
+    topManager_.initAtoms(10);
+    testSingleStatic(POS_ATOM, 0, false, group, index);
+}
+
 TEST_F(PositionCalculationTest, HandlesIdenticalStaticCalculations)
 {
     const int group[] = { 0, 1, 4, 5, 6, 7 };
@@ -431,9 +458,9 @@ TEST_F(PositionCalculationTest, HandlesIdenticalStaticCalculations)
     gmx_ana_pos_t *p3 = initPositions(pc3, "Positions");
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        pcc_.initEvaluation();
+        pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc1, p1, group, &frameCompound, "Positions");
@@ -457,9 +484,9 @@ TEST_F(PositionCalculationTest, HandlesOverlappingStaticCalculations)
     gmx_ana_pos_t *p2 = initPositions(pc2, "P2");
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        pcc_.initEvaluation();
+        pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc1, p1, group1, &frameCompound, "P1");
