@@ -273,9 +273,9 @@ void PositionCalculationTest::testSingleStatic(
     gmx_ana_pos_t *p = initPositions(pc, NULL);
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        pcc_.initEvaluation();
+        pcc_.initFrame(frame);
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc, p, atomCount, atoms, &frameCompound, NULL);
@@ -293,9 +293,9 @@ void PositionCalculationTest::testSingleDynamic(
     gmx_ana_pos_t *p = initPositions(pc, NULL);
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        pcc_.initEvaluation();
+        pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc, p, evalCount, evalAtoms, &frameCompound, NULL);
@@ -459,9 +459,9 @@ TEST_F(PositionCalculationTest, HandlesIdenticalStaticCalculations)
     gmx_ana_pos_t *p3 = initPositions(pc3, "Positions");
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        pcc_.initEvaluation();
+        pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc1, p1, group, &frameCompound, "Positions");
@@ -485,9 +485,9 @@ TEST_F(PositionCalculationTest, HandlesOverlappingStaticCalculations)
     gmx_ana_pos_t *p2 = initPositions(pc2, "P2");
     checkInitialized();
     {
-        pcc_.initEvaluation();
-        pcc_.initFrame();
         generateCoordinates();
+        pcc_.initEvaluation();
+        pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
         updateAndCheck(pc1, p1, group1, &frameCompound, "P1");
