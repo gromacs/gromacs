@@ -157,7 +157,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t (FILE *fplog, t_commrec *cr,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           gmx_bool bCompact, int nstglobalcomm,
+                           int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
                            t_inputrec *inputrec,
@@ -175,7 +175,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                            gmx_walltime_accounting_t walltime_accounting)
  */
 double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
-                  const gmx_output_env_t *oenv, gmx_bool bVerbose, gmx_bool bCompact,
+                  const gmx_output_env_t *oenv, gmx_bool bVerbose,
                   int nstglobalcomm,
                   gmx_vsite_t *vsite, gmx_constr_t constr,
                   int stepout, t_inputrec *ir,
@@ -1605,7 +1605,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
                            step, t,
-                           eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
+                           eprNORMAL, mdebin, fcd, groups, &(ir->opts));
             }
             if (ir->bPull)
             {
@@ -1793,7 +1793,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (ir->nstcalcenergy > 0 && !bRerunMD)
         {
             print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
-                       eprAVER, FALSE, mdebin, fcd, groups, &(ir->opts));
+                       eprAVER, mdebin, fcd, groups, &(ir->opts));
         }
     }
 

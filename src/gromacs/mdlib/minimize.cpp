@@ -987,7 +987,7 @@ namespace gmx
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -1006,7 +1006,7 @@ namespace gmx
  */
 double do_cg(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
-             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
              int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int gmx_unused stepout,
@@ -1096,7 +1096,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
     where();
 
@@ -1535,7 +1535,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
-                       TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
@@ -1584,7 +1584,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             /* Write final energy file entries */
             print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
                        !do_log ? fplog : NULL, step, step, eprNORMAL,
-                       TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
     }
 
@@ -1634,7 +1634,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -1653,7 +1653,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
  */
 double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
                 int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_constr_t constr,
                 int gmx_unused stepout,
@@ -1822,7 +1822,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
     where();
 
@@ -2370,7 +2370,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
-                       TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
@@ -2418,7 +2418,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     {
         print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
                    !do_log ? fplog : NULL, step, step, eprNORMAL,
-                   TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
 
     /* Print some stuff... */
@@ -2463,7 +2463,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -2482,7 +2482,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
  */
 double do_steep(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
                 int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_constr_t constr,
                 int gmx_unused stepout,
@@ -2610,7 +2610,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 print_ebin(mdoutf_get_fp_ene(outf), TRUE,
                            do_per_step(steps_accepted, inputrec->nstdisreout),
                            do_per_step(steps_accepted, inputrec->nstorireout),
-                           fplog, count, count, eprNORMAL, TRUE,
+                           fplog, count, count, eprNORMAL,
                            mdebin, fcd, &(top_global->groups), &(inputrec->opts));
                 fflush(fplog);
             }
@@ -2722,7 +2722,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -2741,7 +2741,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
  */
 double do_nm(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
-             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused  bCompact,
+             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
              int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int gmx_unused stepout,

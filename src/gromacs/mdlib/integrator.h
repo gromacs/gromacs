@@ -71,7 +71,6 @@ namespace gmx
  * \param[in] fnm                 Filename structure array
  * \param[in] oenv                Output information
  * \param[in] bVerbose            Verbose output or not
- * \param[in] bCompact            Compact output or not
  * \param[in] nstglobalcomm       How often global communication is done
  * \param[in] vsite               Virtual site information
  * \param[in] constr              Constraint information
@@ -98,7 +97,7 @@ namespace gmx
 typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                             gmx_bool bCompact, int nstglobalcomm,
+                             int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              int stepout,
                              t_inputrec *inputrec,

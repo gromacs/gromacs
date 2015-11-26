@@ -268,7 +268,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool          bDDBondComm   = TRUE;
     gmx_bool          bTunePME      = TRUE;
     gmx_bool          bVerbose      = FALSE;
-    gmx_bool          bCompact      = TRUE;
     gmx_bool          bRerunVSite   = FALSE;
     gmx_bool          bConfout      = TRUE;
     gmx_bool          bReproducible = FALSE;
@@ -373,8 +372,6 @@ int gmx_mdrun(int argc, char *argv[])
           "Optimize PME load between PP/PME ranks or GPU/CPU" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
-        { "-compact", FALSE, etBOOL, {&bCompact},
-          "Write a compact log file" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
         { "-reprod",  FALSE, etBOOL, {&bReproducible},
@@ -533,7 +530,7 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
+    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
                        nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                        nbpu_opt[0], nstlist,
