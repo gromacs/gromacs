@@ -53,6 +53,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -286,7 +287,7 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
          */
         gmx_fio_do_int(fio,  pcrd->eGeom);
         gmx_fio_do_int(fio,  pcrd->ngroup);
-        if (pcrd->ngroup <= 4)
+        if (pcrd->ngroup <= PULL_COORD_NGROUP_MAX)
         {
             gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
         }
