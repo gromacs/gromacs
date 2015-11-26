@@ -1095,7 +1095,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                    NULL, NULL, vir, pres, NULL, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
-        print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
+        print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step,
                    mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
     where();
@@ -1534,7 +1534,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 print_ebin_header(fplog, step, step);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                       do_log ? fplog : NULL, step, step, eprNORMAL,
+                       do_log ? fplog : NULL, step, step,
                        mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
@@ -1583,7 +1583,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         {
             /* Write final energy file entries */
             print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                       !do_log ? fplog : NULL, step, step, eprNORMAL,
+                       !do_log ? fplog : NULL, step, step,
                        mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
     }
@@ -1821,7 +1821,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                    NULL, NULL, vir, pres, NULL, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
-        print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
+        print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step,
                    mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
     where();
@@ -2369,7 +2369,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 print_ebin_header(fplog, step, step);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                       do_log ? fplog : NULL, step, step, eprNORMAL,
+                       do_log ? fplog : NULL, step, step,
                        mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
@@ -2417,7 +2417,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
         print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                   !do_log ? fplog : NULL, step, step, eprNORMAL,
+                   !do_log ? fplog : NULL, step, step,
                    mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
 
@@ -2610,7 +2610,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 print_ebin(mdoutf_get_fp_ene(outf), TRUE,
                            do_per_step(steps_accepted, inputrec->nstdisreout),
                            do_per_step(steps_accepted, inputrec->nstorireout),
-                           fplog, count, count, eprNORMAL,
+                           fplog, count, count,
                            mdebin, fcd, &(top_global->groups), &(inputrec->opts));
                 fflush(fplog);
             }

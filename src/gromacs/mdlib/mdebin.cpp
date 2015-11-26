@@ -1280,13 +1280,11 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
                 gmx_int64_t step, double time,
-                int mode,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts)
 {
     /*static char **grpnms=NULL;*/
-    char         buf[246];
-    int          i, j, n, ni, nj, b;
+    int          i, b;
     int          ndisre = 0;
     real        *disre_rm3tav, *disre_rt;
 
@@ -1298,130 +1296,111 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
     t_enxframe   fr;
 
-    switch (mode)
+    init_enxframe(&fr);
+    fr.t            = time;
+    fr.step         = step;
+    fr.nsteps       = md->ebin->nsteps;
+    fr.dt           = md->delta_t;
+    fr.nsum         = md->ebin->nsum;
+    fr.nre          = (bEne) ? md->ebin->nener : 0;
+    fr.ener         = md->ebin->e;
+    ndisre          = bDR ? fcd->disres.npair : 0;
+    disre_rm3tav    = fcd->disres.rm3tav;
+    disre_rt        = fcd->disres.rt;
+    /* Optional additional old-style (real-only) blocks. */
+    for (i = 0; i < enxNR; i++)
     {
-        case eprNORMAL:
-            init_enxframe(&fr);
-            fr.t            = time;
-            fr.step         = step;
-            fr.nsteps       = md->ebin->nsteps;
-            fr.dt           = md->delta_t;
-            fr.nsum         = md->ebin->nsum;
-            fr.nre          = (bEne) ? md->ebin->nener : 0;
-            fr.ener         = md->ebin->e;
-            ndisre          = bDR ? fcd->disres.npair : 0;
-            disre_rm3tav    = fcd->disres.rm3tav;
-            disre_rt        = fcd->disres.rt;
-            /* Optional additional old-style (real-only) blocks. */
-            for (i = 0; i < enxNR; i++)
-            {
-                nr[i] = 0;
-            }
-            if (fcd->orires.nr > 0 && bOR)
-            {
-                diagonalize_orires_tensors(&(fcd->orires));
-                nr[enxOR]     = fcd->orires.nr;
-                block[enxOR]  = fcd->orires.otav;
-                id[enxOR]     = enxOR;
-                nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ?
-                    fcd->orires.nr : 0;
-                block[enxORI] = fcd->orires.oinsl;
-                id[enxORI]    = enxORI;
-                nr[enxORT]    = fcd->orires.nex*12;
-                block[enxORT] = fcd->orires.eig;
-                id[enxORT]    = enxORT;
-            }
-
-            /* whether we are going to wrte anything out: */
-            if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
-            {
-
-                /* the old-style blocks go first */
-                fr.nblock = 0;
-                for (i = 0; i < enxNR; i++)
-                {
-                    if (nr[i] > 0)
-                    {
-                        fr.nblock = i + 1;
-                    }
-                }
-                add_blocks_enxframe(&fr, fr.nblock);
-                for (b = 0; b < fr.nblock; b++)
-                {
-                    add_subblocks_enxblock(&(fr.block[b]), 1);
-                    fr.block[b].id        = id[b];
-                    fr.block[b].sub[0].nr = nr[b];
-#ifndef GMX_DOUBLE
-                    fr.block[b].sub[0].type = xdr_datatype_float;
-                    fr.block[b].sub[0].fval = block[b];
-#else
-                    fr.block[b].sub[0].type = xdr_datatype_double;
-                    fr.block[b].sub[0].dval = block[b];
-#endif
-                }
-
-                /* check for disre block & fill it. */
-                if (ndisre > 0)
-                {
-                    int db = fr.nblock;
-                    fr.nblock += 1;
-                    add_blocks_enxframe(&fr, fr.nblock);
-
-                    add_subblocks_enxblock(&(fr.block[db]), 2);
-                    fr.block[db].id        = enxDISRE;
-                    fr.block[db].sub[0].nr = ndisre;
-                    fr.block[db].sub[1].nr = ndisre;
-#ifndef GMX_DOUBLE
-                    fr.block[db].sub[0].type = xdr_datatype_float;
-                    fr.block[db].sub[1].type = xdr_datatype_float;
-                    fr.block[db].sub[0].fval = disre_rt;
-                    fr.block[db].sub[1].fval = disre_rm3tav;
-#else
-                    fr.block[db].sub[0].type = xdr_datatype_double;
-                    fr.block[db].sub[1].type = xdr_datatype_double;
-                    fr.block[db].sub[0].dval = disre_rt;
-                    fr.block[db].sub[1].dval = disre_rm3tav;
-#endif
-                }
-                /* here we can put new-style blocks */
-
-                /* Free energy perturbation blocks */
-                if (md->dhc)
-                {
-                    mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
-                }
-
-                /* we can now free & reset the data in the blocks */
-                if (md->dhc)
-                {
-                    mde_delta_h_coll_reset(md->dhc);
-                }
-
-                /* do the actual I/O */
-                do_enx(fp_ene, &fr);
-                if (fr.nre)
-                {
-                    /* We have stored the sums, so reset the sum history */
-                    reset_ebin_sums(md->ebin);
-                }
-            }
-            free_enxframe(&fr);
-            break;
-        case eprAVER:
-            if (log)
-            {
-                pprint(log, "A V E R A G E S", md);
-            }
-            break;
-        case eprRMS:
-            if (log)
-            {
-                pprint(log, "R M S - F L U C T U A T I O N S", md);
-            }
-            break;
-        default:
-            gmx_fatal(FARGS, "Invalid print mode (%d)", mode);
+        nr[i] = 0;
     }
+    if (fcd->orires.nr > 0 && bOR)
+    {
+        diagonalize_orires_tensors(&(fcd->orires));
+        nr[enxOR]     = fcd->orires.nr;
+        block[enxOR]  = fcd->orires.otav;
+        id[enxOR]     = enxOR;
+        nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ?
+            fcd->orires.nr : 0;
+        block[enxORI] = fcd->orires.oinsl;
+        id[enxORI]    = enxORI;
+        nr[enxORT]    = fcd->orires.nex*12;
+        block[enxORT] = fcd->orires.eig;
+        id[enxORT]    = enxORT;
+    }
+
+    /* whether we are going to wrte anything out: */
+    if (fr.nre || ndisre || nr[enxOR] || nr[enxORI])
+    {
+
+        /* the old-style blocks go first */
+        fr.nblock = 0;
+        for (i = 0; i < enxNR; i++)
+        {
+            if (nr[i] > 0)
+            {
+                fr.nblock = i + 1;
+            }
+        }
+        add_blocks_enxframe(&fr, fr.nblock);
+        for (b = 0; b < fr.nblock; b++)
+        {
+            add_subblocks_enxblock(&(fr.block[b]), 1);
+            fr.block[b].id        = id[b];
+            fr.block[b].sub[0].nr = nr[b];
+#ifndef GMX_DOUBLE
+            fr.block[b].sub[0].type = xdr_datatype_float;
+            fr.block[b].sub[0].fval = block[b];
+#else
+            fr.block[b].sub[0].type = xdr_datatype_double;
+            fr.block[b].sub[0].dval = block[b];
+#endif
+        }
+
+        /* check for disre block & fill it. */
+        if (ndisre > 0)
+        {
+            int db = fr.nblock;
+            fr.nblock += 1;
+            add_blocks_enxframe(&fr, fr.nblock);
+
+            add_subblocks_enxblock(&(fr.block[db]), 2);
+            fr.block[db].id        = enxDISRE;
+            fr.block[db].sub[0].nr = ndisre;
+            fr.block[db].sub[1].nr = ndisre;
+#ifndef GMX_DOUBLE
+            fr.block[db].sub[0].type = xdr_datatype_float;
+            fr.block[db].sub[1].type = xdr_datatype_float;
+            fr.block[db].sub[0].fval = disre_rt;
+            fr.block[db].sub[1].fval = disre_rm3tav;
+#else
+            fr.block[db].sub[0].type = xdr_datatype_double;
+            fr.block[db].sub[1].type = xdr_datatype_double;
+            fr.block[db].sub[0].dval = disre_rt;
+            fr.block[db].sub[1].dval = disre_rm3tav;
+#endif
+        }
+        /* here we can put new-style blocks */
+
+        /* Free energy perturbation blocks */
+        if (md->dhc)
+        {
+            mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
+        }
+
+        /* we can now free & reset the data in the blocks */
+        if (md->dhc)
+        {
+            mde_delta_h_coll_reset(md->dhc);
+        }
+
+        /* do the actual I/O */
+        do_enx(fp_ene, &fr);
+        if (fr.nre)
+        {
+            /* We have stored the sums, so reset the sum history */
+            reset_ebin_sums(md->ebin);
+        }
+    }
+    free_enxframe(&fr);
 
     if (log)
     {
@@ -1434,100 +1413,14 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                         opts->ref_t[i]);
             }
         }
-        if (mode == eprNORMAL && fcd->orires.nr > 0)
+        if (fcd->orires.nr > 0)
         {
             print_orires_log(log, &(fcd->orires));
         }
         fprintf(log, "   Energies (%s)\n", unit_energy);
-        pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, mode, TRUE);
+        pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, TRUE);
         fprintf(log, "\n");
-
-        if (mode == eprAVER)
-        {
-            if (md->bDynBox)
-            {
-                pr_ebin(log, md->ebin, md->ib, md->bTricl ? NTRICLBOXS : NBOXS, 5,
-                        mode, TRUE);
-                fprintf(log, "\n");
-            }
-            if (md->bConstrVir)
-            {
-                fprintf(log, "   Constraint Virial (%s)\n", unit_energy);
-                pr_ebin(log, md->ebin, md->isvir, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-                fprintf(log, "   Force Virial (%s)\n", unit_energy);
-                pr_ebin(log, md->ebin, md->ifvir, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
-            fprintf(log, "   Total Virial (%s)\n", unit_energy);
-            pr_ebin(log, md->ebin, md->ivir, 9, 3, mode, FALSE);
-            fprintf(log, "\n");
-            fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
-            pr_ebin(log, md->ebin, md->ipres, 9, 3, mode, FALSE);
-            fprintf(log, "\n");
-            if (md->bMu)
-            {
-                fprintf(log, "   Total Dipole (%s)\n", unit_dipole_D);
-                pr_ebin(log, md->ebin, md->imu, 3, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
-
-            if (md->nE > 1)
-            {
-                if (md->print_grpnms == NULL)
-                {
-                    snew(md->print_grpnms, md->nE);
-                    n = 0;
-                    for (i = 0; (i < md->nEg); i++)
-                    {
-                        ni = groups->grps[egcENER].nm_ind[i];
-                        for (j = i; (j < md->nEg); j++)
-                        {
-                            nj = groups->grps[egcENER].nm_ind[j];
-                            sprintf(buf, "%s-%s", *(groups->grpname[ni]),
-                                    *(groups->grpname[nj]));
-                            md->print_grpnms[n++] = gmx_strdup(buf);
-                        }
-                    }
-                }
-                sprintf(buf, "Epot (%s)", unit_energy);
-                fprintf(log, "%15s   ", buf);
-                for (i = 0; (i < egNR); i++)
-                {
-                    if (md->bEInd[i])
-                    {
-                        fprintf(log, "%12s   ", egrp_nm[i]);
-                    }
-                }
-                fprintf(log, "\n");
-                for (i = 0; (i < md->nE); i++)
-                {
-                    fprintf(log, "%15s", md->print_grpnms[i]);
-                    pr_ebin(log, md->ebin, md->igrp[i], md->nEc, md->nEc, mode,
-                            FALSE);
-                }
-                fprintf(log, "\n");
-            }
-            if (md->nTC > 1)
-            {
-                pr_ebin(log, md->ebin, md->itemp, md->nTC, 4, mode, TRUE);
-                fprintf(log, "\n");
-            }
-            if (md->nU > 1)
-            {
-                fprintf(log, "%15s   %12s   %12s   %12s\n",
-                        "Group", "Ux", "Uy", "Uz");
-                for (i = 0; (i < md->nU); i++)
-                {
-                    ni = groups->grps[egcACC].nm_ind[i];
-                    fprintf(log, "%15s", *groups->grpname[ni]);
-                    pr_ebin(log, md->ebin, md->iu+3*i, 3, 3, mode, FALSE);
-                }
-                fprintf(log, "\n");
-            }
-        }
     }
-
 }
 
 void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)

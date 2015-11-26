@@ -188,7 +188,7 @@ void reset_ebin_sums(t_ebin *eb)
 }
 
 void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
-             int prmode, gmx_bool bPrHead)
+             gmx_bool bPrHead)
 {
     int  i, j, i0;
     real ee = 0;
@@ -237,14 +237,7 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
         }
         for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
         {
-            switch (prmode)
-            {
-                case eprNORMAL: ee = eb->e[i].e; break;
-                case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
-                default: gmx_fatal(FARGS, "Invalid print mode %d in pr_ebin",
-                                   prmode);
-            }
-
+            ee = eb->e[i].e; break;
             rc = fprintf(fp, "   %12.5e", ee);
         }
         if (rc >= 0)
@@ -299,11 +292,6 @@ int main(int argc, char *argv[])
     add_ebin(eb, it, NT, t, 0);
 
     printf("Normal:\n");
-    pr_ebin(stdout, eb, 0, -1, 5, eprNORMAL, 1);
-
-    printf("Average:\n");
-    pr_ebin(stdout, eb, ie, NE, 5, eprAVER, 1);
-    pr_ebin(stdout, eb, is, NS, 3, eprAVER, 1);
-    pr_ebin(stdout, eb, it, NT, 4, eprAVER, 1);
+    pr_ebin(stdout, eb, 0, -1, 5, 1);
 }
 #endif
