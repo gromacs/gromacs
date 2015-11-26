@@ -1282,7 +1282,7 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
         }
     }
 
-    printf("Cumulative distriubtion functions of all histograms created.\n");
+    printf("Cumulative distribution functions of all histograms created.\n");
     if (opt->bs_verbose)
     {
         for (k = 0; k <= nbin; k++)
@@ -1367,7 +1367,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
     else
     {
         sprintf(errstr,
-                "When generating hypothetical trajctories from given umbrella histograms,\n"
+                "When generating hypothetical trajectories from given umbrella histograms,\n"
                 "autocorrelation times (ACTs) are required. Otherwise the statistical error\n"
                 "cannot be predicted. You have 3 options:\n"
                 "1) Make gmx wham estimate the ACTs (options -ac and -acsig).\n"
@@ -1680,7 +1680,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
     }
 
     /* do bootstrapping */
-    fp = xvgropen(fnprof, "Boot strap profiles", xlabel, ylabel, opt->oenv);
+    fp = xvgropen(fnprof, "Bootstrap profiles", xlabel, ylabel, opt->oenv);
     for (ib = 0; ib < opt->nBootStrap; ib++)
     {
         printf("  *******************************************\n"
@@ -1893,7 +1893,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
         }
         if (bFirst)
         {
-            printf("Using gunzig executable %s\n", gunzip);
+            printf("Using gunzip executable %s\n", gunzip);
             bFirst = 0;
         }
         if (!gmx_fexist(fn))
@@ -2712,7 +2712,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     printf("\n");
     for (i = 0; i < nwins; i++)
     {
-        printf("\rEstimating integrated autocorreltion times ... [%2.0f%%] ...", 100.*(i+1)/nwins);
+        printf("\rEstimating integrated autocorrelation times ... [%2.0f%%] ...", 100.*(i+1)/nwins);
         fflush(stdout);
         ntot = window[i].Ntot[0];
 
