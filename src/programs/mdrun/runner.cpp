@@ -138,7 +138,6 @@ struct mdrunner_arglist
     const t_filenm         *fnm;
     const gmx_output_env_t *oenv;
     gmx_bool                bVerbose;
-    gmx_bool                bCompact;
     int                     nstglobalcomm;
     ivec                    ddxyz;
     int                     dd_node_order;
@@ -192,7 +191,7 @@ static void mdrunner_start_fn(void *arg)
         }
 
         gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                      mc.bVerbose, mc.nstglobalcomm,
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
@@ -212,7 +211,7 @@ static void mdrunner_start_fn(void *arg)
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                         gmx_bool bCompact, int nstglobalcomm,
+                                         int nstglobalcomm,
                                          ivec ddxyz, int dd_node_order, real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -247,7 +246,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->fnm             = fnmn;
     mda->oenv            = oenv;
     mda->bVerbose        = bVerbose;
-    mda->bCompact        = bCompact;
     mda->nstglobalcomm   = nstglobalcomm;
     mda->ddxyz[XX]       = ddxyz[XX];
     mda->ddxyz[YY]       = ddxyz[YY];
@@ -660,7 +658,7 @@ static integrator_t *my_integrator(unsigned int ei)
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
+             int nstglobalcomm,
              ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -830,7 +828,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             t_commrec *cr_old       = cr;
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
-                                        oenv, bVerbose, bCompact, nstglobalcomm,
+                                        oenv, bVerbose, nstglobalcomm,
                                         ddxyz, dd_node_order, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt, nstlist_cmdline,
@@ -1322,7 +1320,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, nfile, fnm,
-                                     oenv, bVerbose, bCompact,
+                                     oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, constr,
                                      nstepout, inputrec, mtop,
