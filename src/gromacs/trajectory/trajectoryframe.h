@@ -56,7 +56,7 @@ typedef struct t_trxframe
     int      flags;            /* flags for read_first/next_frame  */
     int      not_ok;           /* integrity flags                  */
     gmx_bool bDouble;          /* Double precision?                */
-    int      natoms;           /* number of atoms (atoms, x, v, f) */
+    int      natoms;           /* number of atoms (atoms, x, v, f, index) */
     real     t0;               /* time of the first frame, needed  *
                                 * for skipping frames with -dt     */
     real     tf;               /* internal frame time - DO NOT CHANGE */
@@ -89,6 +89,8 @@ typedef struct t_trxframe
     matrix          box;       /* the 3 box vectors                */
     gmx_bool        bPBC;
     int             ePBC;      /* the type of pbc                  */
+    gmx_bool        bIndex;
+    int            *index;     /* atom indices of contained coordinates */
     t_gmxvmdplugin* vmdplugin;
 } t_trxframe;
 
