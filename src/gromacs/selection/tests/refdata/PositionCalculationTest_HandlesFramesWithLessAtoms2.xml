@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <InitializedPositions>
+    <Positions>
+      <Int Name="Count">4</Int>
+      <String Name="Type">atoms</String>
+      <Sequence Name="Block">
+        <Int Name="Length">5</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+      </Sequence>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>2</Int>
+        </Sequence>
+        <Int Name="RefId">0</Int>
+      </Position>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>3</Int>
+        </Sequence>
+        <Int Name="RefId">1</Int>
+      </Position>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>6</Int>
+        </Sequence>
+        <Int Name="RefId">2</Int>
+      </Position>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>7</Int>
+        </Sequence>
+        <Int Name="RefId">3</Int>
+      </Position>
+    </Positions>
+  </InitializedPositions>
+  <EvaluatedPositions Name="Frame0">
+    <Positions>
+      <Int Name="Count">4</Int>
+      <String Name="Type">atoms</String>
+      <Sequence Name="Block">
+        <Int Name="Length">5</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+      </Sequence>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>2</Int>
+        </Sequence>
+        <Int Name="RefId">0</Int>
+        <Vector Name="Coordinates">
+          <Real Name="X">1</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Position>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>3</Int>
+        </Sequence>
+        <Int Name="RefId">1</Int>
+        <Vector Name="Coordinates">
+          <Real Name="X">2</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Position>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>6</Int>
+        </Sequence>
+        <Int Name="RefId">2</Int>
+        <Vector Name="Coordinates">
+          <Real Name="X">4</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Position>
+      <Position>
+        <Sequence Name="Atoms">
+          <Int Name="Length">1</Int>
+          <Int>7</Int>
+        </Sequence>
+        <Int Name="RefId">3</Int>
+        <Vector Name="Coordinates">
+          <Real Name="X">5</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Position>
+    </Positions>
+  </EvaluatedPositions>
+</ReferenceData>

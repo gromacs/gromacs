@@ -839,7 +839,7 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
                     "are required).", fr->natoms, impl_->maxAtomIndex_ + 1);
         GMX_THROW(InconsistentInputError(message));
     }
-    impl_->sc_.pcc.initFrame();
+    impl_->sc_.pcc.initFrame(fr);
 
     SelectionEvaluator evaluator;
     evaluator.evaluate(this, fr, pbc);

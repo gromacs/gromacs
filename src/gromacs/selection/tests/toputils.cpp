@@ -45,6 +45,8 @@
 
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
@@ -81,6 +83,7 @@ TopologyManager::~TopologyManager()
         sfree(frame_->x);
         sfree(frame_->v);
         sfree(frame_->f);
+        sfree(frame_->index);
         sfree(frame_);
     }
 }
@@ -217,6 +220,18 @@ void TopologyManager::initUniformMolecules(int moleculeSize)
         index += moleculeSize;
     }
     top_->mols.index[top_->mols.nr] = top_->atoms.nr;
+}
+
+void TopologyManager::initFrameIndices(const ConstArrayRef<int> &index)
+{
+    GMX_RELEASE_ASSERT(frame_ != nullptr, "Frame not initialized");
+    GMX_RELEASE_ASSERT(!frame_->bIndex, "Frame atom indices can only be set once");
+
+    frame_->bIndex = TRUE;
+    snew(frame_->index, index.size());
+    std::copy(index.begin(), index.end(), frame_->index);
+
+    frame_->natoms = index.size();
 }
 
 } // namespace test
