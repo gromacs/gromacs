@@ -71,6 +71,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
@@ -166,6 +167,12 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     real                  spm, sp;
     int                   d;
 
+    // Note that we don't (yet) support PME load balancing with LJ-PME only.
+    GMX_RELEASE_ASSERT(EEL_PME(ir->coulombtype), "pme_loadbal_init called without PME electrostatics");
+    // To avoid complexity, we require a single cut-off with PME for q+LJ.
+    // This is checked by grompp, but it doesn't hurt to check again.
+    GMX_RELEASE_ASSERT(!(EEL_PME(ir->coulombtype) && EVDW_PME(ir->vdwtype) && ir->rcoulomb != ir->rvdw), "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
+
     snew(pme_lb, 1);
 
     pme_lb->bSepPMERanks  = !(cr->duty & DUTY_PME);
@@ -178,16 +185,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->cutoff_scheme = ir->cutoff_scheme;
 
-    if (pme_lb->cutoff_scheme == ecutsVERLET)
-    {
-        pme_lb->rbuf_coulomb = ic->rlist - ic->rcoulomb;
-        pme_lb->rbuf_vdw     = pme_lb->rbuf_coulomb;
-    }
-    else
-    {
-        pme_lb->rbuf_coulomb = ic->rlist - ic->rcoulomb;
-        pme_lb->rbuf_vdw     = ic->rlist - ic->rvdw;
-    }
+    pme_lb->rbuf_coulomb  = ic->rlist - ic->rcoulomb;
+    pme_lb->rbuf_vdw      = ic->rlist - ic->rvdw;
 
     copy_mat(box, pme_lb->box_start);
     if (ir->ePBC == epbcXY && ir->nwall == 2)
@@ -354,7 +353,9 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
 
     if (pme_lb->cutoff_scheme == ecutsVERLET)
     {
-        set->rlist        = set->rcut_coulomb + pme_lb->rbuf_coulomb;
+        /* Never decrease the Coulomb and VdW list buffers */
+        set->rlist        = std::max(set->rcut_coulomb + pme_lb->rbuf_coulomb,
+                                     pme_lb->rcut_vdw + pme_lb->rbuf_vdw);
     }
     else
     {
