@@ -313,9 +313,16 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
         }
-        if (ir->rcoulomb != ir->rvdw)
+
+        /* Check that rcoulomb==rvdw.
+         * Since we have PME coulomb + LJ cut-off kernels with rcoulomb>rvdw
+         * for PME load balancing, we can support this exception.
+         */
+        if (ir->rcoulomb != ir->rvdw &&
+            !(EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == evdwCUT &&
+              ir->rcoulomb > ir->rvdw))
         {
-            warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
+            warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported (except for rcoulomb>rvdw with PME electrostatics)");
         }
         if (ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwSWITCH)
         {
