@@ -114,6 +114,61 @@ TEST(RVecTest, WorksAs_rvec_Array)
     EXPECT_EQ(4, r[1][ZZ]);
 }
 
+TEST(RVecTest, CanAssignRVecToRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b;
+    b = a;
+    EXPECT_EQ(1, b[XX]);
+    EXPECT_EQ(2, b[YY]);
+    EXPECT_EQ(3, b[ZZ]);
+}
+
+TEST(RVecTest, CanAddRVecToRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    c = a + b;
+    EXPECT_EQ(4, c[XX]);
+    EXPECT_EQ(4, c[YY]);
+    EXPECT_EQ(4, c[ZZ]);
+}
+
+TEST(RVecTest, CanAddAssignRVecToRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    a += b;
+    EXPECT_EQ(4, a[XX]);
+    EXPECT_EQ(4, a[YY]);
+    EXPECT_EQ(4, a[ZZ]);
+}
+
+
+TEST(RVecTest, CanSubstractRVecFromRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    c = b - a;
+    EXPECT_EQ(2, c[XX]);
+    EXPECT_EQ(0, c[YY]);
+    EXPECT_EQ(-2, c[ZZ]);
+}
+
+TEST(RVecTest, CanSubstractAssignRVecFromRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    b -= a;
+    EXPECT_EQ(2, b[XX]);
+    EXPECT_EQ(0, b[YY]);
+    EXPECT_EQ(-2, b[ZZ]);
+}
+
+
 /*! \brief
  * Helper function for testing RVec to rvec conversions.
  */
