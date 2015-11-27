@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,7 @@
 #ifndef GMX_MATH_VECTYPES_H
 #define GMX_MATH_VECTYPES_H
 
+#include <math.h> // since this file used from C source files
 #include "gromacs/utility/real.h"
 
 #define XX      0 /* Defines for indexing in */
@@ -124,6 +125,105 @@ class BasicVector
         operator ValueType *() { return x_; }
         //! Makes BasicVector usable in contexts where a raw C array is expected.
         operator const ValueType *() const { return x_; }
+        //! Allow inplace addition for BasicVector
+        BasicVector<ValueType> &operator+=(const BasicVector<ValueType> &right)
+        {
+            for (int i = 0; i < DIM; ++i)
+            {
+                this->x_[i] += right.x_[i];
+            }
+            return *this;
+        }
+        //! Allow inplace substraction for BasicVector
+        BasicVector<ValueType> &operator-=(const BasicVector<ValueType> &right)
+        {
+            for (int i = 0; i < DIM; ++i)
+            {
+                this->x_[i] -= right.x_[i];
+            }
+            return *this;
+        }
+        //! Allow vector addition
+        BasicVector<ValueType> operator+(const BasicVector<ValueType> &right) const
+        {
+            BasicVector<ValueType> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i] + right.x_[i];
+            }
+            return temp;
+        }
+        //! Allow vector substraction
+        BasicVector<ValueType> operator-(const BasicVector<ValueType> &right) const
+        {
+            BasicVector<ValueType> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i] - right.x_[i];
+            }
+            return temp;
+        }
+        //! Allow vector scalar multiplication (dot product)
+        ValueType dot(const BasicVector<ValueType> &right) const
+        {
+            ValueType temp = 0;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp += this->x_[i]*right.x_[i];
+            }
+            return temp;
+        }
+
+        //! Allow vector vector multiplication (cross product)
+        BasicVector<ValueType> cross(const BasicVector<ValueType> &right) const
+        {
+            BasicVector<ValueType> temp;
+            temp.x_[XX] = this->x_[YY]*right.x_[ZZ]-this->x_[ZZ]*right.x_[YY];
+            temp.x_[YY] = this->x_[ZZ]*right.x_[XX]-this->x_[XX]*right.x_[ZZ];
+            temp.x_[ZZ] = this->x_[XX]*right.x_[YY]-this->x_[YY]*right.x_[XX];
+            return temp;
+        }
+
+        //! Allow vector scaling (vector by scalar multiply
+        BasicVector<ValueType> scale(const ValueType &right) const
+        {
+            BasicVector<ValueType> temp;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp.x_[i] = this->x_[i]*right;
+            }
+            return temp;
+        }
+
+        //! Norm^2 of vector
+        ValueType norm2() const
+        {
+            ValueType temp = 0;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp += this->x_[i]*this->x_[i];
+            }
+            return temp;
+        }
+
+        //! Norm of vector
+        ValueType norm() const
+        {
+            ValueType temp = 0;
+            for (int i = 0; i < DIM; ++i)
+            {
+                temp += this->x_[i]*this->x_[i];
+            }
+            return sqrt(temp);
+        }
+
+
+        //! Clear vector (return Zerro vector)
+        BasicVector<ValueType> clear() const
+        {
+            BasicVector<ValueType> temp(0, 0, 0);
+            return temp;
+        }
 
         //! Converts to a raw C array where implicit conversion does not work.
         RawArray &as_vec() { return x_; }
