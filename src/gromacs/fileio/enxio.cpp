@@ -745,6 +745,11 @@ void free_enxnms(int n, gmx_enxnm_t *nms)
 
 void close_enx(ener_file_t ef)
 {
+    if (ef == NULL)
+    {
+        // Nothing to do
+        return;
+    }
     if (gmx_fio_close(ef->fio) != 0)
     {
         gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of disk space?");
