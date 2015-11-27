@@ -115,6 +115,136 @@ TEST(RVecTest, WorksAs_rvec_Array)
 }
 
 /*! \brief
+ * Test overloaded math operations
+ */
+
+TEST(RVecTest, CanAssignRVecToRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b;
+    b = a;
+    EXPECT_EQ(1, b[XX]);
+    EXPECT_EQ(2, b[YY]);
+    EXPECT_EQ(3, b[ZZ]);
+}
+
+TEST(RVecTest, CanAddRVecToRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    c = a + b;
+    EXPECT_EQ(4, c[XX]);
+    EXPECT_EQ(4, c[YY]);
+    EXPECT_EQ(4, c[ZZ]);
+}
+
+TEST(RVecTest, CanAddAssignRVecToRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    a += b;
+    EXPECT_EQ(4, a[XX]);
+    EXPECT_EQ(4, a[YY]);
+    EXPECT_EQ(4, a[ZZ]);
+}
+
+
+TEST(RVecTest, CanSubstractRVecFromRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    c = b - a;
+    EXPECT_EQ(2, c[XX]);
+    EXPECT_EQ(0, c[YY]);
+    EXPECT_EQ(-2, c[ZZ]);
+}
+
+TEST(RVecTest, CanSubstractAssignRVecFromRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    b -= a;
+    EXPECT_EQ(2, b[XX]);
+    EXPECT_EQ(0, b[YY]);
+    EXPECT_EQ(-2, b[ZZ]);
+}
+
+TEST(RVecTest, CanDotProductRVecByRvec)
+{
+    RVec  a(1, 2, 3);
+    RVec  b(3, 2, 1);
+    float c;
+    c = a.dot(b);
+    EXPECT_EQ(10, c);
+}
+
+TEST(RVecTest, CanCrossProductRVecByRvec)
+{
+    RVec a(1, 2, 3);
+    RVec b(3, 2, 1);
+    RVec c;
+    c = a.cross(b);
+    EXPECT_EQ(-4, c[XX]);
+    EXPECT_EQ(8, c[YY]);
+    EXPECT_EQ(-4, c[ZZ]);
+}
+
+TEST(RVecTest, CanScaleRVec)
+{
+    RVec a(1, 2, 3);
+    real b = 2.0;
+    RVec c;
+    c = a.scale(b);
+    EXPECT_EQ(2, c[XX]);
+    EXPECT_EQ(4, c[YY]);
+    EXPECT_EQ(6, c[ZZ]);
+}
+
+/*! \brief
+ * Test operations imported from vec.h
+ */
+
+TEST(RVecTest, CanClearRVec)
+{
+    RVec a(1, 2, 3);
+    RVec b;
+    b = a.clear();
+    EXPECT_EQ(0, b[XX]);
+    EXPECT_EQ(0, b[YY]);
+    EXPECT_EQ(0, b[ZZ]);
+}
+
+TEST(RVecTest, CanClearRVecInplace)
+{
+    RVec a(1, 2, 3);
+    a.clear();
+    EXPECT_EQ(0, a[XX]);
+    EXPECT_EQ(0, a[YY]);
+    EXPECT_EQ(0, a[ZZ]);
+}
+
+
+TEST(RVecTest, CanNorm2OfRVec)
+{
+    RVec a(1, 2, 2);
+    real b;
+    b = a.norm2();
+    EXPECT_EQ(9, b);
+}
+
+TEST(RVecTest, CanNormOfRVec)
+{
+    RVec a(1, 2, 2);
+    real b;
+    b = a.norm();
+    EXPECT_EQ(3, b);
+}
+
+
+/*! \brief
  * Helper function for testing RVec to rvec conversions.
  */
 const rvec *testFunction(const rvec &x)
