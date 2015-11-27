@@ -204,10 +204,12 @@ static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
     if (sh->f_size   != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, f, sh->natoms);
-    if (sh->pener_size   != 0)
-        bOK = bOK && gmx_fio_ndo_real(fio, pener, sh->natoms);
-    if (sh->vir_size   != 0)
-        bOK = bOK && gmx_fio_ndo_rvec(fio, vir, sh->natoms);
+    	if (sh->pener_size   != 0) 
+        	bOK = bOK && gmx_fio_ndo_real(fio, pener, sh->natoms);
+    	if (sh->vir_size   != 0)  { 
+		//printf("writing vir %p\n",vir); for(int a=0;a<sh->natoms;a++) printf(" %f \n",vir[a][2]);
+        	bOK = bOK && gmx_fio_ndo_rvec(fio, vir, sh->natoms);
+	}
     }
 
     return bOK;

@@ -477,7 +477,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     /* ########## Now pressure ############## */
     if (bPres || bConstrain)
     {
-
         m_add(force_vir, shake_vir, total_vir);
 
         /* Calculate pressure and apply LR correction if PPPM is used.

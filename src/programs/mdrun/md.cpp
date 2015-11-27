@@ -335,10 +335,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     else
     {
         snew(f, top_global->natoms);
-        snew(vir, top_global->natoms);
-        snew(pener, top_global->natoms);
-	global_vir = vir;
-	global_pener = pener;
+        snew(global_vir, top_global->natoms);
+        snew(global_pener, top_global->natoms);
+	printf("Allocating global_vir\n");
+	vir = global_vir ;
+	pener = global_pener ;
         snew(oldv, top_global->natoms);
     }
     /* Kinetic energy data */
@@ -1347,16 +1348,18 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * the update.
          */
 //SAW
+#if 0
         for (i = 0; i < mdatoms->homenr; i++) { 
         	real m = 1./mdatoms->invmass[i] ; 
         	real av_v;
-        	av_v = (state->v[i][0] + oldv[i][0])/2.;
+        	if(bRerunMD) { av_v = state->v[i][0] ;} else {av_v = (state->v[i][0] + oldv[i][0])/2.;}
         	vir[i][0] += (1e25/AVOGADRO) * m * av_v*av_v;
-        	av_v = (state->v[i][1] + oldv[i][1])/2.;
+        	if(bRerunMD) { av_v = state->v[i][1] ;} else {av_v = (state->v[i][1] + oldv[i][1])/2.;}
         	vir[i][1] += (1e25/AVOGADRO) * m * av_v*av_v;
-        	av_v = (state->v[i][2] + oldv[i][2])/2.;
+        	if(bRerunMD) { av_v = state->v[i][0] ;} else {av_v = (state->v[i][2] + oldv[i][2])/2.;}
         	vir[i][2] += (1e25/AVOGADRO) * m * av_v*av_v;
         }
+#endif
         copy_rvecn(state->v, oldv, 0, state->natoms); 
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
@@ -1691,7 +1694,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     gs.sig[eglsNABNSB] = nlh.nabnsb;
                 }
-//SAW
+//SAW #@1
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr,
@@ -1791,6 +1794,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                ir->fepvals, ir->expandedvals, lastbox,
                                shake_vir, force_vir, total_vir, pres,
                                ekind, mu_tot, constr);
+//    {  double vvv=0; printf("address: %p\n",vir);for(int aa=0;aa<mdatoms->homenr;aa++)    printf("%f %f %f : %f %f %f\n",total_vir[0][0],total_vir[1][1],total_vir[2][2],vir[aa][0],vir[aa][1],vir[aa][2]); } 
                 }
                 else
                 {
