@@ -51,6 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -168,18 +169,19 @@ void TopologyManager::initAtoms(int count)
     }
 }
 
-void TopologyManager::initAtomTypes(int count, const char *const types[])
+void TopologyManager::initAtomTypes(const ConstArrayRef<const char *> &types)
 {
     GMX_RELEASE_ASSERT(top_ != NULL, "Topology not initialized");
-    atomtypes_.reserve(count);
-    for (int i = 0; i < count; ++i)
+    atomtypes_.reserve(types.size());
+    for (const char *type : types)
     {
-        atomtypes_.push_back(gmx_strdup(types[i]));
+        atomtypes_.push_back(gmx_strdup(type));
     }
     snew(top_->atoms.atomtype, top_->atoms.nr);
-    for (int i = 0, j = 0; i < top_->atoms.nr; ++i, ++j)
+    size_t j = 0;
+    for (int i = 0; i < top_->atoms.nr; ++i, ++j)
     {
-        if (j == count)
+        if (j == types.size())
         {
             j = 0;
         }
