@@ -399,9 +399,10 @@ Neighbor searching
       automatically set based on :mdp:`verlet-buffer-tolerance`,
       unless this is set to -1, in which case :mdp:`rlist` will be
       used. This option has an explicit, exact cut-off at :mdp:`rvdw`
-      equal to :mdp:`rcoulomb`. Currently only cut-off,
-      reaction-field, PME electrostatics and plain LJ are
-      supported. Some :ref:`gmx mdrun` functionality is not yet
+      equal to :mdp:`rcoulomb`, unless PME or Ewald is used, in which
+      case :mdp:`rcoulomb` > :mdp:`rvdw` is allowed. Currently only
+      cut-off, reaction-field, PME or Ewald electrostatics and plain
+      LJ are supported. Some :ref:`gmx mdrun` functionality is not yet
       supported with the :mdp:`Verlet` scheme, but :ref:`gmx grompp`
       checks for this. Native GPU acceleration is only supported with
       :mdp:`Verlet`. With GPU-accelerated PME or with separate PME
