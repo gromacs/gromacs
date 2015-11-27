@@ -90,6 +90,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -1844,7 +1845,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_vdw_F);
     sfree_aligned(ic->tabq_vdw_V);
 
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    if (EEL_PME_EWALD(ic->eeltype))
     {
         /* Create the original table data in FDV0 */
         snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
@@ -1868,7 +1869,7 @@ void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
                                    real                 rtab)
 {
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
+    if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, rtab);
 
@@ -2609,7 +2610,7 @@ void init_forcerec(FILE              *fp,
     fr->rcoulomb         = cutoff_inf(ir->rcoulomb);
     fr->rcoulomb_switch  = ir->rcoulomb_switch;
 
-    fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD);
+    fr->bEwald     = EEL_PME_EWALD(fr->eeltype);
 
     fr->reppow     = mtop->ffparams.reppow;
 
@@ -3131,9 +3132,15 @@ void init_forcerec(FILE              *fp,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        if (ir->rcoulomb != ir->rvdw)
+        // We checked the cut-offs in grompp, but double-check here.
+        // We have PME+LJcutoff kernels for rcoulomb>rvdw.
+        if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == eelCUT)
         {
-            gmx_fatal(FARGS, "With Verlet lists rcoulomb and rvdw should be identical");
+            GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw, "With Verlet lists and PME we should have rcoulomb>=rvdw");
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
         init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
