@@ -39,6 +39,7 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    energyreader.cpp
     grompp.cpp
     rerun.cpp
     trajectory_writing.cpp

@@ -42,70 +42,186 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include <array>
+#include <string>
+#include <vector>
 
+#include <tuple>
 #include <gtest/gtest.h>
 
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
+#include "energyreader.h"
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
-//! Test fixture for mdrun -rerun
-class MdrunRerun : public gmx::test::MdrunTestFixture,
-                   public ::testing::WithParamInterface<const char *>
+/*! \brief Test fixture for mdrun -rerun
+ *
+ * This test ensures mdrun can run a simulation, writing a trajectory
+ * and matching energies, and reproduce the same energies from a rerun
+ * to within a tight tolerance. It says nothing about whether an mdrun
+ * rerun can reproduce energies from a trajectory generated with older
+ * code, since that is not a useful property. Whether mdrun produced
+ * correct energies then and now needs different kinds of testing, but
+ * if true, this test ensures the rerun has the expected property.
+ *
+ * Reproducing the same energies is currently only meaningful for
+ * integration without thermostats or barostats, however the present
+ * form of the test infrastructure has in-principle support for such,
+ * if that is ever needed.
+ *
+ * \todo Add pure-water and peptide-in-water input cases, so that
+ * constraint handling is also tested. */
+class MdrunRerun : public MdrunTestFixture,
+                   public ::testing::WithParamInterface<std::tuple<const char *, const char *, const char *, const char *> >
 {
 };
 
-/* Among other things, this test ensures mdrun can read a trajectory. */
 TEST_P(MdrunRerun, WithDifferentInputFormats)
 {
-    runner_.useEmptyMdpFile();
-    runner_.useTopGroAndNdxFromDatabase("spc2");
+    const char *integrator      = std::get<0>(GetParam());
+    const char *thermostat      = std::get<1>(GetParam());
+    const char *barostat        = std::get<2>(GetParam());
+    const char *simulationInput = std::get<3>(GetParam());
+
+    /* Do a simulation
+     * - writing frames from different kinds of steps: starting, ending, intermediate NS, intermediate non-NS
+     * - with other steps between frame-writing steps
+     * - with enough buffer that the rerun will compute the same potential energy even though it does NS every frame
+     * - can generalize to using thermostats and barostats if that's ever useful
+     * - without constraints
+     * whose rerun will match with a tight tolerance.
+     */
+    runner_.useStringAsMdpFile(formatString("rcoulomb = 1.0\n"
+                                            "rvdw = 1.0\n"
+                                            "cutoff-scheme = Verlet\n"
+                                            "verlet-buffer-tolerance = 0.000001\n"
+                                            "nsteps = 20\n"
+                                            "nstcalcenergy = -1\n"
+                                            "nstenergy = 5\n"
+                                            "nstlist = 10\n"
+                                            "nstxout = 5\n"
+                                            "nstvout = 5\n"
+                                            "integrator = %s\n"
+                                            "ld-seed = 234262\n"
+                                            "tcoupl = %s\n"
+                                            "ref-t = 70.0\n"
+                                            "tau-t = 1.0\n"
+                                            "tc-grps = System\n"
+                                            "pcoupl = %s\n"
+                                            "ref-p = 1\n"
+                                            "compressibility = 5e-5\n",
+                                            integrator,
+                                            thermostat,
+                                            barostat));
+
+    // make the tpr file
+    runner_.useTopGroAndNdxFromDatabase(simulationInput);
     EXPECT_EQ(0, runner_.callGrompp());
 
-    std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
+    // prepare some names for files to use with the two mdrun calls
+    std::string rerunTrajectoryFileName = fileManager_.getTemporaryFilePath("normal.trr");
+    std::string normalRunEdrFileName    = fileManager_.getTemporaryFilePath("normal.edr");
+    std::string rerunEdrFileName        = fileManager_.getTemporaryFilePath("rerun.edr");
 
-    ::gmx::test::CommandLine rerunCaller;
-    rerunCaller.append("mdrun");
-    rerunCaller.addOption("-rerun", rerunFileName);
-    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    // do a normal mdrun
+    {
+        runner_.fullPrecisionTrajectoryFileName_ = rerunTrajectoryFileName;
+        runner_.edrFileName_                     = normalRunEdrFileName;
+        CommandLine normalRunCaller;
+        normalRunCaller.append("mdrun");
+        ASSERT_EQ(0, runner_.callMdrun(normalRunCaller));
+    }
+
+    // do a rerun on the .trr just produced
+    {
+        runner_.fullPrecisionTrajectoryFileName_.clear();
+        runner_.edrFileName_ = rerunEdrFileName;
+        CommandLine rerunCaller;
+        rerunCaller.append("mdrun");
+        rerunCaller.addOption("-rerun", rerunTrajectoryFileName);
+        ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
+    }
+
+    // Prepare objects to read the energy files
+    EnergyFileReader normalRunFile(normalRunEdrFileName);
+    EnergyFileReader rerunFile(rerunEdrFileName);
+
+    // Describe the energy-file fields that we wish to compare between
+    // the two runs.
+    std::vector<std::string> namesOfRequiredFields({{interaction_function[F_EPOT].longname,
+                                                     interaction_function[F_EKIN].longname,
+                                                     interaction_function[F_ETOT].longname,
+                                                     interaction_function[F_TEMP].longname,
+                                                     interaction_function[F_PRES].longname }});
+    EnergyFrameReader normalRun(normalRunFile.openToReadFields(namesOfRequiredFields));
+    EnergyFrameReader rerun    (rerunFile.openToReadFields(namesOfRequiredFields));
+
+    /* NOTE This is an arbitrary-but-sufficient choice for the
+     * tolerance. Rerun does pair search every frame, so it cannot in
+     * general exactly reproduce quantities from a normal run. (Nor
+     * does it reproduce pair-search frames exactly, either). */
+    FloatingPointTolerance testTolerance = relativeToleranceAsUlp(1.0, 30);
+    do
+    {
+        EnergyFrameInfo normalRunFrame = normalRun.readNextFrame();
+        EnergyFrameInfo rerunFrame     = rerun.readNextFrame();
+        if (normalRunFrame && rerunFrame)
+        {
+            for (auto const &name : namesOfRequiredFields)
+            {
+                EXPECT_REAL_EQ_TOL(normalRunFrame.getValue(name), rerunFrame.getValue(name), testTolerance)
+                << name << " didn't match between normal run " << normalRunFrame.getFrameName() << " and rerun " << rerunFrame.getFrameName();
+            }
+        }
+        else
+        {
+            // At least one file is out of frames. Report if the two
+            // files had different numbers of frames.
+            if (normalRunFrame != rerunFrame)
+            {
+                EXPECT_FALSE(rerunFrame) << "rerun energy file had at least one extra frame";
+                EXPECT_FALSE(normalRunFrame) << "normal run energy file had at least one extra frame";
+            }
+            break;
+        }
+    }
+    while (true);
 }
 
-/*! \brief Helper array of input files present in the source repo
- * database. These all have two identical frames of two SPC water
- * molecules, which were generated via trjconv from the .gro
- * version. */
-const char *trajectoryFileNames[] = {
-    "../../../gromacs/gmxana/legacytests/spc2-traj.trr",
-#if defined GMX_USE_TNG && HAVE_ZLIB
-    "../../../gromacs/gmxana/legacytests/spc2-traj.tng",
-#endif
-    "../../../gromacs/gmxana/legacytests/spc2-traj.xtc",
-    "../../../gromacs/gmxana/legacytests/spc2-traj.gro",
-    "../../../gromacs/gmxana/legacytests/spc2-traj.pdb",
-    "../../../gromacs/gmxana/legacytests/spc2-traj.g96"
-};
-// TODO later. Find a better way to manage this file database and
-// these string arrays that index it
+using ::testing::Combine;
+using ::testing::Values;
 
 #ifdef __INTEL_COMPILER
 #pragma warning( disable : 177 )
 #endif
 
-INSTANTIATE_TEST_CASE_P(NoFatalErrorFrom,
+INSTANTIATE_TEST_CASE_P(Correct,
                         MdrunRerun,
-                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
+                        Combine(Values("md", "md-vv", "bd", "sd"),
+                                Values("no"),
+                                Values("no"),
+                                Values("argon")));
 
 /*! \todo Add other tests for mdrun -rerun, e.g.
  *
- * - RerunReproducesRunWhenRunOnlyWroteEnergiesOnNeighborSearchSteps
- *   (e.g. do such a run, do a rerun, call gmxcheck)
  * - TpiExitsNormally (since it uses the -rerun machinery)
  */
 
+} // namespace
+} // namespace
 } // namespace
