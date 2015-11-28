@@ -594,9 +594,8 @@ PositionCalculationCollection::createCalculationFromEnum(const char *post, int f
     return impl_->createCalculation(type, cflags);
 }
 
-int PositionCalculationCollection::getHighestRequiredAtomIndex() const
+void PositionCalculationCollection::getRequiredAtoms(gmx_ana_index_t *out) const
 {
-    int                result = 0;
     gmx_ana_poscalc_t *pc     = impl_->first_;
     while (pc)
     {
@@ -606,11 +605,10 @@ int PositionCalculationCollection::getHighestRequiredAtomIndex() const
         {
             gmx_ana_index_t g;
             gmx_ana_index_set(&g, pc->b.nra, pc->b.a, 0);
-            result = std::max(result, gmx_ana_index_get_max_index(&g));
+            gmx_ana_index_union_unsorted(out, out, &g);
         }
         pc = pc->next;
     }
-    return result;
 }
 
 void PositionCalculationCollection::initEvaluation()

@@ -280,11 +280,14 @@ class PositionCalculationCollection
         gmx_ana_poscalc_t *createCalculationFromEnum(const char *post, int flags);
 
         /*! \brief
-         * Computes the highest atom index required to evaluate this collection.
+         * Computes the atoms required to evaluate this collection.
+         *
+         * \param[out] out  Maximal group of atoms required to evaluate the
+         *     positions.
          *
          * Does not throw.
          */
-        int getHighestRequiredAtomIndex() const;
+        void getRequiredAtoms(gmx_ana_index_t *out) const;
 
         /*! \brief
          * Initializes evaluation for a position calculation collection.
