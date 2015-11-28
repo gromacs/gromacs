@@ -160,8 +160,8 @@ class SelectionCollection::Impl
         std::string             rpost_;
         //! Default output position type for selections.
         std::string             spost_;
-        //! Largest atom index needed by the selections for evaluation.
-        int                     maxAtomIndex_;
+        //! Atoms needed for evaluating the selections.
+        gmx_ana_index_t         requiredAtoms_;
         /*! \brief
          * Debugging level for the collection.
          *

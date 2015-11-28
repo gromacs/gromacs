@@ -92,7 +92,6 @@ class SelectionCollectionTest : public ::testing::Test
         gmx::SelectionCollection    sc_;
         gmx::SelectionList          sel_;
         t_topology                 *top_;
-        t_trxframe                 *frame_;
         gmx_ana_indexgrps_t        *grps_;
 };
 
@@ -109,7 +108,7 @@ GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 #endif
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : top_(NULL), frame_(NULL), grps_(NULL)
+    : top_(NULL), grps_(NULL)
 {
     topManager_.requestFrame();
     sc_.setDebugLevel(s_debugLevel);
@@ -136,7 +135,6 @@ void
 SelectionCollectionTest::setTopology()
 {
     top_   = topManager_.topology();
-    frame_ = topManager_.frame();
 
     ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
 }
@@ -370,7 +368,7 @@ SelectionCollectionDataTest::runEvaluate()
     using gmx::test::TestReferenceChecker;
 
     ++framenr_;
-    ASSERT_NO_THROW_GMX(sc_.evaluate(frame_, NULL));
+    ASSERT_NO_THROW_GMX(sc_.evaluate(topManager_.frame(), NULL));
     std::string          frame = gmx::formatString("Frame%d", framenr_);
     TestReferenceChecker compound(
             checker_.checkCompound("EvaluatedSelections", frame.c_str()));
@@ -618,7 +616,7 @@ TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
     ASSERT_NO_THROW_GMX(sc_.parseFromString("x < 1.5 permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
-    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), NULL), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets)
@@ -626,27 +624,38 @@ TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets)
     ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 3 to 10"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
-    frame_->natoms = 8;
-    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+    topManager_.frame()->natoms = 8;
+    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), NULL), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets2)
 {
-    // Evaluating the positions will require atoms 1-9.
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_com of atomnr 2 5 7"));
+    const int index[] = { 1, 2, 3, 9 };
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 3 4 7 10"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
-    frame_->natoms = 8;
-    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+    topManager_.initFrameIndices(index);
+    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), NULL), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
 {
+    const int index[] = { 0, 1, 2, 3, 4, 5, 6, 9, 10, 11 };
+    // Evaluating the positions will require atoms 1-3, 7-12.
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_com of atomnr 2 7 11"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    topManager_.initFrameIndices(index);
+    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), NULL), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets4)
+{
     ASSERT_NO_THROW_GMX(sc_.parseFromString("mindistance from atomnr 1 to 5 < 2"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
-    frame_->natoms = 10;
-    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+    topManager_.frame()->natoms = 10;
+    EXPECT_THROW_GMX(sc_.evaluate(topManager_.frame(), NULL), gmx::InconsistentInputError);
 }
 
 // TODO: Tests for more evaluation errors
@@ -1125,6 +1134,23 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndChargesWithoutTopology)
     setFlags(TestFlags() | efTestPositionAtoms
              | efTestPositionMasses | efTestPositionCharges);
     runTest(10, selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesFramesWithAtomSubsets)
+{
+    const int          index[]      = { 0, 1, 2, 3, 4, 5, 9, 10, 11 };
+    const char * const selections[] = {
+        "resnr 1 4",
+        "atomnr 1 2 5 11 and y > 2",
+        "res_cog of atomnr 2 5 11"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionAtoms);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+    topManager_.initFrameIndices(index);
+    ASSERT_NO_FATAL_FAILURE(runEvaluate());
+    ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
 }
 
 

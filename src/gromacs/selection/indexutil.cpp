@@ -378,20 +378,18 @@ gmx_ana_index_deinit(gmx_ana_index_t *g)
  * \param[in]  src    Source index group.
  * \param[in]  bAlloc If true, memory is allocated at \p dest; otherwise,
  *   it is assumed that enough memory has been allocated for index.
- *
- * A deep copy of the name is only made if \p bAlloc is true.
  */
 void
 gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
 {
     dest->isize = src->isize;
+    if (bAlloc)
+    {
+        snew(dest->index, dest->isize);
+        dest->nalloc_index = dest->isize;
+    }
     if (dest->isize > 0)
     {
-        if (bAlloc)
-        {
-            snew(dest->index, dest->isize);
-            dest->nalloc_index = dest->isize;
-        }
         std::memcpy(dest->index, src->index, dest->isize*sizeof(*dest->index));
     }
 }
@@ -497,6 +495,21 @@ void
 gmx_ana_index_sort(gmx_ana_index_t *g)
 {
     std::qsort(g->index, g->isize, sizeof(*g->index), cmp_atomid);
+}
+
+void
+gmx_ana_index_remove_duplicates(gmx_ana_index_t *g)
+{
+    int j = 0;
+    for (int i = 0; i < g->isize; ++i)
+    {
+        if (i == 0 || g->index[i-1] != g->index[i])
+        {
+            g->index[j] = g->index[i];
+            ++j;
+        }
+    }
+    g->isize = j;
 }
 
 /*!
@@ -704,6 +717,25 @@ gmx_ana_index_union(gmx_ana_index_t *dest,
             }
             dest->index[k] = a->index[i--];
         }
+    }
+}
+
+void
+gmx_ana_index_union_unsorted(gmx_ana_index_t *dest,
+                             gmx_ana_index_t *a, gmx_ana_index_t *b)
+{
+    if (gmx_ana_index_check_sorted(b))
+    {
+        gmx_ana_index_union(dest, a, b);
+    }
+    else
+    {
+        gmx_ana_index_t tmp;
+        gmx_ana_index_copy(&tmp, b, true);
+        gmx_ana_index_sort(&tmp);
+        gmx_ana_index_remove_duplicates(&tmp);
+        gmx_ana_index_union(dest, a, &tmp);
+        gmx_ana_index_deinit(&tmp);
     }
 }
 
