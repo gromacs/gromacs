@@ -954,6 +954,10 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     if (bConnolly)
     {
+        if (fr.bIndex || fr.natoms != top_->atoms.nr)
+        {
+            GMX_THROW(InconsistentInputError("Connolly plot (-q) is only supported for trajectories that contain all the atoms"));
+        }
         // This is somewhat nasty, as it modifies the atoms and symtab
         // structures.  But since it is only used in the first frame, and no
         // one else uses the topology after initialization, it may just work
