@@ -5,8 +5,9 @@
 SYNOPSIS
 
 test mod [-f [<.xtc/.trr/...>]] [-s [<.tpr/.gro/...>]] [-n [<.ndx>]]
-         [-b <time>] [-e <time>] [-dt <time>] [-tu <enum>] [-xvg <enum>]
-         [-[no]rmpbc] [-[no]pbc] [-sf <file>] [-selrpos <enum>] [-[no]test]
+         [-b <time>] [-e <time>] [-dt <time>] [-tu <enum>]
+         [-fgroup <selection>] [-xvg <enum>] [-[no]rmpbc] [-[no]pbc]
+         [-sf <file>] [-selrpos <enum>] [-[no]test]
 
 DESCRIPTION
 
@@ -34,6 +35,9 @@ Other options:
            Only use frame if t MOD dt == first time (ps)
  -tu     <enum>             (ps)
            Unit for time values: fs, ps, ns, us, ms, s
+ -fgroup <selection>
+           Atoms stored in the trajectory file (if not set, assume first N
+           atoms)
  -xvg    <enum>             (xmgrace)
            Plot formatting: none, xmgrace, xmgr
  -[no]rmpbc                 (yes)

@@ -98,6 +98,12 @@ class TrajectoryAnalysisRunnerCommon
          */
         void initFirstFrame();
         /*! \brief
+         * Initializes the index in frame() that specifies the atoms contained.
+         *
+         * Can be called after selections have been compiled.
+         */
+        void initFrameIndexGroup();
+        /*! \brief
          * Reads the next frame from the trajectory.
          *
          * \returns false if there were no more frames.

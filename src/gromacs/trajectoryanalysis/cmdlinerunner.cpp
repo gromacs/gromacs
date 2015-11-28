@@ -124,6 +124,7 @@ int RunnerModule::run()
 
     // Load first frame.
     common_.initFirstFrame();
+    common_.initFrameIndexGroup();
     module_->initAfterFirstFrame(settings_, common_.frame());
 
     t_pbc  pbc;
