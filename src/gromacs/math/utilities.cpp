@@ -87,7 +87,7 @@ gmx_log2i(unsigned int n)
     return _bit_scan_reverse(n);
 #elif defined(__GNUC__) && UINT_MAX == 4294967295U /*also for clang*/
     return __builtin_clz(n) ^ 31U;                 /* xor gets optimized out */
-#elif defined(_MSC_VER) && _MSC_VER >= 1400
+#elif defined(_MSC_VER)
     {
         unsigned long i;
         _BitScanReverse(&i, n);
