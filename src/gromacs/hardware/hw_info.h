@@ -32,11 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_HARDWARE_HWINFO_H
+#define GMX_HARDWARE_HWINFO_H
 
-#ifndef HWINFO_H
-#define HWINFO_H
-
-#include "gromacs/legacyheaders/types/gpu_hw_info.h"
+#include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
@@ -99,4 +98,4 @@ typedef struct gmx_hw_opt_t {
     gmx_gpu_opt_t gpu_opt;             /* The GPU options                          */
 } gmx_hw_opt_t;
 
-#endif /* HWINFO_H */
+#endif

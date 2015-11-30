@@ -50,7 +50,7 @@
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
-#include "gromacs/legacyheaders/types/gpu_hw_info.h"
+#include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"

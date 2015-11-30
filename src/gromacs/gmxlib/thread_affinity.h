@@ -37,7 +37,7 @@
 
 #include <cstdio>
 
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;

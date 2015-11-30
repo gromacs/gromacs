@@ -32,9 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_GPU_HW_INFO_H
-#define GMX_GPU_HW_INFO_H
+#ifndef GMX_HARDWARE_GPU_HW_INFO_H
+#define GMX_HARDWARE_GPU_HW_INFO_H
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -86,4 +85,4 @@ typedef struct gmx_gpu_opt_t
 }
 #endif
 
-#endif /* GMX_GPU_HW_INFO_H */
+#endif
