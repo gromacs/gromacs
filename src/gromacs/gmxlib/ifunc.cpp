@@ -37,6 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "ifunc.h"
+
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
 #include "gromacs/listed-forces/bonded.h"

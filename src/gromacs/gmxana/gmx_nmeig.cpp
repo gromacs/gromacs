@@ -48,7 +48,7 @@
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/units.h"

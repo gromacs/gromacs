@@ -43,10 +43,10 @@
 
 #include <cmath>
 
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

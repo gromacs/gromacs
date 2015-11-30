@@ -51,7 +51,7 @@
 #include "gromacs/gmxana/cmat.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"

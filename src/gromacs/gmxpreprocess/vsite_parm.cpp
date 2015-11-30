@@ -45,11 +45,11 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"

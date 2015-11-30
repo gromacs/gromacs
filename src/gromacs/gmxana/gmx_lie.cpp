@@ -49,7 +49,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/futil.h"

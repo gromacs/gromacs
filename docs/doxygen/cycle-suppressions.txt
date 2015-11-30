@@ -13,7 +13,7 @@ mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
 topology -> fileio
-topology -> legacyheaders
+topology -> gmxlib
 pbcutil -> fileio
 pbcutil -> gmxlib
 listed-forces -> mdlib

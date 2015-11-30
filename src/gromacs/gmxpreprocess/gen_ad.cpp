@@ -48,13 +48,13 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

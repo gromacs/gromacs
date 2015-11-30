@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
