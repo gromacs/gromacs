@@ -95,21 +95,20 @@ adress_weight(rvec                 x,
             return 1;
     }
 
-    dl = sqrt(sqr_dl);
-
     /* molecule is coarse grained */
-    if (dl > l2)
+    if (sqr_dl > l2*l2)
     {
         return 0;
     }
     /* molecule is explicit */
-    else if (dl < adressr)
+    else if (sqr_dl < adressr*adressr)
     {
         return 1;
     }
     /* hybrid region */
     else
     {
+        dl = sqrt(sqr_dl);
         tmp = cos((dl-adressr)*M_PI/2/adressw);
         return tmp*tmp;
     }
