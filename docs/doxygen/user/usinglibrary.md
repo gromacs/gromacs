@@ -200,25 +200,19 @@ individual headers in the subdirectories can be renamed or moved, but the goal
 is to only rarely change the name of these top-level headers.
 
 Pre-5.0 versions of \Gromacs installed (nearly) all headers directly under
-`include/gromacs/`.  Most of these headers still exist, but now under
-`include/gromacs/legacyheaders/`.  The long-term goal is to move these to
-proper module hierarchy or get rid of them, but unfortunately this can take a
-long time.  Thus, you should not expect much stability from the API in these
-headers.  Some have already been moved, so if you do not find your favorite
-header there, try searching for a declaration from the other subdirectories.
+`include/gromacs/`.  Most of these headers still exist, but are no longer
+installed.  The long-term goal is to reintroduce those parts of the API that
+make sense, but unfortunately this can take a long time.  Thus, you should not
+expect much stability from the API in these headers.
 
 For headers under other subdirectories, some effort has been put to design the
 API for stability.  However, with limited development resources, and the focus
 of \Gromacs being in high performance simulations, all the APIs are subject to
 change without notice.  With each new release (with possible exception of patch
-releases), you should expect incompatible API changes.  This is in particular
-true until the planned reorganization of the `legacyheaders/` subdirectory is
-complete.
+releases), you should expect incompatible API changes.
 
 The header version.h (installed as `gromacs/version.h`) provides defines that
 calling code can use to check the exact (released) version of \Gromacs that
 installed the headers.
 
-This Doxygen documentation only covers part of the API.  In particular, nearly
-all of `include/gromacs/legacyheaders/` is undocumented, as well as code
-recently moved from there.
+This Doxygen documentation only covers part of the API.

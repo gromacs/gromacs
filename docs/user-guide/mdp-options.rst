@@ -2957,7 +2957,7 @@ User defined thingies
 
    These you can use if you modify code. You can pass integers and
    reals and groups to your subroutine. Check the inputrec definition
-   in ``src/gromacs/legacyheaders/types/inputrec.h``
+   in ``src/gromacs/mdtypes/inputrec.h``
 
 Removed features
 ^^^^^^^^^^^^^^^^

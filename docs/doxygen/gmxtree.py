@@ -736,8 +736,6 @@ class GromacsTree(object):
                         header = self.get_file(os.path.join(basedir, 'modules', basename + '.h'))
                     if not header and basename.endswith('_tests'):
                         header = self.get_file(os.path.join(basedir, basename[:-6] + '.h'))
-                if not header and fileobj.get_relpath().startswith('src/gromacs'):
-                    header = self._files.get(os.path.join('src/gromacs/legacyheaders', basename + '.h'))
                 if header:
                     fileobj.set_main_header(header)
         rootdir = self._get_dir(os.path.join('src', 'gromacs'))

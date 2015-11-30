@@ -546,7 +546,7 @@ def main():
         graph.write(outfile)
 
     # Skip some modules that are too big to make any sense
-    skippedmodules = ('legacyheaders', 'gmxlib', 'mdlib', 'gmxana', 'gmxpreprocess')
+    skippedmodules = ('gmxlib', 'mdlib', 'gmxana', 'gmxpreprocess')
     for module in tree.get_modules():
         if not module.get_name()[7:] in skippedmodules:
             filename = '{0}-deps.dot'.format(module.get_name())

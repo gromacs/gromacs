@@ -8,7 +8,7 @@ between each group, and headers within each group sorted alphabetically.
 2. If a *source* file has a corresponding header, it should be included next.
    If the header is in the same directory as the source, then it is included
    without any path (i.e., relative to the source), otherwise relative to
-   ``src/``.  The latter case is for headers in ``legacyheaders/`` and for tests.
+   ``src/`` (the latter case should be rare).
 3. If the file depends on defines from ``config.h``, that comes next.
 4. This is followed by standard C/C++ headers, grouped as follows:
 
