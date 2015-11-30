@@ -44,8 +44,6 @@
 
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -1021,9 +1019,10 @@ static void set_fbposres_params(t_idef *idef, gmx_molblock_t *molb,
     }
 }
 
-static void gen_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                          gmx_bool bMergeConstr,
-                          gmx_localtop_t *top)
+static void gen_local_top(const gmx_mtop_t *mtop,
+                          bool              freeEnergyInteractionsAtEnd,
+                          bool              bMergeConstr,
+                          gmx_localtop_t   *top)
 {
     int                     mb, srcnr, destnr, ftype, natoms, mol, nposre_old, nfbposre_old;
     gmx_molblock_t         *molb;
@@ -1121,41 +1120,35 @@ static void gen_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
     }
 
-    if (ir == NULL)
+    if (freeEnergyInteractionsAtEnd && gmx_mtop_bondeds_free_energy(mtop))
     {
-        top->idef.ilsort = ilsortUNKNOWN;
+        snew(qA, mtop->natoms);
+        snew(qB, mtop->natoms);
+        aloop = gmx_mtop_atomloop_all_init(mtop);
+        while (gmx_mtop_atomloop_all_next(aloop, &ag, &atom))
+        {
+            qA[ag] = atom->q;
+            qB[ag] = atom->qB;
+        }
+        gmx_sort_ilist_fe(&top->idef, qA, qB);
+        sfree(qA);
+        sfree(qB);
     }
     else
     {
-        if (ir->efep != efepNO && gmx_mtop_bondeds_free_energy(mtop))
-        {
-            snew(qA, mtop->natoms);
-            snew(qB, mtop->natoms);
-            aloop = gmx_mtop_atomloop_all_init(mtop);
-            while (gmx_mtop_atomloop_all_next(aloop, &ag, &atom))
-            {
-                qA[ag] = atom->q;
-                qB[ag] = atom->qB;
-            }
-            gmx_sort_ilist_fe(&top->idef, qA, qB);
-            sfree(qA);
-            sfree(qB);
-        }
-        else
-        {
-            top->idef.ilsort = ilsortNO_FE;
-        }
+        top->idef.ilsort = ilsortNO_FE;
     }
 }
 
-gmx_localtop_t *gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
-                                            const t_inputrec *ir)
+gmx_localtop_t *
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
+                            bool              freeEnergyInteractionsAtEnd)
 {
     gmx_localtop_t *top;
 
     snew(top, 1);
 
-    gen_local_top(mtop, ir, TRUE, top);
+    gen_local_top(mtop, freeEnergyInteractionsAtEnd, true, top);
 
     return top;
 }
@@ -1166,7 +1159,8 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     gmx_localtop_t ltop;
     t_topology     top;
 
-    gen_local_top(mtop, NULL, FALSE, &ltop);
+    gen_local_top(mtop, false, FALSE, &ltop);
+    ltop.idef.ilsort = ilsortUNKNOWN;
 
     top.name                        = mtop->name;
     top.idef                        = ltop.idef;

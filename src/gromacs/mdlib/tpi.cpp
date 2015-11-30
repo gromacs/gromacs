@@ -212,7 +212,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     nnodes = cr->nnodes;
 
-    top = gmx_mtop_generate_local_top(top_global, inputrec);
+    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
 
     groups = &top_global->groups;
 

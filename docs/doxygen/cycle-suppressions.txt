@@ -14,7 +14,6 @@ mdlib -> ewald
 mdlib -> pulling
 topology -> fileio
 topology -> gmxlib
-topology -> mdtypes
 pbcutil -> fileio
 pbcutil -> gmxlib
 listed-forces -> mdlib

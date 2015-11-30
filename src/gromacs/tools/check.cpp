@@ -292,7 +292,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     if (tpr)
     {
         read_tpx_state(tpr, &ir, &state, &mtop);
-        top = gmx_mtop_generate_local_top(&mtop, &ir);
+        top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;

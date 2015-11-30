@@ -243,7 +243,7 @@ int init_gb(gmx_genborn_t **p_born,
     natoms   = mtop->natoms;
 
     atoms    = gmx_mtop_global_atoms(mtop);
-    localtop = gmx_mtop_generate_local_top(mtop, ir);
+    localtop = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
 
     snew(born, 1);
     *p_born = born;

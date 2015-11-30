@@ -378,7 +378,7 @@ static void get_orires_parms(const char *topnm,
     matrix          box;
 
     read_tpx(topnm, &ir, box, &natoms, NULL, NULL, &mtop);
-    top = gmx_mtop_generate_local_top(&mtop, &ir);
+    top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
 
     ip       = top->idef.iparams;
     iatom    = top->idef.il[F_ORIRES].iatoms;
@@ -424,7 +424,7 @@ static int get_bounds(const char *topnm,
 
     read_tpx(topnm, ir, box, &natoms, NULL, NULL, mtop);
     snew(*ltop, 1);
-    top   = gmx_mtop_generate_local_top(mtop, ir);
+    top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
     *ltop = top;
 
     functype = top->idef.functype;

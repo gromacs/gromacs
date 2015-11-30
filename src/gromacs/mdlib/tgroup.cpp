@@ -47,6 +47,7 @@
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"

@@ -770,7 +770,7 @@ int gmx_disre(int argc, char *argv[])
         }
     }
 
-    top = gmx_mtop_generate_local_top(&mtop, &ir);
+    top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
 
     g        = NULL;
     pbc_null = NULL;

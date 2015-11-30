@@ -37,7 +37,6 @@
 #ifndef GMX_TOPOLOGY_MTOP_UTIL_H
 #define GMX_TOPOLOGY_MTOP_UTIL_H
 
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_localtop_t;
@@ -250,10 +249,11 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
 /* Generate a 'local' topology for the whole system.
- * When ir!=NULL the free energy interactions will be sorted to the end.
+ * When feeEnergyInteractionsAtEnd == true, the free energy interactions will
+ * be sorted to the end.
  */
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir);
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsAtEnd);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.

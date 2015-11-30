@@ -400,7 +400,7 @@ void init_em(FILE *fplog, const char *title,
         }
         copy_mat(state_global->box, ems->s.box);
 
-        *top      = gmx_mtop_generate_local_top(top_global, ir);
+        *top      = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
         *f_global = *f;
 
         forcerec_set_excl_load(fr, *top);
