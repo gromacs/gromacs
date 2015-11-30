@@ -49,7 +49,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"

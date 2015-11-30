@@ -47,11 +47,11 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"

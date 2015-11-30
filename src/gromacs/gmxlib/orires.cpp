@@ -41,11 +41,11 @@
 #include <cmath>
 
 #include "gromacs/fileio/copyrite.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"

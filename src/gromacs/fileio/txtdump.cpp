@@ -46,8 +46,8 @@
 #include <algorithm>
 
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"

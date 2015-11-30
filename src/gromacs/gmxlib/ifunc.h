@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-
-#ifndef _ifunc_h
-#define _ifunc_h
+#ifndef GMX_GMXLIB_IFUNC_H
+#define GMX_GMXLIB_IFUNC_H
 
 #include "gromacs/topology/idef.h"
 
@@ -128,6 +126,5 @@ extern const t_interaction_function interaction_function[F_NRE];
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif
