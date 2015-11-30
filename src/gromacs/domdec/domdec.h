@@ -39,7 +39,7 @@
  * ranks to try to distribute work evenly with minimal communication
  * overheads.
  *
- * \todo Get domdec stuff out of legacyheaders/types/commrec.h
+ * \todo Get domdec stuff out of mdtypes/commrec.h
  *
  * \author Berk Hess <hess@kth.se>
  *
@@ -62,10 +62,10 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"

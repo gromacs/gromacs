@@ -47,8 +47,8 @@
 #define NBNXN_CUDA_TYPES_H
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdtypes/interaction_const.h"
 
 #ifdef __cplusplus
 extern "C" {

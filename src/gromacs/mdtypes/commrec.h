@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _commrec_h
-#define _commrec_h
+#ifndef GMX_MDTYPES_COMMREC_H
+#define GMX_MDTYPES_COMMREC_H
 
 #include <stddef.h>
 

@@ -44,8 +44,8 @@
 #define NBNXN_GPU_DATA_MGMT_H
 
 #include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
+#include "gromacs/mdtypes/interaction_const.h"
 
 #ifdef __cplusplus
 extern "C" {

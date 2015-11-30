@@ -43,8 +43,8 @@
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
 
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/bitmask.h"
 

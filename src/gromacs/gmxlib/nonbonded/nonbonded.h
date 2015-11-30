@@ -40,8 +40,8 @@
 #include <stdio.h>
 
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/topology/block.h"

@@ -34,13 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDTYPES_TYPES_FORCEREC_H
+#define GMX_MDTYPES_TYPES_FORCEREC_H
 
-#ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
-#define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
-
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

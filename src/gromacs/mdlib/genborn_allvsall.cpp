@@ -43,10 +43,10 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/genborn.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/topology.h"

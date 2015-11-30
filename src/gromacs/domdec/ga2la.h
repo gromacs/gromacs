@@ -48,7 +48,7 @@
 #ifndef GMX_DOMDEC_GA2LA_H
 #define GMX_DOMDEC_GA2LA_H
 
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 

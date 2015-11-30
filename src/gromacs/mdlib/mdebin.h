@@ -40,8 +40,8 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/state.h"
 
 struct gmx_constr;

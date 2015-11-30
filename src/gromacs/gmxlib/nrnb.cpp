@@ -43,7 +43,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"

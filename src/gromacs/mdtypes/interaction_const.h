@@ -32,9 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_LEGACYHEADERS_INTERACTION_CONST_H
-#define GMX_LEGACYHEADERS_INTERACTION_CONST_H
+#ifndef GMX_MDTYPES_INTERACTION_CONST_H
+#define GMX_MDTYPES_INTERACTION_CONST_H
 
 #include "gromacs/utility/real.h"
 

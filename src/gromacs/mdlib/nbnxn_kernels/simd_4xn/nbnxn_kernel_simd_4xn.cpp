@@ -41,10 +41,10 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 
 #ifdef GMX_NBNXN_SIMD_4XN

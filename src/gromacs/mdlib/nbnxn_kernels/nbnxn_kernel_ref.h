@@ -36,9 +36,9 @@
 #ifndef _nbnxn_kernel_ref_h
 #define _nbnxn_kernel_ref_h
 
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus

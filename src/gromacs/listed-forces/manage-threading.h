@@ -46,7 +46,7 @@
 
 #include <cstdio>
 
-#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
 
 #ifdef __cplusplus

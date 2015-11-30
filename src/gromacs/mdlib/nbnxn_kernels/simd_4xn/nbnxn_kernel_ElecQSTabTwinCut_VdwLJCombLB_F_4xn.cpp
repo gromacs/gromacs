@@ -45,8 +45,8 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/mdtypes/interaction_const.h"
 
 #define GMX_SIMD_J_UNROLL_SIZE 1
 #include "gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"

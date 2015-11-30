@@ -35,8 +35,8 @@
 #ifndef _nbnxn_kernel_x86_simd128_h
 #define _nbnxn_kernel_x86_simd128_h
 
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus

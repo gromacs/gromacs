@@ -44,8 +44,8 @@
 #ifndef GMX_LISTED_FORCES_PAIRS_H
 #define GMX_LISTED_FORCES_PAIRS_H
 
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

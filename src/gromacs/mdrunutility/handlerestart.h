@@ -59,7 +59,7 @@
 #define GMX_MDRUNUTILITY_HANDLERESTART_H
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /*! \brief Handle startup of mdrun, particularly regarding -cpi and -append

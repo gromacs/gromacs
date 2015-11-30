@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _fcdata_h
-#define _fcdata_h
+#ifndef GMX_MDTYPES_FCDATA_H
+#define GMX_MDTYPES_FCDATA_H
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -128,4 +128,4 @@ typedef struct t_fcdata {
 }
 #endif
 
-#endif /* _fcdata_h */
+#endif

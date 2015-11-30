@@ -44,8 +44,8 @@
 #ifndef GMX_DOMDEC_DOMDEC_SPECATOMCOMM_H
 #define GMX_DOMDEC_DOMDEC_SPECATOMCOMM_H
 
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_hash_t;
