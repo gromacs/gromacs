@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,12 @@ extern "C" {
 
 struct gmx_mtop_t;
 
-int n_bonded_dx(struct gmx_mtop_t *mtop, gmx_bool bExcl);
-/* Returns the number of pbc_rvec_sub calls required for bonded interactions.
- * This number is also roughly proportional to the computational cost.
+void count_bonded_distances(struct gmx_mtop_t *mtop, const t_inputrec *ir,
+                            double *ndistance_c, double *ndistance_simd);
+/* Count the number of distance calculations in bonded interactions,
+ * separately for plain-C and SIMD bonded functions.
+ * The computational cost is nearly proportional to the numbers.
+ * It is allowed to pass NULL for the last two arguments.
  */
 
 float pme_load_estimate(struct gmx_mtop_t *mtop, t_inputrec *ir, matrix box);
