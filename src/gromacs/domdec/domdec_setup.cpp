@@ -517,8 +517,8 @@ static float comm_cost_est(real limit, real cutoff,
         fprintf(debug,
                 "nc %2d %2d %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %9.3e tot %9.3e\n",
                 nc[XX], nc[YY], nc[ZZ], npme[XX], npme[YY],
-                comm_vol, cost_pbcdx, comm_pme,
-                3*natoms*(comm_vol + cost_pbcdx) + comm_pme);
+                comm_vol, cost_pbcdx, comm_pme/(3*natoms),
+                comm_vol + cost_pbcdx + comm_pme/(3*natoms));
     }
 
     return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
@@ -624,7 +624,7 @@ static real optimize_ncells(FILE *fplog,
     {
         /* For Ewald exclusions pbc_dx is not called */
         bExcl_pbcdx =
-            (IR_EXCL_FORCES(*ir) && !EEL_FULL(ir->coulombtype));
+            (ir->cutoff_scheme == ecutsGROUP && IR_EXCL_FORCES(*ir) && !EEL_FULL(ir->coulombtype));
         pbcdxr = (double)n_bonded_dx(mtop, bExcl_pbcdx)/(double)mtop->natoms;
     }
     else

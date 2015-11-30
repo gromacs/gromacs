@@ -44,6 +44,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -115,6 +116,19 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
                     case F_POSRES:
                     case F_FBPOSRES:  ndxb = 1; break;
                     case F_CONNBONDS: ndxb = 0; break;
+#ifdef GMX_SIMD_HAVE_REAL
+                    /* SIMD versions of bonded interactions use fast SIMD
+                     * PBC calculation that is always on, so neglect these.
+                     * We only have SIMD versions of these bondeds
+                     * without energy and without shift-forces, but we don't
+                     * want to complicate this code here even more.
+                     */
+                    case F_ANGLES:
+                    case F_PDIHS:
+                    case F_RBDIHS:
+                        ndxb = 0;
+                        break;
+#endif
                     default:     ndxb      = NRAL(ftype) - 1; break;
                 }
                 ndx += nmol*ndxb*molt->ilist[ftype].nr/(1 + NRAL(ftype));
