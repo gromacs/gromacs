@@ -44,55 +44,160 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.
- * The numbers here are accurate for Intel Core2 and AMD Athlon 64
- * in single precision. In double precision PME mesh is slightly cheaper,
- * although not so much that the numbers need to be adjusted.
+ * The numbers are only used for estimating the relative cost of PME vs PP,
+ * so only relative numbers matter.
+ * The numbers here are accurate cycle counts for Haswell in single precision
+ * compiled with gcc5.2. A correction factor for other architectures is given
+ * by simd_acceleration_factor().
+ * In double precision PME mesh is slightly cheaper, although not so much
+ * that the numbers need to be adjusted.
  */
 
 /* Cost of a pair interaction in the "group" cut-off scheme */
-#define C_GR_FQ        1.5
-#define C_GR_QLJ_CUT   1.5
-#define C_GR_QLJ_TAB   2.0
-#define C_GR_LJ_CUT    1.0
-#define C_GR_LJ_TAB    1.75
+#define C_GR_FQ        18.0
+#define C_GR_QLJ_CUT   18.0
+#define C_GR_QLJ_TAB   24.0
+#define C_GR_LJ_CUT    12.0
+#define C_GR_LJ_TAB    21.0
 /* Cost of 1 water with one Q/LJ atom */
-#define C_GR_QLJW_CUT  2.0
-#define C_GR_QLJW_TAB  2.25
+#define C_GR_QLJW_CUT  24.0
+#define C_GR_QLJW_TAB  27.0
 /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
-#define C_GR_QW        1.75
+#define C_GR_QW        21.0
 
 /* Cost of a pair interaction in the "Verlet" cut-off scheme, QEXP is Ewald */
-#define C_VT_LJ        0.30
-#define C_VT_QRF_LJ    0.40
-#define C_VT_QRF       0.30
-#define C_VT_QEXP_LJ   0.55
-#define C_VT_QEXP      0.50
+#define C_VT_LJ         2.5
+#define C_VT_QRF_LJ     2.9
+#define C_VT_QRF        2.4
+#define C_VT_QEXP_LJ    4.2
+#define C_VT_QEXP       3.8
 /* Extra cost for expensive LJ interaction, e.g. pot-switch or LJ-PME */
-#define C_VT_LJEXP_ADD 0.20
+#define C_VT_LJEXP_ADD  1.0
 
-/* Cost of PME, with all components running with SSE instructions */
-/* Cost of particle reordering and redistribution */
-#define C_PME_REDIST  12.0
-/* Cost of q spreading and force interpolation per charge (mainly memory) */
-#define C_PME_SPREAD  0.30
-/* Cost of fft's, will be multiplied with N log(N) */
-#define C_PME_FFT     0.20
+/* Cost of the different components of PME. */
+/* Cost of particle reordering and redistribution (no SIMD correction).
+ * This will be zero without MPI and can be very high with load imbalance.
+ * Thus we use an approximate value for medium parallelization.
+ */
+#define C_PME_REDIST  100.0
+/* Cost of q spreading and force interpolation per charge. This part almost
+ * doesn't accelerate with SIMD, so we don't use SIMD correction.
+ */
+#define C_PME_SPREAD    5.0
+/* Cost of fft's, will be multiplied with 2 N log2(N) (no SIMD correction)
+ * Without MPI the number is 2-3, depending on grid factors and thread count.
+ * We take the high limit to be on the safe side and account for some MPI
+ * communication cost, which will dominate at high parallelization.
+ */
+#define C_PME_FFT       3.0
 /* Cost of pme_solve, will be multiplied with N */
-#define C_PME_SOLVE   0.50
+#define C_PME_SOLVE     9.0
 
-/* Cost of a bonded interaction divided by the number of (pbc_)dx nrequired */
-#define C_BOND        5.0
+/* Cost of a bonded interaction divided by the number of distances calculations
+ * required in one interaction. The actual cost is nearly propotional to this.
+ */
+#define C_BOND         30.0
 
-int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
+
+/* simd_acceleration_factor() return speed compared to the reference
+ * of Haswell: 8-wide SIMD with FMA, factor: sqrt(2*8)*1.25 = 5.
+ */
+static const double simd_acceleration_no_simd = 5.0;
+
+/* Gives a correction factor for the currently compiled SIMD implementations
+ * versus the reference used for the coefficients above, which is width=8+FMA.
+ */
+static double simd_acceleration_factor()
 {
-    int            mb, nmol, ftype, ndxb, ndx_excl;
-    int            ndx;
+    double acceleration;
+
+#ifdef GMX_SIMD_HAVE_REAL
+    /* We never get full speed-up of a factor GMX_SIMD_REAL_WIDTH.
+     * The actual speed-up depends very much on gather+scatter overhead,
+     * which is different for different bonded and non-bonded kernels.
+     * As a rough, but actually not bad, approximation we use a sqrt
+     * dependence on the width which gives a factor 4 for width=8.
+     */
+    acceleration = sqrt(2*GMX_SIMD_REAL_WIDTH);
+#ifdef GMX_SIMD_HAVE_FMA
+    /* FMA tends to give a bit more acceleration */
+    acceleration *= 1.25;
+#endif
+#else
+    /* No SIMD, no acceleration */
+    acceleration  = 1.0;
+#endif
+
+    /* Return speed compared to the reference (Haswell).
+     * For x86 SIMD, the nbnxn kernels are relatively much slower on
+     * Sandy/Ivy Bridge than Haswell, but that only leads to a too high
+     * PME load estimate on SB/IB, which is erring on the safe side.
+     */
+    return simd_acceleration_no_simd/acceleration;
+}
+
+double n_bonded_dx(gmx_mtop_t *mtop, const t_inputrec *ir, gmx_bool bPBCDX)
+{
+    gmx_bool       bExcl;
+    int            nst_ener_or_vir;
+    double         nonsimd_step_frac, simd_fac;
+    int            mb, nmol, ftype;
+    double         ndx, ndx_excl;
     gmx_moltype_t *molt;
+#ifdef GMX_SIMD_HAVE_REAL
+    gmx_bool       bSimdBondeds = TRUE;
+#else
+    gmx_bool       bSimdBondeds = FALSE;
+#endif
+
+    bExcl = (ir->cutoff_scheme == ecutsGROUP && IR_EXCL_FORCES(*ir)
+             && !EEL_FULL(ir->coulombtype));
+
+    if (bSimdBondeds)
+    {
+        /* We only have SIMD versions of these bondeds without energy and
+         * without shift-forces, we take that into account here.
+         */
+        if (ir->nstcalcenergy > 0)
+        {
+            nonsimd_step_frac = 1.0/ir->nstcalcenergy;
+        }
+        else
+        {
+            nonsimd_step_frac = 0;
+        }
+        if (ir->epc != epcNO && 1.0/ir->nstpcouple > nonsimd_step_frac)
+        {
+            nonsimd_step_frac = 1.0/ir->nstpcouple;
+        }
+    }
+    else
+    {
+        nonsimd_step_frac = 1;
+    }
+
+    if (bPBCDX)
+    {
+        /* SIMD versions of bonded interactions use fast SIMD PBC calculation
+         * that is always on, so neglect these.
+         */
+        simd_fac = nonsimd_step_frac;
+    }
+    else
+    {
+        /* This factor makes the return value times C_BOND give the total
+         * computational cost for the bonded interactions.
+         */
+        simd_fac =
+            nonsimd_step_frac*simd_acceleration_no_simd +
+            (1 - nonsimd_step_frac)*simd_acceleration_factor();
+    }
 
     /* Count the number of pbc_rvec_sub calls required for bonded interactions.
      * This number is also roughly proportional to the computational cost.
@@ -110,12 +215,20 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
         {
             if (interaction_function[ftype].flags & IF_BOND)
             {
+                double ndxb;
+
                 switch (ftype)
                 {
                     case F_POSRES:
                     case F_FBPOSRES:  ndxb = 1; break;
                     case F_CONNBONDS: ndxb = 0; break;
-                    default:     ndxb      = NRAL(ftype) - 1; break;
+                    /* These bonded potentially use SIMD */
+                    case F_ANGLES:
+                    case F_PDIHS:
+                    case F_RBDIHS:
+                        ndxb = simd_fac*(NRAL(ftype) - 1);
+                        break;
+                    default: ndxb = NRAL(ftype) - 1; break;
                 }
                 ndx += nmol*ndxb*molt->ilist[ftype].nr/(1 + NRAL(ftype));
             }
@@ -132,7 +245,7 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
 
     if (debug)
     {
-        fprintf(debug, "ndx bonded %d exclusions %d\n", ndx, ndx_excl);
+        fprintf(debug, "npbcdx bonded %f exclusions %f\n", ndx, ndx_excl);
     }
 
     ndx += ndx_excl;
@@ -262,6 +375,8 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                     fq   *nq*(3*nw + nqlj + nq) +
                     flj  *nlj*(nw + nqlj + nlj))
         *4/3*M_PI*ir->rlist*ir->rlist*ir->rlist/det(box);
+
+    *cost_pp *= simd_acceleration_factor();
 }
 
 static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
@@ -363,6 +478,8 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     nat      = mtop->natoms;
     *cost_pp = 0.5*nat*(nqlj*c_qlj + nq*c_q + nlj*c_lj)
         *4/3*M_PI*r_eff*r_eff*r_eff/det(box);
+
+    *cost_pp *= simd_acceleration_factor();
 }
 
 float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
@@ -386,7 +503,7 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
     iparams = mtop->ffparams.iparams;
     atnr    = mtop->ffparams.atnr;
 
-    cost_bond = C_BOND*n_bonded_dx(mtop, TRUE);
+    cost_bond = C_BOND*n_bonded_dx(mtop, ir, FALSE);
 
     if (ir->cutoff_scheme == ecutsGROUP)
     {
@@ -408,15 +525,19 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
 
     if (EEL_PME(ir->coulombtype))
     {
+        double grid = ir->nkx*ir->nky*((ir->nkz + 1)/2);
+
         f            = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
         cost_redist +=   C_PME_REDIST*nq_tot;
         cost_spread += f*C_PME_SPREAD*nq_tot*pow(ir->pme_order, 3);
-        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
-        cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
+        cost_fft    += f*C_PME_FFT*grid*log(grid)/log(2);
+        cost_solve  += f*C_PME_SOLVE*grid*simd_acceleration_factor();
     }
 
     if (EVDW_PME(ir->vdwtype))
     {
+        double grid = ir->nkx*ir->nky*((ir->nkz + 1)/2);
+
         f            = ((ir->efep != efepNO && bTypePerturbed) ? 2 : 1);
         if (ir->ljpme_combination_rule == eljpmeLB)
         {
@@ -425,8 +546,8 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
         }
         cost_redist +=   C_PME_REDIST*nlj_tot;
         cost_spread += f*C_PME_SPREAD*nlj_tot*pow(ir->pme_order, 3);
-        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
-        cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
+        cost_fft    += f*C_PME_FFT*2*grid*log(grid)/log(2);
+        cost_solve  += f*C_PME_SOLVE*grid*simd_acceleration_factor();
     }
 
     cost_pme = cost_redist + cost_spread + cost_fft + cost_solve;
