@@ -1069,6 +1069,11 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     nnhpres = state->nnhpres;
     nh      = state->nhchainlength;
 
+    if (EI_VV(ir->eI) && (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER))
+    {
+        gmx_fatal(FARGS, "Cannot do MTTK pressure coupling without Nose-Hoover temperature control");
+    }
+
     init_npt_masses(ir, state, MassQ, TRUE);
 
     /* first, initialize clear all the trotter calls */
