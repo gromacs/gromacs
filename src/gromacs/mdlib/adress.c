@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,21 +95,20 @@ adress_weight(rvec                 x,
             return 1;
     }
 
-    dl = sqrt(sqr_dl);
-
     /* molecule is coarse grained */
-    if (dl > l2)
+    if (sqr_dl > l2*l2)
     {
         return 0;
     }
     /* molecule is explicit */
-    else if (dl < adressr)
+    else if (sqr_dl < adressr*adressr)
     {
         return 1;
     }
     /* hybrid region */
     else
     {
+        dl  = sqrt(sqr_dl);
         tmp = cos((dl-adressr)*M_PI/2/adressw);
         return tmp*tmp;
     }
