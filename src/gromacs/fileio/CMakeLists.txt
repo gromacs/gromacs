@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB FILEIO_SOURCES *.cpp *.c)
+file(GLOB FILEIO_SOURCES *.cpp)
 
 if(GMX_USE_PLUGINS)
   set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)

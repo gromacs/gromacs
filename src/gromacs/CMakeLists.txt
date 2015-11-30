@@ -34,7 +34,23 @@
 
 set(LIBGROMACS_SOURCES)
 
+set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+
+function (_gmx_add_files_to_property PROPERTY)
+    foreach (_file ${ARGN})
+        if (IS_ABSOLUTE "${_file}")
+            set_property(GLOBAL APPEND PROPERTY ${PROPERTY} ${_file})
+        else()
+            set_property(GLOBAL APPEND PROPERTY ${PROPERTY}
+                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
+        endif()
+    endforeach()
+endfunction ()
+
+function (gmx_add_libgromacs_sources)
+    _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+endfunction ()
 
 function (gmx_install_headers)
     if (NOT GMX_BUILD_MDRUN_ONLY)
@@ -43,14 +59,7 @@ function (gmx_install_headers)
                 DESTINATION "${INCL_INSTALL_DIR}/${_dest}"
                 COMPONENT   development)
     endif()
-    foreach (_file ${ARGN})
-        if (IS_ABSOLUTE "${_file}")
-            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS ${_file})
-        else()
-            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS
-                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
-        endif()
-    endforeach()
+    _gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
 endfunction ()
 
 function (gmx_write_installed_header_list)
@@ -116,7 +125,6 @@ add_subdirectory(pulling)
 add_subdirectory(simd)
 add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
     add_subdirectory(correlationfunctions)
@@ -127,7 +135,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(tools)
 endif()
 
-list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
+get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
+list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
 
 # This would be the standard way to include thread_mpi, but
 # we want libgromacs to link the functions directly
@@ -170,9 +179,7 @@ endif()
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler
-# supports the suppressions). Setting the properties only works after
-# the related target has been created, e.g. after when the file is
-# used with add_library().
+# supports the suppressions).
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
 if (HAS_NO_UNUSED_PARAMETER)

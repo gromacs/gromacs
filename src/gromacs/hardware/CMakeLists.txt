@@ -32,8 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB HARDWARE_SOURCES hardwaretopology.cpp cpuinfo.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${HARDWARE_SOURCES} PARENT_SCOPE)
+gmx_add_libgromacs_sources(
+    cpuinfo.cpp
+    hardwaretopology.cpp
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

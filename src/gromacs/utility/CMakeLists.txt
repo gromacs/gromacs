@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB UTILITY_SOURCES *.c *.cpp)
+file(GLOB UTILITY_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
