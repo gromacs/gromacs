@@ -53,7 +53,7 @@
 
 #include "gromacs/gmxlib/ocl_tools/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"

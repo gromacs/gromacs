@@ -51,7 +51,7 @@
 #include <cuda.h>
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
-#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
