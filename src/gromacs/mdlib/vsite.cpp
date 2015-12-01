@@ -1439,7 +1439,7 @@ void spread_vsite_f(gmx_vsite_t *vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step. But how often do we have vsites with full pbc?
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd->nc, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, cr->dd ? cr->dd->nc : NULL, FALSE, box);
     }
     else
     {
