@@ -53,8 +53,8 @@
 
 #include <string.h>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"

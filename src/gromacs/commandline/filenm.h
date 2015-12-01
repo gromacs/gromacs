@@ -34,9 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_FILENM_H
-#define GMX_FILEIO_FILENM_H
+/*! \file
+ * \brief
+ * Declares t_filenm for old-style command-line parsing of file name options.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+#ifndef GMX_COMMANDLINE_FILENM_H
+#define GMX_COMMANDLINE_FILENM_H
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/basedefinitions.h"

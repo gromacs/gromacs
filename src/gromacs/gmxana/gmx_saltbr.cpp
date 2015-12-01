@@ -39,8 +39,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"

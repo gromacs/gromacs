@@ -34,9 +34,9 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"

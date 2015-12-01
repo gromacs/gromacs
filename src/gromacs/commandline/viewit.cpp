@@ -42,7 +42,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
