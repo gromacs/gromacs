@@ -154,7 +154,7 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
  * Otherwise returns a string with the problem.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
  */
-const char *check_box(int ePBC, matrix box);
+const char *check_box(int ePBC, const matrix box);
 
 /*! \brief Compute the maximum cutoff for the box
 
@@ -165,7 +165,7 @@ const char *check_box(int ePBC, matrix box);
  * \param[in] box  The box matrix
  * \return the maximum cut-off.
  */
-real max_cutoff2(int ePBC, matrix box);
+real max_cutoff2(int ePBC, const matrix box);
 
 /*! \brief Guess PBC typr
  *
@@ -173,7 +173,7 @@ real max_cutoff2(int ePBC, matrix box);
  * \param[in] box  The box matrix
  * \return The pbc identifier
  */
-int guess_ePBC(matrix box);
+int guess_ePBC(const matrix box);
 
 /*! \brief Corrects the box if necessary
  *
@@ -203,16 +203,18 @@ int ndof_com(t_inputrec *ir);
  * \param[in] ePBC The PBC identifier
  * \param[in] box  The box tensor
  */
-void set_pbc(t_pbc *pbc, int ePBC, matrix box);
+void set_pbc(t_pbc *pbc, int ePBC, const matrix box);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *
  * As set_pbc, but additionally sets that correct distances can
  * be obtained using (combinations of) single box-vector shifts.
  * Should be used with pbc_dx_aiuc.
- * If dd!=NULL pbc is not used for directions
+ * If domdecCells!=NULL pbc is not used for directions
  * with dd->nc[i]==1 with bSingleDir==TRUE or
  * with dd->nc[i]<=2 with bSingleDir==FALSE.
+ * Note that when no PBC is required only pbc->ePBC is set,
+ * the rest of the struct will be invalid.
  * \param[inout] pbc The pbc information structure
  * \param[in] ePBC        The PBC identifier
  * \param[in] domdecCells 3D integer vector describing the number of DD cells
@@ -222,7 +224,8 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box);
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  ivec domdecCells, gmx_bool bSingleDir, matrix box);
+                  const ivec domdecCells, gmx_bool bSingleDir,
+                  const matrix box);
 
 /*! \brief Compute distance with PBC
  *
@@ -290,7 +293,7 @@ gmx_bool image_rect(ivec xi, ivec xj, imatrix box,
  * \param[out] r2     The distance (squared???)
  * \return TRUE when the distance is SMALLER than rlong2
  */
-gmx_bool image_tri(ivec xi, ivec xj, imatrix box,
+gmx_bool image_tri(const ivec xi, const ivec xj, const imatrix box,
                    real rlong2, int *shift, real *r2);
 
 /*! \brief Compute distance vector when using cylindrical cutoff
@@ -306,8 +309,8 @@ gmx_bool image_tri(ivec xi, ivec xj, imatrix box,
  * \param[out] r2       The distance (squared???)
  * \return TRUE when the distance is SMALLER than rlong2 (in X and Y dir)
  */
-gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
-                         int *shift, real *r2);
+gmx_bool image_cylindric(const ivec xi, const ivec xj, const ivec box_size,
+                         real rlong2, int *shift, real *r2);
 
 /*! \brief Computes shift vectors
  *
@@ -316,7 +319,7 @@ gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
  * \param[in]  box       The simulation box
  * \param[out] shift_vec The shifting vectors
  */
-void calc_shifts(matrix box, rvec shift_vec[]);
+void calc_shifts(const matrix box, rvec shift_vec[]);
 
 /*! \brief Calculates the center of the box.
  *
@@ -325,14 +328,14 @@ void calc_shifts(matrix box, rvec shift_vec[]);
  * \param[in]  box        The simulation box
  * \param[out] box_center The center of the box
  */
-void calc_box_center(int ecenter, matrix box, rvec box_center);
+void calc_box_center(int ecenter, const matrix box, rvec box_center);
 
 /*! \brief Calculates the NTRICIMG box images
  *
  * \param[in]  box The simulation box
  * \param[out] img The triclinic box images
  */
-void calc_triclinic_images(matrix box, rvec img[]);
+void calc_triclinic_images(const matrix box, rvec img[]);
 
 /*! \brief Calculates the NCUCVERT vertices of a compact unitcell
  *
@@ -340,7 +343,7 @@ void calc_triclinic_images(matrix box, rvec img[]);
  * \param[in]  box     The simulation box
  * \param[out] vert    The vertices
  */
-void calc_compact_unitcell_vertices(int ecenter, matrix box,
+void calc_compact_unitcell_vertices(int ecenter, const matrix box,
                                     rvec vert[]);
 
 /*! \brief Compute unitcell edges
@@ -362,7 +365,7 @@ int *compact_unitcell_edges(void);
  * \param[in]    natoms The number of atoms
  * \param[inout] x      The coordinates of the atoms
  */
-void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[]);
+void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[]);
 
 
 /*! \brief Put atoms inside the simulations box
@@ -375,7 +378,7 @@ void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[]);
  * \param[in]    natoms The number of atoms
  * \param[inout] x      The coordinates of the atoms
  */
-void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[]);
+void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[]);
 
 /*! \brief Put atoms inside triclinic box
  *
@@ -386,7 +389,7 @@ void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[]);
  * \param[in]    natoms  The number of atoms
  * \param[inout] x       The coordinates of the atoms
  */
-void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
+void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
                                      int natoms, rvec x[]);
 
 /*! \brief Put atoms inside the unitcell
@@ -401,7 +404,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
  * \param[inout] x       The coordinates of the atoms
  */
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
-                                   matrix box,
+                                   const matrix box,
                                    int natoms, rvec x[]);
 
 #ifdef __cplusplus
