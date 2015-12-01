@@ -34,106 +34,146 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_FILENM_H
-#define GMX_FILEIO_FILENM_H
+/*! \file
+ * \brief
+ * Declares t_filenm for old-style command-line parsing of file name options.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+#ifndef GMX_COMMANDLINE_FILENM_H
+#define GMX_COMMANDLINE_FILENM_H
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;
 
-typedef struct t_filenm {
-    int           ftp;    // File type (see enum in filetypes.h)
-    const char   *opt;    // Command line option
-    const char   *fn;     // File name (as set in source code)
-    unsigned long flag;   // Flag for all kinds of info (see defs)
-    int           nfiles; // number of files
-    char        **fns;    // File names
-} t_filenm;
+//! \addtogroup module_commandline
+//! \{
 
+/*! \brief
+ * File name option definition for C code.
+ *
+ * \inpublicapi
+ */
+struct t_filenm {
+    int           ftp;    //!< File type (see enum in filetypes.h)
+    const char   *opt;    //!< Command line option
+    const char   *fn;     //!< File name (as set in source code)
+    unsigned long flag;   //!< Flag for all kinds of info (see defs)
+    int           nfiles; //!< number of files
+    char        **fns;    //!< File names
+};
+
+//! Whether a file name option is set.
 #define ffSET   1<<0
+//! Whether a file name option specifies an input file.
 #define ffREAD  1<<1
+//! Whether a file name option specifies an output file.
 #define ffWRITE 1<<2
+//! Whether a file name option specifies an optional file.
 #define ffOPT   1<<3
+//! Whether a file name option specifies a library file.
 #define ffLIB   1<<4
+//! Whether a file name option accepts multiple file names.
 #define ffMULT  1<<5
+//! Whether an input file name option accepts non-existent files.
 #define ffALLOW_MISSING 1<<6
+//! Convenience flag for an input/output file.
 #define ffRW    (ffREAD | ffWRITE)
+//! Convenience flag for an optional input file.
 #define ffOPTRD (ffREAD | ffOPT)
+//! Convenience flag for an optional output file.
 #define ffOPTWR (ffWRITE| ffOPT)
+//! Convenience flag for an optional input/output file.
 #define ffOPTRW (ffRW   | ffOPT)
+//! Convenience flag for a library input file.
 #define ffLIBRD (ffREAD | ffLIB)
+//! Convenience flag for an optional library input file.
 #define ffLIBOPTRD (ffOPTRD | ffLIB)
+//! Convenience flag for an input file that accepts multiple files.
 #define ffRDMULT   (ffREAD  | ffMULT)
+//! Convenience flag for an optional input file that accepts multiple files.
 #define ffOPTRDMULT   (ffRDMULT | ffOPT)
+//! Convenience flag for an output file that accepts multiple files.
 #define ffWRMULT   (ffWRITE  | ffMULT)
+//! Convenience flag for an optional output file that accepts multiple files.
 #define ffOPTWRMULT   (ffWRMULT | ffOPT)
 
+/*! \brief
+ * Returns the filename belonging to cmd-line option opt, or NULL when
+ * no such option.
+ */
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
-/* Return the filename belonging to cmd-line option opt, or NULL when
- * no such option. */
 
-const char *opt2fn_master(const char *opt, int nfile,
-                          const t_filenm fnm[], struct t_commrec *cr);
-/* Return the filename belonging to cmd-line option opt, or NULL when
- * no such option or not running on master */
-
-
+/*! \brief
+ * Returns the filenames belonging to cmd-line option opt, or NULL when
+ * no such option.
+ */
 int opt2fns(char **fns[], const char *opt, int nfile,
             const t_filenm fnm[]);
-/* Return the filenames belonging to cmd-line option opt, or NULL when
- * no such option. */
 
+//! Returns a file pointer from the filename.
 #define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
-/* Return a file pointer from the filename (see above) */
 
+//! Returns the first file name with type ftp, or NULL when none found.
 const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
-/* Return the first file name with type ftp, or NULL when none found. */
 
+/*! \brief
+ * Returns the number of files for the first option with type ftp
+ * and the files in **fns[] (will be allocated), or NULL when none found.
+ */
 int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[]);
-/* Return the number of files for the first option with type ftp
-   and the files in **fns[] (will be allocated), or NULL when none found. */
 
+//! Returns a file pointer from the file type.
 #define ftp2FILE(ftp, nfile, fnm, mode) gmx_ffopen(ftp2fn(ftp, nfile, fnm), mode)
-/* Return a file pointer from the filename (see above) */
 
+//! Returns TRUE when this file type has been found on the cmd-line.
 gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[]);
-/* Return TRUE when this file type has been found on the cmd-line */
 
+//! Returns TRUE when this option has been found on the cmd-line.
 gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[]);
-/* Return TRUE when this option has been found on the cmd-line */
 
-const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[]);
-/* Return the filenm belonging top cmd-line option opt, or NULL when
+/*! \brief
+ * Returns the file name belonging top cmd-line option opt, or NULL when
  * no such option.
+ *
  * Also return NULL when opt is optional and option is not set.
  */
+const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[]);
 
-const char *ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
-/* Return the first file name with type ftp, or NULL when none found.
+/*! \brief
+ * Returns the first file name with type ftp, or NULL when none found.
+ *
  * Also return NULL when ftp is optional and option is not set.
  */
+const char *ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
 
+//! Returns whether or not this filenm is optional.
 gmx_bool is_optional(const t_filenm *fnm);
-/* Return whether or not this filenm is optional */
 
+//! Returns whether or not this filenm is output.
 gmx_bool is_output(const t_filenm *fnm);
-/* Return whether or not this filenm is output */
 
+//! Returns whether or not this filenm is set.
 gmx_bool is_set(const t_filenm *fnm);
-/* Return whether or not this filenm is set */
 
-/* When we do checkpointing, this routine is called to check for previous
+/*! \brief
+ * When we do checkpointing, this routine is called to check for previous
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
  */
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
 
-/* duplicate the filename list (to make a private copy for each thread,
-   for example) */
+/*! \brief
+ * Duplicates the filename list (to make a private copy for each thread,
+ * for example).
+ */
 t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
 
-/* Free memory allocated for file names by parse_file_args(). */
+//! Frees memory allocated for file names by parse_common_args().
 void done_filenms(int nf, t_filenm fnm[]);
+
+//! \}
 
 #endif

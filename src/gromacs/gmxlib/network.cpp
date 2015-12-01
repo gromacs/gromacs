@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
@@ -699,6 +700,12 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
     }
 #endif
 #endif
+}
+
+const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
+                          t_commrec *cr)
+{
+    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : NULL;
 }
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,

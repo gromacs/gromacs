@@ -41,9 +41,9 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"

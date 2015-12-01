@@ -42,7 +42,6 @@
 #include <cstring>
 
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -66,12 +65,6 @@ const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
     fprintf(stderr, "No option %s\n", opt);
 
     return NULL;
-}
-
-const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
-                          t_commrec *cr)
-{
-    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : NULL;
 }
 
 int opt2fns(char **fns[], const char *opt, int nfile, const t_filenm fnm[])

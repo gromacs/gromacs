@@ -36,11 +36,11 @@
 
 #include "mdoutf.h"
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"

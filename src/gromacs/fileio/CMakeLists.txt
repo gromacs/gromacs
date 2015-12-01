@@ -45,7 +45,6 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
 gmx_install_headers(
     confio.h
     enxio.h
-    filenm.h
     filetypes.h
     gmxfio.h
     matio.h

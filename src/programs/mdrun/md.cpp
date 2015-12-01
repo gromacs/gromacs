@@ -46,12 +46,12 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/md_logging.h"

@@ -42,6 +42,7 @@ gmx_install_headers(
     cmdlineoptionsmodule.h
     cmdlineparser.h
     cmdlineprogramcontext.h
+    filenm.h
     pargs.h
     viewit.h
     )
