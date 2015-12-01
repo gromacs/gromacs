@@ -48,10 +48,11 @@
 #ifndef GMX_ESSENTIALDYNAMICS_EDSAM_H
 #define GMX_ESSENTIALDYNAMICS_EDSAM_H
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_output_env_t;
+struct t_filenm;
 
 /*! \brief Abstract type for essential dynamics
  *

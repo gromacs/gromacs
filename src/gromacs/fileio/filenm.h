@@ -38,43 +38,18 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* this enum should correspond to the array deffile in filenm.cpp */
-enum GromacsFileType {
-    efMDP,
-    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
-    efEDR,
-    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
-    efCPT,
-    efLOG, efXVG, efOUT,
-    efNDX,
-    efTOP, efITP,
-    efTPS, efTPR,
-    efTEX, efRTP, efATP, efHDB,
-    efDAT, efDLG,
-    efMAP, efEPS, efMAT, efM2P,
-    efMTX,
-    efEDI,
-    efCUB,
-    efXPM,
-    efRND,
-    efNR
-};
-
-typedef struct {
-    int           ftp;    /* File type (see enum above)		*/
-    const char   *opt;    /* Command line option			*/
-    const char   *fn;     /* File name (as set in source code)	*/
-    unsigned long flag;   /* Flag for all kinds of info (see defs)*/
-    int           nfiles; /* number of files			*/
-    char        **fns;    /* File names				*/
+typedef struct t_filenm {
+    int           ftp;    // File type (see enum in filetypes.h)
+    const char   *opt;    // Command line option
+    const char   *fn;     // File name (as set in source code)
+    unsigned long flag;   // Flag for all kinds of info (see defs)
+    int           nfiles; // number of files
+    char        **fns;    // File names
 } t_filenm;
 
 #define ffSET   1<<0
@@ -95,34 +70,6 @@ typedef struct {
 #define ffWRMULT   (ffWRITE  | ffMULT)
 #define ffOPTWRMULT   (ffWRMULT | ffOPT)
 
-const char *ftp2ext(int ftp);
-/* Return extension for filetype */
-
-const char *ftp2ext_generic(int ftp);
-/* Return extension for filetype, and a generic name for generic types
-   (e.g. trx)*/
-
-const char *ftp2ext_with_dot(int ftp);
-/* Return extension for filetype with a leading dot */
-
-int ftp2generic_count(int ftp);
-/* Return the number of filetypes for a generic filetype */
-
-const int *ftp2generic_list(int ftp);
-/* Return the list of filetypes for a generic filetype */
-
-const char *ftp2desc(int ftp);
-/* Return description for file type */
-
-const char *ftp2defnm(int ftp);
-/* Return default file name for file type */
-
-const char *ftp2defopt(int ftp);
-/* Return default option name for file type */
-
-gmx_bool ftp_is_text(int ftp);
-gmx_bool ftp_is_xdr(int ftp);
-
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when
  * no such option. */
@@ -140,9 +87,6 @@ int opt2fns(char **fns[], const char *opt, int nfile,
 
 #define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
 /* Return a file pointer from the filename (see above) */
-
-int fn2ftp(const char *fn);
-/* Return the filetype corrsponding to filename */
 
 const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found. */
@@ -192,8 +136,4 @@ t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
 /* Free memory allocated for file names by parse_file_args(). */
 void done_filenms(int nf, t_filenm fnm[]);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* GMX_FILEIO_FILENM_H */

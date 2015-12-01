@@ -41,296 +41,15 @@
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Use bitflag ... */
-#define IS_SET(fn) ((fn.flag & ffSET) != 0)
-#define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
-
-enum
-{
-    eftASC, eftXDR, eftTNG, eftGEN, eftNR
-};
-
-/* To support multiple file types with one general (eg TRX) we have
- * these arrays.
- */
-static const int trxs[] =
-{
-    efXTC, efTRR, efCPT,
-    efGRO, efG96, efPDB, efTNG
-};
-#define NTRXS asize(trxs)
-
-static const int trcompressed[] =
-{
-    efXTC,
-    efTNG
-};
-#define NTRCOMPRESSED asize(trcompressed)
-
-static const int tros[] =
-{
-    efXTC, efTRR,
-    efGRO, efG96, efPDB, efTNG
-};
-#define NTROS asize(tros)
-
-static const int trns[] =
-{
-    efTRR, efCPT,
-    efTNG
-};
-#define NTRNS asize(trns)
-
-static const int stos[] =
-{ efGRO, efG96, efPDB, efBRK, efENT, efESP };
-#define NSTOS asize(stos)
-
-static const int stxs[] =
-{
-    efGRO, efG96, efPDB, efBRK, efENT, efESP,
-    efTPR
-};
-#define NSTXS asize(stxs)
-
-static const int tpss[] =
-{
-    efTPR,
-    efGRO, efG96, efPDB, efBRK, efENT
-};
-#define NTPSS asize(tpss)
-
-typedef struct
-{
-    int         ftype;
-    const char *ext;
-    const char *defnm;
-    const char *defopt;
-    const char *descr;
-    int         ntps;
-    const int  *tps;
-} t_deffile;
-
-/* this array should correspond to the enum in filenm.h */
-static const t_deffile
-    deffile[efNR] =
-{
-    { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
-    { eftGEN, ".???", "traj", "-f", "Trajectory", NTRXS, trxs },
-    { eftGEN, ".???", "trajout", "-f", "Trajectory", NTROS, tros },
-    { eftGEN, ".???", "traj", NULL,
-      "Full precision trajectory", NTRNS, trns },
-    { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
-    { eftGEN, ".???", "traj_comp", NULL,
-      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
-    { eftXDR, ".xtc", "traj", NULL,
-      "Compressed trajectory (portable xdr format): xtc" },
-    { eftTNG, ".tng", "traj", NULL,
-      "Trajectory file (tng format)" },
-    { eftXDR, ".edr", "ener",   NULL, "Energy file"},
-    { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
-    { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
-    { eftASC, ".gro", "conf", "-c", "Coordinate file in Gromos-87 format" },
-    { eftASC, ".g96", "conf", "-c", "Coordinate file in Gromos-96 format" },
-    { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"},
-    { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"},
-    { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
-    { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
-    { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
-    { eftASC, ".log", "run",    "-l", "Log file"},
-    { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
-    { eftASC, ".out", "hello",  "-o", "Generic output file"},
-    { eftASC, ".ndx", "index",  "-n", "Index file", },
-    { eftASC, ".top", "topol",  "-p", "Topology file"},
-    { eftASC, ".itp", "topinc", NULL, "Include file for topology"},
-    { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
-    { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
-    { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
-    { eftASC, ".rtp", "residue", NULL, "Residue Type file used by pdb2gmx" },
-    { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx" },
-    { eftASC, ".hdb", "polar",  NULL, "Hydrogen data base"},
-    { eftASC, ".dat", "nnnice", NULL, "Generic data file"},
-    { eftASC, ".dlg", "user",   NULL, "Dialog Box data for ngmx"},
-    { eftASC, ".map", "ss", NULL, "File that maps matrix data to colors" },
-    { eftASC, ".eps", "plot", NULL, "Encapsulated PostScript (tm) file" },
-    { eftASC, ".mat", "ss",     NULL, "Matrix Data file"},
-    { eftASC, ".m2p", "ps",     NULL, "Input file for mat2ps"},
-    { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
-    { eftASC, ".edi", "sam",    NULL, "ED sampling input"},
-    { eftASC, ".cub", "pot",  NULL, "Gaussian cube file" },
-    { eftASC, ".xpm", "root", NULL, "X PixMap compatible matrix file" },
-    { eftASC, "", "rundir", NULL, "Run directory" }
-};
-
-const char *ftp2ext(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].ext[0] != '\0' ? deffile[ftp].ext + 1 : "";
-    }
-    else
-    {
-        return "unknown";
-    }
-}
-
-const char *ftp2ext_generic(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        switch (ftp)
-        {
-            case efTRX:
-                return "trx";
-            case efTRN:
-                return "trn";
-            case efSTO:
-                return "sto";
-            case efSTX:
-                return "stx";
-            case efTPS:
-                return "tps";
-            default:
-                return ftp2ext(ftp);
-        }
-    }
-    else
-    {
-        return "unknown";
-    }
-}
-
-const char *ftp2ext_with_dot(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].ext;
-    }
-    else
-    {
-        return "unknown";
-    }
-}
-
-int ftp2generic_count(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].ntps;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-const int *ftp2generic_list(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].tps;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-const char *ftp2desc(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].descr;
-    }
-    else
-    {
-        return "unknown filetype";
-    }
-}
-
-gmx_bool ftp_is_text(int ftp)
-{
-    if ((ftp >= 0) && (ftp < efNR))
-    {
-        return deffile[ftp].ftype == eftASC;
-    }
-    return FALSE;
-}
-
-gmx_bool ftp_is_xdr(int ftp)
-{
-    if ((ftp >= 0) && (ftp < efNR))
-    {
-        return deffile[ftp].ftype == eftXDR;
-    }
-    return FALSE;
-}
-
-const char *ftp2defnm(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].defnm;
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-const char *ftp2defopt(int ftp)
-{
-    if ((0 <= ftp) && (ftp < efNR))
-    {
-        return deffile[ftp].defopt;
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-int fn2ftp(const char *fn)
-{
-    int         i, len;
-    const char *feptr;
-    const char *eptr;
-
-    if (!fn)
-    {
-        return efNR;
-    }
-
-    len = std::strlen(fn);
-    if ((len >= 4) && (fn[len - 4] == '.'))
-    {
-        feptr = &(fn[len - 4]);
-    }
-    else
-    {
-        return efNR;
-    }
-
-    for (i = 0; (i < efNR); i++)
-    {
-        if ((eptr = deffile[i].ext) != NULL)
-        {
-            if (gmx_strcasecmp(feptr, eptr) == 0)
-            {
-                break;
-            }
-        }
-    }
-
-    return i;
-}
+#define IS_SET(fn) ((fn.flag &ffSET) != 0)
+#define IS_OPT(fn) ((fn.flag &ffOPT) != 0)
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
 {
@@ -384,7 +103,7 @@ const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[])
         }
     }
 
-    fprintf(stderr, "ftp2fn: No filetype %s\n", deffile[ftp].ext);
+    fprintf(stderr, "ftp2fn: No filetype %s\n", ftp2ext_with_dot(ftp));
     return NULL;
 }
 
@@ -401,7 +120,7 @@ int ftp2fns(char **fns[], int ftp, int nfile, const t_filenm fnm[])
         }
     }
 
-    fprintf(stderr, "ftp2fn: No filetype %s\n", deffile[ftp].ext);
+    fprintf(stderr, "ftp2fn: No filetype %s\n", ftp2ext_with_dot(ftp));
     return 0;
 }
 
@@ -417,7 +136,7 @@ gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
         }
     }
 
-    fprintf(stderr, "ftp2bSet: No filetype %s\n", deffile[ftp].ext);
+    fprintf(stderr, "ftp2fn: No filetype %s\n", ftp2ext_with_dot(ftp));
 
     return FALSE;
 }
@@ -479,7 +198,7 @@ const char *ftp2fn_null(int ftp, int nfile, const t_filenm fnm[])
             }
         }
     }
-    fprintf(stderr, "ftp2fn: No filetype %s\n", deffile[ftp].ext);
+    fprintf(stderr, "ftp2fn: No filetype %s\n", ftp2ext_with_dot(ftp));
     return NULL;
 }
 

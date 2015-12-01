@@ -38,13 +38,13 @@
 
 #include <cstdio>
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_membed_t;
 struct gmx_mtop_t;
 struct t_commrec;
+struct t_filenm;
 struct t_inputrec;
 struct t_state;
 

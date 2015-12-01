@@ -155,7 +155,7 @@
 #ifndef GMX_OPTIONS_H
 #define GMX_OPTIONS_H
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/filenameoptionmanager.h"

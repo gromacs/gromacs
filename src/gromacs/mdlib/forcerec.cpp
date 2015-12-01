@@ -52,6 +52,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_detect_hardware.h"

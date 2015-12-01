@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/timing/wallcycle.h"
@@ -47,6 +46,7 @@
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct t_commrec;
+struct t_filenm;
 
 #ifdef __cplusplus
 extern "C" {

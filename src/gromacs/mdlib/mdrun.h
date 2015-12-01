@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct df_history_t;
