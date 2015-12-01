@@ -2193,8 +2193,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
             make_la2lc(dd);
             if (fr->bMolPBC)
             {
-                set_pbc_dd(&pbc, fr->ePBC, dd->nc, TRUE, box);
-                pbc_null = &pbc;
+                pbc_null = set_pbc_dd(&pbc, fr->ePBC, dd->nc, TRUE, box);
             }
             else
             {
