@@ -42,8 +42,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"

@@ -48,6 +48,7 @@
 
 struct gmx_multisim_t;
 struct t_commrec;
+struct t_filenm;
 
 struct t_commrec *init_commrec(void);
 /* Allocate, initialize and return the commrec. */
@@ -108,6 +109,11 @@ void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 #define gmx_sum       gmx_sumf
 #define gmx_sum_sim   gmx_sumf_sim
 #endif
+
+const char *opt2fn_master(const char *opt, int nfile,
+                          const t_filenm fnm[], t_commrec *cr);
+/* Return the filename belonging to cmd-line option opt, or NULL when
+ * no such option or not running on master */
 
 void
 gmx_fatal_collective(int f_errno, const char *file, int line,
