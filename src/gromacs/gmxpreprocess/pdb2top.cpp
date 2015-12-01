@@ -49,7 +49,6 @@
 #include <vector>
 
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/add_par.h"

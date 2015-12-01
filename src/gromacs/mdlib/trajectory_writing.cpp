@@ -37,6 +37,7 @@
 #include "trajectory_writing.h"
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"

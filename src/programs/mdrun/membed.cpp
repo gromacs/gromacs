@@ -40,6 +40,7 @@
 #include <stdlib.h>
 
 #include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/readinp.h"

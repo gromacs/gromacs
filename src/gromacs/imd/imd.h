@@ -62,7 +62,6 @@
 
 #include "config.h"
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
@@ -75,6 +74,7 @@ struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct t_filenm;
 struct t_gmx_IMD;
 struct t_IMD;
 struct t_inputrec;

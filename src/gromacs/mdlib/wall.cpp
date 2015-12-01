@@ -41,7 +41,7 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

@@ -38,7 +38,6 @@
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
 
 #ifdef __cplusplus

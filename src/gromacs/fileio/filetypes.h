@@ -34,44 +34,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_MAIN_H
-#define GMX_GMXLIB_MAIN_H
-
-#include <stdio.h>
+#ifndef GMX_FILEIO_FILETYPES_H
+#define GMX_FILEIO_FILETYPES_H
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_multisim_t;
-struct t_commrec;
-struct t_filenm;
+/* this enum should correspond to the array deffile in filetypes.cpp */
+enum GromacsFileType {
+    efMDP,
+    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
+    efEDR,
+    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
+    efCPT,
+    efLOG, efXVG, efOUT,
+    efNDX,
+    efTOP, efITP,
+    efTPS, efTPR,
+    efTEX, efRTP, efATP, efHDB,
+    efDAT, efDLG,
+    efMAP, efEPS, efMAT, efM2P,
+    efMTX,
+    efEDI,
+    efCUB,
+    efXPM,
+    efRND,
+    efNR
+};
 
-void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE**);
-/* Open the log file, if necessary (nprocs > 1) the logfile name is
- * communicated around the ring.
- */
+const char *ftp2ext(int ftp);
+/* Return extension for filetype */
 
-void gmx_log_close(FILE *fp);
-/* Close the log file */
+const char *ftp2ext_generic(int ftp);
+/* Return extension for filetype, and a generic name for generic types
+   (e.g. trx)*/
 
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       gmx_int64_t val, const char *name,
-                       gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multi run
- * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
- * no output is written.
- */
+const char *ftp2ext_with_dot(int ftp);
+/* Return extension for filetype with a leading dot */
 
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
-                      int nfile, const t_filenm fnm[], gmx_bool bParFn);
-/* Splits the communication into nsim separate simulations
- * and creates a communication structure between the master
- * these simulations.
- * If bParFn is set, the nodeid is appended to the tpx and each output file.
- */
+int ftp2generic_count(int ftp);
+/* Return the number of filetypes for a generic filetype */
+
+const int *ftp2generic_list(int ftp);
+/* Return the list of filetypes for a generic filetype */
+
+const char *ftp2desc(int ftp);
+/* Return description for file type */
+
+const char *ftp2defnm(int ftp);
+/* Return default file name for file type */
+
+const char *ftp2defopt(int ftp);
+/* Return default option name for file type */
+
+gmx_bool ftp_is_text(int ftp);
+gmx_bool ftp_is_xdr(int ftp);
+
+int fn2ftp(const char *fn);
+/* Return the filetype corrsponding to filename */
 
 #endif

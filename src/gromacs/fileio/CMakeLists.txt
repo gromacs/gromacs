@@ -46,6 +46,7 @@ gmx_install_headers(
     confio.h
     enxio.h
     filenm.h
+    filetypes.h
     gmxfio.h
     matio.h
     mtxio.h

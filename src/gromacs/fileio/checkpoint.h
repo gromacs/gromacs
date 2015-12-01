@@ -40,14 +40,15 @@
 
 #include <cstdio>
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct gmx_file_position_t;
+struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
 struct t_state;
