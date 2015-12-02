@@ -48,7 +48,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "copyrite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/strdb.h"
 
 gmx_bool isword(char c)
 {
