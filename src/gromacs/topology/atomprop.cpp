@@ -45,7 +45,6 @@
 #include <cmath>
 
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/cstringutil.h"
@@ -53,6 +52,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 typedef struct {
     gmx_bool    bSet;

@@ -50,7 +50,6 @@
 
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
@@ -74,6 +73,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
 
 /* this must correspond to enum in pdb2top.h */

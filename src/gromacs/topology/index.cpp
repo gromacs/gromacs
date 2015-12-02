@@ -46,7 +46,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -56,6 +55,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 static gmx_bool gmx_ask_yesno(gmx_bool bASK)
 {

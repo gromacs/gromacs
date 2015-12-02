@@ -42,7 +42,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -56,6 +55,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
 static int search_str2(int nstr, char **str, char *key)

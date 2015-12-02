@@ -46,7 +46,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -60,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,
@@ -198,7 +198,7 @@ static gmx_bool *bPhobics(t_atoms *atoms)
     gmx_bool   *bb;
 
 
-    nb = get_strings("phbres.dat", &cb);
+    nb = get_lines("phbres.dat", &cb);
     snew(bb, atoms->nres);
 
     for (i = 0; (i < atoms->nres); i++)
