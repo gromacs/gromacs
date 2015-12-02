@@ -247,31 +247,46 @@ static void get_stx_coordnum(const char *infile, int *natoms)
 
 static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
 {
-    int  m, a, a0, a1, r;
-    char c, chainid;
-    int  chainnum;
-
     /* We always assign a new chain number, but save the chain id characters
      * for larger molecules.
      */
-#define CHAIN_MIN_ATOMS 15
+    const int chainMinAtoms = 15;
 
-    chainnum = 0;
-    chainid  = 'A';
-    for (m = 0; m < mols->nr; m++)
+    int       chainnum = 0;
+    char      chainid  = 'A';
+    bool      outOfIds = false;
+    for (int m = 0; m < mols->nr; m++)
     {
-        a0 = mols->index[m];
-        a1 = mols->index[m+1];
-        if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chainid <= 'Z'))
+        int a0 = mols->index[m];
+        int a1 = mols->index[m+1];
+        int c;
+        if (a1 - a0 >= chainMinAtoms && !outOfIds)
         {
+            /* Set the chain id for the output */
             c = chainid;
-            chainid++;
+            /* Here we allow for the max possible 2*26+10=62 chain ids */
+            if (chainid == 'Z')
+            {
+                chainid = 'a';
+            }
+            else if (chainid == 'z')
+            {
+                chainid = '0';
+            }
+            else if (chainid == '9')
+            {
+                outOfIds = true;
+            }
+            else
+            {
+                chainid++;
+            }
         }
         else
         {
             c = ' ';
         }
-        for (a = a0; a < a1; a++)
+        for (int a = a0; a < a1; a++)
         {
             atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
             atoms->resinfo[atoms->atom[a].resind].chainid  = c;
@@ -282,7 +297,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     /* Blank out the chain id if there was only one chain */
     if (chainid == 'B')
     {
-        for (r = 0; r < atoms->nres; r++)
+        for (int r = 0; r < atoms->nres; r++)
         {
             atoms->resinfo[r].chainid = ' ';
         }
