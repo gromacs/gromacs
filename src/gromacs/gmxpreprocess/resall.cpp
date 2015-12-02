@@ -44,7 +44,6 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
@@ -53,6 +52,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
 {

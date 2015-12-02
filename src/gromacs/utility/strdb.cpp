@@ -117,40 +117,6 @@ gmx_bool get_header(char line[], char *header)
     return TRUE;
 }
 
-int get_strings(const char *db, char ***strings)
-{
-    FILE  *in;
-    char **ptr;
-    char   buf[STRLEN];
-    int    i, nstr;
-
-    in = libopen(db);
-
-    if (fscanf(in, "%d", &nstr) != 1)
-    {
-        gmx_warning("File %s is empty", db);
-        gmx_ffclose(in);
-        return 0;
-    }
-    snew(ptr, nstr);
-    for (i = 0; (i < nstr); i++)
-    {
-        if (NULL == fgets2(buf, STRLEN, in))
-        {
-            gmx_fatal(FARGS, "Cannot read string from buffer");
-        }
-#ifdef DEBUG
-        fprintf(stderr, "Have read: %s\n", buf);
-#endif
-        ptr[i] = gmx_strdup(buf);
-    }
-    gmx_ffclose(in);
-
-    *strings = ptr;
-
-    return nstr;
-}
-
 int search_str(int nstr, char **str, char *key)
 {
     int i;
@@ -167,7 +133,7 @@ int search_str(int nstr, char **str, char *key)
     return -1;
 }
 
-int fget_lines(FILE *in, char ***strings)
+static int fget_lines(FILE *in, char ***strings)
 {
     char **ptr;
     char   buf[STRLEN];
@@ -185,7 +151,10 @@ int fget_lines(FILE *in, char ***strings)
     snew(ptr, nstr);
     for (i = 0; (i < nstr); i++)
     {
-        fgets2(buf, STRLEN, in);
+        if (fgets2(buf, STRLEN, in) == nullptr)
+        {
+            gmx_fatal(FARGS, "Cannot read string from buffer");
+        }
         ptr[i] = gmx_strdup(buf);
     }
 
@@ -202,34 +171,6 @@ int get_lines(const char *db, char ***strings)
     in   = libopen(db);
     nstr = fget_lines(in, strings);
     gmx_ffclose(in);
-
-    return nstr;
-}
-
-int get_file(const char *db, char ***strings)
-{
-    FILE  *in;
-    char **ptr = NULL;
-    char   buf[STRLEN];
-    int    i, nstr, maxi;
-
-    in = libopen(db);
-
-    i = maxi = 0;
-    while (fgets2(buf, STRLEN-1, in))
-    {
-        if (i >= maxi)
-        {
-            maxi += 50;
-            srenew(ptr, maxi);
-        }
-        ptr[i] = gmx_strdup(buf);
-        i++;
-    }
-    nstr = i;
-    gmx_ffclose(in);
-    srenew(ptr, nstr);
-    *strings = ptr;
 
     return nstr;
 }

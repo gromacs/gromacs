@@ -43,7 +43,7 @@
 #include "macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "random.h"
-#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/strdb.h"
 #include "gromacs/utility/futil.h"
 #include "ehdata.h"
 

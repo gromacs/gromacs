@@ -41,7 +41,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/topology.h"
@@ -51,6 +50,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 void check_binwidth(real binwidth)
 {

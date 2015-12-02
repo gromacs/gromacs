@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,57 +34,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_STRDB_H
-#define GMX_FILEIO_STRDB_H
+/*! \libinternal \file
+ * \brief
+ * Declares C functions for reading files with a list of strings.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_STRDB_H
+#define GMX_UTILITY_STRDB_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-gmx_bool get_a_line(FILE *fp, char line[], int n);
-/* Read a line of at most n characters form *fp to line.
+/*! \brief
+ * Reads a line of at most n characters from *fp to line.
+ *
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
  * Return FALSE when eof.
  */
+gmx_bool get_a_line(FILE *fp, char line[], int n);
 
-gmx_bool get_header(char line[], char header[]);
-/* Read a header between '[' and ']' from line to header.
- * Returns FALSE no header is found.
+/*! \brief
+ * Read a header between '[' and ']' from line to header.
+ *
+ * Returns FALSE if no header is found.
  */
+gmx_bool get_header(char line[], char header[]);
 
-int fget_lines(FILE *in, char ***strings);
-/* Read an array of lines from file in. strings should be
- * the address of an array of strings (to be malloced by this routine)
- * return the number of strings.
+/*! \brief
+ * Opens file db, or if non-existant file $GMXLIB/db and read strings.
+ *
+ * First line in the file needs to specify the number of strings following.
+ * Returns the number of strings.
  */
 int get_lines(const char *db, char ***strings);
-/* Open file db, or if non-existant file $GMXLIB/db and read strings
- * return the number of strings.
- */
 
+/*! \brief
+ * Searches an array of strings for key, return the index if found.
+ *
+ * Returns -1 if not found.
+ */
 int search_str(int nstr, char **str, char *key);
-/* Search an array of strings for key, return the index if found
- * -1 if not found.
- */
-
-int get_strings(const char *db, char ***strings);
-/* Read an array of strings from file db or $GMXLIB/db. strings should be
- * the address of an array of strings (to be malloced by this routine)
- * return the number of strings.
- */
-int get_file(const char *db, char ***strings);
-/* Read an array of strings from file db or $GMXLIB/db. strings should be
- * the address of an array of strings (to be malloced by this routine)
- * Does not need number of lines as first line in the file.
- * return the number of strings.
- */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
