@@ -5,20 +5,21 @@
 #ifndef GMX_RESP_ATOM_H
 #define GMX_RESP_ATOM_H
 
-#include "gmx_resp.h"
-
 #include <vector>
 #include "gromacs/utility/real.h"
+#include "poldata.h"
 
 namespace alexandria
 {
-    class Poldata;
 class RespAtom
 {
     public:
-        RespAtom(int atomnumber, int atype,
-                 const char *atomtype, Poldata * pd,
-                 ChargeDistributionModel iDistributionModel, std::vector<std::string>  dzatoms);
+        RespAtom(int atomnumber, 
+                 int atype,
+                 const char *atomtype, 
+                 Poldata * pd,
+                 ChargeDistributionModel iDistributionModel, 
+                 std::vector<std::string>  dzatoms);
         ~RespAtom();
 
         real getQ();

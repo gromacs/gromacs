@@ -63,44 +63,44 @@ set(ALEXANDRIA_SOURCES
      #coulombintegrals/Slater_6S_6S.cpp
      coulombintegrals/gaussian_integrals.c
      coulombintegrals/slater_integrals.cpp
-	xml_util.c
-	poldata.cpp
-	poldata_xml.cpp
-	gmx_simple_comm.cpp
-        composition.cpp
-	molselect.cpp
-	gmx_resp.cpp
-	gentop_qgen.cpp
 	gentop_core.cpp
+	gentop_qgen.cpp
 	gentop_vsite.cpp
+	gmx_resp_atom.cpp
+	gmx_resp.cpp
+	gmx_simple_comm.cpp
 	molprop.cpp
 	molprop_util.cpp
 	molprop_xml.cpp
+	molselect.cpp
+	poldata.cpp
+	poldata_xml.cpp
+	xml_util.c
+        alex_modules.cpp
+        analyze.cpp
+        bastat.cpp
+        categories.cpp
+        composition.cpp
+        gauss2molprop.cpp
+        gauss_io.cpp
+        gen_table.cpp
+        gentop.cpp
+        merge_mp.cpp
+        moldip.cpp
         molprop_sqlite3.cpp
         molprop_tables.cpp
+        molprop_test.cpp
+        mp2csv.cpp
         mymol.cpp
-        moldip.cpp
         nmsimplex.c
+        phase.cpp
         plistwrapper.cpp
-        gauss_io.cpp
-        gentop.cpp
+        poldata_test.cpp
+        stringutil.cpp
+        tune_dip.cpp
         tune_fc.cpp
         tune_pol.cpp
-        tune_dip.cpp
-        bastat.cpp
-        gauss2molprop.cpp
-        analyze.cpp
-        mp2csv.cpp
-        merge_mp.cpp
-        phase.cpp
-        poldata_test.cpp
-        molprop_test.cpp
-        stringutil.cpp
 #        gen_ff.cpp
-        gen_table.cpp
-        alex_modules.cpp
-        categories.cpp
-	gmx_ra.cpp
 	)
 	
 
