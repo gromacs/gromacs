@@ -40,8 +40,6 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_correlationfunctions
  */
-//#include "gmxpre.h"
-
 #include <math.h>
 
 #include <gtest/gtest.h>
@@ -55,8 +53,6 @@
 
 class PoldataTest : public ::testing::Test
 {
-
-
     protected:
         static  alexandria::Poldata                    * pd;
         gmx::test::TestReferenceData                     refData_;
@@ -65,14 +61,9 @@ class PoldataTest : public ::testing::Test
         static   std::vector<std::string>                atomNames;
         static std::string atomName;
 
-        //init sett tolecrance
         PoldataTest ( )
-        //gmx::test::erefdataCreateMissing
-        //gmx::test::erefdataCompare
             : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
-
-
 #ifdef GMX_DOUBLE
             checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
 #else
@@ -85,7 +76,7 @@ class PoldataTest : public ::testing::Test
         {
             gmx_atomprop_t aps = gmx_atomprop_init();
 
-            // Reads the file, the file only suport 3 chargedisributionModels
+            // Reads the file, the file only supports 3 chargedistributionModels
             // eqdAXp,eqdAXg,  eqdAXs,  23/07/15
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
             pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
@@ -96,7 +87,6 @@ class PoldataTest : public ::testing::Test
             {
                 atomNames.push_back(iter->getType());
             }
-
         }
 
         static void TearDownTestCase()
@@ -105,7 +95,6 @@ class PoldataTest : public ::testing::Test
 
 
 };
-
 
 alexandria::Poldata    * PoldataTest::pd;
 const int                PoldataTest::numModels;
@@ -123,7 +112,6 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->getVdwparams(), "vdwparams");
     checker_.checkDouble(aType->getRefEnthalpy(), "refEnthalpy");
 }
-
 
 TEST_F(PoldataTest, searchAtype){
     alexandria::Ffatype  type;
