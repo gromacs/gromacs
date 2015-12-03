@@ -22,7 +22,8 @@
 #include <vector>
 
 #include "gromacs/utility/real.h"
-#include "programs/alexandria/molselect.h"
+
+#include "molselect.h"
 
 /*! \brief
  * Contains classes related to alexandria force field tools

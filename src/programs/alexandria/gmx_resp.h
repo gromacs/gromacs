@@ -6,7 +6,9 @@
 #define GMX_RESP_H
 
 #include <stdio.h>
+
 #include <vector>
+
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 

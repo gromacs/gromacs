@@ -6,7 +6,9 @@
 #define GMX_RESP_ATOM_H
 
 #include <vector>
+
 #include "gromacs/utility/real.h"
+
 #include "poldata.h"
 
 namespace alexandria
