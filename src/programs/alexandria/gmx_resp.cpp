@@ -47,6 +47,7 @@
 #include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -58,9 +59,6 @@
 #include "poldata.h"
 #include "stringutil.h"
 #include "coulombintegrals/coulombintegrals.h"
-
-
-
 
 namespace alexandria
 {

@@ -31,6 +31,8 @@
 #include "plistwrapper.h"
 #include "poldata.h"
 
+struct gpp_atomtype;
+
 #define egvtNO           0
 #define egvtLINEAR       1
 #define egvtPLANAR       2
@@ -137,7 +139,7 @@ class GentopVsites
         void generateSpecial(bool bUseVsites,
                              t_atoms *atoms, rvec **x,
                              std::vector<PlistWrapper> &plist,
-                             t_symtab *symtab, gpp_atomtype_t atype,
+                             t_symtab *symtab, gpp_atomtype *atype,
                              t_excls **excls);
 };
 

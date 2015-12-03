@@ -40,7 +40,10 @@
 #include "molselect.h"
 #include "poldata.h"
 
+struct gmx_enerdata_t;
 struct gmx_shellfc_t;
+struct t_forcerec;
+struct t_inputrec;
 struct t_state;
 struct t_topology;
 
@@ -116,7 +119,7 @@ class MyMol
         real                     *qESP;
         tensor                    Q_exp, Q_calc, Q_esp;
         eSupport                  eSupp;
-        t_state                   state_;
+        t_state                  *state_;
         t_forcerec               *fr_;
 
         std::vector<PlistWrapper> plist_;
@@ -128,7 +131,7 @@ class MyMol
         GentopQgen               *qgen_;
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
-        gmx_enerdata_t            enerd_;
+        gmx_enerdata_t           *enerd_;
         Resp                     *gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;

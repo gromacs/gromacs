@@ -504,7 +504,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   gmx_bool bZero,
                   char *opt_elem, char *const_elem,
                   char *lot,
-                  gmx_molselect_t gms,
+                  gmx_molselect *gms,
                   real watoms, gmx_bool bCheckSupport,
                   unsigned int seed)
 {
@@ -991,7 +991,7 @@ void MolDip::CalcDeviation()
                                     mymol->inputrec_, TRUE,
                                     GMX_FORCE_ALLFORCES,
                                     mymol->ltop_, NULL, NULL, NULL,
-                                    &(mymol->state_),
+                                    mymol->state_,
                                     mymol->f_, force_vir, mymol->md_,
                                     &my_nrnb, wcycle, NULL,
                                     &(mymol->mtop_->groups),

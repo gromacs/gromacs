@@ -32,6 +32,7 @@
 #include "molselect.h"
 #include "poldata.h"
 
+struct t_topology;
 
 using namespace alexandria;
 
@@ -97,6 +98,6 @@ enum MolPropSortAlgorithm {
  */
 extern void MolPropSort(std::vector<alexandria::MolProp> &mp,
                         MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
-                        gmx_molselect_t gms);
+                        gmx_molselect *gms);
 
 #endif

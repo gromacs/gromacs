@@ -496,7 +496,7 @@ alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
 
 void MolPropSort(std::vector<alexandria::MolProp> &mp,
                  MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
-                 gmx_molselect_t gms)
+                 gmx_molselect *gms)
 {
     printf("There are %d molprops. Will now sort them.\n", (int)mp.size());
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)

@@ -35,6 +35,7 @@
 #include "plistwrapper.h"
 #include "poldata.h"
 
+struct gmx_atomprop;
 
 using namespace alexandria;
 
@@ -53,7 +54,7 @@ void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms,
                         alexandria::PlistWrapperIterator bonds,
                         Poldata * pd,
-                        gmx_atomprop_t aps, const char *symm_string,
+                        gmx_atomprop *aps, const char *symm_string,
                         std::vector<int> &sym_charges);
 
 enum eChargeGroup {

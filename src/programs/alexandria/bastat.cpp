@@ -528,7 +528,7 @@ int alex_bastat(int argc, char *argv[])
     //alexandria::MolDip    md;
     FILE                            *fp;
     ChargeDistributionModel          iDistributionModel;
-    gmx_molselect_t                  gms;
+    gmx_molselect *                 gms;
     time_t                           my_t;
     t_bonds                         *b;
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;

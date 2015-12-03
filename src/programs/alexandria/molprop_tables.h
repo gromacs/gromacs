@@ -62,7 +62,7 @@ extern void gmx_molprop_stats_table(FILE *fp, MolPropObservable eprop,
                                     t_qmcount *qmc, char *exp_type,
                                     double outlier,
                                     alexandria::CategoryList cList,
-                                    gmx_molselect_t gms, iMolSelect ims);
+                                    gmx_molselect *gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -76,7 +76,7 @@ extern void gmx_molprop_stats_table(FILE *fp, MolPropObservable eprop,
  */
 extern void gmx_molprop_composition_table(FILE *fp,
                                           std::vector<alexandria::MolProp> mp,
-                                          gmx_molselect_t gms, iMolSelect ims);
+                                          gmx_molselect *gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the molecules in each molecule category
@@ -114,7 +114,7 @@ extern void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
                                    std::vector<alexandria::MolProp> mp,
                                    t_qmcount *qmc, const char *exp_type,
                                    bool bPrintAll, bool bPrintBasis,
-                                   bool bPrintMultQ, gmx_molselect_t gms, iMolSelect ims);
+                                   bool bPrintMultQ, gmx_molselect *gms, iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the atomtypes in Alexandria

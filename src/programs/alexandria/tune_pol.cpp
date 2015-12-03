@@ -164,7 +164,7 @@ static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
 
 static void dump_csv(Poldata     *                     pd,
                      std::vector<alexandria::MolProp> &mp,
-                     gmx_molselect_t                   gms,
+                     gmx_molselect *                  gms,
                      std::vector<pType>               &ptypes,
                      int                               nusemol,
                      double                            x[],
@@ -239,7 +239,7 @@ static int decompose_frag(FILE *fplog,
                           Poldata * pd,
                           std::vector<alexandria::MolProp> &mp,
                           gmx_bool bQM, char *lot,
-                          int mindata, gmx_molselect_t gms,
+                          int mindata, gmx_molselect *gms,
                           gmx_bool bZero, gmx_bool bForceFit,
                           int nBootStrap, real fractionBootStrap,
                           int seed,
@@ -689,7 +689,7 @@ int alex_tune_pol(int argc, char *argv[])
     gmx_atomprop_t                         ap;
     Poldata           *                    pd;
     gmx_output_env_t *                     oenv;
-    gmx_molselect_t                        gms;
+    gmx_molselect *                       gms;
     int                                    npa = sizeof(pa)/sizeof(pa[0]);
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,

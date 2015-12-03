@@ -120,7 +120,7 @@ void CategoryList::sortCategories()
 
 void makeCategoryList(CategoryList         &cList,
                       std::vector<MolProp>  mp,
-                      gmx_molselect_t       gms,
+                      gmx_molselect *      gms,
                       iMolSelect            ims)
 {
     alexandria::CompositionSpecs  cs;

@@ -242,7 +242,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
                              char                            *exp_type,
                              double                           outlier,
                              alexandria::CategoryList         cList,
-                             gmx_molselect_t                  gms,
+                             gmx_molselect *                 gms,
                              iMolSelect                       ims)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
@@ -494,7 +494,7 @@ static void composition_header(alexandria::LongTable &lt,
 }
 
 void gmx_molprop_composition_table(FILE *fp, std::vector<alexandria::MolProp> mp,
-                                   gmx_molselect_t gms, iMolSelect ims)
+                                   gmx_molselect *gms, iMolSelect ims)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     alexandria::MolecularCompositionIterator   mci;
@@ -996,7 +996,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             t_qmcount *qmc,
                             const char *exp_type, bool bPrintAll,
                             bool bPrintBasis, bool bPrintMultQ,
-                            gmx_molselect_t gms, iMolSelect ims)
+                            gmx_molselect *gms, iMolSelect ims)
 {
     alexandria::MolecularQuadrupoleIterator qi;
     alexandria::MolecularEnergyIterator     mei;

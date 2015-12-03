@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "gromacs/utility/real.h"
+#include "programs/alexandria/molselect.h"
 
 /*! \brief
  * Contains classes related to alexandria force field tools
@@ -50,6 +51,8 @@
  */
 namespace alexandria
 {
+    class MolProp;
+    
 class CategoryListElement
 {
     private:
@@ -104,7 +107,7 @@ class CategoryList
 
 void makeCategoryList(CategoryList         &cList,
                       std::vector<MolProp>  mp,
-                      gmx_molselect_t       gms,
+                      gmx_molselect *      gms,
                       iMolSelect            ims);
 
 }

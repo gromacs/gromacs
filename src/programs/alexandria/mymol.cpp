@@ -769,7 +769,9 @@ MyMol::MyMol() : gvt_(egvtALL)
     ltop_  = NULL;
     md_    = NULL;
     mp_    = new MolProp;
-    init_enerdata(1, 0, &enerd_);
+    snew(state_, 1);
+    snew(enerd_, 1);
+    init_enerdata(1, 0, enerd_);
 
     /* Inputrec parameters */
     snew(inputrec_, 1);
@@ -1142,12 +1144,12 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr)
     init_forcerec(NULL, fr_, NULL, inputrec_, mtop_, cr,
                   box, NULL, NULL, NULL, NULL, TRUE, -1);
 
-    init_state(&state_, topology_->atoms.nr, 1, 1, 1, 0);
+    init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
     ltop_ = gmx_mtop_generate_local_top(mtop_, inputrec_);
     md_   = init_mdatoms(NULL, mtop_, FALSE);
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
-        copy_rvec(x_[i], state_.x[i]);
+        copy_rvec(x_[i], state_->x[i]);
     }
     return immOK;
 }

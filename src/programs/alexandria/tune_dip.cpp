@@ -980,7 +980,7 @@ int alex_tune_dip(int argc, char *argv[])
     FILE                       *fp;
     t_commrec                  *cr;
     gmx_output_env_t *          oenv;
-    gmx_molselect_t             gms;
+    gmx_molselect *            gms;
     time_t                      my_t;
 
     cr = init_commrec();

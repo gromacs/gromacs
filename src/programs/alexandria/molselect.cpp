@@ -37,16 +37,18 @@
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 
-typedef struct {
+struct t_ims 
+{
     char      *iupac;
     iMolSelect status;
     int        index;
-} t_ims;
+};
 
-typedef struct gmx_molselect {
+struct gmx_molselect 
+{
     int    nmol;
     t_ims *ims;
-} gmx_molselect;
+};
 
 static int ims_comp(const void *a, const void *b)
 {
@@ -56,7 +58,7 @@ static int ims_comp(const void *a, const void *b)
     return strcasecmp(ia->iupac, ib->iupac);
 }
 
-gmx_molselect_t gmx_molselect_init(const char *fn)
+gmx_molselect *gmx_molselect_init(const char *fn)
 {
     gmx_molselect *gms;
     char         **strings;
@@ -106,10 +108,10 @@ gmx_molselect_t gmx_molselect_init(const char *fn)
     /* Sort the molecules for faster searching down below */
     qsort(gms->ims, gms->nmol, sizeof(gms->ims[0]), ims_comp);
 
-    return (gmx_molselect_t) gms;
+    return gms;
 }
 
-void gmx_molselect_done(gmx_molselect_t gms)
+void gmx_molselect_done(gmx_molselect *gms)
 {
     gmx_molselect *g = (gmx_molselect *)gms;
     int            i;
@@ -123,7 +125,7 @@ void gmx_molselect_done(gmx_molselect_t gms)
     sfree(g);
 }
 
-iMolSelect gmx_molselect_status(gmx_molselect_t gms, const char *iupac)
+iMolSelect gmx_molselect_status(gmx_molselect *gms, const char *iupac)
 {
     gmx_molselect *g = (gmx_molselect *)gms;
     t_ims          key;
@@ -146,7 +148,7 @@ iMolSelect gmx_molselect_status(gmx_molselect_t gms, const char *iupac)
     }
 }
 
-int gmx_molselect_index(gmx_molselect_t gms, const char *iupac)
+int gmx_molselect_index(gmx_molselect *gms, const char *iupac)
 {
     if (NULL == iupac)
     {

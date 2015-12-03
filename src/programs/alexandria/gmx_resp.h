@@ -25,15 +25,16 @@
 #define GMX_RESP_H
 
 #include <stdio.h>
-
+#include <vector>
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 
-#include "gmx_ra.h"
+#include "gmx_resp_atom.h"
 #include "molprop.h"
 #include "poldata.h"
 
 struct gmx_output_env_t;
+struct t_atoms;
 struct t_symtab;
 
 enum eParm {
@@ -212,7 +213,7 @@ class Resp
         real                                      _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
         unsigned int                              _seed;
         int                                       _nparam; /* Total number of parameters */
-        std::vector<Ra *>                         _ra;
+        std::vector<RespAtom *>                         _ra;
         std::vector<std::string>                  _dzatoms;
         const std::string                         _stoichiometry;
         std::vector<double>                       _pot, _potCalc, _rho;

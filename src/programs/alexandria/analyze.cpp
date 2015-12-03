@@ -52,7 +52,7 @@
 
 static void calc_frag_miller(Poldata     *                     pd,
                              std::vector<alexandria::MolProp> &mp,
-                             gmx_molselect_t                   gms)
+                             gmx_molselect *                  gms)
 {
     double                       bos0, polar, sig_pol;
 
@@ -162,7 +162,7 @@ static void write_corr_xvg(const char *fn,
                            std::vector<alexandria::MolProp> mp,
                            MolPropObservable mpo, t_qmcount *qmc,
                            real rtoler, real atoler,
-                           const gmx_output_env_t *oenv, gmx_molselect_t gms,
+                           const gmx_output_env_t *oenv, gmx_molselect *gms,
                            char *exp_type)
 {
     alexandria::MolPropIterator mpi;
@@ -282,7 +282,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 const char *texfn,
                                 const char *xvgfn,
                                 const gmx_output_env_t *oenv,
-                                gmx_molselect_t gms,
+                                gmx_molselect *gms,
                                 const char *selout)
 {
     alexandria::CategoryList       cList;
@@ -481,7 +481,7 @@ int alex_analyze(int argc, char *argv[])
     gmx_atomprop_t                   ap;
     Poldata                         *pd;
     gmx_output_env_t                *oenv;
-    gmx_molselect_t                  gms;
+    gmx_molselect *                 gms;
     char                           **mpname = NULL, **fns = NULL;
     int                              nmpfile;
 

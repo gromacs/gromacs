@@ -1047,10 +1047,10 @@ double OptParam::CalcDeviation()
             if (mymol->shellfc_)
             {
                 (void)
-                relax_shell_flexcon(debug, _cr, FALSE, 0,
+                    relax_shell_flexcon(debug, _cr, FALSE, 0,
                                     mymol->inputrec_, TRUE, flags,
-                                    mymol->ltop_, NULL, &(mymol->enerd_),
-                                    NULL, &(mymol->state_),
+                                    mymol->ltop_, NULL, mymol->enerd_,
+                                    NULL, mymol->state_,
                                     mymol->f_, force_vir, mymol->md_,
                                     &my_nrnb, wcycle, NULL,
                                     &(mymol->mtop_->groups),
@@ -1064,8 +1064,8 @@ double OptParam::CalcDeviation()
                          &(mymol->mtop_->groups),
                          mymol->box, mymol->x_, NULL,
                          mymol->f_, force_vir, mymol->md_,
-                         &mymol->enerd_, NULL,
-                         mymol->state_.lambda, NULL,
+                         mymol->enerd_, NULL,
+                         mymol->state_->lambda, NULL,
                          mymol->fr_,
                          NULL, mu_tot, t, NULL, NULL, FALSE,
                          flags);
@@ -1078,7 +1078,7 @@ double OptParam::CalcDeviation()
             }
             mymol->Force2     /= mymol->molProp()->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
-            mymol->Ecalc       = mymol->enerd_.term[F_EPOT];
+            mymol->Ecalc       = mymol->enerd_->term[F_EPOT];
             ener               = sqr(mymol->Ecalc-mymol->Emol);
             _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
 
@@ -1429,12 +1429,12 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
         {
             for (k = 0; (k < F_NRE); k++)
             {
-                if ((mi->enerd_.term[k] != 0) ||
+                if ((mi->enerd_->term[k] != 0) ||
                     (mi->mtop_->moltype[0].ilist[k].nr > 0))
                 {
                     fprintf(fp, "%s %d %g\n", interaction_function[k].name,
                             mi->mtop_->moltype[0].ilist[k].nr,
-                            mi->enerd_.term[k]);
+                            mi->enerd_->term[k]);
                 }
             }
         }
@@ -1640,7 +1640,7 @@ int alex_tune_fc(int argc, char *argv[])
     FILE                 *fp;
     t_commrec            *cr;
     gmx_output_env_t     *oenv;
-    gmx_molselect_t       gms;
+    gmx_molselect *      gms;
     time_t                my_t;
     opt_mask_t           *omt = NULL;
 
