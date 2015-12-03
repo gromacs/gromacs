@@ -66,32 +66,16 @@ class RespTest : public ::testing::Test
     protected:
         gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
-        static std::vector<alexandria::Resp *>           resp;
-        static const int         nrAtoms = 15;
-
-
-        //init sett tolecrance
-        RespTest ( )
-            : refData_(gmx::test::erefdataCompare), checker_(refData_.rootChecker())
+        alexandria::Poldata                             *pd_;
+        alexandria::MyMol                                mp_;
+        gmx_atomprop_t                                   aps_;
+        
+        //init set tolecrance
+        RespTest () : refData_(gmx::test::erefdataCompare), 
+                      checker_(refData_.rootChecker())
         {
-#ifdef GMX_DOUBLE
-            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
-#else
-            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
-#endif
-        }
-
-        // Static initiation, only run once every test.
-        static void SetUpTestCase()
-        {
-            std::vector<ChargeDistributionModel> iChargeDistributionModel;
-            iChargeDistributionModel.push_back(eqdAXp);
-            iChargeDistributionModel.push_back(eqdAXg);
-            //	      iChargeDistributionModel.push_back(eqdAXs);
-            alexandria::MyMol       mp;
             alexandria::MolProp     molprop;
-            gmx_atomprop_t          aps = gmx_atomprop_init();
-
+            aps_ = gmx_atomprop_init();
 
             //needed for ReadGauss
             char                    * molnm    = (char *)"XXX";
@@ -100,65 +84,67 @@ class RespTest : public ::testing::Test
             char                    * basis    = (char *)"";
             int                       maxpot   = 0;
             int                       nsymm    = 0;
-            int                       nexcl    = 2;
-            const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
-            eDih                      edih     = (eDih) get_option(dihopt);
-
-            //Needed for GenerateCharges
-            real        hfac        = 0;
-            real        epsr        = 1;
-            const char *lot         = "B3LYP/aug-cc-pVTZ";
-            char       *symm_string = (char *)"";
-
-
-            ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) eqgRESP;
 
             //read input file for poldata
             std::string          dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-            alexandria::Poldata *pd       = alexandria::PoldataXml::read(dataName.c_str(), aps);
+            pd_ = alexandria::PoldataXml::read(dataName.c_str(), aps_);
 
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd->getForceField().c_str());
-            mp.molProp()->Merge(molprop);
-            for (unsigned int i = 0; i < iChargeDistributionModel.size(); i++)
+                      maxpot, nsymm, pd_->getForceField().c_str());
+            mp_.molProp()->Merge(molprop);
+        }
+
+        // Static initiation, only run once every test.
+        static void SetUpTestCase()
+        {
+        }
+        
+        void testQtot(ChargeDistributionModel model)
+        {
+            //Generate charges and topology
+            const char *lot         = "B3LYP/aug-cc-pVTZ";
+            int                       nexcl    = 2;
+            const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
+            eDih                      edih     = (eDih) get_option(dihopt);
+            
+            mp_.GenerateTopology(aps_, pd_, lot, model, 
+                                 nexcl, false, false, edih);
+                                
+            mp_.gr_ = new alexandria::Resp(model, mp_.molProp()->getCharge());
+            //Needed for GenerateCharges
+            real        hfac        = 0;
+            real        epsr        = 1;
+            char       *symm_string = (char *)"";
+
+            mp_.GenerateCharges(pd_, aps_, model, eqgRESP,
+                                hfac, epsr, lot, true, symm_string);
+
+            std::vector<double> qtotValues;
+            for (int atom = 0; atom < mp_.gr_->nAtom(); atom++)
             {
-                //Generate charges and topology
-                mp.GenerateTopology(aps, pd, lot, iChargeDistributionModel[i], nexcl, false, false, edih);
-                mp.gr_ = new alexandria::Resp(iChargeDistributionModel[i], mp.molProp()->getCharge());
-                mp.GenerateCharges(pd, aps, iChargeDistributionModel[i], iChargeGenerationAlgorithm, hfac, epsr, lot, true, symm_string);
-                resp.push_back(mp.gr_);
+                qtotValues.push_back(mp_.gr_->getQtot(atom));
             }
+            char buf[256];
+            snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
+                     static_cast<int>(mp_.gr_->chargeDistributionModel()));
+            checker_.checkSequence(qtotValues.begin(), 
+                                   qtotValues.end(), buf);
         }
 
         static void TearDownTestCase()
         {
-            for (unsigned int i = 0; i < resp.size(); i++)
-            {
-                delete resp[i];
-            }
         }
 
 };
 
-std::vector<alexandria::Resp *> RespTest::resp;
-const int                       RespTest::nrAtoms;
-
-
-
-TEST_F (RespTest, qtotValues)
+TEST_F (RespTest, AXpValues)
 {
-    std::vector<double> qtotValues(nrAtoms);
-    for (unsigned int i = 0; i < resp.size(); i++)
-    {
-        for (int atom = 0; atom < nrAtoms; atom++)
-        {
-            qtotValues[atom] = resp[i]->getQtot(atom);
-        }
-        std::stringstream sstm;
-        sstm << "qtotValuesEqdModel" << i;
-        std::string       testName  = sstm.str();
-        checker_.checkSequence(qtotValues.begin(), qtotValues.end(), testName.c_str());
-    }
+    testQtot(eqdAXp);
+}
+
+TEST_F (RespTest, AXgValues)
+{
+    testQtot(eqdAXg);
 }

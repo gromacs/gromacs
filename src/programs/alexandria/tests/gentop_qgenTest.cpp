@@ -66,14 +66,6 @@ class gentopQgenTest : public ::testing::Test
         gentopQgenTest ( )
             : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
-
-
-
-#ifdef GMX_DOUBLE
-            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
-#else
-            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
-#endif
         }
 
         // Static initiation, only run once every test.
@@ -87,10 +79,6 @@ class gentopQgenTest : public ::testing::Test
         }
 
 };
-
-
-
-
 
 TEST_F (gentopQgenTest, test)
 {

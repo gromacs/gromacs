@@ -60,9 +60,12 @@ class Resp
         ~Resp();
 
 
+        ChargeDistributionModel chargeDistributionModel()
+        { return _iDistributionModel; }
+        
         int atomicnumber2row(int elem);
 
-
+        int nAtom() { return _natom; }
 
         void statistics( int len, char buf[]);
 
