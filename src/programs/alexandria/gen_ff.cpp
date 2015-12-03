@@ -22,17 +22,21 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/math/units.h"
-#include "gromacs/legacyheaders/oenv.h"
+
 #include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/oenv.h"
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/cstringutil.h"
+
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "stringutil.h"

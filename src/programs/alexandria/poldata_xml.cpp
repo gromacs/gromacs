@@ -22,16 +22,21 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include "poldata_xml.h"
+
 #include <cstdlib>
 #include <cstring>
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/cstringutil.h"
+
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "poldata_xml.h"
+
 #include "poldata.h"
 #include "xml_util.h"
 

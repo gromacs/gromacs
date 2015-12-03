@@ -37,12 +37,15 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <string>
-#include <sstream>
+
+#include "stringutil.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include "stringutil.h"
+
+#include <sstream>
+#include <string>
 
 int get_option(const char **opts)
 {

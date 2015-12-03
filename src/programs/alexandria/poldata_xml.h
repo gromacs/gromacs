@@ -24,8 +24,9 @@
 #ifndef POLDATA_XML_H
 #define POLDATA_XML_H
 
-#include "poldata.h"
 #include "gromacs/topology/atomprop.h"
+
+#include "poldata.h"
 #include "xml_util.h"
 
 

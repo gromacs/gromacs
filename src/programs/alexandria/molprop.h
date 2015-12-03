@@ -35,13 +35,15 @@
 #ifndef MOLPROP_H
 #define MOLPROP_H
 
-#include <string>
-#include <vector>
 #include <string.h>
 
+#include <string>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/real.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/real.h"
+
 #include "phase.h"
 #include "poldata.h"
 

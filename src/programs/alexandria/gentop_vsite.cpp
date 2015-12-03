@@ -22,18 +22,22 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include "gentop_vsite.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "poldata.h"
-#include "gentop_vsite.h"
 
 namespace alexandria
 {

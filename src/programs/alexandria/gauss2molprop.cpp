@@ -22,32 +22,35 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
-#include "gromacs/utility/real.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
+
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/readinp.h"
+#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "gauss_io.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
-#include "gauss_io.h"
+#include "poldata.h"
+#include "poldata_xml.h"
 
 int alex_gauss2molprop(int argc, char *argv[])
 {

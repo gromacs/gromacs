@@ -26,11 +26,12 @@
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/topology/atomprop.h"
-#include "poldata.h"
+
+#include "categories.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molselect.h"
-#include "categories.h"
+#include "poldata.h"
 
 //! Utility function converting float to char *
 extern char *ftoa(double f);

@@ -22,30 +22,33 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/math/units.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/commandline/viewit.h"
-#include "gromacs/topology/topology.h"
-#include "poldata.h"
-#include "poldata_xml.h"
-#include "molselect.h"
+
+#include "categories.h"
+#include "composition.h"
 #include "molprop.h"
+#include "molprop_tables.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
-#include "molprop_tables.h"
-#include "composition.h"
-#include "categories.h"
+#include "molselect.h"
+#include "poldata.h"
+#include "poldata_xml.h"
 
 static void calc_frag_miller(Poldata *                     pd,
                              std::vector<alexandria::MolProp> &mp,

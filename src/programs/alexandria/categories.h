@@ -35,9 +35,11 @@
 #ifndef CATEGORIES_H
 #define CATEGORIES_H
 
+#include <string.h>
+
 #include <string>
 #include <vector>
-#include <string.h>
+
 #include "gromacs/utility/real.h"
 
 /*! \brief

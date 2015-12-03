@@ -21,9 +21,11 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <string.h>
-#include "gromacs/utility/fatalerror.h"
 #include "xml_util.h"
+
+#include <string.h>
+
+#include "gromacs/utility/fatalerror.h"
 
 int find_elem(char *name, int nr, const char *names[])
 {

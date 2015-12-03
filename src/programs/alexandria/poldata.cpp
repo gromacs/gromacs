@@ -20,19 +20,22 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include "poldata.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <string.h>
+
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/gmxlib/ifunc.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
-#include "poldata.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "gmx_simple_comm.h"
 #include "stringutil.h"
 

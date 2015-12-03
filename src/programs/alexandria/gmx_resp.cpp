@@ -22,38 +22,42 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include "gmx_resp.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
+
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/fileio/xvgr.h"
+#include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "nmsimplex.h"
-#include "coulombintegrals/coulombintegrals.h"
-#include "poldata.h"
-#include "gmx_resp.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "gentop_qgen.h"
+#include "nmsimplex.h"
+#include "poldata.h"
 #include "stringutil.h"
+#include "coulombintegrals/coulombintegrals.h"
 
 
 

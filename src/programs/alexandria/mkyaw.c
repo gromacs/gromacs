@@ -25,28 +25,27 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
 #include <math.h>
 #include <string.h>
-#include <ctype.h>
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "symtab.h"
-#include "smalloc.h"
-#include "symtab.h"
-#include "macros.h"
+
+#include "atomprop.h"
 #include "copyrite.h"
-#include "statutil.h"
-#include "string2.h"
-#include "strdb.h"
+#include "gbutil.h"
 #include "index.h"
 #include "macros.h"
-#include "vec.h"
-#include "typedefs.h"
-#include "gbutil.h"
-#include "strdb.h"
-#include "physics.h"
-#include "atomprop.h"
 #include "pbc.h"
+#include "physics.h"
+#include "smalloc.h"
+#include "statutil.h"
+#include "strdb.h"
+#include "string2.h"
+#include "symtab.h"
+#include "typedefs.h"
+#include "vec.h"
+
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 
 gmx_bool is_hb(t_pbc *pbc, rvec x[], int id, int ih, int ia, real ccut)
 {

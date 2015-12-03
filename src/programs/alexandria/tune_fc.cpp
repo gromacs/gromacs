@@ -22,61 +22,63 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
-#include <assert.h>
-#include "gromacs/listed-forces/bonded.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/futil.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/gmxlib/network.h"
-#include "nmsimplex.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/commandline/viewit.h"
-#include "gromacs/mdlib/vsite.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/coolstuff.h"
+
+#include "nmsimplex.h"
 
 // alexandria stuff
+#include "gentop_core.h"
+#include "gentop_qgen.h"
 #include "gmx_simple_comm.h"
+#include "moldip.h"
+#include "molprop.h"
+#include "molprop_util.h"
+#include "molprop_xml.h"
 #include "molselect.h"
+#include "mymol.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "gentop_qgen.h"
-#include "gentop_core.h"
-#include "molprop.h"
-#include "molprop_xml.h"
-#include "molprop_util.h"
-#include "mymol.h"
-#include "moldip.h"
 #include "stringutil.h"
 
 typedef struct {

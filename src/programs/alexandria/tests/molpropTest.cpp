@@ -49,15 +49,14 @@
 
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/snprintf.h"
+#include "programs/alexandria/molprop.h"
+#include "programs/alexandria/molprop_xml.h"
+#include "programs/alexandria/poldata_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-#include "programs/alexandria/molprop.h"
-#include "programs/alexandria/molprop_xml.h"
-#include "programs/alexandria/poldata_xml.h"
 
 class MolpropTest : public gmx::test::CommandLineTestBase
 {

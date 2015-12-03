@@ -22,10 +22,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <stdlib.h>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/topology/atomprop.h"
+
 #include "poldata_xml.h"
 
 using namespace alexandria;

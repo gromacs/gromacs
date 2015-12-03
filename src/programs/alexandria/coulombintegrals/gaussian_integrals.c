@@ -35,8 +35,10 @@
  */
 /* gaussian_integrals.c (c) 2010 Paul J. van Maaren and David van der Spoel */
 #include "gmxpre.h"
-#include <stdio.h>
+
 #include <math.h>
+#include <stdio.h>
+
 #include "coulombintegrals.h"
 
 static double sqr(double x)

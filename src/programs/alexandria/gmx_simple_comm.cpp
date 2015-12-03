@@ -30,9 +30,10 @@
 #include <mpi.h>
 #endif
 
+#include "gmx_simple_comm.h"
+
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_simple_comm.h"
 
 void gmx_send(const t_commrec *cr, int dest, void *buf, int bufsize)
 {

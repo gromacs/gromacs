@@ -22,32 +22,34 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/mdtypes/md_enums.h"
+
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/random/random.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gromacs/fileio/xvgr.h"
+#include "composition.h"
+#include "molprop.h"
+#include "molprop_tables.h"
+#include "molprop_util.h"
+#include "molprop_xml.h"
 #include "molselect.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molprop.h"
-#include "molprop_xml.h"
-#include "molprop_tables.h"
-#include "molprop_util.h"
-#include "composition.h"
 #include "stringutil.h"
 
 class pType

@@ -43,15 +43,15 @@
 //#include "gmxpre.h"
 
 #include <math.h>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/topology/atoms.h"
+#include "programs/alexandria/gentop_qgen.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-#include "gromacs/topology/atoms.h"
-
-#include "programs/alexandria/gentop_qgen.h"
 
 
 class gentopQgenTest : public ::testing::Test

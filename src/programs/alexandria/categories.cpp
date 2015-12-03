@@ -22,34 +22,38 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <algorithm>
+
+#include "categories.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include "gromacs/math/utilities.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
+
+#include <algorithm>
+
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/statistics/statistics.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "composition.h"
+#include "molprop.h"
+#include "molprop_tables.h"
+#include "molprop_util.h"
+#include "molselect.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molselect.h"
-#include "molprop.h"
-#include "molprop_util.h"
-#include "molprop_tables.h"
-#include "composition.h"
 #include "stringutil.h"
-#include "categories.h"
 
 namespace alexandria
 {

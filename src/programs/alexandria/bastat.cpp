@@ -22,31 +22,33 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
-#include "gromacs/utility/real.h"
-#include "gromacs/math/units.h"
-#include "gromacs/utility/init.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
+
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/statistics/statistics.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/xvgr.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/topology/atomprop.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/coolstuff.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/init.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 // Alexandria stuff
-#include "poldata_xml.h"
-#include "mymol.h"
 #include "molprop_util.h"
+#include "mymol.h"
+#include "poldata_xml.h"
 #include "stringutil.h"
 
 #define STRLEN 256

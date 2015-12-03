@@ -25,11 +25,13 @@
 #define GMX_RESP_H
 
 #include <stdio.h>
+
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
-#include "poldata.h"
-#include "molprop.h"
+
 #include "gmx_ra.h"
+#include "molprop.h"
+#include "poldata.h"
 
 struct gmx_output_env_t;
 struct t_symtab;

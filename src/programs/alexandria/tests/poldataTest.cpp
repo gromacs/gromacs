@@ -43,14 +43,15 @@
 //#include "gmxpre.h"
 
 #include <math.h>
+
 #include <gtest/gtest.h>
+
+#include "programs/alexandria/poldata.h"
+#include "programs/alexandria/poldata_xml.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
-#include "programs/alexandria/poldata.h"
-#include "programs/alexandria/poldata_xml.h"
 
 class PoldataTest : public ::testing::Test
 {

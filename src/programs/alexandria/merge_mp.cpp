@@ -22,23 +22,26 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/math/vec.h"
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "molprop.h"
+#include "molprop_sqlite3.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
-#include "molprop_sqlite3.h"
+#include "poldata.h"
+#include "poldata_xml.h"
 #include "stringutil.h"
 
 typedef struct {

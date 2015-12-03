@@ -36,7 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include <algorithm>
 #include "atomprop.h"
 
 #include <ctype.h>
@@ -44,6 +43,8 @@
 #include <string.h>
 
 #include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/strdb.h"

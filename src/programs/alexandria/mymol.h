@@ -24,20 +24,21 @@
 #ifndef MYMOL_H
 #define MYMOL_H
 
-#include "gromacs/utility/real.h"
-#include "gromacs/mdlib/vsite.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/topology/atomprop.h"
-#include "gmx_resp.h"
+#include "gromacs/utility/real.h"
+
+#include "gauss_io.h"
+#include "gentop_core.h"
 #include "gentop_qgen.h"
 #include "gentop_vsite.h"
-#include "gentop_core.h"
+#include "gmx_resp.h"
 #include "molprop.h"
 #include "molselect.h"
 #include "poldata.h"
-#include "gauss_io.h"
 
 struct gmx_shellfc_t;
 struct t_state;

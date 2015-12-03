@@ -23,29 +23,33 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include "gentop_qgen.h"
+
 #include <ctype.h>
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/strdb.h"
+
 #include "gromacs/fileio/confio.h"
-#include "gromacs/math/units.h"
-#include "gromacs/random/random.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/readinp.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/atoms.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "coulombintegrals/coulombintegrals.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "gmx_resp.h"
 #include "molprop.h"
 #include "poldata.h"
-#include "gentop_qgen.h"
-#include "gmx_resp.h"
+#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {

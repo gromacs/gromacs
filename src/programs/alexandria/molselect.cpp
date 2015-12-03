@@ -22,13 +22,17 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <string.h>
-#include <stdlib.h>
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/fileio/strdb.h"
+
 #include "molselect.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "stringutil.h"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };

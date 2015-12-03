@@ -22,22 +22,26 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <iostream>
-#include <fstream>
+
+#include "gauss_io.h"
+
 #include <algorithm>
-#include "gromacs/utility/real.h"
-#include "gromacs/utility/fatalerror.h"
+#include <fstream>
+#include <iostream>
+
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/utility/futil.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/topology/atomprop.h"
-#include "poldata.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
+
 #include "molprop.h"
 #include "molprop_util.h"
-#include "gauss_io.h"
+#include "poldata.h"
 #include "stringutil.h"
 
 using namespace std;
@@ -84,15 +88,15 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #ifdef HAVE_LIBOPENBABEL2
 // Hack to make this compile!
 #undef ANGSTROM
-#include <openbabel/babelconfig.h>
-#include <openbabel/obmolecformat.h>
-#include <openbabel/mol.h>
 #include <openbabel/atom.h>
+#include <openbabel/babelconfig.h>
 #include <openbabel/data_utilities.h>
-#include <openbabel/residue.h>
-#include <openbabel/obiter.h>
-#include <openbabel/obconversion.h>
 #include <openbabel/forcefield.h>
+#include <openbabel/mol.h>
+#include <openbabel/obconversion.h>
+#include <openbabel/obiter.h>
+#include <openbabel/obmolecformat.h>
+#include <openbabel/residue.h>
 #include <openbabel/math/vector3.h>
 
 static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mol)

@@ -24,12 +24,13 @@
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/fileio/copyrite.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/topology/atomprop.h"
+
 #include "molprop.h"
-#include "poldata.h"
 #include "molselect.h"
+#include "poldata.h"
 
 
 using namespace alexandria;

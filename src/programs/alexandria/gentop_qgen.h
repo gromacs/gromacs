@@ -25,8 +25,9 @@
 #define GENTOP_QGEN_H
 
 #include <stdio.h>
-#include "poldata.h"
+
 #include "gmx_resp.h"
+#include "poldata.h"
 
 enum {
   eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR

@@ -34,8 +34,10 @@
  */
 /* slater_integrals.cpp (c) 2010 Paul J. van Maaren and David van der Spoel */
 #include "gmxpre.h"
-#include <iostream>
+
 #include <stdio.h>
+
+#include <iostream>
 
 #include "coulombintegrals.h"
 #include "slater_low.h"

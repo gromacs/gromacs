@@ -24,8 +24,8 @@
 #ifndef GMX_SIMPLE_COMM_H
 #define GMX_SIMPLE_COMM_H
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdtypes/commrec.h"
 
 void gmx_send(const t_commrec *cr,int dest,void *buf,int bufsize);
 

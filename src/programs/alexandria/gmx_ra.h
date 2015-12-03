@@ -24,8 +24,8 @@
 #ifndef GMX_RA_H
 #define GMX_RA_H
 
-#include "poldata.h"
 #include "gmx_resp.h"
+#include "poldata.h"
 
 
 namespace alexandria

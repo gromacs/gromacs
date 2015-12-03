@@ -42,10 +42,11 @@
  */
 
 
+#include "nmsimplex.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include "nmsimplex.h"
 
 #define ALPHA       1.0       /* reflection coefficient */
 #define BETA        0.5       /* contraction coefficient */

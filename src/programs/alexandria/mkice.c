@@ -25,25 +25,27 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <math.h>
-#include "typedefs.h"
-#include "statutil.h"
+#include <stdio.h>
+
+#include "atomprop.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
-#include "gromacs/fileio/pdbio.h"
 #include "macros.h"
-#include "smalloc.h"
-#include "vec.h"
+#include "names.h"
 #include "pbc.h"
 #include "physics.h"
-#include "names.h"
-#include "txtdump.h"
-#include "gromacs/fileio/trnio.h"
-#include "symtab.h"
+#include "smalloc.h"
+#include "statutil.h"
 #include "strdb.h"
-#include "atomprop.h"
+#include "symtab.h"
+#include "txtdump.h"
+#include "typedefs.h"
+#include "vec.h"
+#include "gromacs/fileio/trnio.h"
+
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 
 #define TET   109.47
 #define DCONS 0.117265878

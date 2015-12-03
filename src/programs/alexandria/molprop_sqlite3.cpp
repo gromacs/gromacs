@@ -22,6 +22,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_CONFIG_H
@@ -30,11 +31,13 @@
 #ifdef HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
+#include "molprop_sqlite3.h"
+
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
-#include "molprop_sqlite3.h"
+
 #include "stringutil.h"
 
 typedef struct {

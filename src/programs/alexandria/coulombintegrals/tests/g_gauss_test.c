@@ -1,4 +1,5 @@
 #include <stdio.h>
+
 #include "gaussian_integrals.h"
 
 int main(int argc,char *argv[])

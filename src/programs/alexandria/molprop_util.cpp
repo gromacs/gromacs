@@ -22,36 +22,41 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include "molprop_util.h"
+
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <vector>
+#include <string.h>
+
 #include <algorithm>
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/utility/real.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
+#include <vector>
+
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/topology/atomprop.h"
+#include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "composition.h"
+#include "gentop_core.h"
+#include "gentop_vsite.h"
 #include "gmx_simple_comm.h"
+#include "molprop.h"
+#include "molprop_xml.h"
+#include "molselect.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molselect.h"
-#include "molprop.h"
-#include "molprop_util.h"
-#include "molprop_xml.h"
-#include "gentop_vsite.h"
-#include "gentop_core.h"
-#include "composition.h"
 #include "stringutil.h"
 
 void generate_composition(std::vector<alexandria::MolProp> &mp, Poldata * pd)

@@ -43,22 +43,21 @@
 
 
 #include <math.h>
-#include <gtest/gtest.h>
 
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
+#include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
-
+#include "programs/alexandria/gauss_io.h"
+#include "programs/alexandria/gmx_resp.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
 
-#include "programs/alexandria/gmx_resp.h"
-#include "programs/alexandria/gauss_io.h"
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 
 class RespTest : public ::testing::Test

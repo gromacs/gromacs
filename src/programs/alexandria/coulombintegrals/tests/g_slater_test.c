@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "slater_integrals.h"
 
 int main(int argc,char *argv[])

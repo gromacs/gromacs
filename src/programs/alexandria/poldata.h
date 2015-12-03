@@ -27,7 +27,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/utility/smalloc.h"
-#include "programs/alexandria/stringutil.h"
+
+#include "stringutil.h"
 
 /* This source code file is part of the Alexandria project */
 

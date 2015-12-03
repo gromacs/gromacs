@@ -25,6 +25,7 @@
 #define MOLDIP_H
 
 #include "gromacs/utility/real.h"
+
 #include "gentop_qgen.h"
 #include "mymol.h"
 

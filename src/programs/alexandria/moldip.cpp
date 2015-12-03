@@ -25,25 +25,26 @@
 
 #include <cmath>
 
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/fileio/copyrite.h"
-#include "gromacs/timing/wallcycle.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/mdlib/shellfc.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "stringutil.h"
 
 // Alexandria stuff
-#include "poldata_xml.h"
-#include "molprop_xml.h"
-#include "gmx_simple_comm.h"
 #include "moldip.h"
+
+#include "gmx_simple_comm.h"
+#include "molprop_xml.h"
+#include "poldata_xml.h"
 
 #define STRLEN 256
 

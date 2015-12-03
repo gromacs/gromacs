@@ -25,8 +25,10 @@
 #define XML_UTIL_H
 
 #include <stdio.h>
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+
 #include "gromacs/utility/fatalerror.h"
 
 /* This source code file is part of the Alexandria project */

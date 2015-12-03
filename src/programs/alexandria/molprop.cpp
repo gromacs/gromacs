@@ -23,17 +23,20 @@
  */
 #include "gmxpre.h"
 
+#include "molprop.h"
+
 #include <cmath>
 
 #include <string>
 #include <vector>
+
 #include "gromacs/math/utilities.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
-#include "poldata.h"
-#include "gmx_simple_comm.h"
-#include "molprop.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "composition.h"
+#include "gmx_simple_comm.h"
+#include "poldata.h"
 #include "stringutil.h"
 
 const char *mpo_name[MPO_NR] =

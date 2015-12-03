@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include "gmxpre.h"
+
 #include "slater_low.h"
 
 cl_R DSlater_4S_6S(cl_R r, cl_R xi, cl_R xj)
