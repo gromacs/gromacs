@@ -69,9 +69,9 @@ class RespTest : public ::testing::Test
         alexandria::Poldata                             *pd_;
         alexandria::MyMol                                mp_;
         gmx_atomprop_t                                   aps_;
-        
+
         //init set tolecrance
-        RespTest () : refData_(gmx::test::erefdataCompare), 
+        RespTest () : refData_(gmx::test::erefdataCompare),
                       checker_(refData_.rootChecker())
         {
             alexandria::MolProp     molprop;
@@ -100,18 +100,18 @@ class RespTest : public ::testing::Test
         static void SetUpTestCase()
         {
         }
-        
+
         void testQtot(ChargeDistributionModel model)
         {
             //Generate charges and topology
-            const char *lot         = "B3LYP/aug-cc-pVTZ";
-            int                       nexcl    = 2;
-            const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
-            eDih                      edih     = (eDih) get_option(dihopt);
-            
-            mp_.GenerateTopology(aps_, pd_, lot, model, 
+            const char               *lot         = "B3LYP/aug-cc-pVTZ";
+            int                       nexcl       = 2;
+            const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
+            eDih                      edih        = (eDih) get_option(dihopt);
+
+            mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, edih);
-                                
+
             mp_.gr_ = new alexandria::Resp(model, mp_.molProp()->getCharge());
             //Needed for GenerateCharges
             real        hfac        = 0;
@@ -129,7 +129,7 @@ class RespTest : public ::testing::Test
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
                      static_cast<int>(mp_.gr_->chargeDistributionModel()));
-            checker_.checkSequence(qtotValues.begin(), 
+            checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
 
