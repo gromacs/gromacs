@@ -60,7 +60,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"

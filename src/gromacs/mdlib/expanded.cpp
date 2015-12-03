@@ -43,7 +43,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/disre.h"

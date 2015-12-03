@@ -47,7 +47,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/units.h"

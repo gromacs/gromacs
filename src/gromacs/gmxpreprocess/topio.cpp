@@ -49,7 +49,6 @@
 #include <sys/types.h>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"

@@ -44,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"

@@ -54,7 +54,6 @@
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_detect_hardware.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"

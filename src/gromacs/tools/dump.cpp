@@ -107,7 +107,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
             pr_title(stdout, indent, fn);
             pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &(ir) : NULL, FALSE);
 
-            pr_header(stdout, indent, "header", &(tpx));
+            pr_tpxheader(stdout, indent, "header", &(tpx));
 
             if (!bSysTop)
             {

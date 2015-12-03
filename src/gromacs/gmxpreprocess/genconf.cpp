@@ -41,7 +41,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/utilities.h"

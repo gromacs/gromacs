@@ -68,7 +68,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/gmxcomplex.h"

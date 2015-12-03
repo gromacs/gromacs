@@ -49,7 +49,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/units.h"

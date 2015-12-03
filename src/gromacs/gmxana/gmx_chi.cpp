@@ -48,7 +48,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
