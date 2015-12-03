@@ -26,9 +26,10 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "xml_util.h"
@@ -67,7 +68,7 @@ static const char *xmltypes[] = {
     "XML_XINCLUDE_START",
     "XML_XINCLUDE_END"
 };
-#define NXMLTYPES asize(xmltypes)
+#define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 enum {
     exmlMOLECULES, exmlMOLECULE, exmlFORMULA, exmlMOLNAME, exmlMASS,
@@ -707,7 +708,7 @@ static void add_xml_molprop(xmlNodePtr                                 parent,
 {
     xmlNodePtr ptr = add_xml_child(parent, exml_names[exmlMOLECULE]);
     add_xml_string(ptr, exml_names[exmlMOLNAME], mp_it->getMolname());
-    add_xml_string(ptr, exml_names[exmlFORMULA], mp_it->getFormula());
+    add_xml_string(ptr, exml_names[exmlFORMULA], mp_it->formula());
     add_xml_double(ptr, exml_names[exmlMASS], mp_it->getMass());
     add_xml_double(ptr, exml_names[exmlCHARGE], mp_it->getCharge());
     add_xml_double(ptr, exml_names[exmlMULTIPLICITY], mp_it->getMultiplicity());

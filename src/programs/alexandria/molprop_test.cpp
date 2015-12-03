@@ -25,9 +25,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/topology.h"
 #include "molprop.h"
 #include "molprop_xml.h"
 #include "molprop_util.h"
@@ -38,16 +38,16 @@ int alex_molprop_test(int argc, char*argv[])
     static const char               *desc[] = {
         "molprop_test reads a molprop file and writes a new one.",
     };
-    output_env_t                     oenv;
+    gmx_output_env_t                *oenv;
     std::vector<alexandria::MolProp> mpt;
     t_filenm                         fnm[] = {
         { efDAT, "-f", "molin", ffREAD },
         { efDAT, "-o", "molout", ffWRITE }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, NULL,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           1, desc, 0, NULL, &oenv))
     {
         return 0;
     }

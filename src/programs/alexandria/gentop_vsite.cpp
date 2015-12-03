@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/math/vec.h"
@@ -56,7 +56,7 @@ void GentopVsites::addLinear(int ai, int aj, int ak)
     if (i == linear_.size())
     {
         gv_linear l;
-        l.nline = NOTSET;
+        l.nline = -1;
         l.a[0]  = ai;
         l.a[1]  = aj;
         l.a[2]  = ak;
@@ -239,7 +239,7 @@ static void calc_vsite2parm(t_atoms *atoms,
     }
     /* Set information in atoms structure for the new mass-particles */
     memset(&aml, 0, sizeof(aml));
-    mt = add_atomtype(atype, symtab, &aml, ml, &nbml, NOTSET, 0, 0, 0, 0, 0, 0);
+    mt = add_atomtype(atype, symtab, &aml, ml, &nbml, -1, 0, 0, 0, 0, 0, 0);
     for (i = natoms; (i <= natoms); i++)
     {
         atoms->atom[i].m          = mV;

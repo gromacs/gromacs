@@ -29,13 +29,16 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/legacyheaders/gmx_statistics.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/random/random.h"
+#include "gromacs/utility/stringutil.h"
+
 #include "gromacs/fileio/xvgr.h"
 #include "molselect.h"
 #include "poldata.h"
@@ -77,7 +80,7 @@ pType::pType(std::string name, const bool bUse, const int nCopies)
 
 pType::~pType()
 {
-    gmx_stats_done(polstats);
+    gmx_stats_free(polstats);
 }
 
 bool check_matrix(double **a, double *x, unsigned int nrow,
@@ -186,7 +189,7 @@ static void dump_csv(Poldata *                     pd,
             alexandria::MolecularCompositionIterator mci =
                 mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());
             fprintf(csv, "\"%d %s\",\"%s\",",
-                    nn, mpi->getMolname().c_str(), mpi->getFormula().c_str());
+                    nn, mpi->getMolname().c_str(), mpi->formula().c_str());
             int *count;
             snew(count, ptypes.size());
             for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
@@ -239,7 +242,7 @@ static int decompose_frag(FILE *fplog,
                           int nBootStrap, real fractionBootStrap,
                           int seed,
                           std::vector<std::string> zeropol,
-                          output_env_t oenv)
+                          const gmx_output_env_t *oenv)
 {
     double                      *x, *atx, *fpp;
     double                     **a, **at, **ata;
@@ -295,7 +298,8 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
                                      bHaveComposition);
             if (NULL != fplog)
             {
-                fprintf(fplog, "%s pol %g Use: %s\n", mpi->getMolname().c_str(), pol, bool_names[bUseMol]);
+                fprintf(fplog, "%s pol %g Use: %s\n", mpi->getMolname().c_str(), pol, 
+                        gmx::boolToString(bUseMol));
             }
 
             /* Now check whether all atoms have supported ptypes */
@@ -342,7 +346,7 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
                 fprintf(fplog, "Mol: %s, IUPAC: %s, ims: %s, bPol: %s, pol: %g - %s\n",
                         mpi->getMolname().c_str(),
                         mpi->getIupac().c_str(),
-                        ims_names[ims], bool_names[bPol], pol,
+                        ims_names[ims], gmx::boolToString(bPol), pol,
                         bUseMol ? "Used" : "Not used");
             }
 
@@ -356,7 +360,7 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
             else
             {
                 fprintf(fplog, "Removing %s. bPol = %s pol = %g composition found = %s npolarizable = %d\n",
-                        mpi->getMolname().c_str(), bool_names[bPol], pol,
+                        mpi->getMolname().c_str(), gmx::boolToString(bPol), pol,
                         (mci == mpi->EndMolecularComposition()) ? "true" : "false",
                         npolarizable);
                 mpi = mp.erase(mpi);
@@ -682,7 +686,7 @@ int alex_tune_pol(int argc, char *argv[])
 
     gmx_atomprop_t                   ap;
     Poldata *                    pd;
-    output_env_t                     oenv;
+    gmx_output_env_t *                     oenv;
     gmx_molselect_t                  gms;
     int                              npa = sizeof(pa)/sizeof(pa[0]);
 

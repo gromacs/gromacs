@@ -39,8 +39,7 @@
 #include "gmxpre.h"
 #include <ctype.h>
 #include <stdlib.h>
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -54,14 +53,15 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "poldata.h"
@@ -207,8 +207,8 @@ static int pcompar(const void *a, const void *b)
 
 static int acomp(const void *a, const void *b)
 {
-    atom_id *aa = (atom_id *)a;
-    atom_id *ab = (atom_id *)b;
+    int *aa = (int *)a;
+    int *ab = (int *)b;
 
     return (*aa - *ab);
 }
@@ -238,7 +238,7 @@ static void my_clean_excls(int nr, t_excls excls[])
 static void clean_thole(t_params *ps)
 {
     int     i, j;
-    atom_id a;
+    int a;
 
     if (ps->nr > 0)
     {
@@ -450,13 +450,13 @@ static int *generate_cg_group(t_atoms                               *atoms,
     int       *cgnr;
     gmx_bool   bMV;
     int        monovalent[] = { 0, 1, 9, 17, 35, 53, 85 };
-    int        nmv          = asize(monovalent);
+    int        nmv          = sizeof(monovalent)/sizeof(monovalent[0]);
 
     /* Assume that shells and masses have atomnumber 0 */
     snew(cgnr, atoms->nr);
     for (i = 0; (i < atoms->nr); i++)
     {
-        cgnr[i] = NOTSET;
+        cgnr[i] = -1;
     }
 
     for (i = 0; (i < atoms->nr); i++)
@@ -490,7 +490,7 @@ static int *generate_cg_group(t_atoms                               *atoms,
             }
             if (bMV)
             {
-                if (cgnr[aj] != NOTSET)
+                if (cgnr[aj] != -1)
                 {
                     cgnr[ai] = cgnr[aj];
                 }
@@ -527,7 +527,7 @@ static int *generate_cg_group(t_atoms                               *atoms,
         }
         for (i = 0; (i < atoms->nr); i++)
         {
-            if (cgnr[i] == NOTSET)
+            if (cgnr[i] == -1)
             {
                 cgnr[i] = ncg++;
             }

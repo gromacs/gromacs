@@ -25,7 +25,7 @@
 #define MOLPROP_UTIL_H
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/topology/atomprop.h"
 #include "molprop.h"
 #include "poldata.h"

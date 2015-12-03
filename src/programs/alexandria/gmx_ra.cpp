@@ -21,6 +21,8 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include "gromacs/topology/atoms.h"
+
 #include "poldata.h"
 #include "gmx_resp.h"
 #include "gentop_qgen.h"

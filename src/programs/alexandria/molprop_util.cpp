@@ -41,6 +41,7 @@
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/topology/topology.h"
 #include "gmx_simple_comm.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -270,7 +271,7 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
         mpi->Dump(debug);
         mmm[cur]     = mpi;
         molname[cur] = mpi->getMolname();
-        form[cur]    = mpi->getFormula();
+        form[cur]    = mpi->formula();
         if (i > 0)
         {
             bForm = (form[prev] == form[cur]);
@@ -298,7 +299,7 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
                     {
                         mmm[cur]      = mpi;
                         molname[cur]  = mmm[cur]->getMolname();
-                        form[cur]     = mmm[cur]->getFormula();
+                        form[cur]     = mmm[cur]->formula();
                     }
                 }
             }
@@ -331,7 +332,7 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
 
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        fprintf(fp, "%-20s  %s\n", mpi->getFormula().c_str(),
+        fprintf(fp, "%-20s  %s\n", mpi->formula().c_str(),
                 mpi->getMolname().c_str());
     }
 
@@ -403,8 +404,8 @@ static bool comp_mp_molname(alexandria::MolProp ma,
 static bool comp_mp_formula(alexandria::MolProp ma,
                             alexandria::MolProp mb)
 {
-    std::string fma = ma.getFormula();
-    std::string fmb = mb.getFormula();
+    std::string fma = ma.formula();
+    std::string fmb = mb.formula();
 
     if (fma.compare(fmb) < 0)
     {

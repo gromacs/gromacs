@@ -24,8 +24,7 @@
  */
 #include "gmxpre.h"
 #include <ctype.h>
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -33,13 +32,15 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/utility/fatalerror.h"
 #include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
@@ -115,7 +116,7 @@ namespace alexandria
             
 	    _Jab[j].resize(_natom+1);
             atm = atoms->atom[i].atomnumber;
-            if (atm == NOTSET)
+            if (atm == 0)
 	      {
                 gmx_fatal(FARGS, "Don't know atomic number for %s %s",
                           *(atoms->resinfo[i].name),
@@ -240,7 +241,7 @@ namespace alexandria
       {
         return _nZeta[atom];
       }
-    return NOTSET;
+    return 0;
   
   }
 
@@ -251,7 +252,7 @@ namespace alexandria
       {
         return _row[atom][z];
       }
-    return NOTSET;
+    return 0;
   
   }
   double GentopQgen::getQ(int atom, int z)
@@ -261,7 +262,7 @@ namespace alexandria
       {
         return _q[atom][z];
       }
-    return NOTSET;
+    return 0;
 
   }
 
@@ -273,7 +274,7 @@ namespace alexandria
       {
         return _zeta[atom][z];
       }
-    return NOTSET;
+    return 0;
   }
 
   real CoulombNN(real r)

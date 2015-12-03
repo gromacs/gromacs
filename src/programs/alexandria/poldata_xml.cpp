@@ -22,24 +22,22 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/utility/smalloc.h"
 #include "poldata_xml.h"
+#include "poldata.h"
 #include "xml_util.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
 namespace alexandria
 {
-
-
 
 #define NN(x) (0 != (x.size()))
 
@@ -66,7 +64,7 @@ namespace alexandria
     "XML_XINCLUDE_START",
     "XML_XINCLUDE_END"
 };
-#define NXMLTYPES asize(xmltypes)
+#define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 enum {
     exmlGENTOP, exmlREFERENCE,
@@ -521,7 +519,6 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
 {
   xmlNodePtr              child, grandchild;
   int                     i, nexcl;
-  ChargeDistributionModel model;
   std::string                   geometry, name, 
     acentral, attached, tau_unit, ahp_unit,
     epref, desc, params;
@@ -725,9 +722,11 @@ for (GtBondIterator bond = pd->getBondBegin();
 
     child = add_xml_child(parent, exml_names[exmlEEMPROPS]);
 
- for (EempropsIterator eep = pd->getEempropsBegin();
-	 eep != pd->getEempropsEnd(); eep++)
+    for (EempropsIterator eep = pd->getEempropsBegin();
+         eep != pd->getEempropsEnd(); eep++)
     {
+        ChargeDistributionModel model = eep->getEqdModel();
+
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP]);
         add_xml_char(grandchild, exml_names[exmlMODEL],
                      pd->getEemtypeName(model).c_str());
@@ -738,6 +737,7 @@ for (GtBondIterator bond = pd->getBondBegin();
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr().c_str());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr().c_str());
   }
+    ChargeDistributionModel model;
     while (pd->listEpref( &model, &epref) == 1)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);

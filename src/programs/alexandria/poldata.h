@@ -24,15 +24,14 @@
 #ifndef POLDATA_H
 #define POLDATA_H
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/network.h"
 #include "gmxpre.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/network.h"
+
 #include "gromacs/utility/smalloc.h"
-#include "stringutil.h"
+#include "programs/alexandria/stringutil.h"
+
 /* This source code file is part of the Alexandria project */
+
+struct t_commrec;
 
 /*! \brief
  * Enumerated type holding the charge distribution models used in PolData

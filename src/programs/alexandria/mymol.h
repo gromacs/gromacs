@@ -25,7 +25,7 @@
 #define MYMOL_H
 
 #include "gromacs/utility/real.h"
-#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -38,6 +38,10 @@
 #include "molselect.h"
 #include "poldata.h"
 #include "gauss_io.h"
+
+struct gmx_shellfc_t;
+struct t_state;
+struct t_topology;
 
 enum immStatus {
     immUnknown,
@@ -71,9 +75,11 @@ namespace alexandria
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class MyMol : public MolProp
+class MyMol
 {
     private:
+        //! The molprop
+        MolProp         *mp_;
         //! Gromacs structures
         int              nexcl_;
         //! List of symmetric charges
@@ -84,7 +90,7 @@ class MyMol : public MolProp
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
-        double           ref_enthalpy_, qtot_, mass_tot_, mutot_;
+        double           ref_enthalpy_, mutot_;
         double           polarizability_, sig_pol_;
         //! Determine whether a molecule has symmetry (within a certain tolerance)
         bool IsSymmetric(real toler);
@@ -117,12 +123,12 @@ class MyMol : public MolProp
         gmx_mtop_t               *mtop_;
         gmx_localtop_t           *ltop_;
         gpp_atomtype_t            atype_;
-        GentopQgen *              qgen_;
+        gmx_shellfc_t            *shellfc_;
+        GentopQgen               *qgen_;
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
-        gmx_shellfc_t             shell_;
         gmx_enerdata_t            enerd_;
-        Resp *                    gr_;
+        Resp                     *gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;
 
@@ -132,9 +138,11 @@ class MyMol : public MolProp
         //! Destructor
         ~MyMol();
 
+        //! Return my inner molprop
+        MolProp *molProp() { return mp_; }
         //! Generate the topology structure
         immStatus GenerateTopology(gmx_atomprop_t          ap,
-                                   Poldata            *pd,
+                                   Poldata                *pd,
                                    const char             *lot,
                                    ChargeDistributionModel iModel,
                                    int                     nexcl,
@@ -183,7 +191,7 @@ class MyMol : public MolProp
 
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
-        immStatus GenerateGromacs(output_env_t oenv, t_commrec *cr);
+        immStatus GenerateGromacs(t_commrec *cr);
 
         void GenerateCube(ChargeDistributionModel iModel,
                           Poldata                *pd,
@@ -196,7 +204,7 @@ class MyMol : public MolProp
                           const char             *hisfn,
                           const char             *difffn,
                           const char             *diffhistfn,
-                          output_env_t            oenv);
+                          const gmx_output_env_t *oenv);
 
         //! Print the coordinates corresponding to topology after adding shell particles
         //! and/or vsites. fp is a File pointer opened previously.

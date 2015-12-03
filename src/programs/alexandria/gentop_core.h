@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 #include <vector>
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"

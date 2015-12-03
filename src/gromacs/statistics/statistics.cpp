@@ -198,11 +198,6 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
     double yy, yx, xx, sx, sy, dy, chi2, chi2aa, d2;
     double ssxx, ssyy, ssxy;
     double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2, dy2;
-<<<<<<< HEAD:src/gromacs/statistics/statistics.c
-    double mse, mae, dd;
-    int    i, N;
-=======
->>>>>>> master:src/gromacs/statistics/statistics.cpp
 
     int    N = stats->np;
 
@@ -220,13 +215,8 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         sy   = sy_nw = 0;
         wtot = 0;
         d2   = 0;
-<<<<<<< HEAD:src/gromacs/statistics/statistics.c
-        mae  = 0;
-        mse  = 0;
-        for (i = 0; (i < N); i++)
-=======
+        double mae = 0, mse = 0;
         for (int i = 0; (i < N); i++)
->>>>>>> master:src/gromacs/statistics/statistics.cpp
         {
             double dd = stats->y[i]-stats->x[i];
             d2 += dsqr(dd);
@@ -264,11 +254,10 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         stats->mae        = mae/N;
         stats->mse        = mse/N; 
         stats->aver       = sy_nw/N;
-<<<<<<< HEAD:src/gromacs/statistics/statistics.c
-        dd = yy_nw/N - dsqr(sy_nw/N);
+        double dd = yy_nw/N - dsqr(sy_nw/N);
         if (dd > 0)
         {
-            stats->sigma_aver = sqrt(dd);
+            stats->sigma_aver = std::sqrt(dd);
         }
         else if (N == 1)
         {
@@ -278,11 +267,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         {
             stats->sigma_aver = 0;
         }
-        stats->error      = stats->sigma_aver/sqrt(N);
-=======
-        stats->sigma_aver = std::sqrt(yy_nw/N - dsqr(sy_nw/N));
-        stats->error      = stats->sigma_aver/std::sqrt(static_cast<double>(N));
->>>>>>> master:src/gromacs/statistics/statistics.cpp
+        stats->error      = stats->sigma_aver/std::sqrt(N);
 
         /* Compute RMSD between x and y */
         stats->rmsd = std::sqrt(d2/N);
@@ -691,8 +676,6 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     {
         *nb = nbins;
     }
-<<<<<<< HEAD:src/gromacs/statistics/statistics.c
-=======
     for (int i = 0; (i < nbins); i++)
     {
         if (nindex[i] > 0)
@@ -700,7 +683,6 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
             (*y)[i] /= nindex[i];
         }
     }
->>>>>>> master:src/gromacs/statistics/statistics.cpp
 
     sfree(nindex);
 

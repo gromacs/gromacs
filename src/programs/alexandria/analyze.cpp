@@ -31,11 +31,12 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/linearalgebra/matrix.h"
-#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/commandline/viewit.h"
+#include "gromacs/topology/topology.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molselect.h"
@@ -54,12 +55,11 @@ static void calc_frag_miller(Poldata *                     pd,
 
     iMolSelect                   ims;
     char                        *null = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
-    const char                  *program;
+    const char                  *program = "alexandria";
     const char                  *ang3;
     alexandria::CompositionSpecs cs;
 
     ang3    = unit2string(eg2cAngstrom3);
-    program = ShortProgram();
     if (0 == pd->getBosquePol( null, &bos0))
     {
         gmx_fatal(FARGS, "Can not find Bosque polarizability for %s", null);
@@ -159,7 +159,7 @@ static void write_corr_xvg(const char *fn,
                            std::vector<alexandria::MolProp> mp,
                            MolPropObservable mpo, t_qmcount *qmc,
                            real rtoler, real atoler,
-                           output_env_t oenv, gmx_molselect_t gms,
+                           const gmx_output_env_t *oenv, gmx_molselect_t gms,
                            char *exp_type)
 {
     alexandria::MolPropIterator mpi;
@@ -278,7 +278,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 gmx_bool bPrintBasis, gmx_bool bPrintMultQ,
                                 const char *texfn,
                                 const char *xvgfn,
-                                output_env_t oenv,
+                                const gmx_output_env_t *oenv,
                                 gmx_molselect_t gms,
                                 const char *selout)
 {
@@ -476,8 +476,8 @@ int alex_analyze(int argc, char *argv[])
     MolPropSortAlgorithm             mpsa;
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
-    Poldata *                    pd;
-    output_env_t                     oenv;
+    Poldata                         *pd;
+    gmx_output_env_t                *oenv;
     gmx_molselect_t                  gms;
     char                           **mpname = NULL, **fns = NULL;
     int                              nmpfile;

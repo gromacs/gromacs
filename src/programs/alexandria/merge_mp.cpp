@@ -30,8 +30,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/topology/topology.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molprop.h"
@@ -201,8 +202,8 @@ int alex_merge_mp(int argc, char *argv[])
     int                              nfiles;
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t                   ap;
-    Poldata *                    pd;
-    output_env_t                     oenv;
+    Poldata                         *pd;
+    gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,

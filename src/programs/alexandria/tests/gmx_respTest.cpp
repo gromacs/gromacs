@@ -49,6 +49,10 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/state.h"
+
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
@@ -86,6 +90,7 @@ class RespTest : public ::testing::Test
 	  iChargeDistributionModel.push_back(eqdAXg);
 	  //	  	  iChargeDistributionModel.push_back(eqdAXs);
           alexandria::MyMol       mp;
+          alexandria::MolProp     molprop;
           gmx_atomprop_t          aps = gmx_atomprop_init();
 
 
@@ -115,13 +120,14 @@ class RespTest : public ::testing::Test
 
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
-            ReadGauss(dataName.c_str(), mp, molnm, iupac, conf, basis,
+            ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd->getForceField().c_str());
+            mp.molProp()->Merge(molprop);
             for (unsigned int i = 0; i < iChargeDistributionModel.size(); i++)
             {
                 //Generate charges and topology
                 mp.GenerateTopology(aps, pd, lot, iChargeDistributionModel[i], nexcl, false, false, edih);
-                mp.gr_ = new alexandria::Resp(iChargeDistributionModel[i], mp.getCharge());
+                mp.gr_ = new alexandria::Resp(iChargeDistributionModel[i], mp.molProp()->getCharge());
                 mp.GenerateCharges(pd, aps, iChargeDistributionModel[i], iChargeGenerationAlgorithm, hfac, epsr, lot, true, symm_string);
                 resp.push_back(mp.gr_);
             }

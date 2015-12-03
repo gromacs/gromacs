@@ -22,10 +22,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
+#include <cmath>
+
 #include <string>
 #include <vector>
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 #include "poldata.h"
 #include "gmx_simple_comm.h"
 #include "molprop.h"
@@ -549,7 +553,7 @@ void MolProp::Merge(MolProp &src)
     {
         AddCategory(*si);
     }
-    SetFormula(src.getFormula());
+    SetFormula(src.formula());
     SetMass(src.getMass());
     if (getMultiplicity() <= 1)
     {
@@ -682,7 +686,7 @@ void MolProp::Dump(FILE *fp)
 
     if (fp)
     {
-        fprintf(fp, "formula:      %s\n", getFormula().c_str());
+        fprintf(fp, "formula:      %s\n", formula().c_str());
         fprintf(fp, "molname:      %s\n", getMolname().c_str());
         fprintf(fp, "iupac:        %s\n", getIupac().c_str());
         fprintf(fp, "CAS:          %s\n", getCas().c_str());
@@ -802,12 +806,12 @@ static void add_element_to_formula(const char *elem, int number, char *formula, 
 
 bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
-    char  formula[1280], texform[2560];
+    char  myform[1280], texform[2560];
     int  *ncomp;
     alexandria::MolecularCompositionIterator mci;
 
     snew(ncomp, 110);
-    formula[0] = '\0';
+    myform[0] = '\0';
     texform[0] = '\0';
     mci        = SearchMolecularComposition("bosque");
     if (mci != EndMolecularComposition())
@@ -820,7 +824,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             cnumber = ani->getNumber();
             if (gmx_atomprop_query(ap, epropElement, "???", catom.c_str(), &value))
             {
-                an = gmx_nint(value);
+                an = std::lround(value);
                 range_check(an, 0, 110);
                 if (an > 0)
                 {
@@ -829,27 +833,27 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             }
         }
     }
-    add_element_to_formula("C", ncomp[6], formula, texform);
-    add_element_to_formula("H", ncomp[1], formula, texform);
+    add_element_to_formula("C", ncomp[6], myform, texform);
+    add_element_to_formula("H", ncomp[1], myform, texform);
     ncomp[6] = ncomp[1] = 0;
 
     for (int j = 109; (j >= 1); j--)
     {
-        add_element_to_formula(gmx_atomprop_element(ap, j), ncomp[j], formula, texform);
+        add_element_to_formula(gmx_atomprop_element(ap, j), ncomp[j], myform, texform);
     }
-    std::string mform = getFormula();
-    if (strlen(formula) > 0)
+    std::string mform = formula();
+    if (strlen(myform) > 0)
     {
         if (debug)
         {
-            if ((mform.size() > 0) && (strcasecmp(formula, mform.c_str()) != 0))
+            if ((mform.size() > 0) && (strcasecmp(myform, mform.c_str()) != 0))
             {
                 fprintf(debug, "Formula '%s' does match '%s' based on composition for %s.\n",
-                        mform.c_str(), formula, getMolname().c_str());
+                        mform.c_str(), myform, getMolname().c_str());
                 fflush(debug);
             }
         }
-        SetFormula(formula);
+        SetFormula(myform);
         SetTexFormula(texform);
     }
     else if ((mform.size() == 0) && debug)
@@ -860,7 +864,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     }
     sfree(ncomp);
 
-    return (strlen(formula) > 0);
+    return (strlen(myform) > 0);
 }
 
 bool MolProp::HasComposition(std::string composition)

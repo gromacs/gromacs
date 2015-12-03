@@ -66,7 +66,7 @@ set(ALEXANDRIA_SOURCES
 	xml_util.c
 	poldata.cpp
 	poldata_xml.cpp
-	gmx_simple_comm.c
+	gmx_simple_comm.cpp
         composition.cpp
 	molselect.cpp
 	gmx_resp.cpp
@@ -80,6 +80,7 @@ set(ALEXANDRIA_SOURCES
         molprop_tables.cpp
         mymol.cpp
         moldip.cpp
+        nmsimplex.c
         plistwrapper.cpp
         gauss_io.cpp
         gentop.cpp

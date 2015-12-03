@@ -24,8 +24,7 @@
 #include "gmxpre.h"
 #include <stdlib.h>
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/topology/atomprop.h"
 #include "poldata_xml.h"
 
@@ -36,15 +35,15 @@ int alex_poldata_test(int argc, char*argv[])
     static const char               *desc[] = {
         "poldata_test reads a poldata (force field) file and writes a new one.",
     };
-    output_env_t                     oenv;
+    gmx_output_env_t                *oenv;
     t_filenm                         fnm[] = {
         { efDAT, "-f", "pdin", ffREAD },
         { efDAT, "-o", "pdout", ffWRITE }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 0, NULL,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           1, desc, 0, NULL, &oenv))
     {
         return 0;
     }

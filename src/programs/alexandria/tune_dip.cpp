@@ -29,28 +29,30 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/shellfc.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdlib/shellfc.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/legacyheaders/nmsimplex.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/coolstuff.h"
+#include "nmsimplex.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molselect.h"
@@ -167,7 +169,7 @@ static void print_dip(FILE *fp, rvec mu_exp, rvec mu_calc, char *calc_name,
 }
 
 static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
-                           const output_env_t oenv)
+                           const gmx_output_env_t * oenv)
 {
     int i;
 
@@ -184,7 +186,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                        const char *espdiff,
                        std::vector<alexandria::MyMol> mol,
                        real hfac,
-                       real dip_toler, real quad_toler, real q_toler, output_env_t oenv)
+                       real dip_toler, real quad_toler, real q_toler, const gmx_output_env_t * oenv)
 {
     FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
     double        d2 = 0;
@@ -218,9 +220,9 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
         {
             fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
                     n+1,
-                    mi->getMolname().c_str(),
-                    mi->getCharge(),
-                    mi->getMultiplicity());
+                    mi->molProp()->getMolname().c_str(),
+                    mi->molProp()->getCharge(),
+                    mi->molProp()->getMultiplicity());
 
             print_dip(fp, mi->mu_exp, NULL, NULL, dip_toler);
             print_dip(fp, mi->mu_exp, mi->mu_calc, (char *)"EEM", dip_toler);
@@ -385,7 +387,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
             (norm(dmu) > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
-                    mi->getMolname().c_str(),
+                    mi->molProp()->getMolname().c_str(),
                     mi->dip_calc, mi->dip_exp,
                     mi->dip_calc-mi->dip_exp);
             nout++;
@@ -402,16 +404,11 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     }
     do_view(oenv, xvgfn, NULL);
 
-    gmx_stats_done(lsq_q);
-    gmx_stats_done(lsq_quad[0]);
-    gmx_stats_done(lsq_quad[1]);
-    gmx_stats_done(lsq_mu[0]);
-    gmx_stats_done(lsq_mu[1]);
-    sfree(lsq_q);
-    sfree(lsq_quad[0]);
-    sfree(lsq_quad[1]);
-    sfree(lsq_mu[0]);
-    sfree(lsq_mu[1]);
+    gmx_stats_free(lsq_q);
+    gmx_stats_free(lsq_quad[0]);
+    gmx_stats_free(lsq_quad[1]);
+    gmx_stats_free(lsq_mu[0]);
+    gmx_stats_free(lsq_mu[1]);
 }
 
 static double dipole_function(void *params, double v[])
@@ -627,7 +624,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
 static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                             alexandria::MolDip *md, int maxiter, real tol,
                             int nrun, real stepsize, int seed,
-                            gmx_bool bRandom, output_env_t oenv)
+                            gmx_bool bRandom, const gmx_output_env_t * oenv)
 {
     FILE      *cfp = NULL;
     double     chi2, chi2_min;
@@ -871,7 +868,7 @@ int alex_tune_dip(int argc, char *argv[])
         { efXVG, "-espdiff", "esp_diff",    ffWRITE },
         { efXVG, "-conv", "convergence", ffOPTWR }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 1;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 1;
@@ -979,15 +976,16 @@ int alex_tune_dip(int argc, char *argv[])
     alexandria::MolDip    md;
     FILE                 *fp;
     t_commrec            *cr;
-    output_env_t          oenv;
+    gmx_output_env_t *          oenv;
     gmx_molselect_t       gms;
     time_t                my_t;
-    char                  pukestr[STRLEN];
 
     cr = init_commrec();
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, 
+                           sizeof(pa)/sizeof(pa[0]), pa,
+                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
         return 0;
     }
@@ -1001,9 +999,8 @@ int alex_tune_dip(int argc, char *argv[])
 
         time(&my_t);
         fprintf(fp, "# This file was created %s", ctime(&my_t));
-        fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
-        bromacs(pukestr, 99);
-        fprintf(fp, "# %s\n#\n", pukestr);
+        fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
+        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
     }
     else
     {
@@ -1033,7 +1030,7 @@ int alex_tune_dip(int argc, char *argv[])
             opt2fn_null("-d", NFILE, fnm),
             minimum_data, bZero,
             opt_elem, const_elem,
-            lot, oenv, gms, watoms, TRUE, seed);
+            lot, gms, watoms, TRUE, seed);
     printf("Read %d molecules\n", (int)md._mymol.size());
 
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),

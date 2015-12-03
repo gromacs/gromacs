@@ -25,22 +25,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/statistics/statistics.h"
@@ -48,7 +47,8 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/legacyheaders/nmsimplex.h"
+#include "gromacs/utility/fatalerror.h"
+#include "nmsimplex.h"
 #include "coulombintegrals/coulombintegrals.h"
 #include "poldata.h"
 #include "gmx_resp.h"
@@ -403,7 +403,7 @@ namespace alexandria
       }
   }
 
-  void Resp::writeHisto( const std::string fn, std::string title, output_env_t oenv)
+  void Resp::writeHisto( const std::string fn, std::string title, const gmx_output_env_t *oenv)
   {
     FILE       *fp;
     gmx_stats_t gs;
@@ -430,11 +430,11 @@ namespace alexandria
     sfree(x);
     sfree(y);
     fclose(fp);
-    gmx_stats_done(gs);
+    gmx_stats_free(gs);
   }
 
   void Resp::writeDiffCube(Resp * src, const std::string cubeFn,
-			   const std::string histFn, std::string title, output_env_t oenv,
+			   const std::string histFn, std::string title, const gmx_output_env_t *oenv,
 			     int rho)
   {
     FILE       *fp;
@@ -546,7 +546,7 @@ namespace alexandria
         if (0)
 	  {
             gmx_stats_make_histogram(gst, 0.01, &nb, ehistoX, 0, &x, &y);
-            gmx_stats_done(gst);
+            gmx_stats_free(gst);
             for (i = 0; (i < nb); i++)
 	      {
                 fprintf(fp, "%10g  %10g\n", x[i], y[i]);
@@ -988,11 +988,11 @@ namespace alexandria
 		  {
 		    if (_ra[i]->getZeta(zz) != 0)
 		      {
-			_ra[i]->setZeta(zz, NOTSET);
+                  _ra[i]->setZeta(zz, -1);
 		      }
 		  }
 	      }
-	    _ra[i]->setQ(_ra[i]->getNZeta()-1, NOTSET);
+	    _ra[i]->setQ(_ra[i]->getNZeta()-1, -1);
 	    
 	    /* First do charges */
 	    for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
@@ -1338,7 +1338,7 @@ namespace alexandria
 
 
   void Resp::potcomp( const std::string potcomp,
-                      const std::string pdbdiff, output_env_t oenv)
+                      const std::string pdbdiff, const gmx_output_env_t *oenv)
   {
     int     i;
     double  pp, exp, eem;

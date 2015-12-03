@@ -25,15 +25,18 @@
 #include <string.h>
 #include <math.h>
 #include <string.h>
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
 #include "poldata.h"
 #include "gmx_simple_comm.h"
 #include "stringutil.h"
+
+#define NOTSET -666
 
 #define assignStr(dst, src) if (dst != NULL) {*dst = src; }
 

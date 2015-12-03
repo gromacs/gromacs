@@ -33,11 +33,12 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/topology.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "molselect.h"
@@ -321,11 +322,8 @@ void gmx_molprop_stats_table(FILE                            *fp,
             {
                 catbuf.append("& -");
             }
-
-            if (gmx_stats_done(lsq) == estatsOK)
-            {
-                sfree(lsq);
-            }
+            
+            gmx_stats_free(lsq);
         }
         if ((nqmres > 0) && (nexpres > 0))
         {
@@ -473,10 +471,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
 
     for (k = 0; (k < qmc->n); k++)
     {
-        if (gmx_stats_done(lsqtot[k]) == estatsOK)
-        {
-            sfree(lsqtot[k]);
-        }
+        gmx_stats_free(lsqtot[k]);
     }
     sfree(lsqtot);
 }

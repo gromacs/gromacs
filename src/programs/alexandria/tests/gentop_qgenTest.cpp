@@ -49,6 +49,8 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "gromacs/topology/atoms.h"
+
 #include "programs/alexandria/gentop_qgen.h"
 
 

@@ -98,7 +98,7 @@ protected:
             checker_.checkString(mpi->getMolname(), mbuf);
             mpi->GenerateFormula(aps_);
             snprintf(mbuf, sizeof(mbuf), "molecule %d formula", mol);
-            checker_.checkString(mpi->getFormula(), mbuf);
+            checker_.checkString(mpi->formula(), mbuf);
             snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
             checker_.checkInteger(mpi->NBond(), mbuf);
             int i = 1;

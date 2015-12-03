@@ -90,6 +90,15 @@ void gmx_stats_free(gmx_stats_t stats);
 int gmx_stats_remove_outliers(gmx_stats_t stats, double level);
 
 /*! \brief
+ * Add a point to the data set with just y values.
+ * \param[in] stats The data structure
+ * \param[in] y   The y value
+ * \param[in] dy  The error in the y value
+ * \return error code
+ */
+int gmx_stats_add_point_ydy(gmx_stats_t stats, double y, double dy);
+                        
+/*! \brief
  * Add a point to the data set
  * \param[in] stats The data structure
  * \param[in] x   The x value

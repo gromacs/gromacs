@@ -49,4 +49,8 @@ void convert_params(int atnr, t_params nbtypes[],
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop);
 
+int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
+                 real forceparams[MAXFORCEPARAM], int comb, real reppow,
+                 int start, gmx_bool bAppend);
+
 #endif

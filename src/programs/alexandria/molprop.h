@@ -38,6 +38,8 @@
 #include <string>
 #include <vector>
 #include <string.h>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/topology/atomprop.h"
 #include "phase.h"
@@ -1188,7 +1190,7 @@ class MolProp
         std::vector<Bond>                 _bond;
     public:
         //! Construct a number MolProp object
-        MolProp() { _index = NOTSET; _mass = 0; _charge = 0; _multiplicity = 0; }
+        MolProp() { _index = -1; _mass = 0; _charge = 0; _multiplicity = 0; }
 
         //! Destructor
         ~MolProp() {}
@@ -1236,16 +1238,13 @@ class MolProp
         void Dump(FILE *fp);
 
         //! Set the LaTeX formula
-        void SetTexFormula(const char *formula) { _texform.assign(formula); }
+        void SetTexFormula(const std::string &formula) { _texform.assign(formula); }
 
         //! Set the formula
-        void SetFormula(const char *formula) { _formula.assign(formula); }
-
-        //! Set the formula
-        void SetFormula(std::string formula) { _formula = formula; }
+        void SetFormula(const std::string &formula) { _formula.assign(formula); }
 
         //! Return the formula
-        std::string getFormula() { return _formula; }
+        std::string formula() { return _formula; }
 
         //! Return the LaTeX formula
         std::string getTexFormula();

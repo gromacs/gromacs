@@ -30,6 +30,7 @@
 #include <mpi.h>
 #endif
 
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gmx_simple_comm.h"
 

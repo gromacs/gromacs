@@ -27,9 +27,10 @@
 #include <string.h>
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/topology.h"
 #include "molprop.h"
 #include "molprop_xml.h"
 #include "molprop_util.h"
@@ -114,7 +115,7 @@ static void gmx_molprop_csv(const char *fn,
     {
         fprintf(fp, "\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%g\"",
                 mpi->getIupac().c_str(),
-                mpi->getFormula().c_str(),
+                mpi->formula().c_str(),
                 mpi->getInchi().c_str(),
                 mpi->getCharge(),
                 mpi->getMultiplicity(),
@@ -178,7 +179,7 @@ int alex_mp2csv(int argc, char*argv[])
     };
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t                   ap;
-    output_env_t                     oenv;
+    gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,

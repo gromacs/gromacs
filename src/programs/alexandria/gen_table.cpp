@@ -23,17 +23,17 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "coulombintegrals/coulombintegrals.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
@@ -82,7 +82,7 @@ static void do_hard(FILE *fp, int pts_nm, double efac, double delta)
         gmx_fatal(FARGS, "Delta should be >= 0 rather than %f\n", delta);
     }
 
-    imax     = gmx_nint(3.0*pts_nm);
+    imax     = std::lround(3.0*pts_nm);
     for (i = 0; (i <= imax); i++)
     {
         x   =  i*(1.0/pts_nm);
@@ -928,7 +928,7 @@ static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double xi)
 
 static void gen_alexandria_rho(Poldata * pd, const char *fn,
                                ChargeDistributionModel iDistributionModel,
-                               real rcut, real spacing, output_env_t oenv)
+                               real rcut, real spacing, const gmx_output_env_t *oenv)
 {
     FILE                   *fp;
     int                     j, n, nmax;
@@ -1014,13 +1014,13 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
 }
 
 static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributionModel iDistributionModel,
-                                  real rcut, real spacing, output_env_t oenv)
+                                  real rcut, real spacing, const gmx_output_env_t *oenv)
 {
     FILE                      *fp;
     int                        i, j, k, l, n, nmax, bi, bk;
     ChargeDistributionModel    eqg_model;
     gmx_bool                  *bSplit;
-    std::string                     *name;
+    std::vector<std::string>   name;
     double                     dV, V, dVp, Vp, rr, **zeta, **q, qij, qkl, vc, vd, fd, fc, vr, fr;
     int                      **row, *nzeta;
     int                        natypemax = 32, natype = 0;
@@ -1029,7 +1029,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     const char                *ns[2] = {"", "_s"};
 
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv);
-    snew(name, natypemax);
+    name.resize(natypemax);
     snew(zeta, natypemax);
     snew(q, natypemax);
     snew(row, natypemax);
@@ -1046,7 +1046,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
         if (natype >= natypemax)
         {
             natypemax += 32;
-            srenew(name, natypemax);
+            name.resize(natypemax);
             srenew(zeta, natypemax);
             srenew(q, natypemax);
             srenew(row, natypemax);
@@ -1306,17 +1306,18 @@ int alex_gen_table(int argc, char *argv[])
         { efXVG, "-o", "table", ffWRITE },
         { efDAT, "-di",   "gentop", ffOPTRD }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
     FILE                         *fp;
     const char                   *fn;
     Poldata     *                 pd;
     gmx_atomprop_t                aps;
     int                           eel = 0, m = 0;
     ChargeDistributionModel       iDistributionModel;
-    output_env_t                  oenv;
+    gmx_output_env_t             *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, sizeof(pa)/sizeof(pa[0]), pa, 
+                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
         return 0;
     }

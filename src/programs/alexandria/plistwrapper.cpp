@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "plistwrapper.h"
 
 namespace alexandria

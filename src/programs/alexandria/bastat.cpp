@@ -22,9 +22,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
 #include "gromacs/utility/real.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/init.h"
@@ -36,11 +36,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 
 // Alexandria stuff
 #include "poldata_xml.h"
@@ -147,7 +148,7 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *b, const char *a1, cons
 {
     int i, j, index;
 
-    index = gmx_nint(blen/spacing);
+    index = std::lround(blen/spacing);
     for (i = 0; (i < b->nbond); i++)
     {
         if (((((strcmp(a1, b->bond[i].a1) == 0) && (strcmp(a2, b->bond[i].a2)) == 0)) ||
@@ -199,7 +200,7 @@ void add_angle(FILE *fplog, const char *molname, t_bonds *b,
 {
     int i, index;
 
-    index = gmx_nint(angle/spacing);
+    index = std::lround(angle/spacing);
     for (i = 0; (i < b->nangle); i++)
     {
         if ((strcmp(a2, b->angle[i].a2) == 0) &&
@@ -262,7 +263,7 @@ void add_dih(FILE *fplog, const char *molname, t_bonds *b,
             angle -= 180;
         }
     }
-    index = gmx_nint(angle/spacing);
+    index = std::lround(angle/spacing);
     if (index < 0)
     {
         index = 0;
@@ -308,7 +309,7 @@ void add_dih(FILE *fplog, const char *molname, t_bonds *b,
     }
 }
 
-static void lo_dump_histo(char *fn, char *xaxis, output_env_t oenv, int Nsample,
+static void lo_dump_histo(char *fn, char *xaxis, const gmx_output_env_t *oenv, int Nsample,
                           int n, int histo[], double spacing)
 {
     FILE  *fp;
@@ -343,7 +344,7 @@ static void lo_dump_histo(char *fn, char *xaxis, output_env_t oenv, int Nsample,
     }
 }
 
-void dump_histo(t_bonds *b, double bspacing, double aspacing, output_env_t oenv)
+void dump_histo(t_bonds *b, double bspacing, double aspacing, const gmx_output_env_t *oenv)
 {
     int  i, N;
     char buf[256];
@@ -490,7 +491,7 @@ int alex_bastat(int argc, char *argv[])
         { efDAT, "-sel", "molselect", ffREAD },
         { efLOG, "-g", "bastat",    ffWRITE }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int                       compress       = 0;
     static gmx_bool                  bHisto         = FALSE, bBondOrder = TRUE, bDih = FALSE;
     static real                      Dm             = 400, kt = 400, kp = 5, beta = 20, klin = 20;
@@ -527,7 +528,6 @@ int alex_bastat(int argc, char *argv[])
     ChargeDistributionModel          iDistributionModel;
     gmx_molselect_t                  gms;
     time_t                           my_t;
-    char                             pukestr[STRLEN];
     t_bonds                         *b;
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
     t_pbc                            pbc;
@@ -538,14 +538,16 @@ int alex_bastat(int argc, char *argv[])
     double                           bspacing = 1;   /* pm */
     double                           aspacing = 0.5; /* degree */
     double                           dspacing = 1;   /* degree */
-    output_env_t                     oenv     = NULL;
-    Poldata *                    pd;
+    gmx_output_env_t                *oenv     = NULL;
+    Poldata                         *pd;
     gmx_atomprop_t                   aps;
     int                              nfiles;
     char                           **fns;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, 
+                           sizeof(pa)/sizeof(pa[0]), pa, 
+                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
         return 0;
     }
@@ -556,9 +558,8 @@ int alex_bastat(int argc, char *argv[])
 
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
-    fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
-    bromacs(pukestr, 99);
-    fprintf(fp, "# %s\n#\n", pukestr);
+    fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
+    fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
 
     gms = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
 
@@ -586,10 +587,10 @@ int alex_bastat(int argc, char *argv[])
         {
             alexandria::MyMol mmi;
             int               i;
-            mmi.Merge(*mpi);
-            if (mmi.getMolname().size() == 0)
+            mmi.molProp()->Merge(*mpi);
+            if (mmi.molProp()->getMolname().size() == 0)
             {
-                printf("Empty molname for molecule with formula %s\n", mmi.getFormula().c_str());
+                printf("Empty molname for molecule with formula %s\n", mmi.molProp()->formula().c_str());
                 continue;
             }
             immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel, 2,
@@ -599,7 +600,7 @@ int alex_bastat(int argc, char *argv[])
             {
                 if (NULL != debug)
                 {
-                    fprintf(debug, "Could not make topology for %s\n", mmi.getMolname().c_str());
+                    fprintf(debug, "Could not make topology for %s\n", mmi.molProp()->getMolname().c_str());
                 }
                 continue;
             }
@@ -611,7 +612,7 @@ int alex_bastat(int argc, char *argv[])
                     if (NULL != debug)
                     {
                         fprintf(debug, "No bond-type support for atom %s in %s\n",
-                                *mmi.topology_->atoms.atomtype[i], mmi.getMolname().c_str());
+                                *mmi.topology_->atoms.atomtype[i], mmi.molProp()->getMolname().c_str());
                     }
                     break;
                 }
@@ -629,7 +630,7 @@ int alex_bastat(int argc, char *argv[])
 		std::string caj = BTP(aj);
                 if ((0 != cai.size()) && (0 != caj.size()))
                 {
-                    for (alexandria::BondIterator bi = mmi.BeginBond(); (bi < mmi.EndBond()); bi++)
+                    for (alexandria::BondIterator bi = mmi.molProp()->BeginBond(); (bi < mmi.molProp()->EndBond()); bi++)
                     {
                         int xi, xj, xb;
                         bi->get(&xi, &xj, &xb);
@@ -639,7 +640,7 @@ int alex_bastat(int argc, char *argv[])
                         }
                         if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
                         {
-                            add_bond(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), 1000*norm(dx),
+                            add_bond(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), 1000*norm(dx),
                                      bspacing, xb);
                             break;
                         }
@@ -664,7 +665,7 @@ int alex_bastat(int argc, char *argv[])
 		std::string cak = BTP(ak);
                 if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()))
                 {
-                    add_angle(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
+                    add_angle(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
                 }
                 else
                 {
@@ -691,7 +692,7 @@ int alex_bastat(int argc, char *argv[])
 		std::string cal = BTP(al);
                 if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
                 {
-                    add_dih(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdPDIHS);
+                    add_dih(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdPDIHS);
                 }
                 else
                 {
@@ -716,7 +717,7 @@ int alex_bastat(int argc, char *argv[])
                 std::string cal = BTP(al);
                 if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
                 {
-                    add_dih(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdIDIHS);
+                    add_dih(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdIDIHS);
                 }
                 else
                 {

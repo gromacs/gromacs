@@ -1155,12 +1155,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr          = mk_forcerec();
         fr->hwinfo  = hwinfo;
         fr->gpu_opt = &hw_opt->gpu_opt;
-<<<<<<< HEAD
-        init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box,
-                      opt2fn_null("-pd", nfile, fnm),
-=======
         init_forcerec(fplog, fr, fcd, inputrec, mtop, cr, box,
->>>>>>> master
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       opt2fn("-tableb", nfile, fnm),

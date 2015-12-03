@@ -37,30 +37,33 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nmsimplex.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/shellfc.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/viewit.h"
-#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/fileio/copyrite.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/gmxlib/network.h"
+#include "nmsimplex.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdlib/shellfc.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/commandline/viewit.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/init.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/coolstuff.h"
 
 // alexandria stuff
 #include "gmx_simple_comm.h"
@@ -181,7 +184,7 @@ static void check_support(FILE                           *fp,
         if (!bSupport)
         {
             fprintf(stderr, "No force field support for %s\n",
-                    mymol->getMolname().c_str());
+                    mymol->molProp()->getMolname().c_str());
             mymol = mm.erase(mymol);
         }
         else
@@ -403,7 +406,7 @@ class OptParam : public MolDip
         void Optimize(FILE *fp, FILE *fplog,
                       int maxiter, //real tol,
                       int nrun, real stepsize, int seed,
-                      bool bRandom, output_env_t oenv,
+                      bool bRandom, const gmx_output_env_t *oenv,
                       int nprint,
                       const char *xvgconv, const char *xvgepot,
                       real temperature);
@@ -416,9 +419,9 @@ class OptParam : public MolDip
                    real temperature,
                    int    maxiter,
                    double *chi2,
-                   output_env_t oenv);
+                   const gmx_output_env_t *oenv);
         void PrintSpecs(FILE *fp, char *title,
-                        const char *xvg, output_env_t oenv,
+                        const char *xvg, const gmx_output_env_t *oenv,
                         bool bCheckOutliers);
 };
 
@@ -546,7 +549,7 @@ void OptParam::MkInvGt()
         snew(_inv_gt[i], gt_max+1);
         for (j = 0; (j <= gt_max); j++)
         {
-            _inv_gt[i][j] = NOTSET;
+            _inv_gt[i][j] = -666;
         }
         for (j = 0; (j < _nbad[i]); j++)
         {
@@ -572,7 +575,7 @@ static void dump_csv(int                             nD,
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
          (mymol < _mymol.end()); mymol++)
     {
-        fprintf(csv, "\"%s\",", mymol->getMolname().c_str());
+        fprintf(csv, "\"%s\",", mymol->molProp()->getMolname().c_str());
         for (int j = 0; (j < nD); j++)
         {
             fprintf(csv, "%g,", a[i][j]);
@@ -644,7 +647,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                           aai.c_str(), aaj.c_str(),
                           *mymol->topology_->atoms.atomtype[ai],
                           *mymol->topology_->atoms.atomtype[aj],
-                          mymol->getIupac().c_str());
+                          mymol->molProp()->getIupac().c_str());
             }
         }
         x[j] = mymol->Emol;
@@ -962,7 +965,7 @@ static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
 }
 
 static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
     int i;
 
@@ -1012,7 +1015,7 @@ double OptParam::CalcDeviation()
     }
     init_nrnb(&my_nrnb);
 
-    wcycle  = wallcycle_init(stdout, 0, _cr, 1, 0);
+    wcycle  = wallcycle_init(stdout, 0, _cr);
     for (j = 0; (j < ermsNR); j++)
     {
         _ener[j] = 0;
@@ -1031,7 +1034,7 @@ double OptParam::CalcDeviation()
             atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
                      mymol->md_);
 
-            for (j = 0; (j < mymol->NAtom()); j++)
+            for (j = 0; (j < mymol->molProp()->NAtom()); j++)
             {
                 clear_rvec(mymol->f_[j]);
             }
@@ -1039,7 +1042,7 @@ double OptParam::CalcDeviation()
             /* Now optimize the shell positions */
             dbcopy = debug;
             debug  = NULL;
-            if (mymol->shell_)
+            if (mymol->shellfc_)
             {
                 (void)
                 relax_shell_flexcon(debug, _cr, FALSE, 0,
@@ -1049,7 +1052,7 @@ double OptParam::CalcDeviation()
                                     mymol->f_, force_vir, mymol->md_,
                                     &my_nrnb, wcycle, NULL,
                                     &(mymol->mtop_->groups),
-                                    mymol->shell_, mymol->fr_, FALSE, t, mu_tot,
+                                    mymol->shellfc_, mymol->fr_, FALSE, t, mu_tot,
                                     &bConverged, NULL, NULL);
             }
             else
@@ -1067,11 +1070,11 @@ double OptParam::CalcDeviation()
             }
             debug         = dbcopy;
             mymol->Force2 = 0;
-            for (j = 0; (j < mymol->NAtom()); j++)
+            for (j = 0; (j < mymol->molProp()->NAtom()); j++)
             {
                 mymol->Force2 += iprod(mymol->f_[j], mymol->f_[j]);
             }
-            mymol->Force2     /= mymol->NAtom();
+            mymol->Force2     /= mymol->molProp()->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc       = mymol->enerd_.term[F_EPOT];
             ener               = sqr(mymol->Ecalc-mymol->Emol);
@@ -1079,7 +1082,8 @@ double OptParam::CalcDeviation()
 
             if (NULL != debug)
             {
-                fprintf(debug, "%s ener %g Epot %g Force2 %g\n", mymol->getMolname().c_str(), ener,
+                fprintf(debug, "%s ener %g Epot %g Force2 %g\n", 
+                        mymol->molProp()->getMolname().c_str(), ener,
                         mymol->Ecalc, mymol->Force2);
             }
         }
@@ -1207,7 +1211,7 @@ void OptParam::Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
                      real temperature,
                      int    maxiter,
                      double *chi2,
-                     output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     int       iter, j, k, nsum, cur = 0;
     double    ds, sorig, DE, E[2] = {0, 0}, beta;
@@ -1316,7 +1320,7 @@ void OptParam::Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
 void OptParam::Optimize(FILE *fp, FILE *fplog,
                         int maxiter,
                         int nrun, real stepsize, int seed,
-                        bool bRandom, output_env_t oenv,
+                        bool bRandom, const gmx_output_env_t *oenv,
                         int nprint,
                         const char *xvgconv, const char *xvgepot,
                         real temperature)
@@ -1405,8 +1409,8 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 
     for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
     {
-        fprintf(fp, "%-30s  %d\n", mi->getMolname().c_str(), mi->NAtom());
-        for (j = 0; (j < mi->NAtom()); j++)
+        fprintf(fp, "%-30s  %d\n", mi->molProp()->getMolname().c_str(), mi->molProp()->NAtom());
+        for (j = 0; (j < mi->molProp()->NAtom()); j++)
         {
             fprintf(fp, "  %-5s  %-5s  q = %10g", *(mi->topology_->atoms.atomname[j]),
                     *(mi->topology_->atoms.atomtype[j]), mi->topology_->atoms.atom[j].q);
@@ -1434,13 +1438,13 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
         }
         if (bMtop)
         {
-            pr_mtop(fp, 0, mi->getMolname().c_str(), mi->mtop_, TRUE);
+            pr_mtop(fp, 0, mi->molProp()->getMolname().c_str(), mi->mtop_, TRUE);
         }
     }
 }
 
 void OptParam::PrintSpecs(FILE *fp, char *title,
-                          const char *xvg, output_env_t oenv,
+                          const char *xvg, const gmx_output_env_t *oenv,
                           bool bCheckOutliers)
 {
     FILE       *xfp;
@@ -1464,7 +1468,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         real DeltaE = mi->Ecalc - mi->Emol;
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i,
-                mi->getMolname().c_str(),
+                mi->molProp()->getMolname().c_str(),
                 mi->Hform, mi->Emol, DeltaE,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
@@ -1492,7 +1496,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
     fprintf(fp, "Regression analysis fit to y = ax + b:\n");
     fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f N = %d\n",
             a, b, Rfit*100, chi2, N);
-    gmx_stats_done(gst);
+    gmx_stats_free(gst);
     fflush(fp);
 }
 }
@@ -1546,7 +1550,7 @@ int alex_tune_fc(int argc, char *argv[])
         { efXVG, "-conv", "param-conv", ffWRITE },
         { efXVG, "-epot", "param-epot", ffWRITE }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 1;
@@ -1633,10 +1637,9 @@ int alex_tune_fc(int argc, char *argv[])
     };
     FILE                 *fp;
     t_commrec            *cr;
-    output_env_t          oenv;
+    gmx_output_env_t     *oenv;
     gmx_molselect_t       gms;
     time_t                my_t;
-    char                  pukestr[STRLEN];
     opt_mask_t           *omt = NULL;
 
     cr = init_commrec();
@@ -1645,7 +1648,10 @@ int alex_tune_fc(int argc, char *argv[])
         printf("There are %d threads/processes.\n", cr->nnodes);
     }
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, 
+                           sizeof(pa)/sizeof(pa[0]), pa, 
+                           sizeof(desc)/sizeof(desc[0]), desc,
+                           0, NULL, &oenv))
     {
         return 0;
     }
@@ -1656,9 +1662,8 @@ int alex_tune_fc(int argc, char *argv[])
 
         time(&my_t);
         fprintf(fp, "# This file was created %s", ctime(&my_t));
-        fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
-        bromacs(pukestr, 99);
-        fprintf(fp, "# %s\n#\n", pukestr);
+        fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
+        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
     }
     else
     {
@@ -1694,7 +1699,7 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
-             lot, oenv, gms, watoms, FALSE, seed);
+             lot, gms, watoms, FALSE, seed);
 
     check_support(fp, opt._mymol, opt._pd, opt._cr, bOpt);
 

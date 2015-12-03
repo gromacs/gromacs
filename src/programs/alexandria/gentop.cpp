@@ -39,26 +39,26 @@
 #include "gmxpre.h"
 #include <stdlib.h>
 #include <ctype.h>
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/atomprop.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -125,9 +125,9 @@ int alex_gentop(int argc, char *argv[])
     const char                      *bugs[] = {
         "No force constants for impropers are generated"
     };
-    output_env_t                     oenv;
+    gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    Poldata *                    pd;
+    Poldata                         *pd;
     gmx_bool                         bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
     char                             ffname[STRLEN];
@@ -155,7 +155,7 @@ int alex_gentop(int argc, char *argv[])
         { efXVG, "-pc",   "pot-comp", ffOPTWR },
         { efPDB, "-pdbdiff", "pdbdiff", ffOPTWR }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
     static real                      kb             = 4e5, kt = 400, kp = 5;
     static real                      btol           = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
     static real                      hfac           = 0, qweight = 1e-3, bhyper = 0.1;
@@ -308,8 +308,10 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 
+                           sizeof(pa)/sizeof(pa[0]), pa,
+                           sizeof(desc)/sizeof(desc[0]), desc, 
+                           sizeof(bugs)/sizeof(bugs[0]), bugs, &oenv))
     {
         return 0;
     }
@@ -425,9 +427,9 @@ int alex_gentop(int argc, char *argv[])
         mpi = mps.begin();
     }
 
-    bQsym = bQsym || (opt2parg_bSet("-symm", asize(pa), pa));
+    bQsym = bQsym || (opt2parg_bSet("-symm", sizeof(pa)/sizeof(pa[0]), pa));
 
-    mymol.Merge(*mpi);
+    mymol.molProp()->Merge(*mpi);
     mymol.SetForceField(forcefield);
 
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
@@ -453,7 +455,7 @@ int alex_gentop(int argc, char *argv[])
                                   penalty_fac, bFitZeta,
                                   bEntropy, dzatoms, seed);*/
 
-        mymol.gr_ = new Resp(iChargeDistributionModel, mymol.getCharge());
+        mymol.gr_ = new Resp(iChargeDistributionModel, mymol.molProp()->getCharge());
         mymol.gr_->setBAXpRESP(bAXpRESP);
         if (NULL == mymol.gr_)
         {
@@ -508,8 +510,8 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        printf("\nWARNING: %s ended prematurely due to \"%s\"\n",
-               ShortProgram(), alexandria::immsg(imm));
+        printf("\nWARNING: alexandria ended prematurely due to \"%s\"\n",
+               alexandria::immsg(imm));
     }
 
     return 0;

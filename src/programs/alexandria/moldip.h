@@ -86,7 +86,7 @@ class MolDip
                   gmx_bool bZero,
                   char *opt_elem, char *const_elem,
                   char *lot,
-                  output_env_t oenv, gmx_molselect_t gms,
+                  gmx_molselect_t gms,
                   real watoms, gmx_bool bCheckSupport, unsigned int seed);
 
         void CalcDeviation();

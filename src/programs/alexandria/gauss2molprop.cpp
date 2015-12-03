@@ -27,20 +27,19 @@
 #include <ctype.h>
 #include <string.h>
 #include "gromacs/utility/real.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "poldata.h"
@@ -61,7 +60,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         { efLOG, "-g03",  "gauss",  ffRDMULT },
         { efDAT, "-o",    "molprop", ffWRITE }
     };
-#define NFILE asize(fnm)
+#define NFILE sizeof(fnm)/sizeof(fnm[0])
     static gmx_bool                  bVerbose   = FALSE;
     static char                     *molnm      = NULL, *iupac = NULL, *conf = (char *)"minimum", *basis = NULL;
     static const char               *forcefield = "GAFF";
@@ -88,16 +87,17 @@ int alex_gauss2molprop(int argc, char *argv[])
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
     };
-    output_env_t                     oenv;
+    gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    Poldata *                    pd;
+    Poldata                         *pd;
     std::vector<alexandria::MolProp> mp;
     alexandria::GaussAtomProp        gap;
     char **fns = NULL;
     int    i, nfn;
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 
+                           sizeof(pa)/sizeof(pa[0]), pa,
+                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
         return 0;
     }

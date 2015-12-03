@@ -31,9 +31,8 @@
 #include "molprop.h"
 #include "gmx_ra.h"
 
-
-
-
+struct gmx_output_env_t;
+struct t_symtab;
 
 enum eParm {
     eparmQ, eparmZ, eparmNR
@@ -132,16 +131,16 @@ class Resp
 
         void writeDiffCube(Resp * src,
                            const std::string cubeFn, const std::string histFn,
-                           std::string title, output_env_t oenv, int rho);
+                           std::string title, const gmx_output_env_t *oenv, int rho);
 
         void writeHisto(const std::string fn,
-                        std::string title, output_env_t oenv);
+                        std::string title, const gmx_output_env_t *oenv);
 
         int  optimizeCharges(FILE *fp,  int maxiter,
                              real toler, real *rms);
 
         void potcomp(const std::string potcomp,
-                     const std::string pdbdiff, output_env_t oenv);
+                     const std::string pdbdiff, const gmx_output_env_t *oenv);
 
         double getQtot( int atom);
 
