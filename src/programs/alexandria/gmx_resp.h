@@ -87,7 +87,9 @@ class Resp
 
         void updateAtomtypes( t_atoms *atoms);
 
-        void fillZeta( alexandria::Poldata * pd);
+        //void fillZeta( alexandria::Poldata * pd);
+
+	void fillZeta();
 
         void fillQ( t_atoms *atoms);
 

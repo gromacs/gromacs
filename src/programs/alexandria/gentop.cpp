@@ -434,6 +434,11 @@ int alex_gentop(int argc, char *argv[])
                                  nexcl,
                                  bGenVSites, bPairs, edih);
 
+
+    if (immOK == imm)
+      {
+	mymol.AddShells(pd, epol, iChargeDistributionModel);
+      }
     
     
     if ((immOK == imm)  && (eqgRESP == iChargeGenerationAlgorithm))
@@ -489,10 +494,6 @@ int alex_gentop(int argc, char *argv[])
         mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
-    if (immOK == imm)
-      {
-	mymol.AddShells(pd, epol, iChargeDistributionModel);
-      }
 
     if (immOK == imm)
     {

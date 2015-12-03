@@ -37,8 +37,10 @@ namespace alexandria
                  const char *atomtype, Poldata * pd,
 	 ChargeDistributionModel iDistributionModel, std::vector<std::string> dzatoms)
   {
-    int  k, zz;
+    int  k, zz = 0, shell;
     bool bRestr;
+    std::string atomtype_new;
+    size_t shell_name;
 
     bRestr = false;
     if (!dzatoms.empty())
@@ -50,15 +52,19 @@ namespace alexandria
             k++;
 	  }
       }
+    // _nZeta       = pd->getNzeta(iDistributionModel, _atomtype.c_str());
     _atomnumber  = atomnumber;
     _atype       = atype;
     _atomtype    = (atomtype);
-    _nZeta       = pd->getNzeta(iDistributionModel, _atomtype.c_str());
-    if (_nZeta <= 0)
+    atomtype_new = _atomtype;
+    _nZeta       = 1;
+    shell        = 0 ;
+
+    /*if (_nZeta <= 0)
       {
         _bSetUpcorrectly = false;
 	return;
-      }
+	}*/
 
     _bRestrained = bRestr;
 
@@ -69,15 +75,24 @@ namespace alexandria
     _iq.resize(_nZeta);
     _row.resize(_nZeta);
 
-    for (zz = 0; (zz < _nZeta); zz++)
+    //for (zz = 0; (zz < _nZeta); zz++)
+    //{	}
+
+    _iq[zz]        = -1;
+    _iz[zz]        = -1;    
+
+    shell_name = _atomtype.find("_s");
+    if (shell_name != std::string::npos)
       {
-        _iq[zz]       = -1;
-        _q[zz]        = pd->getQ( iDistributionModel, _atomtype.c_str(), zz);
-        _iz[zz]       = -1;
-        _zetaRef[zz] =
-	  _zeta[zz] = pd->getZeta( iDistributionModel, _atomtype.c_str(), zz);
-        _row[zz]      = pd->getRow( iDistributionModel, _atomtype.c_str(), zz);
+	shell = 1;
+	atomtype_new = _atomtype.substr(0, shell_name);
       }
+     
+    _q[zz]        = pd->getQ( iDistributionModel, atomtype_new.c_str(), shell);
+    _zetaRef[zz]  =
+    _zeta[zz]     = pd->getZeta( iDistributionModel, atomtype_new.c_str(), shell);
+    _row[zz]      = pd->getRow( iDistributionModel, atomtype_new.c_str(), shell);
+
     _bSetUpcorrectly = true;
   }
 

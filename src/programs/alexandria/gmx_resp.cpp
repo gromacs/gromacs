@@ -168,7 +168,7 @@ namespace alexandria
       }
   }
 
-  void Resp::fillZeta( alexandria::Poldata * pd)
+  /*void Resp::fillZeta( alexandria::Poldata * pd)
   {
     int i, zz;
 
@@ -180,8 +180,18 @@ namespace alexandria
 					 _ra[i]->getAtomtype().c_str(), zz));
 	  }
       }
-  }
+      }*/
 
+  void Resp::fillZeta()
+  {
+    int i;
+    
+    for (i = 0; (i < _natom); i++)
+      {	
+	setZeta( i, 0, _ra[i]->getZeta(0));	
+      }
+  }
+  
   void Resp::fillQ( t_atoms *atoms)
   {
     int    i, zz;
@@ -202,17 +212,17 @@ namespace alexandria
   bool Resp::addAtomInfo( t_atoms *atoms, alexandria::Poldata * pd)
   {
     int  i;
-
+    
     _natom    = atoms->nr;
     _ra.resize(_natom);
 
     for (i = 0; (i < _natom); i++)
       {
 	_ra[i] =  new Ra(atoms->atom[i].atomnumber, atoms->atom[i].type,
-			 *(atoms->atomtype[i]), pd, _iDistributionModel, _dzatoms);
-        if (_ra[i]->setUpcorrectly() == false)
+			 *(atoms->atomtype[i]), pd, _iDistributionModel, _dzatoms); 
+	if (_ra[i]->setUpcorrectly() == false)
 	  {
-            return false;
+	    return false;
 	  }
       }
     return true;
@@ -908,182 +918,182 @@ namespace alexandria
     nrest       = 0;
     for (i = 0; (i < _natom); i++)
       {
-        if (bSet)
+	if (bSet)
 	  {
-            /* First do charges */
-            qi = 0;
-            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
+	    /* First do charges */
+	    qi = 0;
+	    for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                if (_ra[i]->getIq(zz) == n)
+		if (_ra[i]->getIq(zz) == n)
 		  {
-                    if (_ra[i]->getQ(zz) == 0)
+		    if (_ra[i]->getQ(zz) == 0)
 		      {
-                        nmx[n] = -qi;
-                        if (bRandQ)
+			nmx[n] = -qi;
+			if (bRandQ)
 			  {
-                            nmx[n] += 0.2*(gmx_rng_uniform_real(rnd)-0.5);
+			    nmx[n] += 0.2*(gmx_rng_uniform_real(rnd)-0.5);
 			  }
 		      }
-                    else
+		    else
 		      {
-                        nmx[n] = _ra[i]->getQ(zz);
+			nmx[n] = _ra[i]->getQ(zz);
 		      }
-                    n++;
+		    n++;
 		  }
-                qi += _ra[i]->getQ(zz);
+		qi += _ra[i]->getQ(zz);
 	      }
-            /* Then do zeta */
-            if (_bFitZeta)
+	    /* Then do zeta */
+	    if (_bFitZeta)
 	      {
-                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
+		for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    if (_ra[i]->getIz(zz) == n)
+		    if (_ra[i]->getIz(zz) == n)
 		      {
-                        real zmin = _zmin;
-                        real zmax = _zmax;
-
-                        if ((_deltaZ > 0) && (_ra[i]->getBRestrained()))
+			real zmin = _zmin;
+			real zmax = _zmax;
+			
+			if ((_deltaZ > 0) && (_ra[i]->getBRestrained()))
 			  {
-                            zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
-                            zmin = _ra[i]->getZetaRef(zz)-_deltaZ;
+			    zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
+			    zmin = _ra[i]->getZetaRef(zz)-_deltaZ;
 			  }
-                        if ((zz > 1) && (_rDecrZeta >= 0))
+			if ((zz > 1) && (_rDecrZeta >= 0))
 			  {
-                            zmax = _ra[i]->getZeta(zz-1)-_rDecrZeta;
-                            if (zmax < zmin)
+			    zmax = _ra[i]->getZeta(zz-1)-_rDecrZeta;
+			    if (zmax < zmin)
 			      {
-                                zmax = (zmin+_ra[i]->getZeta(zz-1))/2;
+				zmax = (zmin+_ra[i]->getZeta(zz-1))/2;
 			      }
 			  }
-                        if (bRandZeta)
+			if (bRandZeta)
 			  {
-                            nmx[n] = zmin + (zmax-zmin)*gmx_rng_uniform_real(rnd);
+			    nmx[n] = zmin + (zmax-zmin)*gmx_rng_uniform_real(rnd);
 			  }
-                        else
+			else
 			  {
-                            nmx[n] = _ra[i]->getZeta(zz);
+			    nmx[n] = _ra[i]->getZeta(zz);
 			  }
-                        _ra[i]->setZeta(zz, nmx[n]);
-                        n++;
+			_ra[i]->setZeta(zz, nmx[n]);
+			n++;
 		      }
 		  }
 	      }
 	  }
-        else
+	else
 	  {
-            /* Initialize to something strange */
-            if (_bFitZeta)
+	    /* Initialize to something strange */
+	    if (_bFitZeta)
 	      {
-                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
+		for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    if (_ra[i]->getZeta(zz) != 0)
+		    if (_ra[i]->getZeta(zz) != 0)
 		      {
-                        _ra[i]->setZeta(zz, NOTSET);
+			_ra[i]->setZeta(zz, NOTSET);
 		      }
 		  }
 	      }
-            _ra[i]->setQ(_ra[i]->getNZeta()-1, NOTSET);
-
-            /* First do charges */
-            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
+	    _ra[i]->setQ(_ra[i]->getNZeta()-1, NOTSET);
+	    
+	    /* First do charges */
+	    for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                if (_ra[i]->getIq(zz) == n)
+		if (_ra[i]->getIq(zz) == n)
 		  {
-                    _ra[i]->setQ(zz, nmx[n]);
-                    qtot           += _ra[i]->getQ(zz);
-                    n++;
+		    _ra[i]->setQ(zz, nmx[n]);
+		    qtot           += _ra[i]->getQ(zz);
+		    n++;
 		  }
-                else if ((_ra[i]->getIq(zz) < n) && (_ra[i]->getIq(zz) >= 0))
+		else if ((_ra[i]->getIq(zz) < n) && (_ra[i]->getIq(zz) >= 0))
 		  {
-                    for (zzz = 0; (zzz < i); zzz++)
+		    for (zzz = 0; (zzz < i); zzz++)
 		      {
-                        if (_ra[zzz]->getIq(zz) == _ra[i]->getIq(zz))
+			if (_ra[zzz]->getIq(zz) == _ra[i]->getIq(zz))
 			  {
-                            _ra[i]->setQ(zz, _ra[zzz]->getQ(zz));
-                            break;
+			    _ra[i]->setQ(zz, _ra[zzz]->getQ(zz));
+			    break;
 			  }
 		      }
-                    if (zzz == i)
+		    if (zzz == i)
 		      {
-                        gmx_fatal(FARGS, "Can not find a previous atom with iq[%d] = %d", zz, n);
+			gmx_fatal(FARGS, "Can not find a previous atom with iq[%d] = %d", zz, n);
 		      }
-
-                    /* Only sum those atoms to qtot, that are not part of
-                       the "rest" charge */
-                    if (_ra[i]->getIq(zz) != -1)
+		    
+		    /* Only sum those atoms to qtot, that are not part of
+		       the "rest" charge */
+		    if (_ra[i]->getIq(zz) != -1)
 		      {
-                        qtot += _ra[i]->getQ(zz);
+			qtot += _ra[i]->getQ(zz);
 		      }
 		  }
-                else if (zz == _ra[i]->getNZeta()-1)
+		else if (zz == _ra[i]->getNZeta()-1)
 		  {
-                    nrest++;
+		    nrest++;
 		  }
-                else
+		else
 		  {
-                    qtot += _ra[i]->getQ(zz);
+		    qtot += _ra[i]->getQ(zz);
 		  }
 	      }
-
-            if (_bFitZeta)
+	    
+	    if (_bFitZeta)
 	      {
-                /* Then do zeta */
-                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
+		/* Then do zeta */
+		for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    if (_ra[i]->getIz(zz) == n)
+		    if (_ra[i]->getIz(zz) == n)
 		      {
-                        zeta               = nmx[n];
-                        _ra[i]->setZeta(zz, zeta);
-                        if (_deltaZ >= 0)
+			zeta               = nmx[n];
+			_ra[i]->setZeta(zz, zeta);
+			if (_deltaZ >= 0)
 			  {
-                            real zmin = _ra[i]->getZetaRef(zz)-_deltaZ;
-                            real zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
-                            if (zeta <= zmin)
+			    real zmin = _ra[i]->getZetaRef(zz)-_deltaZ;
+			    real zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
+			    if (zeta <= zmin)
 			      {
-                                _penalty += sqr(zeta-zmin);
+				_penalty += sqr(zeta-zmin);
 			      }
-                            else if (zeta >= zmax)
+			    else if (zeta >= zmax)
 			      {
-                                _penalty += sqr(zmax-zeta);
+				_penalty += sqr(zmax-zeta);
 			      }
 			  }
-                        else
+			else
 			  {
-                            if (zeta <= _zmin)
+			    if (zeta <= _zmin)
 			      {
-                                _penalty += sqr(_zmin-zeta);
+				_penalty += sqr(_zmin-zeta);
 			      }
-                            else if (zeta >= _zmax)
+			    else if (zeta >= _zmax)
 			      {
-                                _penalty += sqr(_zmax-zeta);
+				_penalty += sqr(_zmax-zeta);
 			      }
-                            if ((_rDecrZeta >= 0) && (zz > 0) &&
-                                (_ra[i]->getZeta(zz-1) != 0) &&
-                                ((_ra[i]->getZeta(zz-1) - zeta) < _rDecrZeta))
+			    if ((_rDecrZeta >= 0) && (zz > 0) &&
+				(_ra[i]->getZeta(zz-1) != 0) &&
+				((_ra[i]->getZeta(zz-1) - zeta) < _rDecrZeta))
 			      {
-                                _penalty += sqr(_ra[i]->getZeta(zz-1) - zeta - _rDecrZeta);
+				_penalty += sqr(_ra[i]->getZeta(zz-1) - zeta - _rDecrZeta);
 			      }
 			  }
-                        n++;
+			n++;
 		      }
-                    else if ((_ra[i]->getIz(zz) < n) && (_ra[i]->getIz(zz) >= 0))
+		    else if ((_ra[i]->getIz(zz) < n) && (_ra[i]->getIz(zz) >= 0))
 		      {
-                        for (zzz = 0; (zzz < i); zzz++)
+			for (zzz = 0; (zzz < i); zzz++)
 			  {
-                            if (_ra[zzz]->getIz(zz) == _ra[i]->getIz(zz))
+			    if (_ra[zzz]->getIz(zz) == _ra[i]->getIz(zz))
 			      {
-                                _ra[i]->setZeta(zz, _ra[zzz]->getZeta(zz));
-                                break;
+				_ra[i]->setZeta(zz, _ra[zzz]->getZeta(zz));
+				break;
 			      }
 			  }
-                        if (zzz == i)
+			if (zzz == i)
 			  {
-                            gmx_fatal(FARGS, "Can not find a previous atom with iz[%d] = %d", zz, n);
+			    gmx_fatal(FARGS, "Can not find a previous atom with iz[%d] = %d", zz, n);
 			  }
 		      }
-                    else if ((_ra[i]->getIz(zz) == -1) && (_ra[i]->getZeta(zz) != 0))
+		    else if ((_ra[i]->getIz(zz) == -1) && (_ra[i]->getZeta(zz) != 0))
 		      {
-                        gmx_fatal(FARGS, "ra[%d]->iz[%d] = %d whereas ra[%d]->zeta[%d] = %g", i, zz, _ra[i]->getIz(zz), i, zz, _ra[i]->getZeta(zz));
+			gmx_fatal(FARGS, "ra[%d]->iz[%d] = %d whereas ra[%d]->zeta[%d] = %g", i, zz, _ra[i]->getIz(zz), i, zz, _ra[i]->getZeta(zz));
 		      }
 		  }
 	      }
@@ -1108,7 +1118,7 @@ namespace alexandria
 	  }
         for (i = 0; (i < _natom); i++)
 	  {
-            if (_ra[i]->getIq(_ra[i]->getNZeta()-1) == -1)
+            if (_ra[i]->getQ() != 0 && _ra[i]->getIq(_ra[i]->getNZeta()-1) == -1)
 	      {
                 _ra[i]->setQ(_ra[i]->getNZeta()-1,dq);
 	      }
@@ -1389,7 +1399,7 @@ namespace alexandria
   double Resp::getQ( int atom, int zz)
   {
     range_check(atom, 0, _natom);
-    range_check(zz, 0, _ra[atom]->getNZeta());
+    //range_check(zz, 0, _ra[atom]->getNZeta());
 
     return _ra[atom]->getQ(zz);
   }
@@ -1397,7 +1407,7 @@ namespace alexandria
   double Resp::getZeta( int atom, int zz)
   {
     range_check(atom, 0, _natom);
-    range_check(zz, 0, _ra[atom]->getNZeta());
+    //range_check(zz, 0, _ra[atom]->getNZeta());
 
     return _ra[atom]->getZeta(zz);
   }
@@ -1405,7 +1415,7 @@ namespace alexandria
   void Resp::setQ( int atom, int zz, double q)
   {
     range_check(atom, 0, _natom);
-    range_check(zz, 0, _ra[atom]->getNZeta());
+    //range_check(zz, 0, _ra[atom]->getNZeta());
 
     _ra[atom]->setQ(zz,q);
   }
@@ -1413,7 +1423,7 @@ namespace alexandria
   void Resp::setZeta( int atom, int zz, double zeta)
   {
     range_check(atom, 0, _natom);
-    range_check(zz, 0, _ra[atom]->getNZeta());
+    //range_check(zz, 0, _ra[atom]->getNZeta());
 
     _ra[atom]->setZeta(zz,zeta);
   }

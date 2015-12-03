@@ -998,7 +998,8 @@ void MolDip::CalcDeviation()
             if ((NULL != mymol->gr_) && _bQM)
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
-                mymol->gr_->fillZeta( _pd);
+                //mymol->gr_->fillZeta( _pd);
+		mymol->gr_->fillZeta();
                 mymol->gr_->fillQ(&(mymol->topology_->atoms));
                 mymol->gr_->calcPot();
             }
