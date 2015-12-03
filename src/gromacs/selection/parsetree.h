@@ -53,13 +53,13 @@
 
 #include <exception>
 #include <list>
+#include <memory>
 #include <string>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "selelem.h"
 #include "selvalue.h"
@@ -92,7 +92,7 @@ class SelectionParserValue;
 typedef std::list<SelectionParserValue>
     SelectionParserValueList;
 //! Smart pointer type for managing a SelectionParserValueList.
-typedef gmx::gmx_unique_ptr<SelectionParserValueList>::type
+typedef std::unique_ptr<SelectionParserValueList>
     SelectionParserValueListPointer;
 
 /*! \internal
@@ -123,7 +123,7 @@ class SelectionParserValue
         {
             SelectionParserValueListPointer list(new SelectionParserValueList);
             list->push_back(value);
-            return move(list);
+            return list;
         }
         /*! \brief
          * Allocates and initializes an expression value.
@@ -290,7 +290,7 @@ class SelectionParserParameter;
 typedef std::list<SelectionParserParameter>
     SelectionParserParameterList;
 //! Smart pointer type for managing a SelectionParserParameterList.
-typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
+typedef std::unique_ptr<SelectionParserParameterList>
     SelectionParserParameterListPointer;
 
 /*! \internal \brief
@@ -301,6 +301,23 @@ typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
 class SelectionParserParameter
 {
     public:
+        // Default move constructor and assignment. Only needed for old compilers.
+        //! \cond
+        SelectionParserParameter(SelectionParserParameter &&o)
+            : name_(std::move(o.name_)), location_(std::move(o.location_)),
+              values_(std::move(o.values_))
+        {
+        }
+
+        SelectionParserParameter &operator=(SelectionParserParameter &&o)
+        {
+            name_     = std::move(o.name_);
+            location_ = std::move(o.location_);
+            values_   = std::move(o.values_);
+            return *this;
+        }
+        //! \endcond
+
         //! Allocates and initializes an empty parameter list.
         static SelectionParserParameterListPointer createList()
         {
@@ -320,14 +337,14 @@ class SelectionParserParameter
         create(const char *name, SelectionParserValueListPointer values,
                const SelectionLocation &location)
         {
-            return SelectionParserParameter(name, move(values), location);
+            return SelectionParserParameter(name, std::move(values), location);
         }
         //! \copydoc create(const char *, SelectionParserValueListPointer, const SelectionLocation &)
         static SelectionParserParameter
         create(const std::string &name, SelectionParserValueListPointer values,
                const SelectionLocation &location)
         {
-            return SelectionParserParameter(name.c_str(), move(values), location);
+            return SelectionParserParameter(name.c_str(), std::move(values), location);
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.

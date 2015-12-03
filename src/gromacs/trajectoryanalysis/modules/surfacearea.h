@@ -37,9 +37,10 @@
 #ifndef GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 #define GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/real.h"
 
 struct t_pbc;
 
@@ -167,7 +168,7 @@ class SurfaceAreaCalculator
          * outputs.
          */
         void calculate(const rvec *x, const t_pbc *pbc,
-                       int nat, atom_id index[], int flags, real *area,
+                       int nat, int index[], int flags, real *area,
                        real *volume, real **at_area,
                        real **lidots, int *n_dots) const;
 

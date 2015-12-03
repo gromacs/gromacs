@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPWRITER_H
 #define GMX_COMMANDLINE_CMDLINEHELPWRITER_H
 
+#include <string>
+
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
@@ -54,7 +56,7 @@ class Options;
 template <typename T> class ConstArrayRef;
 
 /*! \brief
- * Writes help information for Options in ascii format.
+ * Writes help information for Options.
  *
  * \inpublicapi
  * \ingroup module_commandline
@@ -71,21 +73,19 @@ class CommandLineHelpWriter
         ~CommandLineHelpWriter();
 
         /*! \brief
-         * Sets whether long descriptions for sections are shown in the help.
-         */
-        CommandLineHelpWriter &setShowDescriptions(bool bShow);
-        /*! \brief
-         * Sets time unit to show in descriptions.
+         * Sets the help text to print as description.
          *
-         * \param[in] timeUnit  Time unit to show in descriptions.
+         * \param[in] help  Help text to show.
          * \throws    std::bad_alloc if out of memory.
          *
-         * For each time parameter, any "%t" in the description is replaced
-         * with \p timeunit.
-         * If not called, uses a default "ps".
+         * If `help` is empty, or this method is not called, only a list of
+         * options is printed.
+         * Formatting for the help text is described on \ref page_onlinehelp.
          */
-        CommandLineHelpWriter &setTimeUnitString(const char *timeUnit);
-
+        CommandLineHelpWriter &setHelpText(const std::string &help);
+        //! \copydoc setHelpText(const std::string &)
+        CommandLineHelpWriter &
+        setHelpText(const ConstArrayRef<const char *> &help);
         /*! \brief
          * Sets the list of known bugs/limitations.
          *

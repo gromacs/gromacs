@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_128_fma_single.h"
 #include "kernelutil_x86_avx_128_fma_single.h"
 
 /*
@@ -233,11 +230,11 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv30           = avx128fma_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm_mul_ps(rinv30,rinv30);
@@ -301,10 +298,10 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
-            pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
+            pmecorrV         = avx128fma_pmecorrV_f(zeta2);
             velec            = _mm_nmacc_ps(pmecorrV,beta,rinv10);
             velec            = _mm_mul_ps(qq10,velec);
 
@@ -336,10 +333,10 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
-            pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
+            pmecorrV         = avx128fma_pmecorrV_f(zeta2);
             velec            = _mm_nmacc_ps(pmecorrV,beta,rinv20);
             velec            = _mm_mul_ps(qq20,velec);
 
@@ -371,10 +368,10 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq30);
             rinv3            = _mm_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq30,felec);
-            pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
+            pmecorrV         = avx128fma_pmecorrV_f(zeta2);
             velec            = _mm_nmacc_ps(pmecorrV,beta,rinv30);
             velec            = _mm_mul_ps(qq30,velec);
 
@@ -449,11 +446,11 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv30           = avx128fma_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm_mul_ps(rinv30,rinv30);
@@ -521,10 +518,10 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
-            pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
+            pmecorrV         = avx128fma_pmecorrV_f(zeta2);
             velec            = _mm_nmacc_ps(pmecorrV,beta,rinv10);
             velec            = _mm_mul_ps(qq10,velec);
 
@@ -560,10 +557,10 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
-            pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
+            pmecorrV         = avx128fma_pmecorrV_f(zeta2);
             velec            = _mm_nmacc_ps(pmecorrV,beta,rinv20);
             velec            = _mm_mul_ps(qq20,velec);
 
@@ -599,10 +596,10 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_VF_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq30);
             rinv3            = _mm_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq30,felec);
-            pmecorrV         = gmx_mm_pmecorrV_ps(zeta2);
+            pmecorrV         = avx128fma_pmecorrV_f(zeta2);
             velec            = _mm_nmacc_ps(pmecorrV,beta,rinv30);
             velec            = _mm_mul_ps(qq30,velec);
 
@@ -836,11 +833,11 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv30           = avx128fma_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm_mul_ps(rinv30,rinv30);
@@ -898,7 +895,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
 
@@ -927,7 +924,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
 
@@ -956,7 +953,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq30);
             rinv3            = _mm_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq30,felec);
 
@@ -1028,11 +1025,11 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv10           = avx128fma_invsqrt_f(rsq10);
+            rinv20           = avx128fma_invsqrt_f(rsq20);
+            rinv30           = avx128fma_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm_mul_ps(rinv30,rinv30);
@@ -1093,7 +1090,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq10);
             rinv3            = _mm_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq10,felec);
 
@@ -1125,7 +1122,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq20);
             rinv3            = _mm_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq20,felec);
 
@@ -1157,7 +1154,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW4P1_F_avx_128_fma_single
             /* Analytical PME correction */
             zeta2            = _mm_mul_ps(beta2,rsq30);
             rinv3            = _mm_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm_pmecorrF_ps(zeta2);
+            pmecorrF         = avx128fma_pmecorrF_f(zeta2);
             felec            = _mm_macc_ps(pmecorrF,beta3,rinv3);
             felec            = _mm_mul_ps(qq30,felec);
 

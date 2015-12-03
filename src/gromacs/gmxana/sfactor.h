@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,17 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _sfactor_h
-#define _sfactor_h
+#ifndef GMX_GMXANA_SFACTOR_H
+#define GMX_GMXANA_SFACTOR_H
 
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct gmx_output_env_t;
 struct t_topology;
 struct t_trxframe;
 
@@ -70,26 +67,23 @@ real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momentum, re
                                   real lambda, int n_angles);
 
 void save_data (structure_factor_t * sft, const char *file, int ngrps,
-                real start_q, real end_q, const output_env_t oenv);
+                real start_q, real end_q, const gmx_output_env_t *oenv);
 
 double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, double sin_theta);
 
 int return_atom_type (const char *name, gmx_structurefactors_t *gsf);
 
-void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, atom_id * index,
+void rearrange_atoms (reduced_atom_t * positions, struct t_trxframe *fr, int * index,
                       int isize, struct t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf);
 
 int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
                              const char* fnXVG, const char *fnTRX,
                              const char* fnDAT,
                              real start_q, real end_q,
-                             real energy, int ng, const output_env_t oenv);
+                             real energy, int ng, const gmx_output_env_t *oenv);
 
 t_complex *** rc_tensor_allocation(int x, int y, int z);
 
 real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t * sft);
 
-#ifdef __cplusplus
-}
-#endif
 #endif

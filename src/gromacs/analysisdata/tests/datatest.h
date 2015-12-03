@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -343,7 +343,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * \param      source   Data object to verify.
          *
          * Creates a mock module that verifies that the
-         * AnalysisDataModuleInterface methods are called correctly by
+         * IAnalysisDataModule methods are called correctly by
          * \p source.  Parameters for the calls are verified against \p data.
          * Adds the created module to \p source using \p data->addModule().
          * Any exceptions from the called functions should be caught by the
@@ -361,7 +361,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * \param      source   Data object to verify.
          *
          * Creates a parallel mock module that verifies that the
-         * AnalysisDataModuleInterface methods are called correctly by
+         * IAnalysisDataModule methods are called correctly by
          * \p source.  Parameters for the calls are verified against \p data.
          * Adds the created module to \p source using \p data->addModule().
          * Any exceptions from the called functions should be caught by the
@@ -386,7 +386,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * \param      source   Data object to verify.
          *
          * Creates a mock module that verifies that the
-         * AnalysisDataModuleInterface methods are called correctly by
+         * IAnalysisDataModule methods are called correctly by
          * \p source.  Parameters for the calls are verified against \p data.
          * Adds the created module to \p source using
          * \p data->addColumnModule().
@@ -410,7 +410,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * Works like addStaticCheckerModule(), except that in addition, for
          * each frame, the mock module also checks that previous frames can be
          * accessed using AbstractAnalysisData::getDataFrame().  In the
-         * AnalysisDataModuleInterface::dataStarted() callback, the mock module
+         * IAnalysisDataModule::dataStarted() callback, the mock module
          * calls AbstractAnalysisData::requestStorage() with \p storageCount as
          * the parameter.
          */
@@ -426,7 +426,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * \param[in]  tolerance Tolerance to use for comparison.
          *
          * Creates a mock module that verifies that the
-         * AnalysisDataModuleInterface methods are called correctly by
+         * IAnalysisDataModule methods are called correctly by
          * \p source.  Parameters for the calls are verified against reference
          * data using a child compound \p id of \p checker.
          * Adds the created module to \p source using \p data->addModule().
@@ -435,7 +435,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * \see TestReferenceData
          */
-        static void addReferenceCheckerModule(TestReferenceChecker          checker,
+        static void addReferenceCheckerModule(const TestReferenceChecker   &checker,
                                               const char                   *id,
                                               AbstractAnalysisData         *source,
                                               const FloatingPointTolerance &tolerance);

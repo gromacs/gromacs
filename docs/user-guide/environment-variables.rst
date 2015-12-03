@@ -1,15 +1,15 @@
 Environment Variables
 =====================
 
-Gromacs programs may be influenced by the use of
+|Gromacs| programs may be influenced by the use of
 environment variables.  First of all, the variables set in
 the ``GMXRC`` file are essential for running and
-compiling Gromacs. Some other useful environment variables are
+compiling |Gromacs|. Some other useful environment variables are
 listed in the following sections. Most environment variables function
 by being set in your shell to any non-NULL value. Specific
 requirements are described below if other values need to be set. You
 should consult the documentation for your shell for instructions on
-how to set environment variables in the current shell, or in config
+how to set environment variables in the current shell, or in configuration
 files for future shells. Note that requirements for exporting
 environment variables to jobs run under batch control systems vary and
 you should consult your local documentation for details.
@@ -20,7 +20,7 @@ Output Control
         Print constraint virial and force virial energy terms.
 
 ``GMX_MAXBACKUP``
-        Gromacs automatically backs up old
+        |Gromacs| automatically backs up old
         copies of files when trying to write a new file of the same
         name, and this variable controls the maximum number of
         backups that will be made, default 99. If set to 0 it fails to
@@ -48,7 +48,7 @@ Output Control
         ``ghostview`` and ``rasmol``. Set to empty to disable
         automatic viewing of a particular file type. The command will
         be forked off and run in the background at the same priority
-        as the Gromacs tool (which might not be what you want).
+        as the |Gromacs| tool (which might not be what you want).
         Be careful not to use a command which blocks the terminal
         (e.g. ``vi``), since multiple instances might be run.
 
@@ -212,10 +212,6 @@ Performance and Run Control
         when set to a floating-point value, overrides the default tolerance of
         1e-5 for force-field floating-point parameters.
 
-``GMX_MAX_MPI_THREADS``
-        sets the maximum number of MPI-threads that :ref:`gmx mdrun`
-        can use.
-
 ``GMX_MAXCONSTRWARN``
         if set to -1, :ref:`gmx mdrun` will
         not exit if it produces too many LINCS warnings.
@@ -281,10 +277,6 @@ Performance and Run Control
 ``GMX_NO_PULLVIR``
         when set, do not add virial contribution to COM pull forces.
 
-``GMX_NOCHARGEGROUPS``
-        disables multi-atom charge groups, i.e. each atom
-        in all non-solvent molecules is assigned its own charge group.
-
 ``GMX_NOPREDICT``
         shell positions are not predicted.
 
@@ -349,6 +341,97 @@ Performance and Run Control
 ``GMX_USE_TREEREDUCE``
         use tree reduction for nbnxn force reduction. Potentially faster for large number of
         OpenMP threads (if memory locality is important).
+
+.. _opencl-management:
+
+OpenCL management
+-----------------
+Currently, several environment variables exist that help customize some aspects
+of the OpenCL_ version of |Gromacs|. They are mostly related to the runtime
+compilation of OpenCL kernels, but they are also used in device selection.
+
+``GMX_OCL_NOGENCACHE``
+        If set, disable caching for OpenCL kernel builds. Caching is
+        normally useful so that future runs can re-use the compiled
+        kernels from previous runs. Currently, caching is always
+        disabled, until we solve concurrency issues.
+
+``GMX_OCL_NOFASTGEN``
+        If set, generate and compile all algorithm flavors, otherwise
+        only the flavor required for the simulation is generated and
+        compiled.
+
+``GMX_OCL_FASTMATH``
+        Adds the option ``cl-fast-relaxed-math`` to the compiler
+        options (in the CUDA version this is enabled by default, it is likely that
+        the same will happen with the OpenCL version soon)
+
+``GMX_OCL_DUMP_LOG``
+        If defined, the OpenCL build log is always written to file.
+        The file is saved in the current directory with the name
+        ``OpenCL_kernel_file_name.build_status`` where
+        ``OpenCL_kernel_file_name`` is the name of the file containing the
+        OpenCL source code (usually ``nbnxn_ocl_kernels.cl``) and
+        build_status can be either SUCCEEDED or FAILED. If this
+        environment variable is not defined, the default behavior is
+        the following:
+
+           - Debug build: build log is always written to file
+	   - Release build: build log is written to file only in case of errors.
+
+``GMX_OCL_VERBOSE``
+        If defined, it enables verbose mode for OpenCL kernel build.
+        Currently available only for NVIDIA GPUs. See ``GMX_OCL_DUMP_LOG``
+        for details about how to obtain the OpenCL build log.
+
+``GMX_OCL_DUMP_INTERM_FILES``
+
+        If defined, intermediate language code corresponding to the
+        OpenCL build process is saved to file. Caching has to be
+        turned off in order for this option to take effect (see
+        ``GMX_OCL_NOGENCACHE``).
+
+            - NVIDIA GPUs: PTX code is saved in the current directory
+	      with the name ``device_name.ptx``
+	    - AMD GPUs: ``.IL/.ISA`` files will be created for each OpenCL
+              kernel built.  For details about where these files are
+              created check AMD documentation for ``-save-temps`` compiler
+              option.
+
+``GMX_OCL_DEBUG``
+        Use in conjunction with ``OCL_FORCE_CPU`` or with an AMD device.
+        It adds the debug flag to the compiler options (-g).
+
+``GMX_OCL_NOOPT``
+        Disable optimisations. Adds the option ``cl-opt-disable`` to the
+        compiler options.
+
+``GMX_OCL_FORCE_CPU``
+        Force the selection of a CPU device instead of a GPU.  This
+        exists only for debugging purposes. Do not expect |Gromacs| to
+        function properly with this option on, it is solely for the
+        simplicity of stepping in a kernel and see what is happening.
+
+``GMX_OCL_NB_ANA_EWALD``
+        Forces the use of analytical Ewald kernels. Equivalent of
+        CUDA environment variable ``GMX_CUDA_NB_ANA_EWALD``
+
+``GMX_OCL_NB_TAB_EWALD``
+        Forces the use of tabulated Ewald kernel. Equivalent
+        of CUDA environment variable ``GMX_OCL_NB_TAB_EWALD``
+
+``GMX_OCL_NB_EWALD_TWINCUT``
+        Forces the use of twin-range cutoff kernel. Equivalent of
+        CUDA environment variable ``GMX_CUDA_NB_EWALD_TWINCUT``
+
+``GMX_DISABLE_OCL_TIMING``
+        Disables timing for OpenCL operations
+
+``GMX_OCL_FILE_PATH``
+        Use this parameter to force |Gromacs| to load the OpenCL
+        kernels from a custom location. Use it only if you want to
+        override |Gromacs| default behavior, or if you want to test
+        your own kernels.
 
 Analysis and Core Functions
 ---------------------------

@@ -18,11 +18,11 @@ low-level functions.
    the facilities provided by \ref module_commandline.  There are a few
    different alternatives, depending on how much control you want to give
    \Gromacs:
-    - For C++ code, you can implement gmx::CommandLineOptionsModuleInterface and
+    - For C++ code, you can implement gmx::ICommandLineOptionsModule and
       use gmx::runCommandLineModule() to execute it.  This interface assumes
       the use of the gmx::Options mechanism for declaring command-line options
       (see \ref module_options).
-      For a lower-level interface, gmx::CommandLineModuleInterface can be used,
+      For a lower-level interface, gmx::ICommandLineModule can be used,
       but this requires you to implement `-h` output and command-line parsing
       yourself (possibly using classes that \Gromacs provides).
     - For C code, you can use gmx_run_cmain() to wrap an existing C main
@@ -37,7 +37,7 @@ low-level functions.
       routines.  This allows you to write your own handling for command line
       options from scratch.  This is also discussed in \ref module_commandline.
  - For most control, you can use gmx::init() to do basic initialization, create
-   your own implementation for gmx::ProgramContextInterface, and set that using
+   your own implementation for gmx::IProgramContext, and set that using
    gmx::setProgramContext().  This allows you to customize how the \Gromacs
    library shows the name of the program in messages, as well as how it locates
    its own data files.
@@ -160,8 +160,7 @@ used:
 <dl>
 <dt>`GROMACS_INCLUDE_DIRS`</dt>
 <dd>List of include directories necessary to compile against the \Gromacs
-headers.  Currently, this includes the path to \Gromacs headers, as well as the
-path to Boost headers that were used to compile \Gromacs.</dd>
+headers.  Currently, this includes the path to \Gromacs headers.</dd>
 <dt>`GROMACS_LIBRARIES`</dt>
 <dd>List of libraries to link with to link against \Gromacs.
 Under the hood, this uses imported CMake targets to represent `libgromacs`.</dd>
@@ -191,7 +190,7 @@ Notes on \Gromacs API
 
 The headers for the public \Gromacs API are installed in `include/gromacs/`
 under the installation directory.  The layout reflects the source code layout
-under the `src/gromacs/` directory (see \linktodevmanual{codelayout,Source
+under the `src/gromacs/` directory (see \linktodevmanual{overview,dev-doc-layout,Source
 code layout}).  The headers
 directly under `include/gromacs/` do not contain any declarations, but instead
 include a collection of headers from subdirectories.
@@ -201,25 +200,19 @@ individual headers in the subdirectories can be renamed or moved, but the goal
 is to only rarely change the name of these top-level headers.
 
 Pre-5.0 versions of \Gromacs installed (nearly) all headers directly under
-`include/gromacs/`.  Most of these headers still exist, but now under
-`include/gromacs/legacyheaders/`.  The long-term goal is to move these to
-proper module hierarchy or get rid of them, but unfortunately this can take a
-long time.  Thus, you should not expect much stability from the API in these
-headers.  Some have already been moved, so if you do not find your favorite
-header there, try searching for a declaration from the other subdirectories.
+`include/gromacs/`.  Most of these headers still exist, but are no longer
+installed.  The long-term goal is to reintroduce those parts of the API that
+make sense, but unfortunately this can take a long time.  Thus, you should not
+expect much stability from the API in these headers.
 
 For headers under other subdirectories, some effort has been put to design the
 API for stability.  However, with limited development resources, and the focus
 of \Gromacs being in high performance simulations, all the APIs are subject to
 change without notice.  With each new release (with possible exception of patch
-releases), you should expect incompatible API changes.  This is in particular
-true until the planned reorganization of the `legacyheaders/` subdirectory is
-complete.
+releases), you should expect incompatible API changes.
 
 The header version.h (installed as `gromacs/version.h`) provides defines that
 calling code can use to check the exact (released) version of \Gromacs that
 installed the headers.
 
-This Doxygen documentation only covers part of the API.  In particular, nearly
-all of `include/gromacs/legacyheaders/` is undocumented, as well as code
-recently moved from there.
+This Doxygen documentation only covers part of the API.

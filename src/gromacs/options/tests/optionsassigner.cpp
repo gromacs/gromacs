@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/testasserts.h"
+
 namespace
 {
 
@@ -94,9 +96,12 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
+    bool             bIsSet = false;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
-                            IntegerOption("p").storeVector(&values).multiValue()));
+                            IntegerOption("p")
+                                .storeVector(&values).storeIsSet(&bIsSet)
+                                .multiValue()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -107,7 +112,7 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_TRUE(options.isSet("p"));
+    EXPECT_TRUE(bIsSet);
     ASSERT_EQ(1U, values.size());
     EXPECT_EQ(1, values[0]);
 }
@@ -116,22 +121,25 @@ TEST(OptionsAssignerTest, HandlesMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
+    bool             bIsSet = false;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
-                            IntegerOption("p").storeVector(&values).allowMultiple()));
+                            IntegerOption("p")
+                                .storeVector(&values).storeIsSet(&bIsSet)
+                                .allowMultiple()));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("1"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("2"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("1"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("2"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
-    EXPECT_TRUE(options.isSet("p"));
+    EXPECT_TRUE(bIsSet);
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ(1, values[0]);
     EXPECT_EQ(2, values[1]);
@@ -177,6 +185,38 @@ TEST(OptionsAssignerTest, HandlesExtraValue)
     EXPECT_EQ(0, value1);
 }
 
+TEST(OptionsAssignerTest, HandlesGroups)
+{
+    gmx::Options            options(NULL, NULL);
+    gmx::IOptionsContainer &group1 = options.addGroup();
+    gmx::IOptionsContainer &group2 = options.addGroup();
+    int                     value  = 3;
+    int                     value1 = 1;
+    int                     value2 = 2;
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
+    ASSERT_NO_THROW(group1.addOption(IntegerOption("q").store(&value1)));
+    ASSERT_NO_THROW(group2.addOption(IntegerOption("r").store(&value2)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    EXPECT_NO_THROW(assigner.appendValue("5"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("q"));
+    EXPECT_NO_THROW(assigner.appendValue("4"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("r"));
+    EXPECT_NO_THROW(assigner.appendValue("6"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(5, value);
+    EXPECT_EQ(4, value1);
+    EXPECT_EQ(6, value2);
+}
+
 TEST(OptionsAssignerTest, HandlesSubSections)
 {
     gmx::Options options(NULL, NULL);
@@ -213,54 +253,6 @@ TEST(OptionsAssignerTest, HandlesSubSections)
     EXPECT_EQ(4, value);
     EXPECT_EQ(5, value1);
     EXPECT_EQ(6, value2);
-}
-
-TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
-{
-    gmx::Options options(NULL, NULL);
-    gmx::Options sub1("section1", NULL);
-    gmx::Options sub2("section2", NULL);
-    int          pvalue  = 3;
-    int          pvalue1 = 1;
-    int          qvalue  = 4;
-    int          pvalue2 = 2;
-    int          rvalue  = 5;
-    using gmx::IntegerOption;
-    ASSERT_NO_THROW(options.addSubSection(&sub1));
-    ASSERT_NO_THROW(options.addSubSection(&sub2));
-    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&pvalue)));
-    ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&pvalue1)));
-    ASSERT_NO_THROW(sub1.addOption(IntegerOption("q").store(&qvalue)));
-    ASSERT_NO_THROW(sub2.addOption(IntegerOption("p").store(&pvalue2)));
-    ASSERT_NO_THROW(sub2.addOption(IntegerOption("r").store(&rvalue)));
-
-    gmx::OptionsAssigner assigner(&options);
-    assigner.setNoStrictSectioning(true);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("q"));
-    EXPECT_NO_THROW(assigner.appendValue("6"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    EXPECT_NO_THROW(assigner.appendValue("7"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("r"));
-    EXPECT_NO_THROW(assigner.appendValue("8"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    EXPECT_NO_THROW(assigner.appendValue("9"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finishSubSection());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    EXPECT_NO_THROW(assigner.appendValue("10"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
-
-    EXPECT_EQ(6, qvalue);
-    EXPECT_EQ(7, pvalue1);
-    EXPECT_EQ(8, rvalue);
-    EXPECT_EQ(9, pvalue2);
-    EXPECT_EQ(10, pvalue);
 }
 
 TEST(OptionsAssignerTest, HandlesMultipleSources)
@@ -680,6 +672,9 @@ TEST(OptionsAssignerDoubleTest, HandlesEmptyValue)
  * Tests for string assignment
  */
 
+//! Set of allowed values for enum option tests.
+const char *const c_allowed[] = { "none", "test", "value" };
+
 TEST(OptionsAssignerStringTest, StoresSingleValue)
 {
     gmx::Options           options(NULL, NULL);
@@ -702,12 +697,10 @@ TEST(OptionsAssignerStringTest, HandlesEnumValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValue(allowed).storeEnumIndex(&index)));
+                                .enumValue(c_allowed)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -718,7 +711,6 @@ TEST(OptionsAssignerStringTest, HandlesEnumValue)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
 }
 
 TEST(OptionsAssignerStringTest, HandlesEnumValueFromNullTerminatedArray)
@@ -726,12 +718,10 @@ TEST(OptionsAssignerStringTest, HandlesEnumValueFromNullTerminatedArray)
     gmx::Options           options(NULL, NULL);
     std::string            value;
     const char * const     allowed[] = { "none", "test", "value", NULL };
-    int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValueFromNullTerminatedArray(allowed)
-                                .storeEnumIndex(&index)));
+                                .enumValueFromNullTerminatedArray(allowed)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -742,19 +732,16 @@ TEST(OptionsAssignerStringTest, HandlesEnumValueFromNullTerminatedArray)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ("value", value);
-    EXPECT_EQ(2, index);
 }
 
 TEST(OptionsAssignerStringTest, HandlesIncorrectEnumValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValue(allowed).storeEnumIndex(&index)));
+                                .enumValue(c_allowed)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -766,12 +753,10 @@ TEST(OptionsAssignerStringTest, CompletesEnumValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValue(allowed).storeEnumIndex(&index)));
+                                .enumValue(c_allowed)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -782,41 +767,32 @@ TEST(OptionsAssignerStringTest, CompletesEnumValue)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
 }
 
 TEST(OptionsAssignerStringTest, HandlesEnumWithNoValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -3;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValue(allowed).storeEnumIndex(&index)));
+                                .enumValue(c_allowed)));
     EXPECT_TRUE(value.empty());
-    EXPECT_EQ(-1, index);
 
     ASSERT_NO_THROW(options.finish());
 
     EXPECT_TRUE(value.empty());
-    EXPECT_EQ(-1, index);
 }
 
 TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValue(allowed).defaultValue("test")
-                                .storeEnumIndex(&index)));
+                                .enumValue(c_allowed).defaultValue("test")));
     EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -824,21 +800,17 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
 }
 
 TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVariable)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value("test");
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)
-                                .enumValue(allowed).storeEnumIndex(&index)));
+                                .enumValue(c_allowed)));
     EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -846,7 +818,6 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVariable)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
 }
 
 TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVector)
@@ -855,68 +826,159 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVector)
     std::vector<std::string> value;
     value.push_back("test");
     value.push_back("value");
-    const char * const       allowed[] = { "none", "test", "value" };
-    int                      index[2]  = {-1, -1};
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").storeVector(&value).valueCount(2)
-                                .enumValue(allowed).storeEnumIndex(index)));
+                                .enumValue(c_allowed)));
+    ASSERT_EQ(2U, value.size());
     EXPECT_EQ("test", value[0]);
     EXPECT_EQ("value", value[1]);
-    EXPECT_EQ(1, index[0]);
-    EXPECT_EQ(2, index[1]);
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
+    ASSERT_EQ(2U, value.size());
     EXPECT_EQ("test", value[0]);
     EXPECT_EQ("value", value[1]);
-    EXPECT_EQ(1, index[0]);
-    EXPECT_EQ(2, index[1]);
 }
 
-TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndex)
+
+/********************************************************************
+ * Tests for enum options
+ */
+
+//! Enum type for EnumOption tests.
+enum TestEnum
+{
+    etestNone,
+    etestTest,
+    etestValue,
+    etestNR
+};
+
+TEST(OptionsAssignerEnumTest, StoresSingleValue)
 {
     gmx::Options           options(NULL, NULL);
-    std::string            value;
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = -1;
-    using gmx::StringOption;
+    TestEnum               value     = etestNone;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            StringOption("p").store(&value)
-                                .enumValue(allowed).defaultEnumIndex(1)
-                                .storeEnumIndex(&index)));
-    EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
+                            EnumOption<TestEnum>("p").store(&value)
+                                .enumValue(c_allowed)));
+    EXPECT_EQ(etestNone, value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    ASSERT_NO_THROW(assigner.appendValue("test"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(etestTest, value);
+}
+
+TEST(OptionsAssignerEnumTest, StoresVectorValues)
+{
+    gmx::Options           options(NULL, NULL);
+    std::vector<TestEnum>  values;
+    using gmx::EnumOption;
+    ASSERT_NO_THROW(options.addOption(
+                            EnumOption<TestEnum>("p").storeVector(&values)
+                                .multiValue().enumValue(c_allowed)));
+    EXPECT_TRUE(values.empty());
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    ASSERT_NO_THROW(assigner.appendValue("test"));
+    ASSERT_NO_THROW(assigner.appendValue("value"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    ASSERT_EQ(2U, values.size());
+    EXPECT_EQ(etestTest, values[0]);
+    EXPECT_EQ(etestValue, values[1]);
+}
+
+TEST(OptionsAssignerEnumTest, HandlesInitialValueOutOfRange)
+{
+    gmx::Options           options(NULL, NULL);
+    TestEnum               value     = etestNR;
+    using gmx::EnumOption;
+    ASSERT_NO_THROW(options.addOption(
+                            EnumOption<TestEnum>("p").store(&value)
+                                .enumValue(c_allowed)));
+    EXPECT_EQ(etestNR, value);
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_EQ("test", value);
-    EXPECT_EQ(1, index);
+    EXPECT_EQ(etestNR, value);
 }
 
-TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndexFromVariable)
+TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValue)
 {
     gmx::Options           options(NULL, NULL);
-    const char * const     allowed[] = { "none", "test", "value" };
-    int                    index     = 1;
-    using gmx::StringOption;
+    TestEnum               value     = etestNone;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            StringOption("p")
-                                .enumValue(allowed).storeEnumIndex(&index)));
-    EXPECT_EQ(1, index);
+                            EnumOption<TestEnum>("p").store(&value)
+                                .enumValue(c_allowed).defaultValue(etestTest)));
+    EXPECT_EQ(etestTest, value);
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_EQ(1, index);
+    EXPECT_EQ(etestTest, value);
+}
+
+TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValueFromVariable)
+{
+    gmx::Options           options(NULL, NULL);
+    TestEnum               value     = etestTest;
+    using gmx::EnumOption;
+    ASSERT_NO_THROW(options.addOption(
+                            EnumOption<TestEnum>("p").store(&value)
+                                .enumValue(c_allowed)));
+    EXPECT_EQ(etestTest, value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(etestTest, value);
+}
+
+TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValueFromVector)
+{
+    gmx::Options             options(NULL, NULL);
+    std::vector<TestEnum>    value;
+    value.push_back(etestNone);
+    value.push_back(etestTest);
+    using gmx::EnumOption;
+    ASSERT_NO_THROW(options.addOption(
+                            EnumOption<TestEnum>("p").storeVector(&value).valueCount(2)
+                                .enumValue(c_allowed)));
+    ASSERT_EQ(2U, value.size());
+    EXPECT_EQ(etestNone, value[0]);
+    EXPECT_EQ(etestTest, value[1]);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    ASSERT_EQ(2U, value.size());
+    EXPECT_EQ(etestNone, value[0]);
+    EXPECT_EQ(etestTest, value[1]);
 }
 
 } // namespace

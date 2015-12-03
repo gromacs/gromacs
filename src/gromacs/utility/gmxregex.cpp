@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,14 +45,12 @@
 
 #include "config.h"
 
-#if defined(HAVE_POSIX_REGEX)
-#include <sys/types.h>
+#if HAVE_POSIX_REGEX
+#    include <sys/types.h>
 // old Mac needs sys/types.h before regex.h
-#include <regex.h>
-#define USE_POSIX_REGEX
-#elif defined(HAVE_CXX11_REGEX)
-#include <regex>
-#define USE_CXX11_REGEX
+#    include <regex.h>
+#elif HAVE_CXX11_REGEX
+#    include <regex>
 #endif
 
 #include "gromacs/utility/exceptions.h"
@@ -64,14 +62,14 @@ namespace gmx
 // static
 bool Regex::isSupported()
 {
-#if defined(USE_POSIX_REGEX) || defined(USE_CXX11_REGEX)
+#if HAVE_POSIX_REGEX || HAVE_CXX11_REGEX
     return true;
 #else
     return false;
 #endif
 }
 
-#if defined(USE_POSIX_REGEX)
+#if HAVE_POSIX_REGEX
 class Regex::Impl
 {
     public:
@@ -113,7 +111,7 @@ class Regex::Impl
 
         regex_t                 regex_;
 };
-#elif defined(USE_CXX11_REGEX)
+#elif HAVE_CXX11_REGEX
 class Regex::Impl
 {
     public:
@@ -161,25 +159,25 @@ class Regex::Impl
         explicit Impl(const char * /*value*/)
         {
             GMX_THROW(NotImplementedError(
-                              "Gromacs is compiled without regular expression support"));
+                              "GROMACS is compiled without regular expression support"));
         }
         explicit Impl(const std::string & /*value*/)
         {
             GMX_THROW(NotImplementedError(
-                              "Gromacs is compiled without regular expression support"));
+                              "GROMACS is compiled without regular expression support"));
         }
 
         bool match(const char * /*value*/) const
         {
             // Should never be reached.
             GMX_THROW(NotImplementedError(
-                              "Gromacs is compiled without regular expression support"));
+                              "GROMACS is compiled without regular expression support"));
         }
 };
 #endif
 
 Regex::Regex()
-    : impl_(NULL)
+    : impl_(nullptr)
 {
 }
 
@@ -200,7 +198,7 @@ Regex::~Regex()
 /*! \cond libapi */
 bool regexMatch(const char *str, const Regex &regex)
 {
-    if (regex.impl_.get() == NULL)
+    if (regex.impl_ == nullptr)
     {
         return false;
     }

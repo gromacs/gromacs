@@ -68,10 +68,9 @@ function(gmx_set_cmake_compiler_flags)
             set(GMXC_${language}FLAGS_${build_type} "${GMXC_${language}FLAGS_RELEASE}")
         endforeach()
         # Copy the flags that are only used by the real Release build
-        # type. Currently unused, but we plan to use -Wno-array-bounds
-        # in Release to work around gcc-4.8 being a little too vocal
-        # about some perfectly good code, while using RelWithAssert
-        # (ie. without that suppression) in Jenkins.
+        # type. Used for, e.g., -Wno-array-bounds in Release to work around
+        # gcc-4.8 being a little too vocal about some perfectly good code,
+        # while using RelWithAssert (ie. without that suppression) in Jenkins.
         set(GMXC_${language}FLAGS_RELEASE "${GMXC_${language}FLAGS_RELEASE} ${GMXC_${language}FLAGS_RELEASE_ONLY}")
 
         # Modify the real CMake variables for compiler flags for all
@@ -96,8 +95,8 @@ function(gmx_set_cmake_compiler_flags)
     endforeach()
 endfunction()
 
-# This is the actual exported function to be called 
-MACRO(gmx_c_flags)
+# This is the actual exported function to be called
+macro (gmx_c_flags)
 
     include(CheckCCompilerFlag)
     include(CheckCXXCompilerFlag)
@@ -108,13 +107,18 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
-        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith" GMXC_CFLAGS)
-        # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
-        # the warnings are OK.
-        GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
-        if(CYGWIN)
-            GMX_TEST_CFLAG(CFLAGS_WARN_SUBSCRIPT "-Wno-char-subscripts" GMXC_CFLAGS)
+        if (GMX_COMPILER_WARNINGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith" GMXC_CFLAGS)
+            if(NOT GMX_GPU) #TODO: Fix that CUDA code has warnings
+                GMX_TEST_CFLAG(CFLAGS_WARN_UNDEF "-Wundef" GMXC_CFLAGS)
+            endif()
+            # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
+            # the warnings are OK.
+            GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
+            if(CYGWIN)
+                GMX_TEST_CFLAG(CFLAGS_WARN_SUBSCRIPT "-Wno-char-subscripts" GMXC_CFLAGS)
+            endif()
         endif()
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
@@ -127,11 +131,16 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
-        # Problematic with CUDA
-        # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
-        GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
+        if (GMX_COMPILER_WARNINGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
+            # Problematic with CUDA
+            # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+            if(NOT GMX_GPU)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
+            endif()
+            GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
+        endif()
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-funroll-all-loops"
@@ -141,7 +150,7 @@ MACRO(gmx_c_flags)
 
     # icc
     if (CMAKE_C_COMPILER_ID MATCHES "Intel")
-        if (NOT WIN32) 
+        if (NOT WIN32)
             if(NOT GMX_OPENMP)
                 if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 13.99.99)
 # 3180: unrecognized OpenMP #pragma
@@ -151,8 +160,12 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CFLAG(CFLAGS_PRAGMA "-wd161" GMXC_CFLAGS)
                 endif()
             endif()
-# 177: function/variable ".." was declared but never referenced
+            if (GMX_COMPILER_WARNINGS)
+                if(CMAKE_C_COMPILER_VERSION VERSION_LESS 15.00.00)
 # 193: zero used for undefined preprocessing identifier ".."
+                    GMX_TEST_CFLAG(CFLAGS_WARN_OLD -wd193 GMXC_CFLAGS)
+                endif()
+# 177: function/variable ".." was declared but never referenced
 # 271: trailing comma is nonstandard
 # 304: access control not specified ("public" by default)
 # 383: value copied to temporary, reference to temporary used
@@ -174,7 +187,8 @@ MACRO(gmx_c_flags)
 #3346: dynamic exception specifications are deprecated
 #11074: Inlining inhibited by limit max-size(/max-total-size)
 #11076: To get full report use -opt-report=3 -opt-report-phase ipo (shown for previous remark)
-            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076" GMXC_CFLAGS)
+                GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076" GMXC_CFLAGS)
+            endif()
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_DEBUG "-O0" GMXC_CFLAGS_DEBUG) #icc defaults to -O2 even with -g
@@ -187,7 +201,12 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd161" GMXC_CFLAGS)
                 endif()
             endif()
-            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
+            if (GMX_COMPILER_WARNINGS)
+                if(CMAKE_C_COMPILER_VERSION VERSION_LESS 15.00.00)
+                    GMX_TEST_CFLAG(CFLAGS_WARN_OLD /wd193 GMXC_CFLAGS)
+                endif()
+                GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
+            endif()
             GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
@@ -201,10 +220,15 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd161" GMXC_CXXFLAGS)
                 endif()
             endif()
+            if (GMX_COMPILER_WARNINGS)
+                if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.00.00)
+                    GMX_TEST_CXXFLAG(CXXFLAGS_WARN_OLD -wd193 GMXC_CXXFLAGS)
+                endif()
 #All but the following warnings are identical for the C-compiler (see above)
 #1782: #pragma once is obsolete
 #2282: unrecognized GCC pragma
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
+            endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
             GMX_TEST_CXXFLAG(CXXFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CXXFLAGS_RELWITHASSERT)
@@ -216,17 +240,28 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161" GMXC_CXXFLAGS)
                 endif()
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
+            if (GMX_COMPILER_WARNINGS)
+                if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.00.00)
+                    GMX_TEST_CXXFLAG(CXXFLAGS_WARN_OLD /wd193 GMXC_CXXFLAGS)
+                endif()
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
+            endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()
 
-    # pgi
+    # PGI
+    # Inter-procedural analysis causes pgcc/pgc++ to crash when linking the library with PGI release 15.7.
     if (CMAKE_C_COMPILER_ID MATCHES "PGI")
-        GMX_TEST_CFLAG(CFLAGS_OPT "-fastsse" GMXC_CFLAGS_RELEASE)
+        GMX_TEST_CFLAG(CFLAGS_OPT "-Mnoipa" GMXC_CFLAGS_RELEASE)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "PGI")
-        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-fastsse" GMXC_CXXFLAGS_RELEASE)
+        # Using ipa exposes internal PGI-15.7 compiler bugs at compile time
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-Mnoipa" GMXC_CXXFLAGS_RELEASE)
+        # PGI identifies itself as GCC, but does not understand the GCC
+        # pragmas that occur in parser.cpp. Since that file is generated
+        # we cannot add a define there, but supress the warning instead.
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "--diag_suppress=1675" GMXC_CXXFLAGS)
     endif()
 
     # Pathscale
@@ -234,8 +269,10 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
-        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
+        if (GMX_COMPILER_WARNINGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CFLAGS)
+        endif()
+        GMX_TEST_CFLAG(CFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math"
                          GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_LANG "-std=gnu99" GMXC_CFLAGS)
     endif()
@@ -243,8 +280,10 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
+        if (GMX_COMPILER_WARNINGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CXXFLAGS)
+        endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math"
                          GMXC_CXXFLAGS_RELEASE)
     endif()
 
@@ -254,13 +293,15 @@ MACRO(gmx_c_flags)
     # 1500-010: (W) about correct PBC-related use of maximum array indices of DIM-sized C arrays
     # 1500-030: (I) Additional optimization may be attained by recompiling and specifying MAXMEM option with a value greater than 8192.
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
-        GMX_TEST_CFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_ARCH "-qarch=auto -qtune=auto" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_OPT  "-O3" GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_LANG "-qlanglvl=extc99" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010 -qsuppress=1500-030" GMXC_CFLAGS)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
-        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010 -qsuppress=1500-030" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_ARCH "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-O3" GMXC_CXXFLAGS_RELEASE)
+        GMX_TEST_CXXFLAG(CXXFLAGS_LANG "-qsuppress=1500-036 -qsuppress=1500-010 -qsuppress=1500-030" GMXC_CXXFLAGS)
     endif()
 
     # msvc
@@ -286,16 +327,20 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
-        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wpointer-arith" GMXC_CFLAGS_EXTRA)
+        if (GMX_COMPILER_WARNINGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wpointer-arith" GMXC_CFLAGS_EXTRA)
+        endif()
     endif()
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+        if (GMX_COMPILER_WARNINGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+        endif()
     endif()
 
     # Fujitsu compilers on PrimeHPC/Sparc64
@@ -315,5 +360,5 @@ MACRO(gmx_c_flags)
     if (NOT GMX_SKIP_DEFAULT_CFLAGS)
         gmx_set_cmake_compiler_flags()
     endif()
-ENDMACRO(gmx_c_flags)
 
+endmacro()

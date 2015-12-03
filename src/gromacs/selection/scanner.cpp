@@ -1,6 +1,6 @@
 #line 2 "scanner.cpp"
 #line 50 "scanner.l"
-#if !_gmx_sel_yyIN_HEADER
+#if !defined _gmx_sel_yyIN_HEADER
 #include "gmxpre.h"
 #endif
 
@@ -495,7 +495,7 @@ static yyconst flex_int16_t yy_chk[151] =
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -932,7 +932,7 @@ case 6:
 YY_RULE_SETUP
 #line 137 "scanner.l"
 {
-                    if (yytext[0] == ';' || state->bInteractive)
+                    if (yytext[0] == ';' || state->statusWriter != NULL)
                     {
                         rtrim(state->pselstr);
                         state->bCmdStart = true;

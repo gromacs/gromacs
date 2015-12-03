@@ -47,7 +47,6 @@
 #include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
@@ -148,7 +147,7 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
         std::string testPath(gmx::Path::join(
                                      candidates[i].dir, candidates[i].name, filename));
         // TODO: Consider also checking that the directory can be listed.
-        if (gmx::File::exists(testPath))
+        if (gmx::File::exists(testPath, gmx::File::returnFalseOnError))
         {
             result.push_back(candidates[i]);
         }

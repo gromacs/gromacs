@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,22 +114,22 @@ class MockAnalysisDataModule::Impl
         /*! \brief
          * Reference data checker to use for checking frames.
          *
-         * Must be non-NULL if startReferenceFrame() is called.
+         * Must be initialized if startReferenceFrame() is called.
          */
-        boost::scoped_ptr<TestReferenceChecker>  rootChecker_;
+        TestReferenceChecker         rootChecker_;
         /*! \brief
          * Reference data checker to use to check the current frame.
          *
-         * Non-NULL between startReferenceFrame() and finishReferenceFrame()
+         * Initialized between startReferenceFrame() and finishReferenceFrame()
          * calls.
          */
-        boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
+        TestReferenceChecker         frameChecker_;
         //! Source data.
-        const AbstractAnalysisData              *source_;
+        const AbstractAnalysisData  *source_;
         //! Flags that will be returned by the mock module.
-        int                                      flags_;
+        int                          flags_;
         //! Index of the current/next frame.
-        int                                      frameIndex_;
+        int                          frameIndex_;
 };
 
 namespace
@@ -174,14 +174,13 @@ void
 MockAnalysisDataModule::Impl::startReferenceFrame(
         const AnalysisDataFrameHeader &header)
 {
-    GMX_RELEASE_ASSERT(rootChecker_.get() != NULL,
+    GMX_RELEASE_ASSERT(rootChecker_,
                        "Root checker not set, but reference data used");
-    EXPECT_TRUE(frameChecker_.get() == NULL);
+    EXPECT_FALSE(frameChecker_.isValid());
     EXPECT_EQ(frameIndex_, header.index());
-    frameChecker_.reset(new TestReferenceChecker(
-                                rootChecker_->checkCompound("DataFrame",
-                                                            formatString("Frame%d", frameIndex_).c_str())));
-    frameChecker_->checkReal(header.x(), "X");
+    frameChecker_ = rootChecker_.checkCompound("DataFrame",
+                                               formatString("Frame%d", frameIndex_).c_str());
+    frameChecker_.checkReal(header.x(), "X");
 }
 
 
@@ -189,11 +188,11 @@ void
 MockAnalysisDataModule::Impl::checkReferencePoints(
         const AnalysisDataPointSetRef &points)
 {
-    EXPECT_TRUE(frameChecker_.get() != NULL);
-    if (frameChecker_.get() != NULL)
+    EXPECT_TRUE(frameChecker_.isValid());
+    if (frameChecker_)
     {
         TestReferenceChecker checker(
-                frameChecker_->checkCompound("DataValues", NULL));
+                frameChecker_.checkCompound("DataValues", NULL));
         checker.checkInteger(points.columnCount(), "Count");
         if (checker.checkPresent(source_->dataSetCount() > 1, "DataSet"))
         {
@@ -221,16 +220,16 @@ void
 MockAnalysisDataModule::Impl::finishReferenceFrame(
         const AnalysisDataFrameHeader &header)
 {
-    EXPECT_TRUE(frameChecker_.get() != NULL);
+    EXPECT_TRUE(frameChecker_.isValid());
     EXPECT_EQ(frameIndex_, header.index());
-    frameChecker_.reset();
+    frameChecker_ = TestReferenceChecker();
 }
 
 
 void
 MockAnalysisDataModule::Impl::finishReferenceFrameSerial(int frameIndex)
 {
-    EXPECT_TRUE(frameChecker_.get() == NULL);
+    EXPECT_FALSE(frameChecker_.isValid());
     EXPECT_EQ(frameIndex_, frameIndex);
     ++frameIndex_;
 }
@@ -304,7 +303,7 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
  * Functor for checking data frame header against static test input data.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::frameStarted().
+ * IAnalysisDataModule::frameStarted().
  */
 class StaticDataFrameHeaderChecker
 {
@@ -336,7 +335,7 @@ class StaticDataFrameHeaderChecker
  * Functor for checking data frame points against static test input data.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::pointsAdded().
+ * IAnalysisDataModule::pointsAdded().
  */
 class StaticDataPointsChecker
 {
@@ -387,7 +386,7 @@ class StaticDataPointsChecker
  * Functor for requesting data storage.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::dataStarted().
+ * IAnalysisDataModule::dataStarted().
  */
 class DataStorageRequester
 {
@@ -417,7 +416,7 @@ class DataStorageRequester
  * data.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::pointsAdded().
+ * IAnalysisDataModule::pointsAdded().
  */
 class StaticDataPointsStorageChecker
 {
@@ -679,7 +678,7 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMissing
         | efAllowMultipleDataSets;
 
-    impl_->rootChecker_.reset(new TestReferenceChecker(checker));
+    impl_->rootChecker_ = TestReferenceChecker(checker);
     // Google Mock does not support checking the order fully, because
     // the number of frames is not known.
     // Order of the frameStarted(), pointsAdded() and frameFinished()

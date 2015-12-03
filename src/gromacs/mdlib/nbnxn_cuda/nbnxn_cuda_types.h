@@ -46,16 +46,9 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
-#include "config.h"
-
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
-
-#ifndef HAVE_CUDA_TEXOBJ_SUPPORT
-/** This typedef allows us to define only one version of struct cu_nbparam */
-typedef int cudaTextureObject_t;
-#endif
+#include "gromacs/mdtypes/interaction_const.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -230,8 +223,6 @@ struct gmx_nbnxn_cuda_t
 {
     struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
     bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    bool                      bUseStreamSync; /**< true if the standard cudaStreamSynchronize is used
-                                                   and not memory polling-based waiting                 */
     cu_atomdata_t            *atdat;          /**< atom data                                            */
     cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
     cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
@@ -240,10 +231,12 @@ struct gmx_nbnxn_cuda_t
     cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
-    cudaEvent_t    nonlocal_done;    /**< event triggered when the non-local non-bonded kernel
-                                        is done (and the local transfer can proceed)           */
-    cudaEvent_t    misc_ops_done;    /**< event triggered when the operations that precede the
-                                          main force calculations are done (e.g. buffer 0-ing) */
+    cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
+                                                   is done (and the local transfer can proceed)           */
+    cudaEvent_t    misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
+                                                   the local stream that need to precede the
+                                                   non-local force calculations are done
+                                                   (e.g. f buffer 0-ing, local x/q H2D) */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

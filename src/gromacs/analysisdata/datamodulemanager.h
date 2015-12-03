@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ class AnalysisDataParallelOptions;
 /*! \libinternal \brief
  * Encapsulates handling of data modules attached to AbstractAnalysisData.
  *
- * See AnalysisDataModuleInterface and \ref module_analysisdata for more
+ * See IAnalysisDataModule and \ref module_analysisdata for more
  * details on the notifications and the order in which they should be raised.
  *
  * \inlibraryapi
@@ -66,7 +66,7 @@ class AnalysisDataModuleManager
         /*! \brief
          * Identifies data properties to check with data modules.
          *
-         * \see AnalysisDataModuleInterface::Flag
+         * \see IAnalysisDataModule::Flag
          */
         enum DataProperty
         {
@@ -132,8 +132,8 @@ class AnalysisDataModuleManager
          *
          * \see AbstractAnalysisData::applyModule()
          */
-        void applyModule(AbstractAnalysisData        *data,
-                         AnalysisDataModuleInterface *module);
+        void applyModule(AbstractAnalysisData *data,
+                         IAnalysisDataModule  *module);
 
         /*! \brief
          * Notifies attached modules of the start of serial data.
@@ -141,7 +141,7 @@ class AnalysisDataModuleManager
          * \param   data  Data object that is starting.
          * \throws  APIError if any attached data module is not compatible.
          * \throws  unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::dataStarted().
+         *      in IAnalysisDataModule::dataStarted().
          *
          * Should be called once, after data properties have been set with
          * the methods in AbstractAnalysisData, and before any other
@@ -153,7 +153,7 @@ class AnalysisDataModuleManager
          * derived from AbstractAnalysisData.
          *
          * This method initializes all modules for serial processing by calling
-         * AnalysisDataModuleInterface::dataStarted().
+         * IAnalysisDataModule::dataStarted().
          */
         void notifyDataStart(AbstractAnalysisData *data);
         /*! \brief
@@ -163,11 +163,11 @@ class AnalysisDataModuleManager
          * \param[in] options Parallelization properties of the input data.
          * \throws  APIError if any attached data module is not compatible.
          * \throws  unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::parallelDataStarted().
+         *      in IAnalysisDataModule::parallelDataStarted().
          *
          * Can be called instead of notifyDataStart() if \p data supports
          * non-sequential creation of frames.  Works as notifyDataStart(),
-         * but instead calls AnalysisDataModuleInterface::parallelDataStarted()
+         * but instead calls IAnalysisDataModule::parallelDataStarted()
          * and records whether the module supports the parallel mode.
          * Subsequent notification calls then notify the modules according to
          * the mode they accept.
@@ -182,7 +182,7 @@ class AnalysisDataModuleManager
          *
          * \param[in] header  Header information for the frame that is starting.
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameStarted().
+         *      in IAnalysisDataModule::frameStarted().
          *
          * Should be called once for each frame, before notifyPointsAdd() calls
          * for that frame.
@@ -193,7 +193,7 @@ class AnalysisDataModuleManager
          *
          * \param[in] header  Header information for the frame that is starting.
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameStarted().
+         *      in IAnalysisDataModule::frameStarted().
          *
          * If notifyParallelDataStart() has been called, should be called once
          * for each frame, before notifyParallelPointsAdd() calls for that
@@ -210,7 +210,7 @@ class AnalysisDataModuleManager
          *      frame-level data).
          * \throws    APIError if any attached data module is not compatible.
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::pointsAdded().
+         *      in IAnalysisDataModule::pointsAdded().
          *
          * Can be called zero or more times for each frame.
          * The caller should ensure that any column occurs at most once in the
@@ -228,7 +228,7 @@ class AnalysisDataModuleManager
          *      frame-level data).
          * \throws    APIError if any attached data module is not compatible.
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::pointsAdded().
+         *      in IAnalysisDataModule::pointsAdded().
          *
          * See notifyPointsAdd() for information on the structure of the point
          * sets.
@@ -239,7 +239,7 @@ class AnalysisDataModuleManager
          *
          * \param[in] header  Header information for the frame that is ending.
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameFinished().
+         *      in IAnalysisDataModule::frameFinished().
          *
          * Should be called once for each call of notifyFrameStart(), after any
          * notifyPointsAdd() calls for the frame.
@@ -254,7 +254,7 @@ class AnalysisDataModuleManager
          *
          * \param[in] header  Header information for the frame that is ending.
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameFinished().
+         *      in IAnalysisDataModule::frameFinished().
          *
          * Should be called once for each call of notifyParallelFrameStart(),
          * after any notifyParallelPointsAdd() calls for the frame.
@@ -266,7 +266,7 @@ class AnalysisDataModuleManager
          * Notifies attached modules of the end of data.
          *
          * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::dataFinished().
+         *      in IAnalysisDataModule::dataFinished().
          *
          * Should be called once, after all the other notification calls.
          */

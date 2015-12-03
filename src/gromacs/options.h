@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,12 +39,21 @@
  *
  * <H3>Basic Use</H3>
  *
- * Basic interface for providing options is implemented by the Options class
- * and classes defined in basicoptions.h for specifying individual options.
- * Only these are needed if a class wants to provide a set of standard options.
- * When creating an Options object and adding options, it is possible to add
- * descriptions for individual options as well as for the whole set of options.
- * These can then be used to write out help text.
+ * Code that provides options does so using methods in gmx::IOptionsContainer
+ * and classes defined in basicoptions.h.
+ * Only these are needed if a class wants to provide a set of standard options
+ * (other modules can provide additional option types, such as
+ * gmx::SelectionOption).
+ * For each option, the caller provides an output variable that will receive
+ * the final value of the option once user input has been parsed.
+ * When adding options, it is possible to also provide descriptions for the
+ * options for use in generated help text.
+ *
+ * Generic code that handles the user input does so by creating a gmx::Options
+ * instance and passing it (as gmx::IOptionsContainer) to the classes that add
+ * the actual options.  It can then use a parser to set values to the options.
+ * Final values for the options can be inspected in the code that added the
+ * individual options, from the provided output variables.
  *
  * The sequence charts below provides an overview of how the options work from
  * usage perspective.  They include two fictional modules, A and B, that provide
@@ -52,9 +61,9 @@
  * typical initialization sequence, where the main routine creates an options
  * object, and calls an initOptions() method in each module that can provide
  * options (the modules may also request their submodules to add their own
- * options).  Each module uses gmx::Options::addOption() to add the options
- * they require, and specify output variables into which the options values are
- * stored.
+ * options).  Each module uses gmx::IOptionsContainer::addOption() to add the
+ * options they require, and specify output variables into which the options
+ * values are stored.
  * \msc
  *     main,
  *     options [ label="Options", URL="\ref gmx::Options" ],
@@ -64,11 +73,11 @@
  *     main box B [ label="main owns all objects" ];
  *     main => options [ label="create", URL="\ref gmx::Options::Options()" ];
  *     main => A [ label="initOptions()" ];
- *     A => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     A => options [ label="addOption()", URL="\ref gmx::IOptionsContainer::addOption()" ];
  *     ...;
  *     main << A;
  *     main => B [ label="initOptions()" ];
- *     B => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     B => options [ label="addOption()", URL="\ref gmx::IOptionsContainer::addOption()" ];
  *     ...;
  *     main << B;
  * \endmsc
@@ -77,7 +86,7 @@
  * the input into option-value pairs (one option may have multiple values), and
  * passes these into the gmx::Options object, which is responsible for
  * converting them into the appropriate types and storing the values into the
- * variables provided in the calls to gmx::Options::addOption().
+ * variables provided in the calls to gmx::IOptionsContainer::addOption().
  * \msc
  *     main,
  *     parser [ label="parser" ],
@@ -123,7 +132,7 @@
  * To implement new option types, it is necessary to subclass the templates
  * OptionTemplate and OptionStorageTemplate with the type of the values that
  * the option should provide as the template argument.  After this is done, it
- * is possible to add options of this new type using Options::addOption().
+ * is possible to add options of this new type using IOptionsContainer::addOption().
  *
  * To implement new parsers, one can use OptionsAssigner, which provides an
  * interface to set values in an Options object.
@@ -146,10 +155,12 @@
 #ifndef GMX_OPTIONS_H
 #define GMX_OPTIONS_H
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/filenameoptionmanager.h"
+#include "gromacs/options/ioptionsbehavior.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 
 #endif

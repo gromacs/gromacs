@@ -36,17 +36,20 @@
  */
 #include "gmxpre.h"
 
+#include "dialogs.h"
+
 #include "config.h"
 
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for fork()
 #endif
 
-#include "dialogs.h"
-
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
@@ -81,33 +84,19 @@ static void shell_comm(const char *title, const char *script, int nsleep)
     char  command[STRLEN];
     char  tmp[32];
 
-    strcpy(tmp, "dialogXXXXXX");
-    gmx_tmpnam(tmp);
-
-    if ((tfil = fopen(tmp, "w")) == NULL)
-    {
-        sprintf(tmp, "%ctmp%cdialogXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmp);
-    }
-    else
-    {
-        fclose(tfil);
-    }
-    if ((tfil = fopen(tmp, "w")) == NULL)
-    {
-        gmx_fatal(FARGS, "Can not open tmp file %s", tmp);
-    }
+    std::strcpy(tmp, "dialogXXXXXX");
+    tfil = gmx_fopen_temporary(tmp);
 
     fprintf(tfil, "%s\n", script);
     fprintf(tfil, "sleep %d\n", nsleep);
-    fclose(tfil);
+    gmx_ffclose(tfil);
 
-    sprintf(command, "xterm -title %s -e sh %s", title, tmp);
+    std::sprintf(command, "xterm -title %s -e sh %s", title, tmp);
 #ifdef DEBUG
-    fprintf(stderr, "command: %s\n", command);
+    std::fprintf(stderr, "command: %s\n", command);
 #endif
 
-    if (0 != system(command))
+    if (0 != std::system(command))
     {
         gmx_fatal(FARGS, "Failed to execute command: %s", command);
     }
@@ -243,13 +232,13 @@ static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
                     break;
             }
 #ifdef DEBUG
-            fprintf(stderr, "exportcb: item_id=%d\n", item_id);
+            std::fprintf(stderr, "exportcb: item_id=%d\n", item_id);
 #endif
             break;
         case DLG_EXIT:
             if ((bOk = gmx_strcasecmp("ok", set)) == 0)
             {
-                strcpy(gmx->confout, EditText(dlg, eExConf));
+                std::strcpy(gmx->confout, EditText(dlg, eExConf));
             }
             HideDlg(dlg);
             if (bOk)
@@ -271,7 +260,7 @@ static void Extract(t_dlg *dlg, int ID, char *buf)
     et = EditText(dlg, ID);
     if (et)
     {
-        strcpy(buf, et);
+        std::strcpy(buf, et);
     }
 }
 
@@ -321,8 +310,8 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                     case ebDPlus:
                         DO_NOT(gmx->man->bPlus);
 #ifdef DEBUG
-                        fprintf(stderr, "gmx->man->bPlus=%s\n",
-                                gmx->man->bPlus ? "true" : "false");
+                        std::fprintf(stderr, "gmx->man->bPlus=%s\n",
+                                     gmx->man->bPlus ? "true" : "false");
 #endif
                         break;
                     case ebRMPBC:
@@ -331,16 +320,16 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                     case ebCue:
                         DO_NOT(gmx->man->bSort);
 #ifdef DEBUG
-                        fprintf(stderr, "gmx->man->bSort=%s\n",
-                                gmx->man->bSort ? "true" : "false");
+                        std::fprintf(stderr, "gmx->man->bSort=%s\n",
+                                     gmx->man->bSort ? "true" : "false");
 #endif
                         break;
                     case ebSkip:
-                        nskip = strtol(set, &endptr, 10);
+                        nskip = std::strtol(set, &endptr, 10);
                         if (endptr != set)
                         {
 #ifdef DEBUG
-                            fprintf(stderr, "nskip: %d frames\n", nskip);
+                            std::fprintf(stderr, "nskip: %d frames\n", nskip);
 #endif
                             if (nskip >= 0)
                             {
@@ -349,11 +338,11 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                         }
                         break;
                     case ebWait:
-                        nwait = strtol(set, &endptr, 10);
+                        nwait = std::strtol(set, &endptr, 10);
                         if (endptr != set)
                         {
 #ifdef DEBUG
-                            fprintf(stderr, "wait: %d ms\n", nwait);
+                            std::fprintf(stderr, "wait: %d ms\n", nwait);
 #endif
                             if (nwait >= 0)
                             {
@@ -362,7 +351,7 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                         }
                     default:
 #ifdef DEBUG
-                        fprintf(stderr, "item_id: %d, set: %s\n", item_id, set);
+                        std::fprintf(stderr, "item_id: %d, set: %s\n", item_id, set);
 #endif
                         break;
                 }
@@ -491,8 +480,8 @@ void edit_file(const char *fn)
     {
         char script[256];
 
-        sprintf(script, "vi  %s", fn);
+        std::sprintf(script, "vi  %s", fn);
         shell_comm(fn, script, 0);
-        exit(0);
+        std::exit(0);
     }
 }

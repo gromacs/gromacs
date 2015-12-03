@@ -281,7 +281,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
 
     /* Check if the identifier matches with a symbol */
     const gmx::SelectionParserSymbol *symbol
-        = state->sc->symtab->findSymbol(std::string(yytext, yyleng), false);
+        = state->sc->symtab->findSymbol(std::string(yytext, yyleng));
     /* If there is no match, return the token as a string */
     if (!symbol)
     {
@@ -384,8 +384,8 @@ _gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
 
 void
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive, int maxnr, bool bGroups,
-                    struct gmx_ana_indexgrps_t *grps)
+                    gmx::TextWriter *statusWriter, int maxnr,
+                    bool bGroups, struct gmx_ana_indexgrps_t *grps)
 {
     int rc = _gmx_sel_yylex_init(scannerp);
     if (rc != 0)
@@ -401,7 +401,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->grps      = grps;
     state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
-    state->bInteractive = bInteractive;
+    state->statusWriter = statusWriter;
 
     snew(state->pselstr, STRSTORE_ALLOCSTEP);
     state->pselstr[0]                 = 0;
@@ -442,8 +442,8 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 }
 
 void
-_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
-                             const boost::exception_ptr &ex)
+_gmx_sel_lexer_set_exception(yyscan_t                  scanner,
+                             const std::exception_ptr &ex)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->exception = ex;
@@ -455,17 +455,17 @@ _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     if (state->exception)
     {
-        boost::exception_ptr ex = state->exception;
-        state->exception = boost::exception_ptr();
-        rethrow_exception(ex);
+        std::exception_ptr ex = state->exception;
+        state->exception = std::exception_ptr();
+        std::rethrow_exception(ex);
     }
 }
 
-bool
-_gmx_sel_is_lexer_interactive(yyscan_t scanner)
+gmx::TextWriter *
+_gmx_sel_lexer_get_status_writer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    return state->bInteractive;
+    return state->statusWriter;
 }
 
 struct gmx_ana_selcollection_t *

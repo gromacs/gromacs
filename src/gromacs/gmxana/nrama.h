@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,8 +39,10 @@
 #define GMX_GMXANA_NRAMA_H
 
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_output_env_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,29 +55,29 @@ typedef struct {
 } t_phipsi;
 
 typedef struct {
-    atom_id ai[4];
+    int     ai[4];
     int     mult;
     real    phi0;
     real    ang;
 } t_dih;
 
 typedef struct {
-    int          ndih;
-    t_dih       *dih;
-    int          npp;
-    t_phipsi    *pp;
-    t_trxstatus *traj;
-    int          natoms;
-    int          amin, amax;
-    real         t;
-    rvec        *x;
-    matrix       box;
-    t_idef      *idef;
-    int          ePBC;
-    output_env_t oenv;
+    int               ndih;
+    t_dih            *dih;
+    int               npp;
+    t_phipsi         *pp;
+    t_trxstatus      *traj;
+    int               natoms;
+    int               amin, amax;
+    real              t;
+    rvec             *x;
+    matrix            box;
+    t_idef           *idef;
+    int               ePBC;
+    gmx_output_env_t *oenv;
 } t_xrama;
 
-t_topology *init_rama(const output_env_t oenv, const char *infile,
+t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
                       const char *topfile, t_xrama *xr, int mult);
 
 gmx_bool new_data(t_xrama *xr);

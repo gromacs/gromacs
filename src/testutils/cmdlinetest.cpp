@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,21 +46,25 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <memory>
 #include <new>
 #include <sstream>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/textblockmatchers.h"
 
 namespace gmx
 {
@@ -237,13 +241,20 @@ class CommandLineTestHelper::Impl
     public:
         struct OutputFileInfo
         {
-            OutputFileInfo(const char *option, const std::string &path)
-                : option(option), path(path)
+            OutputFileInfo(const char *option, const std::string &path,
+                           TextBlockMatcherPointer matcher)
+                : option(option), path(path), matcher(move(matcher))
+            {
+            }
+            OutputFileInfo(OutputFileInfo &&other)
+                : option(std::move(other.option)), path(std::move(other.path)),
+                  matcher(std::move(other.matcher))
             {
             }
 
-            std::string         option;
-            std::string         path;
+            std::string              option;
+            std::string              path;
+            TextBlockMatcherPointer  matcher;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -262,8 +273,8 @@ class CommandLineTestHelper::Impl
  */
 
 // static
-int CommandLineTestHelper::runModule(
-        CommandLineModuleInterface *module, CommandLine *commandLine)
+int CommandLineTestHelper::runModuleDirect(
+        ICommandLineModule *module, CommandLine *commandLine)
 {
     CommandLineModuleSettings settings;
     module->init(&settings);
@@ -271,14 +282,21 @@ int CommandLineTestHelper::runModule(
 }
 
 // static
-int CommandLineTestHelper::runModule(
-        CommandLineOptionsModuleInterface::FactoryMethod  factory,
-        CommandLine                                      *commandLine)
+int CommandLineTestHelper::runModuleDirect(
+        std::unique_ptr<ICommandLineOptionsModule> module, CommandLine *commandLine)
 {
     // The name and description are not used in the tests, so they can be NULL.
-    boost::scoped_ptr<CommandLineModuleInterface> module(
-            CommandLineOptionsModuleInterface::createModule(NULL, NULL, factory));
-    return runModule(module.get(), commandLine);
+    const std::unique_ptr<ICommandLineModule> wrapperModule(
+            ICommandLineOptionsModule::createModule(NULL, NULL, std::move(module)));
+    return runModuleDirect(wrapperModule.get(), commandLine);
+}
+
+// static
+int CommandLineTestHelper::runModuleFactory(
+        std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
+        CommandLine                                                 *commandLine)
+{
+    return runModuleDirect(factory(), commandLine);
 }
 
 CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)
@@ -297,7 +315,7 @@ void CommandLineTestHelper::setInputFileContents(
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
-    File::writeFileFromString(fullFilename, contents);
+    TextWriter::writeFileFromString(fullFilename, contents);
     args->addOption(option, fullFilename);
 }
 
@@ -308,7 +326,7 @@ void CommandLineTestHelper::setInputFileContents(
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
-    File        file(fullFilename, "w");
+    TextWriter  file(fullFilename);
     ConstArrayRef<const char *>::const_iterator i;
     for (i = contents.begin(); i != contents.end(); ++i)
     {
@@ -319,19 +337,18 @@ void CommandLineTestHelper::setInputFileContents(
 }
 
 void CommandLineTestHelper::setOutputFile(
-        CommandLine *args, const char *option, const char *filename)
+        CommandLine *args, const char *option, const char *filename,
+        const ITextBlockMatcherSettings &matcher)
 {
-    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
+    std::string suffix(filename);
+    if (startsWith(filename, "."))
+    {
+        suffix = formatString("%d.%s", args->argc(), filename);
+    }
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(suffix);
     args->addOption(option, fullFilename);
-    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
-}
-
-void CommandLineTestHelper::setOutputFileNoTest(
-        CommandLine *args, const char *option, const char *extension)
-{
-    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
-                formatString("%d.%s", args->argc(), extension));
-    args->addOption(option, fullFilename);
+    impl_->outputFiles_.push_back(
+            Impl::OutputFileInfo(option, fullFilename, matcher.createMatcher()));
 }
 
 void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
@@ -345,8 +362,11 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
              outfile != impl_->outputFiles_.end();
              ++outfile)
         {
-            std::string output = File::readToString(outfile->path);
-            outputChecker.checkStringBlock(output, outfile->option.c_str());
+            TestReferenceChecker fileChecker(
+                    outputChecker.checkCompound("File", outfile->option.c_str()));
+            TextInputFile        stream(outfile->path);
+            outfile->matcher->checkStream(&stream, &fileChecker);
+            stream.close();
         }
     }
 }
@@ -404,15 +424,10 @@ void CommandLineTestBase::setInputFileContents(
 }
 
 void CommandLineTestBase::setOutputFile(
-        const char *option, const char *filename)
+        const char *option, const char *filename,
+        const ITextBlockMatcherSettings &matcher)
 {
-    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename);
-}
-
-void CommandLineTestBase::setOutputFileNoTest(
-        const char *option, const char *extension)
-{
-    impl_->helper_.setOutputFileNoTest(&impl_->cmdline_, option, extension);
+    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
 }
 
 CommandLine &CommandLineTestBase::commandLine()
@@ -428,6 +443,16 @@ TestFileManager &CommandLineTestBase::fileManager()
 TestReferenceChecker CommandLineTestBase::rootChecker()
 {
     return impl_->data_.rootChecker();
+}
+
+void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)
+{
+    StringOutputStream     stream;
+    CommandLineHelpContext context(&stream, eHelpOutputFormat_Console, nullptr, "test");
+    context.setModuleDisplayName(formatString("%s %s", "test", module->name()));
+    module->writeHelp(context);
+    TestReferenceChecker   checker(rootChecker());
+    checker.checkTextBlock(stream.toString(), "HelpOutput");
 }
 
 void CommandLineTestBase::checkOutputFiles()

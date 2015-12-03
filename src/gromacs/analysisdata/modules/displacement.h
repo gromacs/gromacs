@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
          *
          * If this function is not called, no histogram is calculated.
          */
-        void setMSDHistogram(boost::shared_ptr<AnalysisDataBinAverageModule> histm);
+        void setMSDHistogram(std::shared_ptr<AnalysisDataBinAverageModule> histm);
 
         virtual int flags() const;
 
@@ -102,7 +102,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
 };
 
 //! Smart pointer to manage an AnalysisDataDisplacementModule object.
-typedef boost::shared_ptr<AnalysisDataDisplacementModule>
+typedef std::shared_ptr<AnalysisDataDisplacementModule>
     AnalysisDataDisplacementModulePointer;
 
 } // namespace gmx

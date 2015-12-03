@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,9 @@
 
 #ifdef __cplusplus
 
+#include <functional>
+#include <memory>
+
 // Forward declaration of class CommandLineProgramContext is not sufficient for
 // MSVC if the return value of initForCommandLine() is ignored(!)
 #include "gromacs/commandline/cmdlineprogramcontext.h"
@@ -52,8 +55,8 @@
 namespace gmx
 {
 
-class CommandLineModuleInterface;
-class CommandLineOptionsModuleInterface;
+class ICommandLineModule;
+class ICommandLineOptionsModule;
 
 /*! \brief
  * Initializes the \Gromacs library for command-line use.
@@ -137,7 +140,7 @@ int processExceptionAtExitForCommandLine(const std::exception &ex);
  * Does not throw.  All exceptions are caught and handled internally.
  */
 int runCommandLineModule(int argc, char *argv[],
-                         CommandLineModuleInterface *module);
+                         ICommandLineModule *module);
 /*! \brief
  * Implements a main() method that runs a single module.
  *
@@ -154,12 +157,12 @@ int runCommandLineModule(int argc, char *argv[],
  *
  * Usage:
  * \code
-   class CustomCommandLineOptionsModule : public CommandLineOptionsModuleInterface
+   class CustomCommandLineOptionsModule : public ICommandLineOptionsModule
    {
        // <...>
    };
 
-   static CommandLineOptionsModuleInterface *create()
+   static ICommandLineOptionsModule *create()
    {
        return new CustomCommandLineOptionsModule();
    }
@@ -175,7 +178,7 @@ int runCommandLineModule(int argc, char *argv[],
  */
 int runCommandLineModule(int argc, char *argv[],
                          const char *name, const char *description,
-                         CommandLineOptionsModuleInterface *(*factory)());
+                         std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory);
 
 } // namespace gmx
 

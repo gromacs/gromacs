@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,26 +49,12 @@
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
-
-/*! \cond libapi */
-void writeBasicHelpTopic(const HelpWriterContext  &context,
-                         const HelpTopicInterface &topic,
-                         const std::string        &text)
-{
-    const char *title = topic.title();
-    if (title != NULL && title[0] != '\0')
-    {
-        context.writeTitle(title);
-    }
-    context.writeTextBlock(text);
-}
-//! \endcond
 
 /********************************************************************
  * AbstractSimpleHelpTopic
@@ -79,7 +65,7 @@ bool AbstractSimpleHelpTopic::hasSubTopics() const
     return false;
 }
 
-const HelpTopicInterface *
+const IHelpTopic *
 AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
 {
     return NULL;
@@ -87,7 +73,7 @@ AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
 
 void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock(helpText());
 }
 
 /********************************************************************
@@ -102,15 +88,23 @@ void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
 class AbstractCompositeHelpTopic::Impl
 {
     public:
+        //! Container for subtopics.
+        typedef std::vector<HelpTopicPointer> SubTopicList;
         //! Container for mapping subtopic names to help topic objects.
-        typedef std::map<std::string, HelpTopicPointer> SubTopicMap;
+        typedef std::map<std::string, const IHelpTopic *> SubTopicMap;
 
         /*! \brief
-         * Maps subtopic names to help topic objects.
+         * Subtopics in the order they were added.
          *
          * Owns the contained subtopics.
          */
-        SubTopicMap             subtopics_;
+        SubTopicList            subTopics_;
+        /*! \brief
+         * Maps subtopic names to help topic objects.
+         *
+         * Points to objects in the \a subTopics_ map.
+         */
+        SubTopicMap             subTopicMap_;
 };
 
 /********************************************************************
@@ -128,23 +122,23 @@ AbstractCompositeHelpTopic::~AbstractCompositeHelpTopic()
 
 bool AbstractCompositeHelpTopic::hasSubTopics() const
 {
-    return !impl_->subtopics_.empty();
+    return !impl_->subTopics_.empty();
 }
 
-const HelpTopicInterface *
+const IHelpTopic *
 AbstractCompositeHelpTopic::findSubTopic(const char *name) const
 {
-    Impl::SubTopicMap::const_iterator topic = impl_->subtopics_.find(name);
-    if (topic == impl_->subtopics_.end())
+    Impl::SubTopicMap::const_iterator topic = impl_->subTopicMap_.find(name);
+    if (topic == impl_->subTopicMap_.end())
     {
         return NULL;
     }
-    return topic->second.get();
+    return topic->second;
 }
 
 void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    writeBasicHelpTopic(context, *this, helpText());
+    context.writeTextBlock(helpText());
     writeSubTopicList(context, "\nAvailable subtopics:");
 }
 
@@ -154,41 +148,49 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "Subtopic listing is not implemented for this output format"));
+        Impl::SubTopicList::const_iterator topic;
+        for (topic = impl_->subTopics_.begin(); topic != impl_->subTopics_.end(); ++topic)
+        {
+            const char *const title = (*topic)->title();
+            if (!isNullOrEmpty(title))
+            {
+                context.outputFile().writeLine();
+                HelpWriterContext subContext(context);
+                subContext.enterSubSection(title);
+                (*topic)->writeHelp(subContext);
+            }
+        }
+        return true;
     }
     int maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;
-    for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
+    for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
-        const char *title = topic->second->title();
-        if (title == NULL || title[0] == '\0')
+        const char *const title = topic->second->title();
+        if (!isNullOrEmpty(title))
         {
-            continue;
-        }
-        int nameLength = static_cast<int>(topic->first.length());
-        if (nameLength > maxNameLength)
-        {
-            maxNameLength = nameLength;
+            int nameLength = static_cast<int>(topic->first.length());
+            if (nameLength > maxNameLength)
+            {
+                maxNameLength = nameLength;
+            }
         }
     }
     if (maxNameLength == 0)
     {
         return false;
     }
-    File              &file = context.outputFile();
+    TextWriter        &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
     formatter.setFirstColumnIndent(4);
     file.writeLine(title);
-    for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
+    for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
-        const char *name  = topic->first.c_str();
-        const char *title = topic->second->title();
-        if (title != NULL && title[0] != '\0')
+        const char *const name  = topic->first.c_str();
+        const char *const title = topic->second->title();
+        if (!isNullOrEmpty(title))
         {
             formatter.clear();
             formatter.addColumnLine(0, name);
@@ -201,10 +203,12 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
 
 void AbstractCompositeHelpTopic::addSubTopic(HelpTopicPointer topic)
 {
-    GMX_ASSERT(impl_->subtopics_.find(topic->name()) == impl_->subtopics_.end(),
+    GMX_ASSERT(impl_->subTopicMap_.find(topic->name()) == impl_->subTopicMap_.end(),
                "Attempted to register a duplicate help topic name");
-    impl_->subtopics_.insert(std::make_pair(std::string(topic->name()),
-                                            move(topic)));
+    const IHelpTopic *topicPtr = topic.get();
+    impl_->subTopics_.reserve(impl_->subTopics_.size() + 1);
+    impl_->subTopicMap_.insert(std::make_pair(std::string(topicPtr->name()), topicPtr));
+    impl_->subTopics_.push_back(std::move(topic));
 }
 
 } // namespace gmx

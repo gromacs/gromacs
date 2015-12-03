@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/classhelpers.h"
@@ -52,7 +54,10 @@ struct t_topology;
 namespace gmx
 {
 
+template <typename T> class ConstArrayRef;
+
 class AnalysisDataPlotSettings;
+class ICommandLineOptionsModuleSettings;
 class Options;
 class TrajectoryAnalysisRunnerCommon;
 
@@ -121,10 +126,11 @@ class TrajectoryAnalysisSettings
         TrajectoryAnalysisSettings();
         ~TrajectoryAnalysisSettings();
 
-        //! Returns the time unit manager with time unit timeUnit().
-        const TimeUnitManager &timeUnitManager() const;
+        //! Injects command line options module settings for some methods to use.
+        void setOptionsModuleSettings(ICommandLineOptionsModuleSettings *settings);
+
         //! Returns the time unit the user has requested.
-        TimeUnit timeUnit() { return timeUnitManager().timeUnit(); }
+        TimeUnit timeUnit() const;
         //! Returns common settings for analysis data plot modules.
         const AnalysisDataPlotSettings &plotSettings() const;
 
@@ -217,6 +223,9 @@ class TrajectoryAnalysisSettings
          * from the trajectory.
          */
         void setFrameFlags(int frflags);
+
+        //! \copydoc ICommandLineOptionsModuleSettings::setHelpText(const std::string &)
+        void setHelpText(const ConstArrayRef<const char *> &help);
 
     private:
         class Impl;

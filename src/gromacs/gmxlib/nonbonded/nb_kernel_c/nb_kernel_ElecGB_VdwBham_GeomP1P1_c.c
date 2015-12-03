@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014.2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecGB_VdwBham_GeomP1P1_VF_c
@@ -106,8 +105,8 @@ nb_kernel_ElecGB_VdwBham_GeomP1P1_VF_c
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = fr->gbtab.scale;
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = fr->gbtab->scale;
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
 
     outeriter        = 0;
@@ -343,8 +342,8 @@ nb_kernel_ElecGB_VdwBham_GeomP1P1_F_c
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = fr->gbtab.scale;
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = fr->gbtab->scale;
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
 
     outeriter        = 0;

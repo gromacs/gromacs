@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
@@ -59,7 +59,7 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -78,8 +78,7 @@ class SelectionTester : public TrajectoryAnalysisModule
 };
 
 SelectionTester::SelectionTester()
-    : TrajectoryAnalysisModule("testing", "Selection testing and debugging"),
-      nmaxind_(20)
+    : nmaxind_(20)
 {
 }
 
@@ -99,14 +98,14 @@ SelectionTester::printSelections()
 }
 
 void
-SelectionTester::initOptions(Options                   *options,
-                             TrajectoryAnalysisSettings * /*settings*/)
+SelectionTester::initOptions(IOptionsContainer          *options,
+                             TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "This is a test program for selections."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(SelectionOption("select").storeVector(&selections_)
                            .required().multiValue()

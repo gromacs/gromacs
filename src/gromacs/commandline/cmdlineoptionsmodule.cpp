@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements supporting routines for gmx::CommandLineOptionsModuleInterface.
+ * Implements supporting routines for gmx::ICommandLineOptionsModule.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
@@ -43,14 +43,18 @@
 
 #include "cmdlineoptionsmodule.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/options/behaviorcollection.h"
 #include "gromacs/options/filenameoptionmanager.h"
+#include "gromacs/options/ioptionsbehavior.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -59,18 +63,52 @@ namespace
 {
 
 /********************************************************************
+ * CommandLineOptionsModuleSettings
+ */
+
+class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSettings
+{
+    public:
+        explicit CommandLineOptionsModuleSettings(
+            OptionsBehaviorCollection *behaviors)
+            : behaviors_(*behaviors)
+        {
+        }
+
+        const std::string &helpText() const { return helpText_; }
+
+        virtual void setHelpText(const ConstArrayRef<const char *> &help)
+        {
+            helpText_ = joinStrings(help, "\n");
+        }
+        virtual void addOptionsBehavior(const OptionsBehaviorPointer &behavior)
+        {
+            behaviors_.addBehavior(behavior);
+        }
+
+    private:
+        std::string                helpText_;
+        OptionsBehaviorCollection &behaviors_;
+};
+
+/********************************************************************
  * CommandLineOptionsModule
  */
 
-class CommandLineOptionsModule : public CommandLineModuleInterface
+class CommandLineOptionsModule : public ICommandLineModule
 {
     public:
         //! Shorthand for the factory function pointer type.
-        typedef CommandLineOptionsModuleInterface::FactoryMethod FactoryMethod;
+        typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
 
         CommandLineOptionsModule(const char *name, const char *description,
                                  FactoryMethod factory)
             : name_(name), description_(description), factory_(factory)
+        {
+        }
+        CommandLineOptionsModule(const char *name, const char *description,
+                                 ICommandLineOptionsModulePointer module)
+            : name_(name), description_(description), module_(std::move(module))
         {
         }
         virtual const char *name() const { return name_; }
@@ -83,15 +121,19 @@ class CommandLineOptionsModule : public CommandLineModuleInterface
     private:
         void parseOptions(int argc, char *argv[]);
 
-        const char    *name_;
-        const char    *description_;
-        FactoryMethod  factory_;
-        boost::scoped_ptr<CommandLineOptionsModuleInterface> module_;
+        const char                       *name_;
+        const char                       *description_;
+        FactoryMethod                     factory_;
+        ICommandLineOptionsModulePointer  module_;
 };
 
 void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
 {
-    module_.reset(factory_());
+    if (!module_)
+    {
+        GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
+        module_ = factory_();
+    }
     module_->init(settings);
 }
 
@@ -104,11 +146,20 @@ int CommandLineOptionsModule::run(int argc, char *argv[])
 
 void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) const
 {
-    boost::scoped_ptr<CommandLineOptionsModuleInterface> module(factory_());
-    Options options(name(), shortDescription());
-    module->initOptions(&options);
+    ICommandLineOptionsModulePointer  moduleGuard;
+    ICommandLineOptionsModule        *module = module_.get();
+    if (!module)
+    {
+        GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
+        moduleGuard = factory_();
+        module      = moduleGuard.get();
+    }
+    Options                          options(name(), shortDescription());
+    OptionsBehaviorCollection        behaviors(&options);
+    CommandLineOptionsModuleSettings settings(&behaviors);
+    module->initOptions(&options, &settings);
     CommandLineHelpWriter(options)
-        .setShowDescriptions(true)
+        .setHelpText(settings.helpText())
         .writeHelp(context);
 }
 
@@ -119,35 +170,49 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
 
     options.addManager(&fileoptManager);
 
-    module_->initOptions(&options);
+    OptionsBehaviorCollection        behaviors(&options);
+    CommandLineOptionsModuleSettings settings(&behaviors);
+    module_->initOptions(&options, &settings);
     {
         CommandLineParser parser(&options);
         parser.parse(&argc, argv);
+        behaviors.optionsFinishing();
         options.finish();
     }
-    module_->optionsFinished(&options);
+    module_->optionsFinished();
+    behaviors.optionsFinished();
 }
 
 }   // namespace
 
 /********************************************************************
- * CommandLineOptionsModuleInterface
+ * ICommandLineOptionsModuleSettings
  */
 
-CommandLineOptionsModuleInterface::~CommandLineOptionsModuleInterface()
+ICommandLineOptionsModuleSettings::~ICommandLineOptionsModuleSettings()
+{
+}
+
+/********************************************************************
+ * ICommandLineOptionsModule
+ */
+
+ICommandLineOptionsModule::~ICommandLineOptionsModule()
 {
 }
 
 // static
-CommandLineModuleInterface *
-CommandLineOptionsModuleInterface::createModule(
-        const char *name, const char *description, FactoryMethod factory)
+std::unique_ptr<ICommandLineModule>
+ICommandLineOptionsModule::createModule(
+        const char *name, const char *description,
+        ICommandLineOptionsModulePointer module)
 {
-    return new CommandLineOptionsModule(name, description, factory);
+    return std::unique_ptr<ICommandLineModule>(
+            new CommandLineOptionsModule(name, description, std::move(module)));
 }
 
 // static
-int CommandLineOptionsModuleInterface::runAsMain(
+int ICommandLineOptionsModule::runAsMain(
         int argc, char *argv[], const char *name, const char *description,
         FactoryMethod factory)
 {
@@ -156,12 +221,23 @@ int CommandLineOptionsModuleInterface::runAsMain(
 }
 
 // static
-void CommandLineOptionsModuleInterface::registerModule(
+void ICommandLineOptionsModule::registerModuleFactory(
         CommandLineModuleManager *manager, const char *name,
         const char *description, FactoryMethod factory)
 {
-    CommandLineModulePointer module(createModule(name, description, factory));
-    manager->addModule(move(module));
+    CommandLineModulePointer module(
+            new CommandLineOptionsModule(name, description, factory));
+    manager->addModule(std::move(module));
+}
+
+// static
+void ICommandLineOptionsModule::registerModuleDirect(
+        CommandLineModuleManager *manager, const char *name,
+        const char *description, ICommandLineOptionsModulePointer module)
+{
+    CommandLineModulePointer wrapperModule(
+            createModule(name, description, std::move(module)));
+    manager->addModule(std::move(wrapperModule));
 }
 
 } // namespace gmx

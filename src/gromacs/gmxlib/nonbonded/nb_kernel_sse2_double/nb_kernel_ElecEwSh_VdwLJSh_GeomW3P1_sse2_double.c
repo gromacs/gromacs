@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse2_double.h"
 #include "kernelutil_x86_sse2_double.h"
 
 /*
@@ -212,9 +209,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_VF_sse2_double
             rsq10            = gmx_mm_calc_rsq_pd(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
@@ -441,9 +438,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_VF_sse2_double
             rsq10            = gmx_mm_calc_rsq_pd(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
@@ -834,9 +831,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_F_sse2_double
             rsq10            = gmx_mm_calc_rsq_pd(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);
@@ -1024,9 +1021,9 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3P1_F_sse2_double
             rsq10            = gmx_mm_calc_rsq_pd(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_pd(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
+            rinv00           = sse2_invsqrt_d(rsq00);
+            rinv10           = sse2_invsqrt_d(rsq10);
+            rinv20           = sse2_invsqrt_d(rsq20);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq10         = _mm_mul_pd(rinv10,rinv10);

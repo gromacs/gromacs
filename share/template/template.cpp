@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -74,23 +74,22 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 
 
 AnalysisTemplate::AnalysisTemplate()
-    : TrajectoryAnalysisModule("template", "Template analysis tool"),
-      cutoff_(0.0)
+    : cutoff_(0.0)
 {
     registerAnalysisDataset(&data_, "avedist");
 }
 
 
 void
-AnalysisTemplate::initOptions(Options                    *options,
+AnalysisTemplate::initOptions(IOptionsContainer          *options,
                               TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "This is a template for writing your own analysis tools for",
-        "Gromacs. The advantage of using Gromacs for this is that you",
+        "GROMACS. The advantage of using GROMACS for this is that you",
         "have access to all information in the topology, and your",
         "program will be able to handle all types of coordinates and",
-        "trajectory files supported by Gromacs. In addition,",
+        "trajectory files supported by GROMACS. In addition,",
         "you get a lot of functionality for free from the trajectory",
         "analysis library, including support for flexible dynamic",
         "selections. Go ahead an try it![PAR]",
@@ -101,7 +100,7 @@ AnalysisTemplate::initOptions(Options                    *options,
         "analysis groups."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o")
                            .filetype(eftPlot).outputFile()

@@ -36,7 +36,11 @@
 #ifndef GMX_MDLIB_CALC_VERLETBUF_H
 #define GMX_MDLIB_CALC_VERLETBUF_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_mtop_t;
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,8 +67,11 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 /* Sets the pair-list setup assumed for the current Gromacs configuration.
  * The setup with smallest cluster sizes is return, such that the Verlet
  * buffer size estimated with this setup will be conservative.
+ * bSIMD tells if to take into account SIMD, when supported.
+ * bGPU tells to estimate for GPU kernels (bSIMD is ignored with bGPU=TRUE)
  */
-void verletbuf_get_list_setup(gmx_bool                bGPU,
+void verletbuf_get_list_setup(gmx_bool                bSIMD,
+                              gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup);
 
 

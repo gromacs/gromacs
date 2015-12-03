@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,11 +78,29 @@
 /** C++ compiler flags used to build */
 #define BUILD_CXXFLAGS          "@BUILD_CXXFLAGS@"
 
+/** Installation prefix (default location of data files) */
+#define CMAKE_INSTALL_PREFIX    "@CMAKE_INSTALL_PREFIX@"
+
+/** Source directory for the build */
+#define CMAKE_SOURCE_DIR        "@CMAKE_SOURCE_DIR@"
+
+/** Binary directory for the build */
+#define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
+
+/** Location of data files in the installation directory */
+#define DATA_INSTALL_DIR        "@DATA_INSTALL_DIR@"
+
 /** CUDA nvcc compiler version information */
 #define CUDA_NVCC_COMPILER_INFO "@CUDA_NVCC_COMPILER_INFO@"
 
 /** CUDA nvcc compiler flags */
 #define CUDA_NVCC_COMPILER_FLAGS "@CUDA_NVCC_COMPILER_FLAGS@"
 
-/** Whether external Boost was used for compiling */
-#cmakedefine GMX_EXTERNAL_BOOST
+/** OpenCL include dir */
+#define OPENCL_INCLUDE_DIR "@OPENCL_INCLUDE_DIR@"
+
+/** OpenCL library */
+#define OPENCL_LIBRARY "@OPENCL_LIBRARY@"
+
+/** OpenCL version */
+#define OPENCL_VERSION_STRING "@OPENCL_VERSION_STRING@"

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,25 +43,18 @@
 
 #include "errorcodes.h"
 
-#include <cstdlib>
-
-#include "thread_mpi/mutex.h"
-
-#include "errorformat.h"
-
 namespace gmx
 {
 
 namespace
 {
 
-//! \addtogroup module_utility
-//! \{
-
 /*! \brief
  * Strings corresponding to gmx::ErrorCode values.
  *
  * This has to match the enum in errorcodes.h!
+ *
+ * \ingroup module_utility
  */
 const char *const error_names[] =
 {
@@ -79,30 +72,10 @@ const char *const error_names[] =
     "Internal error (bug)",
     "API error (bug)",
     "Range checking error (possible bug)",
-    "Communication error (possible bug)",
+    "Communication (parallel processing) problem",
 
     "Unknown error",
 };
-
-/*! \brief
- * The default error handler if setFatalErrorHandler() is not called.
- */
-void standardErrorHandler(int retcode, const char *msg,
-                          const char *file, int line)
-{
-    const char *title = getErrorCodeString(retcode);
-    internal::printFatalErrorHeader(stderr, title, NULL, file, line);
-    internal::printFatalErrorMessageLine(stderr, msg, 0);
-    internal::printFatalErrorFooter(stderr);
-    std::exit(1);
-}
-
-//! Global error handler set with setFatalErrorHandler().
-ErrorHandlerFunc g_errorHandler = standardErrorHandler;
-//! Mutex for protecting access to ::g_errorHandler.
-tMPI::mutex      handler_mutex;
-
-//! \}
 
 }   // namespace
 
@@ -114,33 +87,5 @@ const char *getErrorCodeString(int errorcode)
     }
     return error_names[errorcode];
 }
-
-ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
-{
-    tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-    ErrorHandlerFunc              oldHandler = g_errorHandler;
-    g_errorHandler = handler;
-    return oldHandler;
-}
-
-/*! \cond internal */
-namespace internal
-{
-
-void fatalError(int retcode, const char *msg, const char *file, int line)
-{
-    ErrorHandlerFunc handler = NULL;
-    {
-        tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-        handler = g_errorHandler;
-    }
-    if (handler != NULL)
-    {
-        handler(retcode, msg, file, line);
-    }
-}
-
-}   // namespace internal
-//! \endcond
 
 } // namespace gmx

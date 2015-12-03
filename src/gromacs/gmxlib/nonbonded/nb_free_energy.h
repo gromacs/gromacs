@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,13 @@
 #ifndef _nb_free_energy_h_
 #define _nb_free_energy_h_
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
+
+struct t_forcerec;
 
 #ifdef __cplusplus
 extern "C" {

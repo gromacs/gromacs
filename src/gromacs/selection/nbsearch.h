@@ -36,11 +36,10 @@
  * \brief API for neighborhood searching for analysis.
  *
  * The main part of the API is the class gmx::AnalysisNeighborhood.
- * See the class documentation for usage.
+ * See \ref page_analysisnbsearch for an overview.
  *
  * The classes within this file can be used independently of the other parts
- * of the library.
- * The library also uses the classes internally.
+ * of the selection module.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -49,9 +48,8 @@
 #ifndef GMX_SELECTION_NBSEARCH_H
 #define GMX_SELECTION_NBSEARCH_H
 
+#include <memory>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -125,7 +123,7 @@ class AnalysisNeighborhoodPositions
          * Initializes positions from a vector of position vectors.
          */
         AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
-            : count_(x.size()), index_(-1), x_(as_rvec_array(&x[0])),
+            : count_(x.size()), index_(-1), x_(as_rvec_array(x.data())),
               exclusionIds_(NULL), indices_(NULL)
         {
         }
@@ -196,11 +194,7 @@ class AnalysisNeighborhoodPositions
 /*! \brief
  * Neighborhood searching for analysis tools.
  *
- * This class implements neighborhood searching routines for analysis tools.
- * The emphasis is in flexibility and ease of use; one main driver is to have
- * a common implementation of grid-based searching to avoid replicating this in
- * multiple tools (and to make more tools take advantage of the significant
- * performance improvement this allows).
+ * See \ref page_analysisnbsearch for an overview.
  *
  * To use the search, create an object of this type, call setCutoff() to
  * initialize it, and then repeatedly call initSearch() to start a search with
@@ -438,7 +432,7 @@ class AnalysisNeighborhoodSearch
          * AnalysisNeighborhood object.  Ownership currently always stays with
          * AnalysisNeighborhood; it always keeps one instance of the pointer.
          */
-        typedef boost::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
+        typedef std::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
             ImplPointer;
 
         /*! \brief
@@ -562,7 +556,7 @@ class AnalysisNeighborhoodPairSearch
          * See AnalysisNeighborhoodSearch::ImplPointer for rationale of using
          * shared_ptr and ownership semantics.
          */
-        typedef boost::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
+        typedef std::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
             ImplPointer;
 
         /*! \brief

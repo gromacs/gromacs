@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@
 
 #include "x11.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -59,7 +59,7 @@ static XFontStruct *XLQF(FILE gmx_unused *err, Display *disp, const char *name)
 #ifdef DEBUG
     if (font != NULL)
     {
-        fprintf(err, "Loaded font %s\n", name);
+        std::fprintf(err, "Loaded font %s\n", name);
     }
 #endif
     return font;
@@ -128,7 +128,7 @@ void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col)
     }
     else
     {
-        fprintf(x11->console, "No colour %s\n", name);
+        std::fprintf(x11->console, "No colour %s\n", name);
     }
 }
 
@@ -260,7 +260,7 @@ static void SetInputMask(t_x11 *x11, Window w, unsigned long mask)
     }
     else
     {
-        fprintf(x11->console, "No such window (%d)\n", (int)w);
+        std::fprintf(x11->console, "No such window (%d)\n", (int)w);
     }
 }
 
@@ -296,7 +296,7 @@ static void CleanUp(t_x11 *x11)
 
 static void Flush(t_x11 *x11)
 {
-    fflush(x11->console);
+    std::fflush(x11->console);
 }
 
 t_x11 *GetX11(int *argc, char *argv[])
@@ -324,8 +324,8 @@ t_x11 *GetX11(int *argc, char *argv[])
     title = gmx_strdup(argv[0]);
 
     /* First check environment */
-    fontname = getenv("GMX_FONT");
-    display  = getenv("DISPLAY");
+    fontname = std::getenv("GMX_FONT");
+    display  = std::getenv("DISPLAY");
 
     snew(ARGV, *argc);
     ARGC = 1;
@@ -389,7 +389,7 @@ t_x11 *GetX11(int *argc, char *argv[])
         x11->console = stderr;
     }
     else
-    if ((x11->console = fopen("/dev/null", "w")) == NULL)
+    if ((x11->console = std::fopen("/dev/null", "w")) == NULL)
     {
         x11->console = stderr;
     }
@@ -398,7 +398,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     {
         if (bVerbose)
         {
-            fprintf(x11->console, "Display %s invalid\n", display);
+            std::fprintf(x11->console, "Display %s invalid\n", display);
         }
         return NULL;
     }
@@ -439,13 +439,13 @@ t_x11 *GetX11(int *argc, char *argv[])
         }
         if ((i == 4) || (i == 5))
         {
-            fprintf(x11->console, "Greyscale screen, using B & W only\n");
+            std::fprintf(x11->console, "Greyscale screen, using B & W only\n");
         }
         else
         {
             /* We have real color! */
-            fprintf(x11->console, "%s screen with depth %d.\n",
-                    (i == NCLASS) ? "Unknown" : v_name[i], x11->depth);
+            std::fprintf(x11->console, "%s screen with depth %d.\n",
+                         (i == NCLASS) ? "Unknown" : v_name[i], x11->depth);
             GetNamedColor(x11, "midnight blue", &BLUE);
             GetNamedColor(x11, "DarkGreen", &GREEN);
             GetNamedColor(x11, "SeaGreen", &CYAN);
@@ -464,7 +464,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     }
     else
     {
-        fprintf(x11->console, "Monochrome screen.\n");
+        std::fprintf(x11->console, "Monochrome screen.\n");
     }
 
     /* We should use Xrm here... */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,8 +65,12 @@
 
 #include <string>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/topology/block.h"
+
+namespace gmx
+{
+class TextWriter;
+}
 
 struct t_topology;
 
@@ -95,7 +99,7 @@ struct gmx_ana_index_t
     /** Number of atoms. */
     int                 isize;
     /** List of atoms. */
-    atom_id            *index;
+    int                *index;
     /** Number of items allocated for \p index. */
     int                 nalloc_index;
 };
@@ -205,7 +209,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
 
 /** Writes out a list of index groups. */
 void
-gmx_ana_indexgrps_print(FILE *fp, gmx_ana_indexgrps_t *g, int maxn);
+gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int maxn);
 /*@}*/
 
 /*! \name Functions for handling gmx_ana_index_t
@@ -222,7 +226,7 @@ void
 gmx_ana_index_clear(gmx_ana_index_t *g);
 /** Constructs a \c gmx_ana_index_t from given values. */
 void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, int nalloc);
+gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc);
 /** Creates a simple index group from the first to the \p natoms'th atom. */
 void
 gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms);
@@ -235,7 +239,7 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 
 /** Writes out the contents of a index group. */
 void
-gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn);
+gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn);
 
 /*! \brief
  * Returns maximum atom index that appears in an index group.

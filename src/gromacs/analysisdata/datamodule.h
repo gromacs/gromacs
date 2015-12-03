@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::AnalysisDataModuleInterface and related convenience classes.
+ * Declares gmx::IAnalysisDataModule and related convenience classes.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -78,7 +78,7 @@ class AnalysisDataPointSetRef;
  * \inlibraryapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataModuleInterface
+class IAnalysisDataModule
 {
     public:
         /*! \brief
@@ -98,7 +98,7 @@ class AnalysisDataModuleInterface
             efAllowMultipleDataSets     = 1<<4
         };
 
-        virtual ~AnalysisDataModuleInterface() {};
+        virtual ~IAnalysisDataModule() {};
 
         /*! \brief
          * Returns properties supported by the module.
@@ -237,7 +237,7 @@ class AnalysisDataModuleInterface
  * \inlibraryapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataModuleSerial : public AnalysisDataModuleInterface
+class AnalysisDataModuleSerial : public IAnalysisDataModule
 {
     public:
         virtual ~AnalysisDataModuleSerial() {}
@@ -267,7 +267,7 @@ class AnalysisDataModuleSerial : public AnalysisDataModuleInterface
  * \inlibraryapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataModuleParallel : public AnalysisDataModuleInterface
+class AnalysisDataModuleParallel : public IAnalysisDataModule
 {
     public:
         virtual ~AnalysisDataModuleParallel() {}

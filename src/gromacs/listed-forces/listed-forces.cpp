@@ -51,22 +51,29 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gmxlib/orires.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/forcerec-threading.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "listed-internal.h"
 #include "pairs.h"
 
 namespace
@@ -81,50 +88,38 @@ isPairInteraction(int ftype)
     return ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB);
 }
 
-/*! \brief Zero thread-local force-output buffers */
-void
-zero_thread_forces(f_thread_t *f_t, int n,
-                   int nblock, int blocksize)
+/*! \brief Zero thread-local output buffers */
+static void
+zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
-    int b, a0, a1, a, i, j;
+    f_thread_t *f_t = &bt->f_t[thread];
 
-    if (n > f_t->f_nalloc)
+    for (int i = 0; i < f_t->nblock_used; i++)
     {
-        f_t->f_nalloc = over_alloc_large(n);
-        srenew(f_t->f, f_t->f_nalloc);
-    }
-
-    if (!bitmask_is_zero(f_t->red_mask))
-    {
-        for (b = 0; b < nblock; b++)
+        int a0 = f_t->block_index[i]*reduction_block_size;
+        int a1 = a0 + reduction_block_size;
+        for (int a = a0; a < a1; a++)
         {
-            if (bitmask_is_set(f_t->red_mask, b))
-            {
-                a0 = b*blocksize;
-                a1 = std::min((b+1)*blocksize, n);
-                for (a = a0; a < a1; a++)
-                {
-                    clear_rvec(f_t->f[a]);
-                }
-            }
+            clear_rvec(f_t->f[a]);
         }
     }
-    for (i = 0; i < SHIFTS; i++)
+
+    for (int i = 0; i < SHIFTS; i++)
     {
         clear_rvec(f_t->fshift[i]);
     }
-    for (i = 0; i < F_NRE; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         f_t->ener[i] = 0;
     }
-    for (i = 0; i < egNR; i++)
+    for (int i = 0; i < egNR; i++)
     {
-        for (j = 0; j < f_t->grpp.nener; j++)
+        for (int j = 0; j < f_t->grpp.nener; j++)
         {
             f_t->grpp.ener[i][j] = 0;
         }
     }
-    for (i = 0; i < efptNR; i++)
+    for (int i = 0; i < efptNR; i++)
     {
         f_t->dvdl[i] = 0;
     }
@@ -136,13 +131,11 @@ zero_thread_forces(f_thread_t *f_t, int n,
 #define MAX_BONDED_THREADS 256
 
 /*! \brief Reduce thread-local force buffers */
-void
-reduce_thread_force_buffer(int n, rvec *f,
-                           int nthreads, f_thread_t *f_t,
-                           int nblock, int block_size)
+static void
+reduce_thread_forces(int n, rvec *f,
+                     struct bonded_threading_t *bt,
+                     int nthreads)
 {
-    int b;
-
     if (nthreads > MAX_BONDED_THREADS)
     {
         gmx_fatal(FARGS, "Can not reduce bonded forces on more than %d threads",
@@ -150,92 +143,99 @@ reduce_thread_force_buffer(int n, rvec *f,
     }
 
     /* This reduction can run on any number of threads,
-     * independently of nthreads.
+     * independently of bt->nthreads.
+     * But if nthreads matches bt->nthreads (which it currently does)
+     * the uniform distribution of the touched blocks over nthreads will
+     * match the distribution of bonded over threads well in most cases,
+     * which means that threads mostly reduce their own data which increases
+     * the number of cache hits.
      */
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (b = 0; b < nblock; b++)
+    for (int b = 0; b < bt->nblock_used; b++)
     {
-        rvec *fp[MAX_BONDED_THREADS];
-        int   nfb, ft, fb;
-        int   a0, a1, a;
+        try
+        {
+            int   ind = bt->block_index[b];
+            rvec *fp[MAX_BONDED_THREADS];
 
-        /* Determine which threads contribute to this block */
-        nfb = 0;
-        for (ft = 1; ft < nthreads; ft++)
-        {
-            if (bitmask_is_set(f_t[ft].red_mask, b))
+            /* Determine which threads contribute to this block */
+            int nfb = 0;
+            for (int ft = 1; ft < bt->nthreads; ft++)
             {
-                fp[nfb++] = f_t[ft].f;
-            }
-        }
-        if (nfb > 0)
-        {
-            /* Reduce force buffers for threads that contribute */
-            a0 =  b   *block_size;
-            a1 = (b+1)*block_size;
-            a1 = std::min(a1, n);
-            for (a = a0; a < a1; a++)
-            {
-                for (fb = 0; fb < nfb; fb++)
+                if (bitmask_is_set(bt->mask[ind], ft))
                 {
-                    rvec_inc(f[a], fp[fb][a]);
+                    fp[nfb++] = bt->f_t[ft].f;
+                }
+            }
+            if (nfb > 0)
+            {
+                /* Reduce force buffers for threads that contribute */
+                int a0 =  ind     *reduction_block_size;
+                int a1 = (ind + 1)*reduction_block_size;
+                /* It would be nice if we could pad f to avoid this min */
+                a1     = std::min(a1, n);
+                for (int a = a0; a < a1; a++)
+                {
+                    for (int fb = 0; fb < nfb; fb++)
+                    {
+                        rvec_inc(f[a], fp[fb][a]);
+                    }
                 }
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
-/*! \brief Reduce thread-local forces */
-void
-reduce_thread_forces(int n, rvec *f, rvec *fshift,
+/*! \brief Reduce thread-local forces, shift forces and energies */
+static void
+reduce_thread_output(int n, rvec *f, rvec *fshift,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
-                     int nthreads, f_thread_t *f_t,
-                     int nblock, int block_size,
+                     struct bonded_threading_t *bt,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
-    if (nblock > 0)
+    if (bt->nblock_used > 0)
     {
         /* Reduce the bonded force buffer */
-        reduce_thread_force_buffer(n, f, nthreads, f_t, nblock, block_size);
+        reduce_thread_forces(n, f, bt, bt->nthreads);
     }
 
     /* When necessary, reduce energy and virial using one thread only */
     if (bCalcEnerVir)
     {
-        int t, i, j;
+        f_thread_t *f_t = bt->f_t;
 
-        for (i = 0; i < SHIFTS; i++)
+        for (int i = 0; i < SHIFTS; i++)
         {
-            for (t = 1; t < nthreads; t++)
+            for (int t = 1; t < bt->nthreads; t++)
             {
                 rvec_inc(fshift[i], f_t[t].fshift[i]);
             }
         }
-        for (i = 0; i < F_NRE; i++)
+        for (int i = 0; i < F_NRE; i++)
         {
-            for (t = 1; t < nthreads; t++)
+            for (int t = 1; t < bt->nthreads; t++)
             {
                 ener[i] += f_t[t].ener[i];
             }
         }
-        for (i = 0; i < egNR; i++)
+        for (int i = 0; i < egNR; i++)
         {
-            for (j = 0; j < f_t[1].grpp.nener; j++)
+            for (int j = 0; j < f_t[1].grpp.nener; j++)
             {
-                for (t = 1; t < nthreads; t++)
+                for (int t = 1; t < bt->nthreads; t++)
                 {
-
                     grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
                 }
             }
         }
         if (bDHDL)
         {
-            for (i = 0; i < efptNR; i++)
+            for (int i = 0; i < efptNR; i++)
             {
 
-                for (t = 1; t < nthreads; t++)
+                for (int t = 1; t < bt->nthreads; t++)
                 {
                     dvdl[i] += f_t[t].dvdl[i];
                 }
@@ -259,14 +259,14 @@ calc_one_bond(int thread,
               gmx_bool bCalcEnerVir,
               int *global_atom_index)
 {
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
     gmx_bool bUseSIMD;
     /* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
-#if defined _MSC_VER && _MSC_VER < 1700
+#    if defined _MSC_VER && _MSC_VER < 1700 && !defined(__ICL)
     bUseSIMD = FALSE;
-#else
+#    else
     bUseSIMD = fr->use_simd_kernels;
-#endif
+#    endif
 #endif
 
     int      nat1, nbonds, efptFTYPE;
@@ -304,7 +304,7 @@ calc_one_bond(int thread,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                           md, fcd, global_atom_index);
         }
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
         else if (ftype == F_ANGLES && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -321,7 +321,7 @@ calc_one_bond(int thread,
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
             if (bUseSIMD)
             {
                 pdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
@@ -341,7 +341,7 @@ calc_one_bond(int thread,
             }
             v = 0;
         }
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
         else if (ftype == F_RBDIHS && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -391,8 +391,8 @@ ftype_is_bonded_potential(int ftype)
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
-void calc_listed(const gmx_multisim_t *ms,
-                 gmx_wallcycle        *wcycle,
+void calc_listed(const struct gmx_multisim_t *ms,
+                 struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
@@ -405,14 +405,18 @@ void calc_listed(const gmx_multisim_t *ms,
                  t_fcdata *fcd, int *global_atom_index,
                  int force_flags)
 {
-    gmx_bool      bCalcEnerVir;
-    int           i;
-    real          dvdl[efptNR]; /* The dummy array is to have a place to store the dhdl at other values
-                                                        of lambda, which will be thrown away in the end*/
-    const  t_pbc *pbc_null;
-    int           thread;
+    struct bonded_threading_t *bt;
+    gmx_bool                   bCalcEnerVir;
+    int                        i;
+    /* The dummy array is to have a place to store the dhdl at other values
+       of lambda, which will be thrown away in the end */
+    real                       dvdl[efptNR];
+    const  t_pbc              *pbc_null;
+    int                        thread;
 
-    assert(fr->nthreads == idef->nthreads);
+    bt = fr->bonded_threading;
+
+    assert(bt->nthreads == idef->nthreads);
 
     bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
@@ -485,58 +489,60 @@ void calc_listed(const gmx_multisim_t *ms,
     }
 
     wallcycle_sub_start(wcycle, ewcsLISTED);
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-    for (thread = 0; thread < fr->nthreads; thread++)
+#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
+    for (thread = 0; thread < bt->nthreads; thread++)
     {
-        int                ftype;
-        real              *epot, v;
-        /* thread stuff */
-        rvec              *ft, *fshift;
-        real              *dvdlt;
-        gmx_grppairener_t *grpp;
+        try
+        {
+            int                ftype;
+            real              *epot, v;
+            /* thread stuff */
+            rvec              *ft, *fshift;
+            real              *dvdlt;
+            gmx_grppairener_t *grpp;
 
-        if (thread == 0)
-        {
-            ft     = f;
-            fshift = fr->fshift;
-            epot   = enerd->term;
-            grpp   = &enerd->grpp;
-            dvdlt  = dvdl;
-        }
-        else
-        {
-            zero_thread_forces(&fr->f_t[thread], fr->natoms_force,
-                               fr->red_nblock, 1<<fr->red_ashift);
-
-            ft     = fr->f_t[thread].f;
-            fshift = fr->f_t[thread].fshift;
-            epot   = fr->f_t[thread].ener;
-            grpp   = &fr->f_t[thread].grpp;
-            dvdlt  = fr->f_t[thread].dvdl;
-        }
-        /* Loop over all bonded force types to calculate the bonded forces */
-        for (ftype = 0; (ftype < F_NRE); ftype++)
-        {
-            if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
+            if (thread == 0)
             {
-                v = calc_one_bond(thread, ftype, idef, x,
-                                  ft, fshift, fr, pbc_null, g, grpp,
-                                  nrnb, lambda, dvdlt,
-                                  md, fcd, bCalcEnerVir,
-                                  global_atom_index);
-                epot[ftype] += v;
+                ft     = f;
+                fshift = fr->fshift;
+                epot   = enerd->term;
+                grpp   = &enerd->grpp;
+                dvdlt  = dvdl;
+            }
+            else
+            {
+                zero_thread_output(bt, thread);
+
+                ft     = bt->f_t[thread].f;
+                fshift = bt->f_t[thread].fshift;
+                epot   = bt->f_t[thread].ener;
+                grpp   = &bt->f_t[thread].grpp;
+                dvdlt  = bt->f_t[thread].dvdl;
+            }
+            /* Loop over all bonded force types to calculate the bonded forces */
+            for (ftype = 0; (ftype < F_NRE); ftype++)
+            {
+                if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
+                {
+                    v = calc_one_bond(thread, ftype, idef, x,
+                                      ft, fshift, fr, pbc_null, g, grpp,
+                                      nrnb, lambda, dvdlt,
+                                      md, fcd, bCalcEnerVir,
+                                      global_atom_index);
+                    epot[ftype] += v;
+                }
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     wallcycle_sub_stop(wcycle, ewcsLISTED);
 
-    if (fr->nthreads > 1)
+    if (bt->nthreads > 1)
     {
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-        reduce_thread_forces(fr->natoms_force, f, fr->fshift,
+        reduce_thread_output(fr->natoms_force, f, fr->fshift,
                              enerd->term, &enerd->grpp, dvdl,
-                             fr->nthreads, fr->f_t,
-                             fr->red_nblock, 1<<fr->red_ashift,
+                             bt,
                              bCalcEnerVir,
                              force_flags & GMX_FORCE_DHDL);
         wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
@@ -627,24 +633,24 @@ void calc_listed_lambda(const t_idef *idef,
 }
 
 void
-do_force_listed(gmx_wallcycle        *wcycle,
-                matrix                box,
-                const t_lambda       *fepvals,
-                const gmx_multisim_t *ms,
-                const t_idef         *idef,
-                const rvec            x[],
-                history_t            *hist,
-                rvec                  f[],
-                t_forcerec           *fr,
-                const struct t_pbc   *pbc,
-                const struct t_graph *graph,
-                gmx_enerdata_t       *enerd,
-                t_nrnb               *nrnb,
-                real                 *lambda,
-                const t_mdatoms      *md,
-                t_fcdata             *fcd,
-                int                  *global_atom_index,
-                int                   flags)
+do_force_listed(struct gmx_wallcycle        *wcycle,
+                matrix                       box,
+                const t_lambda              *fepvals,
+                const struct gmx_multisim_t *ms,
+                const t_idef                *idef,
+                const rvec                   x[],
+                history_t                   *hist,
+                rvec                         f[],
+                t_forcerec                  *fr,
+                const struct t_pbc          *pbc,
+                const struct t_graph        *graph,
+                gmx_enerdata_t              *enerd,
+                t_nrnb                      *nrnb,
+                real                        *lambda,
+                const t_mdatoms             *md,
+                t_fcdata                    *fcd,
+                int                         *global_atom_index,
+                int                          flags)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
 
@@ -694,5 +700,4 @@ do_force_listed(gmx_wallcycle        *wcycle,
             wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }
     }
-    debug_gmx();
 }

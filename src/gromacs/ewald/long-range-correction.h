@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,20 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * computing energies and forces for the PME long-ranged part (Coulomb
+ * and LJ).
+ *
+ * \author Erik Lindahl <erik@kth.se>
+ * \author Berk Hess <hess@kth.se>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
 #ifndef GMX_EWALD_LONG_RANGE_CORRECTION_H
 #define GMX_EWALD_LONG_RANGE_CORRECTION_H
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Calculate long-range Ewald correction terms.
  *
@@ -73,9 +81,5 @@ ewald_LRcorrection(int start, int end,
                    real *Vcorr_q, real *Vcorr_lj,
                    real lambda_q, real lambda_lj,
                    real *dvdlambda_q, real *dvdlambda_lj);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

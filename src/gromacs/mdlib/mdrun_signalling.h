@@ -49,7 +49,7 @@
 #ifndef GMX_MDLIB_MDRUN_SIGNALLING_H
 #define GMX_MDLIB_MDRUN_SIGNALLING_H
 
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
@@ -72,12 +72,16 @@ enum {
     eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
 };
 
-/*! \internal \brief Object used by mdrun ranks to signal to each other */
+/*! \internal
+ * \brief Object used by mdrun ranks to signal to each other
+ *
+ * Note that xlc on BG/Q requires sig to be of size char (see unit tests
+ * of ArrayRef for details). */
 struct gmx_signalling_t {
-    int  nstms;             /**< The frequency for inter-simulation communication */
-    int  sig[eglsNR];       /**< The signal set by this rank in do_md */
-    int  set[eglsNR];       /**< The communicated signal, equal for all ranks once communication has occurred */
-    real mpiBuffer[eglsNR]; /**< Buffer for communication */
+    int         nstms;             /**< The frequency for inter-simulation communication */
+    signed char sig[eglsNR];       /**< The signal set by this rank in do_md */
+    signed char set[eglsNR];       /**< The communicated signal, equal for all ranks once communication has occurred */
+    real        mpiBuffer[eglsNR]; /**< Buffer for communication */
 };
 
 /*! \brief Construct a struct gmx_signalling_t */

@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -125,11 +125,11 @@ static gmx_ana_selparam_t smparams_permute[] = {
 };
 
 /** Help text for the \p permute selection modifier. */
-static const char *help_permute[] = {
-    "PERMUTING SELECTIONS[PAR]",
-
-    "[TT]permute P1 ... PN[tt][PAR]",
-
+static const char *const help_permute[] = {
+    "::",
+    "",
+    "  permute P1 ... PN",
+    "",
     "By default, all selections are evaluated such that the atom indices are",
     "returned in ascending order. This can be changed by appending",
     "[TT]permute P1 P2 ... PN[tt] to an expression.",
@@ -155,7 +155,8 @@ gmx_ana_selmethod_t sm_permute = {
     NULL,
     NULL,
     &evaluate_permute,
-    {"permute P1 ... PN", asize(help_permute), help_permute},
+    {"POSEXPR permute P1 ... PN",
+     "Permuting selections", asize(help_permute), help_permute},
 };
 
 static void *

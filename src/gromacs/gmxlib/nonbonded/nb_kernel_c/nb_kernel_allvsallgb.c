@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,9 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct
@@ -289,8 +289,8 @@ nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
     type                = mdatoms->typeA;
     gbfactor            = ((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     facel               = fr->epsfac;
-    GBtab               = fr->gbtab.data;
-    gbtabscale          = fr->gbtab.scale;
+    GBtab               = fr->gbtab->data;
+    gbtabscale          = fr->gbtab->scale;
     invsqrta            = fr->invsqrta;
     dvda                = fr->dvda;
     vpol                = kernel_data->energygrp_polarization;

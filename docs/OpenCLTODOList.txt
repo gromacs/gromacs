@@ -1,0 +1,125 @@
+Gromacs – OpenCL Porting
+TODO List
+
+TABLE OF CONTENTS
+1. KNOWN LIMITATIONS
+2. CODE IMPROVEMENTS
+3. ENHANCEMENTS
+4. OPTIMIZATIONS
+5. OTHER NOTES
+6. TESTED CONFIGURATIONS
+
+1. KNOWN LIMITATIONS
+   =================
+- Sharing an OpenCL GPU between two MPI ranks is not supported.
+  See also Issue #91 - https://github.com/StreamComputing/gromacs/issues/91
+
+- Using more than one OpenCL GPU on a node is thought to work with thread-MPI,
+  and is known to segfault with AMD OpenCL and OpenMPI on x86 and Linux.
+
+2. CODE IMPROVEMENTS
+   =================
+- Errors returned by OpenCL functions are handled by using assert calls. This
+  needs to be improved.
+  See also Issue #6 - https://github.com/StreamComputing/gromacs/issues/6
+
+- clCreateBuffer is always called with CL_MEM_READ_WRITE flag. This needs to be
+  updated so that only the flags that reflect how the buffer is used are provided.
+  For example, if the device is only going to read from a buffer,
+  CL_MEM_READ_ONLY should be used.
+  See also Issue #13 - https://github.com/StreamComputing/gromacs/issues/13
+
+- The data structures shared between the OpenCL host and device are defined twice:
+  once in the host code, once in the device code. They must be moved to a single
+  file and shared between the host and the device.
+  See also Issue #16 - https://github.com/StreamComputing/gromacs/issues/16
+
+- Quite a few error conditions are unhandled, noted with TODOs in several files
+
+- gmx_device_info_t needs struct field documentation
+
+3. ENHANCEMENTS
+   ============
+- Implement OpenCL kernels for Intel GPUs
+
+- Implement OpenCL kernels for Intel CPUs
+
+- Improve GPU device sorting in detect_gpus
+  See also Issue #64 - https://github.com/StreamComputing/gromacs/issues/64
+
+- Implement warp independent kernels
+  See also Issue #66 - https://github.com/StreamComputing/gromacs/issues/66
+
+- Have one OpenCL program object per OpenCL kernel
+  See also Issue #86 - https://github.com/StreamComputing/gromacs/issues/86
+
+- Consider parallelising JIT of programs over CPU cores to improve startup
+  time
+
+- Re-consider caching JIT artefacts to improve startup time
+
+4. OPTIMIZATIONS
+   =============
+- Defining nbparam fields as constants when building the OpenCL kernels
+  See also Issue #87 - https://github.com/StreamComputing/gromacs/issues/87
+
+- Fix the tabulated Ewald kernel. This has the potential of being faster than
+  the analytical Ewald kernel
+  See also Issue #65 - https://github.com/StreamComputing/gromacs/issues/65
+
+- Evaluate gpu_min_ci_balanced_factor impact on performance for AMD
+  See also Issue #69: https://github.com/StreamComputing/gromacs/issues/69
+
+- Update ocl_pmalloc to allocate page locked memory
+  See also Issue #90: https://github.com/StreamComputing/gromacs/issues/90
+
+- Update kernel for 128/256threads/block
+  See also Issue #92: https://github.com/StreamComputing/gromacs/issues/92
+
+- Update the kernels to use OpenCL 2.0 workgroup level functions if they prove
+  to bring a significant speedup.
+  See also Issue #93: https://github.com/StreamComputing/gromacs/issues/93
+
+- Update the kernels to use fixed precision accumulation for force and energy
+  values, if this implementation is faster and does not affect precision.
+  See also Issue #94: https://github.com/StreamComputing/gromacs/issues/94
+
+5. OTHER NOTES
+   ===========
+- NVIDIA GPUs are not handled differently depending on compute capability
+
+- Because the tabulated kernels have a bug not yet fixed, the current
+  implementation uses only the analytical kernels and never the tabulated ones
+  See also Issue #65 - https://github.com/StreamComputing/gromacs/issues/65
+
+- Unlike the CUDA version, the OpenCL implementation uses normal buffers
+  instead of textures
+  See also Issue #88 - https://github.com/StreamComputing/gromacs/issues/88
+
+6. TESTED CONFIGURATIONS
+   =====================
+Tested devices:
+	NVIDIA GPUs: GeForce GTX 660M, GeForce GTX 750Ti, GeForce GTX 780
+	AMD GPUs: FirePro W5100, HD 7950, FirePro W9100, Radeon R7 M260, R9 290
+
+Tested kernels:
+Kernel                                          |Benchmark test                                 |Remarks
+--------------------------------------------------------------------------------------------------------
+nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl      |d.poly-ch2                                     |
+nbnxn_kernel_ElecCut_VdwLJ_F_opencl             |d.poly-ch2                                     |
+nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl       |d.poly-ch2                                     |
+nbnxn_kernel_ElecCut_VdwLJ_VF_opencl            |d.poly-ch2                                     |
+nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl       |adh_cubic with rf_verlet.mdp                   |
+nbnxn_kernel_ElecRF_VdwLJ_F_opencl              |adh_cubic with rf_verlet.mdp                   |
+nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl        |adh_cubic with rf_verlet.mdp                   |
+nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl  |adh_cubic_vsites with pme_verlet_vsites.mdp    |Failed
+nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl   |adh_cubic_vsites with pme_verlet_vsites.mdp    |Failed
+nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl       |adh_cubic_vsites with pme_verlet_vsites.mdp	|
+nbnxn_kernel_ElecEw_VdwLJ_F_opencl              |adh_cubic_vsites with pme_verlet_vsites.mdp	|
+nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl        |adh_cubic_vsites with pme_verlet_vsites.mdp	|
+nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl	|adh_cubic_vsites with pme_verlet_vsites.mdp	|
+nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl       |adh_cubic_vsites with pme_verlet_vsites.mdp    |
+
+Input data used for testing - Benchmark data sets available here:
+ftp://ftp.gromacs.org/pub/benchmarks
+

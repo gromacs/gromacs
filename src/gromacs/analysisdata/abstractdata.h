@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,21 +43,21 @@
 #ifndef GMX_ANALYSISDATA_ABSTRACTDATA_H
 #define GMX_ANALYSISDATA_ABSTRACTDATA_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 
-class AnalysisDataModuleInterface;
 class AnalysisDataModuleManager;
 class AnalysisDataFrameHeader;
 class AnalysisDataFrameRef;
 class AnalysisDataPointSetRef;
+class IAnalysisDataModule;
 
 //! Smart pointer for managing a generic analysis data module.
-typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer;
+typedef std::shared_ptr<IAnalysisDataModule> AnalysisDataModulePointer;
 
 /*! \brief
  * Abstract base class for all objects that provide data.
@@ -318,7 +318,7 @@ class AbstractAnalysisData
          * storage (addModule() has the same problem if called after data is
          * started).
          */
-        void applyModule(AnalysisDataModuleInterface *module);
+        void applyModule(IAnalysisDataModule *module);
 
     protected:
         /*! \cond libapi */

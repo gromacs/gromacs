@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #define gmx_mm_extract_epi32  _mm_extract_epi32
 
 /* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
-#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
 #    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
 #    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), _mm256_castsi256_ps(mask))
@@ -648,5 +648,153 @@ gmx_mm_update_2pot_ps(__m128 pot1, float * gmx_restrict ptrA,
     _mm_store_ss(ptrB, _mm_add_ss(pot2, _mm_load_ss(ptrB)));
 }
 
+#ifdef __PGI
+#    define AVX128FMA_FLOAT_NEGZERO   ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
+#else
+#    define AVX128FMA_FLOAT_NEGZERO  (-0.0f)
+#endif
+
+static gmx_inline __m128 gmx_simdcall
+avx128fma_set_exponent_f(__m128 x)
+{
+    const __m128i expbias      = _mm_set1_epi32(127);
+    __m128i       iexp         = _mm_cvtps_epi32(x);
+
+    iexp = _mm_slli_epi32(_mm_add_epi32(iexp, expbias), 23);
+    return _mm_castsi128_ps(iexp);
+}
+
+
+static gmx_inline __m128 gmx_simdcall
+avx128fma_exp_f(__m128 x)
+{
+    const __m128  argscale     = _mm_set1_ps(1.44269504088896341f);
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const __m128  arglimit     = _mm_set1_ps(126.0f);
+    const __m128  invargscale0 = _mm_set1_ps(-0.693145751953125f);
+    const __m128  invargscale1 = _mm_set1_ps(-1.428606765330187045e-06f);
+    const __m128  CC4          = _mm_set1_ps(0.00136324646882712841033936f);
+    const __m128  CC3          = _mm_set1_ps(0.00836596917361021041870117f);
+    const __m128  CC2          = _mm_set1_ps(0.0416710823774337768554688f);
+    const __m128  CC1          = _mm_set1_ps(0.166665524244308471679688f);
+    const __m128  CC0          = _mm_set1_ps(0.499999850988388061523438f);
+    const __m128  one          = _mm_set1_ps(1.0f);
+    const __m128i expbias      = _mm_set1_epi32(127);
+    __m128i       iexp;
+    __m128        fexppart;
+    __m128        intpart;
+    __m128        y, p;
+    __m128        valuemask;
+
+    y         = _mm_mul_ps(x, argscale);
+    fexppart  = avx128fma_set_exponent_f(y);
+    intpart   = _mm_cvtepi32_ps(_mm_cvtps_epi32(y));
+    valuemask = _mm_cmple_ps(_mm_andnot_ps(_mm_set1_ps(AVX128FMA_FLOAT_NEGZERO), y), arglimit);
+    fexppart  = _mm_and_ps(fexppart, valuemask);
+
+    /* Extended precision arithmetics */
+    x         = _mm_macc_ps(invargscale0, intpart, x);
+    x         = _mm_macc_ps(invargscale1, intpart, x);
+
+    p         = _mm_macc_ps(CC4, x, CC3);
+    p         = _mm_macc_ps(p, x, CC2);
+    p         = _mm_macc_ps(p, x, CC1);
+    p         = _mm_macc_ps(p, x, CC0);
+    p         = _mm_macc_ps(_mm_mul_ps(x, x), p, x);
+    p         = _mm_add_ps(p, one);
+    x         = _mm_mul_ps(p, fexppart);
+    return x;
+}
+
+static gmx_inline __m128 gmx_simdcall
+avx128fma_invsqrt_f(__m128 x)
+{
+    __m128 lu = _mm_rsqrt_ps(x);
+
+    return _mm_macc_ps(_mm_nmacc_ps(x, _mm_mul_ps(lu, lu), _mm_set1_ps(1.0f)), _mm_mul_ps(lu, _mm_set1_ps(0.5f)), lu);
+}
+
+static gmx_inline __m128 gmx_simdcall
+avx128fma_inv_f(__m128 x)
+{
+    __m128 lu = _mm_rcp_ps(x);
+    return _mm_mul_ps(lu, _mm_nmacc_ps(lu, x, _mm_set1_ps(2.0f)));
+}
+
+static gmx_inline __m128 gmx_simdcall
+avx128fma_pmecorrF_f(__m128 z2)
+{
+    const __m128  FN6      = _mm_set1_ps(-1.7357322914161492954e-8f);
+    const __m128  FN5      = _mm_set1_ps(1.4703624142580877519e-6f);
+    const __m128  FN4      = _mm_set1_ps(-0.000053401640219807709149f);
+    const __m128  FN3      = _mm_set1_ps(0.0010054721316683106153f);
+    const __m128  FN2      = _mm_set1_ps(-0.019278317264888380590f);
+    const __m128  FN1      = _mm_set1_ps(0.069670166153766424023f);
+    const __m128  FN0      = _mm_set1_ps(-0.75225204789749321333f);
+
+    const __m128  FD4      = _mm_set1_ps(0.0011193462567257629232f);
+    const __m128  FD3      = _mm_set1_ps(0.014866955030185295499f);
+    const __m128  FD2      = _mm_set1_ps(0.11583842382862377919f);
+    const __m128  FD1      = _mm_set1_ps(0.50736591960530292870f);
+    const __m128  FD0      = _mm_set1_ps(1.0f);
+
+    __m128        z4;
+    __m128        polyFN0, polyFN1, polyFD0, polyFD1;
+
+    z4             = _mm_mul_ps(z2, z2);
+
+    polyFD0        = _mm_macc_ps(FD4, z4, FD2);
+    polyFD1        = _mm_macc_ps(FD3, z4, FD1);
+    polyFD0        = _mm_macc_ps(polyFD0, z4, FD0);
+    polyFD0        = _mm_macc_ps(polyFD1, z2, polyFD0);
+
+    polyFD0        = avx128fma_inv_f(polyFD0);
+
+    polyFN0        = _mm_macc_ps(FN6, z4, FN4);
+    polyFN1        = _mm_macc_ps(FN5, z4, FN3);
+    polyFN0        = _mm_macc_ps(polyFN0, z4, FN2);
+    polyFN1        = _mm_macc_ps(polyFN1, z4, FN1);
+    polyFN0        = _mm_macc_ps(polyFN0, z4, FN0);
+    polyFN0        = _mm_macc_ps(polyFN1, z2, polyFN0);
+
+    return _mm_mul_ps(polyFN0, polyFD0);
+}
+
+static gmx_inline __m128 gmx_simdcall
+avx128fma_pmecorrV_f(__m128 z2)
+{
+    const __m128  VN6      = _mm_set1_ps(1.9296833005951166339e-8f);
+    const __m128  VN5      = _mm_set1_ps(-1.4213390571557850962e-6f);
+    const __m128  VN4      = _mm_set1_ps(0.000041603292906656984871f);
+    const __m128  VN3      = _mm_set1_ps(-0.00013134036773265025626f);
+    const __m128  VN2      = _mm_set1_ps(0.038657983986041781264f);
+    const __m128  VN1      = _mm_set1_ps(0.11285044772717598220f);
+    const __m128  VN0      = _mm_set1_ps(1.1283802385263030286f);
+
+    const __m128  VD3      = _mm_set1_ps(0.0066752224023576045451f);
+    const __m128  VD2      = _mm_set1_ps(0.078647795836373922256f);
+    const __m128  VD1      = _mm_set1_ps(0.43336185284710920150f);
+    const __m128  VD0      = _mm_set1_ps(1.0f);
+
+    __m128        z4;
+    __m128        polyVN0, polyVN1, polyVD0, polyVD1;
+
+    z4             = _mm_mul_ps(z2, z2);
+
+    polyVD1        = _mm_macc_ps(VD3, z4, VD1);
+    polyVD0        = _mm_macc_ps(VD2, z4, VD0);
+    polyVD0        = _mm_macc_ps(polyVD1, z2, polyVD0);
+
+    polyVD0        = avx128fma_inv_f(polyVD0);
+
+    polyVN0        = _mm_macc_ps(VN6, z4, VN4);
+    polyVN1        = _mm_macc_ps(VN5, z4, VN3);
+    polyVN0        = _mm_macc_ps(polyVN0, z4, VN2);
+    polyVN1        = _mm_macc_ps(polyVN1, z4, VN1);
+    polyVN0        = _mm_macc_ps(polyVN0, z4, VN0);
+    polyVN0        = _mm_macc_ps(polyVN1, z2, polyVN0);
+
+    return _mm_mul_ps(polyVN0, polyVD0);
+}
 
 #endif /* _kernelutil_x86_avx_128_fma_single_h_ */

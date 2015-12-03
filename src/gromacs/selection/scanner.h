@@ -45,11 +45,15 @@
 #ifndef SELECTION_SCANNER_H
 #define SELECTION_SCANNER_H
 
+#include <exception>
 #include <string>
 
-#include <boost/exception_ptr.hpp>
-
 #include "parser.h"
+
+namespace gmx
+{
+class TextWriter;
+}
 
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_selcollection_t;
@@ -62,24 +66,24 @@ typedef void *yyscan_t;
 /** Initializes the selection scanner. */
 void
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive, int maxnr, bool bGroups,
+                    gmx::TextWriter *statusWriter, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps);
 /** Frees memory allocated for the selection scanner. */
 void
 _gmx_sel_free_lexer(yyscan_t scanner);
 /** Stores an exception that is caught during parsing. */
 void
-_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
-                             const boost::exception_ptr &ex);
+_gmx_sel_lexer_set_exception(yyscan_t                  scanner,
+                             const std::exception_ptr &ex);
 /** Rethrows and clears the stored exception if one is present. */
 // TODO: The semantics is a bit confusing, need to be thought more,
 // but easier to do as part of larger refactoring of the parsing.
 void
 _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner);
 
-/** Returns true if the scanner is interactive. */
-bool
-_gmx_sel_is_lexer_interactive(yyscan_t scanner);
+/** Returns writer for status output (if not NULL, the scanner is interactive). */
+gmx::TextWriter *
+_gmx_sel_lexer_get_status_writer(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
 struct gmx_ana_selcollection_t *
 _gmx_sel_lexer_selcollection(yyscan_t scanner);

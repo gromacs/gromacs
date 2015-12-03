@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 /* #endif */
 
@@ -252,8 +249,8 @@ void
     /* #if KERNEL_ELEC=='GeneralizedBorn' */
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = _mm256_set1_ps(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = _mm256_set1_ps(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = _mm256_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     /* #endif */
 
@@ -532,7 +529,7 @@ void
 
             /* #for I,J in PAIRS_IJ */
             /*     #if 'rinv' in INTERACTION_FLAGS[I][J] */
-            rinv{I}{J}           = gmx_mm256_invsqrt_ps(rsq{I}{J});
+            rinv{I}{J}           = avx256_invsqrt_f(rsq{I}{J});
             /*         #define INNERFLOPS INNERFLOPS+5 */
             /*     #endif */
             /* #endfor */
@@ -540,7 +537,7 @@ void
             /* #for I,J in PAIRS_IJ */
             /*     #if 'rinvsq' in INTERACTION_FLAGS[I][J] */
             /*         # if 'rinv' not in INTERACTION_FLAGS[I][J] */
-            rinvsq{I}{J}         = gmx_mm256_inv_ps(rsq{I}{J});
+            rinvsq{I}{J}         = avx256_inv_f(rsq{I}{J});
             /*             #define INNERFLOPS INNERFLOPS+4 */
             /*         #else */
             rinvsq{I}{J}         = _mm256_mul_ps(rinv{I}{J},rinv{I}{J});
@@ -769,13 +766,13 @@ void
             zeta2            = _mm256_mul_ps(beta2,rsq{I}{J});
             /*             #if 'Force' in KERNEL_VF */
             rinv3            = _mm256_mul_ps(rinvsq{I}{J},rinv{I}{J});
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq{I}{J},felec);
             /*                 #define INNERFLOPS INNERFLOPS+31 */
             /*             #endif */
             /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_ELEC=='PotentialSwitch' */
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             /*                 #define INNERFLOPS INNERFLOPS+27	*/
             /*                 #if KERNEL_MOD_ELEC=='PotentialShift' */
@@ -918,7 +915,7 @@ void
             rinvsix          = _mm256_mul_ps(_mm256_mul_ps(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
             ewcljrsq         = _mm256_mul_ps(ewclj2,rsq{I}{J});
             ewclj6           = _mm256_mul_ps(ewclj2,_mm256_mul_ps(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_r(ewcljrsq);
+            exponent         = avx256_exp_f(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm256_mul_ps(exponent,_mm256_add_ps(_mm256_sub_ps(one,ewcljrsq),_mm256_mul_ps(_mm256_mul_ps(ewcljrsq,ewcljrsq),one_half)));
             /*                 #define INNERFLOPS INNERFLOPS+11 */

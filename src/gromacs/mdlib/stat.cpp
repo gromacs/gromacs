@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,25 +40,25 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/md_support.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/rbin.h"
-#include "gromacs/legacyheaders/sim_util.h"
-#include "gromacs/legacyheaders/tgroup.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vcm.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/md_support.h"
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/rbin.h"
+#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -243,7 +243,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
                 irmsd = add_binr(rb, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
             }
         }
-        if (!NEED_MUTOT(*inputrec))
+        if (!inputrecNeedMutot(inputrec))
         {
             imu = add_binr(rb, DIM, mu_tot);
             where();
@@ -345,7 +345,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         {
             extract_binr(rb, irmsd, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
         }
-        if (!NEED_MUTOT(*inputrec))
+        if (!inputrecNeedMutot(inputrec))
         {
             extract_binr(rb, imu, DIM, mu_tot);
         }

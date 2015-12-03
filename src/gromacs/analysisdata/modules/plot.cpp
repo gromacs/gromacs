@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,20 +49,19 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -83,7 +82,7 @@ namespace gmx
  */
 
 AnalysisDataPlotSettings::AnalysisDataPlotSettings()
-    : selections_(NULL), timeUnit_(eTimeUnit_ps), plotFormat_(1)
+    : selections_(NULL), timeUnit_(TimeUnit_Default), plotFormat_(1)
 {
 }
 
@@ -95,11 +94,10 @@ AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection *sele
 
 
 void
-AnalysisDataPlotSettings::addOptions(Options *options)
+AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
 {
-    options->addOption(StringOption("xvg").enumValue(g_plotFormats)
-                           .defaultValue("xmgrace")
-                           .storeEnumIndex(&plotFormat_)
+    options->addOption(EnumIntOption("xvg").enumValue(g_plotFormats)
+                           .store(&plotFormat_)
                            .description("Plot formatting"));
 }
 
@@ -344,17 +342,17 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                 = (impl_->settings_.plotFormat() > 0
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
-            output_env_t                  oenv;
+            gmx_output_env_t                              *oenv;
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
-            boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
+            scoped_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
                                   oenv);
             const SelectionCollection *selections
                 = impl_->settings_.selectionCollection();
-            if (selections != NULL)
+            if (selections != NULL && output_env_get_xvg_format(oenv) != exvgNONE)
             {
-                selections->printXvgrInfo(impl_->fp_, oenv);
+                selections->printXvgrInfo(impl_->fp_);
             }
             if (!impl_->subtitle_.empty())
             {
@@ -369,7 +367,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                 {
                     legend.push_back(impl_->legend_[i].c_str());
                 }
-                xvgr_legend(impl_->fp_, legend.size(), &legend[0], oenv);
+                xvgr_legend(impl_->fp_, legend.size(), legend.data(), oenv);
             }
         }
     }

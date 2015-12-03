@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,9 @@
 
 #include "xmb.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "Xstuff.h"
@@ -89,8 +86,8 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
         ((Flags & MB_NO) && (Flags & MB_CANCEL))  ||
         (!(Flags & MB_OK) && !(Flags & MB_YES)))
     {
-        fprintf(stderr, "Invalid button selection in MessageBox\n");
-        exit(1);
+        std::fprintf(stderr, "Invalid button selection in MessageBox\n");
+        std::exit(1);
     }
     nicon = 0;
     if (Flags & MB_ICONSTOP)

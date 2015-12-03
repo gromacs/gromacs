@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -153,7 +153,7 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     NULL,
     &evaluate_pos,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /** Selection method data for the \p cog method. */
@@ -168,7 +168,7 @@ gmx_ana_selmethod_t sm_cog = {
     NULL,
     &evaluate_pos,
     NULL,
-    {"cog of ATOM_EXPR [pbc]", 0, NULL},
+    {"cog of ATOM_EXPR [pbc]", NULL, 0, NULL},
 };
 
 /** Selection method data for the \p com method. */
@@ -183,7 +183,7 @@ gmx_ana_selmethod_t sm_com = {
     NULL,
     &evaluate_pos,
     NULL,
-    {"com of ATOM_EXPR [pbc]", 0, NULL},
+    {"com of ATOM_EXPR [pbc]", NULL, 0, NULL},
 };
 
 /*!
@@ -223,6 +223,19 @@ static void
 set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
 {
     ((t_methoddata_pos *)data)->pcc = pcc;
+}
+
+bool
+_gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
+{
+    if (sel.type != SEL_EXPRESSION || !sel.u.expr.method
+        || sel.u.expr.method->name != sm_keyword_pos.name)
+    {
+        return false;
+    }
+
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(sel.u.expr.mdata);
+    return d->type == NULL;
 }
 
 /*!

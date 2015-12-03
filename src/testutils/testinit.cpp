@@ -43,14 +43,14 @@
 
 #include "testinit.h"
 
-#include "config.h"
-
 #include <cstdio>
 #include <cstdlib>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
+
 #include <gmock/gmock.h>
 
+#include "buildinfo.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineinit.h"
@@ -59,9 +59,8 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
@@ -89,7 +88,7 @@ namespace
  *
  * \ingroup module_testutils
  */
-class TestProgramContext : public ProgramContextInterface
+class TestProgramContext : public IProgramContext
 {
     public:
         /*! \brief
@@ -97,7 +96,7 @@ class TestProgramContext : public ProgramContextInterface
          *
          * \param[in] context  Current \Gromacs program context.
          */
-        explicit TestProgramContext(const ProgramContextInterface &context)
+        explicit TestProgramContext(const IProgramContext &context)
             : context_(context), dataPath_(CMAKE_SOURCE_DIR)
         {
         }
@@ -132,24 +131,26 @@ class TestProgramContext : public ProgramContextInterface
         }
 
     private:
-        const ProgramContextInterface   &context_;
+        const IProgramContext           &context_;
         std::string                      dataPath_;
 };
 
 //! Prints the command-line options for the unit test binary.
 void printHelp(const Options &options)
 {
+    const std::string &program = getProgramContext().displayName();
     std::fprintf(stderr,
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
-    CommandLineHelpContext context(&File::standardError(),
-                                   eHelpOutputFormat_Console, NULL);
-    context.setModuleDisplayName(getProgramContext().displayName());
+    CommandLineHelpContext context(&TextOutputFile::standardError(),
+                                   eHelpOutputFormat_Console, NULL, program);
+    context.setModuleDisplayName(program);
     CommandLineHelpWriter(options).writeHelp(context);
 }
 
 //! Global program context instance for test binaries.
-boost::scoped_ptr<TestProgramContext> g_testContext;
+// Never releases ownership.
+std::unique_ptr<TestProgramContext> g_testContext;
 
 }       // namespace
 
@@ -190,6 +191,12 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
         // TODO: Make this into a FileNameOption (or a DirectoryNameOption).
         options.addOption(StringOption("src-root").store(&sourceRoot)
                               .description("Override source tree location (for data files)"));
+        // The potential MPI test event listener must be initialized first,
+        // because it should appear in the start of the event listener list,
+        // before other event listeners that may generate test failures
+        // (currently, such an event listener is used by the reference data
+        // framework).
+        initMPIOutput();
         // TODO: Consider removing this option from test binaries that do not need it.
         initReferenceData(&options);
         initTestOptions(&options);
@@ -213,8 +220,6 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
             TestFileManager::setInputDataDirectory(
                     Path::join(sourceRoot, dataPath));
         }
-        setFatalErrorHandler(NULL);
-        initMPIOutput();
     }
     catch (const std::exception &ex)
     {

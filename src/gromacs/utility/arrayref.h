@@ -126,6 +126,51 @@ class ArrayRef
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
         /*! \brief
+         * Constructs a reference to a particular range from two pointers.
+         *
+         * \param[in] begin  Pointer to the beginning of a range.
+         * \param[in] end    Pointer to the end of a range.
+         *
+         * Passed pointers must remain valid for the lifetime of this object.
+         */
+        static ArrayRef<value_type>
+        fromPointers(value_type *begin, value_type *end)
+        {
+            return ArrayRef<value_type>(begin, end);
+        }
+        /*! \brief
+         * Constructs a reference to an array.
+         *
+         * \param[in] begin  Pointer to the beginning of the array.
+         *                   May be NULL if \p size is zero.
+         * \param[in] size   Number of elements in the array.
+         *
+         * Passed pointer must remain valid for the lifetime of this object.
+         */
+        static ArrayRef<value_type>
+        fromArray(value_type *begin, size_t size)
+        {
+            return ArrayRef<value_type>(begin, begin+size);
+        }
+        /*! \brief
+         * Constructs a reference to a particular range in a std::vector.
+         *
+         * \param[in] begin  Iterator to the beginning of a range.
+         * \param[in] end    Iterator to the end of a range.
+         *
+         * The referenced vector must remain valid and not be reallocated for
+         * the lifetime of this object.
+         */
+        static ArrayRef<value_type>
+        fromVector(typename std::vector<value_type>::iterator begin,
+                   typename std::vector<value_type>::iterator end)
+        {
+            value_type *p_begin = (begin != end) ? &*begin : NULL;
+            value_type *p_end   = p_begin + (end-begin);
+            return ArrayRef<value_type>(p_begin, p_end);
+        }
+
+        /*! \brief
          * Constructs an empty reference.
          */
         ArrayRef() : begin_(NULL), end_(NULL) {}
@@ -186,6 +231,11 @@ class ArrayRef
          *
          * This constructor is not explicit to allow directly passing
          * a C array to a function that takes an ArrayRef parameter.
+         *
+         * xlc on BG/Q compiles wrong code if the C array is a struct
+         * field, unless value_type is char or unsigned char. There's
+         * no good way to assert on this before C++11 (which that
+         * compiler will never support).
          */
         template <size_t count>
         ArrayRef(value_type (&array)[count])
@@ -272,60 +322,6 @@ class ArrayRef
 };
 
 
-/*! \brief
- * Constructs a reference to a particular range from two pointers.
- *
- * \param[in] begin  Pointer to the beginning of a range.
- * \param[in] end    Pointer to the end of a range.
- *
- * Passed pointers must remain valid for the lifetime of this object.
- *
- * \related ArrayRef
- */
-template <typename T>
-ArrayRef<T> arrayRefFromPointers(T * begin, T * end)
-{
-    return ArrayRef<T>(begin, end);
-}
-
-/*! \brief
- * Constructs a reference to an array
- *
- * \param[in] begin  Pointer to the beginning of the array.
- *                   May be NULL if \p size is zero.
- * \param[in] size   Number of elements in the array.
- *
- * Passed pointer must remain valid for the lifetime of this object.
- *
- * \related ArrayRef
- */
-template <typename T>
-ArrayRef<T> arrayRefFromArray(T * begin, size_t size)
-{
-    return arrayRefFromPointers<T>(begin, begin+size);
-}
-
-/*! \brief
- * Constructs a reference to a particular range in a std::vector.
- *
- * \param[in] begin  Iterator to the beginning of a range.
- * \param[in] end    Iterator to the end of a range.
- *
- * The referenced vector must remain valid and not be reallocated for
- * the lifetime of this object.
- *
- * \related ArrayRef
- */
-template <typename T>
-ArrayRef<T> arrayRefFromVector(typename std::vector<T>::iterator begin,
-                               typename std::vector<T>::iterator end)
-{
-    T * p_begin = (begin != end) ? &*begin : NULL;
-    T * p_end   = p_begin + (end-begin);
-    return arrayRefFromPointers<T>(p_begin, p_end);
-}
-
-
 
 /*! \brief
  * STL-like container for non-mutable interface to a C array (or part of a
@@ -380,6 +376,28 @@ class ConstArrayRef
         typedef std::reverse_iterator<iterator>       reverse_iterator;
         //! Standard reverse iterator.
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+        //! \copydoc ArrayRef::fromPointers()
+        static ConstArrayRef<value_type>
+        fromPointers(const value_type *begin, const value_type *end)
+        {
+            return ConstArrayRef<value_type>(begin, end);
+        }
+        //! \copydoc ArrayRef::fromArray()
+        static ConstArrayRef<value_type>
+        fromArray(const value_type *begin, size_t size)
+        {
+            return ConstArrayRef<value_type>(begin, begin+size);
+        }
+        //! \copydoc ArrayRef::fromVector()
+        static ConstArrayRef<value_type>
+        fromVector(typename std::vector<value_type>::const_iterator begin,
+                   typename std::vector<value_type>::const_iterator end)
+        {
+            const value_type *p_begin = (begin != end) ? &*begin : NULL;
+            const value_type *p_end   = p_begin + (end-begin);
+            return ConstArrayRef<value_type>(p_begin, p_end);
+        }
 
         /*! \brief
          * Constructs an empty reference.
@@ -437,10 +455,16 @@ class ConstArrayRef
          * pointer).  It constructs a reference to the whole array, without
          * a need to pass the number of elements explicitly.  The compiler
          * must be able to deduce the array size.
+         *
          * Passed array must remain valid for the lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
          * a C array to a function that takes a ConstArrayRef parameter.
+         *
+         * xlc on BG/Q compiles wrong code if the C array is a struct
+         * field, unless value_type is char or unsigned char. There's
+         * no good way to assert on this before C++11 (which that
+         * compiler will never support).
          */
         template <size_t count>
         ConstArrayRef(const value_type (&array)[count])
@@ -502,57 +526,51 @@ class ConstArrayRef
 };
 
 
-/*! \brief
- * Constructs a reference to a particular range from two pointers.
- *
- * \param[in] begin  Pointer to the beginning of a range.
- * \param[in] end    Pointer to the end of a range.
- *
- * Passed pointers must remain valid for the lifetime of this object.
- *
- * \related ConstArrayRef
- */
+//! \copydoc ArrayRef::fromPointers()
+//! \related ArrayRef
 template <typename T>
-ConstArrayRef<T> constArrayRefFromPointers(const T * begin, const T * end)
+ArrayRef<T> arrayRefFromPointers(T *begin, T *end)
 {
-    return ConstArrayRef<T>(begin, end);
+    return ArrayRef<T>::fromPointers(begin, end);
+}
+//! \copydoc ArrayRef::fromArray()
+//! \related ArrayRef
+template <typename T>
+ArrayRef<T> arrayRefFromArray(T *begin, size_t size)
+{
+    return ArrayRef<T>::fromArray(begin, size);
+}
+//! \copydoc ArrayRef::fromVector()
+//! \related ArrayRef
+template <typename T>
+ArrayRef<T> arrayRefFromVector(typename std::vector<T>::iterator begin,
+                               typename std::vector<T>::iterator end)
+{
+    return ArrayRef<T>::fromVector(begin, end);
 }
 
-/*! \brief
- * Constructs a reference to an array.
- *
- * \param[in] begin  Pointer to the beginning of the array.
- *                   May be NULL if \p size is zero.
- * \param[in] size   Number of elements in the array.
- *
- * Passed pointer must remain valid for the lifetime of this object.
- *
- * \related ConstArrayRef
- */
-template <typename T>
-ConstArrayRef<T> constArrayRefFromArray(const T * begin, size_t size)
-{
-    return constArrayRefFromPointers<T>(begin, begin+size);
-}
 
-/*! \brief
- * Constructs a reference to a particular range in a std::vector.
- *
- * \param[in] begin  Iterator to the beginning of a range.
- * \param[in] end    Iterator to the end of a range.
- *
- * The referenced vector must remain valid and not be reallocated for
- * the lifetime of this object.
- *
- * \related ConstArrayRef
- */
+//! \copydoc ConstArrayRef::fromPointers()
+//! \related ConstArrayRef
+template <typename T>
+ConstArrayRef<T> constArrayRefFromPointers(const T *begin, const T *end)
+{
+    return ConstArrayRef<T>::fromPointers(begin, end);
+}
+//! \copydoc ConstArrayRef::fromArray()
+//! \related ConstArrayRef
+template <typename T>
+ConstArrayRef<T> constArrayRefFromArray(const T *begin, size_t size)
+{
+    return ConstArrayRef<T>::fromArray(begin, size);
+}
+//! \copydoc ConstArrayRef::fromVector()
+//! \related ConstArrayRef
 template <typename T>
 ConstArrayRef<T> constArrayRefFromVector(typename std::vector<T>::const_iterator begin,
                                          typename std::vector<T>::const_iterator end)
 {
-    const T * p_begin = (begin != end) ? &*begin : NULL;
-    const T * p_end   = p_begin + (end-begin);
-    return constArrayRefFromPointers<T>(p_begin, p_end);
+    return ConstArrayRef<T>::fromVector(begin, end);
 }
 
 /*! \brief

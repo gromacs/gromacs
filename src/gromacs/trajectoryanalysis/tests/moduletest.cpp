@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
@@ -228,10 +229,10 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
         }
     }
 
-    TrajectoryAnalysisCommandLineRunner runner(&module);
-    runner.setUseDefaultGroups(false);
+    ICommandLineOptionsModulePointer runner(
+            TrajectoryAnalysisCommandLineRunner::createModule(std::move(impl_->module_)));
     int rc = 0;
-    EXPECT_NO_THROW_GMX(rc = runner.run(cmdline.argc(), cmdline.argv()));
+    EXPECT_NO_THROW_GMX(rc = CommandLineTestHelper::runModuleDirect(std::move(runner), &cmdline));
     EXPECT_EQ(0, rc);
 
     checkOutputFiles();

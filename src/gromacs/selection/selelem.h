@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,8 @@
 #ifndef GMX_SELECTION_SELELEM_H
 #define GMX_SELECTION_SELELEM_H
 
+#include <memory>
 #include <string>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/classhelpers.h"
@@ -73,7 +72,7 @@ namespace gmx
 class SelectionTreeElement;
 
 //! Smart pointer type for selection tree element pointers.
-typedef boost::shared_ptr<SelectionTreeElement> SelectionTreeElementPointer;
+typedef std::shared_ptr<SelectionTreeElement> SelectionTreeElementPointer;
 } // namespace gmx
 
 /********************************************************************/
@@ -370,6 +369,13 @@ class SelectionTreeElement
          */
         void checkUnsortedAtoms(bool                  bUnsortedAllowed,
                                 ExceptionInitializer *errors) const;
+        /*! \brief
+         * Checks whether the element or its children have unresolved index
+         * group references.
+         *
+         * Does not throw.
+         */
+        bool requiresIndexGroups() const;
         /*! \brief
          * Resolves an unresolved reference to an index group.
          *

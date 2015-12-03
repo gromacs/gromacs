@@ -36,6 +36,8 @@
  * \brief
  * Implements neighborhood searching for analysis (from nbsearch.h).
  *
+ * High-level overview of the algorithm is at \ref page_analysisnbsearch.
+ *
  * \todo
  * The grid implementation could still be optimized in several different ways:
  *   - Pruning grid cells from the search list if they are completely outside
@@ -60,9 +62,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "thread_mpi/mutex.h"
-
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -307,7 +307,7 @@ class AnalysisNeighborhoodSearchImpl
         //! Data structure to hold the grid cell contents.
         CellList                cells_;
 
-        tMPI::mutex             createPairSearchMutex_;
+        Mutex                   createPairSearchMutex_;
         PairSearchList          pairSearchList_;
 
         friend class AnalysisNeighborhoodPairSearchImpl;
@@ -437,7 +437,7 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
 AnalysisNeighborhoodSearchImpl::PairSearchImplPointer
 AnalysisNeighborhoodSearchImpl::getPairSearch()
 {
-    tMPI::lock_guard<tMPI::mutex> lock(createPairSearchMutex_);
+    lock_guard<Mutex> lock(createPairSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     PairSearchList::const_iterator i;
@@ -567,6 +567,9 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
         else
         {
             cellCount = std::max(1, static_cast<int>(box[dd][dd] / targetsize));
+            // TODO: If the cell count is one or two, it would be better to
+            // just fall back to bSingleCell[dd] = true, and leave the rest to
+            // the efficiency check later.
             if (bGridPBC_[dd] && cellCount < 3)
             {
                 return false;
@@ -886,7 +889,7 @@ void AnalysisNeighborhoodSearchImpl::init(
         {
             std::string message =
                 formatString("Computations in the XY plane are not supported with PBC type '%s'",
-                             EPBC(pbc->ePBC));
+                             epbc_names[pbc->ePBC]);
             GMX_THROW(NotImplementedError(message));
         }
         if (pbc->ePBC == epbcXYZ &&
@@ -924,7 +927,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     if (bGrid_)
     {
         xrefAlloc_.resize(nref_);
-        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        xref_ = as_rvec_array(xrefAlloc_.data());
 
         for (int i = 0; i < nref_; ++i)
         {
@@ -937,7 +940,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     else if (refIndices_ != NULL)
     {
         xrefAlloc_.resize(nref_);
-        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        xref_ = as_rvec_array(xrefAlloc_.data());
         for (int i = 0; i < nref_; ++i)
         {
             copy_rvec(positions.x_[refIndices_[i]], xrefAlloc_[i]);
@@ -1247,7 +1250,7 @@ class AnalysisNeighborhood::Impl
 
         SearchImplPointer getSearch();
 
-        tMPI::mutex             createSearchMutex_;
+        Mutex                   createSearchMutex_;
         SearchList              searchList_;
         real                    cutoff_;
         const t_blocka         *excls_;
@@ -1258,7 +1261,7 @@ class AnalysisNeighborhood::Impl
 AnalysisNeighborhood::Impl::SearchImplPointer
 AnalysisNeighborhood::Impl::getSearch()
 {
-    tMPI::lock_guard<tMPI::mutex> lock(createSearchMutex_);
+    lock_guard<Mutex> lock(createSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     SearchList::const_iterator i;

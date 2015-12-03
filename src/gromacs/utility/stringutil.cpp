@@ -57,15 +57,50 @@
 namespace gmx
 {
 
-bool endsWith(const std::string &str, const char *suffix)
+std::size_t
+countWords(const char *s)
 {
-    if (suffix == NULL || suffix[0] == '\0')
+    std::size_t nWords = 0;
+    // Use length variable to avoid N^2 complexity when executing strlen(s) every iteration
+    std::size_t length = std::strlen(s);
+
+    for (std::size_t i = 0; i < length; i++)
+    {
+        // If we found a new word, increase counter and step through the word
+        if (std::isalnum(s[i]))
+        {
+            ++nWords;
+            // If we hit string end, '\0' is not alphanumerical
+            while (std::isalnum(s[i]))
+            {
+                // This might increment i to the string end, and then the outer
+                // loop will increment i one unit beyond that, but since
+                // we compare to the string length in the outer loop this is fine.
+                i++;
+            }
+        }
+    }
+    return nWords;
+}
+
+
+std::size_t
+countWords(const std::string &str)
+{
+    // Under out beautiful C++ interface hides an ugly c-string implementation :-)
+    return countWords(str.c_str());
+}
+
+bool endsWith(const char *str, const char *suffix)
+{
+    if (isNullOrEmpty(suffix))
     {
         return true;
     }
-    size_t length = std::strlen(suffix);
-    return (str.length() >= length
-            && str.compare(str.length() - length, length, suffix) == 0);
+    const size_t strLength    = std::strlen(str);
+    const size_t suffixLength = std::strlen(suffix);
+    return (strLength >= suffixLength
+            && std::strcmp(&str[strLength - suffixLength], suffix) == 0);
 }
 
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
@@ -125,7 +160,7 @@ std::string formatString(const char *fmt, ...)
             length *= 2;
         }
         dynamicBuf.resize(length);
-        buf = &dynamicBuf[0];
+        buf = dynamicBuf.data();
     }
 }
 
@@ -247,7 +282,7 @@ replaceAllWords(const std::string &input, const std::string &from,
 
 TextLineWrapperSettings::TextLineWrapperSettings()
     : maxLength_(0), indent_(0), firstLineIndent_(-1),
-      bStripLeadingWhitespace_(false), continuationChar_('\0')
+      bKeepFinalSpaces_(false), continuationChar_('\0')
 {
 }
 
@@ -256,13 +291,19 @@ TextLineWrapperSettings::TextLineWrapperSettings()
  * TextLineWrapper
  */
 
+bool TextLineWrapper::isTrivial() const
+{
+    return settings_.lineLength() == 0 && settings_.indent() == 0
+           && settings_.firstLineIndent_ <= 0;
+}
+
 size_t
 TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
 {
     size_t inputLength = std::strlen(input);
     bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Ignore leading whitespace if necessary.
-    if (!bFirstLine || settings_.bStripLeadingWhitespace_)
+    if (!bFirstLine)
     {
         lineStart += std::strspn(input + lineStart, " ");
         if (lineStart >= inputLength)
@@ -307,7 +348,7 @@ TextLineWrapper::formatLine(const std::string &input,
     size_t inputLength = input.length();
     bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Strip leading whitespace if necessary.
-    if (!bFirstLine || settings_.bStripLeadingWhitespace_)
+    if (!bFirstLine)
     {
         lineStart = input.find_first_not_of(' ', lineStart);
         if (lineStart >= inputLength)
@@ -318,12 +359,19 @@ TextLineWrapper::formatLine(const std::string &input,
     int  indent        = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     bool bContinuation = (lineEnd < inputLength && input[lineEnd - 1] != '\n');
     // Strip trailing whitespace.
-    while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
+    if (!settings_.bKeepFinalSpaces_ || lineEnd < inputLength || input[inputLength - 1] == '\n')
     {
-        --lineEnd;
+        while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
+        {
+            --lineEnd;
+        }
     }
 
-    size_t      lineLength = lineEnd - lineStart;
+    const size_t lineLength = lineEnd - lineStart;
+    if (lineLength == 0)
+    {
+        return std::string();
+    }
     std::string result(indent, ' ');
     result.append(input, lineStart, lineLength);
     if (bContinuation && settings_.continuationChar_ != '\0')

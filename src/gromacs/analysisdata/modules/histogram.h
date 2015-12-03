@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
 #ifndef GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 #define GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/arraydata.h"
@@ -240,8 +240,7 @@ class AnalysisHistogramSettings
 class AbstractAverageHistogram;
 
 //! Smart pointer to manage an AbstractAverageHistogram object.
-typedef boost::shared_ptr<AbstractAverageHistogram>
-    AverageHistogramPointer;
+typedef std::unique_ptr<AbstractAverageHistogram> AverageHistogramPointer;
 
 /*! \brief
  * Base class for representing histograms averaged over frames.
@@ -529,13 +528,13 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
 };
 
 //! Smart pointer to manage an AnalysisDataSimpleHistogramModule object.
-typedef boost::shared_ptr<AnalysisDataSimpleHistogramModule>
+typedef std::shared_ptr<AnalysisDataSimpleHistogramModule>
     AnalysisDataSimpleHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataWeightedHistogramModule object.
-typedef boost::shared_ptr<AnalysisDataWeightedHistogramModule>
+typedef std::shared_ptr<AnalysisDataWeightedHistogramModule>
     AnalysisDataWeightedHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataBinAverageModule object.
-typedef boost::shared_ptr<AnalysisDataBinAverageModule>
+typedef std::shared_ptr<AnalysisDataBinAverageModule>
     AnalysisDataBinAverageModulePointer;
 
 } // namespace gmx

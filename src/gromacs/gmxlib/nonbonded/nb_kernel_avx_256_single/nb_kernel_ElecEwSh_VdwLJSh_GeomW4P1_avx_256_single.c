@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 
 /*
@@ -260,11 +257,11 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm256_inv_ps(rsq00);
+            rinvsq00         = avx256_inv_f(rsq00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm256_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm256_mul_ps(rinv30,rinv30);
@@ -357,10 +354,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq10);
             rinv3            = _mm256_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq10,felec);
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             velec            = _mm256_sub_ps(_mm256_sub_ps(rinv10,sh_ewald),pmecorrV);
             velec            = _mm256_mul_ps(qq10,velec);
@@ -408,10 +405,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq20);
             rinv3            = _mm256_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq20,felec);
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             velec            = _mm256_sub_ps(_mm256_sub_ps(rinv20,sh_ewald),pmecorrV);
             velec            = _mm256_mul_ps(qq20,velec);
@@ -459,10 +456,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq30);
             rinv3            = _mm256_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq30,felec);
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             velec            = _mm256_sub_ps(_mm256_sub_ps(rinv30,sh_ewald),pmecorrV);
             velec            = _mm256_mul_ps(qq30,velec);
@@ -570,11 +567,11 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm256_inv_ps(rsq00);
+            rinvsq00         = avx256_inv_f(rsq00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm256_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm256_mul_ps(rinv30,rinv30);
@@ -671,10 +668,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq10);
             rinv3            = _mm256_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq10,felec);
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             velec            = _mm256_sub_ps(_mm256_sub_ps(rinv10,sh_ewald),pmecorrV);
             velec            = _mm256_mul_ps(qq10,velec);
@@ -726,10 +723,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq20);
             rinv3            = _mm256_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq20,felec);
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             velec            = _mm256_sub_ps(_mm256_sub_ps(rinv20,sh_ewald),pmecorrV);
             velec            = _mm256_mul_ps(qq20,velec);
@@ -781,10 +778,10 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_VF_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq30);
             rinv3            = _mm256_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq30,felec);
-            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = avx256_pmecorrV_f(zeta2);
             pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
             velec            = _mm256_sub_ps(_mm256_sub_ps(rinv30,sh_ewald),pmecorrV);
             velec            = _mm256_mul_ps(qq30,velec);
@@ -1062,11 +1059,11 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm256_inv_ps(rsq00);
+            rinvsq00         = avx256_inv_f(rsq00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm256_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm256_mul_ps(rinv30,rinv30);
@@ -1151,7 +1148,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq10);
             rinv3            = _mm256_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq10,felec);
             
@@ -1194,7 +1191,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq20);
             rinv3            = _mm256_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq20,felec);
             
@@ -1237,7 +1234,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq30);
             rinv3            = _mm256_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq30,felec);
             
@@ -1340,11 +1337,11 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             rsq20            = gmx_mm256_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm256_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm256_invsqrt_ps(rsq30);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv30           = avx256_invsqrt_f(rsq30);
 
-            rinvsq00         = gmx_mm256_inv_ps(rsq00);
+            rinvsq00         = avx256_inv_f(rsq00);
             rinvsq10         = _mm256_mul_ps(rinv10,rinv10);
             rinvsq20         = _mm256_mul_ps(rinv20,rinv20);
             rinvsq30         = _mm256_mul_ps(rinv30,rinv30);
@@ -1432,7 +1429,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq10);
             rinv3            = _mm256_mul_ps(rinvsq10,rinv10);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq10,felec);
             
@@ -1478,7 +1475,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq20);
             rinv3            = _mm256_mul_ps(rinvsq20,rinv20);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq20,felec);
             
@@ -1524,7 +1521,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW4P1_F_avx_256_single
             /* Analytical PME correction */
             zeta2            = _mm256_mul_ps(beta2,rsq30);
             rinv3            = _mm256_mul_ps(rinvsq30,rinv30);
-            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            pmecorrF         = avx256_pmecorrF_f(zeta2);
             felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
             felec            = _mm256_mul_ps(qq30,felec);
             

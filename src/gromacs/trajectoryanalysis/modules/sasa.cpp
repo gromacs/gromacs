@@ -53,14 +53,14 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -93,9 +93,9 @@ namespace
 struct t_conect
 {
     //! Index of the second nearest neighbor dot.
-    atom_id  aa;
+    int      aa;
     //! Index of the nearest neighbor dot.
-    atom_id  ab;
+    int      ab;
     //! Squared distance to `aa`.
     real     d2a;
     //! Squared distance to `ab`.
@@ -110,14 +110,14 @@ struct t_conect
  * \param[in]     j  Index of the other surface dot to add to the array.
  * \param[in]     d2 Squared distance between `i` and `j`.
  */
-void add_rec(t_conect c[], atom_id i, atom_id j, real d2)
+void add_rec(t_conect c[], int i, int j, real d2)
 {
-    if (c[i].aa == NO_ATID)
+    if (c[i].aa == -1)
     {
         c[i].aa  = j;
         c[i].d2a = d2;
     }
-    else if (c[i].ab == NO_ATID)
+    else if (c[i].ab == -1)
     {
         c[i].ab  = j;
         c[i].d2b = d2;
@@ -167,7 +167,7 @@ void do_conect(const char *fn, int n, rvec x[])
     snew(c, n);
     for (i = 0; (i < n); i++)
     {
-        c[i].aa = c[i].ab = NO_ATID;
+        c[i].aa = c[i].ab = -1;
     }
 
     for (i = 0; (i < n); i++)
@@ -183,7 +183,7 @@ void do_conect(const char *fn, int n, rvec x[])
     fp = gmx_ffopen(fn, "a");
     for (i = 0; (i < n); i++)
     {
-        if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
+        if ((c[i].aa == -1) || (c[i].ab == -1))
         {
             fprintf(stderr, "Warning dot %d has no conections\n", i+1);
         }
@@ -270,7 +270,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
         aaa.nr = ndots;
         write_sto_conf(fn, title, &aaa, xnew, NULL, ePBC, const_cast<rvec *>(box));
         do_conect(fn, ndots, xnew);
-        free_t_atoms(&aaa, FALSE);
+        done_atom(&aaa);
     }
     sfree(xnew);
 }
@@ -287,7 +287,7 @@ class Sasa : public TrajectoryAnalysisModule
     public:
         Sasa();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -394,8 +394,7 @@ class Sasa : public TrajectoryAnalysisModule
 };
 
 Sasa::Sasa()
-    : TrajectoryAnalysisModule(SasaInfo::name, SasaInfo::shortDescription),
-      solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
+    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
 {
     //minarea_ = 0.5;
     registerAnalysisDataset(&area_, "area");
@@ -406,7 +405,7 @@ Sasa::Sasa()
 }
 
 void
-Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+Sasa::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes solvent accessible surface areas.",
@@ -445,7 +444,7 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
         "that are both too high."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnArea_).defaultBasename("area")
@@ -485,10 +484,10 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
     // The calculation group uses dynamicMask() so that the coordinates
     // match a static array of VdW radii.
     options->addOption(SelectionOption("surface").store(&surfaceSel_)
-                           .required().onlyAtoms().dynamicMask()
+                           .required().onlySortedAtoms().dynamicMask()
                            .description("Surface calculation selection"));
     options->addOption(SelectionOption("output").storeVector(&outputSel_)
-                           .onlyAtoms().multiValue()
+                           .onlySortedAtoms().multiValue()
                            .description("Output selection(s)"));
 
     // Atom names etc. are required for the VdW radii lookup.
@@ -607,7 +606,12 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
             }
             if (j == surfaceSel_.posCount() || outputIndices[i] != atomIndices[j])
             {
-                GMX_THROW(InconsistentInputError("Output selection is not a subset of the input selection"));
+                const std::string message
+                    = formatString("Output selection '%s' is not a subset of "
+                                   "the surface selection (atom %d is the first "
+                                   "atom not in the surface selection)",
+                                   outputSel_[g].name(), outputIndices[i] + 1);
+                GMX_THROW(InconsistentInputError(message));
             }
             outputSel_[g].setOriginalId(i, j);
         }
@@ -655,7 +659,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 AnalysisDataPlotModulePointer plotm(
                         new AnalysisDataPlotModule(settings.plotSettings()));
                 plotm->setFileName(fnAtomArea_);
-                plotm->setTitle("Area per residue over the trajectory");
+                plotm->setTitle("Area per atom over the trajectory");
                 plotm->setXLabel("Atom");
                 plotm->setXFormat(8, 0);
                 plotm->setYLabel("Area (nm\\S2\\N)");
@@ -667,11 +671,19 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         {
             AnalysisDataAverageModulePointer avem(new AnalysisDataAverageModule);
+            int nextRow = 0;
             for (int i = 0; i < surfaceSel_.posCount(); ++i)
             {
-                const int atomIndex     = surfaceSel_.position(i).atomIndices()[0];
-                const int residueIndex  = atoms.atom[atomIndex].resind;
-                avem->setXAxisValue(i, atoms.resinfo[residueIndex].nr);
+                const int residueGroup = surfaceSel_.position(i).mappedId();
+                if (residueGroup >= nextRow)
+                {
+                    GMX_ASSERT(residueGroup == nextRow,
+                               "Inconsistent (non-uniformly increasing) residue grouping");
+                    const int atomIndex    = surfaceSel_.position(i).atomIndices()[0];
+                    const int residueIndex = atoms.atom[atomIndex].resind;
+                    avem->setXAxisValue(nextRow, atoms.resinfo[residueIndex].nr);
+                    ++nextRow;
+                }
             }
             residueArea_.addModule(avem);
             if (!fnResidueArea_.empty())
@@ -679,7 +691,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 AnalysisDataPlotModulePointer plotm(
                         new AnalysisDataPlotModule(settings.plotSettings()));
                 plotm->setFileName(fnResidueArea_);
-                plotm->setTitle("Area per atom over the trajectory");
+                plotm->setTitle("Area per residue over the trajectory");
                 plotm->setXLabel("Residue");
                 plotm->setXFormat(8, 0);
                 plotm->setYLabel("Area (nm\\S2\\N)");
@@ -915,7 +927,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     real *area = NULL, *surfacedots = NULL;
     int   nsurfacedots;
     calculator_.calculate(surfaceSel.coordinates().data(), pbc,
-                          frameData.index_.size(), &frameData.index_[0], flag,
+                          frameData.index_.size(), frameData.index_.data(), flag,
                           &totarea, &totvolume, &area,
                           &surfacedots, &nsurfacedots);
     // Unpack the atomwise areas into the frameData.atomAreas_ array for easier

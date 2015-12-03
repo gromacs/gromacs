@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -120,10 +120,10 @@ static gmx_ana_selparam_t smparams_merge[] = {
     {"stride",   {INT_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
 };
 
-/** Help text for the merging selection modifiers. */
-static const char *help_merge[] = {
-    "MERGING SELECTIONS[PAR]",
-    "",
+//! Help title for the merging selection modifiers.
+static const char        helptitle_merge[] = "Merging selections";
+//! Help text for the merging selection modifiers.
+static const char *const help_merge[] = {
     "::",
     "",
     "  POSEXPR merge POSEXPR [stride INT]",
@@ -160,7 +160,7 @@ gmx_ana_selmethod_t sm_merge = {
     NULL,
     NULL,
     &evaluate_merge,
-    {"merge POSEXPR", asize(help_merge), help_merge},
+    {"merge POSEXPR", helptitle_merge, asize(help_merge), help_merge},
 };
 
 /** Selection method data for the \p plus modifier. */
@@ -175,7 +175,7 @@ gmx_ana_selmethod_t sm_plus = {
     NULL,
     NULL,
     &evaluate_plus,
-    {"plus POSEXPR", asize(help_merge), help_merge},
+    {"plus POSEXPR", helptitle_merge, asize(help_merge), help_merge},
 };
 
 /*!

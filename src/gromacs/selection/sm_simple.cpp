@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,9 @@
 
 #include <cctype>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "selmethod.h"
@@ -171,14 +171,19 @@ static void
 evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
-/** Help text for atom name selection keywords. */
-static const char *help_atomname[] = {
-    "ATOM NAME SELECTION KEYWORDS[PAR]",
-
-    "[TT]name[tt] [TT]pdbname[tt] [TT]atomname[tt] [TT]pdbatomname[tt][PAR]",
-
+//! Help title for atom name selection keywords.
+static const char        helptitle_atomname[] = "Selecting atoms by name";
+//! Help text for atom name selection keywords.
+static const char *const help_atomname[] = {
+    "::",
+    "",
+    "  name",
+    "  pdbname",
+    "  atomname",
+    "  pdbatomname",
+    "",
     "These keywords select atoms by name. [TT]name[tt] selects atoms using",
-    "the Gromacs atom naming convention.",
+    "the GROMACS atom naming convention.",
     "For input formats other than PDB, the atom names are matched exactly",
     "as they appear in the input file. For PDB files, 4 character atom names",
     "that start with a digit are matched after moving the digit to the end",
@@ -287,7 +292,7 @@ gmx_ana_selmethod_t sm_atomname = {
     NULL,
     &evaluate_atomname,
     NULL,
-    {NULL, asize(help_atomname), help_atomname}
+    {NULL, helptitle_atomname, asize(help_atomname), help_atomname}
 };
 
 /** Selection method data for \p pdbatomname selection keyword. */
@@ -302,7 +307,7 @@ gmx_ana_selmethod_t sm_pdbatomname = {
     NULL,
     &evaluate_pdbatomname,
     NULL,
-    {NULL, asize(help_atomname), help_atomname}
+    {NULL, helptitle_atomname, asize(help_atomname), help_atomname}
 };
 
 /** Selection method data for \p atomtype selection keyword. */

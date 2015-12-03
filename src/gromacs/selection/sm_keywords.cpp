@@ -45,12 +45,11 @@
 #include <cctype>
 #include <cstring>
 
+#include <memory>
 #include <string>
 
-#include <boost/shared_ptr.hpp>
-
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -255,7 +254,7 @@ class StringKeywordMatchItem
         //! The raw string passed for the matcher.
         std::string                     str_;
         //! Regular expression compiled from \p str_, if applicable.
-        boost::shared_ptr<gmx::Regex>   regex_;
+        std::shared_ptr<gmx::Regex>     regex_;
 };
 
 /*! \internal \brief
@@ -303,7 +302,7 @@ gmx_ana_selmethod_t sm_keyword_int = {
     NULL,
     &evaluate_keyword_int,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /** Selection method data for real keyword evaluation. */
@@ -318,7 +317,7 @@ gmx_ana_selmethod_t sm_keyword_real = {
     NULL,
     &evaluate_keyword_real,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /** Selection method data for string keyword evaluation. */
@@ -333,7 +332,7 @@ gmx_ana_selmethod_t sm_keyword_str = {
     NULL,
     &evaluate_keyword_str,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /*! \brief

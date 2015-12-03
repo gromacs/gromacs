@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
  * \brief
  * Functionality for writing tests that can produce their own reference data.
  *
+ * See \ref page_refdata for more details.
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
@@ -44,6 +46,7 @@
 #define GMX_TESTUTILS_REFDATA_H
 
 #include <iterator>
+#include <memory>
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
@@ -52,7 +55,7 @@
 namespace gmx
 {
 
-class Options;
+class IOptionsContainer;
 
 namespace test
 {
@@ -63,6 +66,8 @@ class FloatingPointTolerance;
  * Mode of operation for reference data handling.
  *
  * There should be no need to use this type outside the test utility module.
+ *
+ * \ingroup module_testutils
  */
 enum ReferenceDataMode
 {
@@ -82,6 +87,13 @@ enum ReferenceDataMode
      */
     erefdataCreateMissing,
     /*! \brief
+     * Update reference data that does not pass comparison.
+     *
+     * Tests utilizing reference data should always pass in this mode unless
+     * there is an I/O error.
+     */
+    erefdataUpdateChanged,
+    /*! \brief
      * Update reference data, overwriting old data.
      *
      * Tests utilizing reference data should always pass in this mode unless
@@ -91,45 +103,35 @@ enum ReferenceDataMode
 };
 
 /*! \libinternal \brief
- * Returns the global reference data mode.
- *
- * There should be no need to use this function outside the test utility module.
- */
-ReferenceDataMode getReferenceDataMode();
-/*! \libinternal \brief
- * Sets the global reference data mode.
- *
- * There should be no need to use this function outside the test utility module.
- */
-void setReferenceDataMode(ReferenceDataMode mode);
-/*! \libinternal \brief
- * Returns the directory where reference data files are stored.
- *
- * There should be no need to use this function outside the test utility module.
- */
-std::string getReferenceDataPath();
-/*! \libinternal \brief
  * Initializes reference data handling.
  *
  * Adds command-line options to \p options to set the reference data mode.
- * By default, ::erefdataCompare is used, but \c "--ref-data create" or
- * \c "--ref-data update" can be used to change it.
+ * By default, ::erefdataCompare is used, but ``--ref-data create`` or
+ * ``--ref-data update`` can be used to change it.
  *
  * This function is automatically called by initTestUtils().
+ *
+ * \ingroup module_testutils
  */
-void initReferenceData(Options *options);
-
+void initReferenceData(IOptionsContainer *options);
 
 class TestReferenceChecker;
+
+namespace internal
+{
+class TestReferenceDataImpl;
+}
 
 /*! \libinternal \brief
  * Handles creation of and comparison to test reference data.
  *
+ * See \ref page_refdata for an overview of the functionality.
+ *
  * This class provides functionality to use the same code to generate reference
  * data and then on later runs compare the results of the code against that
  * reference.  The mode in which the class operates (writing reference data or
- * comparing against existing data) is set with parseReferenceDataArgs(), which
- * is automatically called when using the testutils module to implement tests.
+ * comparing against existing data) is set using a command-line option that
+ * is automatically managed when using the testutils module to implement tests.
  * Tests only need to create an instance of TestReferenceData, obtain a
  * TestReferenceChecker using the rootChecker() method and use the various
  * check*() methods in TestReferenceChecker to indicate values to check.  If
@@ -180,23 +182,21 @@ class TestReferenceData
         /*! \brief
          * Initializes the reference data in a specific mode.
          *
-         * This function is mainly useful for self-testing the reference data
+         * This function is only useful for self-testing the reference data
          * framework.  As such, it also puts the framework in a state where it
          * logs additional internal information for failures to help diagnosing
-         * problems in the framework.
+         * problems in the framework, and stores the reference data in a
+         * temporary directory instead of the source tree.
          * The default constructor should be used in tests utilizing this class.
          */
         explicit TestReferenceData(ReferenceDataMode mode);
         /*! \brief
          * Frees reference data structures.
          *
-         * In the current implementation, this function writes the reference
-         * data out if necessary.
+         * The reference data is written out if necessary automatically when
+         * the test finishes.
          */
         ~TestReferenceData();
-
-        //! Returns true if reference data is currently being written.
-        bool isWriteMode() const;
 
         /*! \brief
          * Returns a root-level checker object for comparisons.
@@ -206,9 +206,9 @@ class TestReferenceData
         TestReferenceChecker rootChecker();
 
     private:
-        class Impl;
+        std::shared_ptr<internal::TestReferenceDataImpl> impl_;
 
-        PrivateImplPointer<Impl> impl_;
+        GMX_DISALLOW_COPY_AND_ASSIGN(TestReferenceData);
 };
 
 /*! \libinternal \brief
@@ -236,16 +236,31 @@ class TestReferenceChecker
 {
     public:
         /*! \brief
-         * Creates a deep copy of the other checker.
+         * Creates a checker that cannot be used for checking.
+         *
+         * Attempting to call the check methods generates an assert.
+         * It is possible to check whether the checker is initialized by
+         * calling isValid().
+         * This constructor exists to allow declaring checker variables that
+         * will receive their value later without resorting to dynamic
+         * allocation.
          */
-        TestReferenceChecker(const TestReferenceChecker &other);
+        TestReferenceChecker();
+        //! Creates a deep copy of the other checker.
+        explicit TestReferenceChecker(const TestReferenceChecker &other);
+        //! Moves the checker.
+        TestReferenceChecker(TestReferenceChecker &&other);
         ~TestReferenceChecker();
 
+        //! Prevents implicit copying during assignment.
+        TestReferenceChecker &operator=(const TestReferenceChecker &) = delete;
         //! Assigns a test reference checker.
-        TestReferenceChecker &operator=(const TestReferenceChecker &other);
+        TestReferenceChecker &operator=(TestReferenceChecker &&other);
 
-        //! Returns true if reference data is currently being written.
-        bool isWriteMode() const;
+        //! Returns whether the checker is initialized.
+        bool isValid() const;
+        //! Allows testing whether the checker is initialized directly with if.
+        explicit operator bool() const { return isValid(); }
 
         /*! \brief
          * Sets the tolerance for floating-point comparisons.
@@ -270,7 +285,7 @@ class TestReferenceChecker
          * present, otherwise checks that the data item is absent.
          * If the check fails, a non-fatal Google Test assertion is generated.
          *
-         * If isWriteMode() returns true, the check always succeeds and the
+         * If reference data is being written, the check always succeeds and the
          * return value is \p bPresent.
          *
          * The main use of this method is to assign meaning for missing
@@ -313,7 +328,7 @@ class TestReferenceChecker
          * formatted output, and attempts to make the output XML such that it
          * is easier to edit by hand to set the desired output formatting.
          */
-        void checkStringBlock(const std::string &value, const char *id);
+        void checkTextBlock(const std::string &value, const char *id);
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
         //! Check a single int64 value.
@@ -334,6 +349,8 @@ class TestReferenceChecker
         void checkVector(const float value[3], const char *id);
         //! Check a vector of three double-precision floating point values.
         void checkVector(const double value[3], const char *id);
+        //! Check a single floating-point value from a string.
+        void checkRealFromString(const std::string &value, const char *id);
 
         /*! \name Overloaded versions of simple checker methods
          *

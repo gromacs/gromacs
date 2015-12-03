@@ -44,12 +44,14 @@
 #ifndef GMX_EXPFIT_H
 #define GMX_EXPFIT_H
 
-#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_output_env_t;
 
 /*! \brief
  * Enum to select fitting functions
@@ -106,7 +108,7 @@ double fit_function(const int eFitFn, const double parm[], const double x);
  * \param[in] c1 The data points
  * \param[in] sig The standard deviation in the points (can be NULL)
  * \param[in] dt The time step
- * \param[in] x The X-axis (may be NULL, see above)
+ * \param[in] x0 The X-axis (may be NULL, see above)
  * \param[in] begintimefit Starting time for fitting
  * \param[in] endtimefit Ending time for fitting
  * \param[in] oenv Output formatting information
@@ -124,8 +126,8 @@ double fit_function(const int eFitFn, const double parm[], const double x);
  * \param[in] fn_fitted If not NULL file to print the data and fitted curve to
  * \return integral.
  */
-real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x,
-              real begintimefit, real endtimefit, const output_env_t oenv,
+real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
+              real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
               gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
               const char *fn_fitted);
 
@@ -144,7 +146,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x,
  * \param[inout] fit The fitting parameters
  * \return the integral over the autocorrelation function?
  */
-real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
+real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbose,
              real tbeginfit, real tendfit, real dt, real c1[], real *fit);
 
 #ifdef __cplusplus

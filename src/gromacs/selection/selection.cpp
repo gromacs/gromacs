@@ -51,6 +51,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "selelem.h"
 #include "selvalue.h"
@@ -182,6 +183,14 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
 }
 
 }       // namespace
+
+bool
+SelectionData::hasSortedAtomIndices() const
+{
+    gmx_ana_index_t g;
+    gmx_ana_index_set(&g, rawPositions_.m.mapb.nra, rawPositions_.m.mapb.a, -1);
+    return gmx_ana_index_check_sorted(&g);
+}
 
 void
 SelectionData::refreshName()
@@ -320,7 +329,8 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     fprintf(fp, "    Group ");
     gmx_ana_index_t g;
     gmx_ana_index_set(&g, p.m.mapb.nra, p.m.mapb.a, 0);
-    gmx_ana_index_dump(fp, &g, nmaxind);
+    TextWriter      writer(fp);
+    gmx_ana_index_dump(&writer, &g, nmaxind);
 
     fprintf(fp, "    Block (size=%d):", p.m.mapb.nr);
     if (!p.m.mapb.index)

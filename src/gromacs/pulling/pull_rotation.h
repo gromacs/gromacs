@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +48,16 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct gmx_domdec_t;
+struct gmx_mtop_t;
+struct gmx_output_env_t;
+struct t_commrec;
+struct t_filenm;
+struct t_inputrec;
+struct t_rot;
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +85,7 @@ extern "C" {
  *                 whether or not we are doing a rerun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const output_env_t oenv,
+                     struct t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      gmx_bool bVerbose, unsigned long Flags);
 
 
@@ -91,7 +97,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
  * \param dd      Structure containing domain decomposition data.
  * \param rot     Pointer to all the enforced rotation data.
  */
-extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot);
+extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
 
 
 /*! \brief Calculates the enforced rotation potential(s).
@@ -111,7 +117,7 @@ extern void dd_make_local_rotation_groups(gmx_domdec_t *dd, t_rot *rot);
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-extern void do_rotation(t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
+extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
                         gmx_int64_t step, gmx_wallcycle_t wcycle, gmx_bool bNS);
 
 
@@ -132,7 +138,7 @@ extern void do_rotation(t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], rea
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_int64_t step, real t);
+extern real add_rot_forces(t_rot *rot, rvec f[], struct t_commrec *cr, gmx_int64_t step, real t);
 
 
 /*! \brief Close the enforced rotation output files.

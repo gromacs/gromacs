@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
+file(GLOB MDRUN_SOURCES mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,6 @@ gmx_dependent_option(
     DOXYGEN_FOUND)
 mark_as_advanced(GMX_COMPACT_DOXYGEN)
 
-find_package(PythonInterp)
 set(USE_PYTHON_SCRIPTS OFF)
 if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
     set(USE_PYTHON_SCRIPTS ON)
@@ -111,7 +110,7 @@ if (DOXYGEN_FOUND)
             ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
             ${CMAKE_CURRENT_BINARY_DIR}/RunDoxygen.cmake)
         if (GMX_COMPACT_DOXYGEN)
-            list(APPEND doxygen_deps ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-compact)
+            list(APPEND doxygen_deps ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact)
         endif()
         gmx_add_custom_output_target(doxygen-source-timestamp
             OUTPUT STAMP
@@ -210,13 +209,31 @@ if (DOXYGEN_FOUND)
             ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             -l ${CMAKE_CURRENT_BINARY_DIR}/check-source.log
-            --exitcode
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
         add_custom_target(check-source      COMMAND ${check_source_command}
-            COMMENT "Checking Doxygen documentation" VERBATIM)
+            COMMENT "Checking source code for various issues" VERBATIM)
         add_custom_target(check-source-fast COMMAND ${check_source_command}
-            COMMENT "Checking Doxygen documentation" VERBATIM)
+            COMMENT "Checking source code for various issues" VERBATIM)
         add_dependencies(check-source       doxygen-xml)
     endif()
+else()
+    function (add_disabled_doxygen_target TARGET)
+        add_custom_target(${TARGET}
+            COMMAND ${CMAKE_COMMAND} -E echo
+                "Cannot build/run target ${TARGET} because Doxygen is not available"
+            COMMENT "Doxygen not available" VERBATIM)
+    endfunction()
+    add_disabled_doxygen_target(doxygen-all)
+    add_disabled_doxygen_target(doxygen-all-fast)
+    add_disabled_doxygen_target(doxygen-xml)
+    add_disabled_doxygen_target(doxygen-user)
+    add_disabled_doxygen_target(doxygen-lib)
+    add_disabled_doxygen_target(doxygen-lib-fast)
+    add_disabled_doxygen_target(doxygen-full)
+    add_disabled_doxygen_target(doxygen-full-fast)
+    add_disabled_doxygen_target(check-source)
+    add_disabled_doxygen_target(check-source-fast)
+    add_disabled_doxygen_target(dep-graphs)
+    add_disabled_doxygen_target(dep-graphs-fast)
 endif()

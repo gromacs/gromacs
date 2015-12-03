@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,10 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
+const char *ptype_str[eptNR+1] = {
+    "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
+};
+
 void init_atom(t_atoms *at)
 {
     at->nr        = 0;
@@ -67,17 +71,13 @@ void init_atomtypes(t_atomtypes *at)
 
 void done_atom(t_atoms *at)
 {
-    at->nr       = 0;
-    at->nres     = 0;
     sfree(at->atom);
     sfree(at->resinfo);
     sfree(at->atomname);
     sfree(at->atomtype);
     sfree(at->atomtypeB);
-    if (at->pdbinfo)
-    {
-        sfree(at->pdbinfo);
-    }
+    sfree(at->pdbinfo);
+    init_atom(at);
 }
 
 void done_atomtypes(t_atomtypes *atype)
@@ -221,68 +221,4 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
     ri->ic       = ic;
     ri->chainnum = chainnum;
     ri->chainid  = chainid;
-}
-
-void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames)
-{
-    int i;
-
-    if (bFreeNames && atoms->atomname != NULL)
-    {
-        for (i = 0; i < atoms->nr; i++)
-        {
-            if (atoms->atomname[i] != NULL)
-            {
-                sfree(*atoms->atomname[i]);
-                *atoms->atomname[i] = NULL;
-            }
-        }
-    }
-    if (bFreeNames && atoms->resinfo != NULL)
-    {
-        for (i = 0; i < atoms->nres; i++)
-        {
-            if (atoms->resinfo[i].name != NULL)
-            {
-                sfree(*atoms->resinfo[i].name);
-                *atoms->resinfo[i].name = NULL;
-            }
-        }
-    }
-    if (bFreeNames && atoms->atomtype != NULL)
-    {
-        for (i = 0; i < atoms->nr; i++)
-        {
-            if (atoms->atomtype[i] != NULL)
-            {
-                sfree(*atoms->atomtype[i]);
-                *atoms->atomtype[i] = NULL;
-            }
-        }
-    }
-    if (bFreeNames && atoms->atomtypeB != NULL)
-    {
-        for (i = 0; i < atoms->nr; i++)
-        {
-            if (atoms->atomtypeB[i] != NULL)
-            {
-                sfree(*atoms->atomtypeB[i]);
-                *atoms->atomtypeB[i] = NULL;
-            }
-        }
-    }
-    sfree(atoms->atomname);
-    sfree(atoms->atomtype);
-    sfree(atoms->atomtypeB);
-    sfree(atoms->resinfo);
-    sfree(atoms->atom);
-    sfree(atoms->pdbinfo);
-    atoms->nr        = 0;
-    atoms->nres      = 0;
-    atoms->atomname  = NULL;
-    atoms->atomtype  = NULL;
-    atoms->atomtypeB = NULL;
-    atoms->resinfo   = NULL;
-    atoms->atom      = NULL;
-    atoms->pdbinfo   = NULL;
 }

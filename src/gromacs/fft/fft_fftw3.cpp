@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,10 @@
 
 #include <fftw3.h>
 
-#include "thread_mpi/mutex.h"
-
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mutex.h"
 
 #ifdef GMX_DOUBLE
 #define FFTWPREFIX(name) fftw_ ## name
@@ -56,7 +55,7 @@
 
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
-static tMPI::mutex big_fftw_mutex;
+static gmx::Mutex big_fftw_mutex;
 #define FFTW_LOCK try { big_fftw_mutex.lock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 #define FFTW_UNLOCK try { big_fftw_mutex.unlock(); } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -115,7 +114,7 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
     int                    i, j, k;
     int                    fftw_flags;
 
-#ifdef GMX_DISABLE_FFTW_MEASURE
+#if GMX_DISABLE_FFTW_MEASURE
     flags |= GMX_FFT_FLAG_CONSERVATIVE;
 #endif
 
@@ -232,7 +231,7 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
     int                    i, j, k;
     int                    fftw_flags;
 
-#ifdef GMX_DISABLE_FFTW_MEASURE
+#if GMX_DISABLE_FFTW_MEASURE
     flags |= GMX_FFT_FLAG_CONSERVATIVE;
 #endif
 
@@ -343,7 +342,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     int                    i, j, k;
     int                    fftw_flags;
 
-#ifdef GMX_DISABLE_FFTW_MEASURE
+#if GMX_DISABLE_FFTW_MEASURE
     flags |= GMX_FFT_FLAG_CONSERVATIVE;
 #endif
 
@@ -586,13 +585,4 @@ gmx_many_fft_destroy(gmx_fft_t    fft)
 void gmx_fft_cleanup()
 {
     FFTWPREFIX(cleanup)();
-}
-
-const char *gmx_fft_get_version_info()
-{
-#ifdef GMX_NATIVE_WINDOWS
-    return "fftw3";
-#else
-    return FFTWPREFIX(version);
-#endif
 }

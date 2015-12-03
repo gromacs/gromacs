@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="&lt;stdout&gt;"><![CDATA[
+SYNOPSIS
+
+test [-[no]h] [-[no]quiet] [-[no]version] [-[no]copyright] [-nice <int>]
+     [-[no]backup]
+
+OPTIONS
+
+Other options:
+
+ -[no]h                     (no)
+           Print help and quit
+ -[no]quiet                 (no)
+           Do not print common startup info or quotes
+ -[no]version               (no)
+           Print extended version information and quit
+ -[no]copyright             (yes)
+           Print copyright information on startup
+ -nice   <int>              (19)
+           Set the nicelevel (default depends on command)
+ -[no]backup                (yes)
+           Write backups if output files exist
+
+Additional help is available on the following topics:
+    commands  List of available commands
+    topic     Test topic
+To access the help, use 'test help <topic>'.
+For help on a command, use 'test help <command>'.
+]]></String>
+</ReferenceData>

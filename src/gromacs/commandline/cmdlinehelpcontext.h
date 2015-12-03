@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPCONTEXT_H
 #define GMX_COMMANDLINE_CMDLINEHELPCONTEXT_H
 
+#include <string>
+
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -74,8 +76,9 @@ class CommandLineHelpContext
          *
          * Wraps the constructor of HelpWriterContext.
          */
-        CommandLineHelpContext(File *file, HelpOutputFormat format,
-                               const HelpLinks *links);
+        CommandLineHelpContext(TextOutputStream *stream,
+                               HelpOutputFormat format, const HelpLinks *links,
+                               const std::string &programName);
         //! Creates a context for a particular HelpWriterContext.
         explicit CommandLineHelpContext(const HelpWriterContext &writerContext);
         /*! \brief
@@ -84,6 +87,10 @@ class CommandLineHelpContext
         explicit CommandLineHelpContext(ShellCompletionWriter *writer);
         //! Creates a copy of the context.
         explicit CommandLineHelpContext(const CommandLineHelpContext &other);
+        //! Moves the context.
+        CommandLineHelpContext(CommandLineHelpContext &&other);
+        //! Move-assigns the context.
+        CommandLineHelpContext &operator=(CommandLineHelpContext &&other);
         ~CommandLineHelpContext();
 
         /*! \brief
@@ -94,6 +101,8 @@ class CommandLineHelpContext
         void setModuleDisplayName(const std::string &name);
         //! Sets whether hidden options should be shown in help output.
         void setShowHidden(bool bHidden);
+        //! \copydoc HelpWriterContext::enterSubSection()
+        void enterSubSection(const std::string &title);
 
         //! Returns the lower-level context for writing the help.
         const HelpWriterContext &writerContext() const;

@@ -67,7 +67,7 @@ try_compile(HAVE_PROCESSOR_NUMBER ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake
 include(FindThreads)
 
 if(CMAKE_USE_WIN32_THREADS_INIT AND NOT HAVE_PROCESSOR_NUMBER)
-    message(WARNING "Incomplete Windows Processor Group API. If you want Gromacs to be able to set thread affinity, choose a Mingw distribution with a complete API (e.g. Mingw-w64).")
+    message(WARNING "Incomplete Windows Processor Group API. If you want GROMACS to be able to set thread affinity, choose a Mingw distribution with a complete API (e.g. Mingw-w64).")
 endif()
 
 if (CMAKE_USE_WIN32_THREADS_INIT AND HAVE_PROCESSOR_NUMBER)

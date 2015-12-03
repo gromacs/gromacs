@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,7 +137,7 @@ typedef uint64_t gmx_uint64_t;
  * to indicate a function is inlined.
  * C++ code should use plain `inline`, as that is already in C++98.
  */
-#if !defined __cplusplus && _MSC_VER
+#if !defined __cplusplus && defined _MSC_VER
 #define gmx_inline __inline
 #else
 /* C++ or C99 */
@@ -169,6 +169,28 @@ typedef uint64_t gmx_uint64_t;
 #define gmx_cxx_const const
 #else
 #define gmx_cxx_const
+#endif
+
+/*! \def GMX_CXX11_COMPILATION
+ * \brief
+ * Defined to 1 when compiling as C++11.
+ *
+ * While \Gromacs only supports C++11 compilation, there are some parts of the
+ * code that are compiled with other tools than the actual C++ compiler, and
+ * these may not support C++11.  Most notable such case is all of CUDA code
+ * (with CUDA versions older than 6.5), but other types of kernels might also
+ * have similar limitations in the future.
+ *
+ * The define is intended for conditional compilation in low-level headers that
+ * need to support inclusion from such non-C++11 files, but get significant
+ * benefit (e.g., for correctness checking or more convenient use) from C++11.
+ * It should only be used for features that do not influence the ABI of the
+ * header; e.g., static_asserts or additional helper methods.
+ */
+#if defined __cplusplus && __cplusplus >= 201103L
+#    define GMX_CXX11_COMPILATION 1
+#else
+#    define GMX_CXX11_COMPILATION 0
 #endif
 
 /*! \def gmx_unused
@@ -220,6 +242,36 @@ typedef uint64_t gmx_uint64_t;
 #else
 #define gmx_noreturn
 #endif
+#endif
+
+/*! \def GMX_ALIGNMENT
+ * \brief
+ * Supports aligned variables */
+
+/*! \def GMX_ALIGNED(type, alignment)
+ * \brief
+ * Declare variable with data alignment
+ *
+ * \param[in] type       Type of variable
+ * \param[in] alignment  Alignment in multiples of type
+ *
+ * Typical usage:
+ * \code
+   GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf[...];
+   \endcode
+ */
+/* alignas(x) is not used even with GMX-CXX11 because it isn't in the list of
+   tested features and thus might not be supported.
+   MSVC before 2015 has align but doesn't support sizeof inside. */
+#if defined(_MSC_VER) && (_MSC_VER > 1800 || defined(__ICL))
+#  define GMX_ALIGNMENT 1
+#  define GMX_ALIGNED(type, alignment) __declspec(align(alignment*sizeof(type))) type
+#elif defined(__GNUC__) || defined(__clang__)
+#  define GMX_ALIGNMENT 1
+#  define GMX_ALIGNED(type, alignment) __attribute__ ((__aligned__(alignment*sizeof(type)))) type
+#else
+#  define GMX_ALIGNMENT 0
+#  define GMX_ALIGNED(type, alignment)
 #endif
 
 /*! \brief

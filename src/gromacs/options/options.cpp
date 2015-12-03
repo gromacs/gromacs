@@ -43,6 +43,8 @@
 
 #include "options.h"
 
+#include <utility>
+
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/utility/arrayref.h"
@@ -56,28 +58,35 @@ namespace gmx
 {
 
 /********************************************************************
- * OptionManagerInterface
+ * IOptionManager
  */
 
-OptionManagerInterface::~OptionManagerInterface()
+IOptionManager::~IOptionManager()
 {
 }
 
 /********************************************************************
- * Options::Impl
+ * IOptionsContainer
  */
 
-Options::Impl::Impl(const char *name, const char *title)
-    : name_(name != NULL ? name : ""), title_(title != NULL ? title : ""),
+IOptionsContainer::~IOptionsContainer()
+{
+}
+
+/********************************************************************
+ * OptionsImpl
+ */
+
+namespace internal
+{
+
+OptionsImpl::OptionsImpl(const char *name, const char * /*title*/)
+    : name_(name != NULL ? name : ""), rootGroup_(this),
       parent_(NULL)
 {
 }
 
-Options::Impl::~Impl()
-{
-}
-
-Options *Options::Impl::findSubSection(const char *name) const
+Options *OptionsImpl::findSubSection(const char *name) const
 {
     SubSectionList::const_iterator i;
     for (i = subSections_.begin(); i != subSections_.end(); ++i)
@@ -90,25 +99,22 @@ Options *Options::Impl::findSubSection(const char *name) const
     return NULL;
 }
 
-AbstractOptionStorage *Options::Impl::findOption(const char *name) const
+AbstractOptionStorage *OptionsImpl::findOption(const char *name) const
 {
-    OptionList::const_iterator i;
-    for (i = options_.begin(); i != options_.end(); ++i)
+    OptionMap::const_iterator i = optionMap_.find(name);
+    if (i == optionMap_.end())
     {
-        if ((*i)->name() == name)
-        {
-            return i->get();
-        }
+        return NULL;
     }
-    return NULL;
+    return i->second.get();
 }
 
-void Options::Impl::startSource()
+void OptionsImpl::startSource()
 {
-    OptionList::const_iterator i;
-    for (i = options_.begin(); i != options_.end(); ++i)
+    OptionMap::const_iterator i;
+    for (i = optionMap_.begin(); i != optionMap_.end(); ++i)
     {
-        AbstractOptionStorage &option = **i;
+        AbstractOptionStorage &option = *i->second;
         option.startSource();
     }
     SubSectionList::const_iterator j;
@@ -120,11 +126,46 @@ void Options::Impl::startSource()
 }
 
 /********************************************************************
+ * OptionsImpl::Group
+ */
+
+IOptionsContainer &OptionsImpl::Group::addGroup()
+{
+    subgroups_.push_back(Group(parent_));
+    return subgroups_.back();
+}
+
+OptionInfo *OptionsImpl::Group::addOption(const AbstractOption &settings)
+{
+    OptionsImpl *root = parent_;
+    while (root->parent_ != NULL)
+    {
+        root = root->parent_->impl_.get();
+    }
+    AbstractOptionStoragePointer         option(settings.createStorage(root->managers_));
+    options_.reserve(options_.size() + 1);
+    std::pair<OptionMap::iterator, bool> insertionResult =
+        parent_->optionMap_.insert(std::make_pair(option->name(),
+                                                  std::move(option)));
+    if (!insertionResult.second)
+    {
+        GMX_THROW(APIError("Duplicate option: " + option->name()));
+    }
+    AbstractOptionStorage &insertedOption = *insertionResult.first->second;
+    options_.push_back(&insertedOption);
+    return &insertedOption.optionInfo();
+}
+
+}   // namespace internal
+
+using internal::OptionsImpl;
+
+/********************************************************************
  * Options
  */
 
 Options::Options(const char *name, const char *title)
-    : impl_(new Impl(name, title))
+    : impl_(new OptionsImpl(name, title))
 {
 }
 
@@ -137,32 +178,13 @@ const std::string &Options::name() const
     return impl_->name_;
 }
 
-const std::string &Options::title() const
-{
-    return impl_->title_;
-}
 
-const std::string &Options::description() const
-{
-    return impl_->description_;
-}
-
-void Options::setDescription(const std::string &desc)
-{
-    impl_->description_ = desc;
-}
-
-void Options::setDescription(const ConstArrayRef<const char *> &descArray)
-{
-    impl_->description_ = joinStrings(descArray, "\n");
-}
-
-void Options::addManager(OptionManagerInterface *manager)
+void Options::addManager(IOptionManager *manager)
 {
     GMX_RELEASE_ASSERT(impl_->parent_ == NULL,
                        "Can only add a manager in a top-level Options object");
     // This ensures that all options see the same set of managers.
-    GMX_RELEASE_ASSERT(impl_->options_.empty(),
+    GMX_RELEASE_ASSERT(impl_->optionMap_.empty(),
                        "Can only add a manager before options");
     // This check could be relaxed if we instead checked that the subsections
     // do not have options.
@@ -175,7 +197,7 @@ void Options::addSubSection(Options *section)
 {
     // This is required, because managers are used from the root Options
     // object, so they are only seen after the subsection has been added.
-    GMX_RELEASE_ASSERT(section->impl_->options_.empty(),
+    GMX_RELEASE_ASSERT(section->impl_->optionMap_.empty(),
                        "Can only add a subsection before it has any options");
     GMX_RELEASE_ASSERT(section->impl_->managers_.empty(),
                        "Can only have managers in a top-level Options object");
@@ -189,36 +211,24 @@ void Options::addSubSection(Options *section)
     section->impl_->parent_ = this;
 }
 
-OptionInfo *Options::addOption(const AbstractOption &settings)
+IOptionsContainer &Options::addGroup()
 {
-    Options::Impl *root = impl_.get();
-    while (root->parent_ != NULL)
-    {
-        root = root->parent_->impl_.get();
-    }
-    Impl::AbstractOptionStoragePointer option(settings.createStorage(root->managers_));
-    if (impl_->findOption(option->name().c_str()) != NULL)
-    {
-        GMX_THROW(APIError("Duplicate option: " + option->name()));
-    }
-    impl_->options_.push_back(move(option));
-    return &impl_->options_.back()->optionInfo();
+    return impl_->rootGroup_.addGroup();
 }
 
-bool Options::isSet(const char *name) const
+OptionInfo *Options::addOption(const AbstractOption &settings)
 {
-    AbstractOptionStorage *option = impl_->findOption(name);
-    return (option != NULL ? option->isSet() : false);
+    return impl_->rootGroup_.addOption(settings);
 }
 
 void Options::finish()
 {
     // TODO: Consider how to customize these error messages based on context.
-    ExceptionInitializer             errors("Invalid input values");
-    Impl::OptionList::const_iterator i;
-    for (i = impl_->options_.begin(); i != impl_->options_.end(); ++i)
+    ExceptionInitializer                    errors("Invalid input values");
+    OptionsImpl::OptionMap::const_iterator  i;
+    for (i = impl_->optionMap_.begin(); i != impl_->optionMap_.end(); ++i)
     {
-        AbstractOptionStorage &option = **i;
+        AbstractOptionStorage &option = *i->second;
         try
         {
             option.finish();
@@ -229,7 +239,7 @@ void Options::finish()
             errors.addCurrentExceptionAsNested();
         }
     }
-    Impl::SubSectionList::const_iterator j;
+    OptionsImpl::SubSectionList::const_iterator j;
     for (j = impl_->subSections_.begin(); j != impl_->subSections_.end(); ++j)
     {
         Options &section = **j;

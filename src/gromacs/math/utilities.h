@@ -82,33 +82,6 @@ extern "C" {
 #define M_2_SQRTPI  1.128379167095513
 #endif
 
-int     gmx_nint(real a);
-real    sign(real x, real y);
-
-real    cuberoot (real a);
-double  gmx_erfd(double x);
-double  gmx_erfcd(double x);
-float   gmx_erff(float x);
-float   gmx_erfcf(float x);
-#ifdef GMX_DOUBLE
-#define gmx_erf(x)   gmx_erfd(x)
-#define gmx_erfc(x)  gmx_erfcd(x)
-#else
-#define gmx_erf(x)   gmx_erff(x)
-#define gmx_erfc(x)  gmx_erfcf(x)
-#endif
-
-#if defined(_MSC_VER) && _MSC_VER < 1800
-#define gmx_expm1(x) (exp(x)-1)
-#define gmx_log1p(x) log(1+x)
-#else
-#define gmx_expm1 expm1
-#define gmx_log1p log1p
-#endif
-
-gmx_bool gmx_isfinite(real x);
-gmx_bool gmx_isnan(real x);
-
 /*! \brief Check if two numbers are within a tolerance
  *
  *  This routine checks if the relative difference between two numbers is
@@ -175,6 +148,17 @@ gmx_greatest_common_divisor(int p, int q);
  * Enables division-by-zero, invalid, and overflow.
  */
 int gmx_feenableexcept();
+
+/*! \brief Return cut-off to use
+ *
+ * Takes the max of two cut-offs. However a cut-off of 0
+ * signifies that the cut-off in fact is infinite, and
+ * this requires this special routine.
+ * \param[in] cutoff1 The first cutoff (e.g. coulomb)
+ * \param[in] cutoff2 The second cutoff (e.g. vdw)
+ * \return 0 if either is 0, the normal max of the two otherwise.
+ */
+real max_cutoff(real cutoff1, real cutoff2);
 
 #ifdef __cplusplus
 }

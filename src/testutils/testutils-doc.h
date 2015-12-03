@@ -51,6 +51,17 @@
  *  - gmx::test::TestFileManager (in testfilemanager.h) provides functionality
  *    for locating test input files from the source directory and managing
  *    temporary files that need to be created during the test.
+ *  - gmx::test::TestFileInputRedirector (in testfileredirector.h) provides
+ *    functionality for capturing file existence checks in code that uses
+ *    gmx::IFileInputRedirector.
+ *  - gmx::test::TestFileOutputRedirector (in testfileredirector.h) provides
+ *    functionality for capturing file output (including `stdout`) from code
+ *    that uses gmx::IFileOutputRedirector, and checking that output
+ *    against reference data.
+ *  - gmx::test::InteractiveTestHelper (in interactivetest.h) provides
+ *    a helper class for testing an interactive session that uses
+ *    gmx::TextInputStream and gmx::TextOutputStream for prompting input and
+ *    printing status messages.
  *  - #GMX_TEST_OPTIONS macro provides facilities for adding custom command
  *    line options for the test binary.
  *  - testasserts.h provides several custom test assertions for better
@@ -58,10 +69,8 @@
  *    assertions.
  *  - gmx::test::TestReferenceData and related classes (in refdata.h) provide
  *    utilities to write regression-style tests that check that the test
- *    produces the same results as an earlier run of the same test.  The
- *    reference data is stored as XML files.  For certain types of tests, the
- *    XML can also be easier to inspect manually for correctness than writing
- *    the checks in C++, providing an alternative method to write assertions.
+ *    produces the same results as an earlier run of the same test.
+ *    See \ref page_refdata for more details.
  *  - gmx::test::CommandLine and related classes (in cmdlinetest.h) provide
  *    utilities for constructing command line argument arrays for use in tests
  *    that invoke actual commands.

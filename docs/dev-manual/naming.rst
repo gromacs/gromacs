@@ -12,12 +12,24 @@ attempt has been made to consolidate the naming.
 Files
 -----
 
-* Avoid having multiple files with the same name in different places within
-  the same library.  In addition to making things harder to find, C++ source
-  files with the same name can cause obscure problems with some compilers.
-  Currently, unit tests are an exception to the rule (there is only one
-  particular compiler that had problems with this, and a workaround is
-  possible if/when that starts to affect more than a few of the test files).
+* C++ source files have a ``.cpp`` extension, C source files ``.c``, and
+  headers for both use ``.h``.
+* For source file :file:`{file}.c`/:file:`{file}.cpp`, declarations that are
+  visible outside the source file should go into a correspondingly named
+  header: :file:`{file}.h`.  Some code may deviate from this rule to improve
+  readability and/or usability of the API, but this should then be clearly
+  documented.
+
+  There can also be a :file:`{file}-impl.h` file that declares classes or
+  functions that are not accessible outside the module.  If the whole file only
+  declares symbols internal to the module, then the :file:`-impl.h` suffix is
+  omitted.
+
+  In most cases, declarations that are not used outside a single source file
+  are in the source file.
+* Use suffix :file:`-doc.h` for files that contain only Doxygen documentation
+  for some module or such, for cases where there is no natural single header
+  for putting the documentation.
 * For C++ files, prefer naming the file the same as the (main) class it
   contains.  Currently all file names are all-lowercase, even though class
   names contain capital letters.
@@ -25,9 +37,12 @@ Files
   containing directory if that would cause unnecessary repetition (e.g., as a
   common prefix to every file name in the directory) and the remaining part of
   the name is unique enough.
-
-.. TODO: Copy/move relevant content from codelayout.rst here, and add
-   details.
+* Avoid having multiple files with the same name in different places within
+  the same library.  In addition to making things harder to find, C++ source
+  files with the same name can cause obscure problems with some compilers.
+  Currently, unit tests are an exception to the rule (there is only one
+  particular compiler that had problems with this, and a workaround is
+  possible if/when that starts to affect more than a few of the test files).
 
 .. TODO: Consider usage of underscores vs dashes in file names.
 
@@ -37,14 +52,6 @@ Common guidelines for C and C++ code
 * Preprocessor macros should be all upper-case.  Do not use leading
   underscores, as all such names are reserved according to the C/C++ standard.
 * Name include guards like ``GMX_DIRNAME_HEADERNAME_H``.
-* Boolean variables are always named with a ``b`` prefix, followed by a
-  CamelCase name.
-* Enum values are named with an ``e`` prefix.  For enum types exposed widely in
-  the codebase, this is followed typically by a part that makes the enum
-  values not conflict with other enums in the same scope.  In C code, this is
-  typically an all-lowercase acronym (e.g., ``epbcNONE``); in C++, the same
-  approach may be used, or the name of the enum type is used (e.g.,
-  ``eHelpOutputFormat_Console``).
 * Avoid abbreviations that are not obvious to a general reader.
 * If you use acronyms (e.g., PME, DD) in names, follow the Microsoft policy on
   casing: two letters is uppercase (DD), three or more is lowercase (Pme).
@@ -62,6 +69,10 @@ C code
   Some parts of the code use a ``_gmx_`` prefix for internal functions, but
   strictly speaking, these are reserved names, so, e.g., a trailing underscore
   would be better.
+* Old C code and changes to it can still use the hungarian notation for
+  booleans and enumerated variable names, as well as enum values, where they
+  are prefixed with ``b`` and ``e`` respectively, or you can gradually move
+  to the C++ practice below. Whatever you choose, avoid complex abbreviations.
 
 C++ code
 --------
@@ -72,8 +83,11 @@ C++ code
   You may use an all-lowercase name with underscores if your class closely
   resembles an external construct (e.g., a standard library construct) named
   that way.
-* C++ interfaces are named with a ``Interface`` suffix, and abstract base
-  classes with an ``Abstract`` prefix.
+* C++ interfaces are named with an ``I`` prefix, such as in ICommandLineModule.
+  This keeps interfaces identifiable, without introducing too much clutter
+  (as the interface is typically used quite widely, spelling out
+  ``Interface`` would make many of the names unnecessarily long).
+* Abstract base classes are typically named with an ``Abstract`` prefix.
 * Member variables are named with a trailing underscore.
 * Accessors for a variable ``foo_`` are named ``foo()`` and ``setFoo()``.
 * Global variables are named with a ``g_`` prefix.
@@ -85,6 +99,19 @@ C++ code
   a module start with the module name, omitting or abbreviating the module
   name is OK).  Currently, all source file names are lowercase, but this
   casing difference should be the only difference.
+* For new C++ code, avoid using the hungarian notation that is a descendant
+  from the C code (i.e., the practice of using a ``b`` prefix for boolean
+  variables and an ``e`` prefix for enumerated variables and/or values).
+  Instead, make the names long with a good description of what they control,
+  typically including a verb for boolean variables, like ``foundAtom``.
+* It is a good idea to include the name of the enum type
+  as a base in the name of enum values, e.g., ``HelpOutputFormat_Console``,
+  in particular for settings exposed to other modules.
+* Prefer to use enumerated types and values instead of booleans as control
+  parameters to functions. It is reasonably easy to understand what the
+  argument ``HelpOutputFormat_Console`` is controling, while it is almost
+  impossible to decipher ``TRUE`` in the same place without checking the
+  documentation for the role of the parameter.
 
 The rationale for the trailing underscore and the global/static prefixes is
 that it is immediately clear whether a variable referenced in a method is local

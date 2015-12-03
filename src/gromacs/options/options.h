@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,18 +48,20 @@
 
 #include <string>
 
-#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
-
 class AbstractOption;
 class OptionsAssigner;
 class OptionsIterator;
+
+namespace internal
+{
+class OptionsImpl;
+}
 
 /*! \brief
  * Base class for option managers.
@@ -76,41 +78,19 @@ class OptionsIterator;
  * \inlibraryapi
  * \ingroup module_options
  */
-class OptionManagerInterface
+class IOptionManager
 {
     protected:
-        virtual ~OptionManagerInterface();
+        virtual ~IOptionManager();
 };
 
 /*! \brief
  * Collection of options.
  *
- * This class provides a standard interface for implementing input options.
- * Standard usage is to write a method that creates an Options that is owned by
- * the object, populates it with supported options, and then returns it:
- * \code
-   // <as class attributes>
-   using gmx::Options;
-   Options      options("common", "Common Options");
-   std::string  arg1;
-   int          arg2;
-
-   // <populating>
-   using gmx::StringOption;
-   using gmx::IntegerOption;
-   options.addOption(StringOption("arg1").store(&arg1));
-   options.addOption(IntegerOption("arg2").store(&arg2));
-   return &options;
-   \endcode
- * The caller of that method can then use a parser implementation such as
- * CommandLineParser to provide values for the options.
+ * See \ref module_options for an overview of how the options work.
+ * The IOptionsContainer interface documents how to add options.
  *
- * Header basicoptions.h provides declarations of several standard
- * option types for use with addOption().  Documentation of those classes
- * also give more examples of how to define options.
- *
- * In order to keep the public interface of this class simple and to reduce
- * build dependencies on objects that simply provide options, functionality
+ * In order to keep the public interface of this class simple, functionality
  * to assign values to options is provided by a separate OptionsAssigner class.
  * Similarly, functionality for looping over all options (e.g., for writing out
  * help) is provided by OptionsIterator.
@@ -118,7 +98,7 @@ class OptionManagerInterface
  * \inpublicapi
  * \ingroup module_options
  */
-class Options
+class Options : public IOptionsContainer
 {
     public:
         /*! \brief
@@ -134,43 +114,6 @@ class Options
 
         //! Returns the short name of the option collection.
         const std::string &name() const;
-        //! Returns the title of the option collection.
-        const std::string &title() const;
-        //! Returns the full description of the option collection.
-        const std::string &description() const;
-
-        /*! \brief
-         * Sets the full description of the option collection.
-         *
-         * \param[in] desc  String to set as the description.
-         *
-         * This overload is mainly useful if the description is very short.
-         * Currently this is mostly the case in unit testing.
-         */
-        void setDescription(const std::string &desc);
-        /*! \brief
-         * Sets the full description of the option collection from string array.
-         *
-         * \param[in] descArray  String array to set as the description.
-         *
-         * All strings in `descArray` are concatenated to form the description.
-         * Spaces are inserted between strings if they are missing.
-         *
-         * Example usage:
-         * \code
-           const char *const desc[] = {
-               "This is the description",
-               "for the options"
-           };
-
-           gmx::Options options(NULL, NULL);
-           options.setDescription(desc);
-           \endcode
-         *
-         * To use this overload, you must also include
-         * `gromacs/utility/arrayref.h`.
-         */
-        void setDescription(const ConstArrayRef<const char *> &descArray);
 
         /*! \brief
          * Adds an option manager.
@@ -192,7 +135,7 @@ class Options
          *
          * This method cannot be called after adding options or subsections.
          */
-        void addManager(OptionManagerInterface *manager);
+        void addManager(IOptionManager *manager);
 
         /*! \brief
          * Adds an option collection as a subsection of this collection.
@@ -214,52 +157,12 @@ class Options
          * If an attempt is made, the function asserts.
          */
         void addSubSection(Options *section);
-        /*! \brief
-         * Adds a recognized option to the collection.
-         *
-         * \param[in] settings Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * This method provides the internal implementation, but in most cases
-         * the templated method is called from user code.
-         * See the templated method for more details.
-         */
-        OptionInfo *addOption(const AbstractOption &settings);
-        /*! \brief
-         * Adds a recognized option to the collection.
-         *
-         * \tparam    OptionType Type of the options description object.
-         * \param[in] settings   Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * The return value is a pointer for more convenient use in callers:
-         * often callers need to declare the variable that will hold the return
-         * value in wider scope than would be achieved by declaring it at the
-         * site where addOption() is called.
-         * The returned pointer must not be freed.
-         *
-         * See \link Options class documentation \endlink for example usage.
-         *
-         * \libinternal
-         * \p OptionType::InfoType must specify a type that derives from
-         * OptionInfo and matches the type that is returned by
-         * AbstractOptionStorage::optionInfo() for the storage object that
-         * corresponds to \p OptionType.
-         */
-        template <class OptionType>
-        typename OptionType::InfoType *addOption(const OptionType &settings)
-        {
-            OptionInfo *info
-                = addOption(static_cast<const AbstractOption &>(settings));
-            GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
-                       "Mismatching option info type declaration and implementation");
-            return info->toType<typename OptionType::InfoType>();
-        }
 
-        //! Returns true if option \p name is set.
-        bool isSet(const char *name) const;
+        // From IOptionsContainer
+        virtual IOptionsContainer &addGroup();
+        virtual OptionInfo *addOption(const AbstractOption &settings);
+        using IOptionsContainer::addOption;
+
         /*! \brief
          * Notifies the collection that all option values are assigned.
          *
@@ -277,10 +180,10 @@ class Options
         void finish();
 
     private:
-        class Impl;
+        PrivateImplPointer<internal::OptionsImpl> impl_;
 
-        PrivateImplPointer<Impl> impl_;
-
+        //! Needed for the implementation to access subsections.
+        friend class internal::OptionsImpl;
         //! Needed to be able to extend the interface of this object.
         friend class OptionsAssigner;
         //! Needed to be able to extend the interface of this object.

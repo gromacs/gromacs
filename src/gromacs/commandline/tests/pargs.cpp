@@ -51,9 +51,9 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
@@ -108,7 +108,7 @@ class ParseCommonArgsTest : public ::testing::Test
                                FileArgumentType type)
         {
             std::string filename(tempFiles_.getTemporaryFilePath(extension));
-            gmx::File::writeFileFromString(filename, "Dummy file");
+            gmx::TextWriter::writeFileFromString(filename, "Dummy file");
             if (name != NULL)
             {
                 args_.append(name);
@@ -132,7 +132,7 @@ class ParseCommonArgsTest : public ::testing::Test
         CommandLine                 args_;
 
     private:
-        output_env_t                oenv_;
+        gmx_output_env_t           *oenv_;
         size_t                      fileCount_;
         gmx::test::TestFileManager  tempFiles_;
 };

@@ -12,6 +12,8 @@ EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
 EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/external \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_blas \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_lapack \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
@@ -61,6 +63,7 @@ EXTRACT_STATIC         = YES
 
 ALIASES               += Gromacs=GROMACS
 ALIASES               += linktodevmanual{2}="<A HREF=\"../../dev-manual/\1.html\">\2</A>"
+ALIASES               += linktodevmanual{3}="<A HREF=\"../../dev-manual/\1.html#\2\">\3</A>"
 
 DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES

@@ -1,0 +1,35 @@
+gcc-4.4 double no-openmp host=bs_centos63
+clang-3.4 gmxtest+"-npme 1 -nt 3" double no-openmp fftpack release host=bs_centos63
+clang-3.4 double no-openmp fftpack asan host=bs_centos63
+gcc-4.1 double no-openmp simd-sse2 host=bs_nix1004
+gcc-4.3 mpi simd-sse2 host=bs_nix1004
+gcc-4.5 no-openmp atlas mpi host=bs_nix64
+icc-12.1.2 no-openmp no-threadmpi host=bs_nix64
+gcc-4.7 no-openmp host=bs_nix64
+icc-12.1.2 double mkl release host=bs_nix64
+gcc-4.7 double no-threadmpi simd-sse4.1 release host=bs_nix64
+icc-15.0.0 gmxtest+"-ntomp 1" no-threadmpi host=bs_mac
+gcc-4.8 no-openmp no-threadmpi fftpack optimized host=bs_mac
+gcc-4.9 optimized host=bs_mac
+icc-14.0.3 Platform=Phi host=bs_mic
+icc-14.0.3 Platform=Phi optimized host=bs_mic
+clang-3.4 asan host=bs_mic
+msvc-2010 release host=bs_Win2008_64
+msvc-2010 double no-threadmpi fftpack cmake+GMX_PREFER_STATIC_LIBS=OFF release host=bs_Win2008_64
+icc-12.1.2 cmake+GMX_DLOPEN=OFF no-threadmpi fftpack release host=bs_Win2008_64
+clang-3.6 double no-openmp fftpack host=bs_nix1204
+gcc-4.7 gmxtest+"-nt 1" gpu cuda-4.2 double simd-sse4.1 host=bs_nix1204
+gcc-4.4 gpu cuda-4.0 mpi simd-avx_256 host=bs_nix1204
+gcc-4.5 gpu cuda-4.1 atlas mpi simd-sse4.1 host=bs_nix1204
+gcc-4.6 gpu cuda-5.0 no-threadmpi release host=bs_nix1204
+gcc-4.7 gpu cuda-5.5 atlas simd-sse2 release host=bs_nix1204
+gcc-4.4 double mpi simd-avx_256 host=bs_nix1310
+gcc-4.6 double no-threadmpi simd-avx_256 release host=bs_nix1310
+gcc-4.7 gmxtest+"-npme 1 -np 3" no-threadmpi mpi simd-avx2_256 release host=bs_nix1310
+gcc-4.7 gmxtest+"-npme 1 -nt 3 -gpu_id 12" gpu cuda-5.5 simd-sse4.1 release host=bs_nix1310
+clang-3.4 gmxtest+"-npme 1 -nt 3" double no-openmp simd-avx_256 release host=bs_nix1310
+gcc-4.9 tsan host=bs_nix1310
+gcc-4.9 double no-threadmpi optimized host=bs_nix1404
+gcc-4.7 double gmxtest+"-nt 1" host=bs_nix1404
+gcc-5.1 gmxtest+"-npme 1 -np 3" double no-threadmpi mpi host=bs_nix1404
+gcc-5.1 mpi release host=bs_nix1404

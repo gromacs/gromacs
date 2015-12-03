@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_TESTUTILS_CMDLINETEST_H
 #define GMX_TESTUTILS_CMDLINETEST_H
 
+#include <functional>
+#include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -55,12 +57,13 @@
 namespace gmx
 {
 
-class CommandLineModuleInterface;
-class CommandLineOptionsModuleInterface;
+class ICommandLineModule;
+class ICommandLineOptionsModule;
 
 namespace test
 {
 
+class ITextBlockMatcherSettings;
 class TestFileManager;
 class TestReferenceChecker;
 
@@ -187,8 +190,7 @@ class CommandLine
  *
  *   1. Adding input files to a CommandLine instance by generating them from a
  *      string provided in the test (setInputFileContents()).
- *   2. Adding output files to a CommandLine instance (setOutputFile() and
- *      setOutputFileNoTest()).
+ *   2. Adding output files to a CommandLine instance (setOutputFile()).
  *   3. Checking the contents of some of the output files using
  *      TestReferenceData (setOutputFile() and checkOutputFiles()).
  *   4. Static methods for easily executing command-line modules
@@ -206,7 +208,7 @@ class CommandLineTestHelper
 {
     public:
         /*! \brief
-         * Runs a command-line program that implements CommandLineModuleInterface.
+         * Runs a command-line program that implements ICommandLineModule.
          *
          * \param[in,out] module       Module to run.
          *     The function does not take ownership.
@@ -216,10 +218,23 @@ class CommandLineTestHelper
          * \throws  unspecified  Any exception thrown by the module.
          */
         static int
-        runModule(CommandLineModuleInterface *module, CommandLine *commandLine);
+        runModuleDirect(ICommandLineModule *module, CommandLine *commandLine);
         /*! \brief
          * Runs a command-line program that implements
-         * CommandLineOptionsModuleInterface.
+         * ICommandLineOptionsModule.
+         *
+         * \param[in,out] module       Module to run.
+         * \param[in,out] commandLine  Command line parameters to pass.
+         *     This is only modified if \p module modifies it.
+         * \returns The return value of the module.
+         * \throws  unspecified  Any exception thrown by the module.
+         */
+        static int
+        runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
+                        CommandLine                               *commandLine);
+        /*! \brief
+         * Runs a command-line program that implements
+         * ICommandLineOptionsModule.
          *
          * \param[in] factory          Factory method for the module to run.
          * \param[in,out] commandLine  Command line parameters to pass.
@@ -229,8 +244,8 @@ class CommandLineTestHelper
          *     module.
          */
         static int
-        runModule(CommandLineOptionsModuleInterface *(*factory)(),
-                  CommandLine                      *commandLine);
+        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
+                         CommandLine                                                 *commandLine);
 
         /*! \brief
          * Initializes an instance.
@@ -276,47 +291,29 @@ class CommandLineTestHelper
          * \param[in,out] args      CommandLine to which to add the option.
          * \param[in]     option    Option to set.
          * \param[in]     filename  Name of the output file.
+         * \param[in]     matcher   Specifies how the contents of the file are
+         *     tested.
          *
-         * This method:
+         * This method does the following:
          *  - Adds \p option to \p args to point a temporary file name
          *    constructed from \p filename.
          *  - Makes checkOutputFiles() to check the contents of the file
-         *    against reference data.
+         *    against reference data, using \p matcher.
          *  - Marks the temporary file for removal at test teardown.
          *
          * \p filename is given to TestTemporaryFileManager to make a unique
-         * filename for the temporary file, but is not otherwise used.
+         * filename for the temporary file.
+         * If \p filename starts with a dot, a unique number is prefixed (such
+         * that it is possible to create multiple files with the same extension
+         * by just specifying the extension for every call of setOutputFile()).
          *
-         * Currently, this method should not be called for an XVG file, because
-         * the comments in the beginning of the file contain timestamps and
-         * other variable information, causing the test to fail.  Best used
-         * only for custom data formats.
+         * If the output file is needed to trigger some computation, or is
+         * unconditionally produced by the code under test, but the contents
+         * are not interesting for the test, use NoTextMatch as the matcher.
          */
         void setOutputFile(CommandLine *args, const char *option,
-                           const char *filename);
-        /*! \brief
-         * Sets an output file parameter.
-         *
-         * \param[in,out] args      CommandLine to which to add the option.
-         * \param[in]     option    Option to set.
-         * \param[in]     extension Extension for the file to create.
-         *
-         * This method:
-         *  - Adds \p option to \p args to point to a temporary file name with
-         *    extension \p extension.
-         *  - Marks the temporary file for removal at test teardown.
-         *
-         * This method provides the mechanism to set output files that are
-         * required to trigger computation of values that are required for
-         * the test.  The contents of the output file are not tested.
-         *
-         * Another use case is to mark files that are unconditionally produced
-         * by the code under test, but do not need to be tested.  This method
-         * makes the test code aware of those files such that it can remove
-         * them at the end of the test.
-         */
-        void setOutputFileNoTest(CommandLine *args, const char *option,
-                                 const char *extension);
+                           const char *filename,
+                           const ITextBlockMatcherSettings &matcher);
 
         /*! \brief
          * Checks output files added with setOutputFile() against reference
@@ -392,13 +389,8 @@ class CommandLineTestBase : public ::testing::Test
          *
          * \see CommandLineTestHelper::setOutputFile()
          */
-        void setOutputFile(const char *option, const char *filename);
-        /*! \brief
-         * Sets an output file parameter.
-         *
-         * \see CommandLineTestHelper::setOutputFileNoTest()
-         */
-        void setOutputFileNoTest(const char *option, const char *extension);
+        void setOutputFile(const char *option, const char *filename,
+                           const ITextBlockMatcherSettings &matcher);
 
         /*! \brief
          * Returns the internal CommandLine object used to construct the
@@ -429,6 +421,10 @@ class CommandLineTestBase : public ::testing::Test
          */
         TestReferenceChecker rootChecker();
 
+        /*! \brief
+         * Checks the output of writeHelp() against reference data.
+         */
+        void testWriteHelp(ICommandLineModule *module);
         /*! \brief
          * Checks output files added with setOutputFile() against reference
          * data.

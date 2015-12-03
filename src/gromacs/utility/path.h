@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,6 +85,50 @@ class Path
         Path();
 };
 
+class File
+{
+    public:
+        struct NotFoundInfo
+        {
+            NotFoundInfo(const char *filename, const char *message,
+                         const char *call, bool wasError, int err)
+                : filename(filename), message(message), call(call),
+                  wasError(wasError), err(err)
+            {
+            }
+
+            const char *filename;
+            const char *message;
+            const char *call;
+            bool        wasError;
+            int         err;
+        };
+
+        static void returnFalseOnError(const NotFoundInfo &info);
+        static void throwOnError(const NotFoundInfo &info);
+        static void throwOnNotFound(const NotFoundInfo &info);
+
+        typedef void (*NotFoundHandler)(const NotFoundInfo &info);
+
+        /*! \brief
+         * Checks whether a file exists and is a regular file.
+         *
+         * \param[in] filename    Path to the file to check.
+         * \param[in] onNotFound  Function to call when the file does not
+         *     exists or there is an error accessing it.
+         * \returns   `true` if \p filename exists and is accessible.
+         *
+         * Does not throw, unless onNotFound throws.
+         */
+        static bool exists(const char *filename, NotFoundHandler onNotFound);
+        //! \copydoc exists(const char *, NotFoundHandler)
+        static bool exists(const std::string &filename,
+                           NotFoundHandler    onNotFound);
+
+    private:
+        // Disallow instantiation.
+        File();
+};
 
 class Directory
 {

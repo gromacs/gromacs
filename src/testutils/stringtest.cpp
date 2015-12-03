@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,13 @@
 
 #include "stringtest.h"
 
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
-#include "gromacs/utility/file.h"
+#include <string>
 
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/utility/textreader.h"
+
+#include "testutils/refdata.h"
 #include "testutils/testoptions.h"
 
 namespace gmx
@@ -73,7 +76,38 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
 }
 //! \endcond
 
+/********************************************************************
+ * StringTestBase::Impl
+ */
+
+class StringTestBase::Impl
+{
+    public:
+        TestReferenceData        data_;
+        TestReferenceChecker     checker_;
+};
+
+/********************************************************************
+ * StringTestBase
+ */
+
+// static
+void StringTestBase::checkText(TestReferenceChecker *checker,
+                               const std::string &text, const char *id)
+{
+    if (g_bWriteToStdOut)
+    {
+        printf("%s:\n", id);
+        printf("%s[END]\n", text.c_str());
+    }
+    else
+    {
+        checker->checkTextBlock(text, id);
+    }
+}
+
 StringTestBase::StringTestBase()
+    : impl_(new Impl)
 {
 }
 
@@ -84,32 +118,37 @@ StringTestBase::~StringTestBase()
 TestReferenceChecker &
 StringTestBase::checker()
 {
-    if (checker_.get() == NULL)
+    if (!impl_->checker_)
     {
-        checker_.reset(new TestReferenceChecker(data_.rootChecker()));
+        impl_->checker_ = impl_->data_.rootChecker();
     }
-    return *checker_;
+    return impl_->checker_;
 }
 
 void
 StringTestBase::checkText(const std::string &text, const char *id)
 {
-    if (g_bWriteToStdOut)
-    {
-        printf("%s:\n", id);
-        printf("%s[END]\n", text.c_str());
-    }
-    else
-    {
-        checker().checkStringBlock(text, id);
-    }
+    checkText(&checker(), text, id);
 }
 
 void
 StringTestBase::checkFileContents(const std::string &filename, const char *id)
 {
-    std::string text = File::readToString(filename);
+    const std::string text = TextReader::readFileToString(filename);
     checkText(text, id);
+}
+
+void
+StringTestBase::testFilesEqual(const std::string &refFilename,
+                               const std::string &testFilename)
+{
+    const std::string expectedContents = TextReader::readFileToString(refFilename);
+    const std::string contents         = TextReader::readFileToString(testFilename);
+    if (g_bWriteToStdOut)
+    {
+        printf("%s[END]\n", contents.c_str());
+    }
+    EXPECT_EQ(expectedContents, contents);
 }
 
 } // namespace test

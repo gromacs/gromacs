@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,9 +54,9 @@
  * gmx::AnalysisData and gmx::AnalysisArrayData.  These classes are used to
  * process and store raw data as produced by the analysis tool.  They also
  * provide an interface to attach data modules that implement
- * gmx::AnalysisDataModuleInterface.
+ * gmx::IAnalysisDataModule.
  *
- * Modules that implement gmx::AnalysisDataModuleInterface form the second part
+ * Modules that implement gmx::IAnalysisDataModule form the second part
  * of the module, and they provide functionality to do processing on the data.
  * These modules can also derive from gmx::AbstractAnalysisData, allowing other
  * modules to be attached to them to form a processing chain that best suits
@@ -70,7 +70,7 @@
  * To use the functionality in this module, you typically declare one or more
  * AnalysisData objects and set its properties.  You then create some module
  * objects and set their properties (see the list of classes that implement
- * gmx::AnalysisDataModuleInterface) and attach them to the data objects or to
+ * gmx::IAnalysisDataModule) and attach them to the data objects or to
  * one another using gmx::AbstractAnalysisData::addModule().  Then you add the
  * actual data values to the gmx::AnalysisData object, which automatically
  * passes it on to the modules.
@@ -87,7 +87,7 @@
  *
  * <H3>Data Modules</H3>
  *
- * Modules that derive from gmx::AnalysisDataModuleInterface can operate in two
+ * Modules that derive from gmx::IAnalysisDataModule can operate in two
  * modes:
  *  - In _serial_ mode, the frames are presented to the module always in the
  *    order of increasing indices, even if they become ready in a different
@@ -118,22 +118,22 @@
  *         node [ shape=box ]
  *
  *         start  [ label="dataStarted()",
- *                  URL="\ref gmx::AnalysisDataModuleInterface::dataStarted()" ]
+ *                  URL="\ref gmx::IAnalysisDataModule::dataStarted()" ]
  *         pstart [ label="parallelDataStarted()",
- *                  URL="\ref gmx::AnalysisDataModuleInterface::parallelDataStarted()" ]
+ *                  URL="\ref gmx::IAnalysisDataModule::parallelDataStarted()" ]
  *         subgraph cluster_frame {
  *             label = "for each frame"
  *             framestart   [ label="frameStarted()",
- *                            URL="\ref gmx::AnalysisDataModuleInterface::frameStarted()" ]
+ *                            URL="\ref gmx::IAnalysisDataModule::frameStarted()" ]
  *             pointsadd    [ label="pointsAdded()",
- *                            URL="\ref gmx::AnalysisDataModuleInterface::pointsAdded()" ]
+ *                            URL="\ref gmx::IAnalysisDataModule::pointsAdded()" ]
  *             framefinish  [ label="frameFinished()",
- *                            URL="\ref gmx::AnalysisDataModuleInterface::frameFinished()" ]
+ *                            URL="\ref gmx::IAnalysisDataModule::frameFinished()" ]
  *             serialfinish [ label="frameFinishedSerial()",
- *                            URL="\ref gmx::AnalysisDataModuleInterface::frameFinishedSerial()" ]
+ *                            URL="\ref gmx::IAnalysisDataModule::frameFinishedSerial()" ]
  *         }
  *         finish [ label="dataFinished()",
- *                  URL="\ref gmx::AnalysisDataModuleInterface::dataFinished()" ]
+ *                  URL="\ref gmx::IAnalysisDataModule::dataFinished()" ]
  *
  *         start -> framestart
  *         pstart -> framestart
@@ -176,7 +176,7 @@
  *
  * New data modules can be implemented to perform custom operations that are
  * not supported by the modules provided in this module.  This is done by
- * creating a new class that implements gmx::AnalysisDataModuleInterface.
+ * creating a new class that implements gmx::IAnalysisDataModule.
  * If the new module computes values that can be used as input for other
  * modules, the new class should also derive from gmx::AbstractAnalysisData, and
  * preferably use gmx::AnalysisDataStorage internally to implement storage of

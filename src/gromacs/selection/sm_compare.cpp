@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,8 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -158,7 +158,7 @@ gmx_ana_selmethod_t sm_compare = {
     NULL,
     &evaluate_compare,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /*! \brief

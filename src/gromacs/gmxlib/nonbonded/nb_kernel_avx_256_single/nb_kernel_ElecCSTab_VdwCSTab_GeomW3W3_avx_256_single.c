@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 
 /*
@@ -286,15 +283,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single
             rsq21            = gmx_mm256_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm256_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm256_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm256_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm256_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm256_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm256_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm256_invsqrt_ps(rsq22);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv01           = avx256_invsqrt_f(rsq01);
+            rinv02           = avx256_invsqrt_f(rsq02);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv11           = avx256_invsqrt_f(rsq11);
+            rinv12           = avx256_invsqrt_f(rsq12);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv21           = avx256_invsqrt_f(rsq21);
+            rinv22           = avx256_invsqrt_f(rsq22);
 
             fjx0             = _mm256_setzero_ps();
             fjy0             = _mm256_setzero_ps();
@@ -913,15 +910,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_VF_avx_256_single
             rsq21            = gmx_mm256_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm256_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm256_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm256_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm256_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm256_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm256_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm256_invsqrt_ps(rsq22);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv01           = avx256_invsqrt_f(rsq01);
+            rinv02           = avx256_invsqrt_f(rsq02);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv11           = avx256_invsqrt_f(rsq11);
+            rinv12           = avx256_invsqrt_f(rsq12);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv21           = avx256_invsqrt_f(rsq21);
+            rinv22           = avx256_invsqrt_f(rsq22);
 
             fjx0             = _mm256_setzero_ps();
             fjy0             = _mm256_setzero_ps();
@@ -1750,15 +1747,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single
             rsq21            = gmx_mm256_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm256_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm256_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm256_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm256_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm256_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm256_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm256_invsqrt_ps(rsq22);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv01           = avx256_invsqrt_f(rsq01);
+            rinv02           = avx256_invsqrt_f(rsq02);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv11           = avx256_invsqrt_f(rsq11);
+            rinv12           = avx256_invsqrt_f(rsq12);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv21           = avx256_invsqrt_f(rsq21);
+            rinv22           = avx256_invsqrt_f(rsq22);
 
             fjx0             = _mm256_setzero_ps();
             fjy0             = _mm256_setzero_ps();
@@ -2326,15 +2323,15 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3W3_F_avx_256_single
             rsq21            = gmx_mm256_calc_rsq_ps(dx21,dy21,dz21);
             rsq22            = gmx_mm256_calc_rsq_ps(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm256_invsqrt_ps(rsq00);
-            rinv01           = gmx_mm256_invsqrt_ps(rsq01);
-            rinv02           = gmx_mm256_invsqrt_ps(rsq02);
-            rinv10           = gmx_mm256_invsqrt_ps(rsq10);
-            rinv11           = gmx_mm256_invsqrt_ps(rsq11);
-            rinv12           = gmx_mm256_invsqrt_ps(rsq12);
-            rinv20           = gmx_mm256_invsqrt_ps(rsq20);
-            rinv21           = gmx_mm256_invsqrt_ps(rsq21);
-            rinv22           = gmx_mm256_invsqrt_ps(rsq22);
+            rinv00           = avx256_invsqrt_f(rsq00);
+            rinv01           = avx256_invsqrt_f(rsq01);
+            rinv02           = avx256_invsqrt_f(rsq02);
+            rinv10           = avx256_invsqrt_f(rsq10);
+            rinv11           = avx256_invsqrt_f(rsq11);
+            rinv12           = avx256_invsqrt_f(rsq12);
+            rinv20           = avx256_invsqrt_f(rsq20);
+            rinv21           = avx256_invsqrt_f(rsq21);
+            rinv22           = avx256_invsqrt_f(rsq22);
 
             fjx0             = _mm256_setzero_ps();
             fjy0             = _mm256_setzero_ps();

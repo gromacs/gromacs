@@ -43,16 +43,15 @@
 
 #include "datafilefinder.h"
 
-#include "config.h"
-
 #include <cstdlib>
 
 #include <string>
 #include <vector>
 
+#include "buildinfo.h"
 #include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -94,7 +93,7 @@ std::string DataFileFinder::Impl::getDefaultPath()
  */
 
 DataFileFinder::DataFileFinder()
-    : impl_(NULL)
+    : impl_(nullptr)
 {
 }
 
@@ -134,7 +133,7 @@ FILE *DataFileFinder::openFile(const DataFileOptions &options) const
         fprintf(debug, "Opening library file %s\n", fn);
     }
 #endif
-    return File::openRawHandle(filename, "r");
+    return TextInputFile::openRawHandle(filename);
 }
 
 std::string DataFileFinder::findFile(const DataFileOptions &options) const
@@ -143,7 +142,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
     {
         return options.filename_;
     }
-    if (impl_.get())
+    if (impl_ != nullptr)
     {
         std::vector<std::string>::const_iterator i;
         for (i = impl_->searchPath_.begin(); i != impl_->searchPath_.end(); ++i)
@@ -168,8 +167,8 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
     }
     if (options.bThrow_)
     {
-        const char *const envName   = (impl_.get() ? impl_->envName_ : NULL);
-        const bool        bEnvIsSet = (impl_.get() ? impl_->bEnvIsSet_ : false);
+        const char *const envName   = (impl_ != nullptr ? impl_->envName_ : nullptr);
+        const bool        bEnvIsSet = (impl_ != nullptr ? impl_->bEnvIsSet_ : false);
         std::string       message(
                 formatString("Library file '%s' not found", options.filename_));
         if (options.bCurrentDir_)
@@ -187,7 +186,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
             message.append(Path::getWorkingDirectory());
             message.append(" (current dir)");
         }
-        if (impl_.get())
+        if (impl_ != nullptr)
         {
             std::vector<std::string>::const_iterator i;
             for (i = impl_->searchPath_.begin(); i != impl_->searchPath_.end(); ++i)
@@ -231,7 +230,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
             result.push_back(DataFileInfo(".", *i, false));
         }
     }
-    if (impl_.get())
+    if (impl_ != nullptr)
     {
         std::vector<std::string>::const_iterator j;
         for (j = impl_->searchPath_.begin(); j != impl_->searchPath_.end(); ++j)

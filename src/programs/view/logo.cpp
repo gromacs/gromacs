@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,11 @@
 
 #include "logo.h"
 
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -127,7 +128,7 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             c[i].x *= wfac;
             c[i].y *= hfac;
         }
-        Mess[1].text = GromacsVersion();
+        Mess[1].text = gmx_version();
         for (i = 0; (i < NMESS); i++)
         {
             Mess[i].y  *= hfac;
@@ -200,7 +201,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     logo->bQuitOnClick = bQuitOnClick;
     InitWin(&logo->wd, 0, 0, 360, 270, 1, "GROMACS");
     bg = LIGHTGREY;
-    if ((newcol = getenv("GMX_LOGO_COLOR")) != NULL)
+    if ((newcol = std::getenv("GMX_LOGO_COLOR")) != NULL)
     {
         GetNamedColor(x11, newcol, &bg);
     }
@@ -217,11 +218,11 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     }
     if (i == NBF)
     {
-        perror(bfname[i-1]);
-        exit(1);
+        std::perror(bfname[i-1]);
+        std::exit(1);
     }
 #ifdef DEBUG
-    fprintf(stderr, "Big Logofont: %s\n", bfname[i]);
+    std::fprintf(stderr, "Big Logofont: %s\n", bfname[i]);
 #endif
     for (i = 0, logo->smallfont = NULL; (i < NSF); i++)
     {
@@ -232,11 +233,11 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     }
     if (i == NSF)
     {
-        perror(sfname[i-1]);
-        exit(1);
+        std::perror(sfname[i-1]);
+        std::exit(1);
     }
 #ifdef DEBUG
-    fprintf(stderr, "Small Logofont: %s\n", sfname[i]);
+    std::fprintf(stderr, "Small Logofont: %s\n", sfname[i]);
 #endif
     x11->RegisterCallback(x11, logo->wd.self, parent, LogoCallBack, logo);
     x11->SetInputMask(x11, logo->wd.self, ButtonPressMask | ExposureMask);

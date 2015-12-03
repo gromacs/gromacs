@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,12 +51,11 @@
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/stringstream.h"
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/stringtest.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace
 {
@@ -68,18 +67,14 @@ class HelpTestBase : public gmx::test::StringTestBase
     public:
         HelpTestBase();
 
-        gmx::test::TestFileManager tempFiles_;
         MockHelpTopic              rootTopic_;
-        std::string                filename_;
-        gmx::File                  helpFile_;
+        gmx::StringOutputStream    helpFile_;
         gmx::HelpWriterContext     context_;
         gmx::HelpManager           manager_;
 };
 
 HelpTestBase::HelpTestBase()
     : rootTopic_("", NULL, "Root topic text"),
-      filename_(tempFiles_.getTemporaryFilePath("helptext.txt")),
-      helpFile_(filename_, "w"),
       context_(&helpFile_, gmx::eHelpOutputFormat_Console),
       manager_(rootTopic_, context_)
 {
@@ -102,10 +97,10 @@ TEST_F(HelpManagerTest, HandlesRootTopic)
 TEST_F(HelpManagerTest, HandlesSubTopics)
 {
     MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", "First topic text");
+        rootTopic_.addSubTopic("first", "First topic", NULL);
     MockHelpTopic &firstSub =
-        first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
-    rootTopic_.addSubTopic("second", "Second topic", "Second topic text");
+        first.addSubTopic("firstsub", "First subtopic", NULL);
+    rootTopic_.addSubTopic("second", "Second topic", NULL);
 
     using ::testing::_;
     EXPECT_CALL(firstSub, writeHelp(_));
@@ -117,9 +112,9 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
 TEST_F(HelpManagerTest, HandlesInvalidTopics)
 {
     MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", "First topic text");
-    first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
-    rootTopic_.addSubTopic("second", "Second topic", "Second topic text");
+        rootTopic_.addSubTopic("first", "First topic", NULL);
+    first.addSubTopic("firstsub", "First subtopic", NULL);
+    rootTopic_.addSubTopic("second", "Second topic", NULL);
 
     ASSERT_THROW_GMX(manager_.enterTopic("unknown"), gmx::InvalidInputError);
     ASSERT_NO_THROW_GMX(manager_.enterTopic("first"));
@@ -158,7 +153,7 @@ void HelpTopicFormattingTest::checkHelpFormatting()
     ASSERT_NO_THROW_GMX(manager_.writeCurrentTopic());
     helpFile_.close();
 
-    checkFileContents(filename_, "HelpText");
+    checkText(helpFile_.toString(), "HelpText");
 }
 
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)
@@ -173,7 +168,7 @@ TEST_F(HelpTopicFormattingTest, FormatsCompositeTopicWithSubTopics)
     gmx::CompositeHelpTopicPointer topic(new gmx::CompositeHelpTopic<TestHelpText>);
     MockHelpTopic::addSubTopic(topic.get(), "subtopic", "First subtopic", "Text");
     MockHelpTopic::addSubTopic(topic.get(), "other", "Second subtopic", "Text");
-    rootTopic_.addSubTopic(move(topic));
+    rootTopic_.addSubTopic(std::move(topic));
     checkHelpFormatting();
 }
 

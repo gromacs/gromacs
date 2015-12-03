@@ -36,6 +36,9 @@
  * \brief
  * Implements gmx::CommandLineProgramContext.
  *
+ * See \linktodevmanual{relocatable-binaries,developer guide section on
+ * relocatable binaries} for explanation of the searching logic.
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
@@ -51,13 +54,10 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
-#include "thread_mpi/mutex.h"
-
+#include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -84,12 +84,12 @@ std::string quoteIfNecessary(const char *str)
 }
 
 /*! \brief
- * Default implementation for ExecutableEnvironmentInterface.
+ * Default implementation for IExecutableEnvironment.
  *
- * Used if ExecutableEnvironmentInterface is not explicitly provided when
+ * Used if IExecutableEnvironment is not explicitly provided when
  * constructing CommandLineProgramContext.
  */
-class DefaultExecutableEnvironment : public ExecutableEnvironmentInterface
+class DefaultExecutableEnvironment : public IExecutableEnvironment
 {
     public:
         //! Allocates a default environment.
@@ -126,8 +126,8 @@ class DefaultExecutableEnvironment : public ExecutableEnvironmentInterface
  * If a binary with the given name cannot be located, \p invokedName is
  * returned.
  */
-std::string findFullBinaryPath(const std::string                    &invokedName,
-                               const ExecutableEnvironmentInterface &env)
+std::string findFullBinaryPath(const std::string            &invokedName,
+                               const IExecutableEnvironment &env)
 {
     std::string searchName = invokedName;
     // On Windows & Cygwin we need to add the .exe extension,
@@ -147,7 +147,7 @@ std::string findFullBinaryPath(const std::string                    &invokedName
         {
             const std::string &dir      = i->empty() ? env.getWorkingDirectory() : *i;
             std::string        testPath = Path::join(dir, searchName);
-            if (File::exists(testPath))
+            if (File::exists(testPath, File::returnFalseOnError))
             {
                 return testPath;
             }
@@ -171,7 +171,7 @@ std::string findFullBinaryPath(const std::string                    &invokedName
  */
 bool isAcceptableLibraryPath(const std::string &path)
 {
-    return Path::exists(Path::join(path, "gurgle.dat"));
+    return Path::exists(Path::join(path, "residuetypes.dat"));
 }
 
 /*! \brief
@@ -224,7 +224,7 @@ std::string findFallbackInstallationPrefixPath()
 }
 
 /*! \brief
- * Finds the library data files based on path of the binary.
+ * Generic function to find data files based on path of the binary.
  *
  * \param[in]  binaryPath     Absolute path to the binary.
  * \param[out] bSourceLayout  Set to `true` if the binary is run from
@@ -252,7 +252,7 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
         std::string buildBinPath;
-#ifdef CMAKE_INTDIR
+#ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
         buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
 #else
         buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
@@ -318,7 +318,7 @@ class CommandLineProgramContext::Impl
         mutable std::string           fullBinaryPath_;
         mutable std::string           installationPrefix_;
         mutable bool                  bSourceLayout_;
-        mutable tMPI::mutex           binaryPathMutex_;
+        mutable Mutex                 binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl()
@@ -328,7 +328,7 @@ CommandLineProgramContext::Impl::Impl()
 
 CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
                                       ExecutableEnvironmentPointer env)
-    : executableEnv_(env), bSourceLayout_(false)
+    : executableEnv_(std::move(env)), bSourceLayout_(false)
 {
     invokedName_ = (argc != 0 ? argv[0] : "");
     programName_ = Path::getFilename(invokedName_);
@@ -377,7 +377,7 @@ CommandLineProgramContext::CommandLineProgramContext(
 
 CommandLineProgramContext::CommandLineProgramContext(
         int argc, const char *const argv[], ExecutableEnvironmentPointer env)
-    : impl_(new Impl(argc, argv, env))
+    : impl_(new Impl(argc, argv, move(env)))
 {
 }
 
@@ -411,14 +411,14 @@ const char *CommandLineProgramContext::commandLine() const
 
 const char *CommandLineProgramContext::fullBinaryPath() const
 {
-    tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
+    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
     impl_->findBinaryPath();
     return impl_->fullBinaryPath_.c_str();
 }
 
 InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
 {
-    tMPI::lock_guard<tMPI::mutex> lock(impl_->binaryPathMutex_);
+    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
     if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();

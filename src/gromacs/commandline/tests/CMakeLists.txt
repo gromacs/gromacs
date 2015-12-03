@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,10 @@ if (UNIX)
 endif()
 
 gmx_add_unit_test(CommandLineUnitTests commandline-test
+                  cmdlinehelpmodule.cpp
                   cmdlinehelpwriter.cpp
                   cmdlinemodulemanager.cpp
+                  cmdlinemodulemanagertest.cpp
                   cmdlineparser.cpp
                   cmdlineprogramcontext.cpp
                   pargs.cpp
@@ -63,5 +65,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
     # This suppression stops a very verbose cascade of messages about the
     # mocks, which is probably a compiler issue.
     #   1540-2924 (W) Cannot pass an argument of non-POD class type "const gmx::CommandLineHelpContext" through ellipsis.
-    set_property(SOURCE cmdlinemodulemanager.cpp PROPERTY COMPILE_FLAGS "-qsuppress=1540-2924")
+    set_property(SOURCE cmdlinehelpmodule.cpp cmdlinemodulemanager.cpp cmdlinemodulemanagertest.cpp
+                 PROPERTY COMPILE_FLAGS "-qsuppress=1540-2924")
 endif()

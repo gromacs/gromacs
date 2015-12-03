@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,8 @@
 #  ${FFTW}_LIBRARIES    - List of libraries when using FFTW.
 #  ${FFTW}_PKG          - The name of the pkg-config package needed
 #  ${FFTW}_HAVE_SIMD    - True if FFTW was built with SIMD support
-#  ${FFTW}_HAVE_AVX     - True if FFTW was built with AVX support
+#  ${FFTW}_HAVE_SSE     - True if FFTW was built with SSE support
+#  ${FFTW}_HAVE_SSE2    - True if FFTW was built with SSE2 support
 #  ${FFTW}_FOUND        - True if FFTW was found
 #  where ${FFTW} is FFTW or FFTWF
 
@@ -100,35 +101,62 @@ if (${FFTW}_FOUND)
     message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
   endif()
 
-  # Check for FFTW3 compiled with --enable-avx, which is slower for GROMACS than --enable-sse or --enable-sse2
-  foreach(AVX_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
+  # Check for FFTW3 compiled with --enable-sse
+  foreach(SSE_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse ${${FFTW}_FUNCTION_PREFIX}_have_sse)
     if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${AVX_FUNCTION} CACHE)
+      unset(${FFTW}_HAVE_${SSE_FUNCTION} CACHE)
     endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_FUNCTION}" "" ${FFTW}_HAVE_${AVX_FUNCTION})
-    if(${FFTW}_HAVE_${AVX_FUNCTION})
-      set(${FFTW}_HAVE_AVX TRUE)
-      break()
-    endif()
-  endforeach()
-
-  #in 3.3 sse function name has changed
-  foreach(SIMD_FCT ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2;${${FFTW}_FUNCTION_PREFIX}_have_simd_avx;${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec;${${FFTW}_FUNCTION_PREFIX}_have_simd_neon;${${FFTW}_FUNCTION_PREFIX}_have_sse2;${${FFTW}_FUNCTION_PREFIX}_have_sse;${${FFTW}_FUNCTION_PREFIX}_have_altivec)
-    if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
-    endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
-    if(${FFTW}_HAVE_${SIMD_FCT})
+    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE_FUNCTION}" "" ${FFTW}_HAVE_${SSE_FUNCTION})
+    if(${FFTW}_HAVE_${SSE_FUNCTION})
+      set(${FFTW}_HAVE_SSE TRUE)
       set(${FFTW}_HAVE_SIMD TRUE)
       break()
     endif()
   endforeach()
+
+  # Check for FFTW3 compiled with --enable-sse2
+  foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2 ${${FFTW}_FUNCTION_PREFIX}_have_sse2)
+    if (FFTW_LIBRARY_CHANGED)
+      unset(${FFTW}_HAVE_${SSE2_FUNCTION} CACHE)
+    endif()
+    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE2_FUNCTION}" "" ${FFTW}_HAVE_${SSE2_FUNCTION})
+    if(${FFTW}_HAVE_${SSE2_FUNCTION})
+      set(${FFTW}_HAVE_SSE2 TRUE)
+      set(${FFTW}_HAVE_SIMD TRUE)
+      break()
+    endif()
+  endforeach()
+
+  # Check for any other SIMD support in FFTW
+  if (NOT ${FFTW}_HAVE_SIMD)
+      foreach(SIMD_FCT
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2_128
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx512
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128_fma
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_neon
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_vsx
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
+              ${${FFTW}_FUNCTION_PREFIX}_have_altivec) # Name used before FFTW 3.3
+          if (FFTW_LIBRARY_CHANGED)
+              unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
+          endif()
+          check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
+          if(${FFTW}_HAVE_${SIMD_FCT})
+              set(${FFTW}_HAVE_SIMD TRUE)
+              break()
+          endif()
+      endforeach()
+  endif()
+
   #Verify FFTW is compiled with fPIC (necessary for shared libraries)
   if (CMAKE_OBJDUMP AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS AND NOT CYGWIN)
       execute_process(COMMAND ${CMAKE_OBJDUMP} --reloc ${${FFTW}_LIBRARY} OUTPUT_VARIABLE ${FFTW}_OBJDUMP)
       if (${${FFTW}_OBJDUMP} MATCHES "R_X86_64" #Should always be true for static libraries. Checks that objdump works properly and that the library isn't dynamic
               AND NOT ${${FFTW}_OBJDUMP} MATCHES "R_X86_64_PLT32")
-          message(FATAL_ERROR "The FFTW library ${${FFTW}_LIBRARY} cannot be used with shared libraries. Provide a different FFTW library by setting ${FFTW}_LIBRARY. If you don't have a different one, recompile FFTW with \"--enable-shared\" or \"--with-pic\". Or disable shared libraries for Gromacs by setting BUILD_SHARED_LIBS to \"no\". Note: Disabling shared libraries requires up to 10x as much disk space.")
+          message(FATAL_ERROR "The FFTW library ${${FFTW}_LIBRARY} cannot be used with shared libraries. Provide a different FFTW library by setting ${FFTW}_LIBRARY. If you don't have a different one, recompile FFTW with \"--enable-shared\" or \"--with-pic\". Or disable shared libraries for GROMACS by setting BUILD_SHARED_LIBS to \"no\". Note: Disabling shared libraries requires up to 10x as much disk space.")
       endif()
   endif()
   set(CMAKE_REQUIRED_LIBRARIES)

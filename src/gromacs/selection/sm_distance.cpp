@@ -44,10 +44,10 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "selmethod.h"
@@ -153,10 +153,10 @@ static gmx_ana_selparam_t smparams_within[] = {
     {"of", {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
-/** Help text for the distance selection methods. */
-static const char *help_distance[] = {
-    "DISTANCE-BASED SELECTION KEYWORDS",
-    "",
+//! Help title for distance selection methods.
+static const char        helptitle_distance[] = "Selecting based on distance";
+//! Help text for distance selection methods.
+static const char *const help_distance[] = {
     "::",
     "",
     "  distance from POS [cutoff REAL]",
@@ -188,7 +188,8 @@ gmx_ana_selmethod_t sm_distance = {
     &init_frame_common,
     NULL,
     &evaluate_distance,
-    {"distance from POS [cutoff REAL]", asize(help_distance), help_distance},
+    {"distance from POS [cutoff REAL]",
+     helptitle_distance, asize(help_distance), help_distance},
 };
 
 /** Selection method data for the \p distance method. */
@@ -203,7 +204,8 @@ gmx_ana_selmethod_t sm_mindistance = {
     &init_frame_common,
     NULL,
     &evaluate_distance,
-    {"mindistance from POS_EXPR [cutoff REAL]", asize(help_distance), help_distance},
+    {"mindistance from POS_EXPR [cutoff REAL]",
+     helptitle_distance, asize(help_distance), help_distance},
 };
 
 /** Selection method data for the \p within method. */
@@ -218,7 +220,8 @@ gmx_ana_selmethod_t sm_within = {
     &init_frame_common,
     NULL,
     &evaluate_within,
-    {"within REAL of POS_EXPR", asize(help_distance), help_distance},
+    {"within REAL of POS_EXPR",
+     helptitle_distance, asize(help_distance), help_distance},
 };
 
 static void *

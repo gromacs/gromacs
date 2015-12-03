@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,21 +38,16 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
+#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/warninp.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct {
     int       nr;   /* The number of entries in the list            */
     int       nra2; /* The total number of entries in a			*/
-    atom_id  *nra;  /* The number of entries in each a array (dim nr)   */
-    atom_id **a;    /* The atom numbers (dim nr) the length of each element	*/
+    int      *nra;  /* The number of entries in each a array (dim nr)   */
+    int     **a;    /* The atom numbers (dim nr) the length of each element	*/
     /* i is nra[i]						*/
 } t_block2;
 
@@ -141,9 +136,5 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

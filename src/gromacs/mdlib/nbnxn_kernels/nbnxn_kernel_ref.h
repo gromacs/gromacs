@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,10 @@
 #ifndef _nbnxn_kernel_ref_h
 #define _nbnxn_kernel_ref_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

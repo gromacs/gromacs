@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares mock implementation of gmx::HelpTopicInterface.
+ * Declares mock implementation of gmx::IHelpTopic.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -71,6 +71,17 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
         MockHelpTopic &addSubTopic(const char *name, const char *title,
                                    const char *text);
         using AbstractCompositeHelpTopic::addSubTopic;
+
+        /*! \brief
+         * Calls base class writeHelp() method.
+         *
+         * This provides the possibility for the mock to do the actual help
+         * writing.
+         */
+        void writeHelpBase(const HelpWriterContext &context)
+        {
+            AbstractCompositeHelpTopic::writeHelp(context);
+        }
 
     private:
         virtual std::string helpText() const;

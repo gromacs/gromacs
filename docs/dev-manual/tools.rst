@@ -5,9 +5,14 @@ Development-time tools
    :maxdepth: 2
 
    doxygen
+   jenkins
    gmxtree
    uncrustify
    testutils
+
+.. TODO: Consider what is the most reasonable structure; currently, this list
+   here does not make much sense in the overall organization and creates a
+   confusing TOC for the developer guide.
 
 .. TODO: Add details for most of the tools, either in the form of links to wiki,
    or to a separate page that explains more details.
@@ -30,6 +35,9 @@ Jenkins
   All changes pushed to Gerrit are automatically compiled and otherwise
   checked on various platforms using a continuous integration system at
   http://jenkins.gromacs.org.
+  :doc:`jenkins` documents how Jenkins interacts with the build system,
+  providing information on how to replicate the builds Jenkins does (e.g., to
+  diagnose issues).
 
 Redmine
   Bugs and issues, as well as some random features and discussions,
@@ -162,8 +170,6 @@ You need to enable at least some of the following CMake options:
   Option that controls 1) whether shell completions are built automatically,
   and 2) whether built man pages are installed if available (the user still needs
   to build the ``man`` target manually before installing)
-``GMX_BUILD_WEBPAGE``
-  Option needed for compiling all the documentation into the webpage
 
 Some documentation cannot be built if the CMake option
 ``GMX_BUILD_MDRUN_ONLY`` is enabled, or when cross-compiling, as it
@@ -259,4 +265,4 @@ documentation exported from source files
 
 __ doxygen-page-wrapperbinary_
 
-.. include:: doxygen-links.rst
+.. include:: /fragments/doxygen-links.rst

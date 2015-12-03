@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,24 +43,25 @@
 #ifndef GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 
-#include "gromacs/onlinehelp/helptopicinterface.h"
+#include <memory>
+
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
 
 class CommandLineModuleGroup;
 class CommandLineModuleGroupData;
-class CommandLineModuleInterface;
 class CommandLineProgramContext;
-class File;
+class ICommandLineModule;
+class IFileOutputRedirector;
 
 //! \addtogroup module_commandline
 //! \{
 
-//! Smart pointer type for managing a CommandLineModuleInterface.
-typedef gmx_unique_ptr<CommandLineModuleInterface>::type
+//! Smart pointer type for managing a ICommandLineModule.
+typedef std::unique_ptr<ICommandLineModule>
     CommandLineModulePointer;
 
 /*! \libinternal \brief
@@ -127,7 +128,7 @@ class CommandLineModuleManager
          * Does not throw.  All exceptions are caught and handled internally.
          */
         static int runAsMainSingleModule(int argc, char *argv[],
-                                         CommandLineModuleInterface *module);
+                                         ICommandLineModule *module);
         /*! \brief
          * Implements a main() method that runs a given function.
          *
@@ -192,17 +193,21 @@ class CommandLineModuleManager
         /*! \brief
          * Redirects the output of the module manager to a file.
          *
-         * \param[in] output  File to write the output to.
+         * \param[in] output  File redirector to use for output.
          *
          * Normally, the module manager prints explicitly requested text such
          * as help output to `stdout`, but this method can be used to redirect
-         * that output to a file.  This is used for unit tests, either to keep
-         * them quiet or to verify that output.  To keep implementation options
-         * open, behavior with `output == NULL` is undefined and should not be
-         * relied on.  For tests, there should only be need to call this a
-         * single time, right after creating the manager.
+         * that output to a file.  For exporting help from the module manager,
+         * several files are written, and can be redirected with this method as
+         * well.
+         *
+         * This is used for unit tests, either to keep them quiet or to verify
+         * that output.  To keep implementation options open, behavior with
+         * `output == NULL` is undefined and should not be relied on.
+         * For tests, there should only be need to call this a single time,
+         * right after creating the manager.
          */
-        void setOutputRedirect(File *output);
+        void setOutputRedirector(IFileOutputRedirector *output);
 
         /*! \brief
          * Makes the manager always run a single module.
@@ -213,7 +218,7 @@ class CommandLineModuleManager
          * directly passes all command-line arguments to \p module.
          * Help arguments are an exception: these are still recognized by the
          * manager and translated into a call to
-         * CommandLineModuleInterface::writeHelp().
+         * ICommandLineModule::writeHelp().
          *
          * This is public mainly for unit testing purposes; for other code,
          * runAsMainSingleModule() typically provides the desired
@@ -221,7 +226,7 @@ class CommandLineModuleManager
          *
          * Does not throw.
          */
-        void setSingleModule(CommandLineModuleInterface *module);
+        void setSingleModule(ICommandLineModule *module);
         /*! \brief
          * Adds a given module to this manager.
          *
@@ -262,7 +267,7 @@ class CommandLineModuleManager
          * \throws  std::bad_alloc if out of memory.
          *
          * \p Module must be default-constructible and implement
-         * CommandLineModuleInterface.
+         * ICommandLineModule.
          *
          * This method is provided as a convenient alternative to addModule()
          * for cases where each module is implemented by a different type

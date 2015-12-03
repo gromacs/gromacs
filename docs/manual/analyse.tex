@@ -348,7 +348,8 @@ up to $r_{max}$, so angle dependent, see \figref{rdfex}D.
 The theory of correlation functions is well established~\cite{Allen87}.
 We describe here the implementation of the various 
 \normindex{correlation} function flavors in the {\gromacs} code.
-The definition of the \index{autocorrelation function} (ACF)
+The definition of the autocorrelation function\index{autocorrelation function} 
+(ACF)
 $C_f(t)$ for a property $f(t)$ is:
 \beq
 C_f(t)  ~=~     \left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
@@ -591,7 +592,8 @@ This is implemented in {\tt gmx viscosity}.
 \section{Mean Square Displacement}
 \label{sec:msd}
 {\tt gmx msd}\\
-To determine the self \index{diffusion coefficient} $D_A$ of
+To determine the self diffusion coefficient\index{diffusion coefficient} $D_A$ 
+of
 particles of type $A$, one can use the \normindex{Einstein
 relation}~\cite{Allen87}:
 \beq 
@@ -724,7 +726,13 @@ R_g ~=~ \left({\frac{\sum_i \|{\bf r}_i\|^2 m_i}{\sum_i m_i}}\right)^{\half}
 \eeq
 where $m_i$ is the mass of atom $i$ and ${\bf r}_i$ the position of 
 atom $i$ with respect to the center of mass of the molecule. It is especially 
-useful to characterize polymer solutions and proteins.
+useful to characterize polymer solutions and proteins. The program will also
+provide the radius of gyration around the coordinate axis (or, optionally, principal axes)
+by only summing the radii components orthogonal to each axis, for instance
+\beq
+R_{g,x} ~=~ \left({\frac{\sum_i \left( r_{i,y}^2 + r_{i,z}^2 \right) m_i}{\sum_i m_i}}\right)^{\half}
+\label{eqn:rg}
+\eeq
 
 Sometimes it is interesting to plot the {\em distance} between two atoms,
 or the {\em minimum} distance between two groups of atoms

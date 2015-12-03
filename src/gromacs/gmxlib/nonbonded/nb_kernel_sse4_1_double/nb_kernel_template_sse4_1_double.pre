@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse4_1_double.h"
 #include "kernelutil_x86_sse4_1_double.h"
 /* #endif */
 
@@ -232,8 +229,8 @@ void
     /* #if KERNEL_ELEC=='GeneralizedBorn' */
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = _mm_set1_pd(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = _mm_set1_pd(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = _mm_set1_pd((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     /* #endif */
 
@@ -468,7 +465,7 @@ void
 
             /* #for I,J in PAIRS_IJ */
             /*     #if 'rinv' in INTERACTION_FLAGS[I][J] */
-            rinv{I}{J}           = gmx_mm_invsqrt_pd(rsq{I}{J});
+            rinv{I}{J}           = sse41_invsqrt_d(rsq{I}{J});
             /*         #define INNERFLOPS INNERFLOPS+5 */
             /*     #endif */
             /* #endfor */
@@ -476,7 +473,7 @@ void
             /* #for I,J in PAIRS_IJ */
             /*     #if 'rinvsq' in INTERACTION_FLAGS[I][J] */
             /*         # if 'rinv' not in INTERACTION_FLAGS[I][J] */
-            rinvsq{I}{J}         = gmx_mm_inv_pd(rsq{I}{J});
+            rinvsq{I}{J}         = sse41_inv_d(rsq{I}{J});
             /*             #define INNERFLOPS INNERFLOPS+4 */
             /*         #else */
             rinvsq{I}{J}         = _mm_mul_pd(rinv{I}{J},rinv{I}{J});
@@ -860,7 +857,7 @@ void
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq{I}{J});
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /*                 #define INNERFLOPS INNERFLOPS+11 */

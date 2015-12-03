@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,7 @@ class AnalysisData : public AbstractAnalysisData
          * \throws  std::bad_alloc if out of memory.
          * \throws  APIError if any attached data module is not compatible.
          * \throws  unspecified  Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::dataStarted().
+         *      in IAnalysisDataModule::dataStarted().
          *
          * The caller should retain the returned handle (or a copy of it), and
          * pass it to finishData() after successfully adding all data.
@@ -169,7 +169,7 @@ class AnalysisData : public AbstractAnalysisData
          *
          * \param[in]  frameIndex Index of the frame that has been finished.
          * \throws  unspecified  Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameFinishedSerial().
+         *      in IAnalysisDataModule::frameFinishedSerial().
          *
          * This method should be called sequentially for each frame, after data
          * for that frame has been produced.  It is not necessary to call this
@@ -183,7 +183,7 @@ class AnalysisData : public AbstractAnalysisData
          *
          * \param[in]  handle  Handle to destroy.
          * \throws  unspecified  Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::dataFinished().
+         *      in IAnalysisDataModule::dataFinished().
          *
          * \p handle must have been obtained from startData() of this object.
          * The order of the calls with respect to the corresponding startData()
@@ -270,7 +270,7 @@ class AnalysisDataHandle
          * \param[in] dx     Error in x for the frame if applicable.
          *
          * \throws    unspecified  Any exception thrown by attached data
-         *      modules in AnalysisDataModuleInterface::frameStarted().
+         *      modules in IAnalysisDataModule::frameStarted().
          *
          * Each \p index value 0, 1, ..., N (where N is the total number of
          * frames) should be started exactly once by exactly one handle of an
@@ -338,7 +338,7 @@ class AnalysisDataHandle
          *
          * \throws    APIError if any attached data module is not compatible.
          * \throws    unspecified  Any exception thrown by attached data
-         *      modules in AnalysisDataModuleInterface::pointsAdded().
+         *      modules in IAnalysisDataModule::pointsAdded().
          *
          * Must be called after each point set for multipoint data, including
          * the last (i.e., no values must be set between the last call to this

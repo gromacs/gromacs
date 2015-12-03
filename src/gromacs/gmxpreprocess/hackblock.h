@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,15 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_HACKBLOCK_H
 #define GMX_GMXPREPROCESS_HACKBLOCK_H
 
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/topology/symtab.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
@@ -67,6 +61,11 @@ typedef struct {
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
     gmx_bool match;        /* boolean to mark that the entry has been found */
+    char*   &ai() { return a[0]; }
+    char*   &aj() { return a[1]; }
+    char*   &ak() { return a[2]; }
+    char*   &al() { return a[3]; }
+    char*   &am() { return a[4]; }
 } t_rbonded;
 
 typedef struct {
@@ -112,7 +111,11 @@ typedef struct {
     gmx_bool    bAlreadyPresent;
     gmx_bool    bXSet;
     rvec        newx; /* calculated new position    */
-    atom_id     newi; /* new atom index number (after additions) */
+    int         newi; /* new atom index number (after additions) */
+    char*      &ai() { return a[0]; }
+    char*      &aj() { return a[1]; }
+    char*      &ak() { return a[2]; }
+    char*      &al() { return a[3]; }
 } t_hack;
 
 typedef struct {
@@ -124,28 +127,6 @@ typedef struct {
     /* list of bonded interactions to add */
     t_rbondeds rb[ebtsNR];
 } t_hackblock;
-
-/* all libraries and other data to protonate a structure or trajectory */
-typedef struct {
-    gmx_bool        bInit; /* true after init; set false by init_t_protonate */
-    /* force field name: */
-    char            FF[10];
-    /* libarary data: */
-    int            *nab;
-    t_hack        **ab;
-    t_hackblock    *ah, *ntdb, *ctdb;
-    t_hackblock   **sel_ntdb, **sel_ctdb;
-    int             nah;
-    t_symtab        tab;
-    /* residue indices (not numbers!) of the N and C termini */
-    int            *rN, *rC;
-    gpp_atomtype_t  atype;
-    /* protonated topology: */
-    t_atoms        *patoms;
-    /* unprotonated topology: */
-    t_atoms        *upatoms;
-
-} t_protonate;
 
 typedef struct {
     char *res1, *res2;
@@ -191,12 +172,5 @@ void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 
 void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
-
-void init_t_protonate(t_protonate *protonate);
-/* initialize t_protein struct */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

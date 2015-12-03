@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,13 @@
 
 #include "analysissettings.h"
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "analysissettings-impl.h"
@@ -71,10 +74,17 @@ TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
 }
 
 
-const TimeUnitManager &
-TrajectoryAnalysisSettings::timeUnitManager() const
+void TrajectoryAnalysisSettings::setOptionsModuleSettings(
+        ICommandLineOptionsModuleSettings *settings)
 {
-    return impl_->timeUnitManager;
+    impl_->optionsModuleSettings_ = settings;
+}
+
+
+TimeUnit
+TrajectoryAnalysisSettings::timeUnit() const
+{
+    return impl_->timeUnit;
 }
 
 
@@ -161,6 +171,14 @@ TrajectoryAnalysisSettings::setFrameFlags(int frflags)
     impl_->frflags = frflags;
 }
 
+void
+TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
+{
+    GMX_RELEASE_ASSERT(impl_->optionsModuleSettings_ != nullptr,
+                       "setHelpText() called in invalid context");
+    impl_->optionsModuleSettings_->setHelpText(help);
+}
+
 
 /********************************************************************
  * TopologyInformation
@@ -177,7 +195,6 @@ TopologyInformation::~TopologyInformation()
 {
     if (top_)
     {
-        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }

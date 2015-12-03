@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,35 +36,39 @@
  */
 #include "gmxpre.h"
 
+#include "manager.h"
+
 #include "config.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <string>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for usleep()
 #endif
 
-#include "manager.h"
-
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "3dview.h"
 #include "nmol.h"
 
-static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
+static void add_object(t_manager *man, eObject eO, int ai, int aj)
 {
     srenew(man->obj, ++man->nobj);
     man->obj[man->nobj-1].eO    = eO;
@@ -84,7 +88,7 @@ static void add_bonds(t_manager *man, t_functype func[],
     int          i, delta, ftype;
 
 #ifdef DEBUG
-    fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
+    std::fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
 #endif
     ia = b->iatoms;
     for (i = 0; (i < b->nr); )
@@ -106,7 +110,7 @@ static void add_bonds(t_manager *man, t_functype func[],
         {
             aj = ia[2];
 #ifdef DEBUG
-            fprintf(stderr, "Adding bond from %d to %d\n", ai, aj);
+            std::fprintf(stderr, "Adding bond from %d to %d\n", ai, aj);
 #endif
             bB[ai] = bB[aj] = true;
             if (!(bH[ai] == bH[aj]))
@@ -119,7 +123,7 @@ static void add_bonds(t_manager *man, t_functype func[],
             }
         }
 #ifdef DEBUG
-        fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
+        std::fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
 #endif
         ia += delta+1;
         i  += delta+1;
@@ -139,7 +143,7 @@ static void add_bpl(t_manager *man, t_idef *idef, bool bB[])
     }
 }
 
-static atom_id which_atom(t_manager *man, int x, int y)
+static int which_atom(t_manager *man, int x, int y)
 {
 #define DELTA 5
     int  i;
@@ -147,23 +151,23 @@ static atom_id which_atom(t_manager *man, int x, int y)
 
     for (i = 0; (i < man->natom); i++)
     {
-        if ((abs(ix[i][XX]-x) < DELTA) && (abs(ix[i][YY]-y) < DELTA))
+        if ((std::abs(ix[i][XX]-x) < DELTA) && (std::abs(ix[i][YY]-y) < DELTA))
         {
             if (man->bVis[i])
             {
-                return (atom_id) i;
+                return (int) i;
             }
         }
     }
-    return NO_ATID;
+    return -1;
 }
 
 static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
 {
-    atom_id         ai;
+    int             ai;
     unsigned long   col;
 
-    if ((ai = which_atom(man, x, y)) != NO_ATID)
+    if ((ai = which_atom(man, x, y)) != -1)
     {
         x = man->ix[ai][XX];
         y = man->ix[ai][YY];
@@ -183,7 +187,7 @@ static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
         }
         XSetForeground(x11->disp, x11->gc, col);
         XDrawString(x11->disp, man->molw->wd.self, x11->gc, x+2, y-2, man->szLab[ai],
-                    strlen(man->szLab[ai]));
+                    std::strlen(man->szLab[ai]));
         XSetForeground(x11->disp, x11->gc, x11->fg);
     }
 }
@@ -202,7 +206,6 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
               const char *status)
 {
     gmx_atomprop_t    aps;
-    char              buf[256], quote[256];
     t_tpxheader       sh;
     t_atoms          *at;
     bool             *bB;
@@ -226,7 +229,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     snew(man->szLab, sh.natoms);
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
-    read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, NULL, &man->top);
+    read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, &man->top);
     man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
     man->natom =
@@ -240,9 +243,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
                   trajectory, man->natom);
     }
 
-    cool_quote(quote, 255, NULL);
-    sprintf(buf, "%s: %s", *man->top.name, quote);
-    man->title.text = gmx_strdup(buf);
+    man->title.text = gmx_strdup(gmx::formatString("%s: %s", *man->top.name, gmx::getCoolQuote().c_str()).c_str());
     man->view       = init_view(man->box);
     at              = &(man->top.atoms);
     aps             = gmx_atomprop_init();
@@ -255,11 +256,11 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
         snew(man->szLab[i], 20);
         if (ri->ic != ' ')
         {
-            sprintf(man->szLab[i], "%s%d%c, %s", *ri->name, ri->nr, ri->ic, aname);
+            std::sprintf(man->szLab[i], "%s%d%c, %s", *ri->name, ri->nr, ri->ic, aname);
         }
         else
         {
-            sprintf(man->szLab[i], "%s%d, %s", *ri->name, ri->nr, aname);
+            std::sprintf(man->szLab[i], "%s%d, %s", *ri->name, ri->nr, aname);
         }
         man->bHydro[i] = (toupper(aname[0]) == 'H');
         if (man->bHydro[i])
@@ -277,7 +278,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     {
         if (!bB[i])
         {
-            add_object(man, eOSingle, (atom_id) i, 0);
+            add_object(man, eOSingle, (int) i, 0);
         }
     }
     sfree(bB);
@@ -349,14 +350,12 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
 static bool step_man(t_manager *man, int *nat)
 {
     static int      ncount = 0;
-    static bool     bWarn  = false;
     bool            bEof;
-    const char     *warn;
 
     if (!man->natom)
     {
-        fprintf(stderr, "Not initiated yet!");
-        exit(1);
+        std::fprintf(stderr, "Not initiated yet!");
+        std::exit(1);
     }
     bEof = read_next_x(man->oenv, man->status, &man->time, man->x, man->box);
     *nat = man->natom;
@@ -368,13 +367,8 @@ static bool step_man(t_manager *man, int *nat)
                 put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, man->natom, man->x);
                 break;
             case esbTrunc:
-                warn = put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
-                                                     man->natom, man->x);
-                if (warn && !bWarn)
-                {
-                    fprintf(stderr, "\n%s\n", warn);
-                    bWarn = true;
-                }
+                put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
+                                              man->natom, man->x);
                 break;
             case esbRect:
             case esbNone:
@@ -568,7 +562,7 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     int th;
 
 #ifdef DEBUG
-    fprintf(stderr, "Move manager %dx%d\n", width, height);
+    std::fprintf(stderr, "Move manager %dx%d\n", width, height);
 #endif
     man->wd.width  = width;
     man->wd.height = height;
@@ -592,7 +586,7 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
 
     if (y0 > height)
     {
-        printf("Error: Windows falling out of main window!\n");
+        std::printf("Error: Windows falling out of main window!\n");
     }
 
     /* Button Box */
@@ -645,7 +639,7 @@ t_manager *init_man(t_x11 *x11, Window Parent,
                     int x, int y, int width, int height,
                     unsigned long fg, unsigned long bg,
                     int ePBC, matrix box,
-                    const output_env_t oenv)
+                    gmx_output_env_t *oenv)
 {
     t_manager *man;
 
@@ -708,7 +702,7 @@ void done_man(t_x11 *x11, t_manager *man)
 void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
 {
     int      i;
-    atom_id  j;
+    int      j;
 
     for (i = 0; (i < man->natom); i++)
     {

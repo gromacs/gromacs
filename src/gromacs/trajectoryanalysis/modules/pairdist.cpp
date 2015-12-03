@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -105,7 +105,7 @@ class PairDistance : public TrajectoryAnalysisModule
     public:
         PairDistance();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -147,9 +147,9 @@ class PairDistance : public TrajectoryAnalysisModule
         std::string             fnDist_;
 
         double                  cutoff_;
-        int                     distanceType_;
-        int                     refGroupType_;
-        int                     selGroupType_;
+        DistanceType            distanceType_;
+        GroupType               refGroupType_;
+        GroupType               selGroupType_;
 
         //! Number of groups in `refSel_`.
         int                     refGroupCount_;
@@ -167,8 +167,7 @@ class PairDistance : public TrajectoryAnalysisModule
 };
 
 PairDistance::PairDistance()
-    : TrajectoryAnalysisModule(PairDistanceInfo::name, PairDistanceInfo::shortDescription),
-      cutoff_(0.0), distanceType_(eDistanceType_Min),
+    : cutoff_(0.0), distanceType_(eDistanceType_Min),
       refGroupType_(eGroupType_All), selGroupType_(eGroupType_All),
       refGroupCount_(0), maxGroupCount_(0), initialDist2_(0.0), cutoff2_(0.0)
 {
@@ -177,7 +176,7 @@ PairDistance::PairDistance()
 
 
 void
-PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates pairwise distances between one reference",
@@ -214,7 +213,7 @@ PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings * /*setti
         "[gmx-distance] may be a more suitable tool."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnDist_).defaultBasename("dist")
@@ -222,14 +221,14 @@ PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings * /*setti
 
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
                            .description("Maximum distance to consider"));
-    options->addOption(StringOption("type").storeEnumIndex(&distanceType_)
-                           .defaultEnumIndex(0).enumValue(c_distanceTypes)
+    options->addOption(EnumOption<DistanceType>("type").store(&distanceType_)
+                           .enumValue(c_distanceTypes)
                            .description("Type of distances to calculate"));
-    options->addOption(StringOption("refgrouping").storeEnumIndex(&refGroupType_)
-                           .defaultEnumIndex(0).enumValue(c_groupTypes)
+    options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_)
+                           .enumValue(c_groupTypes)
                            .description("Grouping of -ref positions to compute the min/max over"));
-    options->addOption(StringOption("selgrouping").storeEnumIndex(&selGroupType_)
-                           .defaultEnumIndex(0).enumValue(c_groupTypes)
+    options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_)
+                           .enumValue(c_groupTypes)
                            .description("Grouping of -sel positions to compute the min/max over"));
 
     options->addOption(SelectionOption("ref").store(&refSel_).required()

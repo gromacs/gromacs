@@ -20,9 +20,7 @@ $ make -f Makefile.pkg
 
 You will need to make sure that you use a sufficiently similar C++
 compiler and C++ Standard Library as the one that was used for
-compiling GROMACS, preferably the same one.  Boost headers used to
-compile GROMACS are also required, and are automatically added to
-the include path by both of the above build systems.
+compiling GROMACS, preferably the same one.
 See the Doxygen documentation for using GROMACS as a library for
 more details about the build system used to build the template, as
 well as its limitations (link to the latest development version):

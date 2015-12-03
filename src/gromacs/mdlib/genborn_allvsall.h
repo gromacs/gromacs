@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,33 +37,37 @@
 #ifndef _GENBORN_ALLVSALL_H
 #define _GENBORN_ALLVSALL_H
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_genborn_t;
+struct gmx_localtop_t;
+struct t_forcerec;
+struct t_mdatoms;
 
 int
-genborn_allvsall_calc_still_radii(t_forcerec *           fr,
-                                  t_mdatoms *            mdatoms,
-                                  gmx_genborn_t *        born,
-                                  gmx_localtop_t *       top,
-                                  real *                 x,
-                                  void *                 work);
+genborn_allvsall_calc_still_radii(struct t_forcerec *           fr,
+                                  t_mdatoms        *            mdatoms,
+                                  gmx_genborn_t        *        born,
+                                  gmx_localtop_t        *       top,
+                                  real        *                 x,
+                                  void        *                 work);
 
 int
-genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
-                                    t_mdatoms *            mdatoms,
-                                    gmx_genborn_t *        born,
-                                    int                    gb_algorithm,
-                                    gmx_localtop_t *       top,
-                                    real *                 x,
-                                    void *                 work);
+genborn_allvsall_calc_hct_obc_radii(struct t_forcerec *           fr,
+                                    t_mdatoms        *            mdatoms,
+                                    gmx_genborn_t        *        born,
+                                    int                           gb_algorithm,
+                                    gmx_localtop_t        *       top,
+                                    real        *                 x,
+                                    void        *                 work);
 
 int
-genborn_allvsall_calc_chainrule(t_forcerec *           fr,
-                                t_mdatoms *            mdatoms,
-                                gmx_genborn_t *        born,
-                                real *                 x,
-                                real *                 f,
-                                int                    gb_algorithm,
-                                void *                 work);
+genborn_allvsall_calc_chainrule(struct t_forcerec *           fr,
+                                t_mdatoms        *            mdatoms,
+                                gmx_genborn_t        *        born,
+                                real        *                 x,
+                                real        *                 f,
+                                int                           gb_algorithm,
+                                void        *                 work);
 
 #endif

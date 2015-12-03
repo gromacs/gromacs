@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,16 +35,22 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
+#include <stdio.h>
+
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/real.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 } /* fixes auto-indentation problems */
 #endif
-
-
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.

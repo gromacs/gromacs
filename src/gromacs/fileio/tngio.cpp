@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, 2015 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,14 +42,14 @@
 #include "tng/tng_io.h"
 #endif
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"
@@ -98,30 +98,23 @@ void gmx_tng_open(const char       *filename,
            no use case for GROMACS handling the non-fatal errors
            gracefully. */
         gmx_fatal(FARGS,
-                  "%s while opening %s for %s",
-                  gmx_strerror("file"),
+                  "File I/O error while opening %s for %s",
                   filename,
                   modeToVerb(mode));
     }
 
     if (mode == 'w' || mode == 'a')
     {
-        /* FIXME in TNG: When adding data to the header, subsequent blocks might get
-         * overwritten. This could be solved by moving the first trajectory
-         * frame set(s) to the end of the file. Could that cause other problems,
-         * e.g. when continuing a simulation? */
         char hostname[256];
         gmx_gethostname(hostname, 256);
         if (mode == 'w')
         {
             tng_first_computer_name_set(*tng, hostname);
         }
-/* TODO: This should be implemented when the above fixme is done (adding data to
- * the header). */
-//         else
-//         {
-//             tng_last_computer_name_set(*tng, hostname);
-//         }
+        else
+        {
+            tng_last_computer_name_set(*tng, hostname);
+        }
 
         char        programInfo[256];
         const char *precisionString = "";
@@ -130,17 +123,15 @@ void gmx_tng_open(const char       *filename,
 #endif
         sprintf(programInfo, "%.100s, %.128s%.24s",
                 gmx::getProgramContext().displayName(),
-                GromacsVersion(), precisionString);
+                gmx_version(), precisionString);
         if (mode == 'w')
         {
             tng_first_program_name_set(*tng, programInfo);
         }
-/* TODO: This should be implemented when the above fixme is done (adding data to
- * the header). */
-//         else
-//         {
-//             tng_last_program_name_set(*tng, programInfo);
-//         }
+        else
+        {
+            tng_last_program_name_set(*tng, programInfo);
+        }
 
         char username[256];
         if (!gmx_getusername(username, 256))
@@ -149,13 +140,12 @@ void gmx_tng_open(const char       *filename,
             {
                 tng_first_user_name_set(*tng, username);
             }
+            else
+            {
+                tng_last_user_name_set(*tng, username);
+                tng_file_headers_write(*tng, TNG_USE_HASH);
+            }
         }
-/* TODO: This should be implemented when the above fixme is done (adding data to
- * the header). */
-//         else
-//         {
-//             tng_last_user_name_set(*tng, username);
-//         }
     }
 #else
     gmx_file("GROMACS was compiled without TNG support, cannot handle this file type");
@@ -437,7 +427,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (vout)
     {
-        set_writing_interval(tng, ir->nstvout, 3, TNG_TRAJ_VELOCITIES,
+        set_writing_interval(tng, vout, 3, TNG_TRAJ_VELOCITIES,
                              "VELOCITIES", TNG_PARTICLE_BLOCK_DATA,
                              compression);
 
@@ -450,7 +440,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     }
     if (fout)
     {
-        set_writing_interval(tng, ir->nstfout, 3, TNG_TRAJ_FORCES,
+        set_writing_interval(tng, fout, 3, TNG_TRAJ_FORCES,
                              "FORCES", TNG_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
 

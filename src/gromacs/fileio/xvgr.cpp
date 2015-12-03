@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,13 +38,16 @@
 
 #include "xvgr.h"
 
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
+#include <string>
+
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -52,7 +55,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
-gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
+gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t *oenv)
 {
     int xvg_format;
 
@@ -61,7 +64,7 @@ gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
     return (xvg_format == exvgXMGRACE || xvg_format == exvgXMGR);
 }
 
-static char *xvgrstr(const char *gmx, const output_env_t oenv,
+static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                      char *buf, int buflen)
 {
     /* Supported greek letter names and corresponding xmgrace/xmgr symbols */
@@ -166,23 +169,23 @@ static char *xvgrstr(const char *gmx, const output_env_t oenv,
                         break;
                 }
                 g++;
-                b = strlen(buf);
+                b = std::strlen(buf);
             }
             else
             {
                 /* Check for special symbol */
                 i = 0;
                 while (sym[i] != NULL &&
-                       gmx_strncasecmp(sym[i], gmx+g, strlen(sym[i])) != 0)
+                       gmx_strncasecmp(sym[i], gmx+g, std::strlen(sym[i])) != 0)
                 {
                     i++;
                 }
                 if (sym[i] != NULL)
                 {
                     c = symc[i];
-                    if (isupper(gmx[g]))
+                    if (std::isupper(gmx[g]))
                     {
-                        c = toupper(c);
+                        c = std::toupper(c);
                     }
                     switch (xvgf)
                     {
@@ -193,17 +196,17 @@ static char *xvgrstr(const char *gmx, const output_env_t oenv,
                             sprintf(buf+b, "%s%c%s", "\\8", c, "\\4");
                             break;
                         default:
-                            strncat(buf+b, gmx+g, strlen(sym[i]));
-                            b += strlen(sym[i]);
-                            if (gmx[g+strlen(sym[i])] != ' ')
+                            std::strncat(buf+b, gmx+g, std::strlen(sym[i]));
+                            b += std::strlen(sym[i]);
+                            if (gmx[g+std::strlen(sym[i])] != ' ')
                             {
                                 buf[b++] = ' ';
                             }
                             buf[b] = '\0';
                             break;
                     }
-                    g += strlen(sym[i]);
-                    b  = strlen(buf);
+                    g += std::strlen(sym[i]);
+                    b  = std::strlen(buf);
                 }
                 else
                 {
@@ -229,9 +232,9 @@ static char *xvgrstr(const char *gmx, const output_env_t oenv,
 
 void xvgr_header(FILE *fp, const char *title, const char *xaxis,
                  const char *yaxis, int exvg_graph_type,
-                 const output_env_t oenv)
+                 const gmx_output_env_t *oenv)
 {
-    char   pukestr[100], buf[STRLEN];
+    char buf[STRLEN];
 
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -248,8 +251,7 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         fprintf(fp, "# %s is part of G R O M A C S:\n#\n",
                 output_env_get_program_display_name(oenv));
-        bromacs(pukestr, 99);
-        fprintf(fp, "# %s\n#\n", pukestr);
+        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
         fprintf(fp, "@    title \"%s\"\n", xvgrstr(title, oenv, buf, STRLEN));
         fprintf(fp, "@    xaxis  label \"%s\"\n",
                 xvgrstr(xaxis, oenv, buf, STRLEN));
@@ -279,7 +281,7 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
 
 FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
                     const char *yaxis, int exvg_graph_type,
-                    const output_env_t oenv)
+                    const gmx_output_env_t *oenv)
 {
     FILE  *fp;
 
@@ -291,7 +293,7 @@ FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
 }
 
 FILE *xvgropen(const char *fn, const char *title, const char *xaxis,
-               const char *yaxis, const output_env_t oenv)
+               const char *yaxis, const gmx_output_env_t *oenv)
 {
     return xvgropen_type(fn, title, xaxis, yaxis, exvggtXNY, oenv);
 }
@@ -302,7 +304,7 @@ xvgrclose(FILE *fp)
     gmx_fio_fclose(fp);
 }
 
-void xvgr_subtitle(FILE *out, const char *subtitle, const output_env_t oenv)
+void xvgr_subtitle(FILE *out, const char *subtitle, const gmx_output_env_t *oenv)
 {
     char buf[STRLEN];
 
@@ -313,7 +315,7 @@ void xvgr_subtitle(FILE *out, const char *subtitle, const output_env_t oenv)
 }
 
 void xvgr_view(FILE *out, real xmin, real ymin, real xmax, real ymax,
-               const output_env_t oenv)
+               const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -322,7 +324,7 @@ void xvgr_view(FILE *out, real xmin, real ymin, real xmax, real ymax,
 }
 
 void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
-                const output_env_t oenv)
+                const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -334,7 +336,7 @@ void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
 }
 
 void xvgr_legend(FILE *out, int nsets, const char** setname,
-                 const output_env_t oenv)
+                 const gmx_output_env_t *oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -368,7 +370,7 @@ void xvgr_legend(FILE *out, int nsets, const char** setname,
 
 void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
                       const char **setname,
-                      const output_env_t oenv)
+                      const gmx_output_env_t *oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -400,7 +402,7 @@ void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -417,7 +419,7 @@ void xvgr_box(FILE *out,
               int LocType,
               real xmin, real ymin, real xmax, real ymax,
               int LineStyle, int LineWidth, int LineColor,
-              int BoxFill, int BoxColor, int BoxPattern, const output_env_t oenv)
+              int BoxFill, int BoxColor, int BoxPattern, const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -467,7 +469,7 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
         curp         += len_remaining-1; /* overwrite the nul char in next iteration */
         len_remaining = 1;
     }
-    while ((strchr(*ptr, '\n') == NULL) && (!feof(fp)));
+    while ((std::strchr(*ptr, '\n') == NULL) && (!feof(fp)));
 
     if (*len + STRLEN >= maxlen)
     {
@@ -481,7 +483,7 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
     }
     {
         /* now remove newline */
-        int slen = strlen(*ptr);
+        int slen = std::strlen(*ptr);
         if ((*ptr)[slen-1] == '\n')
         {
             (*ptr)[slen-1] = '\0';
@@ -501,7 +503,7 @@ static int wordcount(char *ptr)
     {
         for (i = 0; (ptr[i] != '\0'); i++)
         {
-            is[cur] = isspace(ptr[i]);
+            is[cur] = std::isspace(ptr[i]);
             if ((0 == i) && !is[cur])
             {
                 n++;
@@ -521,11 +523,11 @@ static char *read_xvgr_string(const char *line)
     const char *ptr0, *ptr1;
     char       *str;
 
-    ptr0 = strchr(line, '"');
+    ptr0 = std::strchr(line, '"');
     if (ptr0 != NULL)
     {
         ptr0++;
-        ptr1 = strchr(ptr0, '"');
+        ptr1 = std::strchr(ptr0, '"');
         if (ptr1 != NULL)
         {
             str            = gmx_strdup(ptr0);
@@ -584,7 +586,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                 ptr++;
                 trim(ptr);
                 set = -1;
-                if (strncmp(ptr, "subtitle", 8) == 0)
+                if (std::strncmp(ptr, "subtitle", 8) == 0)
                 {
                     ptr += 8;
                     if (subtitle != NULL)
@@ -592,7 +594,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                         *subtitle = read_xvgr_string(ptr);
                     }
                 }
-                else if (strncmp(ptr, "legend string", 13) == 0)
+                else if (std::strncmp(ptr, "legend string", 13) == 0)
                 {
                     ptr += 13;
                     sscanf(ptr, "%d%n", &set, &nchar);
@@ -604,7 +606,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                     sscanf(ptr, "%d%n", &set, &nchar);
                     ptr += nchar;
                     trim(ptr);
-                    if (strncmp(ptr, "legend", 6) == 0)
+                    if (std::strncmp(ptr, "legend", 6) == 0)
                     {
                         ptr += 6;
                     }
@@ -654,8 +656,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
             /* fprintf(stderr,"ptr='%s'\n",ptr);*/
             for (k = 0; (k < nny); k++)
             {
-                strcpy(fmt, base);
-                strcat(fmt, "%lf");
+                std::strcpy(fmt, base);
+                std::strcat(fmt, "%lf");
                 rval = sscanf(ptr, fmt, &lf);
                 /* fprintf(stderr,"rval = %d\n",rval);*/
                 if ((rval == EOF) || (rval == 0))
@@ -665,7 +667,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                 yy[k][nx] = lf;
                 srenew(fmt, 3*(nny+1)+1);
                 srenew(base, 3*nny+1);
-                strcat(base, "%*s");
+                std::strcat(base, "%*s");
             }
             if (k != nny)
             {
@@ -707,7 +709,7 @@ int read_xvg(const char *fn, double ***y, int *ny)
 }
 
 void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
-               const char **leg, const output_env_t oenv)
+               const char **leg, const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i, j;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,12 +55,12 @@
  * classes provide the main interface to obtain gmx::Selection objects in
  * trajectory analysis using gmx::TrajectoryAnalysisModule.
  * To use these classes outside the trajectory analysis framework,
- * a gmx::SelectionOptionManager needs to be created to serve as a bridge
- * between the selection option classes and the gmx::SelectionCollection
- * object.
+ * a gmx::SelectionOptionManager or a gmx::SelectionOptionBehavior needs to be
+ * created to serve as a bridge between the selection option classes and the
+ * gmx::SelectionCollection object.
  * \if libapi
  * gmx::SelectionFileOption can be used to implement generic file input for
- * selection options (done internally in the trajectory analysis framework).
+ * selection options (done internally within gmx::SelectionOptionBehavior).
  *
  * The selection module contains some lower-level functionality that is
  * currently internal to it (centerofmass.h, indexutil.h, poscalc.h,
@@ -84,6 +84,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/selection/selectionoptionbehavior.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 
 #endif

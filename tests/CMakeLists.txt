@@ -40,8 +40,7 @@ option(REGRESSIONTEST_DOWNLOAD
 if(REGRESSIONTEST_DOWNLOAD)
     if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
         set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
-        set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/regressiontests"
-            CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+        # REGRESSIONTEST_PATH for dev trees is set later based on the dirname found in the tar
     else()
         set(REGRESSIONTEST_URL http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
@@ -64,6 +63,18 @@ log: ${log}")
         file(MD5 ${REGRESSIONTEST_FILE} COMPUTED_MD5SUM)
         if(NOT ${REGRESSIONTEST_MD5SUM} STREQUAL ${COMPUTED_MD5SUM})
             message(FATAL_ERROR "Download of regressiontests failed. Expected MD5 of ${REGRESSIONTEST_MD5SUM} but download has ${COMPUTED_MD5SUM}")
+        endif()
+    else()
+        # Extract the REGRESSIONTEST_PATH from the tar when using dev tree.
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar tf "${REGRESSIONTEST_FILE}"
+                RESULT_VARIABLE _tar_tf_res
+                OUTPUT_VARIABLE _tar_tf_out)
+        if (${_tar_tf_res} EQUAL 0)
+            string(REGEX REPLACE "/\n.*$" "" _regressiontest_dir "${_tar_tf_out}")
+            set(REGRESSIONTEST_PATH "${CMAKE_CURRENT_BINARY_DIR}/${_regressiontest_dir}"
+                CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
+        else()
+            message(FATAL_ERROR "Failed to list the contents of the downloaded tarball: ${REGRESSIONTEST_FILE}")
         endif()
     endif()
 
@@ -95,7 +106,7 @@ if(REGRESSIONTEST_PATH)
 
     # gmxtests target builds all binaries required for running gmxtest
     add_custom_target(gmxtests DEPENDS gmx)
-    add_dependencies(check gmxtests)
+    add_dependencies(run-ctest gmxtests)
 
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)

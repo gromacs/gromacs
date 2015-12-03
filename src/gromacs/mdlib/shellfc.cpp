@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/shellfc.h"
+#include "shellfc.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,30 +44,30 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/chargegroup.h"
-#include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/fileio/txtdump.h"
+#include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
     int     nnucl;
-    atom_id shell;               /* The shell id				*/
-    atom_id nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
+    int     shell;               /* The shell id				*/
+    int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
     /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
     real    k;                   /* force constant		        */
     real    k_1;                 /* 1 over force constant		*/
@@ -76,7 +76,7 @@ typedef struct {
     rvec    step;
 } t_shell;
 
-typedef struct gmx_shellfc {
+struct gmx_shellfc_t {
     int         nshell_gl;      /* The number of shells in the system       */
     t_shell    *shell_gl;       /* All the shells (for DD only)             */
     int        *shell_index_gl; /* Global shell index (for DD only)         */
@@ -96,7 +96,7 @@ typedef struct gmx_shellfc {
     rvec       *adir_xnold;     /* Work space for init_adir                 */
     rvec       *adir_xnew;      /* Work space for init_adir                 */
     int         adir_nalloc;    /* Work space for init_adir                 */
-} t_gmx_shellfc;
+};
 
 
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
@@ -235,11 +235,11 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,
-                                 gmx_mtop_t *mtop, int nflexcon,
-                                 rvec *x)
+gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
+                                  gmx_mtop_t *mtop, int nflexcon,
+                                  rvec *x)
 {
-    struct gmx_shellfc       *shfc;
+    gmx_shellfc_t            *shfc;
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
@@ -317,11 +317,11 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     /* Initiate the shell structures */
     for (i = 0; (i < nshell); i++)
     {
-        shell[i].shell = NO_ATID;
+        shell[i].shell = -1;
         shell[i].nnucl = 0;
-        shell[i].nucl1 = NO_ATID;
-        shell[i].nucl2 = NO_ATID;
-        shell[i].nucl3 = NO_ATID;
+        shell[i].nucl1 = -1;
+        shell[i].nucl2 = -1;
+        shell[i].nucl3 = -1;
         /* shell[i].bInterCG=FALSE; */
         shell[i].k_1   = 0;
         shell[i].k     = 0;
@@ -361,7 +361,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                     nra   = interaction_function[ftype].nratoms;
 
                     /* Check whether we have a bond with a shell */
-                    aS = NO_ATID;
+                    aS = -1;
 
                     switch (bondtypes[j])
                     {
@@ -389,7 +389,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                     }
 
-                    if (aS != NO_ATID)
+                    if (aS != -1)
                     {
                         qS = atom[aS].q;
 
@@ -400,7 +400,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "nsi is %d should be within 0 - %d. aS = %d",
                                       nsi, nshell, aS);
                         }
-                        if (shell[nsi].shell == NO_ATID)
+                        if (shell[nsi].shell == -1)
                         {
                             shell[nsi].shell = a_offset + aS;
                             ns++;
@@ -410,15 +410,15 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "Weird stuff in %s, %d", __FILE__, __LINE__);
                         }
 
-                        if      (shell[nsi].nucl1 == NO_ATID)
+                        if      (shell[nsi].nucl1 == -1)
                         {
                             shell[nsi].nucl1 = a_offset + aN;
                         }
-                        else if (shell[nsi].nucl2 == NO_ATID)
+                        else if (shell[nsi].nucl2 == -1)
                         {
                             shell[nsi].nucl2 = a_offset + aN;
                         }
-                        else if (shell[nsi].nucl3 == NO_ATID)
+                        else if (shell[nsi].nucl3 == -1)
                         {
                             shell[nsi].nucl3 = a_offset + aN;
                         }
@@ -546,7 +546,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 }
 
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
-                       struct gmx_shellfc *shfc)
+                       gmx_shellfc_t *shfc)
 {
     t_shell      *shell;
     int           a0, a1, *ind, nshell, i;
@@ -700,7 +700,7 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                  * cause a NaN if df were binary-equal to zero. Values close to
                  * zero won't cause problems (because of the min() and max()), so
                  * just testing for binary inequality is OK. */
-                if (0.0 != df)
+                if (zero != df)
                 {
                     k_est = -dx/df;
                     /* Scale the step size by a factor interpolated from
@@ -840,7 +840,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
     }
 }
 
-static void init_adir(FILE *log, gmx_shellfc_t shfc,
+static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
                       t_commrec *cr, int dd_ac1,
                       gmx_int64_t step, t_mdatoms *md, int start, int end,
@@ -850,8 +850,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
                       real *lambda, real *dvdlambda, t_nrnb *nrnb)
 {
     rvec           *xnold, *xnew;
-    double          w_dt;
-    real            dt;
+    double          dt, w_dt;
     int             n, d;
     unsigned short *ptype;
 
@@ -934,7 +933,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         t_graph *graph,
                         gmx_groups_t *groups,
-                        struct gmx_shellfc *shfc,
+                        gmx_shellfc_t *shfc,
                         t_forcerec *fr,
                         gmx_bool bBornRadii,
                         double t, rvec mu_tot,

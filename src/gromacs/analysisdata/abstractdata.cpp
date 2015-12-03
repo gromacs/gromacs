@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "dataproxy.h"
 
@@ -177,7 +176,7 @@ AbstractAnalysisData::addColumnModule(int col, int span,
 {
     GMX_RELEASE_ASSERT(col >= 0 && span >= 1,
                        "Invalid columns specified for a column module");
-    boost::shared_ptr<AnalysisDataProxy> proxy(
+    std::shared_ptr<AnalysisDataProxy> proxy(
             new AnalysisDataProxy(col, span, this));
     proxy->addModule(module);
     addModule(proxy);
@@ -185,7 +184,7 @@ AbstractAnalysisData::addColumnModule(int col, int span,
 
 
 void
-AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
+AbstractAnalysisData::applyModule(IAnalysisDataModule *module)
 {
     impl_->modules_.applyModule(this, module);
 }

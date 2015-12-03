@@ -7,7 +7,7 @@ on modern CPUs and accelerators, and support nearly all of the
 algorithms used in |Gromacs|.
 
 Before version 4.6, |Gromacs| always used pair-lists based on groups of
-particles. These groups of particles were orginally charge-groups, which were
+particles. These groups of particles were originally charge-groups, which were
 necessary with plain cut-off electrostatics. With the use of PME (or
 reaction-field with a buffer), charge groups are no longer necessary
 (and are ignored in the Verlet scheme). In |Gromacs| 4.6 and later, the
@@ -18,7 +18,7 @@ converted, and for the few cases where it may allow faster simulations
 with bio-molecular systems dominated by water.
 
 Without PME, the group cut-off scheme should generally be combined
-with a buffered pair-list to help avoid artefacts. However, the
+with a buffered pair-list to help avoid artifacts. However, the
 group-scheme kernels that can implement this are much slower than
 either the unbuffered group-scheme kernels, or the buffered
 Verlet-scheme kernels. Use of the Verlet scheme is strongly encouraged
@@ -53,7 +53,7 @@ unbuffered cut-off scheme             default      not by default
 exact cut-off                         shift/switch always
 potential-shift interactions          yes          yes
 potential-switch interactions         yes          yes
-force-switch interations              yes          yes
+force-switch interactions             yes          yes
 switched potential                    yes          yes
 switched forces                       yes          yes
 non-periodic systems                  yes          Z + walls
@@ -61,7 +61,6 @@ implicit solvent                      yes          no
 free energy perturbed non-bondeds     yes          yes
 energy group contributions            yes          only on CPU
 energy group exclusions               yes          no
-AdResS multi-scale                    yes          no
 OpenMP multi-threading                only PME     all
 native GPU support                    no           yes
 Coulomb PME                           yes          yes
@@ -70,7 +69,7 @@ virtual sites                         yes          yes
 User-supplied tabulated interactions  yes          no
 Buckingham VdW interactions           yes          no
 rcoulomb != rvdw                      yes          no
-twin-range                            yes          no
+twin-range                            no           no
 ====================================  ============ =======
 
 Performance
@@ -86,7 +85,7 @@ the cut-off length each time step. This makes simulations much
 slower. The performance of the Verlet scheme with the new non-bonded
 kernels is independent of system composition and is intended to always
 run with a buffered pair-list. Typically, buffer size is 0 to 10% of
-the cut-off, so you could win a bit of peformance by reducing or
+the cut-off, so you could win a bit of performance by reducing or
 removing the buffer, but this might not be a good trade-off of
 simulation quality.
 
@@ -132,7 +131,9 @@ kJ/mol/ns per particle). The effective drift is usually much lower, as
 precision for normal atomistic simulations constraints cause a drift
 somewhere around 0.0001 kJ/mol/ns per particle, so it doesn't make sense
 to go much lower.) Details on how the buffer size is chosen can be
-found in the reference below and in the Reference Manual.
+found in the reference below and in the `reference manual`_.
+
+.. _reference manual: gmx-manual-parent-dir_
 
 For constant-energy (NVE) simulations, the buffer size will be
 inferred from the temperature that corresponds to the velocities
@@ -142,11 +143,11 @@ to -1 and a buffer set manually by specifying :mdp:`rlist` greater than
 the larger of :mdp:`rcoulomb` and :mdp:`rvdw`. The simplest way to get a
 reasonable buffer size is to use an NVT mdp file with the target
 temperature set to what you expect in your NVE simulation, and
-transfer the buffer size printed by grompp to your NVE [.mdp] file.
+transfer the buffer size printed by :ref:`gmx grompp` to your NVE [.mdp] file.
 
-When a GPU is used, nstlist is automatically increased by mdrun,
+When a GPU is used, nstlist is automatically increased by :ref:`gmx mdrun`,
 usually to 20 or more; rlist is increased along to stay below the
-target energy drift. Further information on [running mdrun with
+target energy drift. Further information on [running :ref:`gmx mdrun` with
 GPUs] is available.
 
 Further information

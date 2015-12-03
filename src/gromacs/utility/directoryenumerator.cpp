@@ -273,7 +273,7 @@ DirectoryEnumerator::enumerateFilesWithExtension(
 
 
 DirectoryEnumerator::DirectoryEnumerator(const char *dirname, bool bThrow)
-    : impl_(NULL)
+    : impl_(nullptr)
 {
     GMX_RELEASE_ASSERT(dirname != NULL && dirname[0] != '\0',
                        "Attempted to open empty/null directory path");
@@ -281,7 +281,7 @@ DirectoryEnumerator::DirectoryEnumerator(const char *dirname, bool bThrow)
 }
 
 DirectoryEnumerator::DirectoryEnumerator(const std::string &dirname, bool bThrow)
-    : impl_(NULL)
+    : impl_(nullptr)
 {
     GMX_RELEASE_ASSERT(!dirname.empty(),
                        "Attempted to open empty/null directory path");
@@ -294,7 +294,7 @@ DirectoryEnumerator::~DirectoryEnumerator()
 
 bool DirectoryEnumerator::nextFile(std::string *filename)
 {
-    if (!impl_.get())
+    if (impl_ == nullptr)
     {
         filename->clear();
         return false;

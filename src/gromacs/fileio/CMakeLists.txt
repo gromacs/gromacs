@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB FILEIO_SOURCES *.cpp *.c)
+file(GLOB FILEIO_SOURCES *.cpp)
 
 if(GMX_USE_PLUGINS)
   set(FILEIO_SOURCES ${FILEIO_SOURCES} ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.c)
@@ -45,15 +45,15 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
 gmx_install_headers(
     confio.h
     enxio.h
-    filenm.h
+    filetypes.h
     gmxfio.h
     matio.h
-    mdoutf.h
     mtxio.h
+    oenv.h
     pdbio.h
+    rgb.h
     tpxio.h
-    trajectory_writing.h
-    trnio.h
+    trrio.h
     trx.h
     trxio.h
     xdr_datatype.h

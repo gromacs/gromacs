@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,12 +43,12 @@
 
 #include "errorformat.h"
 
-#include "config.h"
-
 #include <cctype>
 #include <cstdio>
 #include <cstring>
 
+#include "buildinfo.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -93,6 +93,10 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     if (func != NULL)
     {
         std::fprintf(fp, "Function:    %s\n", func);
+    }
+    if (gmx_node_num() > 1)
+    {
+        std::fprintf(fp, "MPI rank:    %d (out of %d)\n", gmx_node_rank(), gmx_node_num());
     }
     std::fprintf(fp, "\n");
     std::fprintf(fp, "%s:\n", title);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -303,18 +303,8 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
         // Check whether the actual selection given was from an external group,
         // and if so, use the name of the external group.
         SelectionTreeElementPointer child = this->child;
-        while (child->type == SEL_MODIFIER)
-        {
-            if (!child->child || child->child->type != SEL_SUBEXPRREF
-                || !child->child->child)
-            {
-                break;
-            }
-            child = child->child->child;
-        }
-        if (child->type == SEL_EXPRESSION
-            && child->child && child->child->type == SEL_SUBEXPRREF
-            && child->child->child)
+        if (_gmx_selelem_is_default_kwpos(*child) && child->child
+            && child->child->type == SEL_SUBEXPRREF && child->child->child)
         {
             if (child->child->child->type == SEL_CONST
                 && child->child->child->v.type == GROUP_VALUE)
@@ -369,6 +359,24 @@ void SelectionTreeElement::checkUnsortedAtoms(
                     name().c_str());
         errors->addNested(InconsistentInputError(message));
     }
+}
+
+bool SelectionTreeElement::requiresIndexGroups() const
+{
+    if (type == SEL_GROUPREF)
+    {
+        return true;
+    }
+    SelectionTreeElementPointer child = this->child;
+    while (child)
+    {
+        if (child->requiresIndexGroups())
+        {
+            return true;
+        }
+        child = child->next;
+    }
+    return false;
 }
 
 void SelectionTreeElement::resolveIndexGroupReference(

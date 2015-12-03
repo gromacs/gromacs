@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -154,12 +154,15 @@ static const t_register_method smtable_def[] = {
     {NULL,         &sm_altloc},
     {NULL,         &sm_occupancy},
     {NULL,         &sm_betafactor},
+    {"beta",       &sm_betafactor},
     {NULL,         &sm_x},
     {NULL,         &sm_y},
     {NULL,         &sm_z},
 
     {NULL,         &sm_distance},
+    {"dist",       &sm_distance},
     {NULL,         &sm_mindistance},
+    {"mindist",    &sm_mindistance},
     {NULL,         &sm_within},
     {NULL,         &sm_insolidangle},
     {NULL,         &sm_same},
@@ -386,7 +389,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             continue;
         }
         /* Check that the name does not conflict with a method */
-        if (symtab.findSymbol(param[i].name, true))
+        if (symtab.findSymbol(param[i].name))
         {
             report_param_error(fp, name, param[i].name, "error: name conflicts with another method or a keyword");
             bOk = false;
@@ -618,7 +621,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
  * \param[in,out] symtab Symbol table to register the method to.
  * \param[in]     name   Name under which the method should be registered.
  * \param[in]     method Method to register.
- * \returns       0 on success, EINVAL if there was something wrong with the
+ * \returns       0 on success, -1 if there was something wrong with the
  *   method.
  *
  * \p name does not need to match the name of the method, and the same
@@ -662,7 +665,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
     if (!bOk)
     {
         report_error(stderr, name, "warning: not registered");
-        return EINVAL;
+        return -1;
     }
     return 0;
 }

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Console"><![CDATA[
+Sample list:
+
+1. first item
+2. second item
+   that spans
+   multiple
+   lines
+3. third item
+   that has a
+   single long
+   line
+
+9.  Item with
+    extra
+    indentation
+10. Double
+    digit item
+
+Normal
+paragraph]]></String>
+  <String Name="reStructuredText"><![CDATA[
+Sample list:
+
+1. first item
+2. second item
+that
+   spans
+multiple lines
+3. third item
+that has a
+single long
+line
+
+9.  Item with
+extra
+indentation
+10. Double
+digit item
+
+Normal
+paragraph]]></String>
+</ReferenceData>

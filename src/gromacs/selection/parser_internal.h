@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,12 +46,8 @@
 #ifndef GMX_SELECTION_PARSER_INTERNAL_H
 #define GMX_SELECTION_PARSER_INTERNAL_H
 
-#include "config.h"
-
 #include <exception>
-
-#include <boost/exception_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -75,11 +71,11 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
             context = gmx::formatString("Near '%s'", context.c_str());
             ex.prependContext(context);
         }
-        _gmx_sel_lexer_set_exception(scanner, boost::copy_exception(ex));
+        _gmx_sel_lexer_set_exception(scanner, std::make_exception_ptr(ex));
     }
     catch (const std::exception &)
     {
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception());
     }
 }
 
@@ -146,23 +142,10 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
     }                                                           \
     catch (const std::exception &)                              \
     {                                                           \
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception()); \
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception()); \
         YYABORT;                                                \
     }
 //!\}
-
-#ifndef GMX_CXX11
-//! No-op to enable use of same get()/set() implementation as with C++11.
-static gmx::SelectionParserValue &move(gmx::SelectionParserValue &src)
-{
-    return src;
-}
-//! No-op to enable use of same get()/set() implementation as with C++11.
-static gmx::SelectionParserParameter &move(gmx::SelectionParserParameter &src)
-{
-    return src;
-}
-#endif
 
 /*! \brief
  * Retrieves a semantic value.
@@ -170,7 +153,7 @@ static gmx::SelectionParserParameter &move(gmx::SelectionParserParameter &src)
  * \param[in] src  Semantic value to get the value from.
  * \returns   Retrieved value.
  * \throws    unspecified  Any exception thrown by the move constructor of
- *      ValueType (copy constructor if GMX_CXX11 is not set).
+ *      ValueType.
  *
  * There should be no statements that may throw exceptions in actions before
  * this function has been called for all semantic values that have a C++ object
@@ -185,8 +168,8 @@ template <typename ValueType> static
 ValueType get(ValueType *src)
 {
     GMX_RELEASE_ASSERT(src != NULL, "Semantic value pointers should be non-NULL");
-    boost::scoped_ptr<ValueType> srcGuard(src);
-    return ValueType(move(*src));
+    const std::unique_ptr<ValueType> srcGuard(src);
+    return ValueType(std::move(*src));
 }
 /*! \brief
  * Sets a semantic value.
@@ -196,7 +179,7 @@ ValueType get(ValueType *src)
  * \param[in]  value Value to put into the semantic value.
  * \throws     std::bad_alloc if out of memory.
  * \throws     unspecified  Any exception thrown by the move constructor of
- *      ValueType (copy constructor if GMX_CXX11 is not set).
+ *      ValueType.
  *
  * This should be the last statement before ::END_ACTION, except for a
  * possible ::CHECK_SEL.
@@ -204,7 +187,7 @@ ValueType get(ValueType *src)
 template <typename ValueType> static
 void set(ValueType * &dest, ValueType value)
 {
-    dest = new ValueType(move(value));
+    dest = new ValueType(std::move(value));
 }
 /*! \brief
  * Sets an empty semantic value.

@@ -34,13 +34,14 @@
  */
 #include "gmxpre.h"
 
-#include <ctype.h>
-#include <math.h>
-#include <string.h>
+#include <cctype>
+#include <cmath>
+#include <cstring>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -50,25 +51,19 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/powerspect.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_DOUBLE
-#define FLOOR(x) ((int) floor(x))
-#else
-#define FLOOR(x) ((int) floorf(x))
-#endif
 
 enum {
     methSEL, methBISECT, methFUNCFIT, methNR
@@ -106,7 +101,7 @@ static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const output_env_t oenv)
+static void density_in_time (const char *fn, int **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
 
 {
 /*
@@ -155,9 +150,9 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
 
 
     }
-    *zslices = 1+FLOOR(box[axis][axis]/bwz);
-    *yslices = 1+FLOOR(box[ax2][ax2]/bw);
-    *xslices = 1+FLOOR(box[ax1][ax1]/bw);
+    *zslices = 1+static_cast<int>(std::floor(box[axis][axis]/bwz));
+    *yslices = 1+static_cast<int>(std::floor(box[ax2][ax2]/bw));
+    *xslices = 1+static_cast<int>(std::floor(box[ax1][ax1]/bw));
     if (bps1d)
     {
         if (*xslices < *yslices)
@@ -248,9 +243,9 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
                 z -= box[axis][axis];
             }
 
-            slicex = ((int) (x/bbww[XX])) % *xslices;
-            slicey = ((int) (y/bbww[YY])) % *yslices;
-            slicez = ((int) (z/bbww[ZZ])) % *zslices;
+            slicex = static_cast<int>(x/bbww[XX]) % *xslices;
+            slicey = static_cast<int>(y/bbww[YY]) % *yslices;
+            slicez = static_cast<int>(z/bbww[ZZ]) % *zslices;
             Densslice[slicex][slicey][slicez] += (top->atoms.atom[index[0][j]].m*dscale);
         }
 
@@ -330,7 +325,7 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
     real  std, var;
     int   i, j, n, order;
     order = ftsize/2;
-    std   = ((real)order/2.0);
+    std   = order/2.0;
     var   = std*std;
     snew(kernel, ftsize);
     gausskernel(kernel, ftsize, var);
@@ -352,7 +347,7 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
 static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zslices,
                             int tblocks, real binwidth, int method,
                             real dens1, real dens2, t_interf ****intf1,
-                            t_interf ****intf2, const output_env_t oenv)
+                            t_interf ****intf2, const gmx_output_env_t *oenv)
 {
     /*Returns two pointers to 3D arrays of t_interf structs containing (position,thickness) of the interface(s)*/
     FILE         *xvg;
@@ -615,7 +610,7 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
 
 static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
                      int xbins, int ybins, char **fnms,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     FILE *raw1, *raw2;
     int   i, j, n;
@@ -670,7 +665,7 @@ int gmx_densorder(int argc, char *argv[])
      * options when running the program, without mentioning them here!
      */
 
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     t_topology        *top;
     char             **grpname;
     int                ePBC, *ngx;
@@ -682,7 +677,7 @@ int gmx_densorder(int argc, char *argv[])
     static int         nsttblock = 100;
     static int         axis      = 2;
     static const char *axtitle   = "Z";
-    atom_id          **index; /* Index list for single group*/
+    int              **index; /* Index list for single group*/
     int                xslices, yslices, zslices, tblock;
     static gmx_bool    bGraph   = FALSE;
     static gmx_bool    bCenter  = FALSE;

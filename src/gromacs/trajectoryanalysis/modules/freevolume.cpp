@@ -48,12 +48,12 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
@@ -85,28 +85,16 @@ namespace
 class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
-        //! Constructor
         FreeVolume();
-
-        //! Destructor
         virtual ~FreeVolume();
 
-        //! Set the options and setting
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
-
-        //! First routine called by the analysis framework
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
-
-        //! Call for each frame of the trajectory
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
-
-        //! Last routine called by the analysis framework
         virtual void finishAnalysis(int nframes);
-
-        //! Routine to write output, that is additional over the built-in
         virtual void writeOutput();
 
     private:
@@ -133,8 +121,7 @@ class FreeVolume : public TrajectoryAnalysisModule
 // one. The type of this depends on what kind of tool you need.
 // Here we only have simple value/time kind of data.
 FreeVolume::FreeVolume()
-    : TrajectoryAnalysisModule(FreeVolumeInfo::name, FreeVolumeInfo::shortDescription),
-      adata_(new AnalysisDataAverageModule())
+    : adata_(new AnalysisDataAverageModule())
 {
     // We only compute two numbers per frame
     data_.setColumnCount(0, 2);
@@ -162,7 +149,7 @@ FreeVolume::~FreeVolume()
 
 
 void
-FreeVolume::initOptions(Options                    *options,
+FreeVolume::initOptions(IOptionsContainer          *options,
                         TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -196,8 +183,7 @@ FreeVolume::initOptions(Options                    *options,
         "the terminal."
     };
 
-    // Add the descriptive text (program help text) to the options
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     // Add option for optional output file
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()

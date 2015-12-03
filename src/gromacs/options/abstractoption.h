@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,11 @@ namespace gmx
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
 class OptionManagerContainer;
-class Options;
+
+namespace internal
+{
+class OptionsImpl;
+}
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -97,7 +101,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : minValueCount_(1), maxValueCount_(1),
-              name_(name), descr_(NULL)
+              name_(name), descr_(NULL), storeIsSet_(NULL)
         { }
 
         /*! \brief
@@ -129,6 +133,8 @@ class AbstractOption
 
         //! Sets the description for the option.
         void setDescription(const char *descr) { descr_ = descr; }
+        //! Sets the storage location for whether the option is set.
+        void setStoreIsSet(bool *store) { storeIsSet_ = store; }
         //! Sets a flag for the option.
         void setFlag(OptionFlag flag) { flags_.set(flag); }
         //! Clears a flag for the option.
@@ -184,16 +190,15 @@ class AbstractOption
         //! Pointer to description of the option.
         const char             *descr_;
         OptionFlags             flags_;
+        bool                   *storeIsSet_;
 
         /*! \brief
          * Needed to initialize an AbstractOptionStorage object from this class
          * without otherwise unnecessary accessors.
          */
         friend class AbstractOptionStorage;
-        /*! \brief
-         * Needed to be able to call createStorage().
-         */
-        friend class Options;
+        //! Needed to be able to call createStorage().
+        friend class internal::OptionsImpl;
 };
 
 /*! \brief
@@ -330,6 +335,21 @@ class OptionTemplate : public AbstractOption
          */
         MyClass &storeVector(std::vector<T> *store)
         { storeVector_ = store; return me(); }
+        /*! \brief
+         * Stores whether the option was explicitly set.
+         *
+         * \param[in] store  Variable to store the flag in.
+         *
+         * The value is set to `false` on creation of the option, and to `true`
+         * as soon as a value is assigned to the option.  A default value does
+         * not set the flag to `true`, but assignment that uses
+         * defaultValueIfSet() does.
+         *
+         * The pointer provided should remain valid as long as the associated
+         * Options object exists.
+         */
+        MyClass &storeIsSet(bool *store)
+        { setStoreIsSet(store); return me(); }
 
     protected:
         /*! \cond libapi */
@@ -353,6 +373,14 @@ class OptionTemplate : public AbstractOption
          * is none.
          */
         const T *defaultValueIfSet() const { return defaultValueIfSet_; }
+        /*! \brief
+         * Returns a pointer to the storage location, or NULL if none specified.
+         */
+        T *store() const { return store_; }
+        /*! \brief
+         * Returns a pointer to the storage vector, or NULL if none specified.
+         */
+        std::vector<T> *storeVector() const { return storeVector_; }
         //! Returns \p *this casted into MyClass to reduce typing.
         MyClass &me() { return static_cast<MyClass &>(*this); }
         //! \endcond

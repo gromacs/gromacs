@@ -343,6 +343,10 @@ typedef unsigned __int64 uint64_t;
 # define PRIu64         __PRI64_PREFIX "u"
 #endif
 
+#ifndef PRIuPTR
+# define PRIuPTR         __PRIPTR_PREFIX "u"
+#endif
+
 #endif
 
 #endif /* USE_STD_INTTYPES_H */
@@ -2128,9 +2132,10 @@ tng_function_status DECLSPECDLLEXPORT tng_residue_atom_w_id_add
  * @pre \code atom != 0 \endcode The atom must not be NULL.
  * @return TNG_SUCCESS (0) if successful.
  */
-tng_function_status tng_atom_residue_get(const tng_trajectory_t tng_data,
-                                         const tng_atom_t atom,
-                                         tng_residue_t *residue);
+tng_function_status DECLSPECDLLEXPORT tng_atom_residue_get
+                (const tng_trajectory_t tng_data,
+                 const tng_atom_t atom,
+                 tng_residue_t *residue);
 
 /**
  * @brief Get the name of an atom.

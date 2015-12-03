@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,14 @@
 #ifndef GMX_OPTIONS_TIMEUNITMANAGER_H
 #define GMX_OPTIONS_TIMEUNITMANAGER_H
 
+#include "gromacs/options/ioptionsbehavior.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
+class IOptionsContainer;
 class Options;
 
 /*! \brief
@@ -62,12 +65,13 @@ class Options;
  */
 enum TimeUnit
 {
-    eTimeUnit_fs, //!< Femtoseconds.
-    eTimeUnit_ps, //!< Picoseconds.
-    eTimeUnit_ns, //!< Nanoseconds.
-    eTimeUnit_us, //!< Microseconds.
-    eTimeUnit_ms, //!< Milliseconds.
-    eTimeUnit_s   //!< Seconds.
+    TimeUnit_fs,                    //!< Femtoseconds.
+    TimeUnit_ps,                    //!< Picoseconds.
+    TimeUnit_ns,                    //!< Nanoseconds.
+    TimeUnit_us,                    //!< Microseconds.
+    TimeUnit_ms,                    //!< Milliseconds.
+    TimeUnit_s,                     //!< Seconds.
+    TimeUnit_Default = TimeUnit_ps  //!< Default time unit.
 };
 
 /*! \brief
@@ -82,10 +86,9 @@ enum TimeUnit
  *
  * \if internal
  * \todo
- * Most of this class is independent of the options implementation.
- * To ease reuse, it could be split such that the generic part is moved to the
- * utility module, and only the options-specific parts left in the options
- * module.
+ * This class is independent of the options implementation.
+ * To ease reuse, it could be moved to the utility module, and only
+ * TimeUnitBehavior left here.
  * \endif
  *
  * \inpublicapi
@@ -102,9 +105,9 @@ class TimeUnitManager
         //! Returns the currently selected time unit.
         TimeUnit timeUnit() const
         {
-            GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= eTimeUnit_s,
+            GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
                        "Time unit index has become out-of-range");
-            return static_cast<TimeUnit>(timeUnit_);
+            return timeUnit_;
         }
         //! Set a new time unit for the manager.
         void setTimeUnit(TimeUnit unit);
@@ -117,8 +120,55 @@ class TimeUnitManager
         //! Returns the scaling factor to convert times from ps.
         double inverseTimeScaleFactor() const;
 
+    private:
+        //! Currently set time unit for this manager.
+        TimeUnit                timeUnit_;
+};
+
+/*! \brief
+ * Options behavior to add a time unit option.
+ *
+ * This class provides functionality to add a time unit option that affects the
+ * input unit for time options (specified with FloatOption::timeValue() or
+ * DoubleOption::timeValue()).  When options are finished, it scales each time
+ * option such that any user-given values are interpreted as given in the time
+ * unit specified by the user, and scaled to picoseconds.  Programmatically
+ * given values (e.g., as default values for the options) are not scaled.
+ *
+ * \inpublicapi
+ * \ingroup module_options
+ */
+class TimeUnitBehavior : public IOptionsBehavior
+{
+    public:
+        TimeUnitBehavior();
+
+        //! Returns the current time unit.
+        TimeUnit timeUnit() const
+        {
+            GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
+                       "Time unit index has become out-of-range");
+            return static_cast<TimeUnit>(timeUnit_);
+        }
+        //! Sets the time unit.
+        void setTimeUnit(TimeUnit unit);
+
         /*! \brief
-         * Sets the time unit in this manager from an environment variable.
+         * Sets a storage location for the selected time unit.
+         *
+         * \param[in] store  Location that will receive the selected time unit.
+         *
+         * \p *store will be set to the time unit selected by the user (or
+         * programmatically).  The value is guaranteed to be set once the
+         * options have been finished.
+         */
+        void setTimeUnitStore(TimeUnit *store);
+
+        /*! \brief
+         * Sets the default time unit from an environment variable.
+         *
+         * This should be called before addTimeUnitOption() for consistent
+         * behavior.
          */
         void setTimeUnitFromEnvironment();
         /*! \brief
@@ -128,31 +178,20 @@ class TimeUnitManager
          * \param[in]     name    Name of the option to add.
          *
          * Adds an enum option to \p options to select the time unit for this
-         * manager.
+         * behavior.
          */
-        void addTimeUnitOption(Options *options, const char *name);
-        /*! \brief
-         * Scales user input values given to time options.
-         *
-         * \param[in,out] options Options in which to scale times.
-         *
-         * Scales each time option (see DoubleOption::timeValue()) in
-         * \p options such that any user-given values are interpreted as given
-         * in the time unit specified by this manager, and scaled to
-         * picoseconds.  Programmatically given values (e.g., as default values
-         * for the options) are not scaled.
-         */
-        void scaleTimeOptions(Options *options) const;
+        void addTimeUnitOption(IOptionsContainer *options, const char *name);
+
+        // From IOptionsBehavior
+        virtual void initBehavior(Options * /*options*/) {}
+        virtual void optionsFinishing(Options *options);
+        virtual void optionsFinished() {}
 
     private:
-        /*! \brief
-         * Currently set time unit for this manager.
-         *
-         * Type is int to make it possible to use it with
-         * StringOption::storeEnumIndex(), but it should always one of the
-         * allowed values for TimeUnit.
-         */
-        int                     timeUnit_;
+        TimeUnit         timeUnit_;
+        TimeUnit        *timeUnitStore_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(TimeUnitBehavior);
 };
 
 } // namespace gmx

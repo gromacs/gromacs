@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,6 @@
 namespace gmx
 {
 
-class Options;
 class SelectionCollection;
 class SelectionOptionStorage;
 
@@ -79,7 +78,7 @@ class SelectionOptionStorage;
  * \inpublicapi
  * \ingroup module_selection
  */
-class SelectionOptionManager : public OptionManagerInterface
+class SelectionOptionManager : public IOptionManager
 {
     public:
         /*! \brief
@@ -134,6 +133,22 @@ class SelectionOptionManager : public OptionManagerInterface
          * Strong exception safety.
          */
         void requestOptionDelayedParsing(SelectionOptionStorage *storage);
+
+        /*! \brief
+         * Returns whether there are requested selections that need input from
+         * parseRequestedFrom*().
+         */
+        bool hasRequestedSelections() const;
+
+        /*! \brief
+         * Initializes options for setting global selection properties.
+         *
+         * \param[in,out] options Options object to initialize.
+         * \throws        std::bad_alloc if out of memory.
+         *
+         * \see SelectionCollection::initOptions()
+         */
+        void initOptions(IOptionsContainer *options);
 
         /*! \brief
          * Parses selection(s) from standard input for options not yet

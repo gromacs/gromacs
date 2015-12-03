@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,9 @@ _where(const char *file, int line);
 void
 gmx_fatal_set_log_file(FILE *fp);
 
+/** Function pointer type for fatal error handler callback. */
+typedef void (*gmx_error_handler_t)(const char *title, const char *msg, const char *file, int line);
+
 /*! \brief
  * Sets an error handler for gmx_fatal() and other fatal error routines.
  *
@@ -99,12 +102,47 @@ gmx_fatal_set_log_file(FILE *fp);
  * \Gromacs will terminate the program after the error handler returns.
  * To make gmx_fatal_collective() work, the error handler should not terminate
  * the program, as it cannot know what is the desired way of termination.
- * The string passed to the handler may be a multi-line string.
+ * The message passed to the handler may be a multi-line string.
  *
  * \see gmx_fatal()
  */
-void
-set_gmx_error_handler(void (*func)(const char *msg));
+void gmx_set_error_handler(gmx_error_handler_t func);
+
+/** Identifies the state of the program on a fatal error. */
+enum ExitType
+{
+    /*! \brief
+     * Clean exit is possible.
+     *
+     * There should be no concurrently executing code that might be accessing
+     * global objects, and all MPI ranks should reach the same fatal error.
+     */
+    ExitType_CleanExit,
+    /*! \brief
+     * Program needs to be aborted.
+     *
+     * There are no preconditions for this state.
+     */
+    ExitType_Abort,
+    /*! \brief
+     * Program needs to be aborted, but some other rank is responsible of it.
+     *
+     * There should be some other MPI rank that reaches the same fatal error,
+     * but uses ExitType_Abort.  The other ranks can then use
+     * ExitType_NonMasterAbort to wait for that one rank to issue the abort.
+     */
+    ExitType_NonMasterAbort
+};
+
+/*! \brief
+ * Helper function to terminate the program on a fatal error.
+ *
+ * \param[in] exitType  Identifies the state of the program at the time of the
+ *    call, determining how the program can be terminated.
+ * \param[in] returnValue  Exit code for the program, for cases where it can be
+ *    used.
+ */
+gmx_noreturn void gmx_exit_on_fatal_error(enum ExitType exitType, int returnValue);
 
 /*! \brief
  * Low-level fatal error reporting routine for collective MPI errors.
@@ -119,8 +157,9 @@ set_gmx_error_handler(void (*func)(const char *msg));
  * here, since it would bring with it mdrun-specific dependencies).
  */
 gmx_noreturn void
-gmx_fatal_mpi_va(int fatal_errno, const char *file, int line, gmx_bool bMaster,
-                 gmx_bool bFinalize, const char *fmt, va_list ap);
+gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
+                 gmx_bool bMaster, gmx_bool bFinalize,
+                 const char *fmt, va_list ap);
 
 /*! \brief
  * Fatal error reporting routine for \Gromacs.
@@ -148,14 +187,6 @@ gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
-/*! \brief
- * Returns error message corresponding to a string key.
- *
- * This maps the strings used by gmx_error() to actual error messages.
- * Caller is responsible of freeing the returned string.
- */
-char *gmx_strerror(const char *key);
-
 /** Implementation for gmx_error(). */
 gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file, int line);
 /*! \brief
@@ -163,8 +194,7 @@ gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file,
  *
  * This works as gmx_fatal(), except that a generic error message is added
  * based on a string key, and printf-style formatting is not supported.
- * Should not typically be called directly, but through gmx_bug(), gmx_call()
- * etc.
+ * Should not typically be called directly, but through gmx_call() etc.
  */
 #define gmx_error(key, msg) _gmx_error(key, msg, __FILE__, __LINE__)
 
@@ -174,11 +204,9 @@ gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file,
  * recognized strings.
  */
 /*! \{ */
-#define gmx_bug(msg)    gmx_error("bug", msg)
 #define gmx_call(msg)   gmx_error("call", msg)
 #define gmx_comm(msg)   gmx_error("comm", msg)
 #define gmx_file(msg)   gmx_error("file", msg)
-#define gmx_cmd(msg)    gmx_error("cmd", msg)
 #define gmx_impl(msg)   gmx_error("impl", msg)
 #define gmx_incons(msg) gmx_error("incons", msg)
 #define gmx_input(msg)  gmx_error("input", msg)

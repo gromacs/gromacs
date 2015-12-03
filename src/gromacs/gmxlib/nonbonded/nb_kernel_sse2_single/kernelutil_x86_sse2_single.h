@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,8 @@
 #include "config.h"
 
 #include <math.h>
+
+#include <emmintrin.h>
 
 #define gmx_mm_castsi128_ps   _mm_castsi128_ps
 
@@ -657,5 +659,77 @@ gmx_mm_update_2pot_ps(__m128 pot1, float * gmx_restrict ptrA,
     _mm_store_ss(ptrB, _mm_add_ss(pot2, _mm_load_ss(ptrB)));
 }
 
+
+
+#ifdef __PGI
+#    define SSE2_FLOAT_NEGZERO   ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
+#else
+#    define SSE2_FLOAT_NEGZERO  (-0.0f)
+#endif
+
+static gmx_inline __m128 gmx_simdcall
+sse2_set_exponent_f(__m128 x)
+{
+    const __m128i expbias      = _mm_set1_epi32(127);
+    __m128i       iexp         = _mm_cvtps_epi32(x);
+
+    iexp = _mm_slli_epi32(_mm_add_epi32(iexp, expbias), 23);
+    return _mm_castsi128_ps(iexp);
+}
+
+static gmx_inline __m128 gmx_simdcall
+sse2_exp_f(__m128 x)
+{
+    const __m128  argscale     = _mm_set1_ps(1.44269504088896341f);
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const __m128  arglimit     = _mm_set1_ps(126.0f);
+    const __m128  invargscale0 = _mm_set1_ps(-0.693145751953125f);
+    const __m128  invargscale1 = _mm_set1_ps(-1.428606765330187045e-06f);
+    const __m128  CC4          = _mm_set1_ps(0.00136324646882712841033936f);
+    const __m128  CC3          = _mm_set1_ps(0.00836596917361021041870117f);
+    const __m128  CC2          = _mm_set1_ps(0.0416710823774337768554688f);
+    const __m128  CC1          = _mm_set1_ps(0.166665524244308471679688f);
+    const __m128  CC0          = _mm_set1_ps(0.499999850988388061523438f);
+    const __m128  one          = _mm_set1_ps(1.0f);
+    __m128        fexppart;
+    __m128        intpart;
+    __m128        y, p;
+    __m128        valuemask;
+
+    y         = _mm_mul_ps(x, argscale);
+    fexppart  = sse2_set_exponent_f(y);
+    intpart   = _mm_cvtepi32_ps(_mm_cvtps_epi32(y));
+    valuemask = _mm_cmple_ps(_mm_andnot_ps(_mm_set1_ps(SSE2_FLOAT_NEGZERO), y), arglimit);
+    fexppart  = _mm_and_ps(fexppart, valuemask);
+
+    /* Extended precision arithmetics */
+    x         = _mm_add_ps(_mm_mul_ps(invargscale0, intpart), x);
+    x         = _mm_add_ps(_mm_mul_ps(invargscale1, intpart), x);
+
+    p         = _mm_add_ps(_mm_mul_ps(CC4, x), CC3);
+    p         = _mm_add_ps(_mm_mul_ps(p, x), CC2);
+    p         = _mm_add_ps(_mm_mul_ps(p, x), CC1);
+    p         = _mm_add_ps(_mm_mul_ps(p, x), CC0);
+    p         = _mm_add_ps(_mm_mul_ps(_mm_mul_ps(x, x), p), x);
+    p         = _mm_add_ps(p, one);
+    x         = _mm_mul_ps(p, fexppart);
+    return x;
+}
+
+static gmx_inline __m128 gmx_simdcall
+sse2_invsqrt_f(__m128 x)
+{
+    __m128 lu = _mm_rsqrt_ps(x);
+
+    return _mm_mul_ps(_mm_set1_ps(0.5f), _mm_mul_ps(_mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(lu, lu), x)), lu));
+}
+
+static gmx_inline __m128 gmx_simdcall
+sse2_inv_f(__m128 x)
+{
+    __m128 lu = _mm_rcp_ps(x);
+
+    return _mm_mul_ps(lu, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(lu, x)));
+}
 
 #endif /* _kernelutil_x86_sse2_single_h_ */

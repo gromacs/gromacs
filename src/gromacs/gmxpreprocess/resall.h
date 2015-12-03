@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,11 +41,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
-#include "gromacs/legacyheaders/typedefs.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
 /* Search for an entry in the rtp database, returns the rtp residue name.
@@ -69,8 +64,5 @@ void read_resall(char *resdb, int *nrtp, t_restp **rtp,
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
                   gpp_atomtype_t atype);
 /* write rtp database */
-#ifdef __cplusplus
-}
-#endif
 
 #endif

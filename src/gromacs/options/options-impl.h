@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,18 +42,23 @@
 #ifndef GMX_OPTIONS_OPTIONS_IMPL_H
 #define GMX_OPTIONS_OPTIONS_IMPL_H
 
+#include <list>
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
 
 class AbstractOptionStorage;
+
+namespace internal
+{
 
 /*! \internal
  * \brief
@@ -64,20 +69,52 @@ class AbstractOptionStorage;
  *
  * \ingroup module_options
  */
-class Options::Impl
+class OptionsImpl
 {
     public:
+        /*! \internal \brief
+         * Describes a group of options (see Options::addGroup()).
+         *
+         * \ingroup module_options
+         */
+        class Group : public IOptionsContainer
+        {
+            public:
+                //! Convenience typedef for list of options.
+                typedef std::vector<AbstractOptionStorage *> OptionList;
+                //! Convenience typedef for list of subgroups.
+                typedef std::list<Group> SubgroupList;
+
+                //! Creates a group within the given Options.
+                explicit Group(OptionsImpl *parent) : parent_(parent) {}
+
+                // From IOptionsContainer
+                virtual IOptionsContainer &addGroup();
+                virtual OptionInfo *addOption(const AbstractOption &settings);
+
+                //! Containing options object.
+                OptionsImpl  *parent_;
+                /*! \brief
+                 * List of options, in insertion order.
+                 *
+                 * Pointers in this container point to the objects managed by
+                 * Impl::optionsMap_.
+                 */
+                OptionList    options_;
+                //! List of groups, in insertion order.
+                SubgroupList  subgroups_;
+        };
+
         //! Smart pointer for managing an AbstractOptionStorage object.
-        typedef gmx_unique_ptr<AbstractOptionStorage>::type
+        typedef std::unique_ptr<AbstractOptionStorage>
             AbstractOptionStoragePointer;
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
-        //! Convenience type for list of options.
-        typedef std::vector<AbstractOptionStoragePointer> OptionList;
+        //! Convenience typedef for a map that contains all the options.
+        typedef std::map<std::string, AbstractOptionStoragePointer> OptionMap;
 
         //! Sets the name and title.
-        Impl(const char *name, const char *title);
-        ~Impl();
+        OptionsImpl(const char *name, const char *title);
 
         /*! \brief
          * Finds a subsection by name.
@@ -108,10 +145,6 @@ class Options::Impl
 
         //! Name for the Options object.
         std::string             name_;
-        //! Description title for the Options object.
-        std::string             title_;
-        //! Full description for the Options object.
-        std::string             description_;
         /*! \brief
          * Option managers set for this collection.
          *
@@ -119,22 +152,25 @@ class Options::Impl
          */
         OptionManagerContainer  managers_;
         /*! \brief
+         * Group that contains all options (and subgroups).
+         *
+         * This is used to store the insertion order of options.
+         */
+        Group                   rootGroup_;
+        //! Map from option names to options; owns the option storage objects.
+        OptionMap               optionMap_;
+        /*! \brief
          * List of subsections, in insertion order.
          *
          * This container contains only references to external objects; memory
          * management is performed elsewhere.
          */
         SubSectionList          subSections_;
-        /*! \brief
-         * List of options, in insertion order.
-         *
-         * All objects in this container are owned by this object, and are
-         * freed in the destructor.
-         */
-        OptionList              options_;
         //! Options object that contains this object as a subsection, or NULL.
         Options                *parent_;
 };
+
+} // namespace internal
 
 } // namespace gmx
 

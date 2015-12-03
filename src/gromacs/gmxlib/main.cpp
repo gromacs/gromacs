@@ -36,21 +36,19 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/main.h"
+#include "main.h"
 
 #include "config.h"
 
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -70,14 +68,14 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
                    char buf[], int bufsize)
 {
-    if ((size_t)bufsize < (strlen(base)+10))
+    if (static_cast<std::size_t>(bufsize) < (std::strlen(base)+10))
     {
         gmx_mem("Character buffer too small!");
     }
 
     /* Copy to buf, and strip extension */
-    strcpy(buf, base);
-    buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
+    std::strcpy(buf, base);
+    buf[strlen(base) - std::strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
 
     if (bAppendSimId)
     {
@@ -85,13 +83,13 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     }
     if (bAppendNodeId)
     {
-        strcat(buf, "_rank");
+        std::strcat(buf, "_rank");
         sprintf(buf+strlen(buf), "%d", cr->nodeid);
     }
-    strcat(buf, ".");
+    std::strcat(buf, ".");
 
     /* Add extension again */
-    strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
+    std::strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
         fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);
@@ -218,8 +216,6 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
     char   timebuf[STRLEN];
     FILE  *fp = *fplog;
 
-    debug_gmx();
-
     if (!bAppendFiles)
     {
         fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
@@ -255,10 +251,9 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
         gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    fprintf(fp, "\n\n");
+    fprintf(fp, "\n");
 
     fflush(fp);
-    debug_gmx();
 
     *fplog = fp;
 }

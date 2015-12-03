@@ -89,7 +89,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         MyClass &filetype(OptionFileType type)
         { optionType_ = type; return me(); }
         /*! \brief
-         * Sets the type of the file from an enum in filenm.h.
+         * Sets the type of the file from an enum in filetypes.h.
          *
          * New code should prefer filetype(), extending the enumeration if
          * necessary.
@@ -186,7 +186,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * used by FileNameOptionManager to complete various file names.
          *
          * The value should be one of the enumerated `ef*` values from
-         * filenm.h, and be a valid type for the type specified with
+         * filetypes.h, and be a valid type for the type specified with
          * filetype().
          */
         MyClass &defaultType(int filetype)
@@ -256,7 +256,7 @@ class FileNameOptionInfo : public OptionInfo
         const char *defaultExtension() const;
         //! Returns the list of extensions this option accepts.
         ExtensionList extensions() const;
-        //! Returns whether \p fileType (from filenm.h) is accepted for this option.
+        //! Returns whether \p fileType (from filetypes.h) is accepted for this option.
         bool isValidType(int fileType) const;
         //! Returns the list of file types this option accepts.
         ConstArrayRef<int> fileTypes() const;

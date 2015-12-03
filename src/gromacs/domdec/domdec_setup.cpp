@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,15 @@
 #include <cmath>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/perf_est.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 /*! \brief Margin for setting up the DD grid */
@@ -624,7 +627,7 @@ static real optimize_ncells(FILE *fplog,
     {
         /* For Ewald exclusions pbc_dx is not called */
         bExcl_pbcdx =
-            (IR_EXCL_FORCES(*ir) && !EEL_FULL(ir->coulombtype));
+            (inputrecExclForces(ir) && !EEL_FULL(ir->coulombtype));
         pbcdxr = (double)n_bonded_dx(mtop, bExcl_pbcdx)/(double)mtop->natoms;
     }
     else
@@ -721,11 +724,6 @@ real dd_choose_grid(FILE *fplog,
         {
             if (cr->npmenodes > 0)
             {
-                if (cr->nnodes <= 2)
-                {
-                    gmx_fatal(FARGS,
-                              "Cannot have separate PME ranks with 2 or fewer ranks");
-                }
                 if (cr->npmenodes >= cr->nnodes)
                 {
                     gmx_fatal(FARGS,

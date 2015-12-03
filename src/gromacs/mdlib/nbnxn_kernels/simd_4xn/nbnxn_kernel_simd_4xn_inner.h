@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,29 +49,9 @@
 #define EXCL_FORCES
 #endif
 
-/* Without exclusions and energies we only need to mask the cut-off,
- * this can be faster when we have defined gmx_simd_blendv_r, i.e. an instruction
- * that selects from two SIMD registers based on the contents of a third.
- */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined LJ_EWALD_GEOM) && defined GMX_SIMD_HAVE_BLENDV
-/* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
- * With gcc this is slower, except for RF on Sandy Bridge.
- * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
- */
-#if (defined CALC_COUL_RF || defined CALC_COUL_TAB) && (!defined __GNUC__ || (defined CALC_COUL_RF && defined GMX_SIMD_X86_AVX_256_OR_HIGHER))
-#define NBNXN_CUTOFF_USE_BLENDV
-#endif
-/* With analytical Ewald we replace cmp+and+and with sub+blendv+blendv.
- * This is only faster with icc on Sandy Bridge (PS kernel slower than gcc 4.7).
- * Tested with icc 13.
- */
-#if defined CALC_COUL_EWALD && defined __INTEL_COMPILER && defined GMX_SIMD_X86_AVX_256_OR_HIGHER
-#define NBNXN_CUTOFF_USE_BLENDV
-#endif
-#endif
-
 {
-    int        cj, aj, ajx, ajy, ajz;
+    int            cj, ajx, ajy, ajz;
+    int gmx_unused aj;
 
 #ifdef ENERGY_GROUPS
     /* Energy group indices for two atoms packed into one int */
@@ -99,13 +79,11 @@
     gmx_simd_real_t  rsq_S1, rinv_S1, rinvsq_S1;
     gmx_simd_real_t  rsq_S2, rinv_S2, rinvsq_S2;
     gmx_simd_real_t  rsq_S3, rinv_S3, rinvsq_S3;
-#ifndef NBNXN_CUTOFF_USE_BLENDV
     /* wco: within cut-off, mask of all 1's or 0's */
     gmx_simd_bool_t  wco_S0;
     gmx_simd_bool_t  wco_S1;
     gmx_simd_bool_t  wco_S2;
     gmx_simd_bool_t  wco_S3;
-#endif
 #ifdef VDW_CUTOFF_CHECK
     gmx_simd_bool_t  wco_vdw_S0;
     gmx_simd_bool_t  wco_vdw_S1;
@@ -118,16 +96,18 @@
 #if (defined CALC_COULOMB && defined CALC_COUL_TAB) || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
     gmx_simd_real_t r_S0;
     gmx_simd_real_t r_S1;
+#if (defined CALC_COULOMB && defined CALC_COUL_TAB) || !defined HALF_LJ
     gmx_simd_real_t r_S2;
     gmx_simd_real_t r_S3;
 #endif
+#endif
 
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-    gmx_simd_real_t  rsw_S0, rsw2_S0, rsw2_r_S0;
-    gmx_simd_real_t  rsw_S1, rsw2_S1, rsw2_r_S1;
+    gmx_simd_real_t  rsw_S0, rsw2_S0;
+    gmx_simd_real_t  rsw_S1, rsw2_S1;
 #ifndef HALF_LJ
-    gmx_simd_real_t  rsw_S2, rsw2_S2, rsw2_r_S2;
-    gmx_simd_real_t  rsw_S3, rsw2_S3, rsw2_r_S3;
+    gmx_simd_real_t  rsw_S2, rsw2_S2;
+    gmx_simd_real_t  rsw_S3, rsw2_S3;
 #endif
 #endif
 
@@ -233,16 +213,6 @@
     int         aj2;
 #endif
 
-#ifndef FIX_LJ_C
-    /* LJ C6 and C12 parameters, used with geometric comb. rule */
-    gmx_simd_real_t  c6_S0, c12_S0;
-    gmx_simd_real_t  c6_S1, c12_S1;
-#ifndef HALF_LJ
-    gmx_simd_real_t  c6_S2, c12_S2;
-    gmx_simd_real_t  c6_S3, c12_S3;
-#endif
-#endif
-
     /* Intermediate variables for LJ calculation */
 #ifndef LJ_COMB_LB
     gmx_simd_real_t  rinvsix_S0;
@@ -266,14 +236,6 @@
 #ifndef HALF_LJ
     gmx_simd_real_t  FrLJ6_S2, FrLJ12_S2, frLJ_S2;
     gmx_simd_real_t  FrLJ6_S3, FrLJ12_S3, frLJ_S3;
-#endif
-#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    gmx_simd_real_t  VLJ6_S0, VLJ12_S0, VLJ_S0;
-    gmx_simd_real_t  VLJ6_S1, VLJ12_S1, VLJ_S1;
-#ifndef HALF_LJ
-    gmx_simd_real_t  VLJ6_S2, VLJ12_S2, VLJ_S2;
-    gmx_simd_real_t  VLJ6_S3, VLJ12_S3, VLJ_S3;
-#endif
 #endif
 #endif /* CALC_LJ */
 
@@ -331,12 +293,11 @@
     rsq_S2      = gmx_simd_calc_rsq_r(dx_S2, dy_S2, dz_S2);
     rsq_S3      = gmx_simd_calc_rsq_r(dx_S3, dy_S3, dz_S3);
 
-#ifndef NBNXN_CUTOFF_USE_BLENDV
+    /* Do the cut-off check */
     wco_S0      = gmx_simd_cmplt_r(rsq_S0, rc2_S);
     wco_S1      = gmx_simd_cmplt_r(rsq_S1, rc2_S);
     wco_S2      = gmx_simd_cmplt_r(rsq_S2, rc2_S);
     wco_S3      = gmx_simd_cmplt_r(rsq_S3, rc2_S);
-#endif
 
 #ifdef CHECK_EXCLS
 #ifdef EXCL_FORCES
@@ -412,10 +373,10 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S0));
-    rsq_S1      = gmx_simd_add_r(rsq_S1, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S1));
-    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S2));
-    rsq_S3      = gmx_simd_add_r(rsq_S3, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S3));
+    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S0));
+    rsq_S1      = gmx_simd_add_r(rsq_S1, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S1));
+    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S2));
+    rsq_S3      = gmx_simd_add_r(rsq_S3, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S3));
 #endif
 
     /* Calculate 1/r */
@@ -441,9 +402,11 @@
 #ifdef CALC_LJ
 
 #if !defined LJ_COMB_GEOM && !defined LJ_COMB_LB && !defined FIX_LJ_C
+    gmx_simd_real_t c6_S0, c6_S1, c12_S0, c12_S1;
     load_lj_pair_params(nbfp0, type, aj, &c6_S0, &c12_S0);
     load_lj_pair_params(nbfp1, type, aj, &c6_S1, &c12_S1);
 #ifndef HALF_LJ
+    gmx_simd_real_t c6_S2, c6_S3, c12_S2, c12_S3;
     load_lj_pair_params(nbfp2, type, aj, &c6_S2, &c12_S2);
     load_lj_pair_params(nbfp3, type, aj, &c6_S3, &c12_S3);
 #endif
@@ -452,17 +415,17 @@
 #ifdef LJ_COMB_GEOM
     c6s_j_S     = gmx_simd_load_r(ljc+aj2+0);
     c12s_j_S    = gmx_simd_load_r(ljc+aj2+STRIDE);
-    c6_S0       = gmx_simd_mul_r(c6s_S0, c6s_j_S );
-    c6_S1       = gmx_simd_mul_r(c6s_S1, c6s_j_S );
+    gmx_simd_real_t c6_S0  = gmx_simd_mul_r(c6s_S0, c6s_j_S );
+    gmx_simd_real_t c6_S1  = gmx_simd_mul_r(c6s_S1, c6s_j_S );
 #ifndef HALF_LJ
-    c6_S2       = gmx_simd_mul_r(c6s_S2, c6s_j_S );
-    c6_S3       = gmx_simd_mul_r(c6s_S3, c6s_j_S );
+    gmx_simd_real_t c6_S2  = gmx_simd_mul_r(c6s_S2, c6s_j_S );
+    gmx_simd_real_t c6_S3  = gmx_simd_mul_r(c6s_S3, c6s_j_S );
 #endif
-    c12_S0      = gmx_simd_mul_r(c12s_S0, c12s_j_S);
-    c12_S1      = gmx_simd_mul_r(c12s_S1, c12s_j_S);
+    gmx_simd_real_t c12_S0 = gmx_simd_mul_r(c12s_S0, c12s_j_S);
+    gmx_simd_real_t c12_S1 = gmx_simd_mul_r(c12s_S1, c12s_j_S);
 #ifndef HALF_LJ
-    c12_S2      = gmx_simd_mul_r(c12s_S2, c12s_j_S);
-    c12_S3      = gmx_simd_mul_r(c12s_S3, c12s_j_S);
+    gmx_simd_real_t c12_S2 = gmx_simd_mul_r(c12s_S2, c12s_j_S);
+    gmx_simd_real_t c12_S3 = gmx_simd_mul_r(c12s_S3, c12s_j_S);
 #endif
 #endif /* LJ_COMB_GEOM */
 
@@ -484,18 +447,11 @@
 
 #endif /* CALC_LJ */
 
-#ifndef NBNXN_CUTOFF_USE_BLENDV
+    /* Set rinv to zero for r beyond the cut-off */
     rinv_S0     = gmx_simd_blendzero_r(rinv_S0, wco_S0);
     rinv_S1     = gmx_simd_blendzero_r(rinv_S1, wco_S1);
     rinv_S2     = gmx_simd_blendzero_r(rinv_S2, wco_S2);
     rinv_S3     = gmx_simd_blendzero_r(rinv_S3, wco_S3);
-#else
-    /* We only need to mask for the cut-off: blendv is faster */
-    rinv_S0     = gmx_simd_blendv_r(rinv_S0, zero_S, gmx_simd_sub_r(rc2_S, rsq_S0));
-    rinv_S1     = gmx_simd_blendv_r(rinv_S1, zero_S, gmx_simd_sub_r(rc2_S, rsq_S1));
-    rinv_S2     = gmx_simd_blendv_r(rinv_S2, zero_S, gmx_simd_sub_r(rc2_S, rsq_S2));
-    rinv_S3     = gmx_simd_blendv_r(rinv_S3, zero_S, gmx_simd_sub_r(rc2_S, rsq_S3));
-#endif
 
     rinvsq_S0   = gmx_simd_mul_r(rinv_S0, rinv_S0);
     rinvsq_S1   = gmx_simd_mul_r(rinv_S1, rinv_S1);
@@ -542,18 +498,10 @@
     /* We need to mask (or limit) rsq for the cut-off,
      * as large distances can cause an overflow in gmx_pmecorrF/V.
      */
-#ifndef NBNXN_CUTOFF_USE_BLENDV
     brsq_S0     = gmx_simd_mul_r(beta2_S, gmx_simd_blendzero_r(rsq_S0, wco_S0));
     brsq_S1     = gmx_simd_mul_r(beta2_S, gmx_simd_blendzero_r(rsq_S1, wco_S1));
     brsq_S2     = gmx_simd_mul_r(beta2_S, gmx_simd_blendzero_r(rsq_S2, wco_S2));
     brsq_S3     = gmx_simd_mul_r(beta2_S, gmx_simd_blendzero_r(rsq_S3, wco_S3));
-#else
-    /* Strangely, putting mul on a separate line is slower (icc 13) */
-    brsq_S0     = gmx_simd_mul_r(beta2_S, gmx_simd_blendv_r(rsq_S0, zero_S, gmx_simd_sub_r(rc2_S, rsq_S0)));
-    brsq_S1     = gmx_simd_mul_r(beta2_S, gmx_simd_blendv_r(rsq_S1, zero_S, gmx_simd_sub_r(rc2_S, rsq_S1)));
-    brsq_S2     = gmx_simd_mul_r(beta2_S, gmx_simd_blendv_r(rsq_S2, zero_S, gmx_simd_sub_r(rc2_S, rsq_S2)));
-    brsq_S3     = gmx_simd_mul_r(beta2_S, gmx_simd_blendv_r(rsq_S3, zero_S, gmx_simd_sub_r(rc2_S, rsq_S3)));
-#endif
     ewcorr_S0   = gmx_simd_mul_r(gmx_simd_pmecorrF_r(brsq_S0), beta_S);
     ewcorr_S1   = gmx_simd_mul_r(gmx_simd_pmecorrF_r(brsq_S1), beta_S);
     ewcorr_S2   = gmx_simd_mul_r(gmx_simd_pmecorrF_r(brsq_S2), beta_S);
@@ -733,30 +681,29 @@
     r_S0        = gmx_simd_mul_r(rsq_S0, rinv_S0);
     rsw_S0      = gmx_simd_max_r(gmx_simd_sub_r(r_S0, rswitch_S), zero_S);
     rsw2_S0     = gmx_simd_mul_r(rsw_S0, rsw_S0);
-    rsw2_r_S0   = gmx_simd_mul_r(rsw2_S0, r_S0);
     r_S1        = gmx_simd_mul_r(rsq_S1, rinv_S1);
     rsw_S1      = gmx_simd_max_r(gmx_simd_sub_r(r_S1, rswitch_S), zero_S);
     rsw2_S1     = gmx_simd_mul_r(rsw_S1, rsw_S1);
-    rsw2_r_S1   = gmx_simd_mul_r(rsw2_S1, r_S1);
 #ifndef HALF_LJ
     r_S2        = gmx_simd_mul_r(rsq_S2, rinv_S2);
     rsw_S2      = gmx_simd_max_r(gmx_simd_sub_r(r_S2, rswitch_S), zero_S);
     rsw2_S2     = gmx_simd_mul_r(rsw_S2, rsw_S2);
-    rsw2_r_S2   = gmx_simd_mul_r(rsw2_S2, r_S2);
     r_S3        = gmx_simd_mul_r(rsq_S3, rinv_S3);
     rsw_S3      = gmx_simd_max_r(gmx_simd_sub_r(r_S3, rswitch_S), zero_S);
     rsw2_S3     = gmx_simd_mul_r(rsw_S3, rsw_S3);
-    rsw2_r_S3   = gmx_simd_mul_r(rsw2_S3, r_S3);
 #endif
 #endif
 
 #ifdef LJ_FORCE_SWITCH
 
 #define gmx_add_fr_switch(fr, rsw, rsw2_r, c2, c3) gmx_simd_fmadd_r(gmx_simd_fmadd_r(c3, rsw, c2), rsw2_r, fr)
-
+    gmx_simd_real_t rsw2_r_S0 = gmx_simd_mul_r(rsw2_S0, r_S0);
+    gmx_simd_real_t rsw2_r_S1 = gmx_simd_mul_r(rsw2_S1, r_S1);
     FrLJ6_S0    = gmx_simd_mul_r(c6_S0, gmx_add_fr_switch(rinvsix_S0, rsw_S0, rsw2_r_S0, p6_fc2_S, p6_fc3_S));
     FrLJ6_S1    = gmx_simd_mul_r(c6_S1, gmx_add_fr_switch(rinvsix_S1, rsw_S1, rsw2_r_S1, p6_fc2_S, p6_fc3_S));
 #ifndef HALF_LJ
+    gmx_simd_real_t rsw2_r_S2 = gmx_simd_mul_r(rsw2_S2, r_S2);
+    gmx_simd_real_t rsw2_r_S3 = gmx_simd_mul_r(rsw2_S3, r_S3);
     FrLJ6_S2    = gmx_simd_mul_r(c6_S2, gmx_add_fr_switch(rinvsix_S2, rsw_S2, rsw2_r_S2, p6_fc2_S, p6_fc3_S));
     FrLJ6_S3    = gmx_simd_mul_r(c6_S3, gmx_add_fr_switch(rinvsix_S3, rsw_S3, rsw2_r_S3, p6_fc2_S, p6_fc3_S));
 #endif
@@ -832,17 +779,17 @@
     sig6_S2     = gmx_simd_mul_r(sig2_S2, gmx_simd_mul_r(sig2_S2, sig2_S2));
     sig6_S3     = gmx_simd_mul_r(sig2_S3, gmx_simd_mul_r(sig2_S3, sig2_S3));
 #endif
-    c6_S0       = gmx_simd_mul_r(eps_S0, sig6_S0);
-    c6_S1       = gmx_simd_mul_r(eps_S1, sig6_S1);
+    gmx_simd_real_t c6_S0  = gmx_simd_mul_r(eps_S0, sig6_S0);
+    gmx_simd_real_t c6_S1  = gmx_simd_mul_r(eps_S1, sig6_S1);
 #ifndef HALF_LJ
-    c6_S2       = gmx_simd_mul_r(eps_S2, sig6_S2);
-    c6_S3       = gmx_simd_mul_r(eps_S3, sig6_S3);
+    gmx_simd_real_t c6_S2  = gmx_simd_mul_r(eps_S2, sig6_S2);
+    gmx_simd_real_t c6_S3  = gmx_simd_mul_r(eps_S3, sig6_S3);
 #endif
-    c12_S0      = gmx_simd_mul_r(c6_S0, sig6_S0);
-    c12_S1      = gmx_simd_mul_r(c6_S1, sig6_S1);
+    gmx_simd_real_t c12_S0 = gmx_simd_mul_r(c6_S0, sig6_S0);
+    gmx_simd_real_t c12_S1 = gmx_simd_mul_r(c6_S1, sig6_S1);
 #ifndef HALF_LJ
-    c12_S2      = gmx_simd_mul_r(c6_S2, sig6_S2);
-    c12_S3      = gmx_simd_mul_r(c6_S3, sig6_S3);
+    gmx_simd_real_t c12_S2 = gmx_simd_mul_r(c6_S2, sig6_S2);
+    gmx_simd_real_t c12_S3 = gmx_simd_mul_r(c6_S3, sig6_S3);
 #endif
 #endif
 #endif /* LJ_COMB_LB */
@@ -859,55 +806,55 @@
 
 #ifdef LJ_CUT
     /* Calculate the LJ energies, with constant potential shift */
-    VLJ6_S0     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S0, p6_cpot_S, FrLJ6_S0));
-    VLJ6_S1     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S1, p6_cpot_S, FrLJ6_S1));
+    gmx_simd_real_t VLJ6_S0  = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S0, p6_cpot_S, FrLJ6_S0));
+    gmx_simd_real_t VLJ6_S1  = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S1, p6_cpot_S, FrLJ6_S1));
 #ifndef HALF_LJ
-    VLJ6_S2     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S2, p6_cpot_S, FrLJ6_S2));
-    VLJ6_S3     = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S3, p6_cpot_S, FrLJ6_S3));
+    gmx_simd_real_t VLJ6_S2  = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S2, p6_cpot_S, FrLJ6_S2));
+    gmx_simd_real_t VLJ6_S3  = gmx_simd_mul_r(sixth_S, gmx_simd_fmadd_r(c6_S3, p6_cpot_S, FrLJ6_S3));
 #endif
-    VLJ12_S0    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S0, p12_cpot_S, FrLJ12_S0));
-    VLJ12_S1    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S1, p12_cpot_S, FrLJ12_S1));
+    gmx_simd_real_t VLJ12_S0 = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S0, p12_cpot_S, FrLJ12_S0));
+    gmx_simd_real_t VLJ12_S1 = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S1, p12_cpot_S, FrLJ12_S1));
 #ifndef HALF_LJ
-    VLJ12_S2    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S2, p12_cpot_S, FrLJ12_S2));
-    VLJ12_S3    = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S3, p12_cpot_S, FrLJ12_S3));
+    gmx_simd_real_t VLJ12_S2 = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S2, p12_cpot_S, FrLJ12_S2));
+    gmx_simd_real_t VLJ12_S3 = gmx_simd_mul_r(twelveth_S, gmx_simd_fmadd_r(c12_S3, p12_cpot_S, FrLJ12_S3));
 #endif
 #endif /* LJ_CUT */
 
 #ifdef LJ_FORCE_SWITCH
 #define v_fswitch_r(rsw, rsw2, c0, c3, c4) gmx_simd_fmadd_r(gmx_simd_fmadd_r(c4, rsw, c3), gmx_simd_mul_r(rsw2, rsw), c0)
 
-    VLJ6_S0     = gmx_simd_mul_r(c6_S0, gmx_simd_fmadd_r(sixth_S, rinvsix_S0, v_fswitch_r(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
-    VLJ6_S1     = gmx_simd_mul_r(c6_S1, gmx_simd_fmadd_r(sixth_S, rinvsix_S1, v_fswitch_r(rsw_S1, rsw2_S1, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+    gmx_simd_real_t VLJ6_S0  = gmx_simd_mul_r(c6_S0, gmx_simd_fmadd_r(sixth_S, rinvsix_S0, v_fswitch_r(rsw_S0, rsw2_S0, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+    gmx_simd_real_t VLJ6_S1  = gmx_simd_mul_r(c6_S1, gmx_simd_fmadd_r(sixth_S, rinvsix_S1, v_fswitch_r(rsw_S1, rsw2_S1, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
 #ifndef HALF_LJ
-    VLJ6_S2     = gmx_simd_mul_r(c6_S2, gmx_simd_fmadd_r(sixth_S, rinvsix_S2, v_fswitch_r(rsw_S2, rsw2_S2, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
-    VLJ6_S3     = gmx_simd_mul_r(c6_S3, gmx_simd_fmadd_r(sixth_S, rinvsix_S3, v_fswitch_r(rsw_S3, rsw2_S3, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+    gmx_simd_real_t VLJ6_S2  = gmx_simd_mul_r(c6_S2, gmx_simd_fmadd_r(sixth_S, rinvsix_S2, v_fswitch_r(rsw_S2, rsw2_S2, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
+    gmx_simd_real_t VLJ6_S3  = gmx_simd_mul_r(c6_S3, gmx_simd_fmadd_r(sixth_S, rinvsix_S3, v_fswitch_r(rsw_S3, rsw2_S3, p6_6cpot_S, p6_vc3_S, p6_vc4_S)));
 #endif
-    VLJ12_S0    = gmx_simd_mul_r(c12_S0, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S0, rinvsix_S0), v_fswitch_r(rsw_S0, rsw2_S0, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
-    VLJ12_S1    = gmx_simd_mul_r(c12_S1, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S1, rinvsix_S1), v_fswitch_r(rsw_S1, rsw2_S1, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+    gmx_simd_real_t VLJ12_S0 = gmx_simd_mul_r(c12_S0, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S0, rinvsix_S0), v_fswitch_r(rsw_S0, rsw2_S0, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+    gmx_simd_real_t VLJ12_S1 = gmx_simd_mul_r(c12_S1, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S1, rinvsix_S1), v_fswitch_r(rsw_S1, rsw2_S1, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
 #ifndef HALF_LJ
-    VLJ12_S2    = gmx_simd_mul_r(c12_S2, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S2, rinvsix_S2), v_fswitch_r(rsw_S2, rsw2_S2, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
-    VLJ12_S3    = gmx_simd_mul_r(c12_S3, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S3, rinvsix_S3), v_fswitch_r(rsw_S3, rsw2_S3, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+    gmx_simd_real_t VLJ12_S2 = gmx_simd_mul_r(c12_S2, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S2, rinvsix_S2), v_fswitch_r(rsw_S2, rsw2_S2, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
+    gmx_simd_real_t VLJ12_S3 = gmx_simd_mul_r(c12_S3, gmx_simd_fmadd_r(twelveth_S, gmx_simd_mul_r(rinvsix_S3, rinvsix_S3), v_fswitch_r(rsw_S3, rsw2_S3, p12_12cpot_S, p12_vc3_S, p12_vc4_S)));
 #endif
 #undef v_fswitch_r
 #endif /* LJ_FORCE_SWITCH */
 
     /* Add up the repulsion and dispersion */
-    VLJ_S0      = gmx_simd_sub_r(VLJ12_S0, VLJ6_S0);
-    VLJ_S1      = gmx_simd_sub_r(VLJ12_S1, VLJ6_S1);
+    gmx_simd_real_t VLJ_S0 = gmx_simd_sub_r(VLJ12_S0, VLJ6_S0);
+    gmx_simd_real_t VLJ_S1 = gmx_simd_sub_r(VLJ12_S1, VLJ6_S1);
 #ifndef HALF_LJ
-    VLJ_S2      = gmx_simd_sub_r(VLJ12_S2, VLJ6_S2);
-    VLJ_S3      = gmx_simd_sub_r(VLJ12_S3, VLJ6_S3);
+    gmx_simd_real_t VLJ_S2 = gmx_simd_sub_r(VLJ12_S2, VLJ6_S2);
+    gmx_simd_real_t VLJ_S3 = gmx_simd_sub_r(VLJ12_S3, VLJ6_S3);
 #endif
 
 #endif /* (LJ_CUT || LJ_FORCE_SWITCH) && CALC_ENERGIES */
 
 #ifdef LJ_POT_SWITCH
     /* We always need the potential, since it is needed for the force */
-    VLJ_S0 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S0, gmx_simd_mul_r(twelveth_S, FrLJ12_S0));
-    VLJ_S1 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S1, gmx_simd_mul_r(twelveth_S, FrLJ12_S1));
+    gmx_simd_real_t VLJ_S0 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S0, gmx_simd_mul_r(twelveth_S, FrLJ12_S0));
+    gmx_simd_real_t VLJ_S1 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S1, gmx_simd_mul_r(twelveth_S, FrLJ12_S1));
 #ifndef HALF_LJ
-    VLJ_S2 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S2, gmx_simd_mul_r(twelveth_S, FrLJ12_S2));
-    VLJ_S3 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S3, gmx_simd_mul_r(twelveth_S, FrLJ12_S3));
+    gmx_simd_real_t VLJ_S2 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S2, gmx_simd_mul_r(twelveth_S, FrLJ12_S2));
+    gmx_simd_real_t VLJ_S3 = gmx_simd_fnmadd_r(sixth_S, FrLJ6_S3, gmx_simd_mul_r(twelveth_S, FrLJ12_S3));
 #endif
 
     {
@@ -1225,7 +1172,5 @@
 #undef  wco_vdw_S1
 #undef  wco_vdw_S2
 #undef  wco_vdw_S3
-
-#undef  NBNXN_CUTOFF_USE_BLENDV
 
 #undef  EXCL_FORCES

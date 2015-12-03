@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,29 +38,33 @@
 #ifndef _repl_ex_h
 #define _repl_ex_h
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include <cstdio>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_enerdata_t;
+struct gmx_multisim_t;
+struct t_commrec;
+struct t_inputrec;
+struct t_state;
 
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
-extern gmx_repl_ex_t init_replica_exchange(FILE *fplog,
-                                           const gmx_multisim_t *ms,
-                                           const t_state *state,
-                                           const t_inputrec *ir,
-                                           int nst, int nmultiex, int init_seed);
+gmx_repl_ex_t init_replica_exchange(FILE *fplog,
+                                    const gmx_multisim_t *ms,
+                                    const t_state *state,
+                                    const t_inputrec *ir,
+                                    int nst, int nmultiex, int init_seed);
 /* Should only be called on the master nodes */
 
-extern gmx_bool replica_exchange(FILE *fplog,
-                                 const t_commrec *cr,
-                                 gmx_repl_ex_t re,
-                                 t_state *state, gmx_enerdata_t *enerd,
-                                 t_state *state_local,
-                                 gmx_int64_t step, real time);
+gmx_bool replica_exchange(FILE *fplog,
+                          const t_commrec *cr,
+                          gmx_repl_ex_t re,
+                          t_state *state, gmx_enerdata_t *enerd,
+                          t_state *state_local,
+                          gmx_int64_t step, real time);
 /* Attempts replica exchange, should be called on all nodes.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,
@@ -69,11 +73,7 @@ extern gmx_bool replica_exchange(FILE *fplog,
  * in state and still needs to be redistributed over the nodes.
  */
 
-extern void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
+void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
 /* Should only be called on the master nodes */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  /* _repl_ex_h */

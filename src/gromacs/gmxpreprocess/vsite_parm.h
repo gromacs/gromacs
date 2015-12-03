@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,11 +40,8 @@
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct gmx_moltype_t;
 
 int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
                t_params plist[]);
@@ -53,12 +50,10 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
 void set_vsites_ptype(gmx_bool bVerbose,  gmx_moltype_t *molt);
 /* set ptype to VSite for virtual sites */
 
+/*! \brief Clean up the bonded interactions
+ *
+ * Throw away all obsolete bonds, angles and dihedrals.
+ * Throw away all constraints. */
 void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
-/* remove all bonded interaction (bonds, angles and diherals) that
-   have become obsolete due to virtual site constructions */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

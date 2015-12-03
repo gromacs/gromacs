@@ -35,12 +35,9 @@
 #ifndef GMX_EWALD_PME_GATHER_H
 #define GMX_EWALD_PME_GATHER_H
 
-#include "gromacs/ewald/pme-internal.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "pme-internal.h"
 
 void
 gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
@@ -51,9 +48,5 @@ gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
 real
 gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
                        pme_atomcomm_t *atc);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse4_1_double.h"
 #include "kernelutil_x86_sse4_1_double.h"
 
 /*
@@ -272,15 +269,15 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse4_1_double
             rsq21            = gmx_mm_calc_rsq_pd(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_pd(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv01           = gmx_mm_invsqrt_pd(rsq01);
-            rinv02           = gmx_mm_invsqrt_pd(rsq02);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
+            rinv00           = sse41_invsqrt_d(rsq00);
+            rinv01           = sse41_invsqrt_d(rsq01);
+            rinv02           = sse41_invsqrt_d(rsq02);
+            rinv10           = sse41_invsqrt_d(rsq10);
+            rinv11           = sse41_invsqrt_d(rsq11);
+            rinv12           = sse41_invsqrt_d(rsq12);
+            rinv20           = sse41_invsqrt_d(rsq20);
+            rinv21           = sse41_invsqrt_d(rsq21);
+            rinv22           = sse41_invsqrt_d(rsq22);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq01         = _mm_mul_pd(rinv01,rinv01);
@@ -330,7 +327,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
@@ -759,15 +756,15 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse4_1_double
             rsq21            = gmx_mm_calc_rsq_pd(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_pd(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv01           = gmx_mm_invsqrt_pd(rsq01);
-            rinv02           = gmx_mm_invsqrt_pd(rsq02);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
+            rinv00           = sse41_invsqrt_d(rsq00);
+            rinv01           = sse41_invsqrt_d(rsq01);
+            rinv02           = sse41_invsqrt_d(rsq02);
+            rinv10           = sse41_invsqrt_d(rsq10);
+            rinv11           = sse41_invsqrt_d(rsq11);
+            rinv12           = sse41_invsqrt_d(rsq12);
+            rinv20           = sse41_invsqrt_d(rsq20);
+            rinv21           = sse41_invsqrt_d(rsq21);
+            rinv22           = sse41_invsqrt_d(rsq22);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq01         = _mm_mul_pd(rinv01,rinv01);
@@ -817,7 +814,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
@@ -1466,15 +1463,15 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse4_1_double
             rsq21            = gmx_mm_calc_rsq_pd(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_pd(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv01           = gmx_mm_invsqrt_pd(rsq01);
-            rinv02           = gmx_mm_invsqrt_pd(rsq02);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
+            rinv00           = sse41_invsqrt_d(rsq00);
+            rinv01           = sse41_invsqrt_d(rsq01);
+            rinv02           = sse41_invsqrt_d(rsq02);
+            rinv10           = sse41_invsqrt_d(rsq10);
+            rinv11           = sse41_invsqrt_d(rsq11);
+            rinv12           = sse41_invsqrt_d(rsq12);
+            rinv20           = sse41_invsqrt_d(rsq20);
+            rinv21           = sse41_invsqrt_d(rsq21);
+            rinv22           = sse41_invsqrt_d(rsq22);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq01         = _mm_mul_pd(rinv01,rinv01);
@@ -1517,7 +1514,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* f6A = 6 * C6grid * (1 - poly) */
@@ -1862,15 +1859,15 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse4_1_double
             rsq21            = gmx_mm_calc_rsq_pd(dx21,dy21,dz21);
             rsq22            = gmx_mm_calc_rsq_pd(dx22,dy22,dz22);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
-            rinv01           = gmx_mm_invsqrt_pd(rsq01);
-            rinv02           = gmx_mm_invsqrt_pd(rsq02);
-            rinv10           = gmx_mm_invsqrt_pd(rsq10);
-            rinv11           = gmx_mm_invsqrt_pd(rsq11);
-            rinv12           = gmx_mm_invsqrt_pd(rsq12);
-            rinv20           = gmx_mm_invsqrt_pd(rsq20);
-            rinv21           = gmx_mm_invsqrt_pd(rsq21);
-            rinv22           = gmx_mm_invsqrt_pd(rsq22);
+            rinv00           = sse41_invsqrt_d(rsq00);
+            rinv01           = sse41_invsqrt_d(rsq01);
+            rinv02           = sse41_invsqrt_d(rsq02);
+            rinv10           = sse41_invsqrt_d(rsq10);
+            rinv11           = sse41_invsqrt_d(rsq11);
+            rinv12           = sse41_invsqrt_d(rsq12);
+            rinv20           = sse41_invsqrt_d(rsq20);
+            rinv21           = sse41_invsqrt_d(rsq21);
+            rinv22           = sse41_invsqrt_d(rsq22);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
             rinvsq01         = _mm_mul_pd(rinv01,rinv01);
@@ -1912,7 +1909,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* f6A = 6 * C6grid * (1 - poly) */

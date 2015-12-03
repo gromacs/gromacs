@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,10 +41,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs,
@@ -63,21 +59,5 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged
  * return the New total number of atoms
  */
-
-int protonate(t_atoms **atoms, rvec **x, t_protonate *protdata);
-/* Protonate molecule according to oplsaa.ff/aminoacids.hdb
- * when called the first time, new atoms are added to atoms,
- * second time only coordinates are generated
- * return the new total number of atoms
- */
-
-void deprotonate(t_atoms *atoms, rvec *x);
-/* Deprotonate any molecule: all atoms whose name begins with H will be
- * removed
- */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

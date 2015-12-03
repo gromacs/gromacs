@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 namespace gmx
 {
 
-class OptionManagerInterface;
+class IOptionManager;
 
 /*! \libinternal
  * \brief
@@ -75,7 +75,7 @@ class OptionManagerContainer
         bool empty() const { return list_.empty(); }
 
         //! Adds a manager to the container.
-        void add(OptionManagerInterface *manager)
+        void add(IOptionManager *manager)
         {
             list_.push_back(manager);
         }
@@ -83,7 +83,7 @@ class OptionManagerContainer
          * Retrieves a manager of a certain type.
          *
          * \tparam  ManagerType  Type of manager to retrieve
-         *     (should derive from OptionManagerInterface).
+         *     (should derive from IOptionManager).
          * \returns The manager, or `NULL` if there is none.
          *
          * This method is used in AbstractOption::createStorage() to retrieve
@@ -112,7 +112,7 @@ class OptionManagerContainer
 
     private:
         //! Shorthand for the internal container type.
-        typedef std::vector<OptionManagerInterface *> ListType;
+        typedef std::vector<IOptionManager *> ListType;
 
         ListType  list_;
 

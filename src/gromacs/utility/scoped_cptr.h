@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,6 @@
 #ifndef GMX_UTILITY_SCOPED_PTR_SFREE_H
 #define GMX_UTILITY_SCOPED_PTR_SFREE_H
 
-#include "config.h"
-
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -79,7 +77,7 @@ class scoped_cptr
 {
     public:
         /*! \brief
-         * Initializes a scoped_ptr that frees \p ptr on scope exit.
+         * Initializes a scoped_cptr that frees \p ptr on scope exit.
          *
          * \param[in] ptr  Pointer to use for initialization.
          */
@@ -89,10 +87,7 @@ class scoped_cptr
         //! Returns the stored pointer.
         T *get() const { return ptr_; }
         //! Check for non-null pointer in boolean context.
-#ifdef GMX_CXX11
-        explicit
-#endif
-        operator bool () const { return ptr_ != 0; }
+        explicit operator bool () const { return ptr_ != 0; }
         //! Sets the pointer and frees previous pointer if necessary.
         void reset(T *ptr) { D(ptr_); ptr_ = ptr; }
         //! Clears the pointer without freeing the memory, and returns the old value.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,14 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct t_block;
+struct t_blocka;
 
 #define MAXSLEN 32
 
@@ -54,34 +57,21 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-#ifndef __cplusplus
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * param.C0 instead of param.c[0].
- * In a similar fashion, you can use param.AI instead of
- * param.a[0]
- *
- * For C++ those should be replaced with member functions.
- */
-
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
-#endif
-
 typedef struct {
-    atom_id    a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
-    /* i = a[0] (AI), j = a[1] (AJ))	*/
+    int        a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
+    /* i = a[0] (ai), j = a[1] (aj))	*/
     real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
     char       s[MAXSLEN];       /* A string (instead of parameters),    *
                                   * read from the .rtp file in pdb2gmx   */
+    int   &ai() { return a[0]; }
+    int   &aj() { return a[1]; }
+    int   &ak() { return a[2]; }
+    int   &al() { return a[3]; }
+    int   &am() { return a[4]; }
+
+    real      &c0() { return c[0]; }
+    real      &c1() { return c[1]; }
+    real      &c2() { return c[2]; }
 } t_param;
 
 typedef struct {
@@ -102,8 +92,8 @@ typedef struct {
 } t_params;
 
 typedef struct {
-    int            nr;          /* The number of exclusions             */
-    atom_id       *e;           /* The excluded atoms                   */
+    int            nr;      /* The number of exclusions             */
+    int           *e;       /* The excluded atoms                   */
 } t_excls;
 
 typedef struct {
@@ -165,13 +155,10 @@ typedef enum {
     d_orientation_restraints,
     d_dihedral_restraints,
     d_cmap,
+    d_intermolecular_interactions,
     d_maxdir,
     d_invalid,
     d_none
 } directive;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

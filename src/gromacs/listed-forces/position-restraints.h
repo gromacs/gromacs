@@ -50,14 +50,20 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct t_pbc;
+struct gmx_enerdata_t;
 struct gmx_wallcycle;
+struct t_forcerec;
+struct t_idef;
+struct t_lambda;
+struct t_nrnb;
+struct t_pbc;
 
 /*! \brief Helper function that wraps calls to posres */
 void

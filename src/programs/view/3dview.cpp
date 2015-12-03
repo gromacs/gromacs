@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,8 @@
 
 #include "3dview.h"
 
-#include <math.h>
+#include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 
@@ -65,11 +66,11 @@ static void calculate_view(t_3dview *view)
     dx = view->eye[XX];
     dy = view->eye[YY];
     dz = view->eye[ZZ];
-    l  = sqrt(dx*dx+dy*dy+dz*dz);
-    r  = sqrt(dx*dx+dy*dy);
+    l  = std::sqrt(dx*dx+dy*dy+dz*dz);
+    r  = std::sqrt(dx*dx+dy*dy);
 #ifdef DEBUG
     gmx_vec4_print(debug, "eye", view->eye);
-    printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n", dx, dy, dz, l, r);
+    std::printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n", dx, dy, dz, l, r);
 #endif
     if (l < SMALL)
     {
@@ -129,7 +130,7 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
         dr   = view->eye[i];
         dr2 += dr*dr;
     }
-    dr1 = sqrt(dr2);
+    dr1 = std::sqrt(dr2);
     if (fac < 1)
     {
         bm = std::max(norm(view->box[XX]), std::max(norm(view->box[YY]), norm(view->box[ZZ])));
@@ -184,7 +185,7 @@ void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive)
 void translate_view(t_3dview *view, int axis, gmx_bool bPositive)
 {
 #ifdef DEBUG
-    printf("Translate called\n");
+    std::printf("Translate called\n");
 #endif
     if (bPositive)
     {
@@ -200,7 +201,7 @@ void translate_view(t_3dview *view, int axis, gmx_bool bPositive)
 void reset_view(t_3dview *view)
 {
 #ifdef DEBUG
-    printf("Reset view called\n");
+    std::printf("Reset view called\n");
 #endif
     set_scale(view, 4.0, 4.0);
     clear_rvec(view->eye);

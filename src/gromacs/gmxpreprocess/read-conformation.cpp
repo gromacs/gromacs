@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,61 +36,61 @@
 
 #include "read-conformation.h"
 
+#include <vector>
+
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
-real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
-                             real defaultDistance, real scaleFactor)
-{
-    int   i;
-    real *exclusionDistances;
+using gmx::RVec;
 
-    snew(exclusionDistances, a->nr);
-    /* initialise arrays with distances usually based on van der Waals
-       radii */
-    for (i = 0; (i < a->nr); i++)
+std::vector<real>
+makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
+                       real defaultDistance, real scaleFactor)
+{
+    std::vector<real> exclusionDistances;
+
+    exclusionDistances.reserve(a->nr);
+    for (int i = 0; i < a->nr; ++i)
     {
+        real value;
         if (!gmx_atomprop_query(aps, epropVDW,
                                 *(a->resinfo[a->atom[i].resind].name),
-                                *(a->atomname[i]), &(exclusionDistances[i])))
+                                *(a->atomname[i]), &value))
         {
-            exclusionDistances[i] = defaultDistance;
+            value = defaultDistance;
         }
         else
         {
-            exclusionDistances[i] *= scaleFactor;
+            value *= scaleFactor;
         }
+        exclusionDistances.push_back(value);
     }
     return exclusionDistances;
 }
 
-char *readConformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
-                       int *ePBC, matrix box, const char *statusTitle)
+void readConformation(const char *confin, t_topology *top,
+                      std::vector<RVec> *x, std::vector<RVec> *v,
+                      int *ePBC, matrix box, const char *statusTitle)
 {
-    char *title;
-    int   natoms;
-
-    snew(title, STRLEN);
-    get_stx_coordnum(confin, &natoms);
-
-    /* allocate memory for atom coordinates of configuration */
-    snew(*x, natoms);
-    if (v)
+    fprintf(stderr, "Reading %s configuration%s\n", statusTitle,
+            v ? " and velocities" : "");
+    rvec                   *x_tmp = NULL, *v_tmp = NULL;
+    read_tps_conf(confin, top, ePBC, x ? &x_tmp : NULL, v ? &v_tmp : NULL, box, FALSE);
+    gmx::scoped_guard_sfree xguard(x_tmp);
+    gmx::scoped_guard_sfree vguard(v_tmp);
+    if (x && x_tmp)
     {
-        snew(*v, natoms);
+        *x = std::vector<RVec>(x_tmp, x_tmp + top->atoms.nr);
     }
-    init_t_atoms(atoms, natoms, FALSE);
-
-    /* read residue number, residue names, atomnames, coordinates etc. */
-    fprintf(stderr, "Reading %s configuration%s\n", statusTitle, v ? " and velocities" : "");
-    read_stx_conf(confin, title, atoms, *x, v ? *v : NULL, ePBC, box);
+    if (v && v_tmp)
+    {
+        *v = std::vector<RVec>(v_tmp, v_tmp + top->atoms.nr);
+    }
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
-            title, atoms->nr, atoms->nres);
-
-    return title;
+            *top->name, top->atoms.nr, top->atoms.nres);
 }

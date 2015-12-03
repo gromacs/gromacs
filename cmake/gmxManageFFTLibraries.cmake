@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,42 +59,48 @@ gmx_dependent_cache_variable(
     PATH ""
     MKL_MANUALLY)
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+    # ${FFTW} must be in upper case
     if(GMX_DOUBLE)
-        set(FFTW fftw)
+        set(FFTW "FFTW")
     else()
-        set(FFTW fftwf)
+        set(FFTW "FFTWF")
     endif()
 
     if(GMX_BUILD_OWN_FFTW)
-      add_subdirectory(src/contrib/fftw)
-    else()
-      find_package(FFTW COMPONENTS ${FFTW})
-    endif()
-
-    string(TOUPPER "${FFTW}" FFTW)
-    if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
-    endif()
-
-    set(PKG_FFT "${${FFTW}_PKG}")
-    if (GMX_BUILD_OWN_FFTW)
+        add_subdirectory(src/contrib/fftw)
         include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
+        # libgmxfftw is always built static, so libgromacs does not
+        # have a dependency on anything, so PKG_FFT should be empty
+        set(PKG_FFT "")
+        set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3 build managed by GROMACS")
     else()
-        include_directories(${${FFTW}_INCLUDE_DIRS})
+        string(TOLOWER "${FFTW}" LOWERFFTW)
+        find_package(FFTW COMPONENTS ${LOWERFFTW})
+
+        if(NOT ${FFTW}_FOUND)
+            MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-DGMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
+        endif()
+
+        set(PKG_FFT "${${FFTW}_PKG}")
+        include_directories(SYSTEM ${${FFTW}_INCLUDE_DIRS})
+
+        if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
+            message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
+        else()
+            if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
+                # If we end up here we have an AVX Gromacs build, and FFTW
+                # with SIMD. FFTW 3.3.5 will have the behaviour that
+                # configuring with AVX support also adds SSE support, which is
+                # what we want. There is no good way to detect the FFTW
+                # version, however.
+                message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). More recent versions of FFTW compile support for such narrower SIMD by default.")
+            endif()
+        endif()
+        set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
     endif()
+
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     set(GMX_FFT_FFTW3 1)
-
-    if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
-      message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    endif()
-
-    if((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND ${FFTW}_HAVE_AVX)
-        # If we're not using SIMD instructions, we don't care about FFTW performance on x86 either
-        message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
-    endif()
-
-    set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
@@ -115,7 +121,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 
         set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
     else()
-        include_directories(${MKL_INCLUDE_DIR})
+        include_directories(SYSTEM ${MKL_INCLUDE_DIR})
         set(FFT_LIBRARIES "${MKL_LIBRARIES}")
         set(MKL_ERROR_MESSAGE "The include path to mkl.h in MKL_INCLUDE_DIR, and the link libraries in MKL_LIBRARIES=${MKL_LIBRARIES} need to match what the MKL documentation says you need for your system: ${MKL_LIBRARIES_FORMAT_DESCRIPTION}")
         # Convert the semi-colon separated list to a list of

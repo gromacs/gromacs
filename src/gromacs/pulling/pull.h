@@ -50,13 +50,23 @@
 #ifndef GMX_PULLING_PULL_H
 #define GMX_PULLING_PULL_H
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_mtop_t;
+struct gmx_output_env_t;
+struct pull_params_t;
+struct t_commrec;
+struct t_filenm;
+struct t_inputrec;
+struct t_mdatoms;
 struct t_pbc;
 
 
@@ -67,17 +77,44 @@ struct t_pbc;
  * \param[in]     pbc       Information structure about periodicity.
  * \param[out]    value     The value of the pull coordinate.
  */
-void get_pull_coord_value(t_pull             *pull,
+void get_pull_coord_value(struct pull_t      *pull,
                           int                 coord_ind,
                           const struct t_pbc *pbc,
                           double             *value);
+
+
+/*! \brief Set the reference value for a pull coord with rate!=0 to value_ref.
+ *
+ * This modifies the reference value. For potential (non-constraint) pulling,
+ * a modification of the reference value at time t will lead to a different
+ * force over t-dt/2 to t and over t to t+dt/2. To take this into account,
+ * bUpdateForce=TRUE will update the force when this function is called
+ * after calling pull_potential.
+ * Note: can not be called for a pull coord with rate!=0.
+ *
+ * \param[in,out] pull         The pull struct.
+ * \param[in]     coord_ind    The pull coordinate index to set.
+ * \param[in]     value_ref    The reference value.
+ * \param[in]     pbc          Information structure about periodicity.
+ * \param[in]     md           Atom properties.
+ * \param[in]     lambda       The value of lambda in FEP calculations.
+ * \param[in]     bUpdateForce Update the force for the new reference value.
+ * \param[in,out] f            The forces.
+ * \param[in,out] vir          The virial, can be NULL.
+ */
+void set_pull_coord_reference_value(struct pull_t *pull,
+                                    int coord_ind, real value_ref,
+                                    const struct t_pbc *pbc,
+                                    const t_mdatoms *md,
+                                    real lambda,
+                                    gmx_bool bUpdateForce, rvec *f, tensor vir);
 
 
 /*! \brief Set the all the pull forces to zero.
  *
  * \param pull              The pull group.
  */
-void clear_pull_forces(t_pull *pull);
+void clear_pull_forces(struct pull_t *pull);
 
 
 /*! \brief Determine the COM pull forces and add them to f, return the potential
@@ -95,7 +132,7 @@ void clear_pull_forces(t_pull *pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
+real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
                     rvec *x, rvec *f, tensor vir, real *dvdlambda);
 
@@ -114,7 +151,7 @@ real pull_potential(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
+void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
                      t_commrec *cr, double dt, double t,
                      rvec *x, rvec *xp, rvec *v, tensor vir);
 
@@ -122,61 +159,62 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
 /*! \brief Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
  *
- * \param dd             Structure containing domain decomposition data.
+ * \param cr             Structure for communication info.
  * \param pull           The pull group.
  * \param md             All atoms.
  */
-void dd_make_local_pull_groups(gmx_domdec_t *dd,
-                               t_pull *pull, t_mdatoms *md);
+void dd_make_local_pull_groups(t_commrec *cr,
+                               struct pull_t *pull, t_mdatoms *md);
 
 
-/*! \brief Get memory and initialize the fields of pull that still need it, and
- * do runtype specific initialization.
+/*! \brief Allocate, initialize and return a pull work struct.
  *
- * \param fplog      General output file, normally md.log.
- * \param ir         The inputrec.
- * \param nfile      Number of files.
- * \param fnm        Standard filename struct.
- * \param mtop       The topology of the whole system.
- * \param cr         Struct for communication info.
- * \param oenv       Output options.
- * \param lambda     FEP lambda.
- * \param bOutFile   Open output files?
- * \param Flags      Flags passed over from main, used to determine
- *                   whether or not we are appending.
+ * \param fplog       General output file, normally md.log.
+ * \param pull_params The pull input parameters containing all pull settings.
+ * \param ir          The inputrec.
+ * \param nfile       Number of files.
+ * \param fnm         Standard filename struct.
+ * \param mtop        The topology of the whole system.
+ * \param cr          Struct for communication info.
+ * \param oenv        Output options.
+ * \param lambda      FEP lambda.
+ * \param bOutFile    Open output files?
+ * \param Flags       Flags passed over from main, used to determine
+ *                    whether or not we are appending.
  */
-void init_pull(FILE              *fplog,
-               t_inputrec        *ir,
-               int                nfile,
-               const t_filenm     fnm[],
-               gmx_mtop_t        *mtop,
-               t_commrec        * cr,
-               const output_env_t oenv,
-               real               lambda,
-               gmx_bool           bOutFile,
-               unsigned long      Flags);
+struct pull_t *init_pull(FILE                   *fplog,
+                         const pull_params_t    *pull_params,
+                         const t_inputrec       *ir,
+                         int                     nfile,
+                         const t_filenm          fnm[],
+                         gmx_mtop_t             *mtop,
+                         t_commrec             * cr,
+                         const gmx_output_env_t *oenv,
+                         real                    lambda,
+                         gmx_bool                bOutFile,
+                         unsigned long           Flags);
 
 
 /*! \brief Close the pull output files.
  *
  * \param pull       The pull group.
  */
-void finish_pull(t_pull *pull);
+void finish_pull(struct pull_t *pull);
 
 
 /*! \brief Print the pull output (x and/or f)
  *
- * \param pull     The pull group.
+ * \param pull     The pull data structure.
  * \param step     Time step number.
  * \param time     Time.
  */
-void pull_print_output(t_pull *pull, gmx_int64_t step, double time);
+void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
 
 
 /*! \brief Calculates centers of mass all pull groups.
  *
  * \param[in] cr       Struct for communication info.
- * \param[in] pull     The pull group.
+ * \param[in] pull     The pull data structure.
  * \param[in] md       All atoms.
  * \param[in] pbc      Information struct about periodicity.
  * \param[in] t        Time, only used for cylinder ref.
@@ -185,12 +223,26 @@ void pull_print_output(t_pull *pull, gmx_int64_t step, double time);
  *
  */
 void pull_calc_coms(t_commrec        *cr,
-                    t_pull           *pull,
+                    struct pull_t    *pull,
                     t_mdatoms        *md,
                     struct t_pbc     *pbc,
                     double            t,
                     rvec              x[],
                     rvec             *xp);
+
+
+/*! \brief Returns if we have pull coordinates with potential pulling.
+ *
+ * \param[in] pull     The pull data structure.
+ */
+gmx_bool pull_have_potential(const struct pull_t *pull);
+
+
+/*! \brief Returns if we have pull coordinates with constraint pulling.
+ *
+ * \param[in] pull     The pull data structure.
+ */
+gmx_bool pull_have_constraint(const struct pull_t *pull);
 
 #ifdef __cplusplus
 }

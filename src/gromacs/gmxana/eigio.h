@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,14 @@
 #ifndef _eigio_h
 #define _eigio_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 enum {
     eWXR_NO, eWXR_YES, eWXR_NOFIT
@@ -56,11 +63,11 @@ extern void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
 /* xav is the average/minimum structure is written (t=0).             */
 /* bDMA indicates mass weighted analysis/eigenvectors.                */
 
-extern void write_eigenvectors(const char *trnname, int natoms, real mat[],
+extern void write_eigenvectors(const char *trrname, int natoms, real mat[],
                                gmx_bool bReverse, int begin, int end,
                                int WriteXref, rvec *xref, gmx_bool bDMR,
                                rvec xav[], gmx_bool bDMA, real *eigval);
-/* Write eigenvectors in mat to a TRN file.                           */
+/* Write eigenvectors in mat to a TRR file.                           */
 /* The reference structure is written (t=-1) when WriteXref=eWXR_YES. */
 /* When WriteXref==eWXR_NOFIT a zero frame is written (t=-1),         */
 /* with lambda=-1.                                                    */
@@ -80,5 +87,9 @@ int read_eigval  (const char *          fn,
                   int                   nmax,
                   int                   eigvalnr[],
                   real                  eigval[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

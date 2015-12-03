@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,16 +43,16 @@
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_IMPL_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -127,7 +127,7 @@ class CommandLineModuleGroupData
 };
 
 //! Smart pointer type for managing a CommandLineModuleGroup.
-typedef gmx_unique_ptr<CommandLineModuleGroupData>::type
+typedef std::unique_ptr<CommandLineModuleGroupData>
     CommandLineModuleGroupDataPointer;
 //! Container type for keeping a list of module groups.
 typedef std::vector<CommandLineModuleGroupDataPointer>
@@ -204,6 +204,7 @@ class CommandLineCommonOptionsHolder
         bool                         bVersion_;
         bool                         bCopyright_;
         int                          niceLevel_;
+        bool                         bNiceSet_;
         bool                         bBackup_;
         bool                         bFpexcept_;
         int                          debugLevel_;

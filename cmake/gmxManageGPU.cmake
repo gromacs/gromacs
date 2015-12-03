@@ -137,7 +137,7 @@ ${_msg}")
     if (NOT CUDA_FOUND)
         if (GMX_GPU_AUTO)
             # Disable GPU acceleration in auto mode
-            message(STATUS "No compatible CUDA toolkit found (v4.0+), disabling native GPU acceleration")
+            message(STATUS "No compatible CUDA toolkit found (v5.0+), disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
             set(CUDA_NOTFOUND_AUTO ON)
         else()
@@ -154,9 +154,12 @@ endif()
 
 # Try to find NVML if a GPU accelerated binary should be build.
 if (GMX_GPU)
+    if (DEFINED NVML_LIBRARY)
+        set(NVML_FIND_QUIETLY TRUE)
+    endif()
     find_package(NVML)
     if(NVML_FOUND)
-        include_directories(${NVML_INCLUDE_DIR})
+        include_directories(SYSTEM ${NVML_INCLUDE_DIR})
         set(HAVE_NVML 1)
         list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
     endif(NVML_FOUND)
@@ -242,15 +245,6 @@ macro(gmx_gpu_setup)
             endif()
         endif()
     endif()
-
-    # texture objects are supported in CUDA 5.0 and later
-    if (CUDA_VERSION VERSION_GREATER 4.999)
-        set(HAVE_CUDA_TEXOBJ_SUPPORT 1)
-    endif()
-
-    # Atomic operations used for polling wait for GPU
-    # (to avoid the cudaStreamSynchronize + ECC bug).
-    # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
 
     # no OpenMP is no good!
     if(NOT GMX_OPENMP)

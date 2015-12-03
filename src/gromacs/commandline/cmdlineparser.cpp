@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,6 @@ CommandLineParser::Impl::Impl(Options *options)
     : assigner_(options), bSkipUnknown_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
-    assigner_.setNoStrictSectioning(true);
 }
 
 const char *CommandLineParser::Impl::toOptionName(const char *arg) const
@@ -195,7 +194,9 @@ void CommandLineParser::parse(int *argc, char *argv[])
             {
                 impl_->assigner_.appendValue(arg);
             }
-            catch (UserInputError &ex)
+            // TODO: Consider if some types of exceptions would be better left
+            // unhandled.
+            catch (GromacsException &ex)
             {
                 ex.prependContext(currentContext);
                 errors.addCurrentExceptionAsNested();

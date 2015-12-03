@@ -51,7 +51,6 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
-#include "gromacs/gmxpreprocess/protonate.h"
 #include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/gmxpreprocess/x2top.h"
 #include "gromacs/tools/check.h"
@@ -70,7 +69,7 @@ namespace
  * Prints a message directing the user to a wiki page describing replacement
  * options.
  */
-class ObsoleteToolModule : public gmx::CommandLineModuleInterface
+class ObsoleteToolModule : public gmx::ICommandLineModule
 {
     public:
         //! Creates an obsolete tool module for a tool with the given name.
@@ -105,8 +104,8 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
         void printMessage() const
         {
             std::fprintf(stderr,
-                         "This tool has been removed from Gromacs 5.0. Please see\n"
-                         "  http://www.gromacs.org/Documentation/How-tos/Tool_Changes_for_5.0\n"
+                         "This tool is no longer present in GROMACS. Please see\n"
+                         "  http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/user-guide/cmdline.html#command-changes\n"
                          "for ideas how to perform the same tasks with the "
                          "new tools.\n");
         }
@@ -116,7 +115,7 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
 
 // TODO: Consider removing duplication with CMainCommandLineModule from
 // cmdlinemodulemanager.cpp.
-class NoNiceModule : public gmx::CommandLineModuleInterface
+class NoNiceModule : public gmx::ICommandLineModule
 {
     public:
         //! \copydoc gmx::CommandLineModuleManager::CMainFunction
@@ -196,7 +195,7 @@ void registerModuleNoNice(gmx::CommandLineModuleManager                *manager,
 {
     gmx::CommandLineModulePointer module(
             new NoNiceModule(name, shortDescription, mainFunction));
-    manager->addModule(move(module));
+    manager->addModule(std::move(module));
 }
 
 /*! \brief
@@ -209,7 +208,7 @@ void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
                           const char                    *name)
 {
     gmx::CommandLineModulePointer module(new ObsoleteToolModule(name));
-    manager->addModule(move(module));
+    manager->addModule(std::move(module));
 }
 
 } // namespace
@@ -228,16 +227,13 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
     registerObsoleteTool(manager, "tpbconv");
-
-    registerModule(manager, &gmx_protonate, "protonate",
-                   "Protonate structures");
     registerModule(manager, &gmx_x2top, "x2top",
                    "Generate a primitive topology from coordinates");
 
     registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
-    gmx::CommandLineOptionsModuleInterface::registerModule(
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
             manager, gmx::InsertMoleculesInfo::name,
             gmx::InsertMoleculesInfo::shortDescription,
             &gmx::InsertMoleculesInfo::create);
@@ -413,7 +409,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Generating topologies and coordinates");
         group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
-        group.addModule("protonate");
         group.addModule("x2top");
         group.addModule("solvate");
         group.addModule("insert-molecules");

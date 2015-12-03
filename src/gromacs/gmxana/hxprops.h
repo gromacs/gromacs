@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,18 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct t_atom;
+struct t_resinfo;
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #define PHI_AHX (-55.0)
 #define PSI_AHX (-45.0)
@@ -66,15 +77,15 @@ enum {
     efhAHX,  efhNR
 };
 
-extern real ahx_len(int gnx, atom_id index[], rvec x[]);
+extern real ahx_len(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern real ellipticity(int nres, t_bb bb[]);
 
-extern real radius(FILE *fp, int nca, atom_id ca_index[], rvec x[]);
+extern real radius(FILE *fp, int nca, int ca_index[], rvec x[]);
 /* Assume we have calphas */
 
-extern real twist(int nca, atom_id caindex[], rvec x[]);
+extern real twist(int nca, int caindex[], rvec x[]);
 /* Calculate the twist of the helix */
 
 extern real pprms(FILE *fp, int nbb, t_bb bb[]);
@@ -82,12 +93,12 @@ extern real pprms(FILE *fp, int nbb, t_bb bb[]);
  * and the distance per residue
  */
 
-extern real ca_phi(int gnx, atom_id index[], rvec x[]);
+extern real ca_phi(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
-extern real dip(int nbb, atom_id bbind[], rvec x[], t_atom atom[]);
+extern real dip(int nbb, int bbind[], rvec x[], t_atom atom[]);
 
-extern real rise(int gnx, atom_id index[], rvec x[]);
+extern real rise(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
 extern void av_hblen(FILE *fp3, FILE *fp3a,
@@ -99,16 +110,20 @@ extern void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
                       real t, int nres, t_bb bb[]);
 
 extern t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
-                     int *nall, atom_id **index,
+                     int *nall, int **index,
                      char ***atomname, t_atom atom[],
                      t_resinfo *resinfo);
 
 extern void do_start_end(int nres, t_bb bb[], int *nbb,
-                         atom_id bbindex[], int *nca, atom_id caindex[],
+                         int bbindex[], int *nca, int caindex[],
                          gmx_bool bRange, int rStart, int rEnd);
 
 extern void calc_hxprops(int nres, t_bb bb[], rvec x[]);
 
 extern void pr_bb(FILE *fp, int nres, t_bb bb[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -66,7 +66,21 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+
+struct gmx_enerdata_t;
+struct gmx_grppairener_t;
+struct gmx_multisim_t;
+struct history_t;
+struct t_fcdata;
+struct t_forcerec;
+struct t_idef;
+struct t_inputrec;
+struct t_lambda;
+struct t_mdatoms;
+struct t_nrnb;
+struct t_state;
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,7 +99,7 @@ ftype_is_bonded_potential(int ftype);
  *
  * Note that pbc_full is used only for position restraints, and is
  * not initialized if there are none. */
-void calc_listed(const gmx_multisim_t *ms,
+void calc_listed(const struct gmx_multisim_t *ms,
                  struct gmx_wallcycle *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
@@ -94,7 +108,7 @@ void calc_listed(const gmx_multisim_t *ms,
                  const struct t_graph *g,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda,
                  const t_mdatoms *md,
-                 t_fcdata *fcd, int *ddgatindex,
+                 struct t_fcdata *fcd, int *ddgatindex,
                  int force_flags);
 
 /*! \brief As calc_listed(), but only determines the potential energy
@@ -108,29 +122,29 @@ void calc_listed_lambda(const t_idef *idef,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
                         real *lambda,
                         const t_mdatoms *md,
-                        t_fcdata *fcd, int *global_atom_index);
+                        struct t_fcdata *fcd, int *global_atom_index);
 
 /*! \brief Do all aspects of energy and force calculations for mdrun
  * on the set of listed interactions */
 void
-do_force_listed(struct gmx_wallcycle     *wcycle,
-                matrix                    box,
-                const t_lambda           *fepvals,
-                const gmx_multisim_t     *ms,
-                const t_idef             *idef,
-                const rvec                x[],
-                history_t                *hist,
-                rvec                      f[],
-                t_forcerec               *fr,
-                const struct t_pbc       *pbc,
-                const struct t_graph     *graph,
-                gmx_enerdata_t           *enerd,
-                t_nrnb                   *nrnb,
-                real                     *lambda,
-                const t_mdatoms          *md,
-                t_fcdata                 *fcd,
-                int                      *global_atom_index,
-                int                       flags);
+do_force_listed(struct gmx_wallcycle           *wcycle,
+                matrix                          box,
+                const t_lambda                 *fepvals,
+                const struct gmx_multisim_t    *ms,
+                const t_idef                   *idef,
+                const rvec                      x[],
+                history_t                      *hist,
+                rvec                            f[],
+                t_forcerec                     *fr,
+                const struct t_pbc             *pbc,
+                const struct t_graph           *graph,
+                gmx_enerdata_t                 *enerd,
+                t_nrnb                         *nrnb,
+                real                           *lambda,
+                const t_mdatoms                *md,
+                struct t_fcdata                *fcd,
+                int                            *global_atom_index,
+                int                             flags);
 
 #ifdef __cplusplus
 }

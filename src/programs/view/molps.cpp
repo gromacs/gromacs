@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,12 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
 
 #include "gromacs/fileio/writeps.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "3dview.h"
@@ -53,7 +50,7 @@
 
 #define MSIZE 4
 
-static void ps_draw_atom(t_psdata ps, atom_id ai, iv2 vec2[], char **atomnm[])
+static void ps_draw_atom(t_psdata ps, int ai, iv2 vec2[], char **atomnm[])
 {
     int xi, yi;
 
@@ -100,7 +97,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 }
 
 static void ps_draw_bond(t_psdata ps,
-                         atom_id ai, atom_id aj, iv2 vec2[],
+                         int ai, int aj, iv2 vec2[],
                          rvec x[], char **atomnm[])
 {
     char    *ic, *jc;
@@ -260,7 +257,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     nvis = filter_vis(man);
     if (nvis && man->bSort)
     {
-        qsort(man->obj, nvis, sizeof(man->obj[0]), compare_obj);
+        std::qsort(man->obj, nvis, sizeof(man->obj[0]), compare_obj);
     }
 
     /* Draw the objects */

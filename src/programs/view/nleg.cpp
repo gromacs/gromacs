@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,12 @@
 
 #include "nleg.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/fileio/rgb.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "buttons.h"
@@ -78,7 +78,7 @@ int search_ac(const char *type)
     {
         for (i = 0; (i < NAC); i++)
         {
-            mij = std::min((int)strlen(type), (int)strlen(ac[i].tp));
+            mij = std::min(static_cast<int>(std::strlen(type)), static_cast<int>(std::strlen(ac[i].tp)));
             for (nb = 0; (nb < mij); nb++)
             {
                 if (type[nb] != ac[i].tp[nb])

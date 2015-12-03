@@ -41,13 +41,14 @@
 #ifndef SELECTION_SCANNER_INTERNAL_H
 #define SELECTION_SCANNER_INTERNAL_H
 
-#include <boost/exception_ptr.hpp>
+#include <exception>
 
 #include "parser.h"
 
 namespace gmx
 {
 class SelectionParserSymbol;
+class TextWriter;
 }
 
 /* These need to be defined before including scanner_flex.h, because it
@@ -73,7 +74,7 @@ typedef struct gmx_sel_lexer_t
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
     //! Stores an exception that occurred during parsing.
-    boost::exception_ptr             exception;
+    std::exception_ptr               exception;
     //! Whether external index groups have been set.
     bool                             bGroups;
     //! External index groups for resolving \c group keywords.
@@ -81,8 +82,8 @@ typedef struct gmx_sel_lexer_t
     //! Number of selections at which the parser should stop.
     int                              nexpsel;
 
-    //! Whether the parser is interactive.
-    bool                             bInteractive;
+    //! Writer to use for status output (if not NULL, parser is interactive).
+    gmx::TextWriter                 *statusWriter;
 
     //! Pretty-printed version of the string parsed since last clear.
     char                            *pselstr;

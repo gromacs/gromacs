@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+struct t_atom;
+struct t_atoms;
 
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
@@ -51,14 +50,14 @@ extern "C"
  * when bondtype="check" no error/warning is issued.
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
-atom_id search_atom(const char *type, int start,
-                    t_atoms *atoms,
-                    const char *bondtype, gmx_bool bAllowMissing);
+int search_atom(const char *type, int start,
+                t_atoms *atoms,
+                const char *bondtype, gmx_bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.
  */
-atom_id
+int
 search_res_atom(const char *type, int resind,
                 t_atoms *atoms,
                 const char *bondtype, gmx_bool bAllowMissing);
@@ -66,9 +65,5 @@ search_res_atom(const char *type, int resind,
 
 void set_at(t_atom *at, real m, real q, int type, int resind);
 
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

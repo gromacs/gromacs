@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,16 +45,14 @@
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
 #define GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
-#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "poscalc.h"
 #include "selelem.h"
@@ -68,7 +66,7 @@ namespace gmx
 {
 
 //! Smart pointer for managing an internal selection data object.
-typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
+typedef std::unique_ptr<internal::SelectionData> SelectionDataPointer;
 //! Container for storing a list of selections internally.
 typedef std::vector<SelectionDataPointer> SelectionDataList;
 
@@ -107,7 +105,8 @@ struct gmx_ana_selcollection_t
     /** Memory pool used for selection evaluation. */
     gmx_sel_mempool_t                                 *mempool;
     //! Parser symbol table.
-    boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
+    // Never releases ownership.
+    std::unique_ptr<gmx::SelectionParserSymbolTable>   symtab;
     //! Root of help topic tree (NULL is no help yet requested).
     gmx::HelpTopicPointer                              rootHelp;
 };

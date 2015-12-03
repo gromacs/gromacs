@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,9 +37,15 @@
 
 #include "config.h"
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void
 nb_kernel_allvsallgb(t_nblist *                nlist,
@@ -49,5 +55,9 @@ nb_kernel_allvsallgb(t_nblist *                nlist,
                      t_mdatoms *               mdatoms,
                      nb_kernel_data_t *        kernel_data,
                      t_nrnb *                  nrnb);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

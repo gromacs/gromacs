@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,10 @@ struct t_trxframe;
 namespace gmx
 {
 
-class Options;
+class IOptionsContainer;
+class ITopologyProvider;
 class SelectionCollection;
+class TimeUnitBehavior;
 class TopologyInformation;
 class TrajectoryAnalysisSettings;
 
@@ -74,27 +76,21 @@ class TrajectoryAnalysisRunnerCommon
         explicit TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings *settings);
         ~TrajectoryAnalysisRunnerCommon();
 
+        //! Returns a topology provider for SelectionOptionBehavior.
+        ITopologyProvider *topologyProvider();
+
         /*! \brief
          * Initializes common options for trajectory analysis.
          *
          * \param[in,out] options  Options object to add the options to.
+         * \param[in,out] timeUnitBehavior  Time unit behavior to use for adding
+         *    and handling the `-tu` option.
          */
-        void initOptions(Options *options);
-        //! Scales time option values according to the time unit set.
-        void scaleTimeOptions(Options *options);
-        /*! \brief
-         * Processes common option values after they have been parsed.
-         *
-         * \param[in,out] options Options object in which options are stored.
-         */
-        void optionsFinished(Options *options);
-        //! Initialize index groups for selections.
-        void initIndexGroups(SelectionCollection *selections,
-                             bool                 bUseDefaults);
-        //! Free memory allocated for index groups.
-        void doneIndexGroups(SelectionCollection *selections);
+        void initOptions(IOptionsContainer *options, TimeUnitBehavior *timeUnitBehavior);
+        //! Processes common option values after they have been parsed.
+        void optionsFinished();
         //! Load topology information if provided and/or required.
-        void initTopology(SelectionCollection *selections);
+        void initTopology();
         /*! \brief
          * Reads the first frame from the trajectory.
          *

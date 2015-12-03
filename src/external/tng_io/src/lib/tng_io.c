@@ -949,7 +949,7 @@ static tng_function_status tng_block_init(struct tng_gen_block **block_p)
     *block_p = malloc(sizeof(struct tng_gen_block));
     if(!*block_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                sizeof(struct tng_gen_block), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -3080,7 +3080,7 @@ static tng_function_status tng_molecules_block_read
         if(molecule->n_residues > 0)
         {
             molecule->residues = malloc(molecule->n_residues *
-                                sizeof(struct tng_residue));
+                                        sizeof(struct tng_residue));
             if(!molecule->residues)
             {
                 fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIu64" bytes). %s: %d\n",
@@ -4203,7 +4203,7 @@ static tng_function_status tng_particle_data_block_create
                     frame_set->n_particle_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                 sizeof(struct tng_data) *
                 frame_set->n_particle_data_blocks,
                 __FILE__, __LINE__);
@@ -4221,7 +4221,7 @@ static tng_function_status tng_particle_data_block_create
                         tng_data->n_particle_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                     sizeof(struct tng_data) *
                     tng_data->n_particle_data_blocks,
                     __FILE__, __LINE__);
@@ -5097,7 +5097,7 @@ static tng_function_status tng_data_block_create
                        frame_set->n_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                 sizeof(struct tng_data) * frame_set->n_data_blocks,
                 __FILE__, __LINE__);
             free(frame_set->tr_data);
@@ -5113,7 +5113,7 @@ static tng_function_status tng_data_block_create
                         tng_data->n_data_blocks);
         if(!data)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                 sizeof(struct tng_data) * tng_data->n_data_blocks,
                 __FILE__, __LINE__);
             free(tng_data->non_tr_data);
@@ -5611,41 +5611,46 @@ static tng_function_status tng_data_read(const tng_trajectory_t tng_data,
         {
             memcpy(data->values, contents, full_data_len);
         }
-        switch(datatype)
+        /* Endianness is handled by the TNG compression library. TNG compressed blocks are always written
+         * as little endian by the compression library. */
+        if(codec_id != TNG_TNG_COMPRESSION)
         {
-        case TNG_FLOAT_DATA:
-            if(tng_data->input_endianness_swap_func_32)
+            switch(datatype)
             {
-                for(i = 0; i < full_data_len; i+=size)
+            case TNG_FLOAT_DATA:
+                if(tng_data->input_endianness_swap_func_32)
                 {
-                    if(tng_data->input_endianness_swap_func_32(tng_data,
-                        (int32_t *)((char *)data->values + i))
-                        != TNG_SUCCESS)
+                    for(i = 0; i < full_data_len; i+=size)
                     {
-                        fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
+                        if(tng_data->input_endianness_swap_func_32(tng_data,
+                            (int32_t *)((char *)data->values + i))
+                            != TNG_SUCCESS)
+                        {
+                            fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                    __FILE__, __LINE__);
+                        }
                     }
                 }
-            }
-            break;
-        case TNG_INT_DATA:
-        case TNG_DOUBLE_DATA:
-            if(tng_data->input_endianness_swap_func_64)
-            {
-                for(i = 0; i < full_data_len; i+=size)
+                break;
+            case TNG_INT_DATA:
+            case TNG_DOUBLE_DATA:
+                if(tng_data->input_endianness_swap_func_64)
                 {
-                    if(tng_data->input_endianness_swap_func_64(tng_data,
-                        (int64_t *)((char *)data->values + i))
-                        != TNG_SUCCESS)
+                    for(i = 0; i < full_data_len; i+=size)
                     {
-                        fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
+                        if(tng_data->input_endianness_swap_func_64(tng_data,
+                            (int64_t *)((char *)data->values + i))
+                            != TNG_SUCCESS)
+                        {
+                            fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                    __FILE__, __LINE__);
+                        }
                     }
                 }
+                break;
+            case TNG_CHAR_DATA:
+                break;
             }
-            break;
-        case TNG_CHAR_DATA:
-            break;
         }
     }
 
@@ -5772,7 +5777,7 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
         temp_name = realloc(block->name, len);
         if(!temp_name)
         {
-            fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n", len+1,
+            fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n", len+1,
                    __FILE__, __LINE__);
             free(block->name);
             block->name = 0;
@@ -6030,91 +6035,56 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
         if(data->values)
         {
             memcpy(contents, data->values, full_data_len);
-            switch(data->datatype)
+            /* If writing TNG compressed data the endianness is taken into account by the compression
+             * routines. TNG compressed data is always written as little endian. */
+            if(data->codec_id != TNG_TNG_COMPRESSION)
             {
-            case TNG_FLOAT_DATA:
-                if(data->codec_id == TNG_UNCOMPRESSED || data-> codec_id == TNG_GZIP_COMPRESSION ||
-                   data->codec_id == TNG_TNG_COMPRESSION)
+                switch(data->datatype)
                 {
-                    if(tng_data->output_endianness_swap_func_32)
+                case TNG_FLOAT_DATA:
+                    if(data->codec_id == TNG_UNCOMPRESSED || data->codec_id == TNG_GZIP_COMPRESSION)
                     {
-                        for(i = 0; i < full_data_len; i+=size)
+                        if(tng_data->output_endianness_swap_func_32)
                         {
-                            if(tng_data->output_endianness_swap_func_32(tng_data,
-                               (int32_t *)(contents + i))
-                               != TNG_SUCCESS)
+                            for(i = 0; i < full_data_len; i+=size)
                             {
-                                fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                        __FILE__, __LINE__);
+                                if(tng_data->output_endianness_swap_func_32(tng_data,
+                                (int32_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
                             }
                         }
                     }
-                }
-                else
-                {
-                    multiplier = data->compression_multiplier;
-                    if(fabs(multiplier - 1.0) > 0.00001 ||
-                       tng_data->output_endianness_swap_func_32)
+                    else
                     {
-                        for(i = 0; full_data_len; i+=size)
+                        multiplier = data->compression_multiplier;
+                        if(fabs(multiplier - 1.0) > 0.00001 ||
+                        tng_data->output_endianness_swap_func_32)
                         {
-                            *(float *)(contents + i) *= (float)multiplier;
-                            if(tng_data->output_endianness_swap_func_32 &&
-                            tng_data->output_endianness_swap_func_32(tng_data,
-                            (int32_t *)(contents + i))
-                            != TNG_SUCCESS)
+                            for(i = 0; full_data_len; i+=size)
                             {
-                                fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                        __FILE__, __LINE__);
+                                *(float *)(contents + i) *= (float)multiplier;
+                                if(tng_data->output_endianness_swap_func_32 &&
+                                tng_data->output_endianness_swap_func_32(tng_data,
+                                (int32_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
                             }
                         }
                     }
-                }
-                break;
-            case TNG_INT_DATA:
-                if(tng_data->output_endianness_swap_func_64)
-                {
-                    for(i = 0; i < full_data_len; i+=size)
-                    {
-                        if(tng_data->output_endianness_swap_func_64(tng_data,
-                           (int64_t *)(contents + i))
-                           != TNG_SUCCESS)
-                        {
-                            fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                    __FILE__, __LINE__);
-                        }
-                    }
-                }
-                break;
-            case TNG_DOUBLE_DATA:
-                if(data->codec_id == TNG_UNCOMPRESSED || data-> codec_id == TNG_GZIP_COMPRESSION ||
-                   data->codec_id == TNG_TNG_COMPRESSION)
-                {
+                    break;
+                case TNG_INT_DATA:
                     if(tng_data->output_endianness_swap_func_64)
                     {
                         for(i = 0; i < full_data_len; i+=size)
                         {
                             if(tng_data->output_endianness_swap_func_64(tng_data,
-                               (int64_t *)(contents + i))
-                               != TNG_SUCCESS)
-                            {
-                                fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                        __FILE__, __LINE__);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    multiplier = data->compression_multiplier;
-                    if(fabs(multiplier - 1.0) > 0.00001 ||
-                       tng_data->output_endianness_swap_func_64)
-                    {
-                        for(i = 0; i < full_data_len; i+=size)
-                        {
-                            *(double *)(contents + i) *= multiplier;
-                            if(tng_data->output_endianness_swap_func_64 &&
-                            tng_data->output_endianness_swap_func_64(tng_data,
                             (int64_t *)(contents + i))
                             != TNG_SUCCESS)
                             {
@@ -6123,10 +6093,48 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
                             }
                         }
                     }
+                    break;
+                case TNG_DOUBLE_DATA:
+                    if(data->codec_id == TNG_UNCOMPRESSED || data-> codec_id == TNG_GZIP_COMPRESSION)
+                    {
+                        if(tng_data->output_endianness_swap_func_64)
+                        {
+                            for(i = 0; i < full_data_len; i+=size)
+                            {
+                                if(tng_data->output_endianness_swap_func_64(tng_data,
+                                (int64_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        multiplier = data->compression_multiplier;
+                        if(fabs(multiplier - 1.0) > 0.00001 ||
+                        tng_data->output_endianness_swap_func_64)
+                        {
+                            for(i = 0; i < full_data_len; i+=size)
+                            {
+                                *(double *)(contents + i) *= multiplier;
+                                if(tng_data->output_endianness_swap_func_64 &&
+                                tng_data->output_endianness_swap_func_64(tng_data,
+                                (int64_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case TNG_CHAR_DATA:
+                    break;
                 }
-                break;
-            case TNG_CHAR_DATA:
-                break;
             }
         }
         else
@@ -6148,7 +6156,7 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
                                 &contents, &block_data_len);
             if(stat != TNG_SUCCESS)
             {
-                fprintf(stderr, "TNG library: Could not write tng compressed block data. %s: %d\n",
+                fprintf(stderr, "TNG library: Could not write TNG compressed block data. %s: %d\n",
                     __FILE__, __LINE__);
                 if(stat == TNG_CRITICAL)
                 {
@@ -6678,9 +6686,10 @@ static tng_function_status tng_frame_set_finalize
 // }
 */
 
-tng_function_status tng_atom_residue_get(const tng_trajectory_t tng_data,
-                                         const tng_atom_t atom,
-                                         tng_residue_t *residue)
+tng_function_status DECLSPECDLLEXPORT tng_atom_residue_get
+                (const tng_trajectory_t tng_data,
+                 const tng_atom_t atom,
+                 tng_residue_t *residue)
 {
     (void) tng_data;
 
@@ -6691,10 +6700,11 @@ tng_function_status tng_atom_residue_get(const tng_trajectory_t tng_data,
     return(TNG_SUCCESS);
 }
 
-tng_function_status tng_atom_name_get(const tng_trajectory_t tng_data,
-                                      const tng_atom_t atom,
-                                      char *name,
-                                      const int max_len)
+tng_function_status DECLSPECDLLEXPORT tng_atom_name_get
+                (const tng_trajectory_t tng_data,
+                 const tng_atom_t atom,
+                 char *name,
+                 const int max_len)
 {
     (void) tng_data;
     TNG_ASSERT(atom, "TNG library: atom must not be NULL");
@@ -6710,9 +6720,10 @@ tng_function_status tng_atom_name_get(const tng_trajectory_t tng_data,
     return(TNG_SUCCESS);
 }
 
-tng_function_status tng_atom_name_set(const tng_trajectory_t tng_data,
-                                      const tng_atom_t atom,
-                                      const char *new_name)
+tng_function_status DECLSPECDLLEXPORT tng_atom_name_set
+                (const tng_trajectory_t tng_data,
+                 const tng_atom_t atom,
+                 const char *new_name)
 {
     unsigned int len;
     (void)tng_data;
@@ -6745,10 +6756,11 @@ tng_function_status tng_atom_name_set(const tng_trajectory_t tng_data,
     return(TNG_SUCCESS);
 }
 
-tng_function_status tng_atom_type_get(const tng_trajectory_t tng_data,
-                                      const tng_atom_t atom,
-                                      char *type,
-                                      const int max_len)
+tng_function_status DECLSPECDLLEXPORT tng_atom_type_get
+                (const tng_trajectory_t tng_data,
+                 const tng_atom_t atom,
+                 char *type,
+                 const int max_len)
 {
     (void) tng_data;
     TNG_ASSERT(atom, "TNG library: atom must not be NULL");
@@ -6764,9 +6776,10 @@ tng_function_status tng_atom_type_get(const tng_trajectory_t tng_data,
     return(TNG_SUCCESS);
 }
 
-tng_function_status tng_atom_type_set(const tng_trajectory_t tng_data,
-                                      const tng_atom_t atom,
-                                      const char *new_type)
+tng_function_status DECLSPECDLLEXPORT tng_atom_type_set
+                (const tng_trajectory_t tng_data,
+                 const tng_atom_t atom,
+                 const char *new_type)
 {
     unsigned int len;
     (void)tng_data;
@@ -6830,6 +6843,31 @@ static tng_function_status tng_atom_destroy(const tng_atom_t atom)
         atom->atom_type = 0;
     }
 
+    return(TNG_SUCCESS);
+}
+
+/**
+ * @brief Update chain->residue pointers (after new memory for
+ * molecule->residues has been allocated).
+ * @param tng_data The trajectory container containing the molecule.
+ * @param mol The molecule that contains the chains that need to be
+ * updated.
+ * @returns TNG_SUCCESS (0) if successful.
+ */
+static tng_function_status tng_molecule_chains_residue_pointers_update
+                (const tng_trajectory_t tng_data,
+                 const tng_molecule_t mol)
+{
+    tng_chain_t chain;
+    int64_t i, res_cnt = 0;
+    (void)tng_data;
+
+    for(i = 0; i < mol->n_chains; i++)
+    {
+        chain = &mol->chains[i];
+        chain->residues = mol->residues + res_cnt;
+        res_cnt += chain->n_residues;
+    }
     return(TNG_SUCCESS);
 }
 
@@ -7814,14 +7852,7 @@ tng_function_status DECLSPECDLLEXPORT tng_chain_residue_w_id_add
 
     *residue = &molecule->residues[curr_index + chain->n_residues];
 
-    if(!chain->n_residues)
-    {
-        chain->residues = *residue;
-    }
-    else
-    {
-        chain->residues = &molecule->residues[curr_index];
-    }
+    tng_molecule_chains_residue_pointers_update(tng_data, molecule);
 
     (*residue)->name = 0;
     tng_residue_name_set(tng_data, *residue, name);
@@ -8023,7 +8054,7 @@ tng_function_status DECLSPECDLLEXPORT tng_molecule_alloc(const tng_trajectory_t 
     *molecule_p = malloc(sizeof(struct tng_molecule));
     if(!*molecule_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                sizeof(struct tng_molecule), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -8710,7 +8741,7 @@ tng_function_status DECLSPECDLLEXPORT tng_trajectory_init(tng_trajectory_t *tng_
     *tng_data_p = malloc(sizeof(struct tng_trajectory));
     if(!*tng_data_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                sizeof(struct tng_trajectory), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -9234,7 +9265,7 @@ tng_function_status DECLSPECDLLEXPORT tng_trajectory_init_from_src
     *dest_p = malloc(sizeof(struct tng_trajectory));
     if(!*dest_p)
     {
-        fprintf(stderr, "TNG library: Cannot allocate memory (%lu bytes). %s: %d\n",
+        fprintf(stderr, "TNG library: Cannot allocate memory (%"PRIuPTR" bytes). %s: %d\n",
                sizeof(struct tng_trajectory), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
@@ -10313,7 +10344,7 @@ tng_function_status DECLSPECDLLEXPORT tng_implicit_num_particles_set
     tng_function_status stat;
     int64_t diff, n_mod, n_impl;
 
-    TNG_ASSERT(n >= 0, "TNG library: The number of molecules must be >= 0");
+    TNG_ASSERT(n >= 0, "TNG library: The requested number of particles must be >= 0");
 
     diff = n - tng_data->n_particles;
 
@@ -15199,26 +15230,24 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_open
         return(TNG_CRITICAL);
     }
 
-    if(mode == 'r' || mode == 'a')
-    {
-        tng_input_file_set(*tng_data_p, filename);
-
-        /* Read the file headers */
-        tng_file_headers_read(*tng_data_p, TNG_USE_HASH);
-
-        stat = tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
-
-        if(stat != TNG_SUCCESS)
-        {
-            return(stat);
-        }
-    }
-
     if(mode == 'w')
     {
         stat = tng_output_file_set(*tng_data_p, filename);
+        return(stat);
     }
-    else if(mode == 'a')
+    tng_input_file_set(*tng_data_p, filename);
+
+    /* Read the file headers */
+    tng_file_headers_read(*tng_data_p, TNG_USE_HASH);
+
+    stat = tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
+
+    if(stat != TNG_SUCCESS)
+    {
+        return(stat);
+    }
+
+    if(mode == 'a')
     {
         if((*tng_data_p)->output_file)
         {

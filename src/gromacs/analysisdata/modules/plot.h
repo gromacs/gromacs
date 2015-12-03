@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,8 @@
 #ifndef GMX_ANALYSISDATA_MODULES_PLOT_H
 #define GMX_ANALYSISDATA_MODULES_PLOT_H
 
+#include <memory>
 #include <string>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/options/timeunitmanager.h"
@@ -55,7 +54,7 @@ namespace gmx
 {
 
 class AnalysisDataValue;
-class Options;
+class IOptionsContainer;
 class SelectionCollection;
 
 /*! \brief
@@ -109,7 +108,7 @@ class AnalysisDataPlotSettings
          *
          * \param[in,out] options Options object to which options are added.
          */
-        void addOptions(Options *options);
+        void initOptions(IOptionsContainer *options);
 
     private:
         const SelectionCollection *selections_;
@@ -327,10 +326,10 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
 };
 
 //! Smart pointer to manage an AnalysisDataPlotModule object.
-typedef boost::shared_ptr<AnalysisDataPlotModule>
+typedef std::shared_ptr<AnalysisDataPlotModule>
     AnalysisDataPlotModulePointer;
 //! Smart pointer to manage an AnalysisDataVectorPlotModule object.
-typedef boost::shared_ptr<AnalysisDataVectorPlotModule>
+typedef std::shared_ptr<AnalysisDataVectorPlotModule>
     AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx

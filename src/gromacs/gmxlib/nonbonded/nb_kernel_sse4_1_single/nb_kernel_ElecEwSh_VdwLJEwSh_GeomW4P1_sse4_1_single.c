@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse4_1_single.h"
 #include "kernelutil_x86_sse4_1_single.h"
 
 /*
@@ -249,10 +246,10 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse4_1_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
+            rinv30           = sse41_invsqrt_f(rsq30);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -296,7 +293,7 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse4_1_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_ps(ewclj2,rsq00);
             ewclj6           = _mm_mul_ps(ewclj2,_mm_mul_ps(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_r(ewcljrsq);
+            exponent         = sse41_exp_f(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_ps(exponent,_mm_add_ps(_mm_sub_ps(one,ewcljrsq),_mm_mul_ps(_mm_mul_ps(ewcljrsq,ewcljrsq),one_half)));
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
@@ -555,10 +552,10 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse4_1_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
+            rinv30           = sse41_invsqrt_f(rsq30);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -603,7 +600,7 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_sse4_1_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_ps(ewclj2,rsq00);
             ewclj6           = _mm_mul_ps(ewclj2,_mm_mul_ps(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_r(ewcljrsq);
+            exponent         = sse41_exp_f(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_ps(exponent,_mm_add_ps(_mm_sub_ps(one,ewcljrsq),_mm_mul_ps(_mm_mul_ps(ewcljrsq,ewcljrsq),one_half)));
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
@@ -1049,10 +1046,10 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse4_1_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
+            rinv30           = sse41_invsqrt_f(rsq30);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -1096,7 +1093,7 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse4_1_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_ps(ewclj2,rsq00);
             ewclj6           = _mm_mul_ps(ewclj2,_mm_mul_ps(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_r(ewcljrsq);
+            exponent         = sse41_exp_f(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_ps(exponent,_mm_add_ps(_mm_sub_ps(one,ewcljrsq),_mm_mul_ps(_mm_mul_ps(ewcljrsq,ewcljrsq),one_half)));
             /* f6A = 6 * C6grid * (1 - poly) */
@@ -1323,10 +1320,10 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse4_1_single
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
             rsq30            = gmx_mm_calc_rsq_ps(dx30,dy30,dz30);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
-            rinv30           = gmx_mm_invsqrt_ps(rsq30);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
+            rinv30           = sse41_invsqrt_f(rsq30);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -1371,7 +1368,7 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_sse4_1_single
             rinvsix          = _mm_mul_ps(_mm_mul_ps(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_ps(ewclj2,rsq00);
             ewclj6           = _mm_mul_ps(ewclj2,_mm_mul_ps(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_r(ewcljrsq);
+            exponent         = sse41_exp_f(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_ps(exponent,_mm_add_ps(_mm_sub_ps(one,ewcljrsq),_mm_mul_ps(_mm_mul_ps(ewcljrsq,ewcljrsq),one_half)));
             /* f6A = 6 * C6grid * (1 - poly) */

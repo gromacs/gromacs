@@ -49,7 +49,8 @@
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
-#include "gromacs/utility/fatalerror.h"
+
+struct gmx_domdec_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,7 +64,7 @@ extern "C" {
  * This can avoid some ifdef'ing.
  */
 typedef struct {
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
     gmx_simd_real_t inv_bzz; /**< 1/box[ZZ][ZZ] */
     gmx_simd_real_t inv_byy; /**< 1/box[YY][YY] */
     gmx_simd_real_t inv_bxx; /**< 1/box[XX][XX] */
@@ -87,7 +88,7 @@ typedef struct {
 void set_pbc_simd(const t_pbc *pbc,
                   pbc_simd_t  *pbc_simd);
 
-#if defined GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /*! \brief Correct SIMD distance vector *dx,*dy,*dz for PBC using SIMD.
  *
@@ -107,14 +108,6 @@ pbc_correct_dx_simd(gmx_simd_real_t  *dx,
                     const pbc_simd_t *pbc)
 {
     gmx_simd_real_t shz, shy, shx;
-
-#if defined _MSC_VER && _MSC_VER < 1700
-    /* The caller side should make sure we never end up here.
-     * TODO Black-list _MSC_VER < 1700 when it's old enough, so we can rid
-     * of this code complication.
-     */
-    gmx_incons("pbc_correct_dx_simd was called for code compiled with MSVC 2010 or older, which produces incorrect code (probably corrupts memory) and therefore this function should not have been called");
-#endif
 
     shz = gmx_simd_round_r(gmx_simd_mul_r(*dz, pbc->inv_bzz));
     *dx = gmx_simd_fnmadd_r(shz, pbc->bzx, *dx);

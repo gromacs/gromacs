@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,8 @@
 #ifndef GMX_TOPOLOGY_IDEF_H
 #define GMX_TOPOLOGY_IDEF_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +52,7 @@ extern "C" {
 #define NR_CBTDIHS   6
 #define NR_FOURDIHS     4
 
-typedef atom_id t_iatom;
+typedef int t_iatom;
 
 /* this MUST correspond to the
    t_interaction_function[F_NRE] in gmxlib/ifunc.c */
@@ -95,11 +96,11 @@ enum {
     F_LJC_PAIRS_NB,
     F_LJ,
     F_BHAM,
-    F_LJ_LR,
-    F_BHAM_LR,
+    F_LJ_LR_NOLONGERUSED,
+    F_BHAM_LR_NOLONGERUSED,
     F_DISPCORR,
     F_COUL_SR,
-    F_COUL_LR,
+    F_COUL_LR_NOLONGERUSED,
     F_RF_EXCL,
     F_COUL_RECIP,
     F_LJ_RECIP,

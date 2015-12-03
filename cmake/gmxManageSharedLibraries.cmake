@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Manage the Gromacs shared library setup.
+# Manage the GROMACS shared library setup.
 
 ########################################################################
 # Shared/static library settings
@@ -63,6 +63,10 @@ set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
 if (WIN32 AND NOT BUILD_SHARED_LIBS)
     set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
 endif()
+if (NOT GMX_BUILD_SHARED_EXE)
+    set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
+    set(SHARED_LIBS_DEFAULT OFF)
+endif()
 
 # Declare the user-visible options
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
@@ -85,7 +89,7 @@ mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 if (UNIX AND GMX_PREFER_STATIC_LIBS)
     if(BUILD_SHARED_LIBS)
         # Warn the user about the combination. But don't overwrite the request.
-        message(WARNING "Searching for static libraries requested, and building shared Gromacs libraries requested. This might cause problems linking later.")
+        message(WARNING "Searching for static libraries requested, and building shared GROMACS libraries requested. This might cause problems linking later.")
     endif()
     # On Linux .a is the static library suffix, on Mac OS X .lib can also
     # be used, so we'll add both to the preference list.
@@ -115,7 +119,7 @@ endfunction()
 IF( WIN32)
   if (NOT BUILD_SHARED_LIBS)
       if(NOT GMX_PREFER_STATIC_LIBS)
-          message(WARNING "Shared system libraries requested, and static Gromacs libraries requested.")
+          message(WARNING "Shared system libraries requested, and static GROMACS libraries requested.")
       endif()
   else()
       if(MINGW)
@@ -125,7 +129,7 @@ IF( WIN32)
       endif()
       if(GMX_PREFER_STATIC_LIBS)
           #this combination segfaults (illegal passing of file handles)
-          message(FATAL_ERROR "Static system libraries requested, and shared Gromacs libraries requested.")
+          message(FATAL_ERROR "Static system libraries requested, and shared GROMACS libraries requested.")
       endif()
       # Visibility not yet implemented
       # add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)

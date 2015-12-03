@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,18 +48,20 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/textblockmatchers.h"
 
 namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::NoTextMatch;
 
 class SolvateTest : public gmx::test::CommandLineTestBase
 {
     public:
         SolvateTest()
         {
-            setOutputFile("-o", "out.gro");
+            setOutputFile("-o", "out.gro", NoTextMatch());
         }
 
         void runTest(const CommandLine &args)

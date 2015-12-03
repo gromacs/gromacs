@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,10 @@
 
 #include "xdlg.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -180,9 +179,9 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
             dlgitem->win.height = h;
         }
 #ifdef DEBUG
-        fprintf(dlg->x11->console,
-                "Size window from: %dx%d to %dx%d\n", old_w, old_h,
-                dlgitem->win.width, dlgitem->win.height);
+        std::fprintf(dlg->x11->console,
+                     "Size window from: %dx%d to %dx%d\n", old_w, old_h,
+                     dlgitem->win.width, dlgitem->win.height);
         dlg->x11->Flush(dlg->x11);
 #endif
         if (dlgitem->win.self)
@@ -221,8 +220,8 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
         dlgitem->win.x = x0;
         dlgitem->win.y = y0;
 #ifdef DEBUG
-        fprintf(dlg->x11->console,
-                "Move window from: %d,%d to %d,%d\n", old_x, old_y, x0, y0);
+        std::fprintf(dlg->x11->console,
+                     "Move window from: %d,%d to %d,%d\n", old_x, old_y, x0, y0);
         dlg->x11->Flush(dlg->x11);
 #endif
         if (dlgitem->win.self)
@@ -296,7 +295,7 @@ int EditTextLen(t_dlg *dlg, t_id id)
     {
         if (dlgitem->type == edlgET)
         {
-            return strlen(dlgitem->u.edittext.buf);
+            return std::strlen(dlgitem->u.edittext.buf);
         }
     }
 
@@ -397,12 +396,12 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
         return;
     }
 
-    printf("%s\n", dlgitem->help);
+    std::printf("%s\n", dlgitem->help);
     do
     {
         fgets2(buf, 79, stdin);
 #ifdef DEBUG
-        fprintf(dlg->x11->console, "buffer: '%s'\n", buf);
+        std::fprintf(dlg->x11->console, "buffer: '%s'\n", buf);
         dlg->x11->Flush(dlg->x11);
 #endif
         if (gmx_strcasecmp(buf, "nok") == 0)
@@ -476,8 +475,8 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
     {
         nWndProc = (dlgitem->WndProc)(x11, dlgitem, event);
 #ifdef DEBUG
-        fprintf(x11->console,
-                "window: %s, nWndProc: %d\n", dlgitem->win.text, nWndProc);
+        std::fprintf(x11->console,
+                     "window: %s, nWndProc: %d\n", dlgitem->win.text, nWndProc);
         x11->Flush(x11);
 #endif
         switch (nWndProc)
@@ -524,7 +523,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                 int  gid = dlgitem->GroupID;
                 t_id tid = RBSelected(dlg, gid);
 #ifdef DEBUG
-                fprintf(stderr, "RBPRESSED\n");
+                std::fprintf(stderr, "RBPRESSED\n");
 #endif
                 if (tid != -1)
                 {
@@ -625,7 +624,7 @@ void DoCreateDlg(t_dlg *dlg)
 
     if (!CheckWindow(dlg->win.self))
     {
-        exit(1);
+        std::exit(1);
     }
     hints.x     = dlg->win.x;
     hints.y     = dlg->win.y;
@@ -687,8 +686,8 @@ void AddDlgItems(t_dlg *dlg, int nitem, t_dlgitem *item[])
     for (i = 0; (i < nitem); i++)
     {
 #ifdef DEBUG
-        fprintf(dlg->x11->console,
-                "Adding item: %d from group %d\n", item[i]->ID, item[i]->GroupID);
+        std::fprintf(dlg->x11->console,
+                     "Adding item: %d from group %d\n", item[i]->ID, item[i]->GroupID);
         dlg->x11->Flush(dlg->x11);
 #endif
         AddDlgItem(dlg, item[i]);
@@ -808,8 +807,8 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
         XGetGeometry(x11->disp, Parent, &root, &x, &y,
                      &(dlg->xmax), &(dlg->ymax), &dum, &dum);
 #ifdef DEBUG
-        fprintf(x11->console,
-                "Daddy is %d x %d at %d, %d\n", dlg->xmax, dlg->ymax, x, y);
+        std::fprintf(x11->console,
+                     "Daddy is %d x %d at %d, %d\n", dlg->xmax, dlg->ymax, x, y);
         dlg->x11->Flush(dlg->x11);
 #endif
     }
@@ -849,8 +848,8 @@ void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition)
     dlg->win.height = h;
 
 #ifdef DEBUG
-    fprintf(dlg->x11->console, "SetDlgSize: Dialog is %dx%d, at %d,%d\n",
-            dlg->win.width, dlg->win.height, dlg->win.x, dlg->win.y);
+    std::fprintf(dlg->x11->console, "SetDlgSize: Dialog is %dx%d, at %d,%d\n",
+                 dlg->win.width, dlg->win.height, dlg->win.x, dlg->win.y);
     dlg->x11->Flush(dlg->x11);
 #endif
     if (dlg->win.self)

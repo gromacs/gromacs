@@ -238,6 +238,8 @@ TEST(ReplaceAllTest, HandlesPossibleRecursiveMatches)
 const char g_wrapText[] = "A quick brown fox jumps over the lazy dog";
 //! Test string for wrapping with embedded line breaks.
 const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
+//! Test string for wrapping with embedded line breaks and an empty line.
+const char g_wrapText3[] = "A quick brown fox jumps\n\nover the lazy dog";
 //! Test string for wrapping with a long word.
 const char g_wrapTextLongWord[]
     = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
@@ -254,7 +256,23 @@ TEST_F(TextLineWrapperTest, HandlesEmptyStrings)
     EXPECT_EQ("", wrapper.wrapToString(""));
     EXPECT_EQ("", wrapper.wrapToString("   "));
     EXPECT_TRUE(wrapper.wrapToVector("").empty());
-    EXPECT_TRUE(wrapper.wrapToString("   ").empty());
+    {
+        std::vector<std::string> wrapped(wrapper.wrapToVector("   "));
+        ASSERT_EQ(1U, wrapped.size());
+        EXPECT_EQ("", wrapped[0]);
+    }
+}
+
+TEST_F(TextLineWrapperTest, HandlesTrailingWhitespace)
+{
+    gmx::TextLineWrapper wrapper;
+
+    EXPECT_EQ("line", wrapper.wrapToString("line   "));
+    EXPECT_EQ("line\n", wrapper.wrapToString("line   \n"));
+
+    wrapper.settings().setKeepFinalSpaces(true);
+    EXPECT_EQ("line   ", wrapper.wrapToString("line   "));
+    EXPECT_EQ("line\n", wrapper.wrapToString("line   \n"));
 }
 
 TEST_F(TextLineWrapperTest, HandlesTrailingNewlines)
@@ -331,6 +349,16 @@ TEST_F(TextLineWrapperTest, HandlesIndent)
     checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
 }
 
+TEST_F(TextLineWrapperTest, HandlesIndentWithEmptyLines)
+{
+    gmx::TextLineWrapper wrapper;
+    wrapper.settings().setIndent(2);
+
+    checkText(wrapper.wrapToString(g_wrapText3), "WrappedWithNoLimit");
+    wrapper.settings().setLineLength(16);
+    checkText(wrapper.wrapToString(g_wrapText3), "WrappedAt14");
+}
+
 TEST_F(TextLineWrapperTest, HandlesHangingIndent)
 {
     gmx::TextLineWrapper wrapper;
@@ -356,14 +384,10 @@ TEST_F(TextLineWrapperTest, HandlesContinuationCharacter)
 TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
 {
     gmx::TextLineWrapper wrapper;
-
     wrapper.settings().setLineLength(14);
-    wrapper.settings().setStripLeadingWhitespace(true);
+
     checkText(wrapper.wrapToString(g_wrapTextWhitespace),
-              "WrappedAt14StripLeading");
-    wrapper.settings().setStripLeadingWhitespace(false);
-    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
-              "WrappedAt14PreserveLeading");
+              "WrappedAt14");
 }
 
 } // namespace

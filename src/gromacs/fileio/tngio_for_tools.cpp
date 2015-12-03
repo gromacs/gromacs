@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#include <math.h>
+#include <cmath>
 
 #ifdef GMX_USE_TNG
 #include "tng/tng_io.h"
@@ -57,7 +57,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              tng_trajectory_t        *output,
                              int                      nAtoms,
                              const gmx_mtop_t        *mtop,
-                             const atom_id           *index,
+                             const int               *index,
                              const char              *indexGroupName)
 {
 #ifdef GMX_USE_TNG
@@ -205,11 +205,11 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
                    frame->step,
                    frame->time,
                    0,
-                   (const rvec *) frame->box,
+                   frame->box,
                    natoms,
-                   (const rvec *) frame->x,
-                   (const rvec *) frame->v,
-                   (const rvec *) frame->f);
+                   frame->x,
+                   frame->v,
+                   frame->f);
 #else
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(frame);
@@ -243,7 +243,7 @@ convert_array_to_real_array(void       *from,
                     {
                         for (j = 0; j < nValues; j++)
                         {
-                            to[i*nValues+j] = (real)((float *)from)[i*nValues+j] * fact;
+                            to[i*nValues+j] = reinterpret_cast<float *>(from)[i*nValues+j] * fact;
                         }
                     }
                 }
@@ -254,7 +254,7 @@ convert_array_to_real_array(void       *from,
                 {
                     for (j = 0; j < nValues; j++)
                     {
-                        to[i*nValues+j] = (real)((float *)from)[i*nValues+j] * fact;
+                        to[i*nValues+j] = reinterpret_cast<float *>(from)[i*nValues+j] * fact;
                     }
                 }
             }
@@ -264,7 +264,7 @@ convert_array_to_real_array(void       *from,
             {
                 for (j = 0; j < nValues; j++)
                 {
-                    to[i*nValues+j] = (real)((gmx_int64_t *)from)[i*nValues+j] * fact;
+                    to[i*nValues+j] = reinterpret_cast<gmx_int64_t *>(from)[i*nValues+j] * fact;
                 }
             }
             break;
@@ -281,7 +281,7 @@ convert_array_to_real_array(void       *from,
                     {
                         for (j = 0; j < nValues; j++)
                         {
-                            to[i*nValues+j] = (real)((double *)from)[i*nValues+j] * fact;
+                            to[i*nValues+j] = reinterpret_cast<double *>(from)[i*nValues+j] * fact;
                         }
                     }
                 }
@@ -292,7 +292,7 @@ convert_array_to_real_array(void       *from,
                 {
                     for (j = 0; j < nValues; j++)
                     {
-                        to[i*nValues+j] = (real)((double *)from)[i*nValues+j] * fact;
+                        to[i*nValues+j] = reinterpret_cast<double *>(from)[i*nValues+j] * fact;
                     }
                 }
             }
@@ -331,7 +331,7 @@ static real getDistanceScaleFactor(tng_trajectory_t in)
 
 void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
                                  const int        nind,
-                                 const atom_id   *ind,
+                                 const int       *ind,
                                  const char      *name)
 {
 #ifdef GMX_USE_TNG
@@ -541,8 +541,8 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                 }
                 for (int i = 0; i < DIM; i++)
                 {
-                    convert_array_to_real_array((char *)(values) + size * i * DIM,
-                                                (real *) fr->box[i],
+                    convert_array_to_real_array(reinterpret_cast<char *>(values) + size * i * DIM,
+                                                reinterpret_cast<real *>(fr->box[i]),
                                                 getDistanceScaleFactor(input),
                                                 1,
                                                 DIM,
@@ -553,7 +553,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
             case TNG_TRAJ_POSITIONS:
                 srenew(fr->x, fr->natoms);
                 convert_array_to_real_array(values,
-                                            (real *) fr->x,
+                                            reinterpret_cast<real *>(fr->x),
                                             getDistanceScaleFactor(input),
                                             fr->natoms,
                                             DIM,
@@ -587,7 +587,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
             case TNG_TRAJ_FORCES:
                 srenew(fr->f, fr->natoms);
                 convert_array_to_real_array(values,
-                                            (real *) fr->f,
+                                            reinterpret_cast<real *>(fr->f),
                                             getDistanceScaleFactor(input),
                                             fr->natoms,
                                             DIM,
@@ -598,10 +598,10 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                 switch (datatype)
                 {
                     case TNG_FLOAT_DATA:
-                        fr->lambda = (*(float *)values);
+                        fr->lambda = *(reinterpret_cast<float *>(values));
                         break;
                     case TNG_DOUBLE_DATA:
-                        fr->lambda = (*(double *)values);
+                        fr->lambda = *(reinterpret_cast<double *>(values));
                         break;
                     default:
                         gmx_incons("Illegal datatype lambda value!");
@@ -615,7 +615,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
          * be reallocated if it is not NULL. */
     }
 
-    fr->step  = (int) frameNumber;
+    fr->step  = static_cast<int>(frameNumber);
     fr->bStep = TRUE;
     // Convert the time to ps
     fr->time  = frameTime / PICO;

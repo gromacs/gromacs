@@ -47,8 +47,10 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/behaviorcollection.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/options.h"
@@ -407,8 +409,8 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
         {
             const int defaultIndex = (pa->u.c[0] != NULL ? nenum(pa->u.c) - 1 : 0);
             data.optionInfo = options->addOption(
-                        StringOption(name).storeEnumIndex(&data.enumIndex)
-                            .defaultEnumIndex(defaultIndex)
+                        EnumIntOption(name).store(&data.enumIndex)
+                            .defaultValue(defaultIndex)
                             .enumValueFromNullTerminatedArray(pa->u.c + 1)
                             .description(desc).hidden(bHidden));
             return;
@@ -476,7 +478,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                            int ndesc, const char **desc,
                            int nbugs, const char **bugs,
-                           output_env_t *oenv)
+                           gmx_output_env_t **oenv)
 {
     /* This array should match the order of the enum in oenv.h */
     const char *const xvg_formats[] = { "xmgrace", "xmgr", "none" };
@@ -487,18 +489,18 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        double                     tbegin    = 0.0, tend = 0.0, tdelta = 0.0;
-        bool                       bView     = false;
-        int                        xvgFormat = 0;
-        gmx::TimeUnitManager       timeUnitManager;
-        gmx::OptionsAdapter        adapter(*argc, argv);
-        gmx::Options               options(NULL, NULL);
-        gmx::FileNameOptionManager fileOptManager;
+        double                          tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
+        bool                            bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
+        bool                            bView         = false;
+        int                             xvgFormat     = 0;
+        gmx::OptionsAdapter             adapter(*argc, argv);
+        gmx::Options                    options(NULL, NULL);
+        gmx::OptionsBehaviorCollection  behaviors(&options);
+        gmx::FileNameOptionManager      fileOptManager;
 
         fileOptManager.disableInputOptionChecking(
                 FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
-        options.setDescription(gmx::constArrayRefFromArray<const char *>(desc, ndesc));
 
         if (FF(PCA_CAN_SET_DEFFNM))
         {
@@ -507,25 +509,33 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (FF(PCA_CAN_BEGIN))
         {
             options.addOption(
-                    gmx::DoubleOption("b").store(&tbegin).timeValue()
+                    gmx::DoubleOption("b")
+                        .store(&tbegin).storeIsSet(&bBeginTimeSet).timeValue()
                         .description("First frame (%t) to read from trajectory"));
         }
         if (FF(PCA_CAN_END))
         {
             options.addOption(
-                    gmx::DoubleOption("e").store(&tend).timeValue()
+                    gmx::DoubleOption("e")
+                        .store(&tend).storeIsSet(&bEndTimeSet).timeValue()
                         .description("Last frame (%t) to read from trajectory"));
         }
         if (FF(PCA_CAN_DT))
         {
             options.addOption(
-                    gmx::DoubleOption("dt").store(&tdelta).timeValue()
+                    gmx::DoubleOption("dt")
+                        .store(&tdelta).storeIsSet(&bDtSet).timeValue()
                         .description("Only use frame when t MOD dt = first time (%t)"));
         }
+        gmx::TimeUnit  timeUnit = gmx::TimeUnit_Default;
         if (FF(PCA_TIME_UNIT))
         {
-            timeUnitManager.setTimeUnitFromEnvironment();
-            timeUnitManager.addTimeUnitOption(&options, "tu");
+            std::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(
+                    new gmx::TimeUnitBehavior());
+            timeUnitBehavior->setTimeUnitStore(&timeUnit);
+            timeUnitBehavior->setTimeUnitFromEnvironment();
+            timeUnitBehavior->addTimeUnitOption(&options, "tu");
+            behaviors.addBehavior(timeUnitBehavior);
         }
         if (FF(PCA_CAN_VIEW))
         {
@@ -544,8 +554,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (bXvgr)
         {
             options.addOption(
-                    gmx::StringOption("xvg").enumValue(xvg_formats)
-                        .storeEnumIndex(&xvgFormat)
+                    gmx::EnumIntOption("xvg").enumValue(xvg_formats)
+                        .store(&xvgFormat)
                         .description("xvg plot formatting"));
         }
 
@@ -567,8 +577,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                                "Help output should be handled higher up and "
                                "only get called only on the master rank");
             gmx::CommandLineHelpWriter(options)
-                .setShowDescriptions(true)
-                .setTimeUnitString(timeUnitManager.timeUnitAsString())
+                .setHelpText(gmx::constArrayRefFromArray<const char *>(desc, ndesc))
                 .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
                 .writeHelp(*context);
             return FALSE;
@@ -577,26 +586,24 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         /* Now parse all the command-line options */
         gmx::CommandLineParser(&options).skipUnknown(FF(PCA_NOEXIT_ON_ARGS))
             .parse(argc, argv);
+        behaviors.optionsFinishing();
         options.finish();
 
         /* set program name, command line, and default values for output options */
         output_env_init(oenv, gmx::getProgramContext(),
-                        (time_unit_t)(timeUnitManager.timeUnit() + 1), bView,
+                        (time_unit_t)(timeUnit + 1), bView,
                         (xvg_format_t)(xvgFormat + 1), 0);
 
-        timeUnitManager.scaleTimeOptions(&options);
-
         /* Extract Time info from arguments */
-        // TODO: Use OptionInfo objects instead of string constants
-        if (FF(PCA_CAN_BEGIN) && options.isSet("b"))
+        if (bBeginTimeSet)
         {
             setTimeValue(TBEGIN, tbegin);
         }
-        if (FF(PCA_CAN_END) && options.isSet("e"))
+        if (bEndTimeSet)
         {
             setTimeValue(TEND, tend);
         }
-        if (FF(PCA_CAN_DT) && options.isSet("dt"))
+        if (bDtSet)
         {
             setTimeValue(TDELTA, tdelta);
         }

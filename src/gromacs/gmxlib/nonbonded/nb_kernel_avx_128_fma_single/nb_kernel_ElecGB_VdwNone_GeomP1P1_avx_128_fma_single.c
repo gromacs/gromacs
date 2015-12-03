@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_128_fma_single.h"
 #include "kernelutil_x86_avx_128_fma_single.h"
 
 /*
@@ -117,8 +114,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = _mm_set1_ps(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = _mm_set1_ps(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = _mm_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
@@ -193,7 +190,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
@@ -307,7 +304,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
@@ -486,8 +483,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = _mm_set1_ps(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = _mm_set1_ps(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = _mm_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
@@ -559,7 +556,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,
@@ -669,7 +666,7 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = avx128fma_invsqrt_f(rsq00);
 
             /* Load parameters for j particles */
             jq0              = gmx_mm_load_4real_swizzle_ps(charge+jnrA+0,charge+jnrB+0,

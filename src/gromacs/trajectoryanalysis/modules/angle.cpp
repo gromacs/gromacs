@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -240,15 +240,39 @@ class AnglePositionIterator
  * Actual analysis module
  */
 
+//! How to interpret the selections in -group1.
+enum Group1Type
+{
+    Group1Type_Angle,
+    Group1Type_Dihedral,
+    Group1Type_Vector,
+    Group1Type_Plane
+};
+//! How to interpret the selections in -group2.
+enum Group2Type
+{
+    Group2Type_None,
+    Group2Type_Vector,
+    Group2Type_Plane,
+    Group2Type_TimeZero,
+    Group2Type_Z,
+    Group2Type_SphereNormal
+};
+//! String values corresponding to Group1Type.
+const char *const cGroup1TypeEnum[] =
+{ "angle", "dihedral", "vector", "plane" };
+//! String values corresponding to Group2Type.
+const char *const cGroup2TypeEnum[] =
+{ "none", "vector", "plane", "t0", "z", "sphnorm" };
+
 class Angle : public TrajectoryAnalysisModule
 {
     public:
         Angle();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
@@ -272,8 +296,8 @@ class Angle : public TrajectoryAnalysisModule
         std::string                              fnAll_;
         std::string                              fnHistogram_;
 
-        std::string                              g1type_;
-        std::string                              g2type_;
+        Group1Type                               g1type_;
+        Group2Type                               g2type_;
         double                                   binWidth_;
 
         AnalysisData                             angles_;
@@ -289,8 +313,9 @@ class Angle : public TrajectoryAnalysisModule
 };
 
 Angle::Angle()
-    : TrajectoryAnalysisModule(AngleInfo::name, AngleInfo::shortDescription),
-      sel1info_(NULL), sel2info_(NULL), binWidth_(1.0), natoms1_(0), natoms2_(0)
+    : sel1info_(NULL), sel2info_(NULL),
+      g1type_(Group1Type_Angle), g2type_(Group2Type_None),
+      binWidth_(1.0), natoms1_(0), natoms2_(0)
 {
     averageModule_.reset(new AnalysisDataFrameAverageModule());
     angles_.addModule(averageModule_);
@@ -304,7 +329,7 @@ Angle::Angle()
 
 
 void
-Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes different types of angles between vectors.",
@@ -354,12 +379,8 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "For [TT]-oav[tt] and [TT]-oh[tt], separate average/histogram is",
         "computed for each selection in [TT]-group1[tt]."
     };
-    static const char *const cGroup1TypeEnum[] =
-    { "angle", "dihedral", "vector", "plane" };
-    static const char *const cGroup2TypeEnum[] =
-    { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("angaver")
@@ -371,11 +392,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
                            .store(&fnHistogram_).defaultBasename("anghist")
                            .description("Histogram of the angles"));
 
-    options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
-                           .defaultEnumIndex(0).store(&g1type_)
+    options->addOption(EnumOption<Group1Type>("g1").enumValue(cGroup1TypeEnum)
+                           .store(&g1type_)
                            .description("Type of analysis/first vector group"));
-    options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
-                           .defaultEnumIndex(0).store(&g2type_)
+    options->addOption(EnumOption<Group2Type>("g2").enumValue(cGroup2TypeEnum)
+                           .store(&g2type_)
                            .description("Type of second vector group"));
     options->addOption(DoubleOption("binw").store(&binWidth_)
                            .description("Binwidth for -oh in degrees"));
@@ -392,48 +413,48 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 
 
 void
-Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* settings */)
+Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
 {
-    const bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
+    const bool bSingle = (g1type_ == Group1Type_Angle || g1type_ == Group1Type_Dihedral);
 
-    if (bSingle && g2type_[0] != 'n')
+    if (bSingle && g2type_ != Group2Type_None)
     {
         GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
                                          "-g1 angle or dihedral"));
     }
-    if (bSingle && options->isSet("group2"))
+    if (bSingle && sel2info_->isSet())
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection "
                                          "(-group2) with -g1 angle or dihedral"));
     }
-    if (!bSingle && g2type_[0] == 'n')
+    if (!bSingle && g2type_ == Group2Type_None)
     {
         GMX_THROW(InconsistentInputError("Should specify a second group (-g2) "
                                          "if the first group is not an angle or a dihedral"));
     }
 
     // Set up the number of positions per angle.
-    switch (g1type_[0])
+    switch (g1type_)
     {
-        case 'a': natoms1_ = 3; break;
-        case 'd': natoms1_ = 4; break;
-        case 'v': natoms1_ = 2; break;
-        case 'p': natoms1_ = 3; break;
+        case Group1Type_Angle:    natoms1_ = 3; break;
+        case Group1Type_Dihedral: natoms1_ = 4; break;
+        case Group1Type_Vector:   natoms1_ = 2; break;
+        case Group1Type_Plane:    natoms1_ = 3; break;
         default:
             GMX_THROW(InternalError("invalid -g1 value"));
     }
-    switch (g2type_[0])
+    switch (g2type_)
     {
-        case 'n': natoms2_ = 0; break;
-        case 'v': natoms2_ = 2; break;
-        case 'p': natoms2_ = 3; break;
-        case 't': natoms2_ = 0; break;
-        case 'z': natoms2_ = 0; break;
-        case 's': natoms2_ = 1; break;
+        case Group2Type_None:         natoms2_ = 0; break;
+        case Group2Type_Vector:       natoms2_ = 2; break;
+        case Group2Type_Plane:        natoms2_ = 3; break;
+        case Group2Type_TimeZero:     natoms2_ = 0; break;
+        case Group2Type_Z:            natoms2_ = 0; break;
+        case Group2Type_SphereNormal: natoms2_ = 1; break;
         default:
             GMX_THROW(InternalError("invalid -g2 value"));
     }
-    if (natoms2_ == 0 && options->isSet("group2"))
+    if (natoms2_ == 0 && sel2info_->isSet())
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }
@@ -479,7 +500,7 @@ Angle::initFromSelections(const SelectionList &sel1,
                                                          "Number of positions in selection %d in the second group not divisible by %d",
                                                          static_cast<int>(g + 1), natoms2_)));
             }
-            if (g2type_[0] == 's' && posCount2 != 1)
+            if (g2type_ == Group2Type_SphereNormal && posCount2 != 1)
             {
                 GMX_THROW(InconsistentInputError(
                                   "The second group should contain a single position with -g2 sphnorm"));
@@ -564,11 +585,11 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         angles_.setColumnCount(i, angleCount_[i]);
     }
-    double histogramMin = (g1type_ == "dihedral" ? -180.0 : 0);
+    double histogramMin = (g1type_ == Group1Type_Dihedral ? -180.0 : 0);
     histogramModule_->init(histogramFromRange(histogramMin, 180.0)
                                .binWidth(binWidth_).includeAll());
 
-    if (g2type_ == "t0")
+    if (g2type_ == Group2Type_TimeZero)
     {
         vt0_.resize(sel1_.size());
         for (size_t g = 0; g < sel1_.size(); ++g)
@@ -686,30 +707,47 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     {
         rvec  v1, v2;
         rvec  c1, c2;
-        switch (g2type_[0])
+
+        // v2 & c2 are conditionally set in the switch statement below, and conditionally
+        // used in a different switch statement later. Apparently the clang static analyzer
+        // thinks there are cases where they can be used uninitialzed (which I cannot find),
+        // but to avoid trouble if we ever change just one of the switch statements it
+        // makes sense to clear them outside the first switch.
+
+        clear_rvec(v2);
+        clear_rvec(c2);
+
+        switch (g2type_)
         {
-            case 'z':
-                clear_rvec(v2);
+            case Group2Type_Z:
                 v2[ZZ] = 1.0;
-                clear_rvec(c2);
                 break;
-            case 's':
+            case Group2Type_SphereNormal:
                 copy_rvec(sel2_[g].position(0).x(), c2);
                 break;
+            default:
+                // do nothing
+                break;
         }
+
         dh.selectDataSet(g);
         for (int n = 0; n < angleCount_[g]; ++n, iter1.nextValue(), iter2.nextValue())
         {
             rvec x[4];
+            // x[] will be assigned below based on the number of atoms used to initialize iter1,
+            // which in turn should correspond perfectly to g1type_ (which determines how many we read),
+            // but unsurprisingly the static analyzer chokes a bit on that.
+            clear_rvecs(4, x);
+
             real angle;
             // checkSelections() ensures that this reflects all the involved
             // positions.
             const bool bPresent =
                 iter1.currentValuesSelected() && iter2.currentValuesSelected();
             iter1.getCurrentPositions(x);
-            switch (g1type_[0])
+            switch (g1type_)
             {
-                case 'a':
+                case Group1Type_Angle:
                     if (pbc)
                     {
                         pbc_dx(pbc, x[0], x[1], v1);
@@ -722,7 +760,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     angle = gmx_angle(v1, v2);
                     break;
-                case 'd':
+                case Group1Type_Dihedral:
                 {
                     rvec dx[3];
                     if (pbc)
@@ -747,17 +785,17 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     break;
                 }
-                case 'v':
-                case 'p':
+                case Group1Type_Vector:
+                case Group1Type_Plane:
                     calc_vec(natoms1_, x, pbc, v1, c1);
-                    switch (g2type_[0])
+                    switch (g2type_)
                     {
-                        case 'v':
-                        case 'p':
+                        case Group2Type_Vector:
+                        case Group2Type_Plane:
                             iter2.getCurrentPositions(x);
                             calc_vec(natoms2_, x, pbc, v2, c2);
                             break;
-                        case 't':
+                        case Group2Type_TimeZero:
                             // FIXME: This is not parallelizable.
                             if (frnr == 0)
                             {
@@ -765,10 +803,10 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                             }
                             copy_rvec(vt0_[g][n], v2);
                             break;
-                        case 'z':
+                        case Group2Type_Z:
                             c1[XX] = c1[YY] = 0.0;
                             break;
-                        case 's':
+                        case Group2Type_SphereNormal:
                             if (pbc)
                             {
                                 pbc_dx(pbc, c1, c2, v2);

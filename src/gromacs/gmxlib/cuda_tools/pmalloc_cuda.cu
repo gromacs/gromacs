@@ -78,7 +78,7 @@ void pmalloc_wc(void **h_ptr, size_t nbytes)
 {
     cudaError_t stat;
     char        strbuf[STRLEN];
-    int         flag = cudaHostAllocDefault || cudaHostAllocWriteCombined;
+    int         flag = cudaHostAllocDefault | cudaHostAllocWriteCombined;
 
     if (nbytes == 0)
     {

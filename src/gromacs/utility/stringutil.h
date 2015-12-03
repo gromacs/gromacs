@@ -59,7 +59,7 @@ namespace gmx
  *
  * Does not throw.
  */
-bool inline isNullOrEmpty(const char *str)
+static inline bool isNullOrEmpty(const char *str)
 {
     return str == NULL || str[0] == '\0';
 }
@@ -74,12 +74,12 @@ bool inline isNullOrEmpty(const char *str)
  * Returns true if \p prefix is empty.
  * Does not throw.
  */
-bool inline startsWith(const std::string &str, const std::string &prefix)
+static inline bool startsWith(const std::string &str, const std::string &prefix)
 {
     return str.compare(0, prefix.length(), prefix) == 0;
 }
 //! \copydoc startsWith(const std::string &, const std::string &)
-bool inline startsWith(const char *str, const char *prefix)
+static inline bool startsWith(const char *str, const char *prefix)
 {
     return std::strncmp(str, prefix, std::strlen(prefix)) == 0;
 }
@@ -94,7 +94,47 @@ bool inline startsWith(const char *str, const char *prefix)
  * Returns true if \p suffix is NULL or empty.
  * Does not throw.
  */
-bool endsWith(const std::string &str, const char *suffix);
+bool endsWith(const char *str, const char *suffix);
+//! \copydoc endsWith(const char *, const char *)
+static inline bool endsWith(const std::string &str, const char *suffix)
+{
+    return endsWith(str.c_str(), suffix);
+}
+
+/*! \brief
+ * Tests whether a string contains another as a substring.
+ *
+ * \param[in] str    String to process.
+ * \param[in] substr Substring to find.
+ * \returns   true if \p str contains \p substr.
+ *
+ * Does not throw.
+ */
+static inline bool contains(const std::string &str, const char *substr)
+{
+    return str.find(substr) != std::string::npos;
+}
+
+/*!\brief Returns number of space-separated words in zero-terminated char ptr
+ *
+ * \param s Character pointer to zero-terminated, which will not be changed.
+ *
+ * \returns number of words in string.
+ *
+ * \note This routine is mainly meant to support legacy code in GROMACS. For
+ *       new source you should try hard to use C++ string objects instead.
+ */
+std::size_t
+countWords(const char *s);
+
+/*!\brief Returns the number of space-separated words in a string object
+ *
+ * \param str Reference to string object, which will not be changed.
+ *
+ * \returns number of words in string.
+ */
+std::size_t
+countWords(const std::string &str);
 
 /*! \brief
  * Removes a suffix from a string.
@@ -260,6 +300,16 @@ std::string joinStrings(const char *const (&array)[count], const char *separator
 }
 
 /*! \brief
+ * Converts a boolean to a "true"/"false" string.
+ *
+ * Does not throw.
+ */
+static inline const char *boolToString(bool value)
+{
+    return value ? "true" : "false";
+}
+
+/*! \brief
  * Splits a string to whitespace separated tokens.
  *
  * \param[in] str  String to process.
@@ -335,7 +385,7 @@ class TextLineWrapperSettings
          *  - No maximum line width (only explicit line breaks).
          *  - No indentation.
          *  - No continuation characters.
-         *  - Ignore whitespace after an explicit newline.
+         *  - Do not keep final spaces in input strings.
          */
         TextLineWrapperSettings();
 
@@ -366,18 +416,18 @@ class TextLineWrapperSettings
          */
         void setFirstLineIndent(int indent) { firstLineIndent_ = indent; }
         /*! \brief
-         * Sets whether to remove spaces after an explicit newline.
+         * Sets whether final spaces in input should be kept.
          *
-         * \param[in] bStrip  If true, spaces after newline are ignored.
+         * \param[in] bKeep  Whether to keep spaces at the end of the input.
          *
-         * If not removed, the space is added to the indentation set with
-         * setIndent().
-         * The default is to not strip such whitespace.
+         * This means that wrapping a string that ends in spaces also keeps
+         * those spaces in the output.  This allows using the wrapper for
+         * partial lines where the initial part of the line may end in a space.
+         * By default, all trailing whitespace is removed.  Note that this
+         * option does not affect spaces before an explicit newline: those are
+         * always removed.
          */
-        void setStripLeadingWhitespace(bool bStrip)
-        {
-            bStripLeadingWhitespace_ = bStrip;
-        }
+        void setKeepFinalSpaces(bool bKeep) { bKeepFinalSpaces_ = bKeep; }
         /*! \brief
          * Sets a continuation marker for wrapped lines.
          *
@@ -424,8 +474,8 @@ class TextLineWrapperSettings
          * If -1, \a indent_ is used.
          */
         int                     firstLineIndent_;
-        //! Whether to ignore or preserve space after a newline.
-        bool                    bStripLeadingWhitespace_;
+        //! Whether to keep spaces at end of input.
+        bool                    bKeepFinalSpaces_;
         //! If not \c '\0', mark each wrapping point with this character.
         char                    continuationChar_;
 
@@ -502,6 +552,9 @@ class TextLineWrapper
          * Does not throw.
          */
         TextLineWrapperSettings &settings() { return settings_; }
+
+        //! Returns true if the wrapper would not modify the input string.
+        bool isTrivial() const;
 
         /*! \brief
          * Finds the next line to be wrapped.

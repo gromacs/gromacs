@@ -72,12 +72,6 @@
    fun:gmx_fio_fopen
 }
 {
-   put_symtab
-   Memcheck:Leak
-   ...
-   fun:put_symtab
-}
-{
    bTimeSet/tMPI_Thread_mutex_init_once
    Memcheck:Leak
    ...

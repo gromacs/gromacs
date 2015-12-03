@@ -53,11 +53,11 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -82,10 +82,10 @@ namespace
  */
 
 /*! \brief
- * Implements a CommandLineModuleInterface, given a function with C/C++ main()
+ * Implements a ICommandLineModule, given a function with C/C++ main()
  * signature.
  */
-class CMainCommandLineModule : public CommandLineModuleInterface
+class CMainCommandLineModule : public ICommandLineModule
 {
     public:
         //! \copydoc gmx::CommandLineModuleManager::CMainFunction
@@ -146,7 +146,8 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
       bQuiet_(false), bVersion_(false), bCopyright_(true),
-      niceLevel_(19), bBackup_(true), bFpexcept_(false), debugLevel_(0)
+      niceLevel_(19), bNiceSet_(false), bBackup_(true), bFpexcept_(false),
+      debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -168,7 +169,7 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Print extended version information and quit"));
     options_.addOption(BooleanOption("copyright").store(&bCopyright_)
                            .description("Print copyright information on startup"));
-    options_.addOption(IntegerOption("nice").store(&niceLevel_)
+    options_.addOption(IntegerOption("nice").store(&niceLevel_).storeIsSet(&bNiceSet_)
                            .description("Set the nicelevel (default depends on command)"));
     options_.addOption(BooleanOption("backup").store(&bBackup_)
                            .description("Write backups if output files exist"));
@@ -193,7 +194,7 @@ bool CommandLineCommonOptionsHolder::finishOptions()
 void CommandLineCommonOptionsHolder::adjustFromSettings(
         const CommandLineModuleSettings &settings)
 {
-    if (!options_.isSet("nice"))
+    if (!bNiceSet_)
     {
         niceLevel_ = settings.defaultNiceLevel();
     }
@@ -263,9 +264,12 @@ class CommandLineModuleManager::Impl
          * options).  Also finds the module that should be run and the
          * arguments that should be passed to it.
          */
-        CommandLineModuleInterface *
+        ICommandLineModule *
         processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
                              int *argc, char ***argv);
+
+        //! Prints the footer at the end of execution.
+        void printThanks(FILE *fp);
 
         /*! \brief
          * Maps module names to module objects.
@@ -292,7 +296,7 @@ class CommandLineModuleManager::Impl
          */
         CommandLineHelpModule       *helpModule_;
         //! If non-NULL, run this module in single-module mode.
-        CommandLineModuleInterface  *singleModule_;
+        ICommandLineModule          *singleModule_;
         //! Stores the value set with setQuiet().
         bool                         bQuiet_;
 
@@ -318,8 +322,8 @@ void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
     ensureHelpModuleExists();
     HelpTopicPointer helpTopic(helpModule_->createModuleHelpTopic(*module));
     modules_.insert(std::make_pair(std::string(module->name()),
-                                   move(module)));
-    helpModule_->addTopic(move(helpTopic));
+                                   std::move(module)));
+    helpModule_->addTopic(std::move(helpTopic), false);
 }
 
 void CommandLineModuleManager::Impl::ensureHelpModuleExists()
@@ -339,12 +343,12 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
     return modules_.find(name);
 }
 
-CommandLineModuleInterface *
+ICommandLineModule *
 CommandLineModuleManager::Impl::processCommonOptions(
         CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
-    CommandLineModuleInterface *module = singleModule_;
+    ICommandLineModule *module = singleModule_;
 
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
@@ -417,6 +421,11 @@ CommandLineModuleManager::Impl::processCommonOptions(
     return module;
 }
 
+void CommandLineModuleManager::Impl::printThanks(FILE *fp)
+{
+    fprintf(fp, "\n%s\n\n", getCoolQuote().c_str());
+}
+
 /********************************************************************
  * CommandLineModuleManager
  */
@@ -436,20 +445,21 @@ void CommandLineModuleManager::setQuiet(bool bQuiet)
     impl_->bQuiet_ = bQuiet;
 }
 
-void CommandLineModuleManager::setOutputRedirect(File *output)
+void CommandLineModuleManager::setOutputRedirector(
+        IFileOutputRedirector *output)
 {
     impl_->ensureHelpModuleExists();
-    impl_->helpModule_->setOutputRedirect(output);
+    impl_->helpModule_->setOutputRedirector(output);
 }
 
-void CommandLineModuleManager::setSingleModule(CommandLineModuleInterface *module)
+void CommandLineModuleManager::setSingleModule(ICommandLineModule *module)
 {
     impl_->singleModule_ = module;
 }
 
 void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 {
-    impl_->addModule(move(module));
+    impl_->addModule(std::move(module));
 }
 
 void CommandLineModuleManager::addModuleCMain(
@@ -458,7 +468,7 @@ void CommandLineModuleManager::addModuleCMain(
 {
     CommandLineModulePointer module(
             new CMainCommandLineModule(name, shortDescription, mainFunction));
-    addModule(move(module));
+    addModule(std::move(module));
 }
 
 CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
@@ -467,19 +477,19 @@ CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
     const char *const                 binaryName = impl_->binaryName_.c_str();
     CommandLineModuleGroupDataPointer group(
             new CommandLineModuleGroupData(impl_->modules_, binaryName, title));
-    impl_->moduleGroups_.push_back(move(group));
+    impl_->moduleGroups_.push_back(std::move(group));
     return CommandLineModuleGroup(impl_->moduleGroups_.back().get());
 }
 
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
     impl_->ensureHelpModuleExists();
-    impl_->helpModule_->addTopic(move(topic));
+    impl_->helpModule_->addTopic(std::move(topic), true);
 }
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
-    CommandLineModuleInterface    *module;
+    ICommandLineModule            *module;
     const bool                     bMaster = (gmx_node_rank() == 0);
     bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
     CommandLineCommonOptionsHolder optionsHolder;
@@ -554,14 +564,14 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (!bQuiet)
     {
-        gmx_thanx(stderr);
+        impl_->printThanks(stderr);
     }
     return rc;
 }
 
 // static
 int CommandLineModuleManager::runAsMainSingleModule(
-        int argc, char *argv[], CommandLineModuleInterface *module)
+        int argc, char *argv[], ICommandLineModule *module)
 {
     CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
     try

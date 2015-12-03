@@ -42,7 +42,8 @@
 # Parse command-line arguments
 function usage() {
     echo "usage: uncrustify.sh [-f|--force] [--rev=REV]"
-    echo "           [--uncrustify=(off|check)] [--copyright=<cmode>] [<action>]"
+    echo "           [--uncrustify=(off|check)] [--copyright=<cmode>]"
+    echo "           [--warnings=<file>] [<action>]"
     echo "<action>: (check*|diff|update)[-(index|workdir*)] (*=default)"
     echo "<cmode>:  off|add|update*|replace|full"
 }
@@ -53,6 +54,7 @@ baserev="HEAD"
 force=
 uncrustify_mode=check
 copyright_mode=update
+warning_file=
 for arg in "$@" ; do
     if [[ "$arg" == "check-index" || "$arg" == "check-workdir" || \
           "$arg" == "diff-index" || "$arg" == "diff-workdir" || \
@@ -77,6 +79,8 @@ for arg in "$@" ; do
         force=1
     elif [[ "$arg" == --rev=* ]] ; then
         baserev=${arg#--rev=}
+    elif [[ "$arg" == --warnings=* ]] ; then
+        warning_file=${arg#--warnings=}
     elif [[ "$arg" == "-h" || "$arg" == "--help" ]] ; then
         usage
         exit 0
@@ -112,7 +116,7 @@ fi
 
 # Switch to the root of the source tree and check the config file
 srcdir=`git rev-parse --show-toplevel`
-cd $srcdir
+pushd $srcdir >/dev/null
 admin_dir=$srcdir/admin
 cfg_file=$admin_dir/uncrustify.cfg
 if [ ! -f "$cfg_file" ]
@@ -271,8 +275,11 @@ elif [[ $action == update-workdir ]] ; then
     rsync --files-from=$tmpdir/changed $tmpdir/new/ $srcdir/
 fi
 
+# Get back to the original directory
+popd >/dev/null
+
 # Report what was done
-sort $tmpdir/messages
+sort $tmpdir/messages | tee $warning_file
 
 rm -rf $tmpdir
 exit $changes

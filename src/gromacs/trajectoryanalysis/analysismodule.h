@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/utility/classhelpers.h"
@@ -62,6 +61,7 @@ class AbstractAnalysisData;
 class AnalysisData;
 class AnalysisDataHandle;
 class AnalysisDataParallelOptions;
+class IOptionsContainer;
 class Options;
 class SelectionCollection;
 class TopologyInformation;
@@ -178,7 +178,7 @@ class TrajectoryAnalysisModuleData
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
-typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
+typedef std::unique_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
@@ -249,12 +249,11 @@ class TrajectoryAnalysisModule
          * If settings depend on the option values provided by the user, see
          * optionsFinished().
          */
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.
          *
-         * \param[in,out] options  Options object in which options are stored.
          * \param[in,out] settings Settings to pass to and from the module.
          *
          * This method is called after option values have been assigned (but
@@ -267,8 +266,7 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
          *
@@ -390,18 +388,6 @@ class TrajectoryAnalysisModule
         virtual void writeOutput() = 0;
 
         /*! \brief
-         * Returns the name of the analysis module.
-         *
-         * Does not throw.
-         */
-        const char *name() const;
-        /*! \brief
-         * Returns short description for the analysis module.
-         *
-         * Does not throw.
-         */
-        const char *description() const;
-        /*! \brief
          * Returns the number of datasets provided by the module.
          *
          * Does not throw.
@@ -462,11 +448,9 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Initializes the dataset registration mechanism.
          *
-         * \param[in] name         Name for the module.
-         * \param[in] description  One-line description for the module.
          * \throws    std::bad_alloc if out of memory.
          */
-        TrajectoryAnalysisModule(const char *name, const char *description);
+        TrajectoryAnalysisModule();
 
         /*! \brief
          * Registers a dataset that exports data.
@@ -512,7 +496,7 @@ class TrajectoryAnalysisModule
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
-typedef boost::shared_ptr<TrajectoryAnalysisModule>
+typedef std::unique_ptr<TrajectoryAnalysisModule>
     TrajectoryAnalysisModulePointer;
 
 } // namespace gmx

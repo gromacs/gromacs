@@ -48,7 +48,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/utility/arrayref.h"
@@ -68,21 +68,22 @@ namespace
 //! \{
 
 /*! \brief
- * Mapping from OptionFileType to a file type in filenm.h.
+ * Mapping from OptionFileType to a file type in filetypes.h.
  */
 struct FileTypeMapping
 {
     //! OptionFileType value to map.
     OptionFileType optionType;
-    //! Corresponding file type from filenm.h.
+    //! Corresponding file type from filetypes.h.
     int            fileType;
 };
 
-//! Mappings from OptionFileType to file types in filenm.h.
+//! Mappings from OptionFileType to file types in filetypes.h.
 const FileTypeMapping c_fileTypeMapping[] =
 {
     { eftTopology,    efTPS },
     { eftTrajectory,  efTRX },
+    { eftEnergy,      efEDR },
     { eftPDB,         efPDB },
     { eftIndex,       efNDX },
     { eftPlot,        efXVG },
@@ -106,7 +107,7 @@ class FileTypeHandler
         /*! \brief
          * Returns a handler for a single file type.
          *
-         * \param[in] fileType  File type (from filenm.h) to use.
+         * \param[in] fileType  File type (from filetypes.h) to use.
          */
         explicit FileTypeHandler(int fileType);
 
@@ -115,12 +116,12 @@ class FileTypeHandler
         //! Returns the extension with the given index.
         const char *extension(int i) const;
 
-        //! Returns whether \p fileType (from filenm.h) is accepted for this type.
+        //! Returns whether \p fileType (from filetypes.h) is accepted for this type.
         bool isValidType(int fileType) const;
 
     private:
         /*! \brief
-         * File type (from filenm.h) represented by this handler.
+         * File type (from filetypes.h) represented by this handler.
          *
          * -1 represents an unknown file type.
          */
@@ -130,7 +131,7 @@ class FileTypeHandler
         /*! \brief
          * List of simple file types that are included in this type.
          *
-         * If `fileType_` represents a generic type in filenm.h, i.e., a type
+         * If `fileType_` represents a generic type in filetypes.h, i.e., a type
          * that accepts multiple different types of files, then this is an
          * array of `extensionCount_` elements, each element specifying one
          * non-generic file type that this option accepts.

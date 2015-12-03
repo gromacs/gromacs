@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <vector>
 
 #include "gromacs/analysisdata/abstractdata.h"
@@ -54,7 +55,6 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -85,7 +85,7 @@ namespace internal
 {
 
 //! Smart pointer type for managing a storage frame builder.
-typedef gmx_unique_ptr<AnalysisDataStorageFrame>::type
+typedef std::unique_ptr<AnalysisDataStorageFrame>
     AnalysisDataFrameBuilderPointer;
 
 /*! \internal \brief
@@ -97,7 +97,7 @@ class AnalysisDataStorageImpl
 {
     public:
         //! Smart pointer type for managing a stored frame.
-        typedef gmx_unique_ptr<AnalysisDataStorageFrameData>::type FramePointer;
+        typedef std::unique_ptr<AnalysisDataStorageFrameData> FramePointer;
 
         //! Shorthand for a list of data frames that are currently stored.
         typedef std::vector<FramePointer> FrameList;
@@ -488,9 +488,9 @@ AnalysisDataStorageImpl::getFrameBuilder()
     {
         return AnalysisDataFrameBuilderPointer(new AnalysisDataStorageFrame(*data_));
     }
-    AnalysisDataFrameBuilderPointer builder(move(builders_.back()));
+    AnalysisDataFrameBuilderPointer builder(std::move(builders_.back()));
     builders_.pop_back();
-    return move(builder);
+    return builder;
 }
 
 
@@ -603,7 +603,7 @@ AnalysisDataStorageFrameData::startFrame(
 {
     status_         = eStarted;
     header_         = header;
-    builder_        = move(builder);
+    builder_        = std::move(builder);
     builder_->data_ = this;
     builder_->selectDataSet(0);
 }
@@ -653,9 +653,9 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
         GMX_RELEASE_ASSERT(!builder_->bPointSetInProgress_,
                            "Unfinished point set");
     }
-    AnalysisDataFrameBuilderPointer builder(move(builder_));
+    AnalysisDataFrameBuilderPointer builder(std::move(builder_));
     builder_.reset();
-    return move(builder);
+    return builder;
 }
 
 

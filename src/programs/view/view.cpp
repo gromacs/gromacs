@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,19 +38,21 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_X11
+#if GMX_X11
 
 #include "gromacs/fileio/writeps.h"
 
@@ -84,7 +86,7 @@ static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
 {
     int y0, wl, hl;
 #ifdef DEBUG
-    fprintf(stderr, "Move gmx %dx%d\n", width, height);
+    std::fprintf(stderr, "Move gmx %dx%d\n", width, height);
 #endif
     y0 = XTextHeight(x11->font);
     /* Resize PD-Menu */
@@ -276,7 +278,7 @@ static t_mentry  DispMenu[] = {
 
 static t_mentry  HelpMenu[] = {
     { 0,  IDHELP,     false,  "Help"             },
-    { 0,  IDABOUT,    false,  "About Gromacs..." }
+    { 0,  IDABOUT,    false,  "About GROMACS..." }
 };
 
 static t_mentry *gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
@@ -292,7 +294,7 @@ static const char *MenuTitle[MSIZE] = {
 };
 
 static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-                     const output_env_t oenv)
+                     gmx_output_env_t *oenv)
 {
     Pixmap                pm;
     t_gmx                *gmx;
@@ -304,13 +306,12 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     matrix                box;
     t_trxframe            fr;
     t_trxstatus          *status;
-    char                  quote[256];
 
     snew(gmx, 1);
     snew(gmx->wd, 1);
 
     ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm),
-                        NULL, box, &natom, NULL, NULL, NULL, &top);
+                        NULL, box, &natom, NULL, NULL, &top);
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_DONT_SKIP);
     close_trx(status);
@@ -319,8 +320,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     /* Creates a simple window */
     w0 = DisplayWidth(x11->disp, x11->screen)-132;
     h0 = DisplayHeight(x11->disp, x11->screen)-140;
-    bromacs(quote, 255);
-    InitWin(gmx->wd, 0, 0, w0, h0, 3, quote);
+    InitWin(gmx->wd, 0, 0, w0, h0, 3, gmx::bromacs().c_str());
     gmx->wd->self = XCreateSimpleWindow(x11->disp, x11->root,
                                         gmx->wd->x, gmx->wd->y,
                                         gmx->wd->width, gmx->wd->height,
@@ -373,7 +373,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
 int gmx_view(int argc, char *argv[])
 {
-    const char  *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] is the GROMACS trajectory viewer. This program reads a",
         "trajectory file, a run input file and an index file and plots a",
         "3D structure of your molecule on your standard X Window",
@@ -389,13 +389,13 @@ int gmx_view(int argc, char *argv[])
         "Some of the more common X command line options can be used: ",
         "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
     };
-    const char  *bugs[] = {
+    const char       *bugs[] = {
         "Balls option does not work",
         "Some times dumps core without a good reason"
     };
 
-    output_env_t oenv;
-    t_filenm     fnm[] = {
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL, ffREAD },
         { efTPR, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD }
@@ -405,15 +405,15 @@ int gmx_view(int argc, char *argv[])
     if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                           0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
-#ifndef GMX_X11
-        fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
+#if !GMX_X11
+        std::fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
 #else
         t_x11 *x11;
 
         if ((x11 = GetX11(&argc, argv)) == NULL)
         {
-            fprintf(stderr, "Can't connect to X Server.\n"
-                    "Check your DISPLAY environment variable\n");
+            std::fprintf(stderr, "Can't connect to X Server.\n"
+                         "Check your DISPLAY environment variable\n");
         }
         else
         {

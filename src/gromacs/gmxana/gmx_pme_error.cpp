@@ -36,26 +36,28 @@
 
 #include "config.h"
 
+#include <cmath>
+
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/readinp.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/calcgrid.h"
+#include "gromacs/gmxlib/main.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -211,19 +213,19 @@ static inline real eps_poly1(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += pow( tmp, -n );
+        nom += std::pow( tmp, -n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += pow( tmp, -n );
+        nom += std::pow( tmp, -n );
     }
 
     tmp   = m / K;
     tmp  *= 2.0*M_PI;
-    denom = pow( tmp, -n )+nom;
+    denom = std::pow( tmp, -n )+nom;
 
     return -nom/denom;
 
@@ -248,21 +250,21 @@ static inline real eps_poly2(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += pow( tmp, -2*n );
+        nom += std::pow( tmp, -2*n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += pow( tmp, -2*n );
+        nom += std::pow( tmp, -2*n );
     }
 
     for (i = -SUMORDER; i < SUMORDER+1; i++)
     {
         tmp    = m / K + i;
         tmp   *= 2.0*M_PI;
-        denom += pow( tmp, -n );
+        denom += std::pow( tmp, -n );
     }
     tmp = eps_poly1(m, K, n);
     return nom / denom / denom + tmp*tmp;
@@ -288,21 +290,21 @@ static inline real eps_poly3(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * pow( tmp, -2*n );
+        nom += i * std::pow( tmp, -2*n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * pow( tmp, -2*n );
+        nom += i * std::pow( tmp, -2*n );
     }
 
     for (i = -SUMORDER; i < SUMORDER+1; i++)
     {
         tmp    = m / K + i;
         tmp   *= 2.0*M_PI;
-        denom += pow( tmp, -n );
+        denom += std::pow( tmp, -n );
     }
 
     return 2.0 * M_PI * nom / denom / denom;
@@ -328,21 +330,21 @@ static inline real eps_poly4(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * i * pow( tmp, -2*n );
+        nom += i * i * std::pow( tmp, -2*n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * i * pow( tmp, -2*n );
+        nom += i * i * std::pow( tmp, -2*n );
     }
 
     for (i = -SUMORDER; i < SUMORDER+1; i++)
     {
         tmp    = m / K + i;
         tmp   *= 2.0*M_PI;
-        denom += pow( tmp, -n );
+        denom += std::pow( tmp, -n );
     }
 
     return 4.0 * M_PI * M_PI * nom / denom / denom;
@@ -375,18 +377,18 @@ static inline real eps_self(
 
     for (i = -SUMORDER; i < 0; i++)
     {
-        tmp    = -sin(2.0 * M_PI * i * K * rcoord);
+        tmp    = -std::sin(2.0 * M_PI * i * K * rcoord);
         tmp1   = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
-        tmp2   = pow(tmp1, -n);
+        tmp2   = std::pow(tmp1, -n);
         nom   += tmp * tmp2 * i;
         denom += tmp2;
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
-        tmp    = -sin(2.0 * M_PI * i * K * rcoord);
+        tmp    = -std::sin(2.0 * M_PI * i * K * rcoord);
         tmp1   = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
-        tmp2   = pow(tmp1, -n);
+        tmp2   = std::pow(tmp1, -n);
         nom   += tmp * tmp2 * i;
         denom += tmp2;
     }
@@ -491,7 +493,7 @@ static real estimate_reciprocal(
     xtot        = stopglobal*2+1;
     if (PAR(cr))
     {
-        x_per_core = static_cast<int>(ceil(static_cast<real>(xtot) / cr->nnodes));
+        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->nnodes));
         startlocal = startglobal + x_per_core*cr->nodeid;
         stoplocal  = startlocal + x_per_core -1;
         if (stoplocal > stopglobal)
@@ -543,7 +545,7 @@ static real estimate_reciprocal(
                 svmul(nz, info->recipbox[ZZ], tmpvec);
                 rvec_add(gridpxy, tmpvec, gridp);
                 tmp    = norm2(gridp);
-                coeff  = exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
+                coeff  = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
                 coeff /= 2.0 * M_PI * info->volume * tmp;
                 coeff2 = tmp;
 
@@ -637,14 +639,14 @@ static real estimate_reciprocal(
         /* Here xtot is the number of samples taken for the Monte Carlo calculation
          * of the average of term IV of equation 35 in Wang2010. Round up to a
          * number of samples that is divisible by the number of nodes */
-        x_per_core  = static_cast<int>(ceil(info->fracself * nr / cr->nnodes));
+        x_per_core  = static_cast<int>(std::ceil(info->fracself * nr / cr->nnodes));
         xtot        = x_per_core * cr->nnodes;
     }
     else
     {
         /* In this case we use all nr particle positions */
         xtot       = nr;
-        x_per_core = static_cast<int>(ceil(static_cast<real>(xtot) / cr->nnodes));
+        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->nnodes));
     }
 
     startlocal = x_per_core *  cr->nodeid;
@@ -660,7 +662,7 @@ static real estimate_reciprocal(
         {
             for (i = 0; i < xtot; i++)
             {
-                numbers[i] = static_cast<int>(floor(gmx_rng_uniform_real(rng) * nr));
+                numbers[i] = static_cast<int>(std::floor(gmx_rng_uniform_real(rng) * nr));
             }
         }
         /* Broadcast the random number array to the other nodes */
@@ -720,7 +722,7 @@ static real estimate_reciprocal(
                     svmul(nz, info->recipbox[ZZ], tmpvec);
                     rvec_add(gridpxy, tmpvec, gridp);
                     tmp      = norm2(gridp);
-                    coeff    = exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
+                    coeff    = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
                     coeff   /= tmp;
                     e_rec3x += coeff*eps_self(nx, info->nkx[0], info->recipbox[XX], info->pme_order[0], x[ci]);
                     e_rec3y += coeff*eps_self(ny, info->nky[0], info->recipbox[YY], info->pme_order[0], x[ci]);
@@ -782,7 +784,7 @@ static real estimate_reciprocal(
        e_rec2*=  q2_all / M_PI / M_PI / info->volume / info->volume / nr ;
        e_rec3/= M_PI * M_PI * info->volume * info->volume * nr ;
      */
-    e_rec = sqrt(e_rec1+e_rec2+e_rec3);
+    e_rec = std::sqrt(e_rec1+e_rec2+e_rec3);
 
 
     return ONE_4PI_EPS0 * e_rec;
@@ -861,7 +863,7 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
 /* Read in the tpr file and save information we need later in info */
 static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
 {
-    read_tpx_state(fn_sim_tpr, ir, state, NULL, mtop);
+    read_tpx_state(fn_sim_tpr, ir, state, mtop);
 
     /* The values of the original tpr input file are save in the first
      * place [0] of the arrays */
@@ -948,7 +950,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     if (MASTER(cr))
     {
         calc_q2all(mtop, &(info->q2all), &(info->q2allnr));
-        info->ewald_rtol[0] = gmx_erfc(info->rcoulomb[0]*info->ewald_beta[0]);
+        info->ewald_rtol[0] = std::erfc(info->rcoulomb[0]*info->ewald_beta[0]);
         /* Write some info to log file */
         fprintf(fp_out, "Box volume              : %g nm^3\n", info->volume);
         fprintf(fp_out, "Number of charged atoms : %d (total atoms %d)\n", ncharges, info->natoms);
@@ -1023,7 +1025,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
         edir = info->e_dir[0];
         erec = info->e_rec[0];
         derr = edir-erec;
-        while (fabs(derr/std::min(erec, edir)) > 1e-4)
+        while (std::abs(derr/std::min(erec, edir)) > 1e-4)
         {
 
             beta                = info->ewald_beta[0];
@@ -1048,13 +1050,13 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
             if (MASTER(cr))
             {
                 i++;
-                fprintf(stderr, "difference between real and rec. space error (step %d): %g\n", i, fabs(derr));
+                fprintf(stderr, "difference between real and rec. space error (step %d): %g\n", i, std::abs(derr));
                 fprintf(stderr, "old beta: %f\n", beta0);
                 fprintf(stderr, "new beta: %f\n", beta);
             }
         }
 
-        info->ewald_rtol[0] = gmx_erfc(info->rcoulomb[0]*info->ewald_beta[0]);
+        info->ewald_rtol[0] = std::erfc(info->rcoulomb[0]*info->ewald_beta[0]);
 
         if (MASTER(cr))
         {
@@ -1104,15 +1106,15 @@ int gmx_pme_error(int argc, char *argv[])
     int             seed     = 0;
 
 
-    static t_filenm fnm[] = {
+    static t_filenm   fnm[] = {
         { efTPR, "-s",     NULL,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
         { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
-    output_env_t    oenv = NULL;
+    gmx_output_env_t *oenv = NULL;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
           "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},
@@ -1128,8 +1130,7 @@ int gmx_pme_error(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    cr = init_commrec();
-
+    cr         = init_commrec();
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(&argc, argv, PCA_Flags,

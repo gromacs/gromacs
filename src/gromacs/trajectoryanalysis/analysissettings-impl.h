@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,12 +42,16 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
 
+#include <string>
+
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
 namespace gmx
 {
+
+class ICommandLineOptionsModuleSettings;
 
 /*! \internal \brief
  * Private implementation class for TrajectoryAnalysisSettings.
@@ -58,10 +62,14 @@ class TrajectoryAnalysisSettings::Impl
 {
     public:
         //! Initializes the default values for the settings object.
-        Impl() : flags(0), frflags(0), bRmPBC(true), bPBC(true) {}
+        Impl()
+            : timeUnit(TimeUnit_Default), flags(0), frflags(0),
+              bRmPBC(true), bPBC(true), optionsModuleSettings_(nullptr)
+        {
+        }
 
         //! Global time unit setting for the analysis module.
-        TimeUnitManager          timeUnitManager;
+        TimeUnit                 timeUnit;
         //! Global plotting settings for the analysis module.
         AnalysisDataPlotSettings plotSettings;
         //! Flags for the analysis module.
@@ -73,6 +81,9 @@ class TrajectoryAnalysisSettings::Impl
         bool                 bRmPBC;
         //! Whether to pass PBC information to the analysis module.
         bool                 bPBC;
+
+        //! Lower-level settings object wrapped by these settings.
+        ICommandLineOptionsModuleSettings  *optionsModuleSettings_;
 };
 
 } // namespace gmx

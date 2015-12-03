@@ -44,11 +44,15 @@
 
 #include <algorithm>
 
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-simd.h"
-#include "gromacs/ewald/pme-spline-work.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/ewald/pme.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
+#include "pme-simd.h"
+#include "pme-spline-work.h"
 
 /* TODO consider split of pme-spline from this file */
 
@@ -202,13 +206,11 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
  */
 #define CALC_SPLINE(order)                     \
     {                                              \
-        int  j, k, l;                                 \
-        real dr, div;                               \
-        real data[PME_ORDER_MAX];                  \
-        real ddata[PME_ORDER_MAX];                 \
-                                               \
-        for (j = 0; (j < DIM); j++)                     \
+        for (int j = 0; (j < DIM); j++)            \
         {                                          \
+            real dr, div;                          \
+            real data[PME_ORDER_MAX];              \
+                                                   \
             dr  = xptr[j];                         \
                                                \
             /* dr is relative offset from lower cell limit */ \
@@ -216,11 +218,11 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
             data[1]       = dr;                          \
             data[0]       = 1 - dr;                      \
                                                \
-            for (k = 3; (k < order); k++)               \
+            for (int k = 3; (k < order); k++)      \
             {                                      \
                 div       = 1.0/(k - 1.0);               \
                 data[k-1] = div*dr*data[k-2];      \
-                for (l = 1; (l < (k-1)); l++)           \
+                for (int l = 1; (l < (k-1)); l++)  \
                 {                                  \
                     data[k-l-1] = div*((dr+l)*data[k-l-2]+(k-l-dr)* \
                                        data[k-l-1]);                \
@@ -228,25 +230,24 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
                 data[0] = div*(1-dr)*data[0];      \
             }                                      \
             /* differentiate */                    \
-            ddata[0] = -data[0];                   \
-            for (k = 1; (k < order); k++)               \
+            dtheta[j][i*order+0] = -data[0];       \
+            for (int k = 1; (k < order); k++)      \
             {                                      \
-                ddata[k] = data[k-1] - data[k];    \
+                dtheta[j][i*order+k] = data[k-1] - data[k]; \
             }                                      \
                                                \
             div           = 1.0/(order - 1);                 \
             data[order-1] = div*dr*data[order-2];  \
-            for (l = 1; (l < (order-1)); l++)           \
+            for (int l = 1; (l < (order-1)); l++)  \
             {                                      \
                 data[order-l-1] = div*((dr+l)*data[order-l-2]+    \
                                        (order-l-dr)*data[order-l-1]); \
             }                                      \
             data[0] = div*(1 - dr)*data[0];        \
                                                \
-            for (k = 0; k < order; k++)                 \
+            for (int k = 0; k < order; k++)        \
             {                                      \
                 theta[j][i*order+k]  = data[k];    \
-                dtheta[j][i*order+k] = ddata[k];   \
             }                                      \
         }                                          \
     }
@@ -269,6 +270,7 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
         if (bDoSplines || coefficient[ii] != 0.0)
         {
             xptr = fractx[ii];
+            assert(order >= 4 && order <= PME_ORDER_MAX);
             switch (order)
             {
                 case 4:  CALC_SPLINE(4);     break;
@@ -367,7 +369,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "gromacs/ewald/pme-simd4.h"
+#include "pme-simd4.h"
 #else
                     DO_BSPLINE(4);
 #endif
@@ -376,7 +378,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "gromacs/ewald/pme-simd4.h"
+#include "pme-simd4.h"
 #else
                     DO_BSPLINE(5);
 #endif
@@ -873,15 +875,19 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #pragma omp parallel for num_threads(nthread) schedule(static)
         for (thread = 0; thread < nthread; thread++)
         {
-            int start, end;
+            try
+            {
+                int start, end;
 
-            start = atc->n* thread   /nthread;
-            end   = atc->n*(thread+1)/nthread;
+                start = atc->n* thread   /nthread;
+                end   = atc->n*(thread+1)/nthread;
 
-            /* Compute fftgrid index for all atoms,
-             * with help of some extra variables.
-             */
-            calc_interpolation_idx(pme, atc, start, grid_index, end, thread);
+                /* Compute fftgrid index for all atoms,
+                 * with help of some extra variables.
+                 */
+                calc_interpolation_idx(pme, atc, start, grid_index, end, thread);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
     }
 #ifdef PME_TIME_THREADS
@@ -895,62 +901,66 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
-        splinedata_t *spline;
-        pmegrid_t *grid = NULL;
-
-        /* make local bsplines  */
-        if (grids == NULL || !pme->bUseThreads)
+        try
         {
-            spline = &atc->spline[0];
+            splinedata_t *spline;
+            pmegrid_t *grid = NULL;
 
-            spline->n = atc->n;
-
-            if (bSpread)
+            /* make local bsplines  */
+            if (grids == NULL || !pme->bUseThreads)
             {
-                grid = &grids->grid;
-            }
-        }
-        else
-        {
-            spline = &atc->spline[thread];
+                spline = &atc->spline[0];
 
-            if (grids->nthread == 1)
-            {
-                /* One thread, we operate on all coefficients */
                 spline->n = atc->n;
+
+                if (bSpread)
+                {
+                    grid = &grids->grid;
+                }
             }
             else
             {
-                /* Get the indices our thread should operate on */
-                make_thread_local_ind(atc, thread, spline);
+                spline = &atc->spline[thread];
+
+                if (grids->nthread == 1)
+                {
+                    /* One thread, we operate on all coefficients */
+                    spline->n = atc->n;
+                }
+                else
+                {
+                    /* Get the indices our thread should operate on */
+                    make_thread_local_ind(atc, thread, spline);
+                }
+
+                grid = &grids->grid_th[thread];
             }
 
-            grid = &grids->grid_th[thread];
-        }
-
-        if (bCalcSplines)
-        {
-            make_bsplines(spline->theta, spline->dtheta, pme->pme_order,
-                          atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines);
-        }
-
-        if (bSpread)
-        {
-            /* put local atoms on grid. */
-#ifdef PME_TIME_SPREAD
-            ct1a = omp_cyc_start();
-#endif
-            spread_coefficients_bsplines_thread(grid, atc, spline, pme->spline_work);
-
-            if (pme->bUseThreads)
+            if (bCalcSplines)
             {
-                copy_local_grid(pme, grids, grid_index, thread, fftgrid);
+                make_bsplines(spline->theta, spline->dtheta, pme->pme_order,
+                              atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines);
             }
+
+            if (bSpread)
+            {
+                /* put local atoms on grid. */
 #ifdef PME_TIME_SPREAD
-            ct1a          = omp_cyc_end(ct1a);
-            cs1a[thread] += (double)ct1a;
+                ct1a = omp_cyc_start();
 #endif
+                spread_coefficients_bsplines_thread(grid, atc, spline, pme->spline_work);
+
+                if (pme->bUseThreads)
+                {
+                    copy_local_grid(pme, grids, grid_index, thread, fftgrid);
+                }
+#ifdef PME_TIME_SPREAD
+                ct1a          = omp_cyc_end(ct1a);
+                cs1a[thread] += (double)ct1a;
+#endif
+            }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 #ifdef PME_TIME_THREADS
     c2   = omp_cyc_end(c2);
@@ -965,11 +975,15 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #pragma omp parallel for num_threads(grids->nthread) schedule(static)
         for (thread = 0; thread < grids->nthread; thread++)
         {
-            reduce_threadgrid_overlap(pme, grids, thread,
-                                      fftgrid,
-                                      pme->overlap[0].sendbuf,
-                                      pme->overlap[1].sendbuf,
-                                      grid_index);
+            try
+            {
+                reduce_threadgrid_overlap(pme, grids, thread,
+                                          fftgrid,
+                                          pme->overlap[0].sendbuf,
+                                          pme->overlap[1].sendbuf,
+                                          grid_index);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 #ifdef PME_TIME_THREADS
         c3   = omp_cyc_end(c3);

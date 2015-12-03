@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,16 +151,23 @@
 {
     int              offset;
     int              index;
-    gmx_simd4_real_t ty_S0, ty_S1, ty_S2, ty_S3, ty_S4;
+    gmx_simd4_real_t ty_S0, ty_S1, ty_S2, ty_S3;
     gmx_simd4_real_t tz_S0;
     gmx_simd4_real_t tz_S1;
     gmx_simd4_real_t vx_S;
     gmx_simd4_real_t vx_tz_S0;
     gmx_simd4_real_t vx_tz_S1;
-    gmx_simd4_real_t sum_S00, sum_S01, sum_S02, sum_S03, sum_S04;
-    gmx_simd4_real_t sum_S10, sum_S11, sum_S12, sum_S13, sum_S14;
-    gmx_simd4_real_t gri_S00, gri_S01, gri_S02, gri_S03, gri_S04;
-    gmx_simd4_real_t gri_S10, gri_S11, gri_S12, gri_S13, gri_S14;
+    gmx_simd4_real_t sum_S00, sum_S01, sum_S02, sum_S03;
+    gmx_simd4_real_t sum_S10, sum_S11, sum_S12, sum_S13;
+    gmx_simd4_real_t gri_S00, gri_S01, gri_S02, gri_S03;
+    gmx_simd4_real_t gri_S10, gri_S11, gri_S12, gri_S13;
+#if PME_ORDER == 5
+    gmx_simd4_real_t ty_S4;
+    gmx_simd4_real_t sum_S04;
+    gmx_simd4_real_t sum_S14;
+    gmx_simd4_real_t gri_S04;
+    gmx_simd4_real_t gri_S14;
+#endif
 
     offset = k0 & 3;
 

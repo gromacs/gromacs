@@ -1,4 +1,4 @@
-# This is a Gromacs template makefile for your own utility programs using pkg-config.
+# This is a GROMACS template makefile for your own utility programs using pkg-config.
 #
 # Copy this file to whatever directory you are using for your own software
 #
