@@ -217,7 +217,7 @@ void Poldata::addPtype(
 
     for (i = 0; (i < _ptype.size()); i++)
     {
-      if (_ptype[i].getType().compare(ptype) == 0)
+        if (_ptype[i].getType().compare(ptype) == 0)
         {
             break;
         }
@@ -265,7 +265,7 @@ void Poldata::addAtype(
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (_alexandria[i].getType().compare(atype) == 0)
+        if (_alexandria[i].getType().compare(atype) == 0)
         {
             break;
         }
@@ -292,7 +292,7 @@ void Poldata::addBondingRule(std::string gtBrule, std::string atype,
 
     for (j = 0; (j < _alexandria.size()); j++)
     {
-      if (_alexandria[j].getType().compare(atype) == 0)
+        if (_alexandria[j].getType().compare(atype) == 0)
         {
             break;
         }
@@ -301,7 +301,7 @@ void Poldata::addBondingRule(std::string gtBrule, std::string atype,
     {
         for (i = 0; (i < _brule.size()); i++)
         {
-	  if (_brule[i].getRule().compare( gtBrule) == 0)
+            if (_brule[i].getRule().compare( gtBrule) == 0)
             {
                 break;
             }
@@ -309,7 +309,7 @@ void Poldata::addBondingRule(std::string gtBrule, std::string atype,
         if (i == _brule.size())
         {
 
-	  Brule brule(_alexandria[j].getElem(), gtBrule, atype, neighbors, geometry,
+            Brule brule(_alexandria[j].getElem(), gtBrule, atype, neighbors, geometry,
                         numbonds, iAromatic, valence, split(neighbors, ' '));
 
             _brule.push_back(brule);
@@ -394,7 +394,7 @@ void Poldata::setPtypePolarizability( const std::string ptype,
 
     for (i = 0; (i < _ptype.size()); i++)
     {
-      if (ptype.compare(_ptype[i].getType()) == 0)
+        if (ptype.compare(_ptype[i].getType()) == 0)
         {
             sp                 = &(_ptype[i]);
             sp->setPolarizability(polarizability);
@@ -430,9 +430,9 @@ std::string Poldata::getGeometry( std::string gtBrule)
     {
         for (i = 0; (i < _brule.size()); i++)
         {
-	  if (_brule[i].getRule().compare(gtBrule) == 0)
+            if (_brule[i].getRule().compare(gtBrule) == 0)
             {
-	      return _brule[i].getGeometry();
+                return _brule[i].getGeometry();
             }
         }
     }
@@ -448,9 +448,9 @@ std::string Poldata::getDesc( std::string atype)
     {
         for (i = 0; (i < _alexandria.size()); i++)
         {
-	  if (_alexandria[i].getType().compare(atype) == 0)
+            if (_alexandria[i].getType().compare(atype) == 0)
             {
-	      return _alexandria[i].getDesc();
+                return _alexandria[i].getDesc();
             }
         }
     }
@@ -507,9 +507,9 @@ int Poldata::bondingRuleValence( std::string gtBrule, double *valence)
 
     for (i = 0; (i < _brule.size()); i++)
     {
-      if (strcasecmp(gtBrule.c_str(), _brule[i].getRule().c_str()) == 0)
+        if (strcasecmp(gtBrule.c_str(), _brule[i].getRule().c_str()) == 0)
         {
-	  *valence = _brule[i].getValence();
+            *valence = _brule[i].getValence();
             return 1;
         }
     }
@@ -523,16 +523,16 @@ int Poldata::getPtypePol( const std::string ptype,
 
     for (j = 0; (j < _ptype.size()); j++)
     {
-      if (ptype.compare(_ptype[j].getType()) == 0)
+        if (ptype.compare(_ptype[j].getType()) == 0)
         {
             if (NULL != polar)
             {
-	      *polar   = _ptype[j].getPolarizability();
+                *polar   = _ptype[j].getPolarizability();
             }
 
             if (NULL != sigPol)
             {
-	      *sigPol = _ptype[j].getSigPol();
+                *sigPol = _ptype[j].getSigPol();
             }
             return 1;
         }
@@ -547,9 +547,9 @@ int Poldata::getAtypePol( const std::string atype,
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (atype.compare(_alexandria[i].getType()) == 0)
+        if (atype.compare(_alexandria[i].getType()) == 0)
         {
-	  return getPtypePol( _alexandria[i].getPtype(), polar, sigPol);
+            return getPtypePol( _alexandria[i].getPtype(), polar, sigPol);
         }
     }
     return 0;
@@ -563,9 +563,9 @@ int Poldata::getAtypeRefEnthalpy( const std::string atype,
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (atype.compare(_alexandria[i].getType()) == 0)
+        if (atype.compare(_alexandria[i].getType()) == 0)
         {
-	  *Href = _alexandria[i].getRefEnthalpy();
+            *Href = _alexandria[i].getRefEnthalpy();
             return 1;
         }
     }
@@ -578,9 +578,9 @@ std::string Poldata::ptypeToMiller( const std::string ptype)
 
     for (i = 0; (i < _ptype.size()); i++)
     {
-      if (ptype.compare(_ptype[i].getType()) == 0)
+        if (ptype.compare(_ptype[i].getType()) == 0)
         {
-	  return _ptype[i].getMiller();
+            return _ptype[i].getMiller();
         }
     }
     return "";
@@ -592,9 +592,9 @@ std::string Poldata::ptypeToBosque( const std::string ptype)
 
     for (i = 0; (i < _ptype.size()); i++)
     {
-      if (ptype.compare(_ptype[i].getType()) == 0)
+        if (ptype.compare(_ptype[i].getType()) == 0)
         {
-	  return _ptype[i].getBosque();
+            return _ptype[i].getBosque();
         }
     }
     return "";
@@ -606,9 +606,9 @@ std::string Poldata::atypeToPtype( const std::string atype)
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (_alexandria[i].getType().compare(atype) == 0)
+        if (_alexandria[i].getType().compare(atype) == 0)
         {
-	  return _alexandria[i].getPtype();
+            return _alexandria[i].getPtype();
         }
     }
     return "";
@@ -620,32 +620,32 @@ std::string Poldata::atypeToBtype( const std::string atype)
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (_alexandria[i].getType().compare(atype) == 0)
+        if (_alexandria[i].getType().compare(atype) == 0)
         {
-	  return _alexandria[i].getBtype();
+            return _alexandria[i].getBtype();
         }
     }
     return "";
 }
 
-  int Poldata::searchAtype(std::string         key,
-			   Ffatype * atype)
+int Poldata::searchAtype(std::string         key,
+                         Ffatype           * atype)
 {
     unsigned int        i;
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (key.compare(_alexandria[i].getType()) == 0)
+        if (key.compare(_alexandria[i].getType()) == 0)
         {
             break;
         }
     }
 
     if (i < _alexandria.size())
-      {
-	*atype  =  _alexandria[i];
-	return 1;
-      }
+    {
+        *atype  =  _alexandria[i];
+        return 1;
+    }
     else
     {
         return 0;
@@ -659,10 +659,10 @@ double Poldata::elemGetMaxValence( std::string elem)
 
     for (i = 0; (i < _brule.size()); i++)
     {
-      if ((0 == gmx_strcasecmp(_brule[i].getElem().c_str(), elem.c_str())) &&
+        if ((0 == gmx_strcasecmp(_brule[i].getElem().c_str(), elem.c_str())) &&
             (mv < _brule[i].getValence()))
         {
-	  mv = _brule[i].getValence();
+            mv = _brule[i].getValence();
         }
     }
     return mv;
@@ -682,13 +682,13 @@ double *Poldata::elemGetBondorders( std::string elem1, std::string elem2,
     nbo = 0;
     for (i = 0; (i < _gtBond.size()); i++)
     {
-      if (0 == _gtBond[i].getElem1().size())
+        if (0 == _gtBond[i].getElem1().size())
         {
             for (j = 0; (j < _alexandria.size()); j++)
             {
-	      if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
+                if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
                 {
-		  _gtBond[i].setElem1(_alexandria[j].getElem());
+                    _gtBond[i].setElem1(_alexandria[j].getElem());
                 }
             }
         }
@@ -696,9 +696,9 @@ double *Poldata::elemGetBondorders( std::string elem1, std::string elem2,
         {
             for (j = 0; (j < _alexandria.size()); j++)
             {
-	      if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
+                if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
                 {
-		  _gtBond[i].setElem2(_alexandria[j].getElem());
+                    _gtBond[i].setElem2(_alexandria[j].getElem());
                 }
             }
         }
@@ -707,12 +707,12 @@ double *Poldata::elemGetBondorders( std::string elem1, std::string elem2,
         if (((ba1.compare(elem1) == 0) && (ba2.compare(elem2) == 0)) ||
             ((ba1.compare(elem2) == 0) && (ba2.compare(elem1) == 0)))
         {
-	  dev = fabs((_gtBond[i].getLength() - distance)/_gtBond[i].getLength());
+            dev = fabs((_gtBond[i].getLength() - distance)/_gtBond[i].getLength());
             if (dev < toler)
             {
                 for (k = 0; (k < nbo); k++)
                 {
-		  if (_gtBond[i].getBondorder() == bo[k])
+                    if (_gtBond[i].getBondorder() == bo[k])
                     {
                         break;
                     }
@@ -743,13 +743,13 @@ int Poldata::elemIsBond( std::string elem1, std::string elem2,
     }
     for (i = 0; (i < _gtBond.size()); i++)
     {
-      if (0 == _gtBond[i].getElem1().size())
+        if (0 == _gtBond[i].getElem1().size())
         {
             for (j = 0; (j < _alexandria.size()); j++)
             {
-	      if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
+                if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
                 {
-		  _gtBond[i].setElem1(_alexandria[j].getElem());
+                    _gtBond[i].setElem1(_alexandria[j].getElem());
                 }
             }
         }
@@ -757,9 +757,9 @@ int Poldata::elemIsBond( std::string elem1, std::string elem2,
         {
             for (j = 0; (j < _alexandria.size()); j++)
             {
-	      if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
+                if (_alexandria[j].getType().compare(_gtBond[i].getAtom2()) == 0)
                 {
-		  _gtBond[i].setElem2(_alexandria[j].getElem());
+                    _gtBond[i].setElem2(_alexandria[j].getElem());
                 }
             }
         }
@@ -768,7 +768,7 @@ int Poldata::elemIsBond( std::string elem1, std::string elem2,
         if (((ba1.compare(elem1) == 0) && (ba2.compare(elem2)) == 0) ||
             ((ba1.compare(elem2) == 0) && (ba2.compare(elem1) == 0)))
         {
-	  dev = fabs((_gtBond[i].getLength() - distance)/_gtBond[i].getLength());
+            dev = fabs((_gtBond[i].getLength() - distance)/_gtBond[i].getLength());
             if (dev < devBest)
             {
                 devBest = dev;
@@ -876,7 +876,7 @@ double Poldata::atypeBondorder( std::string atype1, std::string atype2,
         i = indexOfPointInVector(gtB, _gtBond);
         do
         {
-	  dev = fabs(_gtBond[i].getLength() - distance);
+            dev = fabs(_gtBond[i].getLength() - distance);
             if (dev < devBest)
             {
                 devBest = dev;
@@ -889,7 +889,7 @@ double Poldata::atypeBondorder( std::string atype1, std::string atype2,
     }
     if (devBest < toler)
     {
-      return _gtBond[iBest].getBondorder();
+        return _gtBond[iBest].getBondorder();
     }
 
     return 0.0;
@@ -959,9 +959,9 @@ int Poldata::getBosquePol(
 
     for (i = 0; (i < _bosque.size()); i++)
     {
-      if (strcasecmp(bosque.c_str(), _bosque[i].getBosque().c_str()) == 0)
+        if (strcasecmp(bosque.c_str(), _bosque[i].getBosque().c_str()) == 0)
         {
-	  *polarizability = _bosque[i].getPolarizability();
+            *polarizability = _bosque[i].getPolarizability();
             return 1;
         }
     }
@@ -1009,15 +1009,15 @@ int Poldata::setBondParams( std::string atom1, std::string atom2,
     {
         if (length > 0)
         {
-	  gtB->setLength(length);
+            gtB->setLength(length);
         }
         if (sigma > 0)
         {
-	  gtB->setSigma(sigma);
+            gtB->setSigma(sigma);
         }
         if (ntrain > 0)
         {
-	  gtB->setNtrain(ntrain);
+            gtB->setNtrain(ntrain);
         }
         gtB->setParams(params);
         return 1;
@@ -1109,15 +1109,15 @@ int Poldata::setAngleParams( std::string atom1, std::string atom2,
     {
         if (angle > 0)
         {
-	  gtB->setAngle(angle);
+            gtB->setAngle(angle);
         }
         if (sigma > 0)
         {
-	  gtB->setSigma(sigma);
+            gtB->setSigma(sigma);
         }
         if (ntrain > 0)
         {
-	  gtB->setNtrain(ntrain);
+            gtB->setNtrain(ntrain);
         }
         gtB->setParams(params);
         return 1;
@@ -1168,7 +1168,7 @@ int Poldata::searchAngle( std::string atom1, std::string atom2,
              ((gtB->getAtom1().compare(atom3) == 0) &&
               (gtB->getAtom3().compare(atom1) == 0))))
         {
-	  assignScal(angle, gtB->getAngle());
+            assignScal(angle, gtB->getAngle());
             assignScal(sigma, gtB->getSigma());
             assignScal(ntrain, gtB->getNtrain());
             assignStr(params, gtB->getParams());
@@ -1223,10 +1223,10 @@ GtDihedral *Poldata::searchDihedral( int egd,
     gtRes      = (GtDihedral *) bsearch(&gtA, gtDptr, nd, sizeof(gtA), &gtdComp);
     if (NULL == gtRes)
     {
-      gtA.setAtom1(atom4);
-      gtA.setAtom2(atom3);
-      gtA.setAtom3(atom2);
-      gtA.setAtom4(atom1);
+        gtA.setAtom1(atom4);
+        gtA.setAtom2(atom3);
+        gtA.setAtom3(atom2);
+        gtA.setAtom4(atom1);
         gtRes     = (GtDihedral *) bsearch(&gtA, gtDptr, nd, sizeof(gtA), gtdComp);
     }
     return gtRes;
@@ -1246,15 +1246,15 @@ int Poldata::setDihedralParams( int egd,
     {
         if (dihedral > 0)
         {
-	  gtB->setDihedral(dihedral);
+            gtB->setDihedral(dihedral);
         }
         if (sigma > 0)
         {
-	  gtB->setSigma(sigma);
+            gtB->setSigma(sigma);
         }
         if (ntrain > 0)
         {
-	  gtB->setNtrain(ntrain);
+            gtB->setNtrain(ntrain);
         }
         gtB->setParams(params);
         return 1;
@@ -1476,7 +1476,7 @@ int Poldata::havePolSupport( const std::string atype)
 
     for (i = 0; (i < _alexandria.size()); i++)
     {
-      if (atype.compare(_alexandria[i].getType()) == 0)
+        if (atype.compare(_alexandria[i].getType()) == 0)
         {
             return 1;
         }
@@ -1500,7 +1500,7 @@ double Poldata::getJ00( ChargeDistributionModel eqdModel, const std::string name
 
     if ((eer = getEep(eqdModel, name)) != NULL)
     {
-      return eer->getJ0();
+        return eer->getJ0();
     }
     else
     {
@@ -1516,7 +1516,7 @@ std::string Poldata::getQstr( ChargeDistributionModel eqdModel, std::string name
 
     if ((eer = getEep( eqdModel, name)) != NULL)
     {
-      return eer->getQstr();
+        return eer->getQstr();
     }
     return "";
 }
@@ -1577,7 +1577,7 @@ double Poldata::getQ( ChargeDistributionModel eqdModel, const std::string name, 
 
     if ((eer = getEep( eqdModel, name)) != NULL)
     {
-      range_check(zz, 0, eer->getNzeta());
+        range_check(zz, 0, eer->getNzeta());
         return eer->getQ(zz);
     }
     return -1;
@@ -1589,7 +1589,7 @@ double Poldata::getChi0( ChargeDistributionModel eqdModel, const  std::string na
 
     if ((eer = getEep( eqdModel, name)) != NULL)
     {
-      return eer->getChi0();
+        return eer->getChi0();
     }
     else
     {
@@ -1604,9 +1604,9 @@ void Poldata::setEpref( ChargeDistributionModel eqdModel, std::string epref)
 
     for (i = 0; (i < _epr.size()); i++)
     {
-      if (_epr[i].getEqdModel() == eqdModel)
+        if (_epr[i].getEqdModel() == eqdModel)
         {
-	  _epr[i].setEpref(epref);
+            _epr[i].setEpref(epref);
             break;
         }
     }
@@ -1623,9 +1623,9 @@ std::string Poldata::getEpref( ChargeDistributionModel eqdModel)
 
     for (i = 0; (i < _epr.size()); i++)
     {
-      if (_epr[i].getEqdModel() == eqdModel)
+        if (_epr[i].getEqdModel() == eqdModel)
         {
-	  return _epr[i].getEpref();
+            return _epr[i].getEpref();
         }
     }
     return "";
@@ -1635,8 +1635,8 @@ int Poldata::listEpref( ChargeDistributionModel *eqdModel, std::string *epref)
 {
     if (_nerC < _epr.size())
     {
-      assignScal(eqdModel, _epr[_nerC].getEqdModel());
-      assignStr(epref, _epr[_nerC].getEpref());
+        assignScal(eqdModel, _epr[_nerC].getEqdModel());
+        assignStr(epref, _epr[_nerC].getEpref());
         _nerC++;
         return 1;
     }

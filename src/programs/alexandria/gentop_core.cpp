@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -241,7 +241,7 @@ static void my_clean_excls(int nr, t_excls excls[])
 static void clean_thole(t_params *ps)
 {
     int     i, j;
-    int a;
+    int     a;
 
     if (ps->nr > 0)
     {
@@ -317,12 +317,12 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges)
 {
-  std::string  central, attached;
-    int    nattached, nh, ai, aj, anri, anrj;
-    int    anr_central, anr_attached, nrq;
-    int    hs[8];
-    double qaver, qsum;
-    int    hsmin;
+    std::string  central, attached;
+    int          nattached, nh, ai, aj, anri, anrj;
+    int          anr_central, anr_attached, nrq;
+    int          hs[8];
+    double       qaver, qsum;
+    int          hsmin;
 
     //printf("Fix me: symmetrize charges algorithm is broken in: file %s, line %d\n",
     //       __FILE__, __LINE__ );
@@ -352,9 +352,9 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         else
         {
             while (pd->getSymcharges(&central,
-                                              &attached, &nattached) == 1)
+                                     &attached, &nattached) == 1)
             {
-	      anr_central  = gmx_atomprop_atomnumber(aps, central.c_str());
+                anr_central  = gmx_atomprop_atomnumber(aps, central.c_str());
                 anr_attached = gmx_atomprop_atomnumber(aps, attached.c_str());
                 hsmin        = -1;
                 for (int i = 0; (i < atoms->nr); i++)

@@ -57,16 +57,16 @@
 class gentopQgenTest : public ::testing::Test
 {
 
-  //using gmx::test::TestReferenceData;
+    //using gmx::test::TestReferenceData;
     protected:
-  gmx::test::TestReferenceData                     refData_;
+        gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
 
 //init sett tolecrance
         gentopQgenTest ( )
-	  :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
+            : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
-	  
+
 
 
 #ifdef GMX_DOUBLE
@@ -79,7 +79,7 @@ class gentopQgenTest : public ::testing::Test
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-	  
+
         }
 
         static void TearDownTestCase()

@@ -27,20 +27,20 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 
-void gmx_send(const t_commrec *cr,int dest,void *buf,int bufsize);
+void gmx_send(const t_commrec *cr, int dest, void *buf, int bufsize);
 
-void gmx_recv(const t_commrec *cr,int src,void *buf,int bufsize);
+void gmx_recv(const t_commrec *cr, int src, void *buf, int bufsize);
 
-void gmx_send_str(t_commrec *cr,int dest,const char *ptr);
+void gmx_send_str(t_commrec *cr, int dest, const char *ptr);
 
-char *gmx_recv_str(t_commrec *cr,int src);
+char *gmx_recv_str(t_commrec *cr, int src);
 
-void gmx_send_double(t_commrec *cr,int dest,double d);
+void gmx_send_double(t_commrec *cr, int dest, double d);
 
-double gmx_recv_double(t_commrec *cr,int src);
+double gmx_recv_double(t_commrec *cr, int src);
 
-void gmx_send_int(t_commrec *cr,int dest,int d);
+void gmx_send_int(t_commrec *cr, int dest, int d);
 
-int gmx_recv_int(t_commrec *cr,int src);
+int gmx_recv_int(t_commrec *cr, int src);
 
 #endif

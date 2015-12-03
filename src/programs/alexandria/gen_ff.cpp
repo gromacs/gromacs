@@ -53,7 +53,7 @@ void print_atypes_tex(FILE *tp, gmx_poldata_t pd, gmx_atomprop_t aps)
     fprintf(tp, "\\label{atypes}\\\\\n\hline\n", label);
     fprintf(tp, "Nr. & Type & Description & Elem & $\\alpha$ & Van der Waals\\\\\n");
     fprintf(tp, "\\hline\n");
-    
+
     gt_old = NULL;
     nline  = 2;
     npage  = 0;

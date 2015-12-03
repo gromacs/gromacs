@@ -168,7 +168,7 @@ class MyMol
         void PrintTopology(const char             *fn,
                            ChargeDistributionModel iModel,
                            bool                    bVerbose,
-                           Poldata           *pd,
+                           Poldata                *pd,
                            gmx_atomprop_t          aps);
 
 

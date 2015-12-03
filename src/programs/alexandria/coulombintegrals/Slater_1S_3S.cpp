@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,7 +93,7 @@ cl_R Slater_1S_3S(cl_R r, cl_R xi, cl_R xj)
 
                            (135LL + 333LL*rxj + 228LL*Power(rxj, 2LL) + 75LL*Power(rxj, 3LL) +
 
-           13LL*Power(rxj, 4LL) + Power(rxj, 5LL)) +
+                            13LL*Power(rxj, 4LL) + Power(rxj, 5LL)) +
 
                            2LL*Power(rxj, 10LL)*(945LL + 945LL*rxj + 420LL*Power(rxj, 2LL) +
 
@@ -107,19 +107,19 @@ cl_R Slater_1S_3S(cl_R r, cl_R xi, cl_R xj)
 
                            (63LL + 105LL*rxj + 84LL*Power(rxj, 2LL) + 42LL*Power(rxj, 3LL) +
 
-           14LL*Power(rxj, 4LL) + 2LL*Power(rxj, 5LL)) -
+                            14LL*Power(rxj, 4LL) + 2LL*Power(rxj, 5LL)) -
 
                            5LL*Power(rxi, 6LL)*Power(rxj, 4LL)*
 
                            (189LL + 315LL*rxj + 252LL*Power(rxj, 2LL) + 132LL*Power(rxj, 3LL) +
 
-           36LL*Power(rxj, 4LL) + 4LL*Power(rxj, 5LL)) +
+                            36LL*Power(rxj, 4LL) + 4LL*Power(rxj, 5LL)) +
 
                            5LL*Power(rxi, 4LL)*Power(rxj, 6LL)*
 
                            (315LL + 513LL*rxj + 468LL*Power(rxj, 2LL) + 204LL*Power(rxj, 3LL) +
 
-           44LL*Power(rxj, 4LL) + 4LL*Power(rxj, 5LL))))/
+                            44LL*Power(rxj, 4LL) + 4LL*Power(rxj, 5LL))))/
 
                          (45LL*exp(2LL*(rxi + rxj))*Power(rxi - rxj, 7LL)*Power(rxi + rxj, 7LL))
 

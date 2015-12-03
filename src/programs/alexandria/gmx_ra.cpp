@@ -36,38 +36,38 @@
 namespace alexandria
 {
 
-  Ra::Ra(int atomnumber, int atype,
-                 const char *atomtype, Poldata * pd,
-	 ChargeDistributionModel iDistributionModel, std::vector<std::string> dzatoms)
-  {
-    int  k, zz = 0, shell;
-    bool bRestr;
+Ra::Ra(int atomnumber, int atype,
+       const char *atomtype, Poldata * pd,
+       ChargeDistributionModel iDistributionModel, std::vector<std::string> dzatoms)
+{
+    int         k, zz = 0, shell;
+    bool        bRestr;
     std::string atomtype_new;
-    size_t shell_name;
+    size_t      shell_name;
 
     bRestr = false;
     if (!dzatoms.empty())
-      {
+    {
         k = 0;
         while (("" != dzatoms[k]) && !bRestr)
-	  {
+        {
             bRestr = (strcasecmp(atomtype, dzatoms[k].c_str()) == 0);
             k++;
-	  }
-      }
+        }
+    }
     // _nZeta       = pd->getNzeta(iDistributionModel, _atomtype.c_str());
     _atomnumber  = atomnumber;
     _atype       = atype;
     _atomtype    = (atomtype);
     atomtype_new = _atomtype;
     _nZeta       = 1;
-    shell        = 0 ;
+    shell        = 0;
 
     /*if (_nZeta <= 0)
-      {
+       {
         _bSetUpcorrectly = false;
-	return;
-	}*/
+       return;
+       }*/
 
     _bRestrained = bRestr;
 
@@ -82,48 +82,49 @@ namespace alexandria
     //{	}
 
     _iq[zz]        = -1;
-    _iz[zz]        = -1;    
+    _iz[zz]        = -1;
 
     shell_name = _atomtype.find("_s");
     if (shell_name != std::string::npos)
-      {
-	shell = 1;
-	atomtype_new = _atomtype.substr(0, shell_name);
-      }
-     
-    _q[zz]        = pd->getQ( iDistributionModel, atomtype_new.c_str(), shell);
-    _zetaRef[zz]  =
-    _zeta[zz]     = pd->getZeta( iDistributionModel, atomtype_new.c_str(), shell);
-    _row[zz]      = pd->getRow( iDistributionModel, atomtype_new.c_str(), shell);
+    {
+        shell        = 1;
+        atomtype_new = _atomtype.substr(0, shell_name);
+    }
+
+    _q[zz]            = pd->getQ( iDistributionModel, atomtype_new.c_str(), shell);
+    _zetaRef[zz]      =
+        _zeta[zz]     = pd->getZeta( iDistributionModel, atomtype_new.c_str(), shell);
+    _row[zz]          = pd->getRow( iDistributionModel, atomtype_new.c_str(), shell);
 
     _bSetUpcorrectly = true;
-  }
+}
 
 
-  bool Ra::setUpcorrectly(){
+bool Ra::setUpcorrectly()
+{
     return _bSetUpcorrectly;
-  }
+}
 
-  Ra::~Ra()
-  {
+Ra::~Ra()
+{
     /* sfree(_iz);
-    sfree(_iq);
-    sfree(_zeta);
-    sfree(_q);
-    sfree(_row);*/
+       sfree(_iq);
+       sfree(_zeta);
+       sfree(_q);
+       sfree(_row);*/
     // sfree(_atomtype);
-  }
+}
 
-  real Ra::getQ()
-  {
+real Ra::getQ()
+{
     int  i;
     real q = 0;
 
     for (i = 0; (i < _nZeta); i++)
-      {
+    {
         q += _q[i];
-      }
+    }
 
     return q;
-  }
+}
 }

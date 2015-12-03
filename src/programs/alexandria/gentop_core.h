@@ -50,7 +50,7 @@ void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
                t_params plist[], int cgnr[], int nbts, int bts[]);
 
 void symmetrize_charges(gmx_bool bQsym,
-                        t_atoms *atoms, 
+                        t_atoms *atoms,
                         alexandria::PlistWrapperIterator bonds,
                         Poldata * pd,
                         gmx_atomprop_t aps, const char *symm_string,
@@ -65,7 +65,7 @@ int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
                             bool bUsePDBcharge,
                             real *qtot, real *mtot);
 
-void sort_on_charge_groups(int *cgnr, t_atoms *atoms, 
+void sort_on_charge_groups(int *cgnr, t_atoms *atoms,
                            std::vector<alexandria::PlistWrapper> &pw,
                            rvec x[], t_excls excls[],
                            const char *ndxout,

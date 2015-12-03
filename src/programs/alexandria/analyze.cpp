@@ -50,14 +50,14 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 
-static void calc_frag_miller(Poldata *                     pd,
+static void calc_frag_miller(Poldata     *                     pd,
                              std::vector<alexandria::MolProp> &mp,
                              gmx_molselect_t                   gms)
 {
     double                       bos0, polar, sig_pol;
 
     iMolSelect                   ims;
-    char                        *null = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
+    char                        *null    = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
     const char                  *program = "alexandria";
     const char                  *ang3;
     alexandria::CompositionSpecs cs;

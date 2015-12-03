@@ -272,8 +272,8 @@ void ReadSqlite3(const char                       *sqlite_file,
                         }
                         //mpi->Stats();
                         /*
-                        if (0 && (strlen(classification) > 0))
-                        {
+                           if (0 && (strlen(classification) > 0))
+                           {
                             std::vector<std::string> class_ptr = split(classification, ';');
                             for (std::vector<std::string>::iterator cp = class_ptr.begin();
                                  cp < class_ptr.end(); ++cp)

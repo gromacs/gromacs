@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,7 +123,7 @@ cl_R Slater_2S_4S(cl_R r, cl_R xi, cl_R xj)
 
                            (1080LL + 1935LL*rxj + 1350LL*Power(rxj, 2LL) + 1170LL*Power(rxj, 3LL) +
 
-           420LL*Power(rxj, 4LL) + 66LL*Power(rxj, 5LL) + 4LL*Power(rxj, 6LL)) -
+                            420LL*Power(rxj, 4LL) + 66LL*Power(rxj, 5LL) + 4LL*Power(rxj, 6LL)) -
 
                            4LL*Power(rxj, 16LL)*(135135LL + 135135LL*rxj + 62370LL*Power(rxj, 2LL) +
 
@@ -141,39 +141,39 @@ cl_R Slater_2S_4S(cl_R r, cl_R xi, cl_R xj)
 
                            (-99540LL - 58095LL*rxj - 190710LL*Power(rxj, 2LL) - 100950LL*Power(rxj, 3LL) -
 
-           21660LL*Power(rxj, 4LL) - 1938LL*Power(rxj, 5LL) - 4LL*Power(rxj, 6LL) +
+                            21660LL*Power(rxj, 4LL) - 1938LL*Power(rxj, 5LL) - 4LL*Power(rxj, 6LL) +
 
-           8LL*Power(rxj, 7LL)) - 7LL*Power(rxi, 4LL)*Power(rxj, 12LL)*
+                            8LL*Power(rxj, 7LL)) - 7LL*Power(rxi, 4LL)*Power(rxj, 12LL)*
 
                            (114660LL - 343395LL*rxj - 242910LL*Power(rxj, 2LL) - 61950LL*Power(rxj, 3LL) -
 
-           6060LL*Power(rxj, 4LL) + 282LL*Power(rxj, 5LL) + 116LL*Power(rxj, 6LL) +
+                            6060LL*Power(rxj, 4LL) + 282LL*Power(rxj, 5LL) + 116LL*Power(rxj, 6LL) +
 
-           8LL*Power(rxj, 7LL)) + 7LL*Power(rxi, 12LL)*Power(rxj, 4LL)*
+                            8LL*Power(rxj, 7LL)) + 7LL*Power(rxi, 12LL)*Power(rxj, 4LL)*
 
                            (9900LL + 17325LL*rxj + 14850LL*Power(rxj, 2LL) + 8250LL*Power(rxj, 3LL) +
 
-           3300LL*Power(rxj, 4LL) + 1074LL*Power(rxj, 5LL) + 164LL*Power(rxj, 6LL) +
+                            3300LL*Power(rxj, 4LL) + 1074LL*Power(rxj, 5LL) + 164LL*Power(rxj, 6LL) +
 
-           8LL*Power(rxj, 7LL)) - 7LL*Power(rxi, 10LL)*Power(rxj, 6LL)*
+                            8LL*Power(rxj, 7LL)) - 7LL*Power(rxi, 10LL)*Power(rxj, 6LL)*
 
                            (29700LL + 51975LL*rxj + 44550LL*Power(rxj, 2LL) + 23850LL*Power(rxj, 3LL) +
 
-           11700LL*Power(rxj, 4LL) + 2814LL*Power(rxj, 5LL) + 284LL*Power(rxj, 6LL) +
+                            11700LL*Power(rxj, 4LL) + 2814LL*Power(rxj, 5LL) + 284LL*Power(rxj, 6LL) +
 
-           8LL*Power(rxj, 7LL)) - Power(rxi, 14LL)*Power(rxj, 2LL)*
+                            8LL*Power(rxj, 7LL)) - Power(rxi, 14LL)*Power(rxj, 2LL)*
 
                            (13860LL + 24255LL*rxj + 20790LL*Power(rxj, 2LL) + 11550LL*Power(rxj, 3LL) +
 
-           4620LL*Power(rxj, 4LL) + 1386LL*Power(rxj, 5LL) + 308LL*Power(rxj, 6LL) +
+                            4620LL*Power(rxj, 4LL) + 1386LL*Power(rxj, 5LL) + 308LL*Power(rxj, 6LL) +
 
-           24LL*Power(rxj, 7LL)) + Power(rxi, 2LL)*Power(rxj, 14LL)*
+                            24LL*Power(rxj, 7LL)) + Power(rxi, 2LL)*Power(rxj, 14LL)*
 
                            (-3063060LL - 1936935LL*rxj - 408870LL*Power(rxj, 2LL) + 11550LL*Power(rxj, 3LL) +
 
-           23100LL*Power(rxj, 4LL) + 5082LL*Power(rxj, 5LL) + 532LL*Power(rxj, 6LL) +
+                            23100LL*Power(rxj, 4LL) + 5082LL*Power(rxj, 5LL) + 532LL*Power(rxj, 6LL) +
 
-           24LL*Power(rxj, 7LL))))/
+                            24LL*Power(rxj, 7LL))))/
 
                          (1260LL*exp(2LL*(rxi + rxj))*Power(rxi - rxj, 11LL)*Power(rxi + rxj, 11LL))
 

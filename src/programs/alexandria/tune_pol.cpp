@@ -162,7 +162,7 @@ static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
     return false;
 }
 
-static void dump_csv(Poldata *                     pd,
+static void dump_csv(Poldata     *                     pd,
                      std::vector<alexandria::MolProp> &mp,
                      gmx_molselect_t                   gms,
                      std::vector<pType>               &ptypes,
@@ -198,11 +198,11 @@ static void dump_csv(Poldata *                     pd,
                  ani < mci->EndAtomNum(); ani++)
             {
                 const char  *atomname = ani->getAtom().c_str();
-		std::string ptype    = pd->atypeToPtype(atomname);
+                std::string  ptype    = pd->atypeToPtype(atomname);
                 unsigned int i;
                 for (i = 0; (i < ptypes.size()); i++)
                 {
-		  if (strcmp(ptype.c_str(), ptypes[i].name().c_str()) == 0)
+                    if (strcmp(ptype.c_str(), ptypes[i].name().c_str()) == 0)
                     {
                         break;
                     }
@@ -259,14 +259,14 @@ static int decompose_frag(FILE *fplog,
     snew(x, mp.size()+1);
     // Copy all atom types into array. Set usage array.
     {
-      std::string ptype;
-for (PtypeIterator ptype = pd->getPtypeBegin();
-	   ptype != pd->getPtypeEnd(); ptype++)
+        std::string ptype;
+        for (PtypeIterator ptype = pd->getPtypeBegin();
+             ptype != pd->getPtypeEnd(); ptype++)
         {
 
-	  if (!bZeroPol(ptype->getType().c_str(), zeropol))
+            if (!bZeroPol(ptype->getType().c_str(), zeropol))
             {
-	      ptypes.push_back(pType(ptype->getType().c_str(), false, 0));
+                ptypes.push_back(pType(ptype->getType().c_str(), false, 0));
             }
         }
     }
@@ -300,7 +300,7 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
                                      bHaveComposition);
             if (NULL != fplog)
             {
-                fprintf(fplog, "%s pol %g Use: %s\n", mpi->getMolname().c_str(), pol, 
+                fprintf(fplog, "%s pol %g Use: %s\n", mpi->getMolname().c_str(), pol,
                         gmx::boolToString(bUseMol));
             }
 
@@ -310,7 +310,7 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
                  (bUseMol && (ani < mci->EndAtomNum())); ++ani)
             {
                 const char *atomname = ani->getAtom().c_str();
-		std::string ptype    = pd->atypeToPtype( atomname);
+                std::string ptype    = pd->atypeToPtype( atomname);
                 if (0 == ptype.size())
                 {
                     if (NULL != fplog)
@@ -377,7 +377,7 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
             pi->resetCopies();
 
             if ((1 == pd->getPtypePol( pi->name(),
-                                                &pol, &sig_pol)) &&
+                                       &pol, &sig_pol)) &&
                 ((pol == 0) || bForceFit))
             {
                 for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
@@ -607,7 +607,7 @@ for (PtypeIterator ptype = pd->getPtypeBegin();
 
 int alex_tune_pol(int argc, char *argv[])
 {
-    static const char               *desc[] =
+    static const char                     *desc[] =
     {
         "tune_pol optimes atomic polarizabilities that together build",
         "an additive model for polarization. The set of atomtypes used",
@@ -627,7 +627,7 @@ int alex_tune_pol(int argc, char *argv[])
         "([TT]-f[tt] option). Missing molecules will be ignored.[PAR]",
         "tune_pol produces a table and a figure to describe the data."
     };
-    t_filenm                         fnm[] =
+    t_filenm                               fnm[] =
     {
         { efDAT, "-f",  "data",      ffRDMULT },
         { efDAT, "-o",  "allmols",   ffOPTWR  },
@@ -638,19 +638,19 @@ int alex_tune_pol(int argc, char *argv[])
         { efTEX, "-atype",  "atomtypes", ffWRITE  },
         { efXVG, "-his",  "polhisto",  ffWRITE  }
     };
-    int                              NFILE       = (sizeof(fnm)/sizeof(fnm[0]));
-    static char                     *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
-    static char                     *exp_type    = (char *)"Polarizability";
-    static char                     *zeropol     = (char *) NULL;
-    static gmx_bool                  bQM         = FALSE;
-    static int                       mindata     = 1;
-    static int                       nBootStrap  = 1;
-    static int                       seed;
-    static real                      fractionBootStrap = 1;
-    static char                     *lot               = (char *)"B3LYP/aug-cc-pVTZ";
-    static real                      sigma             = 0;
-    static gmx_bool                  bZero             = FALSE, bForceFit = FALSE, bCompress = TRUE;
-    t_pargs                          pa[]              =
+    int                                    NFILE       = (sizeof(fnm)/sizeof(fnm[0]));
+    static char                           *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
+    static char                           *exp_type    = (char *)"Polarizability";
+    static char                           *zeropol     = (char *) NULL;
+    static gmx_bool                        bQM         = FALSE;
+    static int                             mindata     = 1;
+    static int                             nBootStrap  = 1;
+    static int                             seed;
+    static real                            fractionBootStrap = 1;
+    static char                           *lot               = (char *)"B3LYP/aug-cc-pVTZ";
+    static real                            sigma             = 0;
+    static gmx_bool                        bZero             = FALSE, bForceFit = FALSE, bCompress = TRUE;
+    t_pargs                                pa[]              =
     {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
@@ -679,18 +679,18 @@ int alex_tune_pol(int argc, char *argv[])
         { "-compress", FALSE, etBOOL, {&bCompress},
           "Compress output XML files" }
     };
-    int                              i, nalexandria_atypes;
-    char                           **fns;
-    int                              nfiles;
-    std::vector<alexandria::MolProp> mp;
-    alexandria::MolPropIterator      mpi;
-    MolPropSortAlgorithm             mpsa;
+    int                                    i, nalexandria_atypes;
+    char                                 **fns;
+    int                                    nfiles;
+    std::vector<alexandria::MolProp>       mp;
+    alexandria::MolPropIterator            mpi;
+    MolPropSortAlgorithm                   mpsa;
 
-    gmx_atomprop_t                   ap;
-    Poldata *                    pd;
+    gmx_atomprop_t                         ap;
+    Poldata           *                    pd;
     gmx_output_env_t *                     oenv;
-    gmx_molselect_t                  gms;
-    int                              npa = sizeof(pa)/sizeof(pa[0]);
+    gmx_molselect_t                        gms;
+    int                                    npa = sizeof(pa)/sizeof(pa[0]);
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
                            npa, pa, sizeof(desc)/sizeof(desc[0]), desc,
@@ -744,7 +744,7 @@ int alex_tune_pol(int argc, char *argv[])
 
     const char *pdout = opt2fn("-do", NFILE, fnm);
     fprintf(fplog, "Now writing force field file %s\n", pdout);
-    alexandria::PoldataXml::write(pdout,pd,  bCompress);
+    alexandria::PoldataXml::write(pdout, pd,  bCompress);
 
     const char *atype = opt2fn("-atype", NFILE, fnm);
     fprintf(fplog, "Now writing LaTeX description of force field to %s\n", atype);

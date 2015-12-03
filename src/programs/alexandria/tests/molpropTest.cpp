@@ -61,169 +61,169 @@
 class MolpropTest : public gmx::test::CommandLineTestBase
 {
 
-protected:
-    std::vector<alexandria::MolProp>  mp_;
-    gmx_atomprop_t                    aps_;
-    gmx::test::TestReferenceData      refData_;
-    gmx::test::TestReferenceChecker   checker_;
+    protected:
+        std::vector<alexandria::MolProp>  mp_;
+        gmx_atomprop_t                    aps_;
+        gmx::test::TestReferenceData      refData_;
+        gmx::test::TestReferenceChecker   checker_;
 
-    // Init set tolerance
-    MolpropTest()
-        :refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
-    {
+        // Init set tolerance
+        MolpropTest()
+            : refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
+        {
 #ifdef GMX_DOUBLE
-        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
+            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
 #else
-        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
+            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
 #endif
-        aps_  = gmx_atomprop_init();
+            aps_  = gmx_atomprop_init();
 
-        std::string mpFile = fileManager().getInputFilePath("molprop.dat");
-        MolPropRead(mpFile.c_str(), mp_);
-    }
-
-    // Static initiation, only run once every test.
-    static void SetUpTestCase()
-    {	  
-    }
-  
-    void testMolProp ()
-    {  
-        int mol = 1;
-        for(alexandria::MolPropIterator mpi=mp_.begin(); (mpi<mp_.end()); ++mpi, ++mol)
-        {
-            char mbuf[256];
-            snprintf(mbuf, sizeof(mbuf), "molecule %d name", mol);
-            checker_.checkString(mpi->getMolname(), mbuf);
-            mpi->GenerateFormula(aps_);
-            snprintf(mbuf, sizeof(mbuf), "molecule %d formula", mol);
-            checker_.checkString(mpi->formula(), mbuf);
-            snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
-            checker_.checkInteger(mpi->NBond(), mbuf);
-            int i = 1;
-            for(alexandria::BondIterator bi=mpi->BeginBond(); (bi<mpi->EndBond()); ++bi)
-            {
-                char buf[256];
-                snprintf(buf, sizeof(buf), "atoms %d %d order %d", 
-                         bi->getAi(), bi->getAj(), bi->getBondOrder());
-                std::string bond("bond");
-                char ibuf[256];
-                snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);
-                checker_.checkString(buf, ibuf);
-            }
+            std::string mpFile = fileManager().getInputFilePath("molprop.dat");
+            MolPropRead(mpFile.c_str(), mp_);
         }
-    }
-    
-    void testExperiments ()
-    {  
-        int mol = 1;
-        for(alexandria::MolPropIterator mpi=mp_.begin(); (mpi<mp_.end()); ++mpi, ++mol)
+
+        // Static initiation, only run once every test.
+        static void SetUpTestCase()
         {
-            char mbuf[256];
-            int exp = 1;
-            snprintf(mbuf, sizeof(mbuf), "molecule %d number of experiments", mol);
-            checker_.checkInteger(mpi->NExperiment(), mbuf);
-            for(alexandria::ExperimentIterator expi=mpi->BeginExperiment(); (expi<mpi->EndExperiment()); ++expi, ++exp)
+        }
+
+        void testMolProp ()
+        {
+            int mol = 1;
+            for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
             {
-                char cbuf[256];
-                snprintf(cbuf, sizeof(cbuf), "molecule %d exper %d", mol, exp);
-                int nener = 1;
-                for(alexandria::MolecularEnergyIterator ei=expi->BeginEnergy(); (ei<expi->EndEnergy()); ++ei)
+                char mbuf[256];
+                snprintf(mbuf, sizeof(mbuf), "molecule %d name", mol);
+                checker_.checkString(mpi->getMolname(), mbuf);
+                mpi->GenerateFormula(aps_);
+                snprintf(mbuf, sizeof(mbuf), "molecule %d formula", mol);
+                checker_.checkString(mpi->formula(), mbuf);
+                snprintf(mbuf, sizeof(mbuf), "molecule %d number of bonds", mol);
+                checker_.checkInteger(mpi->NBond(), mbuf);
+                int i = 1;
+                for (alexandria::BondIterator bi = mpi->BeginBond(); (bi < mpi->EndBond()); ++bi)
                 {
-                    char ebuf[256];
-                    snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
-                    snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s", 
-                             ei->getType().c_str(), 
-                             ei->getValue(), ei->getError(),
-                             ei->getUnit().c_str());
-                    checker_.checkString(ebuf, mbuf);
+                    char buf[256];
+                    snprintf(buf, sizeof(buf), "atoms %d %d order %d",
+                             bi->getAi(), bi->getAj(), bi->getBondOrder());
+                    std::string bond("bond");
+                    char        ibuf[256];
+                    snprintf(ibuf, sizeof(ibuf), "molecule %d bond %d", mol, i++);
+                    checker_.checkString(buf, ibuf);
                 }
             }
         }
-    }
-    
-    void testCalculations ()
-    {  
-        int mol = 1;
-        for(alexandria::MolPropIterator mpi=mp_.begin(); (mpi<mp_.end()); ++mpi, ++mol)
-        {
-            char mbuf[256];
-            int calc = 1;
-            snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
-            checker_.checkInteger(mpi->NCalculation(), mbuf);
-            for(alexandria::CalculationIterator ci=mpi->BeginCalculation(); (ci<mpi->EndCalculation()); ++ci, ++calc)
-            {
-                char cbuf[256];
-                snprintf(cbuf, sizeof(cbuf), "molecule %d cakc %d", mol, calc);
-                snprintf(mbuf, sizeof(mbuf), "%s program", cbuf);
-                checker_.checkString(ci->getProgram(), mbuf);
-                snprintf(mbuf, sizeof(mbuf), "%s basisset", cbuf);
-                checker_.checkString(ci->getBasisset(), mbuf);
-                snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
-                checker_.checkString(ci->getMethod(), mbuf);
-                snprintf(mbuf, sizeof(mbuf), "%s number of polar", cbuf);
-                checker_.checkInteger(ci->NPolar(), mbuf);
-                for(alexandria::MolecularPolarizabilityIterator poli=ci->BeginPolar(); (poli<ci->EndPolar()); ++ poli)
-                {
-                    snprintf(mbuf, sizeof(mbuf), "%s polar XX", cbuf);
-                    checker_.checkDouble(poli->getXX(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s polar YY", cbuf);
-                    checker_.checkDouble(poli->getYY(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s polar ZZ", cbuf);
-                    checker_.checkDouble(poli->getZZ(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s polar XY", cbuf);
-                    checker_.checkDouble(poli->getXY(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s polar XZ", cbuf);
-                    checker_.checkDouble(poli->getXZ(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s polar YZ", cbuf);
-                    checker_.checkDouble(poli->getYZ(), mbuf);
-                }
-                
-                for(alexandria::MolecularQuadrupoleIterator qi=ci->BeginQuadrupole(); (qi<ci->EndQuadrupole()); ++ qi)
-                {
-                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole XX", cbuf);
-                    checker_.checkDouble(qi->getXX(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole YY", cbuf);
-                    checker_.checkDouble(qi->getYY(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole ZZ", cbuf);
-                    checker_.checkDouble(qi->getZZ(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole XY", cbuf);
-                    checker_.checkDouble(qi->getXY(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole XZ", cbuf);
-                    checker_.checkDouble(qi->getXZ(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s quadrupole YZ", cbuf);
-                    checker_.checkDouble(qi->getYZ(), mbuf);
-                }
 
-                for(alexandria::MolecularDipoleIterator dip=ci->BeginDipole(); (dip<ci->EndDipole()); ++ dip)
+        void testExperiments ()
+        {
+            int mol = 1;
+            for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
+            {
+                char mbuf[256];
+                int  exp = 1;
+                snprintf(mbuf, sizeof(mbuf), "molecule %d number of experiments", mol);
+                checker_.checkInteger(mpi->NExperiment(), mbuf);
+                for (alexandria::ExperimentIterator expi = mpi->BeginExperiment(); (expi < mpi->EndExperiment()); ++expi, ++exp)
                 {
-                    snprintf(mbuf, sizeof(mbuf), "%s dipole X", cbuf);
-                    checker_.checkDouble(dip->getX(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s dipole Y", cbuf);
-                    checker_.checkDouble(dip->getY(), mbuf);
-                    snprintf(mbuf, sizeof(mbuf), "%s dipole Z", cbuf);
-                    checker_.checkDouble(dip->getZ(), mbuf);
-                }
-                
-                int nener = 1;
-                for(alexandria::MolecularEnergyIterator ei=ci->BeginEnergy(); (ei<ci->EndEnergy()); ++ei)
-                {
-                    char ebuf[256];
-                    snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
-                    snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s", 
-                             ei->getType().c_str(), 
-                             ei->getValue(), ei->getError(),
-                             ei->getUnit().c_str());
-                    checker_.checkString(ebuf, mbuf);
+                    char cbuf[256];
+                    snprintf(cbuf, sizeof(cbuf), "molecule %d exper %d", mol, exp);
+                    int  nener = 1;
+                    for (alexandria::MolecularEnergyIterator ei = expi->BeginEnergy(); (ei < expi->EndEnergy()); ++ei)
+                    {
+                        char ebuf[256];
+                        snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
+                        snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
+                                 ei->getType().c_str(),
+                                 ei->getValue(), ei->getError(),
+                                 ei->getUnit().c_str());
+                        checker_.checkString(ebuf, mbuf);
+                    }
                 }
             }
         }
-    }
-    
-    static void TearDownTestCase()
-    {
-    }
-   
+
+        void testCalculations ()
+        {
+            int mol = 1;
+            for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
+            {
+                char mbuf[256];
+                int  calc = 1;
+                snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
+                checker_.checkInteger(mpi->NCalculation(), mbuf);
+                for (alexandria::CalculationIterator ci = mpi->BeginCalculation(); (ci < mpi->EndCalculation()); ++ci, ++calc)
+                {
+                    char cbuf[256];
+                    snprintf(cbuf, sizeof(cbuf), "molecule %d cakc %d", mol, calc);
+                    snprintf(mbuf, sizeof(mbuf), "%s program", cbuf);
+                    checker_.checkString(ci->getProgram(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s basisset", cbuf);
+                    checker_.checkString(ci->getBasisset(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s method", cbuf);
+                    checker_.checkString(ci->getMethod(), mbuf);
+                    snprintf(mbuf, sizeof(mbuf), "%s number of polar", cbuf);
+                    checker_.checkInteger(ci->NPolar(), mbuf);
+                    for (alexandria::MolecularPolarizabilityIterator poli = ci->BeginPolar(); (poli < ci->EndPolar()); ++poli)
+                    {
+                        snprintf(mbuf, sizeof(mbuf), "%s polar XX", cbuf);
+                        checker_.checkDouble(poli->getXX(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s polar YY", cbuf);
+                        checker_.checkDouble(poli->getYY(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s polar ZZ", cbuf);
+                        checker_.checkDouble(poli->getZZ(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s polar XY", cbuf);
+                        checker_.checkDouble(poli->getXY(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s polar XZ", cbuf);
+                        checker_.checkDouble(poli->getXZ(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s polar YZ", cbuf);
+                        checker_.checkDouble(poli->getYZ(), mbuf);
+                    }
+
+                    for (alexandria::MolecularQuadrupoleIterator qi = ci->BeginQuadrupole(); (qi < ci->EndQuadrupole()); ++qi)
+                    {
+                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole XX", cbuf);
+                        checker_.checkDouble(qi->getXX(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole YY", cbuf);
+                        checker_.checkDouble(qi->getYY(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole ZZ", cbuf);
+                        checker_.checkDouble(qi->getZZ(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole XY", cbuf);
+                        checker_.checkDouble(qi->getXY(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole XZ", cbuf);
+                        checker_.checkDouble(qi->getXZ(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s quadrupole YZ", cbuf);
+                        checker_.checkDouble(qi->getYZ(), mbuf);
+                    }
+
+                    for (alexandria::MolecularDipoleIterator dip = ci->BeginDipole(); (dip < ci->EndDipole()); ++dip)
+                    {
+                        snprintf(mbuf, sizeof(mbuf), "%s dipole X", cbuf);
+                        checker_.checkDouble(dip->getX(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s dipole Y", cbuf);
+                        checker_.checkDouble(dip->getY(), mbuf);
+                        snprintf(mbuf, sizeof(mbuf), "%s dipole Z", cbuf);
+                        checker_.checkDouble(dip->getZ(), mbuf);
+                    }
+
+                    int nener = 1;
+                    for (alexandria::MolecularEnergyIterator ei = ci->BeginEnergy(); (ei < ci->EndEnergy()); ++ei)
+                    {
+                        char ebuf[256];
+                        snprintf(mbuf, sizeof(mbuf), "%s energy %d", cbuf, nener++);
+                        snprintf(ebuf, sizeof(ebuf), "%s %g +/- %g %s",
+                                 ei->getType().c_str(),
+                                 ei->getValue(), ei->getError(),
+                                 ei->getUnit().c_str());
+                        checker_.checkString(ebuf, mbuf);
+                    }
+                }
+            }
+        }
+
+        static void TearDownTestCase()
+        {
+        }
+
 };
 
 TEST_F (MolpropTest, NameFormulaBonds){
@@ -237,4 +237,3 @@ TEST_F (MolpropTest, Calculations){
 TEST_F (MolpropTest, Experiments){
     testExperiments();
 }
-

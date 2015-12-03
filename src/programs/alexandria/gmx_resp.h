@@ -90,7 +90,7 @@ class Resp
 
         //void fillZeta( alexandria::Poldata * pd);
 
-	void fillZeta();
+        void fillZeta();
 
         void fillQ( t_atoms *atoms);
 

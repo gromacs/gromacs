@@ -310,9 +310,9 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc, 
+                           sizeof(desc)/sizeof(desc[0]), desc,
                            sizeof(bugs)/sizeof(bugs[0]), bugs, &oenv))
     {
         return 0;
@@ -440,22 +440,22 @@ int alex_gentop(int argc, char *argv[])
 
 
     if (immOK == imm)
-      {
-	mymol.AddShells(pd, epol, iChargeDistributionModel);
-      }
-    
-    
+    {
+        mymol.AddShells(pd, epol, iChargeDistributionModel);
+    }
+
+
     if ((immOK == imm)  && (eqgRESP == iChargeGenerationAlgorithm))
     {
         if (0 == seed)
         {
             seed = gmx_rng_make_seed();
         }
-	/* mymol.gr_ = new Resp(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.getCharge(),
-                                  zmin, zmax, delta_z,
-                                  bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
-                                  penalty_fac, bFitZeta,
-                                  bEntropy, dzatoms, seed);*/
+        /* mymol.gr_ = new Resp(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.getCharge(),
+                                      zmin, zmax, delta_z,
+                                      bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
+                                      penalty_fac, bFitZeta,
+                                      bEntropy, dzatoms, seed);*/
 
         mymol.gr_ = new Resp(iChargeDistributionModel, mymol.molProp()->getCharge());
         mymol.gr_->setBAXpRESP(bAXpRESP);
@@ -492,7 +492,7 @@ int alex_gentop(int argc, char *argv[])
                                oenv);
         }
     }
-    
+
     if (immOK == imm)
     {
         mymol.GenerateChargeGroups(ecg, bUsePDBcharge);

@@ -98,7 +98,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     char **fns = NULL;
     int    i, nfn;
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, 
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {

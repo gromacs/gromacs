@@ -930,24 +930,24 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                                ChargeDistributionModel iDistributionModel,
                                real rcut, real spacing, const gmx_output_env_t *oenv)
 {
-    FILE                   *fp;
-    int                     j, n, nmax;
-    ChargeDistributionModel eqd_model;
+    FILE                         *fp;
+    int                           j, n, nmax;
+    ChargeDistributionModel       eqd_model;
     std::string                   name;
-    double                  rho, rr, *A, *zeta, *q, qtot;
-    int                    *row, nzeta;
-    char                    buf[STRLEN];
+    double                        rho, rr, *A, *zeta, *q, qtot;
+    int                          *row, nzeta;
+    char                          buf[STRLEN];
 
     nmax = 1+(int)(rcut/spacing);
 
- for (EempropsIterator eep = pd->getEempropsBegin();
-	 eep != pd->getEempropsEnd(); eep++)
+    for (EempropsIterator eep = pd->getEempropsBegin();
+         eep != pd->getEempropsEnd(); eep++)
     {
-      eqd_model = eep->getEqdModel();
-      name = eep->getName();
+        eqd_model = eep->getEqdModel();
+        name      = eep->getName();
         if (eqd_model == iDistributionModel)
         {
-	  nzeta = pd->getNzeta( iDistributionModel, name);
+            nzeta = pd->getNzeta( iDistributionModel, name);
             snew(zeta, nzeta);
             snew(q, nzeta);
             snew(row, nzeta);
@@ -1033,12 +1033,12 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     snew(zeta, natypemax);
     snew(q, natypemax);
     snew(row, natypemax);
-     for (EempropsIterator eep = pd->getEempropsBegin();
-	 eep != pd->getEempropsEnd(); eep++)
-      {
-	eqg_model = eep->getEqdModel();
-	name[natype] = eep->getName();
-	
+    for (EempropsIterator eep = pd->getEempropsBegin();
+         eep != pd->getEempropsEnd(); eep++)
+    {
+        eqg_model    = eep->getEqdModel();
+        name[natype] = eep->getName();
+
         if (eqg_model == iDistributionModel)
         {
             natype++;
@@ -1316,7 +1316,7 @@ int alex_gen_table(int argc, char *argv[])
     gmx_output_env_t             *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, sizeof(pa)/sizeof(pa[0]), pa, 
+                           NFILE, fnm, sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
         return 0;

@@ -1308,14 +1308,14 @@ class MolProp
 
         //! Convenience function
         bool getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
-                        const char *conf, const char *type, 
+                        const char *conf, const char *type,
                         double *value, double *error, double *T,
                         std::string &ref, std::string &mylot,
                         double vec[3], tensor quadrupole);
 
         //! And another one
         bool getProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                     char *conf, char *type, 
+                     char *conf, char *type,
                      double *value, double *error, double *T);
 
         //! Add a classification category for this molecule
@@ -1476,7 +1476,7 @@ typedef std::vector<MolProp>::iterator MolPropIterator;
  * \param[in] Tref The reference temperature
  * \param[in] T    The temperature to be tested
  * \return true if the reference T < 0, or the difference between the two
- *              T is negligable. 
+ *              T is negligable.
  */
 bool bCheckTemperature(double Tref, double T);
 

@@ -745,17 +745,17 @@ bool MolProp::GenerateComposition(Poldata * pd)
             std::string ptype = pd->atypeToPtype(cai->getObtype());
             if (0 != ptype.size())
             {
-	      std::string bos_type = pd->ptypeToBosque(ptype);
-	      if (0 != bos_type.size())
+                std::string bos_type = pd->ptypeToBosque(ptype);
+                if (0 != bos_type.size())
                 {
                     AtomNum anb(bos_type, 1);
                     mci_bosque.AddAtom(anb);
                 }
-	      std::string mil_type = pd->ptypeToMiller(ptype);
+                std::string mil_type = pd->ptypeToMiller(ptype);
 
-	      if (0 != mil_type.size())
+                if (0 != mil_type.size())
                 {
-		  AtomNum anm(mil_type.c_str(), 1);
+                    AtomNum anm(mil_type.c_str(), 1);
                     mci_miller.AddAtom(anm);
                 }
             }
@@ -814,7 +814,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     alexandria::MolecularCompositionIterator mci;
 
     snew(ncomp, 110);
-    myform[0] = '\0';
+    myform[0]  = '\0';
     texform[0] = '\0';
     mci        = SearchMolecularComposition("bosque");
     if (mci != EndMolecularComposition())
@@ -902,7 +902,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
     bool   done = false;
     double x, y, z;
     double Told = *T;
-    
+
     switch (mpo)
     {
         case MPO_ENERGY:
@@ -989,12 +989,12 @@ bool bCheckTemperature(double Tref, double T)
 }
 
 bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
-                         const char *conf, const char *type, 
+                         const char *conf, const char *type,
                          double *value, double *error, double *T,
                          std::string &ref, std::string &mylot,
                          double vec[3], tensor quad_polar)
 {
-    bool done = false;
+    bool   done = false;
     double Told = *T;
 
     if ((iQM == iqmExp) || (iQM == iqmBoth))
@@ -1020,8 +1020,8 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
         for (alexandria::CalculationIterator ci = BeginCalculation(); (ci < EndCalculation()); ++ci)
         {
             char buf[256];
-            
-            snprintf(buf, sizeof(buf), "%s/%s", 
+
+            snprintf(buf, sizeof(buf), "%s/%s",
                      ci->getMethod().c_str(), ci->getBasisset().c_str());
             if (((NULL == lot) || (strcmp(lot, buf) == 0))  &&
                 ((NULL == conf) || (strcasecmp(conf, ci->getConformation().c_str()) == 0)))
@@ -1041,12 +1041,12 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 }
 
 bool MolProp::getProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                      char *conf, char *type, 
+                      char *conf, char *type,
                       double *value, double *error, double *T)
 {
-    double myerror, vec[3];
-    tensor quad;
-    bool   bReturn;
+    double      myerror, vec[3];
+    tensor      quad;
+    bool        bReturn;
     std::string myref, mylot;
 
     bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror, T,

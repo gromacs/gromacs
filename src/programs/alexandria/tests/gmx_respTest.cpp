@@ -84,13 +84,13 @@ class RespTest : public ::testing::Test
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-	  std::vector<ChargeDistributionModel> iChargeDistributionModel;
-	  iChargeDistributionModel.push_back(eqdAXp);
-	  iChargeDistributionModel.push_back(eqdAXg);
-	  //	  	  iChargeDistributionModel.push_back(eqdAXs);
-          alexandria::MyMol       mp;
-          alexandria::MolProp     molprop;
-          gmx_atomprop_t          aps = gmx_atomprop_init();
+            std::vector<ChargeDistributionModel> iChargeDistributionModel;
+            iChargeDistributionModel.push_back(eqdAXp);
+            iChargeDistributionModel.push_back(eqdAXg);
+            //	      iChargeDistributionModel.push_back(eqdAXs);
+            alexandria::MyMol       mp;
+            alexandria::MolProp     molprop;
+            gmx_atomprop_t          aps = gmx_atomprop_init();
 
 
             //needed for ReadGauss

@@ -285,15 +285,15 @@ void gmx_molprop_stats_table(FILE                            *fp,
                         (mpi->SearchCategory(i->getName()) == 1))
                     {
                         double exp_err = 0;
-                        double Texp = -1;
-                        bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL,
-                                                   exp_type, &exp_val, &exp_err, &Texp);
+                        double Texp    = -1;
+                        bool   bExp    = mpi->getProp(mpo, iqmExp, NULL, NULL,
+                                                      exp_type, &exp_val, &exp_err, &Texp);
                         if (bExp)
                         {
                             double qm_err = 0;
-                            double Tqm  = Texp;
-                            bool   bQM  = mpi->getProp(mpo, iqmQM, lot, NULL,
-                                                       qmc->type[k], &qm_val, &qm_err, &Tqm);
+                            double Tqm    = Texp;
+                            bool   bQM    = mpi->getProp(mpo, iqmQM, lot, NULL,
+                                                         qmc->type[k], &qm_val, &qm_err, &Tqm);
                             //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                             if (bQM)
                             {
@@ -325,7 +325,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
             {
                 catbuf.append("& -");
             }
-            
+
             gmx_stats_free(lsq);
         }
         if ((nqmres > 0) && (nexpres > 0))
@@ -351,7 +351,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
                 bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, exp_type,
                                            &exp_val, &exp_err, &Texp);
                 double Tqm  = Texp;
-                bool   bQM  = mpi->getProp(mpo, iqmQM, lot, NULL, qmc->type[k], 
+                bool   bQM  = mpi->getProp(mpo, iqmQM, lot, NULL, qmc->type[k],
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
                 {
@@ -672,8 +672,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
      * as we check for the type name.
      */
     for (PtypeIterator pType = pd->getPtypeBegin();
-	 pType != pd->getPtypeEnd(); pType++)
-      {
+         pType != pd->getPtypeEnd(); pType++)
+    {
         if (pType->getPolarizability() > 0)
         {
             int atomnumber;
@@ -693,9 +693,9 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 
                     for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
                     {
-		      std::string pt =
+                        std::string pt =
                             pd->atypeToPtype(ani->getAtom());
-		      if ((0 != pt.size()) && (strcasecmp(pt.c_str(), pType->getType().c_str()) == 0))
+                        if ((0 != pt.size()) && (strcasecmp(pt.c_str(), pType->getType().c_str()) == 0))
                         {
                             bFound = true;
                         }
@@ -718,7 +718,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
             /* Determine Miller and Bosque polarizabilities for this Alexandria element */
             ahc = ahp = bos_pol = 0;
             if (1 == pd->getMillerPol(pType->getMiller(),
-                                                &atomnumber, &ahc, &ahp))
+                                      &atomnumber, &ahc, &ahp))
             {
                 ahc = (4.0/atomnumber)*sqr(ahc);
             }
@@ -750,7 +750,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 
 static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
 {
-    int     i, k, m, cur = 0;
+    int         i, k, m, cur = 0;
     std::string gt_type[2] = { "", "" };
 
 
@@ -796,28 +796,28 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     lt.printHeader();
 
     for (FfatypeIterator aType = pd->getAtypeBegin();
-	   aType != pd->getAtypeEnd(); aType++)
+         aType != pd->getAtypeEnd(); aType++)
     {
-      gt_type[cur] = aType->getType();
-      if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(),gt_type[cur].c_str()) != 0)))
+        gt_type[cur] = aType->getType();
+        if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(), gt_type[cur].c_str()) != 0)))
         {
-	  snprintf(longbuf, STRLEN, "%s\n", gt_type[cur].c_str());
+            snprintf(longbuf, STRLEN, "%s\n", gt_type[cur].c_str());
             for (k = 0; (k < NEQG); k++)
             {
                 if (pd->haveEemSupport(eqgcol[k], gt_type[cur], false))
                 {
-		  snprintf(buf, 256, " & %.3f", pd->getJ00(eqgcol[k], gt_type[cur]));
+                    snprintf(buf, 256, " & %.3f", pd->getJ00(eqgcol[k], gt_type[cur]));
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     snprintf(buf, 256, " & %.3f", pd->getChi0(eqgcol[k], gt_type[cur]));
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     if (npcol[k] == 3)
                     {
-		      snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 1));
+                        snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 1));
                         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     }
                     if (npcol[k] == 4)
                     {
-		      snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 2));
+                        snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 2));
                         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     }
                 }
@@ -976,7 +976,7 @@ class ExpData
     public:
         double      val_, err_, temp_;
         std::string ref_, conf_, type_, unit_;
-    
+
         ExpData(double val, double err, double temp, std::string ref, std::string conf, std::string type, std::string unit)
         { val_ = val; err_ = err; temp_ = temp; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
 };
@@ -1099,7 +1099,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                 for (j = 0; (j < qmc->n); j++)
                 {
                     std::string ref, mylot;
-                    double T = ed[nexp].temp_;
+                    double      T = ed[nexp].temp_;
                     sprintf(lbuf, "%s/%s", qmc->method[j], qmc->basis[j]);
                     if ((strcmp(qmc->type[j], exp_type) == 0) &&
                         mpi->getPropRef(mpo, iqmQM, lbuf, NULL,

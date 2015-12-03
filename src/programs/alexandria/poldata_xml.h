@@ -33,31 +33,31 @@
 //extern int xmlDoValidityCheckingDefaultValue;
 namespace alexandria
 {
-  //using namespace alexandria;
-  /* This source code file is part of the Alexandria project */
-  class PoldataXml
-  {
-  public:
+//using namespace alexandria;
+/* This source code file is part of the Alexandria project */
+class PoldataXml
+{
+    public:
 
-    PoldataXml(){}
+        PoldataXml(){}
 
-    static void write(const std::string fn, Poldata * pd,
-		      gmx_bool bCompress);
+        static void write(const std::string fn, Poldata * pd,
+                          gmx_bool bCompress);
 
-    static Poldata * read(const char *fn, gmx_atomprop_t aps);
+        static Poldata * read(const char *fn, gmx_atomprop_t aps);
 
-  private:
-    static void sp(int n, char buf[], int maxindent);
+    private:
+        static void sp(int n, char buf[], int maxindent);
 
-    static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
-			     int indent, Poldata  * pd);
+        static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
+                                int indent, Poldata  * pd);
 
-    static void processTree(FILE *fp, xmlNodePtr tree, int indent,
-			     Poldata * pd, gmx_atomprop_t aps);
+        static void processTree(FILE *fp, xmlNodePtr tree, int indent,
+                                Poldata * pd, gmx_atomprop_t aps);
 
-    static void addXmlPoldata(xmlNodePtr parent, Poldata * pd);
+        static void addXmlPoldata(xmlNodePtr parent, Poldata * pd);
 
 
-  };
+};
 }
 #endif

@@ -52,7 +52,7 @@ int alex_poldata_test(int argc, char*argv[])
     }
 
     gmx_atomprop_t aps  = gmx_atomprop_init();
-    Poldata *  pd   = alexandria::PoldataXml::read(opt2fn("-f", NFILE, fnm), aps);
+    Poldata     *  pd   = alexandria::PoldataXml::read(opt2fn("-f", NFILE, fnm), aps);
     alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), pd, 0);
 
     return 0;

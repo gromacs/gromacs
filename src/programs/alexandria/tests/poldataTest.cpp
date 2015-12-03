@@ -67,8 +67,8 @@ class PoldataTest : public ::testing::Test
 
         //init sett tolecrance
         PoldataTest ( )
-	  //gmx::test::erefdataCreateMissing
-	  //gmx::test::erefdataCompare
+        //gmx::test::erefdataCreateMissing
+        //gmx::test::erefdataCompare
             : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
 
@@ -94,7 +94,7 @@ class PoldataTest : public ::testing::Test
             atomName = iter->getType();
             for (; iter != pd->getAtypeEnd(); iter++)
             {
-	      atomNames.push_back(iter->getType());
+                atomNames.push_back(iter->getType());
             }
 
         }
@@ -126,8 +126,8 @@ TEST_F (PoldataTest, getAtype){
 
 
 TEST_F(PoldataTest, searchAtype){
-  alexandria::Ffatype  type;
-    pd->searchAtype(atomName,&type);
+    alexandria::Ffatype  type;
+    pd->searchAtype(atomName, &type);
 
     checker_.checkString(type.getElem(), "elem");
     checker_.checkString(type.getDesc(), "desc");
@@ -152,7 +152,7 @@ TEST_F(PoldataTest, addAtype){
     std::string              newPtype;
     std::string              newBtype;
     std::string              newVdwparams;
-    alexandria::Ffatype  fatype;
+    alexandria::Ffatype      fatype;
 
 
     pd->addAtype( elem,
@@ -165,15 +165,15 @@ TEST_F(PoldataTest, addAtype){
 
     int valid = pd->searchAtype(atype, &fatype);
     //will faill if the seartch failed
-    checker_.checkBoolean(valid == 1,"search valid");
+    checker_.checkBoolean(valid == 1, "search valid");
 
     //test if the extraction where corect
-    checker_.checkBoolean(fatype.getElem().compare(elem) == 0,"elem");
-     checker_.checkBoolean(fatype.getDesc().compare(desc) == 0,"desc");
-     checker_.checkBoolean(fatype.getType().compare(atype) == 0,"atype");
-     checker_.checkBoolean(fatype.getPtype().compare(ptype) == 0,"ptype");
-     checker_.checkBoolean(fatype.getBtype().compare(btype) == 0,"btype");
-     checker_.checkBoolean(fatype.getVdwparams().compare(vdwparams) == 0,"vdwparams" );
+    checker_.checkBoolean(fatype.getElem().compare(elem) == 0, "elem");
+    checker_.checkBoolean(fatype.getDesc().compare(desc) == 0, "desc");
+    checker_.checkBoolean(fatype.getType().compare(atype) == 0, "atype");
+    checker_.checkBoolean(fatype.getPtype().compare(ptype) == 0, "ptype");
+    checker_.checkBoolean(fatype.getBtype().compare(btype) == 0, "btype");
+    checker_.checkBoolean(fatype.getVdwparams().compare(vdwparams) == 0, "vdwparams" );
 }
 
 

@@ -416,19 +416,19 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
 
 static double dipole_function(void *params, double v[])
 {
-    alexandria::MolDip *md = (alexandria::MolDip *) params;
-    int                 j, k, zz, nzeta;
-    double              chi0, z, J0, bounds = 0;
-    std::string              name, rowstr;
+    alexandria::MolDip        *md = (alexandria::MolDip *) params;
+    int                        j, k, zz, nzeta;
+    double                     chi0, z, J0, bounds = 0;
+    std::string                name, rowstr;
     std::string                qstr;
-    char                zstr[STRLEN], buf[STRLEN];
+    char                       zstr[STRLEN], buf[STRLEN];
 
 #define HARMONIC(x, xmin, xmax) (x < xmin) ? (sqr(x-xmin)) : ((x > xmax) ? (sqr(x-xmax)) : 0)
 
     /* Set parameters in eem record. There is a penalty if parameters
      * go out of bounds as well.
      */
-    k = 0;
+    k    = 0;
     name = opt_index_count(md->_ic);
     while (name.size() != 0)
     {
@@ -460,7 +460,7 @@ static double dipole_function(void *params, double v[])
             strcat(zstr, buf);
         }
         md->_pd->setEemprops( md->_iChargeDistributionModel, name, J0, chi0,
-                                 zstr, qstr, rowstr);
+                              zstr, qstr, rowstr);
     }
     if (md->_bOptHfac)
     {
@@ -523,14 +523,14 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
                            gmx_bool bRandom, gmx_rng_t rng,
                            double orig_param[], double test_param[])
 {
-    double     J00, xxx, chi0, zeta;
-    char * name;
+    double           J00, xxx, chi0, zeta;
+    char           * name;
     std::string      rowstr;
-    std::string qstr;
-    char       zstr[STRLEN], buf[STRLEN];
-    gmx_bool   bStart = (/*(run == 0) &&*/ (iter == 0));
-    gmx_bool   bRand  = bRandom && (iter == 0);
-    int        zz, nzeta, k = 0;
+    std::string      qstr;
+    char             zstr[STRLEN], buf[STRLEN];
+    gmx_bool         bStart = (/*(run == 0) &&*/ (iter == 0));
+    gmx_bool         bRand  = bRandom && (iter == 0);
+    int              zz, nzeta, k = 0;
 
     fprintf(fplog, "%-5s %10s %10s %10s Run/Iter %d/%d - %s randomization\n", "Name",
             "J00", "chi0", "zeta", run, iter,
@@ -579,13 +579,13 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             }
             test_param[k++] = chi0;
         }
-	qstr = md->_pd->getQstr( md->_iChargeDistributionModel, name);
-	 if (qstr.size() == 0)
+        qstr = md->_pd->getQstr( md->_iChargeDistributionModel, name);
+        if (qstr.size() == 0)
         {
             gmx_fatal(FARGS, "No qstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
-	rowstr = md->_pd->getRowstr( md->_iChargeDistributionModel, name);
-	  if (rowstr.size() == 0)
+        rowstr = md->_pd->getRowstr( md->_iChargeDistributionModel, name);
+        if (rowstr.size() == 0)
         {
             gmx_fatal(FARGS, "No rowstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
@@ -612,7 +612,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             strcat(zstr, buf);
         }
         md->_pd->setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
-                                 zstr, qstr, rowstr);
+                              zstr, qstr, rowstr);
         fprintf(fplog, "%-5s %10g %10g %10s\n", name, J00, chi0, zstr);
     }
     fprintf(fplog, "\n");
@@ -629,24 +629,24 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                             int nrun, real stepsize, int seed,
                             gmx_bool bRandom, const gmx_output_env_t * oenv)
 {
-    FILE      *cfp = NULL;
-    double     chi2, chi2_min;
-    int        nzeta, zz;
-    int        i, k, n, nparam;
-    double    *test_param, *orig_param, *best_param, *start;
-    gmx_bool   bMinimum = FALSE;
-    double     J00, chi0, zeta;
+    FILE       *cfp = NULL;
+    double      chi2, chi2_min;
+    int         nzeta, zz;
+    int         i, k, n, nparam;
+    double     *test_param, *orig_param, *best_param, *start;
+    gmx_bool    bMinimum = FALSE;
+    double      J00, chi0, zeta;
     std::string name;
     std::string qstr, rowstr;
-    char       zstr[STRLEN], buf[STRLEN];
-    gmx_rng_t  rng;
+    char        zstr[STRLEN], buf[STRLEN];
+    gmx_rng_t   rng;
 
     if (MASTER(md->_cr))
     {
         rng = gmx_rng_init(seed);
 
         nparam = 0;
-	name = opt_index_count(md->_ic);
+        name   = opt_index_count(md->_ic);
         while (name.size() != 0)
         {
             /* One parameter for J00 and one for chi0 */
@@ -756,8 +756,8 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             {
                 start[k] = best_param[k];
             }
-            k = 0;
-	    name = opt_index_count(md->_ic);
+            k    = 0;
+            name = opt_index_count(md->_ic);
             while (name.size() != 0)
             {
                 J00    = start[k++];
@@ -781,7 +781,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                     strcat(zstr, buf);
                 }
                 md->_pd->setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
-                                         zstr, qstr, rowstr);
+                                      zstr, qstr, rowstr);
             }
             if (md->_bOptHfac)
             {
@@ -819,7 +819,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
 
 int alex_tune_dip(int argc, char *argv[])
 {
-    static const char    *desc[] = {
+    static const char          *desc[] = {
         "tune_dip read a series of molecules and corresponding experimental",
         "dipole moments from a file, and tunes parameters in an algorithm",
         "until the experimental dipole moments are reproduced by the",
@@ -857,7 +857,7 @@ int alex_tune_dip(int argc, char *argv[])
         "([TT]-f[tt] option). Missing molecules will be ignored."
     };
 
-    t_filenm              fnm[] = {
+    t_filenm                    fnm[] = {
         { efDAT, "-f", "allmols",    ffREAD  },
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "tunedip",    ffWRITE },
@@ -872,23 +872,23 @@ int alex_tune_dip(int argc, char *argv[])
         { efXVG, "-conv", "convergence", ffOPTWR }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-    static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
-    static int            minimum_data  = 3, compress = 1;
-    static real           tol           = 1e-3, stol = 1e-6, watoms = 1;
-    static gmx_bool       bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
-    static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
-    static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
-    static real           th_toler      = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
-    static char          *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
-    static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";
-    static const char    *cqdist[]      = {
+    static int                  nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
+    static int                  minimum_data  = 3, compress = 1;
+    static real                 tol           = 1e-3, stol = 1e-6, watoms = 1;
+    static gmx_bool             bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static real                 J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
+    static real                 J0_1          = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
+    static real                 fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
+    static real                 th_toler      = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
+    static char                *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
+    static char                *lot           = (char *)"B3LYP/aug-cc-pVTZ";
+    static const char          *cqdist[]      = {
         NULL, "AXp", "AXg", "AXs", NULL
     };
-    static const char    *cqgen[]      = {
+    static const char          *cqgen[]      = {
         NULL, "None", "EEM", "ESP", "RESP", NULL
     };
-    t_pargs               pa[]         = {
+    t_pargs                     pa[]         = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
         { "-maxiter", FALSE, etINT, {&maxiter},
@@ -976,17 +976,17 @@ int alex_tune_dip(int argc, char *argv[])
         { "-bgaussquad", FALSE, etBOOL, {&bGaussianBug},
           "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" }
     };
-    alexandria::MolDip    md;
-    FILE                 *fp;
-    t_commrec            *cr;
+    alexandria::MolDip          md;
+    FILE                       *fp;
+    t_commrec                  *cr;
     gmx_output_env_t *          oenv;
-    gmx_molselect_t       gms;
-    time_t                my_t;
+    gmx_molselect_t             gms;
+    time_t                      my_t;
 
     cr = init_commrec();
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, 
+                           NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
@@ -1049,7 +1049,7 @@ int alex_tune_dip(int argc, char *argv[])
 
         gmx_ffclose(fp);
 
-	alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), md._pd, compress);
+        alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), md._pd, compress);
     }
 
     return 0;

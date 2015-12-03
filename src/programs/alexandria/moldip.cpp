@@ -315,14 +315,14 @@ static int check_data_sufficiency(FILE *fp,
     }
     else
     {
-for (EempropsIterator eep = pd->getEempropsBegin();
-	 eep != pd->getEempropsEnd(); eep++)
-  {
-    if ((eep->getEqdModel() == iDistributionModel) &&
-	!const_index_count(ic, (char *)eep->getName().c_str()) &&
-	pd->haveEemSupport( iDistributionModel, eep->getName(), FALSE))
-      {
-	add_index_count(ic, (char *)eep->getName().c_str(), FALSE);
+        for (EempropsIterator eep = pd->getEempropsBegin();
+             eep != pd->getEempropsEnd(); eep++)
+        {
+            if ((eep->getEqdModel() == iDistributionModel) &&
+                !const_index_count(ic, (char *)eep->getName().c_str()) &&
+                pd->haveEemSupport( iDistributionModel, eep->getName(), FALSE))
+            {
+                add_index_count(ic, (char *)eep->getName().c_str(), FALSE);
             }
         }
     }
@@ -1006,7 +1006,7 @@ void MolDip::CalcDeviation()
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
                 //mymol->gr_->fillZeta( _pd);
-		mymol->gr_->fillZeta();
+                mymol->gr_->fillZeta();
                 mymol->gr_->fillQ(&(mymol->topology_->atoms));
                 mymol->gr_->calcPot();
             }

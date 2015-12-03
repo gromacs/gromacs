@@ -442,8 +442,8 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
             sprintf(pbuf, "%g", klin);
         }
         pd->addAngle(
-                              b->angle[i].a1, b->angle[i].a2,
-                              b->angle[i].a3, av, sig, N, pbuf);
+                b->angle[i].a1, b->angle[i].a2,
+                b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
                 b->angle[i].a1, b->angle[i].a2, b->angle[i].a3, av, sig, N,
                 (sig > 3) ? " WARNING" : "");
@@ -457,8 +457,8 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
         pd->addDihedral( egdPDIHS,
-                                 b->dih[i].a1, b->dih[i].a2,
-                                 b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
+                         b->dih[i].a1, b->dih[i].a2,
+                         b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->dih[i].a1, b->dih[i].a2, b->dih[i].a3, b->dih[i].a4, av, sig);
     }
@@ -471,8 +471,8 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
         pd->addDihedral( egdIDIHS,
-                                 b->imp[i].a1, b->imp[i].a2,
-                                 b->imp[i].a3, b->imp[i].a4, av, sig, N, pbuf);
+                         b->imp[i].a1, b->imp[i].a2,
+                         b->imp[i].a3, b->imp[i].a4, av, sig, N, pbuf);
         fprintf(fp, "improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 b->imp[i].a1, b->imp[i].a2, b->imp[i].a3, b->imp[i].a4, av, sig);
     }
@@ -547,8 +547,8 @@ int alex_bastat(int argc, char *argv[])
     char                           **fns;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, 
-                           sizeof(pa)/sizeof(pa[0]), pa, 
+                           NFILE, fnm,
+                           sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -609,7 +609,7 @@ int alex_bastat(int argc, char *argv[])
 #define BTP(ii) pd->atypeToBtype( *mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
-	      if (0 == BTP(i).size())
+                if (0 == BTP(i).size())
                 {
                     if (NULL != debug)
                     {
@@ -628,8 +628,8 @@ int alex_bastat(int argc, char *argv[])
                 int         ai = mmi.ltop_->idef.il[ftb].iatoms[j+1];
                 int         aj = mmi.ltop_->idef.il[ftb].iatoms[j+2];
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-		std::string cai = BTP(ai);
-		std::string caj = BTP(aj);
+                std::string cai = BTP(ai);
+                std::string caj = BTP(aj);
                 if ((0 != cai.size()) && (0 != caj.size()))
                 {
                     for (alexandria::BondIterator bi = mmi.molProp()->BeginBond(); (bi < mmi.molProp()->EndBond()); bi++)
@@ -662,9 +662,9 @@ int alex_bastat(int argc, char *argv[])
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
                 rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
                 double      ang = RAD2DEG*gmx_angle(dx, dx2);
-		std::string cai = BTP(ai);
-		std::string caj = BTP(aj);
-		std::string cak = BTP(ak);
+                std::string cai = BTP(ai);
+                std::string caj = BTP(aj);
+                std::string cak = BTP(ak);
                 if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()))
                 {
                     add_angle(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
@@ -688,10 +688,10 @@ int alex_bastat(int argc, char *argv[])
                                                mmi.x_[ak], mmi.x_[al],
                                                &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                &sign, &t1, &t2, &t3);
-		std::string cai = BTP(ai);
-		std::string caj = BTP(aj);
-		std::string cak = BTP(ak);
-		std::string cal = BTP(al);
+                std::string cai = BTP(ai);
+                std::string caj = BTP(aj);
+                std::string cak = BTP(ak);
+                std::string cal = BTP(al);
                 if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
                 {
                     add_dih(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdPDIHS);

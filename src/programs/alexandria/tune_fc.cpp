@@ -88,7 +88,7 @@ typedef struct {
 
 static void check_support(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mm,
-                          Poldata *                   pd,
+                          Poldata     *                   pd,
                           t_commrec                      *cr,
                           bool                            bOpt[])
 {
@@ -128,8 +128,8 @@ static void check_support(FILE                           *fp,
 
                 for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
                 {
-                    int   ai, aj, ak, al, gt = 0;
-		    std::string aai, aaj, aak, aal;
+                    int         ai, aj, ak, al, gt = 0;
+                    std::string aai, aaj, aak, aal;
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
@@ -143,7 +143,7 @@ static void check_support(FILE                           *fp,
                     {
                         case ebtsBONDS:
                             gt = pd->searchBond( aai, aaj, NULL,
-                                                         NULL, NULL, NULL, NULL);
+                                                 NULL, NULL, NULL, NULL);
                             break;
                         case ebtsANGLES:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
@@ -155,7 +155,7 @@ static void check_support(FILE                           *fp,
                             else
                             {
                                 gt  = pd->searchAngle( aai, aaj, aak, NULL,
-                                                               NULL, NULL, NULL);
+                                                       NULL, NULL, NULL);
                             }
                             break;
                         case ebtsPDIHS:
@@ -171,8 +171,8 @@ static void check_support(FILE                           *fp,
                             else
                             {
                                 gt  = pd->searchDihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
-                                                                  aai, aaj, aak, aal,
-                                                                  NULL, NULL, NULL, NULL);
+                                                          aai, aaj, aak, aal,
+                                                          NULL, NULL, NULL, NULL);
                             }
                             break;
                     }
@@ -208,14 +208,14 @@ static void check_support(FILE                           *fp,
 
 static opt_mask_t *analyze_idef(FILE                          *fp,
                                 std::vector<alexandria::MyMol> mm,
-                                Poldata *                  pd,
+                                Poldata     *                  pd,
                                 bool                           bOpt[])
 {
-    int         gt, i, bt, ai, aj, ak, al, ft;
-    int         ntot[ebtsNR];
+    int               gt, i, bt, ai, aj, ak, al, ft;
+    int               ntot[ebtsNR];
     std::string       aai, aaj, aak, aal, params;
-    opt_mask_t *omt;
-    const char *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
+    opt_mask_t       *omt;
+    const char       *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
 
     fprintf(fp, "In the total data set of %d molecules we have:\n", (int)mm.size());
     snew(omt, 1);
@@ -266,7 +266,7 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                     {
                         case ebtsBONDS:
                             gt = pd->searchBond( aai, aaj, NULL,
-                                                         NULL, NULL, NULL, &params);
+                                                 NULL, NULL, NULL, &params);
                             if (gt > 0)
                             {
                                 sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
@@ -276,7 +276,7 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
                             gt  = pd->searchAngle( aai, aaj, aak, NULL,
-                                                           NULL, NULL, &params);
+                                                   NULL, NULL, &params);
                             if (gt > 0)
                             {
                                 sprintf(buf, "%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str());
@@ -289,11 +289,11 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                             aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
                             aal = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
                             gt  = pd->searchDihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
-                                                              aai, aaj, aak, aal,
-                                                              NULL, NULL, NULL, &params);
+                                                      aai, aaj, aak, aal,
+                                                      NULL, NULL, NULL, &params);
                             if (gt > 0)
                             {
-			      sprintf(buf, "%s-%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                                sprintf(buf, "%s-%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
                             }
                             break;
                     }
@@ -362,7 +362,7 @@ static void add_obt(opt_bad_t *obt, int natom, std::string *ai,
     snew(obt->ai, natom);
     for (i = 0; (i < natom); i++)
     {
-      obt->ai[i] = (char *)ai[i].c_str();
+        obt->ai[i] = (char *)ai[i].c_str();
     }
     obt->nparam = nparam;
     snew(obt->param, nparam);
@@ -398,7 +398,7 @@ class OptParam : public MolDip
         void getDissociationEnergy(FILE *fplog);
         void Opt2List();
         void List2Opt();
-  void Add(int otype, int natom, std::string *ai,
+        void Add(int otype, int natom, std::string *ai,
                  int nparam, double *param, double bondorder, int gt);
         void Print(FILE *fp);
         double CalcDeviation();
@@ -490,31 +490,31 @@ void OptParam::List2Opt()
             {
                 case ebtsBONDS:
                     _pd->setBondParams(_bad[i][j].ai[0],
-                                                _bad[i][j].ai[1],
-                                                0, 0, 0,
-                                                _bad[i][j].bondorder, buf);
+                                       _bad[i][j].ai[1],
+                                       0, 0, 0,
+                                       _bad[i][j].bondorder, buf);
                     break;
                 case ebtsANGLES:
                     _pd->setAngleParams(_bad[i][j].ai[0],
-                                                 _bad[i][j].ai[1],
-                                                 _bad[i][j].ai[2],
-                                                 0, 0, 0, buf);
+                                        _bad[i][j].ai[1],
+                                        _bad[i][j].ai[2],
+                                        0, 0, 0, buf);
                     break;
                 case ebtsPDIHS:
                     _pd->setDihedralParams(egdPDIHS,
-                                                    _bad[i][j].ai[0],
-                                                    _bad[i][j].ai[1],
-                                                    _bad[i][j].ai[2],
-                                                    _bad[i][j].ai[3],
-                                                    0, 0, 0, buf);
+                                           _bad[i][j].ai[0],
+                                           _bad[i][j].ai[1],
+                                           _bad[i][j].ai[2],
+                                           _bad[i][j].ai[3],
+                                           0, 0, 0, buf);
                     break;
                 case ebtsIDIHS:
                     _pd->setDihedralParams(egdIDIHS,
-                                                    _bad[i][j].ai[0],
-                                                    _bad[i][j].ai[1],
-                                                    _bad[i][j].ai[2],
-                                                    _bad[i][j].ai[3],
-                                                    0, 0, 0, buf);
+                                           _bad[i][j].ai[0],
+                                           _bad[i][j].ai[1],
+                                           _bad[i][j].ai[2],
+                                           _bad[i][j].ai[3],
+                                           0, 0, 0, buf);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unsupported bts %d", i);
@@ -523,7 +523,7 @@ void OptParam::List2Opt()
     }
 }
 
-  void OptParam::Add(int otype, int natom, std::string *ai,
+void OptParam::Add(int otype, int natom, std::string *ai,
                    int nparam, double *param, double bondorder, int gt)
 {
     assert(otype < ebtsNR);
@@ -628,10 +628,10 @@ void OptParam::getDissociationEnergy(FILE *fplog)
         {
             ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
             aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-	    std::string aai = _pd->atypeToBtype(*mymol->topology_->atoms.atomtype[ai]);
-	    std::string aaj = _pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
+            std::string aai = _pd->atypeToBtype(*mymol->topology_->atoms.atomtype[ai]);
+            std::string aaj = _pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
             if ((gt = _pd->searchBond(aai, aaj,
-                                              NULL, NULL, NULL, NULL, NULL)) != 0)
+                                      NULL, NULL, NULL, NULL, NULL)) != 0)
             {
                 gti = _inv_gt[ebtsBONDS][gt-1];
                 at[gti][j]++;
@@ -639,7 +639,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                 test[gti]++;
                 if (NULL == ctest[gti])
                 {
-		  sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
+                    sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
                     ctest[gti] = strdup(buf);
                 }
             }
@@ -766,9 +766,9 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                        real D0, real beta0,
                        opt_mask_t *omt, real factor)
 {
-  std::string ai[4];
-    int     gt, i, n = 0, maxfc = 0;
-    double *fc = NULL;
+    std::string ai[4];
+    int         gt, i, n = 0, maxfc = 0;
+    double     *fc = NULL;
 
     for (i = 0; (i < ebtsNR); i++)
     {
@@ -777,15 +777,15 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     *nparam = 0;
     if (bOpt[ebtsBONDS])
     {
-      GtBondIterator bond;
-      for ( bond = _pd->getBondBegin(), gt = 1;
-	   bond != _pd->getBondEnd(); bond++, gt++)
+        GtBondIterator bond;
+        for (bond = _pd->getBondBegin(), gt = 1;
+             bond != _pd->getBondEnd(); bond++, gt++)
         {
-	  ai[0] = bond->getAtom1();
-	  ai[1] = bond->getAtom2();
+            ai[0] = bond->getAtom1();
+            ai[1] = bond->getAtom2();
             if (omt->ngtb[ebtsBONDS][gt-1] > 0)
             {
-	      std::vector<std::string> ptr = split(bond->getParams(), ' ');
+                std::vector<std::string> ptr = split(bond->getParams(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -812,17 +812,17 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsANGLES])
     {
-      GtAngleIterator angle;
-      for (angle = _pd->getAngleBegin(), gt = 1;
-	   angle != _pd->getAngleEnd(); angle++, gt++)
-	{
-	  ai[0] = angle->getAtom1();
-	  ai[1] = angle->getAtom2();
-	  ai[2] = angle->getAtom3();
- 
+        GtAngleIterator angle;
+        for (angle = _pd->getAngleBegin(), gt = 1;
+             angle != _pd->getAngleEnd(); angle++, gt++)
+        {
+            ai[0] = angle->getAtom1();
+            ai[1] = angle->getAtom2();
+            ai[2] = angle->getAtom3();
+
             if (omt->ngtb[ebtsANGLES][gt-1] > 0)
             {
-	      std::vector<std::string> ptr = split(angle->getParams(), ' ');
+                std::vector<std::string> ptr = split(angle->getParams(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -841,17 +841,17 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsPDIHS])
     {
-      DihedralIterator dihydral;
-      for (dihydral = _pd->getDihedralBegin(egdPDIHS), gt = 1;
-	   dihydral != _pd->getDihedralEnd(egdPDIHS); dihydral++, gt++)
+        DihedralIterator dihydral;
+        for (dihydral = _pd->getDihedralBegin(egdPDIHS), gt = 1;
+             dihydral != _pd->getDihedralEnd(egdPDIHS); dihydral++, gt++)
         {
-	  ai[0]  = dihydral->getAtom1();
-	  ai[1] = dihydral->getAtom2();
-	  ai[2] = dihydral->getAtom3();
-	  ai[3] = dihydral->getAtom4();
+            ai[0]  = dihydral->getAtom1();
+            ai[1]  = dihydral->getAtom2();
+            ai[2]  = dihydral->getAtom3();
+            ai[3]  = dihydral->getAtom4();
             if (omt->ngtb[ebtsPDIHS][gt-1] > 0)
             {
-	      std::vector<std::string> ptr = split(dihydral->getParams().c_str(), ' ');
+                std::vector<std::string> ptr = split(dihydral->getParams().c_str(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -870,18 +870,18 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsIDIHS])
     {
-      DihedralIterator dihydral;
-      for (dihydral = _pd->getDihedralBegin(egdIDIHS), gt = 1;
-	   dihydral != _pd->getDihedralEnd(egdIDIHS); dihydral++, gt++)
+        DihedralIterator dihydral;
+        for (dihydral = _pd->getDihedralBegin(egdIDIHS), gt = 1;
+             dihydral != _pd->getDihedralEnd(egdIDIHS); dihydral++, gt++)
         {
-	  ai[0]  = dihydral->getAtom1();
-	  ai[1] = dihydral->getAtom2();
-	  ai[2] = dihydral->getAtom3();
-	  ai[3] = dihydral->getAtom4();
-	  
+            ai[0]  = dihydral->getAtom1();
+            ai[1]  = dihydral->getAtom2();
+            ai[2]  = dihydral->getAtom3();
+            ai[3]  = dihydral->getAtom4();
+
             if (omt->ngtb[ebtsIDIHS][gt-1] > 0)
             {
-	      std::vector<std::string> ptr = split(dihydral->getParams(), ' ');
+                std::vector<std::string> ptr = split(dihydral->getParams(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -1084,7 +1084,7 @@ double OptParam::CalcDeviation()
 
             if (NULL != debug)
             {
-                fprintf(debug, "%s ener %g Epot %g Force2 %g\n", 
+                fprintf(debug, "%s ener %g Epot %g Force2 %g\n",
                         mymol->molProp()->getMolname().c_str(), ener,
                         mymol->Ecalc, mymol->Force2);
             }
@@ -1650,8 +1650,8 @@ int alex_tune_fc(int argc, char *argv[])
         printf("There are %d threads/processes.\n", cr->nnodes);
     }
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, 
-                           sizeof(pa)/sizeof(pa[0]), pa, 
+                           NFILE, fnm,
+                           sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc,
                            0, NULL, &oenv))
     {
@@ -1732,7 +1732,7 @@ int alex_tune_fc(int argc, char *argv[])
         opt.PrintSpecs(fp, (char *)"After optimization",
                        opt2fn("-x", NFILE, fnm), oenv, true);
 
-	alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
+        alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
 
         gmx_molselect_done(gms);
         done_filenms(NFILE, fnm);
