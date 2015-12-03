@@ -48,12 +48,12 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdlib/qmmm.h"
@@ -2308,10 +2308,6 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                                  ns->bexcl, ns->simple_aaj,
                                  ngid, ns->ns_buf, put_in_list, ns->bHaveVdW);
     }
-
-#ifdef DEBUG
-    pr_nsblock(log);
-#endif
 
     inc_nrnb(nrnb, eNR_NS, nsearch);
 

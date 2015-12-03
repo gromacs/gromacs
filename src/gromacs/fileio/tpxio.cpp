@@ -50,7 +50,6 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 #define TPX_TAG_RELEASE  "release"
 

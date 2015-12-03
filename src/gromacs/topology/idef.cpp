@@ -40,9 +40,9 @@
 
 #include <cstdio>
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/txtdump.h"
 
 static void pr_harm(FILE *fp, const t_iparams *iparams, const char *r, const char *kr)
 {

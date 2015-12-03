@@ -49,10 +49,10 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"

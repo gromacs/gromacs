@@ -44,7 +44,6 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
@@ -77,9 +76,6 @@ real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
         {
             d[m] = std::sqrt(d[m]/tm);
         }
-#ifdef DEBUG
-        pr_rvecs(stderr, 0, "trans", trans, DIM);
-#endif
         /* rotate_atoms(gnx,index,x,trans); */
     }
     clear_rvec(comp);

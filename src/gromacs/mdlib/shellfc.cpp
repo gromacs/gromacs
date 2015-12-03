@@ -45,11 +45,11 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"

@@ -41,11 +41,11 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"

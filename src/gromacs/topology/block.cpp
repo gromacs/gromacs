@@ -42,8 +42,8 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 void init_block(t_block *block)
 {

@@ -43,6 +43,8 @@
 #ifndef GMX_MDTYPES_INPUTREC_H
 #define GMX_MDTYPES_INPUTREC_H
 
+#include <stdio.h>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -449,6 +451,9 @@ void init_inputrec(t_inputrec *ir);
  * \param[in] ir The data structure
  */
 void done_inputrec(t_inputrec *ir);
+
+void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
+                 gmx_bool bMDPformat);
 
 gmx_bool inputrecDeform(const t_inputrec *ir);
 

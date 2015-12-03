@@ -43,11 +43,11 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 #define BUFSIZE         1024
 #define TABLESIZE       5

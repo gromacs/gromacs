@@ -52,7 +52,6 @@
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/splitter.h"
@@ -68,6 +67,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */

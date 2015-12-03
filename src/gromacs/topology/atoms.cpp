@@ -41,9 +41,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 const char *ptype_str[eptNR+1] = {
     "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
