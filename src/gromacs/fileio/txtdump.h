@@ -39,19 +39,10 @@
 
 #include <cstdio>
 
-#include "gromacs/topology/idef.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_mtop_t;
-struct t_atoms;
-struct t_atomtypes;
-struct t_block;
-struct t_blocka;
-struct t_commrec;
-struct t_idef;
 struct t_inputrec;
-struct t_topology;
-struct t_tpxheader;
 
 #define LINE_WIDTH  80
 #define RMARGIN     10
@@ -67,41 +58,19 @@ void pr_ivec(FILE *fp, int indent, const char *title, const int vec[], int n, gm
 void pr_ivecs(FILE *fp, int indent, const char *title, const ivec vec[], int n, gmx_bool bShowNumbers);
 void pr_bvec(FILE *fp, int indent, const char *title, const gmx_bool vec[], int n, gmx_bool bShowNnumbers);
 void pr_rvec(FILE *fp, int indent, const char *title, const real vec[], int n, gmx_bool bShowNumbers);
-void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n, int dim);
+void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, const rvec vec[], int n, int dim);
 void pr_dvec(FILE *fp, int indent, const char *title, const double vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs(FILE *fp, int indent, const char *title, const rvec vec[], int n);
 void pr_rvecs_len(FILE *fp, int indent, const char *title, const rvec vec[], int n);
 void pr_reals(FILE *fp, int indent, const char *title, const real vec[], int n);
 void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int n);
 void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, int n, int dim);
-void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx_bool bShowNumbers);
-void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers);
-void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist, gmx_bool bShowNumbers);
-void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
-void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef, gmx_bool bShowNumbers);
+void pr_int(FILE *fp, int indent, const char *title, int i);
+void pr_real(FILE *fp, int indent, const char *title, real r);
+void pr_double(FILE *fp, int indent, const char *title, double d);
+void pr_str(FILE *fp, int indent, const char *title, const char *s);
+void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_bool bShowNumbers);
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat);
-void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
-              gmx_bool bShownumbers);
-void pr_atomtypes(FILE *fp, int indent, const char *title,
-                  t_atomtypes *atomtypes, gmx_bool bShowNumbers);
-void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
-             gmx_bool bShowNumbers);
-void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_bool bShowNumbers);
-/*
- * This routine prints out a (human) readable representation of
- * the topology to the file fp. Ident specifies the number of
- * spaces the text should be indented. Title is used to print a
- * header text.
- */
-void pr_header(FILE *fp, int indent, const char *title, const t_tpxheader *sh);
-/*
- * This routine prints out a (human) readable representation of
- * a header to the file fp. Ident specifies the number of spaces
- * the text should be indented. Title is used to print a header text.
- */
 
-void pr_commrec(FILE *fp, int indent, const struct t_commrec *cr);
-
-#endif  /* GMX_FILEIO_TXTDUMP_H */
+#endif

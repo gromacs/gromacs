@@ -58,7 +58,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/conformation-utilities.h"

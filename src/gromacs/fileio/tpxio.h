@@ -34,23 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_TPXIO_H
 #define GMX_FILEIO_TPXIO_H
 
+#include <cstdio>
 
-/**************************************************************
- *
- * The routines in the corresponding c-file tpxio.c
- * are based on the lower level routines in gmxfio.c
- *
- **************************************************************/
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_mtop_t;
 struct t_atoms;
@@ -124,8 +114,6 @@ int read_tpx_top(const char *fn,
 gmx_bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */
 
-#ifdef __cplusplus
-}
-#endif
+void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh);
 
 #endif

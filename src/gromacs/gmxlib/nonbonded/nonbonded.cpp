@@ -46,7 +46,6 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"

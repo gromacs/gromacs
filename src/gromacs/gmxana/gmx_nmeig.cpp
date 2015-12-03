@@ -43,7 +43,6 @@
 #include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"

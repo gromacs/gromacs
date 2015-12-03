@@ -40,6 +40,7 @@
 
 #include "tpxio.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -49,6 +50,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
+#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -3686,4 +3688,29 @@ int read_tpx_top(const char *fn,
 gmx_bool fn2bTPX(const char *file)
 {
     return (efTPR == fn2ftp(file));
+}
+
+void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh)
+{
+    if (available(fp, sh, indent, title))
+    {
+        indent = pr_title(fp, indent, title);
+        pr_indent(fp, indent);
+        fprintf(fp, "bIr    = %spresent\n", sh->bIr ? "" : "not ");
+        pr_indent(fp, indent);
+        fprintf(fp, "bBox   = %spresent\n", sh->bBox ? "" : "not ");
+        pr_indent(fp, indent);
+        fprintf(fp, "bTop   = %spresent\n", sh->bTop ? "" : "not ");
+        pr_indent(fp, indent);
+        fprintf(fp, "bX     = %spresent\n", sh->bX ? "" : "not ");
+        pr_indent(fp, indent);
+        fprintf(fp, "bV     = %spresent\n", sh->bV ? "" : "not ");
+        pr_indent(fp, indent);
+        fprintf(fp, "bF     = %spresent\n", sh->bF ? "" : "not ");
+
+        pr_indent(fp, indent);
+        fprintf(fp, "natoms = %d\n", sh->natoms);
+        pr_indent(fp, indent);
+        fprintf(fp, "lambda = %e\n", sh->lambda);
+    }
 }

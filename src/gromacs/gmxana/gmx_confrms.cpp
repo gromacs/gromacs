@@ -47,7 +47,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"

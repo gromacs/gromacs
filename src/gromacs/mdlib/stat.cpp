@@ -42,7 +42,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"

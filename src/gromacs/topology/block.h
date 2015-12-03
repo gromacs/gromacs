@@ -37,6 +37,8 @@
 #ifndef GMX_TOPOLOGY_BLOCK_H
 #define GMX_TOPOLOGY_BLOCK_H
 
+#include <stdio.h>
+
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -95,6 +97,9 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
  * (0, 1, 2, .. natom-1)
  * There is one atom per index entry
  */
+
+void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx_bool bShowNumbers);
+void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers);
 
 #ifdef __cplusplus
 }

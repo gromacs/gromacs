@@ -46,7 +46,6 @@
 #include <string.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
