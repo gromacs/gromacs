@@ -53,10 +53,10 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -67,6 +67,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)

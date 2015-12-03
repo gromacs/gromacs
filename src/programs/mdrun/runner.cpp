@@ -64,7 +64,6 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/gmx_detect_hardware.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"

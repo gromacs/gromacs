@@ -44,12 +44,12 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

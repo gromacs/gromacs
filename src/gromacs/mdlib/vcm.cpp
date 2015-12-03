@@ -39,9 +39,9 @@
 
 #include "vcm.h"
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"

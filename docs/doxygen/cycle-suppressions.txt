@@ -16,4 +16,5 @@ topology -> fileio
 topology -> gmxlib
 pbcutil -> fileio
 pbcutil -> gmxlib
+pbcutil -> mdtypes
 listed-forces -> mdlib
