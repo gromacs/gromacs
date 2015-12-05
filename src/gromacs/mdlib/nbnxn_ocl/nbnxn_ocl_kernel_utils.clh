@@ -153,11 +153,11 @@ __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 /*! Apply force switch,  force + energy version. */
  __INLINE__ __device__
 void calculate_force_switch_F(cl_nbparam_params_t *nbparam,
-                              float     c6,
-                              float     c12,
-                              float     inv_r,
-                              float     r2,
-                              float *   F_invr)
+                              float                c6,
+                              float                c12,
+                              float                inv_r,
+                              float                r2,
+                              float               *F_invr)
 {
     float r, r_switch;
 
@@ -179,12 +179,12 @@ void calculate_force_switch_F(cl_nbparam_params_t *nbparam,
 /*! Apply force switch, force-only version. */
 __INLINE__ __device__
 void calculate_force_switch_F_E(cl_nbparam_params_t *nbparam,
-                                float               c6,
-                                float               c12,
-                                float               inv_r,
-                                float               r2,
-                                float      *F_invr,
-                                float      *E_lj)
+                                float                c6,
+                                float                c12,
+                                float                inv_r,
+                                float                r2,
+                                float               *F_invr,
+                                float               *E_lj)
 {
     float r, r_switch;
 
@@ -214,12 +214,12 @@ void calculate_force_switch_F_E(cl_nbparam_params_t *nbparam,
 /*! Apply potential switch, force-only version. */
 __INLINE__ __device__
 void calculate_potential_switch_F(cl_nbparam_params_t *nbparam,
-                                  float               c6,
-                                  float               c12,
-                                  float               inv_r,
-                                  float               r2,
-                                  float     *F_invr,
-                                  float     *E_lj)
+                                  float                c6,
+                                  float                c12,
+                                  float                inv_r,
+                                  float                r2,
+                                  float               *F_invr,
+                                  float               *E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -248,12 +248,12 @@ void calculate_potential_switch_F(cl_nbparam_params_t *nbparam,
 /*! Apply potential switch, force + energy version. */
 __INLINE__ __device__
 void calculate_potential_switch_F_E(cl_nbparam_params_t *nbparam,
-                                    float               c6,
-                                    float               c12,
-                                    float               inv_r,
-                                    float               r2,
-                                    float              *F_invr,
-                                    float              *E_lj)
+                                    float                c6,
+                                    float                c12,
+                                    float                inv_r,
+                                    float                r2,
+                                    float               *F_invr,
+                                    float               *E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -282,7 +282,7 @@ void calculate_potential_switch_F_E(cl_nbparam_params_t *nbparam,
  *  geometric combination rule.
  */
 __INLINE__ __device__
-void calculate_lj_ewald_comb_geom_F(__constant float *     nbfp_comb_climg2d,
+void calculate_lj_ewald_comb_geom_F(__constant float * nbfp_comb_climg2d,
                                     int                typei,
                                     int                typej,
                                     float              r2,
@@ -309,17 +309,17 @@ void calculate_lj_ewald_comb_geom_F(__constant float *     nbfp_comb_climg2d,
  *  geometric combination rule.
  */
 __INLINE__ __device__
-void calculate_lj_ewald_comb_geom_F_E(__constant float *nbfp_comb_climg2d,
+void calculate_lj_ewald_comb_geom_F_E(__constant float    *nbfp_comb_climg2d,
                                       cl_nbparam_params_t *nbparam,
-                                      int                typei,
-                                      int                typej,
-                                      float              r2,
-                                      float              inv_r2,
-                                      float              lje_coeff2,
-                                      float              lje_coeff6_6,
-                                      float              int_bit,
-                                      float             *F_invr,
-                                      float             *E_lj)
+                                      int                  typei,
+                                      int                  typej,
+                                      float                r2,
+                                      float                inv_r2,
+                                      float                lje_coeff2,
+                                      float                lje_coeff6_6,
+                                      float                int_bit,
+                                      float               *F_invr,
+                                      float               *E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
@@ -345,18 +345,18 @@ void calculate_lj_ewald_comb_geom_F_E(__constant float *nbfp_comb_climg2d,
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
 __INLINE__ __device__
-void calculate_lj_ewald_comb_LB_F_E(__constant float *nbfp_comb_climg2d,
+void calculate_lj_ewald_comb_LB_F_E(__constant float    *nbfp_comb_climg2d,
                                     cl_nbparam_params_t *nbparam,
-                                    int                typei,
-                                    int                typej,
-                                    float              r2,
-                                    float              inv_r2,
-                                    float              lje_coeff2,
-                                    float              lje_coeff6_6,
-                                    float              int_bit,
-                                    bool               with_E_lj,
-                                    float             *F_invr,
-                                    float             *E_lj)
+                                    int                  typei,
+                                    int                  typej,
+                                    float                r2,
+                                    float                inv_r2,
+                                    float                lje_coeff2,
+                                    float                lje_coeff6_6,
+                                    float                int_bit,
+                                    bool                 with_E_lj,
+                                    float               *F_invr,
+                                    float               *E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
     float sigma, sigma2, epsilon;
@@ -392,9 +392,9 @@ void calculate_lj_ewald_comb_LB_F_E(__constant float *nbfp_comb_climg2d,
  *  Original idea: from the OpenMM project
  */
 __INLINE__ __device__ float
-interpolate_coulomb_force_r(__constant float*     coulomb_tab_climg2d,
-                            float r,
-                            float scale)
+interpolate_coulomb_force_r(__constant float *coulomb_tab_climg2d,
+                            float             r,
+                            float             scale)
 {
     float   normalized = scale * r;
     int     index      = (int) normalized;
@@ -449,8 +449,8 @@ float pmecorrF(float z2)
  *  arbitrary array sizes.
  */
 /* AMD OpenCL compiler error "Undeclared function index 1024" if __INLINE__d */
-//__INLINE__ __device__
-void reduce_force_j_generic(__local float *f_buf, __global float *fout,//__global float3 *fout,
+__INLINE__ __device__
+void reduce_force_j_generic(__local float *f_buf, __global float *fout,
                             int tidxi, int tidxj, int aidx)
 {
     /* Split the reduction between the first 3 column threads
@@ -565,10 +565,10 @@ void reduce_force_i(__local float *f_buf, __global float *f,
  *  array sizes.
  */
 __INLINE__ __device__
-void reduce_energy_pow2(volatile __local float *buf,
+void reduce_energy_pow2(volatile __local float  *buf,
                         volatile __global float *e_lj,
                         volatile __global float *e_el,
-                        unsigned int tidx)
+                        unsigned int             tidx)
 {
     int     i, j;
     float   e1, e2;
