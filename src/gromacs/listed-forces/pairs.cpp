@@ -342,7 +342,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
 real
 do_pairs(int ftype, int nbonds,
          const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec f[], rvec fshift[],
+         const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          real *lambda, real *dvdl,
          const t_mdatoms *md,
@@ -539,7 +539,7 @@ do_pairs(int ftype, int nbonds,
 void
 do_pairs_noener_simd(int nbonds,
                      const t_iatom iatoms[], const t_iparams iparams[],
-                     const rvec x[], rvec f[],
+                     const rvec x[], rvec4 f[],
                      const struct t_pbc *pbc,
                      const t_mdatoms *md,
                      const t_forcerec *fr)
@@ -632,8 +632,8 @@ do_pairs_noener_simd(int nbonds,
          * Note that here we might add multiple force components for some atoms
          * due to the SIMD padding. But the extra force components are zero.
          */
-        transposeScatterIncrU<3>(reinterpret_cast<real *>(f), ai, fx, fy, fz);
-        transposeScatterDecrU<3>(reinterpret_cast<real *>(f), aj, fx, fy, fz);
+        transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ai, fx, fy, fz);
+        transposeScatterDecrU<4>(reinterpret_cast<real *>(f), aj, fx, fy, fz);
     }
 }
 

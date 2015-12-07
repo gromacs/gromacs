@@ -46,6 +46,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/bitmask.h"
 
 /* We reduce the force array in blocks of 32 atoms. This is large enough
@@ -58,7 +59,7 @@ static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
 /*! \internal \brief struct with output for bonded forces, used per thread */
 typedef struct
 {
-    rvec             *f;            /**< Force array */
+    rvec4            *f;            /**< Force array */
     int               f_nalloc;     /**< Allocation size of f */
     gmx_bitmask_t    *mask;         /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
     int               nblock_used;  /**< Number of blocks touched by our thread */
