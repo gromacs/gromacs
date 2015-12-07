@@ -80,6 +80,22 @@ avx256Transpose3By4InLanes(__m256 * v0,
     *v2       = _mm256_shuffle_ps(t2, *v2, _MM_SHUFFLE(0, 2, 1, 0));
 }
 
+static inline void gmx_simdcall
+avx256Transpose4By4InLanes(__m256 * v0,
+                           __m256 * v1,
+                           __m256 * v2,
+                           __m256 * v3)
+{
+    __m256 t0 = _mm256_unpacklo_ps(*v0, *v1);
+    __m256 t1 = _mm256_unpackhi_ps(*v0, *v1);
+    __m256 t2 = _mm256_unpacklo_ps(*v2, *v3);
+    __m256 t3 = _mm256_unpackhi_ps(*v2, *v3);
+    *v0       = _mm256_shuffle_ps(t0, t2, _MM_SHUFFLE(1, 0, 1, 0));
+    *v1       = _mm256_shuffle_ps(t0, t2, _MM_SHUFFLE(3, 2, 3, 2));
+    *v2       = _mm256_shuffle_ps(t1, t3, _MM_SHUFFLE(1, 0, 1, 0));
+    *v3       = _mm256_shuffle_ps(t1, t3, _MM_SHUFFLE(3, 2, 3, 2));
+}
+
 template <int align>
 static inline void gmx_simdcall
 gatherLoadTranspose(const float *        base,
@@ -242,7 +258,17 @@ transposeScatterIncrU(float *              base,
 
     assert(std::size_t(offset) % 32 == 0);
 
-    avx256Transpose3By4InLanes(&v0.simdInternal_, &v1.simdInternal_, &v2.simdInternal_, &tv3);
+    if (align == 4)
+    {
+        // We will operate on all 4 output elements, so add 0 to element 3
+        tv3 = _mm256_setzero_ps();
+
+         avx256Transpose4By4InLanes(&v0.simdInternal_, &v1.simdInternal_, &v2.simdInternal_, &tv3);
+    }
+    else
+    {
+        avx256Transpose3By4InLanes(&v0.simdInternal_, &v1.simdInternal_, &v2.simdInternal_, &tv3);
+    }
 
     t4 = _mm256_extractf128_ps(v0.simdInternal_, 0x1);
     t5 = _mm256_extractf128_ps(v1.simdInternal_, 0x1);
@@ -253,29 +279,46 @@ transposeScatterIncrU(float *              base,
     t2 = _mm256_castps256_ps128(v2.simdInternal_);
     t3 = _mm256_castps256_ps128(tv3);
 
-    t0 = _mm_add_ps(t0, _mm_maskload_ps( base + align * offset[0], mask));
-    _mm_maskstore_ps(base + align * offset[0], mask, t0);
+    if (align == 4)
+    {
+        // We should probably move this code to transposeScatterIncr()
+        assert(std::size_t(base) % 16 == 0);
 
-    t1 = _mm_add_ps(t1, _mm_maskload_ps( base + align * offset[1], mask));
-    _mm_maskstore_ps(base + align * offset[1], mask, t1);
+        _mm_store_ps(base + align * offset[0], _mm_add_ps(_mm_load_ps(base + align * offset[0]), t0));
+        _mm_store_ps(base + align * offset[1], _mm_add_ps(_mm_load_ps(base + align * offset[1]), t1));
+        _mm_store_ps(base + align * offset[2], _mm_add_ps(_mm_load_ps(base + align * offset[2]), t2));
+        _mm_store_ps(base + align * offset[3], _mm_add_ps(_mm_load_ps(base + align * offset[3]), t3));
+        _mm_store_ps(base + align * offset[4], _mm_add_ps(_mm_load_ps(base + align * offset[4]), t4));
+        _mm_store_ps(base + align * offset[5], _mm_add_ps(_mm_load_ps(base + align * offset[5]), t5));
+        _mm_store_ps(base + align * offset[6], _mm_add_ps(_mm_load_ps(base + align * offset[6]), t6));
+        _mm_store_ps(base + align * offset[7], _mm_add_ps(_mm_load_ps(base + align * offset[7]), t7));
+    }
+    else
+    {
+        t0 = _mm_add_ps(t0, _mm_maskload_ps( base + align * offset[0], mask));
+        _mm_maskstore_ps(base + align * offset[0], mask, t0);
 
-    t2 = _mm_add_ps(t2, _mm_maskload_ps( base + align * offset[2], mask));
-    _mm_maskstore_ps(base + align * offset[2], mask, t2);
+        t1 = _mm_add_ps(t1, _mm_maskload_ps( base + align * offset[1], mask));
+        _mm_maskstore_ps(base + align * offset[1], mask, t1);
 
-    t3 = _mm_add_ps(t3, _mm_maskload_ps( base + align * offset[3], mask));
-    _mm_maskstore_ps(base + align * offset[3], mask, t3);
+        t2 = _mm_add_ps(t2, _mm_maskload_ps( base + align * offset[2], mask));
+        _mm_maskstore_ps(base + align * offset[2], mask, t2);
 
-    t4 = _mm_add_ps(t4, _mm_maskload_ps( base + align * offset[4], mask));
-    _mm_maskstore_ps(base + align * offset[4], mask, t4);
+        t3 = _mm_add_ps(t3, _mm_maskload_ps( base + align * offset[3], mask));
+        _mm_maskstore_ps(base + align * offset[3], mask, t3);
 
-    t5 = _mm_add_ps(t5, _mm_maskload_ps( base + align * offset[5], mask));
-    _mm_maskstore_ps(base + align * offset[5], mask, t5);
+        t4 = _mm_add_ps(t4, _mm_maskload_ps( base + align * offset[4], mask));
+        _mm_maskstore_ps(base + align * offset[4], mask, t4);
 
-    t6 = _mm_add_ps(t6, _mm_maskload_ps( base + align * offset[6], mask));
-    _mm_maskstore_ps(base + align * offset[6], mask, t6);
+        t5 = _mm_add_ps(t5, _mm_maskload_ps( base + align * offset[5], mask));
+        _mm_maskstore_ps(base + align * offset[5], mask, t5);
 
-    t7 = _mm_add_ps(t7, _mm_maskload_ps( base + align * offset[7], mask));
-    _mm_maskstore_ps(base + align * offset[7], mask, t7);
+        t6 = _mm_add_ps(t6, _mm_maskload_ps( base + align * offset[6], mask));
+        _mm_maskstore_ps(base + align * offset[6], mask, t6);
+
+        t7 = _mm_add_ps(t7, _mm_maskload_ps( base + align * offset[7], mask));
+        _mm_maskstore_ps(base + align * offset[7], mask, t7);
+    }
 }
 
 template <int align>
@@ -293,7 +336,17 @@ transposeScatterDecrU(float *              base,
 
     assert(std::size_t(offset) % 32 == 0);
 
-    avx256Transpose3By4InLanes(&v0.simdInternal_, &v1.simdInternal_, &v2.simdInternal_, &tv3);
+    if (align == 4)
+    {
+        // We will operate on all 4 output elements, so subtract 0 to element 3
+        tv3 = _mm256_setzero_ps();
+
+        avx256Transpose4By4InLanes(&v0.simdInternal_, &v1.simdInternal_, &v2.simdInternal_, &tv3);
+    }
+    else
+    {
+        avx256Transpose3By4InLanes(&v0.simdInternal_, &v1.simdInternal_, &v2.simdInternal_, &tv3);
+    }
 
     t4 = _mm256_extractf128_ps(v0.simdInternal_, 0x1);
     t5 = _mm256_extractf128_ps(v1.simdInternal_, 0x1);
@@ -304,29 +357,46 @@ transposeScatterDecrU(float *              base,
     t2 = _mm256_castps256_ps128(v2.simdInternal_);
     t3 = _mm256_castps256_ps128(tv3);
 
-    t0 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[0], mask), t0);
-    _mm_maskstore_ps(base + align * offset[0], mask, t0);
+    if (align == 4)
+    {
+        // We should probably move this code to transposeScatterDecr()
+        assert(std::size_t(base) % 16 == 0);
 
-    t1 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[1], mask), t1);
-    _mm_maskstore_ps(base + align * offset[1], mask, t1);
+        _mm_store_ps(base + align * offset[0], _mm_sub_ps(_mm_load_ps(base + align * offset[0]), t0));
+        _mm_store_ps(base + align * offset[1], _mm_sub_ps(_mm_load_ps(base + align * offset[1]), t1));
+        _mm_store_ps(base + align * offset[2], _mm_sub_ps(_mm_load_ps(base + align * offset[2]), t2));
+        _mm_store_ps(base + align * offset[3], _mm_sub_ps(_mm_load_ps(base + align * offset[3]), t3));
+        _mm_store_ps(base + align * offset[4], _mm_sub_ps(_mm_load_ps(base + align * offset[4]), t4));
+        _mm_store_ps(base + align * offset[5], _mm_sub_ps(_mm_load_ps(base + align * offset[5]), t5));
+        _mm_store_ps(base + align * offset[6], _mm_sub_ps(_mm_load_ps(base + align * offset[6]), t6));
+        _mm_store_ps(base + align * offset[7], _mm_sub_ps(_mm_load_ps(base + align * offset[7]), t7));
+    }
+    else
+    {
+        t0 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[0], mask), t0);
+        _mm_maskstore_ps(base + align * offset[0], mask, t0);
 
-    t2 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[2], mask), t2);
-    _mm_maskstore_ps(base + align * offset[2], mask, t2);
+        t1 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[1], mask), t1);
+        _mm_maskstore_ps(base + align * offset[1], mask, t1);
 
-    t3 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[3], mask), t3);
-    _mm_maskstore_ps(base + align * offset[3], mask, t3);
+        t2 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[2], mask), t2);
+        _mm_maskstore_ps(base + align * offset[2], mask, t2);
 
-    t4 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[4], mask), t4);
-    _mm_maskstore_ps(base + align * offset[4], mask, t4);
+        t3 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[3], mask), t3);
+        _mm_maskstore_ps(base + align * offset[3], mask, t3);
 
-    t5 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[5], mask), t5);
-    _mm_maskstore_ps(base + align * offset[5], mask, t5);
+        t4 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[4], mask), t4);
+        _mm_maskstore_ps(base + align * offset[4], mask, t4);
 
-    t6 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[6], mask), t6);
-    _mm_maskstore_ps(base + align * offset[6], mask, t6);
+        t5 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[5], mask), t5);
+        _mm_maskstore_ps(base + align * offset[5], mask, t5);
 
-    t7 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[7], mask), t7);
-    _mm_maskstore_ps(base + align * offset[7], mask, t7);
+        t6 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[6], mask), t6);
+        _mm_maskstore_ps(base + align * offset[6], mask, t6);
+
+        t7 = _mm_sub_ps(_mm_maskload_ps( base + align * offset[7], mask), t7);
+        _mm_maskstore_ps(base + align * offset[7], mask, t7);
+    }
 }
 
 static inline void gmx_simdcall
