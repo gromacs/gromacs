@@ -390,11 +390,8 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     {
         try
         {
-            if (t > 0)
-            {
-                calc_bonded_reduction_mask(fr->natoms_force, &bt->f_t[t],
-                                           idef, t, bt->nthreads);
-            }
+            calc_bonded_reduction_mask(fr->natoms_force, &bt->f_t[t],
+                                       idef, t, bt->nthreads);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -416,7 +413,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
 
         /* Generate the union over the threads of the bitmask */
         bitmask_clear(mask);
-        for (int t = 1; t < bt->nthreads; t++)
+        for (int t = 0; t < bt->nthreads; t++)
         {
             bitmask_union(mask, bt->f_t[t].mask[b]);
         }
@@ -481,19 +478,16 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
         {
             try
             {
-                /* Thread 0 uses the global force and energy arrays */
-                if (t > 0)
+                /* Note that thread 0 uses the global fshift and energy arrays,
+                 * but to keep the code simple, we initialize all data here.
+                 */
+                bt->f_t[t].f        = NULL;
+                bt->f_t[t].f_nalloc = 0;
+                snew(bt->f_t[t].fshift, SHIFTS);
+                bt->f_t[t].grpp.nener = nenergrp*nenergrp;
+                for (int i = 0; i < egNR; i++)
                 {
-                    int i;
-
-                    bt->f_t[t].f        = NULL;
-                    bt->f_t[t].f_nalloc = 0;
-                    snew(bt->f_t[t].fshift, SHIFTS);
-                    bt->f_t[t].grpp.nener = nenergrp*nenergrp;
-                    for (i = 0; i < egNR; i++)
-                    {
-                        snew(bt->f_t[t].grpp.ener[i], bt->f_t[t].grpp.nener);
-                    }
+                    snew(bt->f_t[t].grpp.ener[i], bt->f_t[t].grpp.nener);
                 }
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
