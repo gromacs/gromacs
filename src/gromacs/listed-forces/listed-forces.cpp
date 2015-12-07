@@ -92,7 +92,8 @@ isPairInteraction(int ftype)
 static void
 zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
-    f_thread_t *f_t = &bt->f_t[thread];
+    f_thread_t *f_t      = &bt->f_t[thread];
+    const int   nelem_fa = sizeof(*f_t->f)/sizeof(real);
 
     for (int i = 0; i < f_t->nblock_used; i++)
     {
@@ -100,7 +101,10 @@ zero_thread_output(struct bonded_threading_t *bt, int thread)
         int a1 = a0 + reduction_block_size;
         for (int a = a0; a < a1; a++)
         {
-            clear_rvec(f_t->f[a]);
+            for (int d = 0; d < nelem_fa; d++)
+            {
+                f_t->f[a][d] = 0;
+            }
         }
     }
 
@@ -155,12 +159,12 @@ reduce_thread_forces(int n, rvec *f,
     {
         try
         {
-            int   ind = bt->block_index[b];
-            rvec *fp[MAX_BONDED_THREADS];
+            int    ind = bt->block_index[b];
+            rvec4 *fp[MAX_BONDED_THREADS];
 
             /* Determine which threads contribute to this block */
             int nfb = 0;
-            for (int ft = 1; ft < bt->nthreads; ft++)
+            for (int ft = 0; ft < bt->nthreads; ft++)
             {
                 if (bitmask_is_set(bt->mask[ind], ft))
                 {
@@ -202,7 +206,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
     }
 
     /* When necessary, reduce energy and virial using one thread only */
-    if (bCalcEnerVir)
+    if (bCalcEnerVir && bt->nthreads > 1)
     {
         f_thread_t *f_t = bt->f_t;
 
@@ -249,7 +253,7 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
 real
 calc_one_bond(int thread,
               int ftype, const t_idef *idef,
-              const rvec x[], rvec f[], rvec fshift[],
+              const rvec x[], rvec4 f[], rvec fshift[],
               t_forcerec *fr,
               const t_pbc *pbc, const t_graph *g,
               gmx_grppairener_t *grpp,
@@ -491,13 +495,17 @@ void calc_listed(const struct gmx_multisim_t *ms,
             int                ftype;
             real              *epot, v;
             /* thread stuff */
-            rvec              *ft, *fshift;
+            rvec4             *ft;
+            rvec              *fshift;
             real              *dvdlt;
             gmx_grppairener_t *grpp;
 
+            zero_thread_output(bt, thread);
+
+            ft = bt->f_t[thread].f;
+
             if (thread == 0)
             {
-                ft     = f;
                 fshift = fr->fshift;
                 epot   = enerd->term;
                 grpp   = &enerd->grpp;
@@ -505,9 +513,6 @@ void calc_listed(const struct gmx_multisim_t *ms,
             }
             else
             {
-                zero_thread_output(bt, thread);
-
-                ft     = bt->f_t[thread].f;
                 fshift = bt->f_t[thread].fshift;
                 epot   = bt->f_t[thread].ener;
                 grpp   = &bt->f_t[thread].grpp;
@@ -531,16 +536,13 @@ void calc_listed(const struct gmx_multisim_t *ms,
     }
     wallcycle_sub_stop(wcycle, ewcsLISTED);
 
-    if (bt->nthreads > 1)
-    {
-        wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-        reduce_thread_output(fr->natoms_force, f, fr->fshift,
-                             enerd->term, &enerd->grpp, dvdl,
-                             bt,
-                             bCalcEnerVir,
-                             force_flags & GMX_FORCE_DHDL);
-        wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
-    }
+    wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
+    reduce_thread_output(fr->natoms_force, f, fr->fshift,
+                         enerd->term, &enerd->grpp, dvdl,
+                         bt,
+                         bCalcEnerVir,
+                         force_flags & GMX_FORCE_DHDL);
+    wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
 
     /* Remaining code does not have enough flops to bother counting */
     if (force_flags & GMX_FORCE_DHDL)
@@ -572,7 +574,8 @@ void calc_listed_lambda(const t_idef *idef,
     int           ftype, nr_nonperturbed, nr;
     real          v;
     real          dvdl_dum[efptNR] = {0};
-    rvec         *f, *fshift;
+    rvec4        *f;
+    rvec         *fshift;
     const  t_pbc *pbc_null;
     t_idef        idef_fe;
 

@@ -47,6 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -60,7 +61,7 @@ struct t_pbc;
  */
 real
 do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec f[], rvec fshift[],
+         const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
          gmx_grppairener_t *grppener, int *global_atom_index);

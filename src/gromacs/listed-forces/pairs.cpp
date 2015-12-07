@@ -338,7 +338,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
 real
 do_pairs(int ftype, int nbonds,
          const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec f[], rvec fshift[],
+         const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          real *lambda, real *dvdl,
          const t_mdatoms *md,
