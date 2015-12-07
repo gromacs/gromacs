@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,14 @@ struct t_graph;
 struct t_mdatoms;
 struct t_pbc;
 
+/* Real vector type with an additional, unused 4th element.
+ * This type is used to allow aligned 4-wide SIMD loads and stores.
+ */
+typedef real rvec4[4];
+
 typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
                       const t_iparams iparams[],
-                      const rvec x[], rvec f[], rvec fshift[],
+                      const rvec x[], rvec4 f[], rvec fshift[],
                       const struct t_pbc *pbc, const struct t_graph *g,
                       real lambda, real *dvdlambda,
                       const struct t_mdatoms *md, struct t_fcdata *fcd,
