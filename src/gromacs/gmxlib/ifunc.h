@@ -48,9 +48,14 @@ struct t_graph;
 struct t_mdatoms;
 struct t_pbc;
 
+/* Real vector type with an additional, unused 4th element.
+ * This type is used to allow aligned 4-wide SIMD loads and stores.
+ */
+typedef real rvec4[4];
+
 typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
                       const t_iparams iparams[],
-                      const rvec x[], rvec f[], rvec fshift[],
+                      const rvec x[], rvec4 f[], rvec fshift[],
                       const struct t_pbc *pbc, const struct t_graph *g,
                       real lambda, real *dvdlambda,
                       const struct t_mdatoms *md, struct t_fcdata *fcd,
