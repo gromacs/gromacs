@@ -43,22 +43,23 @@
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
 
+#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/bitmask.h"
 
-/* We reduce the force array in blocks of 32 atoms. This is large enough
- * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
+/* We reduce the force array in blocks of 16 atoms. This is large enough
+ * to not cause overhead and 16*sizeof(rvec4) is a multiple of the cache-line
  * size on all systems.
  */
-static const int reduction_block_size = 32; /**< Force buffer block size in atoms*/
-static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
+static const int reduction_block_size = 16; /**< Force buffer block size in atoms*/
+static const int reduction_block_bits =  4; /**< log2(reduction_block_size) */
 
 /*! \internal \brief struct with output for bonded forces, used per thread */
 typedef struct
 {
-    rvec             *f;            /**< Force array */
+    rvec4            *f;            /**< Force array */
     int               f_nalloc;     /**< Allocation size of f */
     gmx_bitmask_t    *mask;         /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
     int               nblock_used;  /**< Number of blocks touched by our thread */
