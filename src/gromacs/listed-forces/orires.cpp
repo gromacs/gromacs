@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -611,7 +611,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 }
 
 real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
-            const rvec x[], rvec f[], rvec fshift[],
+            const rvec x[], rvec4 f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real gmx_unused lambda, real gmx_unused *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata *fcd,
