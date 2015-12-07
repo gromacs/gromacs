@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -338,7 +338,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
 real
 do_pairs(int ftype, int nbonds,
          const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec f[], rvec fshift[],
+         const rvec x[], rvec4 f[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          real *lambda, real *dvdl,
          const t_mdatoms *md,

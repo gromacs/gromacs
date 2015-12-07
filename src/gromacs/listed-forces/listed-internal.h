@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/bitmask.h"
 
 /* We reduce the force array in blocks of 32 atoms. This is large enough
@@ -58,7 +59,7 @@ static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
 /*! \internal \brief struct with output for bonded forces, used per thread */
 typedef struct
 {
-    rvec             *f;            /**< Force array */
+    rvec4            *f;            /**< Force array */
     int               f_nalloc;     /**< Allocation size of f */
     gmx_bitmask_t    *mask;         /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
     int               nblock_used;  /**< Number of blocks touched by our thread */
