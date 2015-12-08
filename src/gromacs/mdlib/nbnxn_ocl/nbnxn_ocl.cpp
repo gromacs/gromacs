@@ -69,6 +69,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "nbnxn_ocl_types.h"
 
@@ -331,7 +332,7 @@ void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     cl_error = clEnqueueWaitForEvents(stream, 1, ocl_event);
 #endif
 
-    assert(CL_SUCCESS == cl_error);
+    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error));
 
     /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
     cl_error = clReleaseEvent(*ocl_event);
@@ -928,6 +929,15 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     /* don't launch non-local copy-back if there was no non-local work to do */
     if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
     {
+        /* TODO An alternative way to signal that non-local work is
+           complete is to use a clEnqueueMarker+clEnqueueBarrier
+           pair. However, the use of bNonLocalStreamActive has the
+           advantage of being local to the host, so probably minimizes
+           overhead. Curiously, for NVIDIA OpenCL with an empty-domain
+           test case, overall simulation performance was higher with
+           the API calls, but this has not been tested on AMD OpenCL,
+           so could be worth considering in future. */
+        nb->bNonLocalStreamActive = false;
         return;
     }
 
@@ -947,7 +957,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
     /* With DD the local D2H transfer can only start after the non-local
        has been launched. */
-    if (iloc == eintLocal && nb->bUseTwoStreams)
+    if (iloc == eintLocal && nb->bNonLocalStreamActive)
     {
         sync_ocl_event(stream, &(nb->nonlocal_done));
     }
@@ -972,6 +982,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
         cl_error = clEnqueueMarker(stream, &(nb->nonlocal_done));
 #endif
         assert(CL_SUCCESS == cl_error);
+        nb->bNonLocalStreamActive = true;
     }
 
     /* only transfer energies in the local stream */
