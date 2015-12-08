@@ -45,6 +45,8 @@
 
 #include "config.h"
 
+#include <cstdio>
+
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -217,26 +219,35 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
         caller.addOption("-nsteps", nsteps_);
     }
 
-#ifdef GMX_MPI
-#  ifdef GMX_GPU
-#    ifdef GMX_THREAD_MPI
-    int         numGpusNeeded = g_numThreads;
-#    else   /* Must be real MPI */
-    int         numGpusNeeded = gmx_node_num();
-#    endif
-    std::string gpuIdString(numGpusNeeded, '0');
-    caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
-#endif
-
 #ifdef GMX_THREAD_MPI
-    caller.addOption("-nt", g_numThreads);
+    caller.addOption("-ntmpi", g_numThreads);
 #endif
 
 #ifdef GMX_OPENMP
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
+#if defined GMX_GPU
+    /* TODO Ideally, with real MPI, we could call
+     * gmx_collect_hardware_mpi() here and find out how many nodes
+     * mdrun will run on. For now, we assume that we're running on one
+     * node regardless of the number of ranks, because that's true in
+     * Jenkins and for most developers running the tests. */
+    int numberOfNodes = 1;
+#if defined GMX_THREAD_MPI
+    /* Can't use gmx_node_num() because it is only valid after spawn of thread-MPI threads */
+    int numberOfRanks = g_numThreads;
+#elif defined GMX_LIB_MPI
+    int numberOfRanks = gmx_node_num();
+#else
+    int numberOfRanks = 1;
+#endif
+    if (numberOfRanks > numberOfNodes && !gmx_multiple_gpu_per_node_supported())
+    {
+        fprintf(stderr, "GROMACS in this build configuration cannot run on more than one GPU per node, so with %d ranks and %d nodes, this test will disable GPU support", numberOfRanks, numberOfNodes);
+        caller.addOption("-nb", "cpu");
+    }
+#endif
     return gmx_mdrun(caller.argc(), caller.argv());
 }
 
