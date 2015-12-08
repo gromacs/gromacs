@@ -2629,6 +2629,7 @@ void init_forcerec(FILE              *fp,
             break;
 
         case eelPME:
+        case eelP3M_AD:
         case eelEWALD:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
             break;
