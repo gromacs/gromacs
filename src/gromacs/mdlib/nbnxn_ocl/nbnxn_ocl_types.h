@@ -290,6 +290,7 @@ struct gmx_nbnxn_ocl_t
     ///@}
 
     cl_bool             bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU          */
+    cl_bool             bNonLocalStreamActive; /**< true iff the non-local stream did work this step    */
 
     cl_atomdata_t      *atdat;          /**< atom data                                                  */
     cl_nbparam_t       *nbparam;        /**< parameters required for the non-bonded calc.               */

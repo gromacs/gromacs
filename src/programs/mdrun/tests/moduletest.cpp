@@ -217,20 +217,8 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
         caller.addOption("-nsteps", nsteps_);
     }
 
-#ifdef GMX_MPI
-#  ifdef GMX_GPU
-#    ifdef GMX_THREAD_MPI
-    int         numGpusNeeded = g_numThreads;
-#    else   /* Must be real MPI */
-    int         numGpusNeeded = gmx_node_num();
-#    endif
-    std::string gpuIdString(numGpusNeeded, '0');
-    caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
-#endif
-
 #ifdef GMX_THREAD_MPI
-    caller.addOption("-nt", g_numThreads);
+    caller.addOption("-ntmpi", g_numThreads);
 #endif
 
 #ifdef GMX_OPENMP
