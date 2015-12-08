@@ -561,6 +561,9 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
   been filed about this issue. A possible workaround would be to have a
   separate thread for issuing GPU commands. However this hasn't been implemented
   yet.
+- older CUDA versions (and/or drivers) are believed to have some
+  correctness issues for OpenCL support in |Gromacs|, so please use
+  the latest available CUDA version and driver.
 
 Limitations of interest to |Gromacs| developers:
 
