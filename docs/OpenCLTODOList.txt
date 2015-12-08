@@ -17,6 +17,13 @@ TABLE OF CONTENTS
 - Using more than one OpenCL GPU on a node is thought to work with thread-MPI,
   and is known to segfault with AMD OpenCL and OpenMPI on x86 and Linux.
 
+- Some NVIDIA OpenCL runtimes may have problems for GROMACS. Since
+  these are provided by the NVIDIA driver package (not CUDA, which
+  provides only header files and a library that dispatches to the
+  correct runtime), it is generally best to use the latest driver. It
+  would be good to find out the earliest driver version that does not
+  have problems.
+
 2. CODE IMPROVEMENTS
    =================
 - Errors returned by OpenCL functions are handled by using assert calls. This
