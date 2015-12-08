@@ -131,6 +131,8 @@ void ocl_pmalloc(void **h_ptr, size_t nbytes);
 /*! \brief Free host memory in malloc style */
 void ocl_pfree(void *h_ptr);
 
+/*! \brief Convert error code to diagnostic string */
+const char *ocl_get_error_string(cl_int error);
 
 #ifdef __cplusplus
 }

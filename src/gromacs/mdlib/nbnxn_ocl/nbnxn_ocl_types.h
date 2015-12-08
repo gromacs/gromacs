@@ -289,16 +289,17 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_zero_e_fshift;
     ///@}
 
-    cl_bool             bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU          */
+    cl_bool             bUseTwoStreams;        /**< true if doing both local/non-local NB work on GPU          */
+    cl_bool             bNonLocalStreamActive; /**< true indicates that the nonlocal_done event was enqueued   */
 
-    cl_atomdata_t      *atdat;          /**< atom data                                                  */
-    cl_nbparam_t       *nbparam;        /**< parameters required for the non-bonded calc.               */
-    cl_plist_t         *plist[2];       /**< pair-list data structures (local and non-local)            */
-    cl_nb_staging_t     nbst;           /**< staging area where fshift/energies get downloaded          */
+    cl_atomdata_t      *atdat;                 /**< atom data                                                  */
+    cl_nbparam_t       *nbparam;               /**< parameters required for the non-bonded calc.               */
+    cl_plist_t         *plist[2];              /**< pair-list data structures (local and non-local)            */
+    cl_nb_staging_t     nbst;                  /**< staging area where fshift/energies get downloaded          */
 
-    cl_mem              debug_buffer;   /**< debug buffer */
+    cl_mem              debug_buffer;          /**< debug buffer */
 
-    cl_command_queue    stream[2];      /**< local and non-local GPU queues                             */
+    cl_command_queue    stream[2];             /**< local and non-local GPU queues                             */
 
     /** events used for synchronization */
     cl_event nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
