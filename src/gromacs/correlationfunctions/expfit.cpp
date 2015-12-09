@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@
 
 #include <algorithm>
 
-#include "external/lmfit/lmcurve.h"
+#include "external/lmfit/gmx_lmcurve.h"
 
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
@@ -448,7 +448,7 @@ static gmx_bool lmfit_exp(int          nfit,
     /* Using default control structure for double precision fitting that
      * comes with the lmfit package (i.e. from the include file).
      */
-    control            = lm_control_double;
+    control            = gmx_lm_control_double;
     control.verbosity  = (bVerbose ? 1 : 0);
     control.n_maxpri   = 0;
     control.m_maxpri   = 0;
@@ -483,14 +483,14 @@ static gmx_bool lmfit_exp(int          nfit,
     do
     {
         ochisq = chisq;
-        lmcurve(nparam, parm, nfit, x, y, dy,
-                lmcurves[eFitFn], &control, status);
+        gmx_lmcurve(nparam, parm, nfit, x, y, dy,
+                    lmcurves[eFitFn], &control, status);
         chisq = gmx::square(status->fnorm);
         if (bVerbose)
         {
             printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
                    status->fnorm, status->nfev, status->userbreak,
-                   lm_infmsg[status->outcome]);
+                   gmx_lm_infmsg[status->outcome]);
         }
         if (bVerbose)
         {
