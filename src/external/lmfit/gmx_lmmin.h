@@ -12,21 +12,10 @@
  * Homepage:  apps.jcns.fz-juelich.de/lmfit
  */
 
-#ifndef LMMIN_H
-#define LMMIN_H
-#undef __BEGIN_DECLS
-#undef __END_DECLS
-#ifdef __cplusplus
-# define __BEGIN_DECLS extern "C" {
-# define __END_DECLS }
-#else
-# define __BEGIN_DECLS /* empty */
-# define __END_DECLS   /* empty */
-#endif
+#ifndef GMX_LMMIN_H
+#define GMX_LMMIN_H
 
-#include "lmstruct.h"
-
-__BEGIN_DECLS
+#include "gmx_lmstruct.h"
 
 /*! \brief
  * Levenberg-Marquardt minimization.
@@ -67,13 +56,9 @@ __BEGIN_DECLS
  *      status contains OUTPUT variables that inform about the fit result,
  *        as declared and explained in lmstruct.h
  */
-void lmmin( int n_par, double *par, int m_dat, const void *data,
-            void (*evaluate) (const double *par, int m_dat, const void *data,
-                              double *fvec, int *userbreak),
-            const lm_control_struct *control, lm_status_struct *status );
+void gmx_lmmin( const int n_par, double *par, const int m_dat, const void *data,
+                void (*evaluate) (const double *par, const int m_dat, const void *data,
+                                  double *fvec, int *userbreak),
+                const lm_control_struct *control, lm_status_struct *status );
 
-/* Refined calculation of Eucledian norm. */
-double lm_enorm( int, const double * );
-
-__END_DECLS
-#endif /* LMMIN_H */
+#endif /* GMX_LMMIN_H */
