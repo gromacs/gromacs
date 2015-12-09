@@ -12,7 +12,7 @@
  * Homepage:  apps.jcns.fz-juelich.de/lmfit
  */
 
-#include "lmmin.h"
+#include "gmx_lmmin.h"
 #include "gromacs/utility/basedefinitions.h"
 
 typedef struct {
@@ -37,11 +37,11 @@ void lmcurve_evaluate( const double *par, int m_dat, const void *data,
 }
 
 
-void lmcurve( int n_par, double *par, int m_dat,
-              const double *t, const double *y, const double *dy,
-              double (*f)( double t, const double *par ),
-              const lm_control_struct *control,
-              lm_status_struct *status )
+void gmx_lmcurve( int n_par, double *par, int m_dat,
+                  const double *t, const double *y, const double *dy,
+                  double (*f)( double t, const double *par ),
+                  const lm_control_struct *control,
+                  lm_status_struct *status )
 {
     lmcurve_data_struct data;
     data.t  = t;
@@ -49,6 +49,6 @@ void lmcurve( int n_par, double *par, int m_dat,
     data.dy = dy;
     data.f  = f;
 
-    lmmin( n_par, par, m_dat, (const void*) &data,
-           lmcurve_evaluate, control, status );
+    gmx_lmmin( n_par, par, m_dat, (const void*) &data,
+               lmcurve_evaluate, control, status );
 }

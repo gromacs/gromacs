@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include "lmmin.h"
+#include "gmx_lmmin.h"
 
 #define MIN(a, b) (((a) <= (b)) ? (a) : (b))
 #define MAX(a, b) (((a) >= (b)) ? (a) : (b))
@@ -58,11 +58,11 @@ void lm_qrsolv( int n, double *r, int ldr, int *ipvt, double *diag,
    LM_USER_TOL   1.e-14
  */
 
-const lm_control_struct lm_control_double = {
+const lm_control_struct gmx_lm_control_double = {
     LM_USERTOL, LM_USERTOL, LM_USERTOL, LM_USERTOL, 100., 100, 1,
     NULL, 0, -1, -1
 };
-const lm_control_struct lm_control_float = {
+const lm_control_struct gmx_lm_control_float = {
     1.e-7,      1.e-7,      1.e-7,      1.e-7,      100., 100, 1,
     NULL, 0, -1, -1
 };
@@ -72,7 +72,7 @@ const lm_control_struct lm_control_float = {
 /*  Message texts (indexed by status.info)                                   */
 /*****************************************************************************/
 
-const char *lm_infmsg[] = {
+const char *gmx_lm_infmsg[] = {
     "found zero (sum of squares below underflow limit)",
     "converged  (the relative error in the sum of squares is at most tol)",
     "converged  (the relative error of the parameter vector is at most tol)",
@@ -87,7 +87,7 @@ const char *lm_infmsg[] = {
     "stopped    (break requested within function evaluation)"
 };
 
-const char *lm_shortmsg[] = {
+const char *gmx_lm_shortmsg[] = {
     "found zero",
     "converged (f)",
     "converged (p)",
@@ -122,10 +122,10 @@ void lm_print_pars( int nout, const double *par, double fnorm, FILE* fout )
 /*  lmmin (main minimization routine)                                        */
 /*****************************************************************************/
 
-void lmmin( int n, double *x, int m, const void *data,
-            void (*evaluate) (const double *par, int m_dat, const void *data,
-                              double *fvec, int *userbreak),
-            const lm_control_struct *C, lm_status_struct *S )
+void gmx_lmmin( int n, double *x, int m, const void *data,
+                void (*evaluate) (const double *par, int m_dat, const void *data,
+                                  double *fvec, int *userbreak),
+                const lm_control_struct *C, lm_status_struct *S )
 {
     double       *fvec, *diag, *fjac, *qtf, *wa1, *wa2, *wa3, *wf;
     int          *ipvt;
@@ -266,7 +266,7 @@ void lmmin( int n, double *x, int m, const void *data,
     {
         goto terminate;
     }
-    fnorm = lm_enorm(m, fvec);
+    fnorm = gmx_lm_enorm(m, fvec);
     if (C->verbosity)
     {
         fprintf( msgfile, "lmmin start " );
@@ -409,7 +409,7 @@ void lmmin( int n, double *x, int m, const void *data,
                 {
                     wa3[j] = diag[j] * x[j];
                 }
-                xnorm = lm_enorm(n, wa3);
+                xnorm = gmx_lm_enorm(n, wa3);
                 if (C->verbosity >= 2)
                 {
                     fprintf( msgfile, "lmmin diag  " );
@@ -430,7 +430,7 @@ void lmmin( int n, double *x, int m, const void *data,
             }
             else
             {
-                xnorm = lm_enorm(n, x);
+                xnorm = gmx_lm_enorm(n, x);
             }
             /* initialize the step bound delta. */
             if (xnorm)
@@ -465,7 +465,7 @@ void lmmin( int n, double *x, int m, const void *data,
             /* used return values are fjac (partly), lmpar, wa1=x, wa3=diag*x */
 
             /* predict scaled reduction */
-            pnorm = lm_enorm(n, wa3);
+            pnorm = gmx_lm_enorm(n, wa3);
             temp2 = lmpar * SQR( pnorm / fnorm );
             for (j = 0; j < n; j++)
             {
@@ -475,7 +475,7 @@ void lmmin( int n, double *x, int m, const void *data,
                     wa3[i] -= fjac[j*m+i] * wa1[ipvt[j]];
                 }
             }
-            temp1  = SQR( lm_enorm(n, wa3) / fnorm );
+            temp1  = SQR( gmx_lm_enorm(n, wa3) / fnorm );
             prered = temp1 + 2 * temp2;
             dirder = -temp1 + temp2; /* scaled directional derivative */
 
@@ -498,7 +498,7 @@ void lmmin( int n, double *x, int m, const void *data,
             {
                 goto terminate;
             }
-            fnorm1 = lm_enorm(m, wf);
+            fnorm1 = gmx_lm_enorm(m, wf);
 
 /***  [inner]  Evaluate the scaled reduction.  ***/
 
@@ -580,7 +580,7 @@ void lmmin( int n, double *x, int m, const void *data,
                 {
                     fvec[i] = wf[i];
                 }
-                xnorm = lm_enorm(n, wa2);
+                xnorm = gmx_lm_enorm(n, wa2);
                 fnorm = fnorm1;
             }
 
@@ -640,7 +640,7 @@ void lmmin( int n, double *x, int m, const void *data,
     ;
 
 terminate:
-    S->fnorm = lm_enorm(m, fvec);
+    S->fnorm = gmx_lm_enorm(m, fvec);
     if (C->verbosity >= 2)
     {
         printf("lmmin outcome (%i) xnorm %g ftol %g xtol %g\n",
@@ -793,7 +793,7 @@ void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
     {
         xdi[j] = diag[j] * x[j];
     }
-    dxnorm = lm_enorm(n, xdi);
+    dxnorm = gmx_lm_enorm(n, xdi);
     fp     = dxnorm - delta;
     if (fp <= p1 * delta)
     {
@@ -826,7 +826,7 @@ void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
             }
             aux[j] = (aux[j] - sum) / r[j + ldr * j];
         }
-        temp = lm_enorm(n, aux);
+        temp = gmx_lm_enorm(n, aux);
         parl = fp / delta / temp / temp;
     }
 
@@ -841,7 +841,7 @@ void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
         }
         aux[j] = sum / diag[ipvt[j]];
     }
-    gnorm = lm_enorm(n, aux);
+    gnorm = gmx_lm_enorm(n, aux);
     paru  = gnorm / delta;
     if (paru == 0.)
     {
@@ -882,7 +882,7 @@ void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
         {
             xdi[j] = diag[j] * x[j]; /* used as output */
         }
-        dxnorm = lm_enorm(n, xdi);
+        dxnorm = gmx_lm_enorm(n, xdi);
         fp_old = fp;
         fp     = dxnorm - delta;
 
@@ -917,7 +917,7 @@ void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
                 aux[i] -= r[j * ldr + i] * aux[j];
             }
         }
-        temp = lm_enorm(n, aux);
+        temp = gmx_lm_enorm(n, aux);
         parc = fp / delta / temp / temp;
 
         /** depending on the sign of the function, update parl or paru. **/
@@ -999,7 +999,7 @@ void lm_qrfac(int m, int n, double *a, int *ipvt,
 
     for (j = 0; j < n; j++)
     {
-        acnorm[j] = lm_enorm(m, &a[j*m]);
+        acnorm[j] = gmx_lm_enorm(m, &a[j*m]);
         rdiag[j]  = acnorm[j];
         wa[j]     = rdiag[j];
         ipvt[j]   = j;
@@ -1045,7 +1045,7 @@ pivot_ok:
         /** compute the Householder transformation to reduce the
             j-th column of a to a multiple of the j-th unit vector. **/
 
-        ajnorm = lm_enorm(m-j, &a[j*m+j]);
+        ajnorm = gmx_lm_enorm(m-j, &a[j*m+j]);
         if (ajnorm == 0.)
         {
             rdiag[j] = 0;
@@ -1089,7 +1089,7 @@ pivot_ok:
                 temp      = rdiag[k] / wa[k];
                 if (0.05 * SQR(temp) <= LM_MACHEP)
                 {
-                    rdiag[k] = lm_enorm(m-j-1, &a[m*k+j+1]);
+                    rdiag[k] = gmx_lm_enorm(m-j-1, &a[m*k+j+1]);
                     wa[k]    = rdiag[k];
                 }
             }
@@ -1293,10 +1293,10 @@ L90:
 
 
 /*****************************************************************************/
-/*  lm_enorm (Euclidean norm)                                                */
+/*  gmx_lm_enorm (Euclidean norm)                                                */
 /*****************************************************************************/
 
-double lm_enorm(int n, const double *x)
+double gmx_lm_enorm(int n, const double *x)
 {
 /*     Given an n-vector x, this function calculates the
  *     euclidean norm of x.

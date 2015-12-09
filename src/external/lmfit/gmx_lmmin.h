@@ -12,8 +12,8 @@
  * Homepage:  apps.jcns.fz-juelich.de/lmfit
  */
 
-#ifndef LMMIN_H
-#define LMMIN_H
+#ifndef GMX_LMMIN_H
+#define GMX_LMMIN_H
 #undef __BEGIN_DECLS
 #undef __END_DECLS
 #ifdef __cplusplus
@@ -24,7 +24,7 @@
 # define __END_DECLS   /* empty */
 #endif
 
-#include "lmstruct.h"
+#include "gmx_lmstruct.h"
 
 __BEGIN_DECLS
 
@@ -67,13 +67,13 @@ __BEGIN_DECLS
  *      status contains OUTPUT variables that inform about the fit result,
  *        as declared and explained in lmstruct.h
  */
-void lmmin( int n_par, double *par, int m_dat, const void *data,
-            void (*evaluate) (const double *par, int m_dat, const void *data,
-                              double *fvec, int *userbreak),
-            const lm_control_struct *control, lm_status_struct *status );
+void gmx_lmmin( int n_par, double *par, int m_dat, const void *data,
+                void (*evaluate) (const double *par, int m_dat, const void *data,
+                                  double *fvec, int *userbreak),
+                const lm_control_struct *control, lm_status_struct *status );
 
 /* Refined calculation of Eucledian norm. */
-double lm_enorm( int, const double * );
+double gmx_lm_enorm( int, const double * );
 
 __END_DECLS
-#endif /* LMMIN_H */
+#endif /* GMX_LMMIN_H */
