@@ -66,8 +66,8 @@ set(ALEXANDRIA_SOURCES
 	gentop_core.cpp
 	gentop_qgen.cpp
 	gentop_vsite.cpp
-	gmx_resp_atom.cpp
 	gmx_resp.cpp
+	gmx_resp_atom.cpp
 	gmx_simple_comm.cpp
 	molprop.cpp
 	molprop_util.cpp
@@ -104,17 +104,17 @@ set(ALEXANDRIA_SOURCES
 	)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	
-#target_link_libraries(libalexandria libgromacs)
+#target_link_libraries(libalexandria libgromacs ${GMX_EXTRA_LIBRARIES})
 
 add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
 
-#set_target_properties(libalexandria PROPERTIES
+#set_target_properties(alexandria_objlib PROPERTIES
 #                      OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
 #                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 add_executable(alexandria alexandria.cpp
-        ${ALEXANDRIA_SOURCES})
-target_link_libraries(alexandria libalexandria libgromacs ${GMX_EXE_LINKER_FLAGS})
+         $<TARGET_OBJECTS:alexandria_objlib>)
+target_link_libraries(alexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
 set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 
                       OUTPUT_NAME "${BINARY_NAME}")
