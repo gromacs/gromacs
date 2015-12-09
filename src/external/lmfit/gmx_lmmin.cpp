@@ -17,20 +17,23 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include "lmmin.h"
+#include "gmx_lmmin.h"
 
 #define MIN(a, b) (((a) <= (b)) ? (a) : (b))
 #define MAX(a, b) (((a) >= (b)) ? (a) : (b))
 #define SQR(x)   (x)*(x)
 
 /* function declarations (implemented below). */
-void lm_lmpar( int n, double *r, int ldr, int *ipvt, double *diag,
+static void lm_lmpar( int n, double *r, int ldr, int *ipvt, double *diag,
                double *qtb, double delta, double *par, double *x,
                double *sdiag, double *aux, double *xdi );
-void lm_qrfac( int m, int n, double *a, int *ipvt,
+static void lm_qrfac( int m, int n, double *a, int *ipvt,
                double *rdiag, double *acnorm, double *wa );
-void lm_qrsolv( int n, double *r, int ldr, int *ipvt, double *diag,
+static void lm_qrsolv( int n, double *r, int ldr, int *ipvt, double *diag,
                 double *qtb, double *x, double *sdiag, double *wa );
+/* Refined calculation of Eucledian norm. */
+static double lm_enorm( int, const double * );
+
 
 
 /*****************************************************************************/
@@ -58,11 +61,11 @@ void lm_qrsolv( int n, double *r, int ldr, int *ipvt, double *diag,
    LM_USER_TOL   1.e-14
  */
 
-const lm_control_struct lm_control_double = {
+const lm_control_struct gmx_lm_control_double = {
     LM_USERTOL, LM_USERTOL, LM_USERTOL, LM_USERTOL, 100., 100, 1,
     NULL, 0, -1, -1
 };
-const lm_control_struct lm_control_float = {
+const lm_control_struct gmx_lm_control_float = {
     1.e-7,      1.e-7,      1.e-7,      1.e-7,      100., 100, 1,
     NULL, 0, -1, -1
 };
@@ -72,7 +75,7 @@ const lm_control_struct lm_control_float = {
 /*  Message texts (indexed by status.info)                                   */
 /*****************************************************************************/
 
-const char *lm_infmsg[] = {
+const char *gmx_lm_infmsg[] = {
     "found zero (sum of squares below underflow limit)",
     "converged  (the relative error in the sum of squares is at most tol)",
     "converged  (the relative error of the parameter vector is at most tol)",
@@ -87,7 +90,7 @@ const char *lm_infmsg[] = {
     "stopped    (break requested within function evaluation)"
 };
 
-const char *lm_shortmsg[] = {
+const char *gmx_lm_shortmsg[] = {
     "found zero",
     "converged (f)",
     "converged (p)",
@@ -107,7 +110,7 @@ const char *lm_shortmsg[] = {
 /*  Monitoring auxiliaries.                                                  */
 /*****************************************************************************/
 
-void lm_print_pars( int nout, const double *par, double fnorm, FILE* fout )
+static void lm_print_pars( int nout, const double *par, double fnorm, FILE* fout )
 {
     int i;
     for (i = 0; i < nout; ++i)
@@ -122,10 +125,10 @@ void lm_print_pars( int nout, const double *par, double fnorm, FILE* fout )
 /*  lmmin (main minimization routine)                                        */
 /*****************************************************************************/
 
-void lmmin( int n, double *x, int m, const void *data,
-            void (*evaluate) (const double *par, int m_dat, const void *data,
-                              double *fvec, int *userbreak),
-            const lm_control_struct *C, lm_status_struct *S )
+void gmx_lmmin( int n, double *x, int m, const void *data,
+                void (*evaluate) (const double *par, int m_dat, const void *data,
+                                  double *fvec, int *userbreak),
+                const lm_control_struct *C, lm_status_struct *S )
 {
     double       *fvec, *diag, *fjac, *qtf, *wa1, *wa2, *wa3, *wf;
     int          *ipvt;
@@ -674,9 +677,9 @@ terminate:
 /*  lm_lmpar (determine Levenberg-Marquardt parameter)                       */
 /*****************************************************************************/
 
-void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
-              double *qtb, double delta, double *par, double *x,
-              double *sdiag, double *aux, double *xdi)
+static void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
+                     double *qtb, double delta, double *par, double *x,
+                     double *sdiag, double *aux, double *xdi)
 {
 /*     Given an m by n matrix a, an n by n nonsingular diagonal
  *     matrix d, an m-vector b, and a positive number delta,
@@ -944,7 +947,7 @@ void lm_lmpar(int n, double *r, int ldr, int *ipvt, double *diag,
 /*  lm_qrfac (QR factorization, from lapack)                                 */
 /*****************************************************************************/
 
-void lm_qrfac(int m, int n, double *a, int *ipvt,
+static void lm_qrfac(int m, int n, double *a, int *ipvt,
               double *rdiag, double *acnorm, double *wa)
 {
 /*
@@ -1104,8 +1107,8 @@ pivot_ok:
 /*  lm_qrsolv (linear least-squares)                                         */
 /*****************************************************************************/
 
-void lm_qrsolv(int n, double *r, int ldr, int *ipvt, double *diag,
-               double *qtb, double *x, double *sdiag, double *wa)
+static void lm_qrsolv(int n, double *r, int ldr, int *ipvt, double *diag,
+                      double *qtb, double *x, double *sdiag, double *wa)
 {
 /*
  *     Given an m by n matrix a, an n by n diagonal matrix d,
@@ -1296,7 +1299,7 @@ L90:
 /*  lm_enorm (Euclidean norm)                                                */
 /*****************************************************************************/
 
-double lm_enorm(int n, const double *x)
+static double lm_enorm(int n, const double *x)
 {
 /*     Given an n-vector x, this function calculates the
  *     euclidean norm of x.
