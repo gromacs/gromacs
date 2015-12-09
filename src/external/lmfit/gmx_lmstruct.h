@@ -12,18 +12,8 @@
  * Homepage:  apps.jcns.fz-juelich.de/lmfit
  */
 
-#ifndef LMSTRUCT_H
-#define LMSTRUCT_H
-#undef __BEGIN_DECLS
-#undef __END_DECLS
-#ifdef __cplusplus
-# define __BEGIN_DECLS extern "C" {
-# define __END_DECLS }
-#else
-# define __BEGIN_DECLS /* empty */
-# define __END_DECLS   /* empty */
-#endif
-__BEGIN_DECLS
+#ifndef GMX_LMSTRUCT_H
+#define GMX_LMSTRUCT_H
 
 #include <stdio.h>
 
@@ -69,13 +59,12 @@ typedef struct {
 } lm_status_struct;
 
 /* Preset (and recommended) control parameter settings. */
-extern const lm_control_struct lm_control_double;
-extern const lm_control_struct lm_control_float;
+extern const lm_control_struct gmx_lm_control_double;
+extern const lm_control_struct gmx_lm_control_float;
 
 /* Preset message texts. */
 
-extern const char *lm_infmsg[];
-extern const char *lm_shortmsg[];
+extern const char *gmx_lm_infmsg[];
+extern const char *gmx_lm_shortmsg[];
 
-__END_DECLS
-#endif /* LMSTRUCT_H */
+#endif /* GMX_LMSTRUCT_H */
