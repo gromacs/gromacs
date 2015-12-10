@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+#include <vector>
+
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -188,12 +191,11 @@ int Poldata::getCombRule()
     return _gtCombRule;
 }
 
-void Poldata::addPtype(
-        const std::string ptype,
-        const std::string miller,
-        const std::string bosque,
-        double            polarizability,
-        double            sigPol)
+void Poldata::addPtype(const std::string &ptype,
+                       const std::string &miller,
+                       const std::string &bosque,
+                       double             polarizability,
+                       double             sigPol)
 {
 
     unsigned int      i;
@@ -216,10 +218,9 @@ void Poldata::addPtype(
     }
 }
 
-void Poldata::addBtype(
-        const std::string btype)
+void Poldata::addBtype(const std::string &btype)
 {
-    unsigned int i;
+    size_t i;
 
     for (i = 0; (i < _btype.size()); i++)
     {
@@ -234,14 +235,13 @@ void Poldata::addBtype(
     }
 }
 
-void Poldata::addAtype(
-        const std::string elem,
-        const std::string desc,
-        const std::string atype,
-        const std::string ptype,
-        const std::string btype,
-        const std::string vdwparams,
-        double            refEnthalpy)
+void Poldata::addAtype(const std::string &elem,
+                       const std::string &desc,
+                       const std::string &atype,
+                       const std::string &ptype,
+                       const std::string &btype,
+                       const std::string &vdwparams,
+                       double            refEnthalpy)
 {
 
     unsigned int        i;
@@ -954,9 +954,7 @@ int Poldata::getBosquePol(
 
 int Poldata::searchBondtype( std::string atom)
 {
-    unsigned int j;
-
-    for (j = 0; (j < _btype.size()); j++)
+    for (size_t j = 0; (j < _btype.size()); j++)
     {
         if (_btype[j].compare(atom) == 0)
         {
@@ -973,9 +971,8 @@ int Poldata::setBondParams( std::string atom1, std::string atom2,
                             double length, double sigma, int ntrain,
                             double bondorder, std::string params)
 {
-    GtBond             *gtB;
-    unsigned int        i;
-
+    GtBond *gtB;
+    size_t  i;
     for (i = 0; (i < _gtBond.size()); i++)
     {
         gtB = &(_gtBond[i]);
@@ -1008,17 +1005,32 @@ int Poldata::setBondParams( std::string atom1, std::string atom2,
     return 0;
 }
 
+FfatypeIterator Poldata::searchType(const std::string &type)
+{
+    return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                        [type](Ffatype const &f) { return f.getType().compare(type); });
+}
+
+FfatypeIterator Poldata::searchBtype(const std::string &btype)
+{
+    return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                        [btype](Ffatype const &f) { return f.getBtype().compare(btype); });
+}
+
+FfatypeIterator Poldata::searchPtype(const std::string &ptype)
+{
+    return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                        [ptype](Ffatype const &f) { return f.getPtype().compare(ptype); });
+}
+
 int Poldata::addBond( std::string atom1, std::string atom2,
                       double length, double sigma, int ntrain,
                       double bondorder, std::string params)
 {
-    int        a1, a2;
+    FfatypeIterator a1, a2;
 
-    if (-1 == (a1 = searchBondtype( atom1)))
-    {
-        return 0;
-    }
-    if (-1 == (a2 = searchBondtype( atom2)))
+    if (((a1 = searchBtype(atom1)) == _alexandria.end()) ||
+        ((a2 = searchBtype(atom2)) == _alexandria.end()))
     {
         return 0;
     }
@@ -1026,7 +1038,7 @@ int Poldata::addBond( std::string atom1, std::string atom2,
                        bondorder, params) == 0)
     {
         GtBond bond(atom1, atom2, params,
-                    _alexandria[a1].getElem(), _alexandria[a2].getElem(),
+                    a1->getElem(), a2->getElem(),
                     length, sigma, bondorder, ntrain);
 
         _gtBond.push_back(bond);

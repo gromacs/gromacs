@@ -131,40 +131,19 @@ class Ffatype
         {
         }
 
-        std::string getDesc()
-        {
-            return desc;
-        }
+        std::string getDesc() const { return desc; }
 
-        std::string getType()
-        {
-            return type;
-        }
+        std::string getType() const { return type; }
 
-        std::string getPtype()
-        {
-            return ptype;
-        }
+        std::string getPtype() const { return ptype; }
 
-        std::string getBtype()
-        {
-            return btype;
-        }
+        std::string getBtype() const { return btype; }
 
-        std::string getElem()
-        {
-            return elem;
-        }
+        std::string getElem() const { return elem; }
 
-        std::string getVdwparams()
-        {
-            return vdwparams;
-        }
+        std::string getVdwparams() const { return vdwparams; }
 
-        double getRefEnthalpy()
-        {
-            return refEnthalpy;
-        }
+        double getRefEnthalpy() const { return refEnthalpy; }
 };
 typedef std::vector<Ffatype>::iterator FfatypeIterator;
 
@@ -983,18 +962,18 @@ class Poldata
             return _brule.end();
         }
 
-        void  addPtype(const std::string ptype,
-                       const std::string miller,
-                       const std::string bosque,
+        void  addPtype(const std::string &ptype,
+                       const std::string &miller,
+                       const std::string &bosque,
                        double            polarizability,
                        double            sigPol);
 
-        void  addAtype(const std::string elem,
-                       const std::string desc,
-                       const std::string atype,
-                       const std::string ptype,
-                       const std::string btype,
-                       const std::string vdwparams,
+        void  addAtype(const std::string &elem,
+                       const std::string &desc,
+                       const std::string &atype,
+                       const std::string &ptype,
+                       const std::string &btype,
+                       const std::string &vdwparams,
                        double            ref_enthalpy);
 
         void  setPtypePolarizability(  const std::string ptype,
@@ -1114,7 +1093,13 @@ class Poldata
         {
             return _alexandria.end();
         }
-
+        
+        FfatypeIterator searchType(const std::string &type);
+        
+        FfatypeIterator searchBtype(const std::string &btype);
+        
+        FfatypeIterator searchPtype(const std::string &ptype);
+        
         PtypeIterator getPtypeBegin()
         {
             return _ptype.begin();
@@ -1497,7 +1482,7 @@ class Poldata
         unsigned int                          _nerC;
         std::vector<Epref>                    _epr;
 
-        void addBtype(const std::string btype);
+        void addBtype(const std::string &btype);
 
         gmx_bool strcasestrStart(std::string needle, std::string haystack);
 
