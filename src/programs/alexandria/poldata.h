@@ -265,101 +265,43 @@ class GtBond
         {
         }
 
-        GtBond()
-        {
-        }
+        GtBond() {}
 
-        std::string getAtom1()
-        {
-            return atom1;
-        }
+        std::string getAtom1() const { return atom1; }
 
-        std::string getAtom2()
-        {
-            return atom2;
-        }
+        std::string getAtom2() const { return atom2; }
 
-        std::string getParams()
-        {
-            return params;
-        }
+        std::string getParams() const { return params; }
 
-        std::string getElem1()
-        {
-            return elem1;
-        }
+        std::string getElem1() const { return elem1; }
 
-        std::string getElem2()
-        {
-            return elem2;
-        }
+        std::string getElem2() const { return elem2; }
 
-        void setElem1(std::string elem)
-        {
-            elem1 = elem;
-        }
+        void setElem1(std::string elem) { elem1 = elem; }
 
-        void setElem2(std::string elem)
-        {
-            elem2 = elem;
-        }
+        void setElem2(std::string elem) { elem2 = elem; }
 
-        double getLength()
-        {
-            return length;
-        }
+        double getLength() { return length; }
 
-        double getSigma()
-        {
-            return sigma;
-        }
+        double getSigma() { return sigma; }
 
-        double getBondorder()
-        {
-            return bondorder;
-        }
+        double getBondorder() { return bondorder; }
 
-        int getNtrain()
-        {
-            return ntrain;
-        }
+        int getNtrain() { return ntrain; }
 
-        void setAtom1(std::string atom)
-        {
-            atom1 = atom;
-        }
+        void setAtom1(std::string atom) { atom1 = atom; }
 
-        void setAtom2(std::string atom)
-        {
-            atom2 = atom;
-        }
+        void setAtom2(std::string atom) { atom2 = atom; }
 
-        void setBondorder(double bondorder)
-        {
-            this->bondorder = bondorder;
-        }
+        void setBondorder(double bondorder) { this->bondorder = bondorder; }
 
+        void setLength(double length) { this->length = length; }
 
-        void setLength(double length)
-        {
-            this->length = length;
-        }
+        void setParams(std::string params) { this->params = params; }
 
-        void setParams(std::string params)
-        {
-            this->params = params;
-        }
+        void setSigma(double sigma) { this->sigma = sigma; }
 
-
-        void setSigma(double sigma)
-        {
-            this->sigma = sigma;
-        }
-
-        void setNtrain(int ntrain)
-        {
-            this->ntrain = ntrain;
-        }
+        void setNtrain(int ntrain) { this->ntrain = ntrain; }
 };
 
 typedef std::vector<GtBond>::iterator GtBondIterator;
@@ -367,13 +309,13 @@ typedef std::vector<GtBond>::iterator GtBondIterator;
 class GtAngle
 {
     private:
-        std::string atom1;
-        std::string atom2;
-        std::string atom3;
-        std::string params;
-        double      angle;
-        double      sigma;
-        int         ntrain;
+        std::string atom1_;
+        std::string atom2_;
+        std::string atom3_;
+        std::string params_;
+        double      angle_;
+        double      sigma_;
+        int         ntrain_;
     public:
         GtAngle(std::string atom1,
                 std::string atom2,
@@ -383,74 +325,38 @@ class GtAngle
                 double      sigma,
                 int         ntrain)
             :
-              atom1(atom1),
-              atom2(atom2),
-              atom3(atom3),
-              params(params),
-              angle(angle),
-              sigma(sigma),
-              ntrain(ntrain)
-        {
-        }
+              atom1_(atom1),
+              atom2_(atom2),
+              atom3_(atom3),
+              params_(params),
+              angle_(angle),
+              sigma_(sigma),
+              ntrain_(ntrain)
+        {}
 
-        GtAngle()
-        {
-        }
+        GtAngle() {}
 
-        std::string getAtom1()
-        {
-            return atom1;
-        }
+        std::string getAtom1() const { return atom1_; }
 
-        std::string getAtom2()
-        {
-            return atom2;
-        }
+        std::string getAtom2() const { return atom2_; }
 
-        std::string getAtom3()
-        {
-            return atom3;
-        }
-        std::string getParams()
-        {
-            return params;
-        }
+        std::string getAtom3() const { return atom3_; }
+        
+        std::string getParams() const { return params_; }
 
-        double getAngle()
-        {
-            return angle;
-        }
+        double getAngle() const { return angle_; }
 
-        double getSigma()
-        {
-            return sigma;
-        }
+        double getSigma() const { return sigma_; }
 
-        int getNtrain()
-        {
-            return ntrain;
-        }
+        int getNtrain() const { return ntrain_; }
 
-        void setParams(std::string params)
-        {
-            this->params = params;
-        }
+        void setParams(std::string params) { params_ = params; }
 
-        void setAngle(double angle)
-        {
-            this->angle = angle;
-        }
+        void setAngle(double angle) { angle_ = angle; }
 
-        void setSigma(double sigma)
-        {
-            this->sigma = sigma;
-        }
+        void setSigma(double sigma) { sigma_ = sigma; }
 
-        void setNtrain(int ntrain)
-        {
-            this->ntrain = ntrain;
-        }
-
+        void setNtrain(int ntrain) { ntrain_ = ntrain; }
 };
 typedef std::vector<GtAngle>::iterator GtAngleIterator;
 
@@ -490,87 +396,39 @@ class GtDihedral
         {
         }
 
-        std::string getAtom1()
-        {
-            return atom1;
-        }
+        std::string getAtom1() const { return atom1; }
 
-        std::string getAtom2()
-        {
-            return atom2;
-        }
+        std::string getAtom2() const { return atom2; }
 
-        std::string getAtom3()
-        {
-            return atom3;
-        }
+        std::string getAtom3() const { return atom3; }
 
-        std::string getAtom4()
-        {
-            return atom4;
-        }
+        std::string getAtom4() const { return atom4; }
 
+        void setAtom1(std::string atom) { atom1 = atom; }
 
-        void setAtom1(std::string atom)
-        {
-            atom1 = atom;
-        }
+        void setAtom2(std::string atom) { atom2 = atom; }
 
-        void setAtom2(std::string atom)
-        {
-            atom2 = atom;
-        }
+        void setAtom3(std::string atom) { atom3 = atom; }
 
-        void setAtom3(std::string atom)
-        {
-            atom3 = atom;
-        }
+        void setAtom4(std::string atom) { atom4 = atom; }
 
-        void setAtom4(std::string atom)
-        {
-            atom4 = atom;
-        }
+        std::string getParams() { return params; }
 
-        std::string getParams()
-        {
-            return params;
-        }
+        double getDihedral() { return dihedral; }
 
-        double getDihedral()
-        {
-            return dihedral;
-        }
+        double getSigma() { return sigma; }
 
-        double getSigma()
-        {
-            return sigma;
-        }
+        int getNtrain() { return ntrain; }
+        
+        bool compare(const GtDihedral &gtB) const;
 
-        int getNtrain()
-        {
-            return ntrain;
-        }
+        void setParams(std::string params) { this->params = params; }
 
+        void setDihedral(double dihedral) { this->dihedral = dihedral; }
 
-        void setParams(std::string params)
-        {
-            this->params = params;
-        }
+        void setSigma(double sigma) { this->sigma = sigma; }
 
-        void setDihedral(double dihedral)
-        {
-            this->dihedral = dihedral;
-        }
-
-        void setSigma(double sigma)
-        {
-            this->sigma = sigma;
-        }
-
-        void setNtrain(int ntrain)
-        {
-            this->ntrain = ntrain;
-        }
+        void setNtrain(int ntrain) { this->ntrain = ntrain; }
 };
 typedef std::vector<GtDihedral>::iterator DihedralIterator;
 
@@ -1187,8 +1045,6 @@ class Poldata
             return _bosquePolarUnit;
         }
 
-
-
         /* Returns bosque name or NULL if not found */
         std::string  ptypeToBosque(  const std::string ptype);
 
@@ -1282,9 +1138,13 @@ class Poldata
             std::string atom3, double angle, double sigma,
             int ntrain, std::string params);
 
-        int  setAngleParams(  std::string atom1, std::string atom2,
-                              std::string atom3,
-                              double angle, double sigma, int ntrain, std::string params);
+        int  setAngleParams(std::string atom1,
+                            std::string atom2,
+                            std::string atom3, 
+                            double angle, 
+                            double sigma, 
+                            int ntrain, 
+                            std::string params);
 
 
         GtAngleIterator getAngleBegin()
@@ -1344,11 +1204,17 @@ class Poldata
         }
 
         /* Return dihedral-index 1-N or 0 if not found */
-        int  searchDihedral(  int egd,
-                              std::string atom1, std::string atom2,
-                              std::string atom3, std::string atom4,
-                              double *dihedral, double *sigma,
-                              int *ntrain, std::string *params);
+        DihedralIterator searchDihedral(int egd,
+                                        const std::string &atom1, 
+                                        const std::string &atom2,
+                                        const std::string &atom3, 
+                                        const std::string &atom4);
+        int searchDihedral(int egd, 
+                           std::string atom1, std::string atom2,
+                           std::string atom3, std::string atom4,
+                           double *dihedral, double *sigma,
+                           int *ntrain, std::string *params);
+
 
         void  setDihedralUnit(  int         egd,
                                 std::string dihedralUnit);
@@ -1495,9 +1361,6 @@ class Poldata
 
         Eemprops *getEep(ChargeDistributionModel       eqdModel,
                          const std::string             name);
-
-        GtDihedral *searchDihedral( int egd, std::string atom1, std::string atom2,
-                                    std::string atom3, std::string atom4);
 
         static int gtbComp(const void *a, const void *b);
 
