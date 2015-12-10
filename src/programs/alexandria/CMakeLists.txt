@@ -66,8 +66,8 @@ set(ALEXANDRIA_SOURCES
 	gentop_core.cpp
 	gentop_qgen.cpp
 	gentop_vsite.cpp
-	gmx_resp_atom.cpp
 	gmx_resp.cpp
+	gmx_resp_atom.cpp
 	gmx_simple_comm.cpp
 	molprop.cpp
 	molprop_util.cpp
@@ -103,27 +103,24 @@ set(ALEXANDRIA_SOURCES
 #        gen_ff.cpp
 	)
 	
-
-
-
-add_library(libalexandria ${ALEXANDRIA_SOURCES})	
-target_link_libraries(libalexandria libgromacs)
+#add_library(libalexandria ${ALEXANDRIA_SOURCES})	
+#target_link_libraries(libalexandria libgromacs ${GMX_EXTRA_LIBRARIES})
 
 add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
 
-set_target_properties(libalexandria PROPERTIES
-                      OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
-                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+#set_target_properties(alexandria_objlib PROPERTIES
+#                      OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
+#                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
-list(APPEND GMX_EXTRA_LIBRARIES libalexandria libgromacs)
+add_executable(alexandria alexandria.cpp
+         $<TARGET_OBJECTS:alexandria_objlib>
+         )
+target_link_libraries(alexandria libalexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
+set_target_properties(alexandria PROPERTIES 
+                      OUTPUT_NAME "${BINARY_NAME}")
 
-add_executable(alexandria alexandria.cpp)
-target_link_libraries(alexandria ${GMX_EXTRA_LIBRARIES})
-set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_BINARY_SUFFIX}")
-
-install(TARGETS 
-        alexandria
-        COMPONENT runtime
+install(TARGETS alexandria
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libalexandria.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc @ONLY)
