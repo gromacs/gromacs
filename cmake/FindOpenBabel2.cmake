@@ -10,8 +10,11 @@ if(OPENBABEL2_INCLUDE_DIR)
   set(OPENBABEL2_FIND_QUIETLY TRUE)
 endif(OPENBABEL2_INCLUDE_DIR)
 
-find_path(OPENBABEL2_INCLUDE_DIR openbabel/obconversion.h)
-find_library (OPENBABEL2_LIBRARIES openbabel)
+find_path(OPENBABEL2_INCLUDE_DIR openbabel-2.0/openbabel/obconversion.h)
+find_library (OPENBABEL2_LIBRARIES NAMES openbabel openbabel-2 PATHS
+      ${_obLinkDir}
+      ${GNUWIN32_DIR}/lib
+      $ENV{OPENBABEL2_LIBRARIES})
 
 # handle the QUIETLY and REQUIRED arguments and set OPENBABEL2_FOUND to TRUE if
 # all listed variables are TRUE
