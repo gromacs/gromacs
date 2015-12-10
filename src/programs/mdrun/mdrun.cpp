@@ -253,7 +253,6 @@ int gmx_mdrun(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },

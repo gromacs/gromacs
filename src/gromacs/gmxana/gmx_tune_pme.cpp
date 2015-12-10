@@ -2256,7 +2256,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efXVG, "-swap",   "swapions", ffOPTWR },
         /* Output files that are deleted after each benchmark run */
         { efTRN, "-bo",     "bench",    ffWRITE },
