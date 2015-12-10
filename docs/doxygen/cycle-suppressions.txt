@@ -12,7 +12,6 @@ mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
-topology -> fileio
 topology -> gmxlib
 pbcutil -> fileio
 pbcutil -> gmxlib
