@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+#include <vector>
+
 #include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -188,12 +191,11 @@ int Poldata::getCombRule()
     return _gtCombRule;
 }
 
-void Poldata::addPtype(
-        const std::string ptype,
-        const std::string miller,
-        const std::string bosque,
-        double            polarizability,
-        double            sigPol)
+void Poldata::addPtype(const std::string &ptype,
+                       const std::string &miller,
+                       const std::string &bosque,
+                       double             polarizability,
+                       double             sigPol)
 {
 
     unsigned int      i;
@@ -216,10 +218,9 @@ void Poldata::addPtype(
     }
 }
 
-void Poldata::addBtype(
-        const std::string btype)
+void Poldata::addBtype(const std::string &btype)
 {
-    unsigned int i;
+    size_t i;
 
     for (i = 0; (i < _btype.size()); i++)
     {
@@ -234,14 +235,13 @@ void Poldata::addBtype(
     }
 }
 
-void Poldata::addAtype(
-        const std::string elem,
-        const std::string desc,
-        const std::string atype,
-        const std::string ptype,
-        const std::string btype,
-        const std::string vdwparams,
-        double            refEnthalpy)
+void Poldata::addAtype(const std::string &elem,
+                       const std::string &desc,
+                       const std::string &atype,
+                       const std::string &ptype,
+                       const std::string &btype,
+                       const std::string &vdwparams,
+                       double            refEnthalpy)
 {
 
     unsigned int        i;
@@ -954,9 +954,7 @@ int Poldata::getBosquePol(
 
 int Poldata::searchBondtype( std::string atom)
 {
-    unsigned int j;
-
-    for (j = 0; (j < _btype.size()); j++)
+    for (size_t j = 0; (j < _btype.size()); j++)
     {
         if (_btype[j].compare(atom) == 0)
         {
@@ -973,9 +971,8 @@ int Poldata::setBondParams( std::string atom1, std::string atom2,
                             double length, double sigma, int ntrain,
                             double bondorder, std::string params)
 {
-    GtBond             *gtB;
-    unsigned int        i;
-
+    GtBond *gtB;
+    size_t  i;
     for (i = 0; (i < _gtBond.size()); i++)
     {
         gtB = &(_gtBond[i]);
@@ -1008,17 +1005,32 @@ int Poldata::setBondParams( std::string atom1, std::string atom2,
     return 0;
 }
 
+FfatypeIterator Poldata::searchType(const std::string &type)
+{
+    return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                        [type](Ffatype const &f) { return f.getType().compare(type); });
+}
+
+FfatypeIterator Poldata::searchBtype(const std::string &btype)
+{
+    return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                        [btype](Ffatype const &f) { return f.getBtype().compare(btype); });
+}
+
+FfatypeIterator Poldata::searchPtype(const std::string &ptype)
+{
+    return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                        [ptype](Ffatype const &f) { return f.getPtype().compare(ptype); });
+}
+
 int Poldata::addBond( std::string atom1, std::string atom2,
                       double length, double sigma, int ntrain,
                       double bondorder, std::string params)
 {
-    int        a1, a2;
+    FfatypeIterator a1, a2;
 
-    if (-1 == (a1 = searchBondtype( atom1)))
-    {
-        return 0;
-    }
-    if (-1 == (a2 = searchBondtype( atom2)))
+    if (((a1 = searchBtype(atom1)) == _alexandria.end()) ||
+        ((a2 = searchBtype(atom2)) == _alexandria.end()))
     {
         return 0;
     }
@@ -1026,7 +1038,7 @@ int Poldata::addBond( std::string atom1, std::string atom2,
                        bondorder, params) == 0)
     {
         GtBond bond(atom1, atom2, params,
-                    _alexandria[a1].getElem(), _alexandria[a2].getElem(),
+                    a1->getElem(), a2->getElem(),
                     length, sigma, bondorder, ntrain);
 
         _gtBond.push_back(bond);
@@ -1069,40 +1081,53 @@ int Poldata::searchBond( std::string atom1, std::string atom2,
 /*
  * gt_angle stuff
  */
-int Poldata::setAngleParams( std::string atom1, std::string atom2,
-                             std::string atom3, double angle, double sigma, int ntrain,
-                             std::string params)
+int Poldata::setAngleParams(std::string atom1,
+                            std::string atom2,
+                            std::string atom3, 
+                            double angle, 
+                            double sigma, 
+                            int ntrain,
+                            std::string params)
 {
-    GtAngle             *gtB;
-    unsigned int         i;
+    FfatypeIterator a1, a2, a3;
 
-    for (i = 0; (i < _gtAngle.size()); i++)
+    if (((a1 = searchBtype(atom1)) == _alexandria.end()) ||
+        ((a2 = searchBtype(atom2)) == _alexandria.end()) ||
+        ((a3 = searchBtype(atom3)) == _alexandria.end()))
     {
-        gtB = &(_gtAngle[i]);
-        if ((gtB->getAtom2().compare(atom2) == 0) &&
-            (((gtB->getAtom1().compare(atom1) == 0) &&
-              (gtB->getAtom3().compare(atom3) == 0)) ||
-             ((gtB->getAtom1().compare(atom3) == 0) &&
-              (gtB->getAtom3().compare(atom1) == 0))))
+        return 0;
+    }
+
+    size_t i = 0;
+    
+    for (auto gtB : _gtAngle)
+    {
+        if ((gtB.getAtom2().compare(a2->getBtype()) == 0) &&
+            (((gtB.getAtom1().compare(a1->getBtype()) == 0) &&
+              (gtB.getAtom3().compare(a3->getBtype()) == 0)) ||
+             ((gtB.getAtom1().compare(a3->getBtype()) == 0) &&
+              (gtB.getAtom3().compare(a1->getBtype()) == 0))))
         {
             break;
         }
+        i++;
     }
     if (i < _gtAngle.size())
     {
         if (angle > 0)
         {
-            gtB->setAngle(angle);
+            _gtAngle[i].setAngle(angle);
         }
         if (sigma > 0)
         {
-            gtB->setSigma(sigma);
+            _gtAngle[i].setSigma(sigma);
         }
         if (ntrain > 0)
         {
-            gtB->setNtrain(ntrain);
+            _gtAngle[i].setNtrain(ntrain);
         }
-        gtB->setParams(params);
+        _gtAngle[i].setParams(params);
+        
         return 1;
     }
     return 0;
@@ -1112,21 +1137,13 @@ int Poldata::addAngle(std::string atom1, std::string atom2,
                       std::string atom3, double angle, double sigma,
                       int ntrain, std::string params)
 {
-
-    if ((-1 == searchBondtype( atom1)) ||
-        (-1 == searchBondtype( atom2)) ||
-        (-1 == searchBondtype( atom3)))
-    {
-        return 0;
-    }
-
-    if (0 == setAngleParams( atom1, atom2, atom3, angle, sigma, ntrain, params))
+    if (0 == setAngleParams(atom1, atom2, atom3,
+                            angle, sigma, ntrain, params))
     {
         GtAngle ang(atom1, atom2, atom3,
                     params, angle, sigma, ntrain);
 
         _gtAngle.push_back(ang);
-
     }
     return 1;
 }
@@ -1166,71 +1183,55 @@ int Poldata::searchAngle( std::string atom1, std::string atom2,
 /*
  * gt_dihedral stuff
  */
-int Poldata::gtdComp(const void *a, const void *b)
+bool GtDihedral::compare(const GtDihedral &gtB) const
 {
-    GtDihedral    *gtA = (GtDihedral *)a;
-    GtDihedral    *gtB = (GtDihedral *)b;
-    int            n;
-
-    if (0 == (n = gtA->getAtom1().compare(gtB->getAtom1())))
-    {
-        if (0 == (n = gtA->getAtom2().compare(gtB->getAtom2())))
-        {
-            if (0 == (n = gtA->getAtom3().compare(gtB->getAtom3())))
-            {
-                n = gtA->getAtom4().compare(gtB->getAtom4());
-            }
-        }
-    }
-
-    return n;
+    return ((getAtom1().compare(gtB.getAtom1()) &&
+             getAtom2().compare(gtB.getAtom2()) &&
+             getAtom3().compare(gtB.getAtom3()) &&
+             getAtom4().compare(gtB.getAtom4())) ||
+            (getAtom1().compare(gtB.getAtom4()) &&
+             getAtom2().compare(gtB.getAtom3()) &&
+             getAtom3().compare(gtB.getAtom2()) &&
+             getAtom4().compare(gtB.getAtom1())));
 }
 
-GtDihedral *Poldata::searchDihedral( int egd,
-                                     std::string atom1, std::string atom2,
-                                     std::string atom3, std::string atom4)
+DihedralIterator Poldata::searchDihedral(int egd,
+                                         const std::string &atom1, 
+                                         const std::string &atom2,
+                                         const std::string &atom3, 
+                                         const std::string &atom4)
 {
-    GtDihedral    gtA, *gtRes, *gtDptr;
-    int           nd;
+    FfatypeIterator a1, a2, a3, a4;
 
-    if ((0 == atom1.size()) || (0 == atom2.size()) || (0 == atom3.size()) || (0 == atom4.size()))
+    if (((a1 = searchBtype(atom1)) == _alexandria.end()) ||
+        ((a2 = searchBtype(atom2)) == _alexandria.end()) ||
+        ((a3 = searchBtype(atom3)) == _alexandria.end()) ||
+        ((a4 = searchBtype(atom4)) == _alexandria.end()))
     {
-        return NULL;
+        return _gtDihedral[egd].end();
     }
-    gtDptr     = vectorToArray(_gtDihedral[egd]);
-    nd         = _gtDihedral[egd].size();
-    gtA.setAtom1(atom1);
-    gtA.setAtom2(atom2);
-    gtA.setAtom3(atom3);
-    gtA.setAtom4(atom4);
-    gtRes      = (GtDihedral *) bsearch(&gtA, gtDptr, nd, sizeof(gtA), &gtdComp);
-    if (NULL == gtRes)
-    {
-        gtA.setAtom1(atom4);
-        gtA.setAtom2(atom3);
-        gtA.setAtom3(atom2);
-        gtA.setAtom4(atom1);
-        gtRes     = (GtDihedral *) bsearch(&gtA, gtDptr, nd, sizeof(gtA), gtdComp);
-    }
-    return gtRes;
+
+    GtDihedral gtA(a1->getBtype(), a2->getBtype(),
+                   a3->getBtype(), a4->getBtype(),
+                   "", 0, 0, 0);
+    return std::find_if(_gtDihedral[egd].begin(),
+                        _gtDihedral[egd].end(),
+                        [gtA](const GtDihedral &gtB)
+                        {
+                            return gtA.compare(gtB);
+                        });
 }
 
-int Poldata::setDihedralParams( int egd,
-                                std::string atom1, std::string atom2,
-                                std::string atom3, std::string atom4,
-                                double dihedral, double sigma, int ntrain,
-                                std::string params)
+int Poldata::setDihedralParams(int egd,
+                               std::string atom1, std::string atom2,
+                               std::string atom3, std::string atom4,
+                               double dihedral, double sigma, int ntrain,
+                               std::string params)
 {
-    GtDihedral *gtB;
-
-
-    gtB = searchDihedral( egd, atom1, atom2, atom3, atom4);
-    if (NULL != gtB)
+    DihedralIterator gtB = searchDihedral(egd, atom1, atom2, atom3, atom4);
+    if (_gtDihedral[egd].end() != gtB)
     {
-        if (dihedral > 0)
-        {
-            gtB->setDihedral(dihedral);
-        }
+        gtB->setDihedral(dihedral);
         if (sigma > 0)
         {
             gtB->setSigma(sigma);
@@ -1250,26 +1251,18 @@ int Poldata::addDihedral( int egd,
                           std::string atom3, std::string atom4, double dihedral,
                           double sigma, int ntrain, std::string params)
 {
-
-    if ((-1 == searchBondtype( atom1)) ||
-        (-1 == searchBondtype( atom2)) ||
-        (-1 == searchBondtype( atom3)) ||
-        (-1 == searchBondtype( atom4)))
-    {
-        return 0;
-    }
-
     if (0 == Poldata::setDihedralParams( egd, atom1, atom2,
                                          atom3, atom4, dihedral,
                                          sigma, ntrain, params))
     {
-
         GtDihedral dihed(atom1, atom2, atom3, atom4,
                          params, dihedral, sigma, ntrain);
 
         _gtDihedral[egd].push_back(dihed);
-        qsort(vectorToArray(_gtDihedral[egd]), _gtDihedral[egd].size(), sizeof(_gtDihedral[egd][0]),
-              gtdComp);
+        std::sort(_gtDihedral[egd].begin(),
+                  _gtDihedral[egd].end(), 
+                  [](const GtDihedral &a, const GtDihedral &b)
+                  { return a.compare(b); });
     }
     return 1;
 }
@@ -1280,17 +1273,15 @@ int Poldata::searchDihedral( int egd,
                              double *dihedral, double *sigma,
                              int *ntrain, std::string *params)
 {
-    GtDihedral *gtRes;
-
-    gtRes = searchDihedral( egd, atom1, atom2, atom3, atom4);
-    if (NULL != gtRes)
+    DihedralIterator gtRes = searchDihedral(egd, atom1, atom2, atom3, atom4);
+    if (_gtDihedral[egd].end() != gtRes)
     {
         assignScal(dihedral, gtRes->getDihedral());
         assignScal(sigma, gtRes->getSigma());
         assignScal(ntrain, gtRes->getNtrain());
         assignStr(params, gtRes->getParams());
 
-        return 1 + (indexOfPointInVector(gtRes, _gtDihedral[egd]));
+        return 1 + (gtRes - _gtDihedral[egd].begin());
     }
     return 0;
 }
