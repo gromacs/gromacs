@@ -45,8 +45,8 @@
 #endif
 
 #include "gromacs/fileio/tngio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/math/units.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
