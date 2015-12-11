@@ -49,7 +49,6 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -1515,26 +1514,6 @@ int *compact_unitcell_edges()
     }
 
     return edge;
-}
-
-void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
-{
-    int t, nth;
-    nth = gmx_omp_nthreads_get(emntDefault);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (t = 0; t < nth; t++)
-    {
-        try
-        {
-            int offset, len;
-
-            offset = (natoms*t    )/nth;
-            len    = (natoms*(t + 1))/nth - offset;
-            put_atoms_in_box(ePBC, box, len, x + offset);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 }
 
 void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])

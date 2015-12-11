@@ -64,6 +64,18 @@ void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
 void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
                  gmx_mtop_t *mtop, rvec x[]);
 
+/*! \brief Parallellizes put_atoms_in_box()
+ *
+ * This wrapper function around put_atoms_in_box() with the ugly manual
+ * workload splitting is needed to avoid silently introducing multithreading
+ * in tools.
+ * \param[in]    ePBC   The pbc type
+ * \param[in]    box    The simulation box
+ * \param[in]    natoms The number of atoms
+ * \param[inout] x      The coordinates of the atoms
+ */
+void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[]);
+
 
 
 /* ROUTINES from stat.c */

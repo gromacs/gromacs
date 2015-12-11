@@ -2478,6 +2478,26 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
 }
 
+void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
+{
+    int t, nth;
+    nth = gmx_omp_nthreads_get(emntDefault);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (t = 0; t < nth; t++)
+    {
+        try
+        {
+            int offset, len;
+
+            offset = (natoms*t    )/nth;
+            len    = (natoms*(t + 1))/nth - offset;
+            put_atoms_in_box(ePBC, box, len, x + offset);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
 // TODO This can be cleaned up a lot, and move back to runner.cpp
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
