@@ -171,8 +171,11 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     state->nalloc = state->natoms;
     if (state->nalloc > 0)
     {
-        snew(state->x, state->nalloc);
-        snew(state->v, state->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        snew(state->x, state->nalloc + 1);
+        snew(state->v, state->nalloc + 1);
     }
     else
     {
