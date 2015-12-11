@@ -45,11 +45,11 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"

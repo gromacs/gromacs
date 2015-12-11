@@ -13,8 +13,8 @@ mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
 topology -> gmxlib
+topology -> listed-forces
 pbcutil -> fileio
-pbcutil -> gmxlib
 pbcutil -> mdtypes
 listed-forces -> mdlib
 utility -> math

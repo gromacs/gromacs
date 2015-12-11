@@ -40,7 +40,6 @@
 
 #include <cmath>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/nrjac.h"
@@ -53,6 +52,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"

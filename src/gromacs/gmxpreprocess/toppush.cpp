@@ -45,7 +45,6 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
@@ -54,6 +53,7 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

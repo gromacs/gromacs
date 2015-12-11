@@ -40,12 +40,12 @@
 
 #include <cmath>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 

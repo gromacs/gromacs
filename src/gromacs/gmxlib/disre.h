@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_mtop_t;

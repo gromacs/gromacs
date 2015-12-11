@@ -42,11 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/fatalerror.h"

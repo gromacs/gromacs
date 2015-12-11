@@ -40,7 +40,7 @@
 
 #include <cstdio>
 
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/txtdump.h"
 

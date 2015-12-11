@@ -49,7 +49,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -59,6 +58,7 @@
 #include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
