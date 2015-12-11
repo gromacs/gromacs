@@ -2035,7 +2035,10 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
     real            dvdl_dum;
     rvec           *savex;
 
-    snew(savex, state->natoms);
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
+    snew(savex, state->natoms + 1);
 
     start = 0;
     end   = md->homenr;

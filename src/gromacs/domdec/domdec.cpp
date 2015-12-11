@@ -1344,19 +1344,22 @@ static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
     {
         if (EST_DISTR(est) && (state->flags & (1<<est)))
         {
+            /* We need to allocate one element extra, since we might use
+             * (unaligned) 4-wide SIMD loads to access rvec entries.
+             */
             switch (est)
             {
                 case estX:
-                    srenew(state->x, state->nalloc);
+                    srenew(state->x, state->nalloc + 1);
                     break;
                 case estV:
-                    srenew(state->v, state->nalloc);
+                    srenew(state->v, state->nalloc + 1);
                     break;
                 case estSDX:
-                    srenew(state->sd_X, state->nalloc);
+                    srenew(state->sd_X, state->nalloc + 1);
                     break;
                 case estCGP:
-                    srenew(state->cg_p, state->nalloc);
+                    srenew(state->cg_p, state->nalloc + 1);
                     break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:

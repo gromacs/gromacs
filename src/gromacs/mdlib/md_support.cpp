@@ -193,8 +193,11 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
     if (statea->nalloc > stateb->nalloc)
     {
         stateb->nalloc = statea->nalloc;
-        srenew(stateb->x, stateb->nalloc);
-        srenew(stateb->v, stateb->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        srenew(stateb->x, stateb->nalloc + 1);
+        srenew(stateb->v, stateb->nalloc + 1);
     }
 
     stateb->natoms     = statea->natoms;
@@ -721,14 +724,17 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
     if (state->x == NULL)
     {
-        snew(state->x, state->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        snew(state->x, state->nalloc + 1);
     }
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
         if (state->v == NULL)
         {
-            snew(state->v, state->nalloc);
+            snew(state->v, state->nalloc + 1);
         }
     }
     if (ir->eI == eiSD2)
@@ -737,7 +743,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if (state->sd_X == NULL)
         {
             /* sd_X is not stored in the tpx file, so we need to allocate it */
-            snew(state->sd_X, state->nalloc);
+            snew(state->sd_X, state->nalloc + 1);
         }
     }
     if (ir->eI == eiCG)
@@ -746,7 +752,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if (state->cg_p == NULL)
         {
             /* cg_p is not stored in the tpx file, so we need to allocate it */
-            snew(state->cg_p, state->nalloc);
+            snew(state->cg_p, state->nalloc + 1);
         }
     }
 

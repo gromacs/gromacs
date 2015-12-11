@@ -1435,7 +1435,10 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
     if (state->nalloc > upd->xp_nalloc)
     {
         upd->xp_nalloc = state->nalloc;
-        srenew(upd->xp, upd->xp_nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        srenew(upd->xp, upd->xp_nalloc + 1);
     }
 
     return upd->xp;

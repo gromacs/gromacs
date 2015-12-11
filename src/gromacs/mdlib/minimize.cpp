@@ -392,7 +392,10 @@ void init_em(FILE *fplog, const char *title,
 
         /* Just copy the state */
         ems->s = *state_global;
-        snew(ems->s.x, ems->s.nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        snew(ems->s.x, ems->s.nalloc + 1);
         snew(ems->f, ems->s.nalloc);
         for (i = 0; i < state_global->natoms; i++)
         {
@@ -602,11 +605,14 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     if (s2->nalloc != s1->nalloc)
     {
         s2->nalloc = s1->nalloc;
-        srenew(s2->x, s1->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        srenew(s2->x, s1->nalloc + 1);
         srenew(ems2->f,  s1->nalloc);
         if (s2->flags & (1<<estCGP))
         {
-            srenew(s2->cg_p,  s1->nalloc);
+            srenew(s2->cg_p,  s1->nalloc + 1);
         }
     }
 
@@ -678,7 +684,10 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                 s2->cg_gl_nalloc = s1->cg_gl_nalloc;
                 try
                 {
-                    srenew(s2->cg_gl, s2->cg_gl_nalloc);
+                    /* We need to allocate one element extra, since we might use
+                     * (unaligned) 4-wide SIMD loads to access rvec entries.
+                     */
+                    srenew(s2->cg_gl, s2->cg_gl_nalloc + 1);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 #pragma omp barrier
