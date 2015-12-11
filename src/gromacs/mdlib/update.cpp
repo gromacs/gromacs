@@ -45,11 +45,11 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/orires.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"

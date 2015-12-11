@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,63 +34,54 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_ORIRES_H
-#define GMX_GMXLIB_ORIRES_H
+/*! \libinternal \file
+ * \brief
+ * Declares functions for handling distance restraints.
+ *
+ * \inlibraryapi
+ * \ingroup module_listed-forces
+ */
+#ifndef GMX_LISTED_FORCES_DISRE_H
+#define GMX_LISTED_FORCES_DISRE_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/topology/ifunc.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_mtop_t;
-struct gmx_multisim_t;
 struct history_t;
+struct t_commrec;
 struct t_inputrec;
 struct t_pbc;
-struct t_commrec;
-struct t_fcdata;
-struct t_oriresdata;
 struct t_state;
 
-void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
-                 rvec x[],
-                 const t_inputrec *ir,
-                 const struct t_commrec *cr, t_oriresdata *od,
-                 t_state *state);
-/* Decides whether orientation restraints can work, and initializes
-   all the orientation restraint stuff in *od (and assumes *od is
-   already allocated. */
-
-real calc_orires_dev(const struct gmx_multisim_t *ms,
-                     int nfa, const t_iatom fa[], const t_iparams ip[],
-                     const t_mdatoms *md, const rvec x[],
-                     const struct t_pbc *pbc, t_fcdata *fcd, history_t *hist);
-/*
- * Calculates the time averaged D matrices, the S matrix for each experiment.
- * Returns the weighted RMS deviation of the orientation restraints.
+/*! \brief
+ * Initiates *fcd data.
+ *
+ * Must be called once, nbonds is the number
+ * of iatoms in the ilist of the idef struct.
+ * When time averaging is used, the history is initialized in state,
+ * unless it was read before from a checkpoint file.
+ * The implementation of distance restraints with -multi
+ * must differ according to whether REMD is active.
  */
+void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
+                 t_inputrec *ir, const t_commrec *cr,
+                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
 
-void diagonalize_orires_tensors(t_oriresdata *od);
-/*
- * Diagonalizes the order tensor(s) of the orienation restraints.
- * For each experiment eig containts first 3 eigenvalues and then
- * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
+/*! \brief
+ * Calculates r and r^-3 (inst. and time averaged) for all pairs
+ * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
+void calc_disres_R_6(int nfa, const t_iatom *fa, const t_iparams ip[],
+                     const rvec *x, const t_pbc *pbc,
+                     t_fcdata *fcd, history_t *hist);
 
-void print_orires_log(FILE *log, t_oriresdata *od);
-/* Print order parameter, eigenvalues and eigenvectors to the log file */
+//! Calculates the distance restraint forces, return the potential.
+t_ifunc ta_disres;
 
-t_ifunc orires;
-/* Does only the orientation restraint force calculation */
+//! Copies the new time averages that have been calculated in calc_disres_R_6.
+void update_disres_history(t_fcdata *fcd, history_t *hist);
 
-void update_orires_history(t_fcdata *fcd, history_t *hist);
-/* Copy the new time averages that have been calculated in calc_orires_dev */
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _orires_h */
