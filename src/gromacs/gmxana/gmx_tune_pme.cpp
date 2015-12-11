@@ -2288,7 +2288,7 @@ int gmx_tune_pme(int argc, char *argv[])
     int             nthreads = 1;
 
     const char     *procstring[] =
-    { NULL, "-np", "-n", "none", NULL };
+    { NULL, "np", "n", "none", NULL };
     const char     *npmevalues_opt[] =
     { NULL, "auto", "all", "subset", NULL };
 
@@ -2309,7 +2309,7 @@ int gmx_tune_pme(int argc, char *argv[])
         { "-np",       FALSE, etINT,  {&nnodes},
           "Number of ranks to run the tests on (must be > 2 for separate PME ranks)" },
         { "-npstring", FALSE, etENUM, {procstring},
-          "Specify the number of ranks to [TT]$MPIRUN[tt] using this string"},
+          "Name of the [TT]$MPIRUN[tt] option that specifies the number of ranks to use ('np', or 'n'; use 'none' if there is no such option)" },
         { "-ntmpi",    FALSE, etINT,  {&nthreads},
           "Number of MPI-threads to run the tests on (turns MPI & mpirun off)"},
         { "-r",        FALSE, etINT,  {&repeats},
@@ -2416,7 +2416,7 @@ int gmx_tune_pme(int argc, char *argv[])
          * mpirun command. */
         if (std::strcmp(procstring[0], "none") != 0)
         {
-            sprintf(bbuf, " %s %d ", procstring[0], nnodes);
+            sprintf(bbuf, " -%s %d ", procstring[0], nnodes);
         }
         else
         {
@@ -2517,7 +2517,7 @@ int gmx_tune_pme(int argc, char *argv[])
         fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
         if (std::strcmp(procstring[0], "none") != 0)
         {
-            fprintf(fp, "Passing # of ranks via  : %s\n", procstring[0]);
+            fprintf(fp, "Passing # of ranks via  : -%s\n", procstring[0]);
         }
         else
         {
