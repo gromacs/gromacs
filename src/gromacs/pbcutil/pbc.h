@@ -355,19 +355,6 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box,
  */
 int *compact_unitcell_edges(void);
 
-/*! \brief Parallellizes put_atoms_box
- *
- * This wrapper function around put_atoms_in_box() with the ugly manual
- * workload splitting is needed to avoid silently introducing multithreading
- * in tools.
- * \param[in]    ePBC   The pbc type
- * \param[in]    box    The simulation box
- * \param[in]    natoms The number of atoms
- * \param[inout] x      The coordinates of the atoms
- */
-void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[]);
-
-
 /*! \brief Put atoms inside the simulations box
  *
  * These routines puts ONE or ALL atoms in the box, not caring
