@@ -1600,7 +1600,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
         if (pgrp->params.nweight > 0)
         {
-            snew(pgrp->params.ind, pgrp->params.nweight);
+            snew(pgrp->params.weight, pgrp->params.nweight);
             for (i = 0; i < pgrp->params.nweight; i++)
             {
                 pgrp->params.weight[i] = pull_params->group[g].weight[i];
