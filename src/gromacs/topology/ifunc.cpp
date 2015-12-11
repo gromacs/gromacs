@@ -39,9 +39,9 @@
 
 #include "ifunc.h"
 
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/orires.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 
 #define  def_bonded(str, lstr, nra, nrpa, nrpb, ind, func) \
     {str, lstr, (nra), (nrpa), (nrpb), IF_BOND,                        (ind), (func)}
