@@ -38,9 +38,9 @@
 #define GMX_FILEIO_ENXIO_H
 
 #include "gromacs/fileio/xdr_datatype.h"
-#include "gromacs/mdtypes/energy.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/trajectory/energy.h"
 
 #ifdef __cplusplus
 extern "C" {
