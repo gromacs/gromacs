@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/topology/ifunc.h"
 
 #ifdef __cplusplus
 extern "C" {

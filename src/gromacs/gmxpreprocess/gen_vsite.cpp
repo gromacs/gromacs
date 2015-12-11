@@ -45,7 +45,6 @@
 #include <cmath>
 
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -55,6 +54,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/basedefinitions.h"

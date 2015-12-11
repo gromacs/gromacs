@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"

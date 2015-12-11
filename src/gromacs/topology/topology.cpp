@@ -42,8 +42,8 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"

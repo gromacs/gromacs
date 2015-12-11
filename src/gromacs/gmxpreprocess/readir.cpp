@@ -47,7 +47,6 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
@@ -60,6 +59,7 @@
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"

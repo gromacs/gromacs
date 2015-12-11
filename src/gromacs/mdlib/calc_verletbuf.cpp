@@ -43,7 +43,6 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -52,6 +51,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

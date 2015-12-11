@@ -42,9 +42,9 @@
 #include "tng/tng_io.h"
 #endif
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"

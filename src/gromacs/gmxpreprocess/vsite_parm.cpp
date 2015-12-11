@@ -45,7 +45,6 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
@@ -53,6 +52,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
