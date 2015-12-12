@@ -72,7 +72,6 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nsgrid.h"
-#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -9122,7 +9121,6 @@ void dd_partition_system(FILE                *fplog,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
-                         gmx_shellfc_t       *shellfc,
                          gmx_constr_t         constr,
                          t_nrnb              *nrnb,
                          gmx_wallcycle_t      wcycle,
@@ -9622,12 +9620,6 @@ void dd_partition_system(FILE                *fplog,
         /* Now we have updated mdatoms, we can do the last vsite bookkeeping */
         split_vsites_over_threads(top_local->idef.il, top_local->idef.iparams,
                                   mdatoms, FALSE, vsite);
-    }
-
-    if (shellfc)
-    {
-        /* Make the local shell stuff, currently no communication is done */
-        make_local_shells(cr, mdatoms, shellfc);
     }
 
     if (ir->implicit_solvent)
