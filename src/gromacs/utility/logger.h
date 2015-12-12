@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,54 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_MD_LOGGING_H
-#define GMX_GMXLIB_MD_LOGGING_H
+/*! \libinternal \file
+ * \brief
+ * Declares functionality for logging.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_LOGGER_H
+#define GMX_UTILITY_LOGGER_H
 
 #include <cstdio>
 
-struct t_commrec;
+namespace gmx
+{
 
-void md_print_info(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...);
-/* Print an general information message to stderr on the master node
- * and to fplog if fplog!=NULL.
- * fmt is a standard printf formatting string which should end in \n,
- * the arguments after that contain the values to be printed, as in printf.
- */
+class Logger
+{
+    public:
+        Logger(FILE *fp1, FILE *fp2);
 
-void md_print_warn(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...);
-/* As md_print_info above, but for important notices or warnings.
- * The only difference with md_print_info is that a newline is printed
- * before and after the message such that it stands out.
+        bool isActive() const { return fp1_ != NULL || fp2_ != NULL; }
+
+        Logger &formatLine(const char *fmt, ...);
+        Logger &formatWarning(const char *fmt, ...);
+
+    private:
+        FILE *fp1_;
+        FILE *fp2_;
+};
+
+/*! \brief
+ * Helper to log information using gmx::Logger.
+ *
+ * \param  logger  gmx::Logger instance to use for logging.
+ *
+ * Used as
+ * \code
+   GMX_LOG(logger).formatLine(...);
+   \endcode
+ * and ensures that the code to format the output is only executed when the
+ * output goes somewhere.
+ *
+ * \ingroup module_utility
  */
+#define GMX_LOG(logger) \
+    if (!(logger).isActive()) { } else \
+        (logger)
+
+} // namespace gmx
 
 #endif

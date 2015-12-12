@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,60 +34,61 @@
  */
 #include "gmxpre.h"
 
-#include "md_logging.h"
+#include "logger.h"
 
 #include <cstdarg>
 #include <cstdio>
 
-#include "gromacs/mdtypes/commrec.h"
+namespace gmx
+{
 
+Logger::Logger(FILE *fp1, FILE *fp2)
+    : fp1_(fp1), fp2_(fp2)
+{
+}
 
-void md_print_info(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...)
+Logger &Logger::formatLine(const char *fmt, ...)
 {
     va_list ap;
 
-    if (cr == NULL || SIMMASTER(cr))
+    if (fp1_ != nullptr)
     {
         va_start(ap, fmt);
-
-        vfprintf(stderr, fmt, ap);
-
+        std::vfprintf(fp1_, fmt, ap);
+        std::fprintf(fp1_, "\n");
         va_end(ap);
     }
-    if (fplog != NULL)
+    if (fp2_ != nullptr)
     {
         va_start(ap, fmt);
-
-        vfprintf(fplog, fmt, ap);
-
+        std::vfprintf(fp2_, fmt, ap);
+        std::fprintf(fp2_, "\n");
         va_end(ap);
     }
+    return *this;
 }
 
-void md_print_warn(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...)
+Logger &Logger::formatWarning(const char *fmt, ...)
 {
     va_list ap;
 
-    if (cr == NULL || SIMMASTER(cr))
+    if (fp1_ != nullptr)
     {
         va_start(ap, fmt);
-
-        fprintf(stderr, "\n");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, "\n");
-
+        std::fprintf(fp1_, "\n");
+        std::vfprintf(fp1_, fmt, ap);
+        std::fprintf(fp1_, "\n\n");
         va_end(ap);
     }
-    if (fplog != NULL)
+    if (fp2_ != nullptr)
     {
         va_start(ap, fmt);
-
-        fprintf(fplog, "\n");
-        vfprintf(fplog, fmt, ap);
-        fprintf(fplog, "\n");
-
+        std::fprintf(fp2_, "\n");
+        std::vfprintf(fp2_, fmt, ap);
+        std::fprintf(fp2_, "\n\n");
         va_end(ap);
     }
+    return *this;
 }
+
+} // namespace gmx
