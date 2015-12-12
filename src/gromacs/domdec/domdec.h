@@ -80,7 +80,6 @@ struct t_commrec;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
-struct gmx_shellfc_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -275,7 +274,6 @@ void dd_partition_system(FILE                       *fplog,
                          gmx_localtop_t             *top_local,
                          t_forcerec                 *fr,
                          gmx_vsite_t                *vsite,
-                         gmx_shellfc_t              *shellfc,
                          gmx_constr_t                constr,
                          t_nrnb                     *nrnb,
                          gmx_wallcycle_t             wcycle,

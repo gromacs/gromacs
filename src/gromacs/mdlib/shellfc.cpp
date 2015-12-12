@@ -78,25 +78,27 @@ typedef struct {
 } t_shell;
 
 struct gmx_shellfc_t {
-    int         nshell_gl;      /* The number of shells in the system       */
-    t_shell    *shell_gl;       /* All the shells (for DD only)             */
-    int        *shell_index_gl; /* Global shell index (for DD only)         */
-    gmx_bool    bInterCG;       /* Are there inter charge-group shells?     */
-    int         nshell;         /* The number of local shells               */
-    t_shell    *shell;          /* The local shells                         */
-    int         shell_nalloc;   /* The allocation size of shell             */
-    gmx_bool    bPredict;       /* Predict shell positions                  */
-    gmx_bool    bRequireInit;   /* Require initialization of shell positions  */
-    int         nflexcon;       /* The number of flexible constraints       */
-    rvec       *x[2];           /* Array for iterative minimization         */
-    rvec       *f[2];           /* Array for iterative minimization         */
-    int         x_nalloc;       /* The allocation size of x and f           */
-    rvec       *acc_dir;        /* Acceleration direction for flexcon       */
-    rvec       *x_old;          /* Old coordinates for flexcon              */
-    int         flex_nalloc;    /* The allocation size of acc_dir and x_old */
-    rvec       *adir_xnold;     /* Work space for init_adir                 */
-    rvec       *adir_xnew;      /* Work space for init_adir                 */
-    int         adir_nalloc;    /* Work space for init_adir                 */
+    int          nshell_gl;              /* The number of shells in the system        */
+    t_shell     *shell_gl;               /* All the shells (for DD only)              */
+    int         *shell_index_gl;         /* Global shell index (for DD only)          */
+    gmx_bool     bInterCG;               /* Are there inter charge-group shells?      */
+    int          nshell;                 /* The number of local shells                */
+    t_shell     *shell;                  /* The local shells                          */
+    int          shell_nalloc;           /* The allocation size of shell              */
+    gmx_bool     bPredict;               /* Predict shell positions                   */
+    gmx_bool     bRequireInit;           /* Require initialization of shell positions */
+    int          nflexcon;               /* The number of flexible constraints        */
+    rvec        *x[2];                   /* Array for iterative minimization          */
+    rvec        *f[2];                   /* Array for iterative minimization          */
+    int          x_nalloc;               /* The allocation size of x and f            */
+    rvec        *acc_dir;                /* Acceleration direction for flexcon        */
+    rvec        *x_old;                  /* Old coordinates for flexcon               */
+    int          flex_nalloc;            /* The allocation size of acc_dir and x_old  */
+    rvec        *adir_xnold;             /* Work space for init_adir                  */
+    rvec        *adir_xnew;              /* Work space for init_adir                  */
+    int          adir_nalloc;            /* Work space for init_adir                  */
+    std::int64_t numForceEvaluations;    /* Total number of force evaluations         */
+    int          numConvergedIterations; /* Total number of iterations that converged */
 };
 
 
@@ -125,6 +127,13 @@ static void pr_shell(FILE *fplog, int ns, t_shell s[])
     }
 }
 
+/* TODO The remain call of this function passes non-NULL mass and NULL
+ * mtop, so this routine can be simplified.
+ *
+ * The other code path supported doing prediction before the MD loop
+ * started, but even when called, the prediction was always
+ * over-written by a subsequent call in the MD loop, so has been
+ * removed. */
 static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                            int ns, t_shell s[],
                            real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
@@ -238,7 +247,9 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
 
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   gmx_mtop_t *mtop, int nflexcon,
-                                  rvec *x)
+                                  int nstcalcenergy,
+                                  bool usingDomainDecomposition,
+                                  bool doingNormalModeAnalysis)
 {
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
@@ -292,6 +303,19 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 
     snew(shfc, 1);
     shfc->nflexcon = nflexcon;
+
+    if (nstcalcenergy != 1)
+    {
+        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combination with shell particles.\nPlease make a new tpr file.", nstcalcenergy);
+    }
+    if (usingDomainDecomposition)
+    {
+        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
+    }
+    if (doingNormalModeAnalysis)
+    {
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
 
     if (nshell == 0)
     {
@@ -521,12 +545,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 
     if (shfc->bPredict)
     {
-        if (x)
-        {
-            predict_shells(fplog, x, NULL, 0, shfc->nshell_gl, shfc->shell_gl,
-                           NULL, mtop, TRUE);
-        }
-
         if (shfc->bInterCG)
         {
             if (fplog)
@@ -922,25 +940,24 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
               NULL, NULL, nrnb, econqDeriv_FlexCon);
 }
 
-int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_int64_t mdstep, t_inputrec *inputrec,
-                        gmx_bool bDoNS, int force_flags,
-                        gmx_localtop_t *top,
-                        gmx_constr_t constr,
-                        gmx_enerdata_t *enerd, t_fcdata *fcd,
-                        t_state *state, rvec f[],
-                        tensor force_vir,
-                        t_mdatoms *md,
-                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        t_graph *graph,
-                        gmx_groups_t *groups,
-                        gmx_shellfc_t *shfc,
-                        t_forcerec *fr,
-                        gmx_bool bBornRadii,
-                        double t, rvec mu_tot,
-                        gmx_bool *bConverged,
-                        gmx_vsite_t *vsite,
-                        FILE *fp_field)
+void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
+                         gmx_int64_t mdstep, t_inputrec *inputrec,
+                         gmx_bool bDoNS, int force_flags,
+                         gmx_localtop_t *top,
+                         gmx_constr_t constr,
+                         gmx_enerdata_t *enerd, t_fcdata *fcd,
+                         t_state *state, rvec f[],
+                         tensor force_vir,
+                         t_mdatoms *md,
+                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         t_graph *graph,
+                         gmx_groups_t *groups,
+                         gmx_shellfc_t *shfc,
+                         t_forcerec *fr,
+                         gmx_bool bBornRadii,
+                         double t, rvec mu_tot,
+                         gmx_vsite_t *vsite,
+                         FILE *fp_field)
 {
     int        nshell;
     t_shell   *shell;
@@ -950,7 +967,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     real       sf_dir, invdt;
     real       ftol, dum = 0;
     char       sbuf[22];
-    gmx_bool   bCont, bInit;
+    gmx_bool   bCont, bInit, bConverged;
     int        nat, dd_ac0, dd_ac1 = 0, i;
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
     int        nflexcon, number_steps, d, Min = 0, count = 0;
@@ -1129,9 +1146,9 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     /* First check whether we should do shells, or whether the force is
      * low enough even without minimization.
      */
-    *bConverged = (df[Min] < ftol);
+    bConverged = (df[Min] < ftol);
 
-    for (count = 1; (!(*bConverged) && (count < number_steps)); count++)
+    for (count = 1; (!(bConverged) && (count < number_steps)); count++)
     {
         if (vsite)
         {
@@ -1219,7 +1236,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
         }
 
-        *bConverged = (df[Try] < ftol);
+        bConverged = (df[Try] < ftol);
 
         if ((df[Try] < df[Min]))
         {
@@ -1246,7 +1263,12 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             decrease_step_size(nshell, shell);
         }
     }
-    if (MASTER(cr) && !(*bConverged))
+    shfc->numForceEvaluations += count;
+    if (bConverged)
+    {
+        shfc->numConvergedIterations++;
+    }
+    if (MASTER(cr) && !(bConverged))
     {
         /* Note that the energies and virial are incorrect when not converged */
         if (fplog)
@@ -1263,6 +1285,18 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     /* Copy back the coordinates and the forces */
     memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
     memcpy(f, force[Min], nat*sizeof(f[0]));
+}
 
-    return count;
+void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, gmx_int64_t numSteps)
+{
+    if (shfc && fplog && numSteps > 0)
+    {
+        double numStepsAsDouble = static_cast<double>(numSteps);
+        fprintf(fplog, "Fraction of iterations that converged:           %.2f %%\n",
+                (shfc->numConvergedIterations*100.0)/numStepsAsDouble);
+        fprintf(fplog, "Average number of force evaluations per MD step: %.2f\n\n",
+                shfc->numForceEvaluations/numStepsAsDouble);
+    }
+
+    // TODO Deallocate memory in shfc
 }
