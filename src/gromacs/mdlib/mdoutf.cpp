@@ -74,6 +74,7 @@ struct gmx_mdoutf {
     int               natoms_x_compressed;
     gmx_groups_t     *groups; /* for compressed position writing */
     gmx_wallcycle_t   wcycle;
+    rvec             *f_global;
 };
 
 
@@ -103,6 +104,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->simulation_part         = ir->simulation_part;
     of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
     of->wcycle                  = wcycle;
+    of->f_global                = NULL;
 
     if (MASTER(cr))
     {
@@ -221,6 +223,11 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                 of->natoms_x_compressed++;
             }
         }
+
+        if (ir->nstfout && DOMAINDECOMP(cr))
+        {
+            snew(of->f_global, top_global->natoms);
+        }
     }
 
     if (bCiteTng)
@@ -257,10 +264,11 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local, rvec *f_global)
+                                      rvec *f_local)
 {
     rvec *local_v;
     rvec *global_v;
+    rvec *f_global;
 
     /* MRS -- defining these variables is to manage the difference
      * between half step and full step velocities, but there must be a better way . . . */
@@ -287,6 +295,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                global_v);
             }
         }
+        f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
             dd_collect_vec(cr->dd, state_local, f_local, f_global);
@@ -308,6 +317,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             copy_mat(state_local->fvir_prev, state_global->fvir_prev);
             copy_mat(state_local->pres_prev, state_global->pres_prev);
         }
+        f_global = f_local;
     }
 
     if (MASTER(cr))
@@ -447,6 +457,10 @@ void done_mdoutf(gmx_mdoutf_t of)
          * gmx_fio_fopen, so we use the least common denominator for closing.
          */
         gmx_fio_fclose(of->fp_field);
+    }
+    if (of->f_global != NULL)
+    {
+        sfree(of->f_global);
     }
 
     gmx_tng_close(&of->tng);

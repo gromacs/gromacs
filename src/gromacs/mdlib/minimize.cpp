@@ -332,7 +332,7 @@ void init_em(FILE *fplog, const char *title,
              t_commrec *cr, t_inputrec *ir,
              t_state *state_global, gmx_mtop_t *top_global,
              em_state_t *ems, gmx_localtop_t **top,
-             rvec **f, rvec **f_global,
+             rvec **f,
              t_nrnb *nrnb, rvec mu_tot,
              t_forcerec *fr, gmx_enerdata_t **enerd,
              t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
@@ -377,14 +377,6 @@ void init_em(FILE *fplog, const char *title,
                             nrnb, NULL, FALSE);
         dd_store_state(cr->dd, &ems->s);
 
-        if (ir->nstfout)
-        {
-            snew(*f_global, top_global->natoms);
-        }
-        else
-        {
-            *f_global = NULL;
-        }
         *graph = NULL;
     }
     else
@@ -402,7 +394,6 @@ void init_em(FILE *fplog, const char *title,
         copy_mat(state_global->box, ems->s.box);
 
         *top      = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
-        *f_global = *f;
 
         forcerec_set_excl_load(fr, *top);
 
@@ -521,7 +512,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir, gmx_int64_t step,
                           em_state_t *state,
-                          t_state *state_global, rvec *f_global)
+                          t_state *state_global)
 {
     int      mdof_flags;
     gmx_bool bIMDout = FALSE;
@@ -536,7 +527,6 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
     if ((bX || bF || bIMDout || confout != NULL) && !DOMAINDECOMP(cr))
     {
         copy_em_coords(state, state_global);
-        f_global = state->f;
     }
 
     mdof_flags = 0;
@@ -557,7 +547,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
                                      top_global, step, (double)step,
-                                     &state->s, state_global, state->f, f_global);
+                                     &state->s, state_global, state->f);
 
     if (confout != NULL && MASTER(cr))
     {
@@ -1033,7 +1023,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     rvec             *f;
     gmx_global_stat_t gstat;
     t_graph          *graph;
-    rvec             *f_global, *p, *sf;
+    rvec             *p, *sf;
     double            gpa, gpb, gpc, tmp, minstep;
     real              fnormn;
     real              stepsize;
@@ -1058,7 +1048,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
     /* Init em and store the local state in s_min */
     init_em(fplog, CG, cr, inputrec,
-            state_global, top_global, s_min, &top, &f, &f_global,
+            state_global, top_global, s_min, &top, &f,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
@@ -1223,7 +1213,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
         write_em_traj(fplog, cr, outf, do_x, do_f, NULL,
                       top_global, inputrec, step,
-                      s_min, state_global, f_global);
+                      s_min, state_global);
 
         /* Take a step downhill.
          * In theory, we should minimize the function along this direction.
@@ -1607,7 +1597,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
-                  s_min, state_global, f_global);
+                  s_min, state_global);
 
 
     if (MASTER(cr))
@@ -1679,7 +1669,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     rvec              *f;
     gmx_global_stat_t  gstat;
     t_graph           *graph;
-    rvec              *f_global;
     int                ncorr, nmaxcorr, point, cp, neval, nminstep;
     double             stepsize, step_taken, gpa, gpb, gpc, tmp, minstep;
     real              *rho, *alpha, *ff, *xx, *p, *s, *lastx, *lastf, **dx, **dg;
@@ -1748,7 +1737,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     /* Init em */
     init_em(fplog, LBFGS, cr, inputrec,
-            state_global, top_global, &ems, &top, &f, &f_global,
+            state_global, top_global, &ems, &top, &f,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
@@ -1909,7 +1898,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, (real)step, state_global, state_global, f, f);
+                                         top_global, step, (real)step, state_global, state_global, f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
@@ -2439,7 +2428,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     do_f = !do_per_step(step, inputrec->nstfout);
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
-                  &ems, state_global, f);
+                  &ems, state_global);
 
     if (MASTER(cr))
     {
@@ -2503,7 +2492,6 @@ double do_steep(FILE *fplog, t_commrec *cr,
 {
     const char       *SD = "Steepest Descents";
     em_state_t       *s_min, *s_try;
-    rvec             *f_global;
     gmx_localtop_t   *top;
     gmx_enerdata_t   *enerd;
     rvec             *f;
@@ -2525,7 +2513,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
 
     /* Init em and store the local state in s_try */
     init_em(fplog, SD, cr, inputrec,
-            state_global, top_global, s_try, &top, &f, &f_global,
+            state_global, top_global, s_try, &top, &f,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
@@ -2643,7 +2631,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
             do_f = do_per_step(steps_accepted, inputrec->nstfout);
             write_em_traj(fplog, cr, outf, do_x, do_f, NULL,
                           top_global, inputrec, count,
-                          s_min, state_global, f_global);
+                          s_min, state_global);
         }
         else
         {
@@ -2696,7 +2684,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     }
     write_em_traj(fplog, cr, outf, TRUE, inputrec->nstfout, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, count,
-                  s_min, state_global, f_global);
+                  s_min, state_global);
 
     if (MASTER(cr))
     {
@@ -2764,7 +2752,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
     gmx_mdoutf_t         outf;
     int                  natoms, atom, d;
     int                  nnodes, node;
-    rvec                *f_global;
     gmx_localtop_t      *top;
     gmx_enerdata_t      *enerd;
     rvec                *f;
@@ -2795,7 +2782,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     /* Init em and store the local state in state_minimum */
     init_em(fplog, NM, cr, inputrec,
             state_global, top_global, state_work, &top,
-            &f, &f_global,
+            &f,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
             nfile, fnm, &outf, NULL, imdport, Flags, wcycle);
 
