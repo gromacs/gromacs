@@ -244,7 +244,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_localtop_t   *top;
     t_mdebin         *mdebin   = NULL;
     t_state          *state    = NULL;
-    rvec             *f_global = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     gmx_global_stat_t gstat;
@@ -398,11 +397,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         snew(state, 1);
         dd_init_local_state(cr->dd, state_global, state);
-
-        if (DDMASTER(cr->dd) && ir->nstfout)
-        {
-            snew(f_global, state_global->natoms);
-        }
     }
     else
     {
@@ -411,7 +405,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         forcerec_set_excl_load(fr, top);
 
         state    = serial_init_local_state(state_global);
-        f_global = f;
 
         atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
 
@@ -1234,7 +1227,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
-                                 outf, mdebin, ekind, f, f_global,
+                                 outf, mdebin, ekind, f,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);

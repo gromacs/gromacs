@@ -65,7 +65,6 @@ do_md_trajectory_writing(FILE           *fplog,
                          t_mdebin       *mdebin,
                          gmx_ekindata_t *ekind,
                          rvec           *f,
-                         rvec           *f_global,
                          int            *nchkpt,
                          gmx_bool        bCPT,
                          gmx_bool        bRerunMD,
@@ -142,7 +141,7 @@ do_md_trajectory_writing(FILE           *fplog,
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, f, f_global);
+                                         step, t, state, state_global, f);
         if (bCPT)
         {
             (*nchkpt)++;
