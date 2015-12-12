@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,39 +32,63 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TIMING_WALLCYCLEREPORTING_H
-#define GMX_TIMING_WALLCYCLEREPORTING_H
+#include "gmxpre.h"
 
-/* NOTE: None of the routines here are safe to call within an OpenMP
- * region */
+#include "logger.h"
 
-#include <stdio.h>
-
-#include <array>
-
-#include "gromacs/utility/basedefinitions.h"
-
-struct t_commrec;
+#include <cstdarg>
+#include <cstdio>
 
 namespace gmx
 {
-class Logger;
+
+Logger::Logger(FILE *fp1, FILE *fp2)
+    : fp1_(fp1), fp2_(fp2)
+{
 }
 
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
-typedef struct gmx_wallclock_gpu_t gmx_wallclock_gpu_t;
+Logger &Logger::formatLine(const char *fmt, ...)
+{
+    va_list ap;
 
-typedef std::array<double, ewcNR+ewcsNR> WallcycleCounts;
-/* Convenience typedef */
+    if (fp1_ != nullptr)
+    {
+        va_start(ap, fmt);
+        std::vfprintf(fp1_, fmt, ap);
+        std::fprintf(fp1_, "\n");
+        va_end(ap);
+    }
+    if (fp2_ != nullptr)
+    {
+        va_start(ap, fmt);
+        std::vfprintf(fp2_, fmt, ap);
+        std::fprintf(fp2_, "\n");
+        va_end(ap);
+    }
+    return *this;
+}
 
-WallcycleCounts wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
-/* Return a vector of the sum of cycle counts over the nodes in
-   cr->mpi_comm_mysim. */
+Logger &Logger::formatWarning(const char *fmt, ...)
+{
+    va_list ap;
 
-void wallcycle_print(FILE *fplog, gmx::Logger *mdlog, int nnodes, int npme,
-                     int nth_pp, int nth_pme, double realtime,
-                     gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
-                     struct gmx_wallclock_gpu_t *gpu_t);
-/* Print the cycle and time accounting */
+    if (fp1_ != nullptr)
+    {
+        va_start(ap, fmt);
+        std::fprintf(fp1_, "\n");
+        std::vfprintf(fp1_, fmt, ap);
+        std::fprintf(fp1_, "\n\n");
+        va_end(ap);
+    }
+    if (fp2_ != nullptr)
+    {
+        va_start(ap, fmt);
+        std::fprintf(fp2_, "\n");
+        std::vfprintf(fp2_, fmt, ap);
+        std::fprintf(fp2_, "\n\n");
+        va_end(ap);
+    }
+    return *this;
+}
 
-#endif
+} // namespace gmx

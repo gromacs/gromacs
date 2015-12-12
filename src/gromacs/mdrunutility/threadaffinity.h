@@ -49,6 +49,11 @@
 
 struct t_commrec;
 
+namespace gmx
+{
+class Logger;
+}
+
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
  *
@@ -75,7 +80,7 @@ gmx_set_thread_affinity(FILE                *fplog,
  * variables for setting the affinity are set.
  */
 void
-gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
+gmx_check_thread_affinity_set(gmx::Logger *mdlog, const t_commrec *cr,
                               gmx_hw_opt_t *hw_opt, int ncpus,
                               gmx_bool bAfterOpenmpInit);
 
