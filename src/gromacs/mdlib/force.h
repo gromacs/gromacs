@@ -60,6 +60,11 @@ struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 
+namespace gmx
+{
+class Logger;
+}
+
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
@@ -106,8 +111,7 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  */
 
 
-gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
-                                          const t_commrec  *cr,
+gmx_bool nbnxn_gpu_acceleration_supported(gmx::Logger      *mdlog,
                                           const t_inputrec *ir,
                                           gmx_bool          bRerunMD);
 /* Return if GPU acceleration is supported with the given settings.
@@ -116,8 +120,7 @@ gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
  * message to fplog/stderr.
  */
 
-gmx_bool nbnxn_simd_supported(FILE             *fplog,
-                              const t_commrec  *cr,
+gmx_bool nbnxn_simd_supported(gmx::Logger      *mdlog,
                               const t_inputrec *ir);
 /* Return if CPU SIMD support exists for the given inputrec
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback

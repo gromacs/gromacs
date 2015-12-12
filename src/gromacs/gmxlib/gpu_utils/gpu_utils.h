@@ -51,12 +51,13 @@
 #include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
+
+namespace gmx
+{
+class Logger;
+}
 
 /*! \brief Detect all GPUs in the system.
  *
@@ -120,7 +121,7 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * The varible \p mygpu is the index of the GPU to initialize in the
  * gpu_info.gpu_dev array.
  *
- * \param[out] fplog        log file to write to
+ * \param      mdlog        log file to write to
  * \param[in]  mygpu        index of the GPU to initialize
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
@@ -129,7 +130,7 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * \returns                 true if no error occurs during initialization.
  */
 GPU_FUNC_QUALIFIER
-gmx_bool init_gpu(FILE *GPU_FUNC_ARGUMENT(fplog),
+gmx_bool init_gpu(gmx::Logger *GPU_FUNC_ARGUMENT(mdlog),
                   int GPU_FUNC_ARGUMENT(mygpu),
                   char *GPU_FUNC_ARGUMENT(result_str),
                   const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
@@ -236,9 +237,5 @@ typedef void gmx_host_free_t (void *ptr);
 void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

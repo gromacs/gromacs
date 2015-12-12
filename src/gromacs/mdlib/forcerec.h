@@ -47,6 +47,11 @@
 struct t_commrec;
 struct t_fcdata;
 
+namespace gmx
+{
+class Logger;
+}
+
 /*! \brief Create a new forcerec structure */
 t_forcerec *mk_forcerec(void);
 
@@ -90,6 +95,7 @@ void init_interaction_const_tables(FILE                   *fp,
  *
  * The Force rec struct must be created with mk_forcerec.
  * \param[in]  fplog       File for printing
+ * \param[in]  mdlog       File for printing
  * \param[out] fr          The forcerec
  * \param[in]  fcd         Force constant data
  * \param[in]  ir          Inputrec structure
@@ -104,6 +110,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
 void init_forcerec(FILE                   *fplog,
+                   gmx::Logger            *mdlog,
                    t_forcerec             *fr,
                    t_fcdata               *fcd,
                    const t_inputrec       *ir,

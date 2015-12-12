@@ -60,6 +60,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
@@ -397,7 +398,7 @@ gmx_set_thread_affinity(FILE                *fplog,
  * Note that this will only work on Linux as we use a GNU feature.
  */
 void
-gmx_check_thread_affinity_set(FILE            *fplog,
+gmx_check_thread_affinity_set(gmx::Logger     *mdlog,
                               const t_commrec *cr,
                               gmx_hw_opt_t    *hw_opt,
                               int  gmx_unused  nthreads_hw_avail,
@@ -418,7 +419,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
             if (!gmx_omp_check_thread_affinity(&message))
             {
                 /* TODO: with -pin auto we should only warn when using all cores */
-                md_print_warn(cr, fplog, "%s", message);
+                GMX_LOG(*mdlog).formatWarning("%s", message);
                 sfree(message);
                 hw_opt->thread_affinity = threadaffOFF;
             }
@@ -493,14 +494,14 @@ gmx_check_thread_affinity_set(FILE            *fplog,
         {
             if (!bAfterOpenmpInit)
             {
-                md_print_warn(cr, fplog,
-                              "Non-default thread affinity set, disabling internal thread affinity");
+                GMX_LOG(*mdlog).formatWarning(
+                        "Non-default thread affinity set, disabling internal thread affinity");
             }
             else
             {
-                md_print_warn(cr, fplog,
-                              "Non-default thread affinity set probably by the OpenMP library,\n"
-                              "disabling internal thread affinity");
+                GMX_LOG(*mdlog).formatWarning(
+                        "Non-default thread affinity set probably by the OpenMP library,\n"
+                        "disabling internal thread affinity");
             }
             hw_opt->thread_affinity = threadaffOFF;
         }
@@ -509,9 +510,9 @@ gmx_check_thread_affinity_set(FILE            *fplog,
             /* Only warn once, at the last check (bAfterOpenmpInit==TRUE) */
             if (bAfterOpenmpInit)
             {
-                md_print_warn(cr, fplog,
-                              "Overriding thread affinity set outside %s\n",
-                              gmx::getProgramContext().displayName());
+                GMX_LOG(*mdlog).formatWarning(
+                        "Overriding thread affinity set outside %s",
+                        gmx::getProgramContext().displayName());
             }
         }
 

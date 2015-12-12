@@ -63,10 +63,14 @@ struct t_filenm;
 
 namespace gmx
 {
+
+class Logger;
+
 /*! \brief Integrator algorithm implementation.
  *
  * \param[in] fplog               Log file for output
  * \param[in] cr                  Communication record
+ * \param[in] mdlog               Log writer for important output
  * \param[in] nfile               Number of files
  * \param[in] fnm                 Filename structure array
  * \param[in] oenv                Output information
@@ -94,7 +98,7 @@ namespace gmx
  * \param[in] Flags               Flags to control mdrun
  * \param[in] walltime_accounting More timing information
  */
-typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
+typedef double integrator_t (FILE *fplog, t_commrec *cr, gmx::Logger *mdlog,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv, gmx_bool bVerbose,
                              int nstglobalcomm,

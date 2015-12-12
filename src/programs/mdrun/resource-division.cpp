@@ -46,7 +46,6 @@
 
 #include "gromacs/gmxlib/gmx_detect_hardware.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -57,6 +56,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 
 
 /* DISCLAIMER: All the atom count and thread numbers below are heuristic.
@@ -248,7 +248,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 }
 
 
-static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t *hwinfo,
+static int getMaxGpuUsable(gmx::Logger *mdlog, const gmx_hw_info_t *hwinfo,
                            int cutoff_scheme, gmx_bool bUseGpu)
 {
     /* This code relies on the fact that GPU are not detected when GPU
@@ -266,7 +266,7 @@ static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t
         {
             if (hwinfo->gpu_info.n_dev_compatible > 1)
             {
-                md_print_warn(cr, fplog, "More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI rank.\n");
+                GMX_LOG(*mdlog).formatWarning("More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI rank.");
             }
             return 1;
         }
@@ -298,8 +298,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      gmx_hw_opt_t        *hw_opt,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
-                     const t_commrec     *cr,
-                     FILE                *fplog,
+                     gmx::Logger         *mdlog,
                      gmx_bool             bUseGpu)
 {
     int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
@@ -312,7 +311,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     if (inputrec->eI == eiLBFGS ||
         inputrec->coulombtype == eelEWALD)
     {
-        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI rank.\n");
+        GMX_LOG(*mdlog).formatWarning("The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI rank.");
         if (hw_opt->nthreads_tmpi > 1)
         {
             gmx_fatal(FARGS, "You asked for more than 1 thread-MPI rank, but an algorithm doesn't support that");
@@ -345,7 +344,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    ngpu = getMaxGpuUsable(fplog, cr, hwinfo, inputrec->cutoff_scheme, bUseGpu);
+    ngpu = getMaxGpuUsable(mdlog, hwinfo, inputrec->cutoff_scheme, bUseGpu);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {
@@ -467,7 +466,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
-                                        FILE                *fplog)
+                                        gmx::Logger         *mdlog)
 {
 #if defined GMX_OPENMP && defined GMX_MPI
     int         nth_omp_min, nth_omp_max, ngpu;
@@ -536,7 +535,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
             if (bNtOmpOptionSet)
             {
-                md_print_warn(cr, fplog, "NOTE: %s\n", buf);
+                GMX_LOG(*mdlog).formatWarning("NOTE: %s", buf);
             }
             else
             {
@@ -584,7 +583,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
              */
             if (bNtOmpOptionSet || (bEnvSet && nth_omp_min != nth_omp_max))
             {
-                md_print_warn(cr, fplog, "NOTE: %s\n", buf);
+                GMX_LOG(*mdlog).formatWarning("NOTE: %s", buf);
             }
             else
             {
@@ -603,12 +602,12 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     if ((hwinfo->ncore > 1) ||
         (hwinfo->ncore == 0 && hwinfo->nthreads_hw_avail > 1))
     {
-        md_print_warn(cr, fplog, "NOTE: GROMACS was compiled without OpenMP and (thread-)MPI support, can only use a single CPU core\n");
+        GMX_LOG(*mdlog).formatWarning("NOTE: GROMACS was compiled without OpenMP and (thread-)MPI support, can only use a single CPU core");
     }
 #else
     GMX_UNUSED_VALUE(hwinfo);
     GMX_UNUSED_VALUE(cr);
-    GMX_UNUSED_VALUE(fplog);
+    GMX_UNUSED_VALUE(mdlog);
 #endif
 
 #endif /* GMX_OPENMP && GMX_MPI */

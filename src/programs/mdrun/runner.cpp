@@ -65,7 +65,6 @@
 #include "gromacs/gmxlib/gmx_detect_hardware.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/main.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/gmxlib/thread_affinity.h"
@@ -101,6 +100,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -578,13 +578,11 @@ static void prepare_verlet_scheme(FILE                           *fplog,
  *
  * with value passed on the command line (if any)
  */
-static void override_nsteps_cmdline(FILE            *fplog,
+static void override_nsteps_cmdline(gmx::Logger     *mdlog,
                                     gmx_int64_t      nsteps_cmdline,
-                                    t_inputrec      *ir,
-                                    const t_commrec *cr)
+                                    t_inputrec      *ir)
 {
     assert(ir);
-    assert(cr);
 
     /* override with anything else than the default -2 */
     if (nsteps_cmdline > -2)
@@ -605,7 +603,7 @@ static void override_nsteps_cmdline(FILE            *fplog,
                     gmx_step_str(nsteps_cmdline, sbuf_steps));
         }
 
-        md_print_warn(cr, fplog, "%s\n", sbuf_msg);
+        GMX_LOG(*mdlog).formatWarning("%s", sbuf_msg);
     }
     else if (nsteps_cmdline < -2)
     {
@@ -709,11 +707,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
+    // Here we assume that SIMMASTER(cr) does not change even after the
+    // threads are started.
+    gmx::Logger mdlog(fplog, cr == NULL || SIMMASTER(cr) ? stderr : NULL);
+
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
-    hwinfo = gmx_detect_hardware(fplog, cr, bTryUseGPU);
+    hwinfo = gmx_detect_hardware(&mdlog, cr, bTryUseGPU);
 
-    gmx_print_detected_hardware(fplog, cr, hwinfo);
+    gmx_print_detected_hardware(fplog, cr, &mdlog, hwinfo);
 
     if (fplog != NULL)
     {
@@ -745,7 +747,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              * update the message text and the content of nbnxn_acceleration_supported.
              */
             if (bUseGPU &&
-                !nbnxn_gpu_acceleration_supported(fplog, cr, inputrec, bRerunMD))
+                !nbnxn_gpu_acceleration_supported(&mdlog, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
                 if (bForceUseGPU)
@@ -768,9 +770,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
             if (hwinfo->gpu_info.n_dev_compatible > 0)
             {
-                md_print_warn(cr, fplog,
-                              "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                              "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n");
+                GMX_LOG(mdlog).formatWarning(
+                        "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
+                        "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
             }
 
             if (bForceUseGPU)
@@ -779,19 +781,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             }
 
 #ifdef GMX_TARGET_BGQ
-            md_print_warn(cr, fplog,
-                          "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
-                          "      BlueGene/Q. You will observe better performance from using the\n"
-                          "      Verlet cut-off scheme.\n");
+            GMX_LOG(mdlog).formatWarnig(
+                    "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
+                    "      BlueGene/Q. You will observe better performance from using the\n"
+                    "      Verlet cut-off scheme.");
 #endif
         }
 
         if (inputrec->eI == eiSD2)
         {
-            md_print_warn(cr, fplog, "The stochastic dynamics integrator %s is deprecated, since\n"
-                          "it is slower than integrator %s and is slightly less accurate\n"
-                          "with constraints. Use the %s integrator.",
-                          ei_names[inputrec->eI], ei_names[eiSD1], ei_names[eiSD1]);
+            GMX_LOG(mdlog).formatWarning(
+                    "The stochastic dynamics integrator %s is deprecated, since\n"
+                    "it is slower than integrator %s and is slightly less accurate\n"
+                    "with constraints. Use the %s integrator.",
+                    ei_names[inputrec->eI], ei_names[eiSD1], ei_names[eiSD1]);
         }
     }
 
@@ -799,7 +802,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     check_and_update_hw_opt_1(hw_opt, cr);
 
     /* Early check for externally set process affinity. */
-    gmx_check_thread_affinity_set(fplog, cr,
+    gmx_check_thread_affinity_set(&mdlog, cr,
                                   hw_opt, hwinfo->nthreads_hw_avail, FALSE);
 
 #ifdef GMX_THREAD_MPI
@@ -820,7 +823,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 cr, fplog, bUseGPU);
+                                                 &mdlog, bUseGPU);
 
         if (hw_opt->nthreads_tmpi > 1)
         {
@@ -997,10 +1000,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
                      Flags, &fplog);
+        mdlog = gmx::Logger(fplog, cr == NULL || SIMMASTER(cr) ? stderr : NULL);
     }
 
     /* override nsteps with value from cmdline */
-    override_nsteps_cmdline(fplog, nsteps_cmdline, inputrec, cr);
+    override_nsteps_cmdline(&mdlog, nsteps_cmdline, inputrec);
 
     if (SIMMASTER(cr))
     {
@@ -1063,19 +1067,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #ifdef GMX_MPI
     if (MULTISIM(cr))
     {
-        md_print_info(cr, fplog,
-                      "This is simulation %d out of %d running as a composite GROMACS\n"
-                      "multi-simulation job. Setup for this simulation:\n\n",
-                      cr->ms->sim, cr->ms->nsim);
+        GMX_LOG(mdlog).formatWarning(
+                "This is simulation %d out of %d running as a composite GROMACS\n"
+                "multi-simulation job. Setup for this simulation:\n",
+                cr->ms->sim, cr->ms->nsim);
     }
-    md_print_info(cr, fplog, "Using %d MPI %s\n",
-                  cr->nnodes,
+    GMX_LOG(mdlog).formatLine(
+            "Using %d MPI %s\n",
+            cr->nnodes,
 #ifdef GMX_THREAD_MPI
-                  cr->nnodes == 1 ? "thread" : "threads"
+            cr->nnodes == 1 ? "thread" : "threads"
 #else
-                  cr->nnodes == 1 ? "process" : "processes"
+            cr->nnodes == 1 ? "process" : "processes"
 #endif
-                  );
+            );
     fflush(stderr);
 #endif
 
@@ -1085,7 +1090,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Check and update hw_opt for the number of MPI ranks */
     check_and_update_hw_opt_3(hw_opt);
 
-    gmx_omp_nthreads_init(fplog, cr,
+    gmx_omp_nthreads_init(&mdlog, cr,
                           hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
                           hw_opt->nthreads_omp_pme,
@@ -1103,7 +1108,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (bUseGPU)
     {
         /* Select GPU id's to use */
-        gmx_select_gpu_ids(fplog, cr, &hwinfo->gpu_info, bForceUseGPU,
+        gmx_select_gpu_ids(&mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
                            &hw_opt->gpu_opt);
     }
     else
@@ -1114,11 +1119,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
+    gmx_check_hw_runconf_consistency(&mdlog, hwinfo, cr, hw_opt, bUseGPU);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
-                                       cr, fplog);
+                                       cr, &mdlog);
 
     if (DOMAINDECOMP(cr))
     {
@@ -1152,7 +1157,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr          = mk_forcerec();
         fr->hwinfo  = hwinfo;
         fr->gpu_opt = &hw_opt->gpu_opt;
-        init_forcerec(fplog, fr, fcd, inputrec, mtop, cr, box,
+        init_forcerec(fplog, &mdlog, fr, fcd, inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       opt2fn("-tableb", nfile, fnm),
@@ -1227,7 +1232,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          * - which indicates that probably the OpenMP library has changed it
          * since we first checked).
          */
-        gmx_check_thread_affinity_set(fplog, cr,
+        gmx_check_thread_affinity_set(&mdlog, cr,
                                       hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
         /* Set the CPU affinity */
@@ -1318,7 +1323,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, nfile, fnm,
+        my_integrator(inputrec->eI) (fplog, cr, &mdlog, nfile, fnm,
                                      oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, constr,
@@ -1356,7 +1361,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Finish up, write some stuff
      * if rerunMD, don't write last frame again
      */
-    finish_run(fplog, cr,
+    finish_run(fplog, &mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
