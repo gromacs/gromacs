@@ -54,6 +54,11 @@
 
 struct t_commrec;
 
+namespace gmx
+{
+class Logger;
+}
+
 /*! \brief Object to manage PME load balancing */
 struct pme_load_balancing_t;
 
@@ -69,12 +74,12 @@ bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb);
  * usage.
  */
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
-                      struct t_commrec          *cr,
-                      FILE                      *fp_log,
+                      t_commrec                 *cr,
+                      gmx::Logger               *mdlog,
                       const t_inputrec          *ir,
                       matrix                     box,
                       const interaction_const_t *ic,
-                      struct gmx_pme_t          *pmedata,
+                      gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting);
 
@@ -89,6 +94,7 @@ void pme_loadbal_do(pme_load_balancing_t  *pme_lb,
                     struct t_commrec      *cr,
                     FILE                  *fp_err,
                     FILE                  *fp_log,
+                    gmx::Logger           *mdlog,
                     const t_inputrec      *ir,
                     t_forcerec            *fr,
                     t_state               *state,
@@ -99,8 +105,8 @@ void pme_loadbal_do(pme_load_balancing_t  *pme_lb,
 
 /*! \brief Finish the PME load balancing and print the settings when fplog!=NULL */
 void pme_loadbal_done(pme_load_balancing_t *pme_lb,
-                      struct t_commrec     *cr,
                       FILE                 *fplog,
+                      gmx::Logger          *mdlog,
                       gmx_bool              bNonBondedOnGPU);
 
 #endif

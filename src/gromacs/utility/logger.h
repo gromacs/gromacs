@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -34,39 +34,54 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TIMING_WALLCYCLEREPORTING_H
-#define GMX_TIMING_WALLCYCLEREPORTING_H
+/*! \libinternal \file
+ * \brief
+ * Declares functionality for logging.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_LOGGER_H
+#define GMX_UTILITY_LOGGER_H
 
-/* NOTE: None of the routines here are safe to call within an OpenMP
- * region */
-
-#include <stdio.h>
-
-#include <array>
-
-#include "gromacs/utility/basedefinitions.h"
-
-struct t_commrec;
+#include <cstdio>
 
 namespace gmx
 {
-class Logger;
-}
 
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
-typedef struct gmx_wallclock_gpu_t gmx_wallclock_gpu_t;
+class Logger
+{
+    public:
+        Logger(FILE *fp1, FILE *fp2);
 
-typedef std::array<double, ewcNR+ewcsNR> WallcycleCounts;
-/* Convenience typedef */
+        bool isActive() const { return fp1_ != NULL || fp2_ != NULL; }
 
-WallcycleCounts wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
-/* Return a vector of the sum of cycle counts over the nodes in
-   cr->mpi_comm_mysim. */
+        Logger &formatLine(const char *fmt, ...);
+        Logger &formatWarning(const char *fmt, ...);
 
-void wallcycle_print(FILE *fplog, gmx::Logger *mdlog, int nnodes, int npme,
-                     int nth_pp, int nth_pme, double realtime,
-                     gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
-                     struct gmx_wallclock_gpu_t *gpu_t);
-/* Print the cycle and time accounting */
+    private:
+        FILE *fp1_;
+        FILE *fp2_;
+};
+
+/*! \brief
+ * Helper to log information using gmx::Logger.
+ *
+ * \param  logger  gmx::Logger instance to use for logging.
+ *
+ * Used as
+ * \code
+   GMX_LOG(logger).formatLine(...);
+   \endcode
+ * and ensures that the code to format the output is only executed when the
+ * output goes somewhere.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_LOG(logger) \
+    if (!(logger).isActive()) { } else \
+        (logger)
+
+} // namespace gmx
 
 #endif

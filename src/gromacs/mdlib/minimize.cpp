@@ -61,7 +61,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
@@ -92,6 +91,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 //! Utility structure for manipulating states during EM
@@ -984,7 +984,7 @@ namespace gmx
 {
 
 /*! \brief Do conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr, gmx::Logger *mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
                           int nstglobalcomm,
@@ -1004,7 +1004,7 @@ namespace gmx
                           unsigned long Flags,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_cg(FILE *fplog, t_commrec *cr,
+double do_cg(FILE *fplog, t_commrec *cr, gmx::Logger gmx_unused *mdlog,
              int nfile, const t_filenm fnm[],
              const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
              int gmx_unused nstglobalcomm,
@@ -1631,7 +1631,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
 
 /*! \brief Do L-BFGS conjugate gradients minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr, gmx::Logger *mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
                           int nstglobalcomm,
@@ -1651,7 +1651,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                           unsigned long Flags,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_lbfgs(FILE *fplog, t_commrec *cr,
+double do_lbfgs(FILE *fplog, t_commrec *cr, gmx::Logger gmx_unused *mdlog,
                 int nfile, const t_filenm fnm[],
                 const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
                 int gmx_unused nstglobalcomm,
@@ -2460,7 +2460,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 }   /* That's all folks */
 
 /*! \brief Do steepest descents minimization
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr, gmx::Logger *mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
                           int nstglobalcomm,
@@ -2480,7 +2480,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                           unsigned long Flags,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_steep(FILE *fplog, t_commrec *cr,
+double do_steep(FILE *fplog, t_commrec *cr, gmx::Logger gmx_unused *mdlog,
                 int nfile, const t_filenm fnm[],
                 const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
                 int gmx_unused nstglobalcomm,
@@ -2719,7 +2719,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
 }   /* That's all folks */
 
 /*! \brief Do normal modes analysis
-    \copydoc integrator_t(FILE *fplog, t_commrec *cr,
+    \copydoc integrator_t(FILE *fplog, t_commrec *cr, gmx::Logger *mdlog,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
                           int nstglobalcomm,
@@ -2739,7 +2739,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                           unsigned long Flags,
                           gmx_walltime_accounting_t walltime_accounting)
  */
-double do_nm(FILE *fplog, t_commrec *cr,
+double do_nm(FILE *fplog, t_commrec *cr, gmx::Logger *mdlog,
              int nfile, const t_filenm fnm[],
              const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
              int gmx_unused nstglobalcomm,
@@ -2821,17 +2821,18 @@ double do_nm(FILE *fplog, t_commrec *cr,
      */
     if (EEL_FULL(fr->eeltype) || fr->rlist == 0.0)
     {
-        md_print_info(cr, fplog, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
+        GMX_LOG(*mdlog).formatLine("Non-cutoff electrostatics used, forcing full Hessian format.");
         bSparse = FALSE;
     }
     else if (top_global->natoms < 1000)
     {
-        md_print_info(cr, fplog, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
+        GMX_LOG(*mdlog).formatLine("Small system size (N=%d), using full Hessian format.",
+                                   top_global->natoms);
         bSparse = FALSE;
     }
     else
     {
-        md_print_info(cr, fplog, "Using compressed symmetric sparse Hessian format.\n");
+        GMX_LOG(*mdlog).formatLine("Using compressed symmetric sparse Hessian format.");
         bSparse = TRUE;
     }
 
@@ -2882,14 +2883,14 @@ double do_nm(FILE *fplog, t_commrec *cr,
     /* if forces are not small, warn user */
     get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, state_work);
 
-    md_print_info(cr, fplog, "Maximum force:%12.5e\n", state_work->fmax);
+    GMX_LOG(*mdlog).formatLine("Maximum force:%12.5e", state_work->fmax);
     if (state_work->fmax > 1.0e-3)
     {
-        md_print_info(cr, fplog,
-                      "The force is probably not small enough to "
-                      "ensure that you are at a minimum.\n"
-                      "Be aware that negative eigenvalues may occur\n"
-                      "when the resulting matrix is diagonalized.\n\n");
+        GMX_LOG(*mdlog).formatLine(
+                "The force is probably not small enough to "
+                "ensure that you are at a minimum.\n"
+                "Be aware that negative eigenvalues may occur\n"
+                "when the resulting matrix is diagonalized.");
     }
 
     /***********************************************************
