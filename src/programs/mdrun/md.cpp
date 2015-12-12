@@ -254,9 +254,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind;
     gmx_shellfc_t    *shellfc;
-    int               count, nconverged = 0;
-    double            tcount                 = 0;
-    gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bTemp, bPres, bTrotter;
     real              dvdl_constr;
@@ -367,22 +365,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog,
                                  top_global, n_flexible_constraints(constr),
-                                 (ir->bContinuation ||
-                                  (DOMAINDECOMP(cr) && !MASTER(cr))) ?
-                                 NULL : state_global->x);
-    if (shellfc && ir->nstcalcenergy != 1)
-    {
-        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
-    }
-    if (shellfc && DOMAINDECOMP(cr))
-    {
-        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
-    }
-    if (shellfc && ir->eI == eiNM)
-    {
-        /* Currently shells don't work with Normal Modes */
-        gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
-    }
+                                 ir->nstcalcenergy, DOMAINDECOMP(cr), ir->eI == eiNM);
 
     if (vsite && ir->eI == eiNM)
     {
@@ -460,7 +443,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             state, &f, mdatoms, top, fr,
-                            vsite, shellfc, constr,
+                            vsite, constr,
                             nrnb, NULL, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
     }
@@ -971,7 +954,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
                                     state, &f, mdatoms, top, fr,
-                                    vsite, shellfc, constr,
+                                    vsite, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
@@ -1061,21 +1044,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            count = relax_shell_flexcon(fplog, cr, bVerbose, step,
-                                        ir, bNS, force_flags,
-                                        top,
-                                        constr, enerd, fcd,
-                                        state, f, force_vir, mdatoms,
-                                        nrnb, wcycle, graph, groups,
-                                        shellfc, fr, bBornRadii, t, mu_tot,
-                                        &bConverged, vsite,
-                                        mdoutf_get_fp_field(outf));
-            tcount += count;
-
-            if (bConverged)
-            {
-                nconverged++;
-            }
+            relax_shell_flexcon(fplog, cr, bVerbose, step,
+                                ir, bNS, force_flags, top,
+                                constr, enerd, fcd,
+                                state, f, force_vir, mdatoms,
+                                nrnb, wcycle, graph, groups,
+                                shellfc, fr, bBornRadii, t, mu_tot,
+                                vsite, mdoutf_get_fp_field(outf));
         }
         else
         {
@@ -1674,7 +1649,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdatoms, top, fr,
-                                vsite, shellfc, constr,
+                                vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
         }
@@ -1809,13 +1784,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         pme_loadbal_done(pme_loadbal, cr, fplog, use_GPU(fr->nbv));
     }
 
-    if (shellfc && fplog)
-    {
-        fprintf(fplog, "Fraction of iterations that converged:           %.2f %%\n",
-                (nconverged*100.0)/step_rel);
-        fprintf(fplog, "Average number of force evaluations per MD step: %.2f\n\n",
-                tcount/step_rel);
-    }
+    done_shellfc(fplog, shellfc, step_rel);
 
     if (repl_ex_nst > 0 && MASTER(cr))
     {
