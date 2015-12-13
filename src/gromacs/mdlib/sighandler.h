@@ -34,10 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_SIGHANDLER_H
-#define GMX_GMXLIB_SIGHANDLER_H
-
-#include <signal.h>
+#ifndef GMX_MDLIB_SIGHANDLER_H
+#define GMX_MDLIB_SIGHANDLER_H
 
 #include "gromacs/utility/basedefinitions.h"
 
