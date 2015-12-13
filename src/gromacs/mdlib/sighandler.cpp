@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <csignal>
 #include <cstdlib>
 
 #include "gromacs/utility/fatalerror.h"

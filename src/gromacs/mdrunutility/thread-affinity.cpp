@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "thread_affinity.h"
+#include "thread-affinity.h"
 
 #include "config.h"
 
