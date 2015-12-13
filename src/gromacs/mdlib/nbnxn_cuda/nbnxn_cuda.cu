@@ -50,7 +50,7 @@
 
 #include <cuda.h>
 
-#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"

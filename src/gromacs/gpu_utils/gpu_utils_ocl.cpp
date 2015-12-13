@@ -52,9 +52,9 @@
 
 #include <memory.h>
 
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
-#include "gromacs/gmxlib/gpu_utils/ocl_compiler.h"
-#include "gromacs/gmxlib/ocl_tools/oclutils.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/ocl_compiler.h"
+#include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"

@@ -32,9 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef CUDAUTILS_CUH
-#define CUDAUTILS_CUH
+#ifndef GMX_GPU_UTILS_CUDAUTILS_CUH
+#define GMX_GPU_UTILS_CUDAUTILS_CUH
 
 #include "config.h"
 
@@ -114,10 +113,6 @@
 
 #endif /* CHECK_CUDA_ERRORS */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! CUDA device information. */
 struct gmx_device_info_t
 {
@@ -172,8 +167,4 @@ float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*end*/);
 /*! Waits for event end to complete and calculates the time between start and end. */
 int cu_wait_event_time(cudaEvent_t /*end*/, cudaEvent_t /*begin*/, float * /*time*/);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* CUDAUTILS_CUH */

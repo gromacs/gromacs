@@ -58,7 +58,7 @@
 
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/hardware/hardwaretopology.h"
