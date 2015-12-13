@@ -44,11 +44,10 @@
  * but e.g. organizing the defines for various physics models
  * is leaking in here a bit.
  */
+#ifndef GMX_GPU_UTILS_OCL_COMPILER_H
+#define GMX_GPU_UTILS_OCL_COMPILER_H
 
-#ifndef GMX_GMXLIB_GPU_UTILS_OCL_COMPILER_H
-#define GMX_GMXLIB_GPU_UTILS_OCL_COMPILER_H
-
-#include "gromacs/gmxlib/ocl_tools/oclutils.h"
+#include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 
 /*! \brief Vendor specific kernel sources

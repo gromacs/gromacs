@@ -42,18 +42,13 @@
  *
  *  \inlibraryapi
  */
-
-#ifndef GMX_GMXLIB_GPU_UTILS_GPU_UTILS_H
-#define GMX_GMXLIB_GPU_UTILS_GPU_UTILS_H
+#ifndef GMX_GPU_UTILS_GPU_UTILS_H
+#define GMX_GPU_UTILS_GPU_UTILS_H
 
 #include <cstdio>
 
-#include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
+#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
@@ -236,9 +231,5 @@ typedef void gmx_host_free_t (void *ptr);
 void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

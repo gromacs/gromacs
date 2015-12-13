@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_GPU_UTILS_MACROS_H
-#define GMX_GMXLIB_GPU_UTILS_MACROS_H
+#ifndef GMX_GPU_UTILS_MACROS_H
+#define GMX_GPU_UTILS_MACROS_H
 
 #include "config.h"
 
