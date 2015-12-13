@@ -32,8 +32,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_THREAD_AFFINITY_H
-#define GMX_GMXLIB_THREAD_AFFINITY_H
+/*! \libinternal \file
+ * \brief
+ * Declares functions for managing mdrun thread affinity.
+ *
+ * \inlibraryapi
+ * \ingroup module_mdrunutility
+ */
+#ifndef GMX_MDRUNUTILITY_THREADAFFINITY_H
+#define GMX_MDRUNUTILITY_THREADAFFINITY_H
 
 #include <cstdio>
 
@@ -42,8 +49,10 @@
 
 struct t_commrec;
 
-/* Sets the thread affinity using the requested setting stored in hw_opt.
- * The hardware topologu is requested from hwinfo, when present.
+/*! \brief
+ * Sets the thread affinity using the requested setting stored in hw_opt.
+ *
+ * The hardware topology is requested from hwinfo, when present.
  */
 void
 gmx_set_thread_affinity(FILE                *fplog,
@@ -51,8 +60,10 @@ gmx_set_thread_affinity(FILE                *fplog,
                         const gmx_hw_opt_t  *hw_opt,
                         const gmx_hw_info_t *hwinfo);
 
-/* Check the process affinity mask and if it is found to be non-zero,
+/*! \brief
+ * Checks the process affinity mask and if it is found to be non-zero,
  * will honor it and disable mdrun internal affinity setting.
+ *
  * This function should be called first before the OpenMP library gets
  * initialized with the last argument FALSE (which will detect affinity
  * set by external tools like taskset), and later, after the OpenMP
