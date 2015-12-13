@@ -69,7 +69,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/gmxlib/thread_affinity.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"

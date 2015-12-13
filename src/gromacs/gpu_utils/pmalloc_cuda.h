@@ -38,17 +38,12 @@
  *  \author Szilard Pall <pall.szilard@gmail.com>
  *  \inlibraryapi
  */
-
-#ifndef GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
-#define GMX_GMXLIB_CUDA_TOOLS_PMALLOC_CUDA_H
+#ifndef GMX_GPU_UTILS_PMALLOC_CUDA_H
+#define GMX_GPU_UTILS_PMALLOC_CUDA_H
 
 #include <stdlib.h>
 
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief Allocates nbytes of page-locked memory. */
 void pmalloc(void **h_ptr, size_t nbytes);
@@ -58,9 +53,5 @@ void pmalloc_wc(void **h_ptr, size_t nbytes);
 
 /*! \brief Frees page locked memory allocated with pmalloc. */
 void pfree(void *h_ptr);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

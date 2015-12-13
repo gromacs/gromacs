@@ -48,8 +48,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
-#include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
+#include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/pmalloc_cuda.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"

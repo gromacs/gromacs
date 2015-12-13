@@ -38,13 +38,8 @@
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \inlibraryapi
  */
-
-#ifndef GMX_GMXLIB_OCL_TOOLS_OCLUTILS_H
-#define GMX_GMXLIB_OCL_TOOLS_OCLUTILS_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef GMX_GPU_UTILS_OCLUTILS_H
+#define GMX_GPU_UTILS_OCLUTILS_H
 
 /*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
    features that were deprecated in 2.0, so that they don't warn about
@@ -130,10 +125,5 @@ void ocl_pmalloc(void **h_ptr, size_t nbytes);
 
 /*! \brief Free host memory in malloc style */
 void ocl_pfree(void *h_ptr);
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

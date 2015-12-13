@@ -44,7 +44,7 @@
 
 #include <stdlib.h>
 
-#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/utility/cstringutil.h"
 
 /*! Allocates nbytes of page-locked memory.

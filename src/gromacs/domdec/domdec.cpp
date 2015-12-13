@@ -57,7 +57,7 @@
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"

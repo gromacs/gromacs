@@ -51,7 +51,7 @@
 #include <limits>
 #endif
 
-#include "gromacs/gmxlib/ocl_tools/oclutils.h"
+#include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"

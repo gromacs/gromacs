@@ -43,7 +43,7 @@
 #ifndef GMX_MDLIB_NBNXN_GPU_H
 #define GMX_MDLIB_NBNXN_GPU_H
 
-#include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
+#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/utility/basedefinitions.h"
