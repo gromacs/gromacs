@@ -25,8 +25,6 @@
 #include "poldata.h"
 #include "stringutil.h"
 
-using namespace std;
-
 static bool comp_esp(alexandria::ElectrostaticPotential ea,
                      alexandria::ElectrostaticPotential eb)
 {
@@ -69,6 +67,10 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #ifdef HAVE_LIBOPENBABEL2
 // Hack to make this compile!
 #undef ANGSTROM
+#ifdef HAVE_SYS_TIME_H
+#define KOKO HAVE_SYS_TIME_H
+#undef HAVE_SYS_TIME_H
+#endif
 #include <openbabel/atom.h>
 #include <openbabel/babelconfig.h>
 #include <openbabel/data_utilities.h>
@@ -79,22 +81,28 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
 #include <openbabel/math/vector3.h>
+#ifdef KOKO
+#ifndef HAVE_SYS_TIME_H
+#define HAVE_SYS_TIME_H KOKO
+#endif
+#undef KOKO
+#endif
 
 static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mol)
 {
-    ifstream          g98f;
-    bool              isGzip = false;
+    std::ifstream g98f;
+    bool          isGzip = false;
 
     if (!gmx_fexist(g98))
     {
         std::string g98z(g98);
         g98z += ".gz";
-        g98f.open(g98z.c_str(), ios::in);
+        g98f.open(g98z.c_str(), std::ios::in);
         isGzip = g98f.is_open();
     }
     else
     {
-        g98f.open(g98, ios::in);
+        g98f.open(g98, std::ios::in);
     }
     if (!g98f.is_open())
     {
@@ -102,7 +110,7 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     }
 
     // Read from g98f
-    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g98f, &cout);
+    OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g98f, &std::cout);
 
     if (conv->SetInFormat("g09", isGzip))
     {
@@ -114,12 +122,13 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
         }
         else
         {
-            cerr << "Could not read input file " << g98 << " with OpenBabel2." << endl;
+            fprintf(stderr, "Could not read input file %s with OpenBabel2.\n",
+                    g98);
         }
     }
     else
     {
-        cerr << "Input file " << g98 << " has incomprehensible format." << endl;
+        fprintf(stderr, "Input file %s has incomprehensible format.\n", g98);
     }
     g98f.close();
 
@@ -161,12 +170,12 @@ static void gmx_molprop_read_babel(const char *g98,
     }
     delete conv;
 
-    conv = new OpenBabel::OBConversion(&cin, &cout);
+    conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
     // Now extract classification info.
     if (conv->SetOutFormat("fpt"))
     {
-        vector<string> vs;
-        string         ss;
+        std::vector<std::string> vs;
+        std::string              ss;
         const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
         char          *dup, *ptr;
