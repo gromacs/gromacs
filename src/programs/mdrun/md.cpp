@@ -522,16 +522,24 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     if (!ir->bContinuation && !bRerunMD)
     {
-        if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
+        if (state->flags & (1 << estV))
         {
-            /* Set the velocities of frozen particles to zero */
+            /* Set the velocities of vsites, shells and frozen atoms to zero */
             for (i = 0; i < mdatoms->homenr; i++)
             {
-                for (m = 0; m < DIM; m++)
+                if (mdatoms->ptype[i] == eptVSite ||
+                    mdatoms->ptype[i] == eptShell)
                 {
-                    if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
+                    clear_rvec(state->v[i]);
+                }
+                else if (mdatoms->cFREEZE)
+                {
+                    for (m = 0; m < DIM; m++)
                     {
-                        state->v[i][m] = 0;
+                        if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
+                        {
+                            state->v[i][m] = 0;
+                        }
                     }
                 }
             }
