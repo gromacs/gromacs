@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "gmx_detect_hardware.h"
+#include "detecthardware.h"
 
 #include "config.h"
 

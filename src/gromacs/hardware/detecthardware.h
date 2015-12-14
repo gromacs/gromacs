@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_DETECT_HARDWARE_H
-#define GMX_GMXLIB_DETECT_HARDWARE_H
+#ifndef GMX_HARDWARE_DETECTHARDWARE_H
+#define GMX_HARDWARE_DETECTHARDWARE_H
 
 #include <cstdio>
 
