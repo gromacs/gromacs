@@ -153,6 +153,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         srenew(md->massT, md->nalloc);
         srenew(md->invmass, md->nalloc);
+        srenew(md->invMassPerDim, md->nalloc);
         srenew(md->chargeA, md->nalloc);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
@@ -292,9 +293,13 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 md->massB[i]  = mB;
             }
             md->massT[i]    = mA;
+
             if (mA == 0.0)
             {
-                md->invmass[i]    = 0;
+                md->invmass[i]           = 0;
+                md->invMassPerDim[i][XX] = 0;
+                md->invMassPerDim[i][YY] = 0;
+                md->invMassPerDim[i][ZZ] = 0;
             }
             else if (md->cFREEZE)
             {
@@ -314,11 +319,20 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                      */
                     md->invmass[i]  = 1.0/mA;
                 }
+                for (int d = 0; d < DIM; d++)
+                {
+                    md->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0/mA);
+                }
             }
             else
             {
-                md->invmass[i]    = 1.0/mA;
+                md->invmass[i]  = 1.0/mA;
+                for (int d = 0; d < DIM; d++)
+                {
+                    md->invMassPerDim[i][d] = 1.0/mA;
+                }
             }
+
             md->chargeA[i]      = atom->q;
             md->typeA[i]        = atom->type;
             if (bLJPME)
