@@ -112,166 +112,372 @@ struct gmx_update_t
     matrix          deformref_box;
 };
 
-
-static void do_update_md(int start, int nrend, double dt,
-                         t_grp_tcstat *tcstat,
-                         double nh_vxi[],
-                         gmx_bool bNEMD, t_grp_acc *gstat, rvec accel[],
-                         ivec nFreeze[],
-                         real invmass[],
-                         unsigned short ptype[], unsigned short cFREEZE[],
-                         unsigned short cACC[], unsigned short cTC[],
-                         rvec x[], rvec xprime[], rvec v[],
-                         rvec f[], matrix M,
-                         gmx_bool bNH, gmx_bool bPR)
+static bool isTemperatureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
 {
-    double imass, w_dt;
-    int    gf = 0, ga = 0, gt = 0;
-    rvec   vrel;
-    real   vn, vv, va, vb, vnrel;
-    real   lg, vxi = 0, u;
-    int    n, d;
-
-    if (bNH || bPR)
+    /* We should only couple after a step where energies were determined (for leapfrog versions)
+       or the step energies are determined, for velocity verlet versions */
+    int offset;
+    if (EI_VV(ir->eI))
     {
-        /* Update with coupling to extended ensembles, used for
-         * Nose-Hoover and Parrinello-Rahman coupling
-         * Nose-Hoover uses the reversible leap-frog integrator from
-         * Holian et al. Phys Rev E 52(3) : 2338, 1995
-         */
-        for (n = start; n < nrend; n++)
-        {
-            imass = invmass[n];
-            if (cFREEZE)
-            {
-                gf   = cFREEZE[n];
-            }
-            if (cACC)
-            {
-                ga   = cACC[n];
-            }
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
-            if (bNH)
-            {
-                vxi   = nh_vxi[gt];
-            }
-            rvec_sub(v[n], gstat[ga].u, vrel);
+        offset = 0;
+    }
+    else
+    {
+        offset = 1;
+    }
+    return ir->etc != etcNO &&
+           (ir->nsttcouple == 1 ||
+            do_per_step(step + ir->nsttcouple - offset, ir->nsttcouple));
+}
 
-            for (d = 0; d < DIM; d++)
+static bool isPressureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
+{
+    GMX_ASSERT(ir->epc != epcMTTK, "MTTK pressure coupling is not handled here");
+
+    /* We should only couple after a step where pressures were determined */
+    return ir->epc != etcNO &&
+           (ir->nstpcouple == 1 ||
+            do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
+}
+
+/*! \brief Sets the number of different temperature coupling values */
+enum class NumTempScaleValues
+{
+    single, multiple
+};
+
+/*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling */
+enum class DoParrinelloRahman
+{
+    no, diagonal
+};
+
+/*! \brief Integrate using leap-frog with T-scaling and optionally diagonal Parrinello-Rahman p-coupling
+ *
+ * \tparam       numTempScaleValues  The number of different T-couple values
+ * \tparam       doParrinelloRahman  Apply Parrinello-Rahman pressure coupling
+ * \param[in]    start               Index of first atom to update
+ * \param[in]    nrend               Last atom to update: \p nrend - 1
+ * \param[in]    dt                  The time step
+ * \param[in]    dtPressureCouple    Time step for pressure coupling
+ * \param[in]    invMassPerDim       1/mass per atom and dimension
+ * \param[in]    tcstat              Temperature coupling information
+ * \param[in]    cTC                 T-coupling group index per atom
+ * \param[in]    diagM               Parrinello-Rahman scaling matrix diagonal
+ * \param[in]    x                   Input coordinates
+ * \param[out]   xprime              Updated coordinates
+ * \param[inout] v                   Velocities
+ * \param[in]    f                   Forces
+ *
+ * We expect this template to get good SIMD acceleration by most compilers,
+ * unlike the more complex general template.
+ * Note that we might get even better SIMD acceleration when we introduce
+ * aligned (and padded) memory, possibly with some hints for the compilers.
+ */
+template<NumTempScaleValues numTempScaleValues,
+         DoParrinelloRahman doParrinelloRahman>
+static void
+updateMdLeapfrogSimple(int                       start,
+                       int                       nrend,
+                       real                      dt,
+                       real                      dtPressureCouple,
+                       const rvec * gmx_restrict invMassPerDim,
+                       const t_grp_tcstat      * tcstat,
+                       const unsigned short    * cTC,
+                       const rvec                diagM,
+                       const rvec * gmx_restrict x,
+                       rvec       * gmx_restrict xprime,
+                       rvec       * gmx_restrict v,
+                       const rvec * gmx_restrict f)
+{
+    real lambdaGroup;
+
+    if (numTempScaleValues == NumTempScaleValues::single)
+    {
+        lambdaGroup = tcstat[0].lambda;
+    }
+
+    for (int a = start; a < nrend; a++)
+    {
+        if (numTempScaleValues == NumTempScaleValues::multiple)
+        {
+            lambdaGroup = tcstat[cTC[a]].lambda;
+        }
+
+        for (int d = 0; d < DIM; d++)
+        {
+            /* Note that using rvec invMassPerDim results in more efficient
+             * SIMD code, but this increases the cache pressure.
+             * For large systems with PME on the CPU this slows down the
+             * (then already slow) update by 20%. If all data remains in cache,
+             * using rvec is much faster.
+             */
+            real vNew = lambdaGroup*v[a][d] + f[a][d]*invMassPerDim[a][d]*dt;
+
+            if (doParrinelloRahman == DoParrinelloRahman::diagonal)
             {
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-                {
-                    vnrel = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                              - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
-                    /* do not scale the mean velocities u */
-                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel;
-                    v[n][d]        = vn;
-                    xprime[n][d]   = x[n][d]+vn*dt;
-                }
-                else
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
+                vNew -= dtPressureCouple*diagM[d]*v[a][d];
             }
+            v[a][d]      = vNew;
+            xprime[a][d] = x[a][d] + vNew*dt;
         }
     }
-    else if (cFREEZE != NULL ||
-             nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] ||
-             bNEMD)
+}
+
+/*! \brief Sets the NEMD acceleration type */
+enum class AccelerationType
+{
+    none, group, cosine
+};
+
+/*! \brief Integrate using leap-frog with support for everything
+ *
+ * \tparam       accelerationType       Type of NEMD acceleration
+ * \param[in]    start                  Index of first atom to update
+ * \param[in]    nrend                  Last atom to update: \p nrend - 1
+ * \param[in]    doNoseHoover           If to apply Nose-Hoover T-coupling
+ * \param[in]    dt                     The time step
+ * \param[in]    dtPressureCouple       Time step for pressure coupling, is 0 when no pressure coupling should be applied at this step
+ * \param[in]    ir                     The input parameter record
+ * \param[in]    md                     Atom properties
+ * \param[in]    ekind                  Kinetic energy data
+ * \param[in]    box                    The box dimensions
+ * \param[in]    x                      Input coordinates
+ * \param[out]   xprime                 Updated coordinates
+ * \param[inout] v                      Velocities
+ * \param[in]    f                      Forces
+ * \param[in]    nh_vxi                 Nose-Hoover velocity scaling factors
+ * \param[in]    M                      Parrinello-Rahman scaling matrix
+ */
+template<AccelerationType accelerationType>
+static void
+updateMdLeapfrogGeneral(int                         start,
+                        int                         nrend,
+                        bool                        doNoseHoover,
+                        real                        dt,
+                        real                        dtPressureCouple,
+                        const t_inputrec          * ir,
+                        const t_mdatoms           * md,
+                        const gmx_ekindata_t      * ekind,
+                        const matrix                box,
+                        const rvec   * gmx_restrict x,
+                        rvec         * gmx_restrict xprime,
+                        rvec         * gmx_restrict v,
+                        const rvec   * gmx_restrict f,
+                        const double * gmx_restrict nh_vxi,
+                        const matrix                M)
+{
+    /* This is a version of the leap-frog integrator that supports
+     * all combinations of T-coupling, P-coupling and NEMD.
+     * Nose-Hoover uses the reversible leap-frog integrator from
+     * Holian et al. Phys Rev E 52(3) : 2338, 1995
+     */
+
+    const unsigned short    * cTC           = md->cTC;
+    const t_grp_tcstat      * tcstat        = ekind->tcstat;
+
+    const unsigned short    * cACC          = md->cACC;
+    const rvec              * accel         = ir->opts.acc;
+    const t_grp_acc         * grpstat       = ekind->grpstat;
+
+    const rvec * gmx_restrict invMassPerDim = md->invMassPerDim;
+
+    /* Initialize group values, changed later when multiple groups are used */
+    int  ga       = 0;
+    int  gt       = 0;
+    real factorNH = 0;
+
+    for (int n = start; n < nrend; n++)
     {
-        /* Update with Berendsen/v-rescale coupling and freeze or NEMD */
-        for (n = start; n < nrend; n++)
+        if (cTC)
         {
-            w_dt = invmass[n]*dt;
-            if (cFREEZE)
-            {
-                gf   = cFREEZE[n];
-            }
-            if (cACC)
-            {
-                ga   = cACC[n];
-            }
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
+            gt  = cTC[n];
+        }
+        real lg = tcstat[gt].lambda;
 
-            for (d = 0; d < DIM; d++)
-            {
-                vn             = v[n][d];
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+        rvec vRel;
+        real cosineZ, vCosine;
+#ifdef __INTEL_COMPILER
+#pragma warning( disable : 280 )
+#endif
+        switch (accelerationType)
+        {
+            case AccelerationType::none:
+                copy_rvec(v[n], vRel);
+                break;
+            case AccelerationType::group:
+                if (cACC)
                 {
-                    vv             = lg*vn + f[n][d]*w_dt;
+                    ga = cACC[n];
+                }
+                /* Avoid scaling the group velocity */
+                rvec_sub(v[n], grpstat[ga].u, vRel);
+                break;
+            case AccelerationType::cosine:
+                cosineZ = std::cos(x[n][ZZ]*static_cast<real>(M_PI)/box[ZZ][ZZ]);
+                vCosine = cosineZ*ekind->cosacc.vcos;
+                /* Avoid scaling the cosine profile velocity */
+                copy_rvec(v[n], vRel);
+                vRel[XX] -= vCosine;
+                break;
+        }
 
-                    /* do not scale the mean velocities u */
-                    u              = gstat[ga].u[d];
-                    va             = vv + accel[ga][d]*dt;
-                    vb             = va + (1.0-lg)*u;
-                    v[n][d]        = vb;
-                    xprime[n][d]   = x[n][d]+vb*dt;
-                }
-                else
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
+        if (doNoseHoover)
+        {
+            /* Here we account for multiple time stepping, by increasing
+             * the Nose-Hoover correction by nsttcouple
+             */
+            factorNH = 0.5*ir->nsttcouple*dt*nh_vxi[gt];
+        }
+
+        for (int d = 0; d < DIM; d++)
+        {
+            real vNew =
+                (lg*vRel[d] + (f[n][d]*invMassPerDim[n][d]*dt - factorNH*vRel[d]
+                               - dtPressureCouple*iprod(M[d], vRel)))/(1 + factorNH);
+            switch (accelerationType)
+            {
+                case AccelerationType::none:
+                    break;
+                case AccelerationType::group:
+                    /* Add back the mean velocity and apply acceleration */
+                    vNew += grpstat[ga].u[d] + accel[ga][d]*dt;
+                    break;
+                case AccelerationType::cosine:
+                    if (d == XX)
+                    {
+                        /* Add back the mean velocity and apply acceleration */
+                        vNew += vCosine + cosineZ*ekind->cosacc.cos_accel*dt;
+                    }
+                    break;
             }
+            v[n][d]       = vNew;
+            xprime[n][d]  = x[n][d] + vNew*dt;
+        }
+    }
+}
+
+/*! \brief Handles the Leap-frog MD x and v integration */
+static void do_update_md(int                         start,
+                         int                         nrend,
+                         gmx_int64_t                 step,
+                         real                        dt,
+                         const t_inputrec          * ir,
+                         const t_mdatoms           * md,
+                         const gmx_ekindata_t      * ekind,
+                         const matrix                box,
+                         const rvec   * gmx_restrict x,
+                         rvec         * gmx_restrict xprime,
+                         rvec         * gmx_restrict v,
+                         const rvec   * gmx_restrict f,
+                         const double * gmx_restrict nh_vxi,
+                         const matrix                M)
+{
+    GMX_ASSERT(nrend == start || xprime != x, "For SIMD optimization certain compilers need to have xprime != x");
+
+    /* Note: Berendsen pressure scaling is handled after do_update_md() */
+    bool doTempCouple       = isTemperatureCouplingStep(step, ir);
+    bool doNoseHoover       = (ir->etc == etcNOSEHOOVER && doTempCouple);
+    bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN && isPressureCouplingStep(step, ir));
+    bool doPROffDiagonal    = (doParrinelloRahman && (M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0));
+
+    real dtPressureCouple   = (doParrinelloRahman ? ir->nstpcouple*dt : 0);
+
+    /* NEMD (also cosine) acceleration is applied in updateMdLeapFrogGeneral */
+    bool doAcceleration     = (ekind->bNEMD || ekind->cosacc.cos_accel != 0);
+
+    if (doNoseHoover || doPROffDiagonal || doAcceleration)
+    {
+        if (!doAcceleration)
+        {
+            updateMdLeapfrogGeneral<AccelerationType::none>
+                (start, nrend, doNoseHoover, dt, dtPressureCouple,
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+        }
+        else if (ekind->bNEMD)
+        {
+            updateMdLeapfrogGeneral<AccelerationType::group>
+                (start, nrend, doNoseHoover, dt, dtPressureCouple,
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+        }
+        else
+        {
+            updateMdLeapfrogGeneral<AccelerationType::cosine>
+                (start, nrend, doNoseHoover, dt, dtPressureCouple,
+                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
     }
     else
     {
-        /* Plain update with Berendsen/v-rescale coupling */
-        for (n = start; n < nrend; n++)
-        {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
-            {
-                w_dt = invmass[n]*dt;
-                if (cTC)
-                {
-                    gt = cTC[n];
-                }
-                lg = tcstat[gt].lambda;
+        /* We determine if we have a single T-coupling lambda value for all
+         * atoms. That allows for better SIMD acceleration in the template.
+         */
+        bool haveSingleTempScaleValue = (!doTempCouple || ekind->ngtc == 1);
 
-                for (d = 0; d < DIM; d++)
-                {
-                    vn           = lg*v[n][d] + f[n][d]*w_dt;
-                    v[n][d]      = vn;
-                    xprime[n][d] = x[n][d] + vn*dt;
-                }
+        /* Extract some pointers needed by all cases */
+        const unsigned short *cTC           = md->cTC;
+        const t_grp_tcstat   *tcstat        = ekind->tcstat;
+        const rvec           *invMassPerDim = md->invMassPerDim;
+
+        if (doParrinelloRahman)
+        {
+            GMX_ASSERT(!doPROffDiagonal, "updateMdLeapfrogSimple only support diagonal Parrinello-Rahman scaling matrices");
+
+            rvec diagM;
+            for (int d = 0; d < DIM; d++)
+            {
+                diagM[d] = M[d][d];
+            }
+
+            if (haveSingleTempScaleValue)
+            {
+                updateMdLeapfrogSimple
+                <NumTempScaleValues::single, DoParrinelloRahman::diagonal>
+                    (start, nrend, dt, dtPressureCouple,
+                    invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
             }
             else
             {
-                for (d = 0; d < DIM; d++)
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
+                updateMdLeapfrogSimple
+                <NumTempScaleValues::multiple, DoParrinelloRahman::diagonal>
+                    (start, nrend, dt, dtPressureCouple,
+                    invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
+            }
+        }
+        else
+        {
+            if (haveSingleTempScaleValue)
+            {
+                updateMdLeapfrogSimple
+                <NumTempScaleValues::single, DoParrinelloRahman::no>
+                    (start, nrend, dt, dtPressureCouple,
+                    invMassPerDim, tcstat, cTC, NULL, x, xprime, v, f);
+            }
+            else
+            {
+                updateMdLeapfrogSimple
+                <NumTempScaleValues::multiple, DoParrinelloRahman::no>
+                    (start, nrend, dt, dtPressureCouple,
+                    invMassPerDim, tcstat, cTC, NULL, x, xprime, v, f);
             }
         }
     }
 }
 
-static void do_update_vv_vel(int start, int nrend, double dt,
+static void do_update_vv_vel(int start, int nrend, real dt,
                              rvec accel[], ivec nFreeze[], real invmass[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              unsigned short cACC[], rvec v[], rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
-    double w_dt;
     int    gf = 0, ga = 0;
     int    n, d;
-    double g, mv1, mv2;
+    real   g, mv1, mv2;
 
     if (bExtended)
     {
         g        = 0.25*dt*veta*alpha;
-        mv1      = exp(-g);
+        mv1      = std::exp(-g);
         mv2      = gmx::series_sinhx(g);
     }
     else
@@ -281,7 +487,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     }
     for (n = start; n < nrend; n++)
     {
-        w_dt = invmass[n]*dt;
+        real w_dt = invmass[n]*dt;
         if (cFREEZE)
         {
             gf   = cFREEZE[n];
@@ -305,7 +511,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     }
 } /* do_update_vv_vel */
 
-static void do_update_vv_pos(int start, int nrend, double dt,
+static void do_update_vv_pos(int start, int nrend, real dt,
                              ivec nFreeze[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              rvec x[], rvec xprime[], rvec v[],
@@ -313,13 +519,13 @@ static void do_update_vv_pos(int start, int nrend, double dt,
 {
     int    gf = 0;
     int    n, d;
-    double g, mr1, mr2;
+    real   g, mr1, mr2;
 
     /* Would it make more sense if Parrinello-Rahman was put here? */
     if (bExtended)
     {
         g        = 0.5*dt*veta;
-        mr1      = exp(g);
+        mr1      = std::exp(g);
         mr2      = gmx::series_sinhx(g);
     }
     else
@@ -350,113 +556,6 @@ static void do_update_vv_pos(int start, int nrend, double dt,
     }
 } /* do_update_vv_pos */
 
-static void do_update_visc(int start, int nrend, double dt,
-                           t_grp_tcstat *tcstat,
-                           double nh_vxi[],
-                           real invmass[],
-                           unsigned short ptype[], unsigned short cTC[],
-                           rvec x[], rvec xprime[], rvec v[],
-                           rvec f[], matrix M, matrix box, real
-                           cos_accel, real vcos,
-                           gmx_bool bNH, gmx_bool bPR)
-{
-    double imass, w_dt;
-    int    gt = 0;
-    real   vn, vc;
-    real   lg, vxi = 0, vv;
-    real   fac, cosz;
-    rvec   vrel;
-    int    n, d;
-
-    fac = 2*M_PI/(box[ZZ][ZZ]);
-
-    if (bNH || bPR)
-    {
-        /* Update with coupling to extended ensembles, used for
-         * Nose-Hoover and Parrinello-Rahman coupling
-         */
-        for (n = start; n < nrend; n++)
-        {
-            imass = invmass[n];
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
-            cosz = cos(fac*x[n][ZZ]);
-
-            copy_rvec(v[n], vrel);
-
-            vc            = cosz*vcos;
-            vrel[XX]     -= vc;
-            if (bNH)
-            {
-                vxi        = nh_vxi[gt];
-            }
-            for (d = 0; d < DIM; d++)
-            {
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
-                {
-                    vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                            - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
-                    if (d == XX)
-                    {
-                        vn += vc + dt*cosz*cos_accel;
-                    }
-                    v[n][d]        = vn;
-                    xprime[n][d]   = x[n][d]+vn*dt;
-                }
-                else
-                {
-                    xprime[n][d]   = x[n][d];
-                }
-            }
-        }
-    }
-    else
-    {
-        /* Classic version of update, used with berendsen coupling */
-        for (n = start; n < nrend; n++)
-        {
-            w_dt = invmass[n]*dt;
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
-            cosz = cos(fac*x[n][ZZ]);
-
-            for (d = 0; d < DIM; d++)
-            {
-                vn             = v[n][d];
-
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
-                {
-                    if (d == XX)
-                    {
-                        vc           = cosz*vcos;
-                        /* Do not scale the cosine velocity profile */
-                        vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
-                        /* Add the cosine accelaration profile */
-                        vv          += dt*cosz*cos_accel;
-                    }
-                    else
-                    {
-                        vv           = lg*(vn + f[n][d]*w_dt);
-                    }
-                    v[n][d]        = vv;
-                    xprime[n][d]   = x[n][d]+vv*dt;
-                }
-                else
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
-            }
-        }
-    }
-}
-
 static gmx_stochd_t *init_stochd(const t_inputrec *ir)
 {
     gmx_stochd_t   *sd;
@@ -481,7 +580,7 @@ static gmx_stochd_t *init_stochd(const t_inputrec *ir)
         {
             if (opts->tau_t[gt] > 0)
             {
-                sdc[gt].em  = exp(-ir->delta_t/opts->tau_t[gt]);
+                sdc[gt].em  = std::exp(-ir->delta_t/opts->tau_t[gt]);
             }
             else
             {
@@ -578,7 +677,7 @@ void update_realloc(gmx_update_t *upd, int state_nalloc)
 }
 
 static void do_update_sd1(gmx_stochd_t *sd,
-                          int start, int nrend, double dt,
+                          int start, int nrend, real dt,
                           rvec accel[], ivec nFreeze[],
                           real invmass[], unsigned short ptype[],
                           unsigned short cFREEZE[], unsigned short cACC[],
@@ -722,7 +821,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
     }
 }
 
-static void do_update_bd(int start, int nrend, double dt,
+static void do_update_bd(int start, int nrend, real dt,
                          ivec nFreeze[],
                          real invmass[], unsigned short ptype[],
                          unsigned short cFREEZE[], unsigned short cTC[],
@@ -1155,33 +1254,18 @@ void update_tcouple(gmx_int64_t       step,
                     t_mdatoms        *md)
 
 {
-    gmx_bool   bTCouple = FALSE;
-    real       dttc;
-    int        i, offset;
+    bool doTemperatureCoupling = false;
 
     /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
-    if (inputrec->etc != etcNO &&
-        !(inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec)))
+    if (!(EI_VV(inputrec->eI) &&
+          (inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))))
     {
-        /* We should only couple after a step where energies were determined (for leapfrog versions)
-           or the step energies are determined, for velocity verlet versions */
-
-        if (EI_VV(inputrec->eI))
-        {
-            offset = 0;
-        }
-        else
-        {
-            offset = 1;
-        }
-        bTCouple = (inputrec->nsttcouple == 1 ||
-                    do_per_step(step+inputrec->nsttcouple-offset,
-                                inputrec->nsttcouple));
+        doTemperatureCoupling = isTemperatureCouplingStep(step, inputrec);
     }
 
-    if (bTCouple)
+    if (doTemperatureCoupling)
     {
-        dttc = inputrec->nsttcouple*inputrec->delta_t;
+        real dttc = inputrec->nsttcouple*inputrec->delta_t;
 
         switch (inputrec->etc)
         {
@@ -1208,7 +1292,7 @@ void update_tcouple(gmx_int64_t       step,
     else
     {
         /* Set the T scaling lambda to 1 to have no scaling */
-        for (i = 0; (i < inputrec->opts.ngtc); i++)
+        for (int i = 0; (i < inputrec->opts.ngtc); i++)
         {
             ekind->tcstat[i].lambda = 1.0;
         }
@@ -1223,30 +1307,27 @@ void update_pcouple(FILE             *fplog,
                     matrix            M,
                     gmx_bool          bInitStep)
 {
-    gmx_bool   bPCouple = FALSE;
-    real       dtpc     = 0;
-    int        i;
+    bool doPressureCoupling = false;
 
     /* if using Trotter pressure, we do this in coupling.c, so we leave it false. */
-    if (inputrec->epc != epcNO && (!(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))))
+    if (!(EI_VV(inputrec->eI) &&
+          (inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec))))
     {
         /* We should only couple after a step where energies were determined */
-        bPCouple = (inputrec->nstpcouple == 1 ||
-                    do_per_step(step+inputrec->nstpcouple-1,
-                                inputrec->nstpcouple));
+        doPressureCoupling = isPressureCouplingStep(step, inputrec);
     }
 
     clear_mat(pcoupl_mu);
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
         pcoupl_mu[i][i] = 1.0;
     }
 
     clear_mat(M);
 
-    if (bPCouple)
+    if (doPressureCoupling)
     {
-        dtpc = inputrec->nstpcouple*inputrec->delta_t;
+        real dtpc = inputrec->nstpcouple*inputrec->delta_t;
 
         switch (inputrec->epc)
         {
@@ -1294,8 +1375,6 @@ void update_constraints(FILE             *fplog,
                         gmx_bool          bCalcVir)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
-    double               dt;
-    int                  start, homenr, nrend, i;
     tensor               vir_con;
     int                  nth, th;
 
@@ -1311,11 +1390,18 @@ void update_constraints(FILE             *fplog,
     /* for now, SD update is here -- though it really seems like it
        should be reformulated as a velocity verlet method, since it has two parts */
 
-    start  = 0;
-    homenr = md->homenr;
-    nrend  = start+homenr;
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
 
-    dt   = inputrec->delta_t;
+    /* Cast delta_t from double to real to make the integrators faster.
+     * The only reason for having delta_t double is to get accurate values
+     * for t=delta_t*step when step is larger than float precision.
+     * For integration dt the accuracy of real suffices, since with
+     * integral += dt*integrand the increment is nearly always (much) smaller
+     * than the integral (and the integrand has real precision).
+     */
+    real dt     = static_cast<real>(inputrec->delta_t);
 
     /*
      *  Steps (7C, 8C)
@@ -1490,7 +1576,7 @@ void update_constraints(FILE             *fplog,
             nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
 #pragma omp parallel for num_threads(nth) schedule(static)
-            for (i = start; i < nrend; i++)
+            for (int i = start; i < nrend; i++)
             {
                 // Trivial statement, does not throw
                 copy_rvec(upd->xp[i], state->x[i]);
@@ -1514,13 +1600,10 @@ void update_box(FILE             *fplog,
                 t_nrnb           *nrnb,
                 gmx_update_t     *upd)
 {
-    double               dt;
-    int                  start, homenr, i, n, m;
+    int  start  = 0;
+    int  homenr = md->homenr;
 
-    start  = 0;
-    homenr = md->homenr;
-
-    dt = inputrec->delta_t;
+    real dt     = static_cast<real>(inputrec->delta_t);
 
     where();
 
@@ -1530,35 +1613,34 @@ void update_box(FILE             *fplog,
         case (epcNO):
             break;
         case (epcBERENDSEN):
-            /* We should only scale after a step where the pressure (kinetic
-             * energy and virial) was calculated. This happens after the
-             * coordinate update, whereas the current routine is called before
-             * that, so we scale when step % nstpcouple = 1 instead of 0.
-             */
-            if (inputrec->nstpcouple == 1 || (step % inputrec->nstpcouple == 1))
+            if (isPressureCouplingStep(step, inputrec))
             {
                 berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
                                  start, homenr, state->x, md->cFREEZE, nrnb);
             }
             break;
         case (epcPARRINELLORAHMAN):
-            /* The box velocities were updated in do_pr_pcoupl in the update
-             * iteration, but we dont change the box vectors until we get here
-             * since we need to be able to shift/unshift above.
-             */
-            for (i = 0; i < DIM; i++)
+            if (isPressureCouplingStep(step, inputrec))
             {
-                for (m = 0; m <= i; m++)
+                /* The box velocities were updated in do_pr_pcoupl,
+                 * but we dont change the box vectors until we get here
+                 * since we need to be able to shift/unshift above.
+                 */
+                real dtpc = inputrec->nstpcouple*dt;
+                for (int i = 0; i < DIM; i++)
                 {
-                    state->box[i][m] += dt*state->boxv[i][m];
+                    for (int m = 0; m <= i; m++)
+                    {
+                        state->box[i][m] += dtpc*state->boxv[i][m];
+                    }
                 }
-            }
-            preserve_box_shape(inputrec, state->box_rel, state->box);
+                preserve_box_shape(inputrec, state->box_rel, state->box);
 
-            /* Scale the coordinates */
-            for (n = start; (n < start+homenr); n++)
-            {
-                tmvmul_ur0(pcoupl_mu, state->x[n], state->x[n]);
+                /* Scale the coordinates */
+                for (int n = start; n < start + homenr; n++)
+                {
+                    tmvmul_ur0(pcoupl_mu, state->x[n], state->x[n]);
+                }
             }
             break;
         case (epcMTTK):
@@ -1569,7 +1651,7 @@ void update_box(FILE             *fplog,
                        ln V_new = ln V_old + 3*dt*veta => V_new = V_old*exp(3*dt*veta) =>
                        Side length scales as exp(veta*dt) */
 
-                    msmul(state->box, exp(state->veta*dt), state->box);
+                    msmul(state->box, std::exp(state->veta*dt), state->box);
 
                     /* Relate veta to boxv.  veta = d(eta)/dT = (1/DIM)*1/V dV/dT.
                        o               If we assume isotropic scaling, and box length scaling
@@ -1613,12 +1695,7 @@ void update_coords(FILE             *fplog,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr_t      constr)
 {
-    gmx_bool          bNH, bPR, bDoConstr = FALSE;
-    double            dt, alpha;
-    int               start, homenr, nrend;
-    int               nth, th;
-
-    bDoConstr = (NULL != constr);
+    gmx_bool bDoConstr = (NULL != constr);
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1627,11 +1704,11 @@ void update_coords(FILE             *fplog,
         gmx_incons("update_coords called for velocity without VV integrator");
     }
 
-    start  = 0;
-    homenr = md->homenr;
-    nrend  = start+homenr;
+    int  start  = 0;
+    int  homenr = md->homenr;
+    int  nrend  = start+homenr;
 
-    dt   = inputrec->delta_t;
+    real dt     = static_cast<real>(inputrec->delta_t);
 
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & (1<<estDISRE_RM3TAV))
@@ -1643,19 +1720,15 @@ void update_coords(FILE             *fplog,
         update_orires_history(fcd, &state->hist);
     }
 
-
-    bNH = inputrec->etc == etcNOSEHOOVER;
-    bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
-
     /* ############# START The update of velocities and positions ######### */
     where();
     dump_it_all(fplog, "Before update",
                 state->natoms, state->x, upd->xp, state->v, f);
 
-    nth = gmx_omp_nthreads_get(emntUpdate);
+    int nth = gmx_omp_nthreads_get(emntUpdate);
 
-#pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
-    for (th = 0; th < nth; th++)
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
     {
         try
         {
@@ -1667,28 +1740,10 @@ void update_coords(FILE             *fplog,
             switch (inputrec->eI)
             {
                 case (eiMD):
-                    if (ekind->cosacc.cos_accel == 0)
-                    {
-                        do_update_md(start_th, end_th, dt,
-                                     ekind->tcstat, state->nosehoover_vxi,
-                                     ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
-                                     inputrec->opts.nFreeze,
-                                     md->invmass, md->ptype,
-                                     md->cFREEZE, md->cACC, md->cTC,
-                                     state->x, upd->xp, state->v, f, M,
-                                     bNH, bPR);
-                    }
-                    else
-                    {
-                        do_update_visc(start_th, end_th, dt,
-                                       ekind->tcstat, state->nosehoover_vxi,
-                                       md->invmass, md->ptype,
-                                       md->cTC, state->x, upd->xp, state->v, f, M,
-                                       state->box,
-                                       ekind->cosacc.cos_accel,
-                                       ekind->cosacc.vcos,
-                                       bNH, bPR);
-                    }
+                    do_update_md(start_th, end_th, step, dt,
+                                 inputrec, md, ekind, state->box,
+                                 state->x, upd->xp, state->v, f,
+                                 state->nosehoover_vxi, M);
                     break;
                 case (eiSD1):
                     /* With constraints, the SD1 update is done in 2 parts */
@@ -1712,7 +1767,13 @@ void update_coords(FILE             *fplog,
                     break;
                 case (eiVV):
                 case (eiVVAK):
-                    alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
+                {
+                    gmx_bool bExtended = (inputrec->etc == etcNOSEHOOVER ||
+                                          inputrec->epc == epcPARRINELLORAHMAN ||
+                                          inputrec->epc == epcMTTK);
+
+                    /* assuming barostat coupled to group 0 */
+                    real alpha = 1.0 + DIM/static_cast<real>(inputrec->opts.nrdf[0]);
                     switch (UpdatePart)
                     {
                         case etrtVELOCITY1:
@@ -1722,17 +1783,18 @@ void update_coords(FILE             *fplog,
                                              md->invmass, md->ptype,
                                              md->cFREEZE, md->cACC,
                                              state->v, f,
-                                             (bNH || bPR), state->veta, alpha);
+                                             bExtended, state->veta, alpha);
                             break;
                         case etrtPOSITION:
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
                                              md->ptype, md->cFREEZE,
                                              state->x, upd->xp, state->v,
-                                             (bNH || bPR), state->veta);
+                                             bExtended, state->veta);
                             break;
                     }
                     break;
+                }
                 default:
                     gmx_fatal(FARGS, "Don't know how to update coordinates");
                     break;
