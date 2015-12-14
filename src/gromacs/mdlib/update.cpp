@@ -112,21 +112,56 @@ struct gmx_update_t
     matrix          deformref_box;
 };
 
+/* Template function for leap-frog update with temperature scaling.
+ * haveSingleTCoupleValue is a template parameter, since if it's true
+ * the compiler can achieve much better SIMD acceleration.
+ */
+template<bool haveSingleTCoupleValue>
+static void
+updateMdLeapfrogSimple(int start, int nrend, real dt,
+                       const rvec *invMassPerDim,
+                       const t_grp_tcstat *tcstat, const unsigned short *cTC,
+                       const rvec *x, rvec *xprime,
+                       rvec *v, const rvec *f)
+{
+    const real *invmr = reinterpret_cast<const real *>(invMassPerDim);
+    const real *xr    = reinterpret_cast<const real *>(x);
+    real       *xpr   = reinterpret_cast<real *>(xprime);
+    real       *vr    = reinterpret_cast<real *>(v);
+    const real *fr    = reinterpret_cast<const real *>(f);
+
+    real lambdaGroup;
+
+    if (haveSingleTCoupleValue)
+    {
+        lambdaGroup = tcstat[0].lambda;
+    }
+
+    for (int i = start*DIM; i < nrend*DIM; i++)
+    {
+        if (!haveSingleTCoupleValue)
+        {
+            lambdaGroup = tcstat[cTC[i/3]].lambda;
+        }
+
+        real vn = lambdaGroup*vr[i] + dt*fr[i]*invmr[i];
+        vr[i]   = vn;
+        xpr[i]  = xr[i] + vn*dt;
+    }
+}
 
 static void do_update_md(int start, int nrend, double dt,
-                         t_grp_tcstat *tcstat,
+                         int ngtc, t_grp_tcstat *tcstat,
                          double nh_vxi[],
                          gmx_bool bNEMD, t_grp_acc *gstat, rvec accel[],
-                         ivec nFreeze[],
-                         real invmass[],
-                         unsigned short ptype[], unsigned short cFREEZE[],
+                         real invmass[], const rvec invMassPerDim[],
                          unsigned short cACC[], unsigned short cTC[],
                          rvec x[], rvec xprime[], rvec v[],
                          rvec f[], matrix M,
                          gmx_bool bNH, gmx_bool bPR)
 {
     double imass, w_dt;
-    int    gf = 0, ga = 0, gt = 0;
+    int    ga = 0, gt = 0;
     rvec   vrel;
     real   vn, vv, va, vb, vnrel;
     real   lg, vxi = 0, u;
@@ -142,10 +177,6 @@ static void do_update_md(int start, int nrend, double dt,
         for (n = start; n < nrend; n++)
         {
             imass = invmass[n];
-            if (cFREEZE)
-            {
-                gf   = cFREEZE[n];
-            }
             if (cACC)
             {
                 ga   = cACC[n];
@@ -163,35 +194,21 @@ static void do_update_md(int start, int nrend, double dt,
 
             for (d = 0; d < DIM; d++)
             {
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-                {
-                    vnrel = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                              - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
-                    /* do not scale the mean velocities u */
-                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel;
-                    v[n][d]        = vn;
-                    xprime[n][d]   = x[n][d]+vn*dt;
-                }
-                else
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
+                vnrel = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
+                                          - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
+                /* do not scale the mean velocities u */
+                vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel;
+                v[n][d]        = vn;
+                xprime[n][d]   = x[n][d]+vn*dt;
             }
         }
     }
-    else if (cFREEZE != NULL ||
-             nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] ||
-             bNEMD)
+    else if (bNEMD)
     {
-        /* Update with Berendsen/v-rescale coupling and freeze or NEMD */
+        /* Update with Berendsen/v-rescale coupling and NEMD */
         for (n = start; n < nrend; n++)
         {
             w_dt = invmass[n]*dt;
-            if (cFREEZE)
-            {
-                gf   = cFREEZE[n];
-            }
             if (cACC)
             {
                 ga   = cACC[n];
@@ -205,66 +222,52 @@ static void do_update_md(int start, int nrend, double dt,
             for (d = 0; d < DIM; d++)
             {
                 vn             = v[n][d];
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-                {
-                    vv             = lg*vn + f[n][d]*w_dt;
+                vv             = lg*vn + f[n][d]*w_dt;
 
-                    /* do not scale the mean velocities u */
-                    u              = gstat[ga].u[d];
-                    va             = vv + accel[ga][d]*dt;
-                    vb             = va + (1.0-lg)*u;
-                    v[n][d]        = vb;
-                    xprime[n][d]   = x[n][d]+vb*dt;
-                }
-                else
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
+                /* do not scale the mean velocities u */
+                u              = gstat[ga].u[d];
+                va             = vv + accel[ga][d]*dt;
+                vb             = va + (1.0-lg)*u;
+                v[n][d]        = vb;
+                xprime[n][d]   = x[n][d] + vb*dt;
             }
         }
     }
     else
     {
-        /* Plain update with Berendsen/v-rescale coupling */
-        for (n = start; n < nrend; n++)
+        /* We determine if we have a single T-coupling lambda value for all
+         * atoms. That allows for better SIMD acceleration in the template.
+         */
+        bool haveSingleTCoupleValue = true;
+        for (int gt = 1; gt < ngtc; gt++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
+            if (tcstat[gt].lambda != tcstat[0].lambda)
             {
-                w_dt = invmass[n]*dt;
-                if (cTC)
-                {
-                    gt = cTC[n];
-                }
-                lg = tcstat[gt].lambda;
+                haveSingleTCoupleValue = false;
+            }
+        }
 
-                for (d = 0; d < DIM; d++)
-                {
-                    vn           = lg*v[n][d] + f[n][d]*w_dt;
-                    v[n][d]      = vn;
-                    xprime[n][d] = x[n][d] + vn*dt;
-                }
-            }
-            else
-            {
-                for (d = 0; d < DIM; d++)
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
-            }
+        if (haveSingleTCoupleValue)
+        {
+            updateMdLeapfrogSimple<true>(start, nrend, static_cast<real>(dt),
+                                         invMassPerDim, tcstat, cTC,
+                                         x, xprime, v, f);
+        }
+        else
+        {
+            updateMdLeapfrogSimple<false>(start, nrend, static_cast<real>(dt),
+                                          invMassPerDim, tcstat, cTC,
+                                          x, xprime, v, f);
         }
     }
 }
 
 static void do_update_vv_vel(int start, int nrend, double dt,
-                             rvec accel[], ivec nFreeze[], real invmass[],
-                             unsigned short ptype[], unsigned short cFREEZE[],
+                             rvec accel[], const rvec invMassPerDim[],
                              unsigned short cACC[], rvec v[], rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
-    double w_dt;
-    int    gf = 0, ga = 0;
+    int    ga = 0;
     int    n, d;
     double g, mv1, mv2;
 
@@ -281,11 +284,6 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     }
     for (n = start; n < nrend; n++)
     {
-        w_dt = invmass[n]*dt;
-        if (cFREEZE)
-        {
-            gf   = cFREEZE[n];
-        }
         if (cACC)
         {
             ga   = cACC[n];
@@ -293,21 +291,14 @@ static void do_update_vv_vel(int start, int nrend, double dt,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-            {
-                v[n][d]             = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
-            }
-            else
-            {
-                v[n][d]        = 0.0;
-            }
+            v[n][d] = mv1*(mv1*v[n][d] + 0.5*(invMassPerDim[n][d]*dt*mv2*f[n][d])) + 0.5*accel[ga][d]*dt;
         }
     }
 } /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start, int nrend, double dt,
                              ivec nFreeze[],
-                             unsigned short ptype[], unsigned short cFREEZE[],
+                             unsigned short cFREEZE[],
                              rvec x[], rvec xprime[], rvec v[],
                              gmx_bool bExtended, real veta)
 {
@@ -338,7 +329,7 @@ static void do_update_vv_pos(int start, int nrend, double dt,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            if (!nFreeze[gf][d])
             {
                 xprime[n][d]   = mr1*(mr1*x[n][d]+mr2*dt*v[n][d]);
             }
@@ -353,14 +344,13 @@ static void do_update_vv_pos(int start, int nrend, double dt,
 static void do_update_visc(int start, int nrend, double dt,
                            t_grp_tcstat *tcstat,
                            double nh_vxi[],
-                           real invmass[],
-                           unsigned short ptype[], unsigned short cTC[],
+                           const rvec invMassPerDim[],
+                           unsigned short cTC[],
                            rvec x[], rvec xprime[], rvec v[],
                            rvec f[], matrix M, matrix box, real
                            cos_accel, real vcos,
                            gmx_bool bNH, gmx_bool bPR)
 {
-    double imass, w_dt;
     int    gt = 0;
     real   vn, vc;
     real   lg, vxi = 0, vv;
@@ -377,7 +367,6 @@ static void do_update_visc(int start, int nrend, double dt,
          */
         for (n = start; n < nrend; n++)
         {
-            imass = invmass[n];
             if (cTC)
             {
                 gt   = cTC[n];
@@ -395,21 +384,14 @@ static void do_update_visc(int start, int nrend, double dt,
             }
             for (d = 0; d < DIM; d++)
             {
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
+                vn  = (lg*vrel[d] + dt*(dt*invMassPerDim[n][d]*f[n][d] - 0.5*vxi*vrel[d]
+                                        - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
+                if (d == XX)
                 {
-                    vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                            - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
-                    if (d == XX)
-                    {
-                        vn += vc + dt*cosz*cos_accel;
-                    }
-                    v[n][d]        = vn;
-                    xprime[n][d]   = x[n][d]+vn*dt;
+                    vn += vc + dt*cosz*cos_accel;
                 }
-                else
-                {
-                    xprime[n][d]   = x[n][d];
-                }
+                v[n][d]        = vn;
+                xprime[n][d]   = x[n][d]+vn*dt;
             }
         }
     }
@@ -418,7 +400,6 @@ static void do_update_visc(int start, int nrend, double dt,
         /* Classic version of update, used with berendsen coupling */
         for (n = start; n < nrend; n++)
         {
-            w_dt = invmass[n]*dt;
             if (cTC)
             {
                 gt   = cTC[n];
@@ -430,28 +411,21 @@ static void do_update_visc(int start, int nrend, double dt,
             {
                 vn             = v[n][d];
 
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
+                if (d == XX)
                 {
-                    if (d == XX)
-                    {
-                        vc           = cosz*vcos;
-                        /* Do not scale the cosine velocity profile */
-                        vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
-                        /* Add the cosine accelaration profile */
-                        vv          += dt*cosz*cos_accel;
-                    }
-                    else
-                    {
-                        vv           = lg*(vn + f[n][d]*w_dt);
-                    }
-                    v[n][d]        = vv;
-                    xprime[n][d]   = x[n][d]+vv*dt;
+                    vc           = cosz*vcos;
+                    /* Do not scale the cosine velocity profile */
+                    vv           = vc + lg*(vn - vc + f[n][d]*invMassPerDim[n][d]*dt);
+                    /* Add the cosine accelaration profile */
+                    vv          += dt*cosz*cos_accel;
                 }
                 else
                 {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
+                    vv           = lg*(vn + f[n][d]*invMassPerDim[n][d]*dt);
                 }
+
+                v[n][d]        = vv;
+                xprime[n][d]   = x[n][d] + vv*dt;
             }
         }
     }
@@ -1670,11 +1644,11 @@ void update_coords(FILE             *fplog,
                     if (ekind->cosacc.cos_accel == 0)
                     {
                         do_update_md(start_th, end_th, dt,
-                                     ekind->tcstat, state->nosehoover_vxi,
+                                     ekind->ngtc, ekind->tcstat,
+                                     state->nosehoover_vxi,
                                      ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
-                                     inputrec->opts.nFreeze,
-                                     md->invmass, md->ptype,
-                                     md->cFREEZE, md->cACC, md->cTC,
+                                     md->invmass, md->invMassPerDim,
+                                     md->cACC, md->cTC,
                                      state->x, upd->xp, state->v, f, M,
                                      bNH, bPR);
                     }
@@ -1682,7 +1656,7 @@ void update_coords(FILE             *fplog,
                     {
                         do_update_visc(start_th, end_th, dt,
                                        ekind->tcstat, state->nosehoover_vxi,
-                                       md->invmass, md->ptype,
+                                       md->invMassPerDim,
                                        md->cTC, state->x, upd->xp, state->v, f, M,
                                        state->box,
                                        ekind->cosacc.cos_accel,
@@ -1718,16 +1692,16 @@ void update_coords(FILE             *fplog,
                         case etrtVELOCITY1:
                         case etrtVELOCITY2:
                             do_update_vv_vel(start_th, end_th, dt,
-                                             inputrec->opts.acc, inputrec->opts.nFreeze,
-                                             md->invmass, md->ptype,
-                                             md->cFREEZE, md->cACC,
+                                             inputrec->opts.acc,
+                                             md->invMassPerDim,
+                                             md->cACC,
                                              state->v, f,
                                              (bNH || bPR), state->veta, alpha);
                             break;
                         case etrtPOSITION:
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
-                                             md->ptype, md->cFREEZE,
+                                             md->cFREEZE,
                                              state->x, upd->xp, state->v,
                                              (bNH || bPR), state->veta);
                             break;
