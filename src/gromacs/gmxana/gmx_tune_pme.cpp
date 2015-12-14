@@ -49,10 +49,10 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"

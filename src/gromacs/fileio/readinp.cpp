@@ -45,7 +45,7 @@
 #include <algorithm>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
