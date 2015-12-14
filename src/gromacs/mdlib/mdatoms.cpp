@@ -40,7 +40,7 @@
 
 #include <math.h>
 
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"

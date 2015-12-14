@@ -40,11 +40,11 @@
 
 #include <cmath>
 
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/mdatom.h"

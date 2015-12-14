@@ -45,7 +45,6 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/disre.h"
@@ -55,6 +54,7 @@
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
