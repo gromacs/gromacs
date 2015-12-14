@@ -39,7 +39,6 @@
 
 #include <string.h>
 
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"

@@ -44,10 +44,10 @@
 #include <math.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"

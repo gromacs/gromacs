@@ -49,7 +49,6 @@
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"

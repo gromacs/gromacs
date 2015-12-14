@@ -46,7 +46,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"

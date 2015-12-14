@@ -52,7 +52,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/math/do_fit.h"
@@ -955,7 +954,7 @@ int gmx_disre(int argc, char *argv[])
         }
     }
 
-    gmx_log_close(fplog);
+    gmx_ffclose(fplog);
 
     return 0;
 }
