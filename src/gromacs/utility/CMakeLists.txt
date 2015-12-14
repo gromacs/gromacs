@@ -42,6 +42,7 @@ gmx_install_headers(
     arrayref.h
     arraysize.h
     basedefinitions.h
+    baseversion.h
     classhelpers.h
     cstringutil.h
     current_function.h

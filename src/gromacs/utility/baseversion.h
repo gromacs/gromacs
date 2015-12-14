@@ -32,12 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares functions to get basic version information.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
+ * \inpublicapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_BASEVERSION_H
