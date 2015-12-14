@@ -150,6 +150,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         srenew(md->massT, md->nalloc);
         srenew(md->invmass, md->nalloc);
+        srenew(md->invMassPerDim, md->nalloc);
         srenew(md->chargeA, md->nalloc);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
@@ -289,9 +290,13 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 md->massB[i]  = mB;
             }
             md->massT[i]    = mA;
+
             if (mA == 0.0)
             {
-                md->invmass[i]    = 0;
+                md->invmass[i]           = 0;
+                md->invMassPerDim[i][XX] = 0;
+                md->invMassPerDim[i][YY] = 0;
+                md->invMassPerDim[i][ZZ] = 0;
             }
             else if (md->cFREEZE)
             {
@@ -311,11 +316,20 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                      */
                     md->invmass[i]  = 1.0/mA;
                 }
+                for (int d = 0; d < DIM; d++)
+                {
+                    md->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0/mA);
+                }
             }
             else
             {
-                md->invmass[i]    = 1.0/mA;
+                md->invmass[i]  = 1.0/mA;
+                for (int d = 0; d < DIM; d++)
+                {
+                    md->invMassPerDim[i][d] = 1.0/mA;
+                }
             }
+
             md->chargeA[i]      = atom->q;
             md->typeA[i]        = atom->type;
             if (bLJPME)
@@ -402,34 +416,47 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
     gmx_mtop_atomlookup_destroy(alook);
 
     md->homenr = homenr;
+    /* We set mass, invmass, invMassPerDim and tmass for lambda=0.
+     * For free-energy runs, these should be updated using update_mdatoms().
+     */
+    md->tmass  = md->tmassA;
     md->lambda = 0;
 }
 
 void update_mdatoms(t_mdatoms *md, real lambda)
 {
-    int    al, end;
-    real   L1 = 1.0-lambda;
-
-    end = md->nr;
-
-    if (md->nMassPerturbed)
+    if (md->nMassPerturbed && lambda != md->lambda)
     {
-        for (al = 0; (al < end); al++)
+        real L1 = 1 - lambda;
+
+        /* Update masses of perturbed atoms for the change in lambda */
+        // cppcheck-suppress unreadVariable
+        int gmx_unused nthreads = gmx_omp_nthreads_get(emntDefault);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+        for (int i = 0; i < md->nr; i++)
         {
-            if (md->bPerturbed[al])
+            if (md->bPerturbed[i])
             {
-                md->massT[al] = L1*md->massA[al]+ lambda*md->massB[al];
-                if (md->invmass[al] > 1.1*ALMOST_ZERO)
+                md->massT[i] = L1*md->massA[i] + lambda*md->massB[i];
+                /* Atoms with invmass 0 or ALMOST_ZERO are massless or frozen
+                 * and their invmass does not depend on lambda.
+                 */
+                if (md->invmass[i] > 1.1*ALMOST_ZERO)
                 {
-                    md->invmass[al] = 1.0/md->massT[al];
+                    md->invmass[i] = 1.0/md->massT[i];
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        if (md->invMassPerDim[i][d] > 1.1*ALMOST_ZERO)
+                        {
+                            md->invMassPerDim[i][d] = md->invmass[i];
+                        }
+                    }
                 }
             }
         }
-        md->tmass = L1*md->tmassA + lambda*md->tmassB;
+        /* Update the system mass for the change in lambda */
+        md->tmass  = L1*md->tmassA + lambda*md->tmassB;
+
+        md->lambda = lambda;
     }
-    else
-    {
-        md->tmass = md->tmassA;
-    }
-    md->lambda = lambda;
 }
