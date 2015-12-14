@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,9 +54,16 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               t_mdatoms *md);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
+ * For the masses the A-state (lambda=0) mass is used.
+ * Sets md->lambda = 0.
+ * In free-energy runs, update_mdatoms() should be called after atoms2md()
+ * to set the masses corresponding to the value of lambda at each step.
  */
 
 void update_mdatoms(t_mdatoms *md, real lambda);
-/* (Re)set all the mass parameters */
+/* When necessary, sets all the mass parameters to values corresponding
+ * to the free-energy parameter lambda.
+ * Sets md->lambda = lambda.
+ */
 
 #endif
