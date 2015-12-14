@@ -48,9 +48,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/gmxlib/gmx_detect_hardware.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
