@@ -34,12 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_READINP_H
-#define GMX_GMXLIB_READINP_H
+#ifndef GMX_FILEIO_READINP_H
+#define GMX_FILEIO_READINP_H
 
 #include <cstring>
 
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/basedefinitions.h"
 
 typedef struct {

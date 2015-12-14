@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
-#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
 struct gmx_groups_t;

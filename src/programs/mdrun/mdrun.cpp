@@ -59,9 +59,9 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
