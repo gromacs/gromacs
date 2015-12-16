@@ -63,7 +63,7 @@ pType::pType(std::string name, const bool bUse, const int nCopies)
 
 pType::~pType()
 {
-    gmx_stats_free(polstats);
+    //gmx_stats_free(polstats);
 }
 
 bool check_matrix(double **a, double *x, unsigned int nrow,
@@ -240,7 +240,6 @@ static int decompose_frag(FILE *fplog,
     snew(x, mp.size()+1);
     // Copy all atom types into array. Set usage array.
     {
-        std::string ptype;
         for (PtypeIterator ptype = pd->getPtypeBegin();
              ptype != pd->getPtypeEnd(); ptype++)
         {

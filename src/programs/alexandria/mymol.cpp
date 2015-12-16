@@ -142,7 +142,7 @@ void MyMol::getForceConstants(Poldata *pd)
     double      xx, sx, bo;
     std::string params;
 
-#define ATP(ii) ((char *)pd->atypeToBtype( *topology_->atoms.atomtype[ii]).c_str())
+#define ATP(ii) (pd->atypeToBtype( *topology_->atoms.atomtype[ii]).c_str())
     for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
          (pw < plist_.end()); ++pw)
     {

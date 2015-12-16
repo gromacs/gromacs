@@ -617,6 +617,8 @@ int alex_bastat(int argc, char *argv[])
                     {
                         int xi, xj, xb;
                         bi->get(&xi, &xj, &xb);
+                        xi--;
+                        xj--;
                         if (!bBondOrder)
                         {
                             xb = 1;

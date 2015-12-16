@@ -382,7 +382,7 @@ static void gmx_molprop_read_babel(const char *g98,
     OBet = new OpenBabel::OBElementTable();
 
     OpenBabel::OBForceField *ff = OpenBabel::OBForceField::FindForceField(forcefield);
-    if ((NULL != ff) && (ff->Setup(mol)))
+    if (ff && (ff->Setup(mol)))
     {
         ff->GetAtomTypes(mol);
         FOR_ATOMS_OF_MOL (atom, mol) {
