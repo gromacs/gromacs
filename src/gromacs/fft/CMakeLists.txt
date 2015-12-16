@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
+     calcgrid.cpp
      fft.cpp
      fft5d.cpp
      parallel_3dfft.cpp
