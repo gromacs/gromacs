@@ -34,17 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_CALCGRID_H
-#define GMX_GMXLIB_CALCGRID_H
+#ifndef GMX_FFT_CALCGRID_H
+#define GMX_FFT_CALCGRID_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 real calc_grid(FILE *fp,
                matrix box, real gr_sp,
@@ -53,9 +49,5 @@ real calc_grid(FILE *fp,
  * number which gives a spacing equal to or smaller than gr_sp.
  * Returns the maximum grid spacing.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
