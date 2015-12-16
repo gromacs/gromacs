@@ -65,6 +65,18 @@
 #include "gromacs/utility/smalloc.h"
 
 
+static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
+{
+#ifdef GMX_MPI
+    int value = invalidLocally ? 1 : 0;
+    int globalValue;
+    MPI_Reduce(&value, &globalValue, 1, MPI_INT, MPI_LAND, MASTERRANK(cr), cr->mpi_comm_mysim);
+    return SIMMASTER(cr) ? (globalValue != 0) : invalidLocally;
+#else
+    return invalidLocally;
+#endif
+}
+
 static int
 get_thread_affinity_layout(FILE *fplog,
                            const t_commrec *cr,
@@ -77,6 +89,7 @@ get_thread_affinity_layout(FILE *fplog,
     int                          hwThreadsPerCore = 0;
     bool                         bPickPinStride;
     bool                         haveTopology;
+    bool                         invalidLayout;
 
     const gmx::HardwareTopology &hwTop = *hwinfo->hardwareTopology;
 
@@ -119,27 +132,34 @@ get_thread_affinity_layout(FILE *fplog,
         {
             /* We don't know anything about the hardware, don't pin */
             md_print_warn(cr, fplog,
-                          "NOTE: No information on available cores, thread pinning disabled.");
+                          "NOTE: No information on available cores, thread pinning disabled.\n");
 
             return -1;
         }
     }
 
-    if (threads > hwThreads)
+    invalidLayout = (threads > hwThreads);
+    if (invalidWithinSimulation(cr, invalidLayout))
     {
         /* We are oversubscribing, don't pin */
-        md_print_warn(NULL, fplog,
-                      "NOTE: Oversubscribing the CPU, will not pin threads");
-
+        md_print_warn(cr, fplog,
+                      "NOTE: Oversubscribing the CPU, will not pin threads.\n");
+    }
+    if (invalidLayout)
+    {
         return -1;
     }
 
-    if (pin_offset + threads > hwThreads)
+    invalidLayout = (pin_offset + threads > hwThreads);
+    if (invalidWithinSimulation(cr, invalidLayout))
     {
         /* We are oversubscribing, don't pin */
-        md_print_warn(NULL, fplog,
-                      "WARNING: Requested offset too large for available cores, thread pinning disabled.");
+        md_print_warn(cr, fplog,
+                      "WARNING: Requested offset too large for available cores, thread pinning disabled.\n");
 
+    }
+    if (invalidLayout)
+    {
         return -1;
     }
 
@@ -172,12 +192,16 @@ get_thread_affinity_layout(FILE *fplog,
     {
         /* Check the placement of the thread with the largest index to make sure
          * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
-        if (pin_offset + (threads-1)*(*pin_stride) >= hwThreads)
+        invalidLayout = (pin_offset + (threads-1)*(*pin_stride) >= hwThreads);
+        if (invalidWithinSimulation(cr, invalidLayout))
         {
             /* We are oversubscribing, don't pin */
-            md_print_warn(NULL, fplog,
-                          "WARNING: Requested stride too large for available cores, thread pinning disabled.");
+            md_print_warn(cr, fplog,
+                          "WARNING: Requested stride too large for available cores, thread pinning disabled.\n");
 
+        }
+        if (invalidLayout)
+        {
             return -1;
         }
     }
@@ -228,8 +252,8 @@ gmx_set_thread_affinity(FILE                *fplog,
            no point in warning the user in that case. In any other case
            the user might be able to do something about it. */
 #if !defined(__APPLE__) && !defined(__bg__)
-        md_print_warn(NULL, fplog,
-                      "NOTE: Cannot set thread affinities on the current platform.");
+        md_print_warn(cr, fplog,
+                      "NOTE: Cannot set thread affinities on the current platform.\n");
 #endif  /* __APPLE__ */
         return;
     }
@@ -358,7 +382,8 @@ gmx_set_thread_affinity(FILE                *fplog,
     else
     {
         /* check & warn if some threads failed to set their affinities */
-        if (nth_affinity_set != nthread_local)
+        const bool allAffinitiesSet = (nth_affinity_set == nthread_local);
+        if (!allAffinitiesSet)
         {
             char sbuf1[STRLEN], sbuf2[STRLEN];
 
@@ -383,13 +408,15 @@ gmx_set_thread_affinity(FILE                *fplog,
                         nthread_local > 1 ? "s" : "");
             }
 
-            md_print_warn(NULL, fplog,
-                          "NOTE: %sAffinity setting %sfailed. This can cause performance degradation.\n"
-                          "      If you think your settings are correct, ask on the gmx-users list.",
-                          sbuf1, sbuf2);
+            fprintf(stderr, "NOTE: %sAffinity setting %sfailed.\n", sbuf1, sbuf2);
+        }
+        if (invalidWithinSimulation(cr, !allAffinitiesSet))
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: Thread affinity setting failed. This can cause performance degradation.\n"
+                          "      If you think your settings are correct, ask on the gmx-users list.\n");
         }
     }
-    return;
 }
 
 /* Check the process affinity mask and if it is found to be non-zero,
