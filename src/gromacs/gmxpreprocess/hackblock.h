@@ -38,10 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_HACKBLOCK_H
 #define GMX_GMXPREPROCESS_HACKBLOCK_H
 
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/topology/symtab.h"
 
 /* Used for reading .rtp/.tdb */
@@ -114,7 +112,7 @@ typedef struct {
     gmx_bool    bAlreadyPresent;
     gmx_bool    bXSet;
     rvec        newx; /* calculated new position    */
-    atom_id     newi; /* new atom index number (after additions) */
+    int         newi; /* new atom index number (after additions) */
     char*      &ai() { return a[0]; }
     char*      &aj() { return a[1]; }
     char*      &ak() { return a[2]; }

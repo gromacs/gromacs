@@ -44,17 +44,18 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/cmat.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -75,7 +76,7 @@
 
 static void find_nearest_neighbours(int ePBC,
                                     int natoms, matrix box,
-                                    rvec x[], int maxidx, atom_id index[],
+                                    rvec x[], int maxidx, int index[],
                                     real *sgmean, real *skmean,
                                     int nslice, int slice_dim,
                                     real sgslice[], real skslice[],
@@ -265,7 +266,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     rvec        *xtop, *x;
     matrix       box;
     real         sg, sk;
-    atom_id    **index;
+    int        **index;
     char       **grpname;
     int          i, *isize, ng, nframes;
     real        *sg_slice, *sg_slice_tot, *sk_slice, *sk_slice_tot;
@@ -346,7 +347,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
 
 
 /* Print name of first atom in all groups in index file */
-static void print_types(atom_id index[], atom_id a[], int ngrps,
+static void print_types(int index[], int a[], int ngrps,
                         char *groups[], t_topology *top)
 {
     int i;
@@ -370,7 +371,7 @@ static void check_length(real length, int a, int b)
     }
 }
 
-void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
+void calc_order(const char *fn, int *index, int *a, rvec **order,
                 real ***slOrder, real *slWidth, int nslices, gmx_bool bSliced,
                 gmx_bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
                 gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
@@ -403,7 +404,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
     rvec         direction, com, dref, dvec;
     int          comsize, distsize;
-    atom_id     *comidx  = NULL, *distidx = NULL;
+    int         *comidx  = NULL, *distidx = NULL;
     char        *grpname = NULL;
     t_pbc        pbc;
     real         arcdist, tmpdist;
@@ -607,15 +608,15 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                  */
                 if (use_unitvector)
                 {
-                    cossum[XX] = sqr(iprod(Sx, direction)); /* this is allowed, since Sa is normalized */
-                    cossum[YY] = sqr(iprod(Sy, direction));
-                    cossum[ZZ] = sqr(iprod(Sz, direction));
+                    cossum[XX] = gmx::square(iprod(Sx, direction)); /* this is allowed, since Sa is normalized */
+                    cossum[YY] = gmx::square(iprod(Sy, direction));
+                    cossum[ZZ] = gmx::square(iprod(Sz, direction));
                 }
                 else
                 {
-                    cossum[XX] = sqr(Sx[axis]); /* this is allowed, since Sa is normalized */
-                    cossum[YY] = sqr(Sy[axis]);
-                    cossum[ZZ] = sqr(Sz[axis]);
+                    cossum[XX] = gmx::square(Sx[axis]); /* this is allowed, since Sa is normalized */
+                    cossum[YY] = gmx::square(Sy[axis]);
+                    cossum[ZZ] = gmx::square(Sz[axis]);
                 }
 
                 for (m = 0; m < DIM; m++)
@@ -833,7 +834,7 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
     xvgrclose(slOrd);
 }
 
-void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, gmx_output_env_t *oenv)
+void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, gmx_output_env_t *oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -949,7 +950,7 @@ int gmx_order(int argc, char *argv[])
                        axis = 0;                      /* normal axis                */
     t_topology       *top;                            /* topology         */
     int               ePBC;
-    atom_id          *index,                          /* indices for a              */
+    int              *index,                          /* indices for a              */
     *a;                                               /* atom numbers in each group */
     t_blocka         *block;                          /* data from index file       */
     t_filenm          fnm[] = {                       /* files for g_order    */

@@ -159,8 +159,8 @@ class SurfaceAreaTest : public ::testing::Test
                         gmx::SurfaceAreaCalculator calculator;
                         calculator.setDotCount(ndots);
                         calculator.setRadii(radius_);
-                        calculator.calculate(as_rvec_array(&x_[0]), bPBC ? &pbc : NULL,
-                                             index_.size(), &index_[0], flags,
+                        calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : NULL,
+                                             index_.size(), index_.data(), flags,
                                              &area_, &volume_, &atomArea_,
                                              &dots_, &dotCount_);
                     });

@@ -51,12 +51,11 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -139,9 +138,9 @@ static gmx_bool bAllowed(real phi, real psi)
     return (map[x][y] == '1') ? TRUE : FALSE;
 }
 
-atom_id *make_chi_ind(int nl, t_dlist dl[], int *ndih)
+int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
 {
-    atom_id *id;
+    int     *id;
     int      i, Xi, n;
 
     /* There are nl residues with max edMax dihedrals with 4 atoms each */
@@ -446,7 +445,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
 static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
-                          atom_id index[],
+                          int index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
                           real bfac_max, t_atoms *atoms,
@@ -1362,7 +1361,7 @@ int gmx_chi(int argc, char *argv[])
     gmx_output_env_t  *oenv;
     gmx_residuetype_t *rt;
 
-    atom_id            isize, *index;
+    int                isize, *index;
     int                ndih, nactdih, nf;
     real             **dih, *trans_frac, *aver_angle, *time;
     int                i, **chi_lookup, *multiplicity;

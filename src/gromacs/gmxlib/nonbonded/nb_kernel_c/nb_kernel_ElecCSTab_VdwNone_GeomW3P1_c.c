@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014.2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,8 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_c
@@ -180,9 +179,9 @@ nb_kernel_ElecCSTab_VdwNone_GeomW3P1_VF_c
             rsq10            = dx10*dx10+dy10*dy10+dz10*dz10;
             rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv20           = 1.0/sqrt(rsq20);
 
             /* Load parameters for j particles */
             jq0              = charge[jnr+0];
@@ -492,9 +491,9 @@ nb_kernel_ElecCSTab_VdwNone_GeomW3P1_F_c
             rsq10            = dx10*dx10+dy10*dy10+dz10*dz10;
             rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv20           = 1.0/sqrt(rsq20);
 
             /* Load parameters for j particles */
             jq0              = charge[jnr+0];

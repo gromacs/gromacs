@@ -48,24 +48,24 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gen_vsite.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
@@ -74,6 +74,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
 
 /* this must correspond to enum in pdb2top.h */
@@ -774,7 +775,7 @@ static void add_drude_ssbonds_thole(t_atoms *atoms, int nssbonds, t_ssbond *ssbo
     fprintf(stderr, "Generating Thole interactions for disulfides...\n");
 
     int             i, ri, rj;
-    atom_id         ai, aj;
+    int             ai, aj;
     char            buf[STRLEN];
     enum            { etSG, etCB };
     const real      alpha[] = { 0.001888, 0.002686 };
@@ -789,7 +790,7 @@ static void add_drude_ssbonds_thole(t_atoms *atoms, int nssbonds, t_ssbond *ssbo
                              "check", bAllowMissing);
         aj = search_res_atom(ssbonds[i].a2, rj, atoms,
                              "check", bAllowMissing);
-        if ((ai == NO_ATID) || (aj == NO_ATID))
+        if ((ai == -1) || (aj == -1))
         {
             gmx_fatal(FARGS, "Trying to make impossible Thole interaction (%s-%s)!",
                       ssbonds[i].a1, ssbonds[i].a2);
@@ -819,7 +820,7 @@ static void do_ssbonds(t_params *ps, t_params *psv, t_atoms *atoms,
                        gmx_bool bAllowMissing, gmx_bool bDrude)
 {
     int     i, ri, rj;
-    atom_id ai, aj;
+    int     ai, aj;
 
     for (i = 0; (i < nssbonds); i++)
     {
@@ -829,7 +830,7 @@ static void do_ssbonds(t_params *ps, t_params *psv, t_atoms *atoms,
                              "special bond", bAllowMissing);
         aj = search_res_atom(ssbonds[i].a2, rj, atoms,
                              "special bond", bAllowMissing);
-        if ((ai == NO_ATID) || (aj == NO_ATID))
+        if ((ai == -1) || (aj == -1))
         {
             gmx_fatal(FARGS, "Trying to make impossible special bond (%s-%s)!",
                       ssbonds[i].a1, ssbonds[i].a2);
@@ -855,12 +856,12 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                      gmx_bool bDrude)
 {
     int         resind, i, j, k;
-    atom_id     ai, aj;
+    int         ai, aj;
     real        dist2, long_bond_dist2, short_bond_dist2;
     const char *ptr;
 
-    long_bond_dist2  = sqr(long_bond_dist);
-    short_bond_dist2 = sqr(short_bond_dist);
+    long_bond_dist2  = gmx::square(long_bond_dist);
+    short_bond_dist2 = gmx::square(short_bond_dist);
 
     if (debug)
     {
@@ -886,7 +887,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                              ptr, TRUE);
             aj = search_atom(hb[resind].rb[ebtsBONDS].b[j].a[1], i, atoms,
                              ptr, TRUE);
-            if (ai != NO_ATID && aj != NO_ATID)
+            if (ai != -1 && aj != -1)
             {
                 dist2 = distance2(x[ai], x[aj]);
                 if (dist2 > long_bond_dist2)
@@ -998,8 +999,8 @@ static int pcompar(const void *a, const void *b)
 
 static void clean_bonds(t_params *ps)
 {
-    int         i, j;
-    atom_id     a;
+    int     i, j;
+    int     a;
 
     if (ps->nr > 0)
     {
@@ -1051,7 +1052,7 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
     int     start;
     real    alphai[2], alphaj[2], ai[2], aj[2];  /* tmp values for sscanf */
     char    buf[STRLEN];
-    atom_id tmp1, tmp2;
+    int     tmp1, tmp2;
 
     start = ps->nr; /* save original number for later printing */
 
@@ -1676,7 +1677,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
     int         nthole = 0;
     const char *ptr;
     int         nres = atoms->nres;
-    atom_id     thole_atomid[4];
+    int         thole_atomid[4];
     gmx_bool    bAddThole;
 
     if (debug)
@@ -1699,7 +1700,7 @@ static void gen_thole(t_params *ps, t_restp *restp, t_atoms *atoms)
             {
                 thole_atomid[k] = search_atom(restp[residx].rb[ebtsTHOLE].b[j].a[k],
                                               i, atoms, ptr, TRUE);
-                bAddThole = bAddThole && (thole_atomid[k] != NO_ATID);
+                bAddThole = bAddThole && (thole_atomid[k] != -1);
             }
             if (!bAddThole)
             {
@@ -1729,7 +1730,7 @@ static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
     int         naniso = 0;
     const char *ptr;
     int         nres = atoms->nres;
-    atom_id     aniso_atomid[5];
+    int         aniso_atomid[5];
     gmx_bool    bAddAniso;
 
     if (debug)
@@ -1752,7 +1753,7 @@ static void gen_aniso(t_params *ps, t_restp *restp, t_atoms *atoms)
             {
                 aniso_atomid[k] = search_atom(restp[residx].rb[ebtsANISO].b[j].a[k],
                                               i, atoms, ptr, TRUE);
-                bAddAniso = bAddAniso && (aniso_atomid[k] != NO_ATID);
+                bAddAniso = bAddAniso && (aniso_atomid[k] != -1);
             }
             if (!bAddAniso)
             {
@@ -1783,7 +1784,7 @@ static void gen_pol(t_params *ps, t_restp *restp, t_atoms *atoms)
     int         npol = 0;
     const char *ptr;
     int         nres = atoms->nres;
-    atom_id     pol_atomid[2];
+    int         pol_atomid[2];
     gmx_bool    bAddPol;
 
     if (debug)
@@ -1806,7 +1807,7 @@ static void gen_pol(t_params *ps, t_restp *restp, t_atoms *atoms)
             {
                 pol_atomid[k] = search_atom(restp[residx].rb[ebtsPOL].b[j].a[k],
                                               i, atoms, ptr, TRUE);
-                bAddPol = bAddPol && (pol_atomid[k] != NO_ATID);
+                bAddPol = bAddPol && (pol_atomid[k] != -1);
             }
             if (!bAddPol)
             {
@@ -1839,7 +1840,7 @@ static void gen_lonepairs(t_params *ps, t_restp *restp, t_atoms *atoms, int vsty
 
     /* since different vsite geometries take different numbers
      * of atoms as reference, we set up a switch here to properly
-     * allocate the atom_id array below */
+     * allocate the int array below */
     switch (vstype)
     {
         case F_VSITE2:
@@ -1862,7 +1863,7 @@ static void gen_lonepairs(t_params *ps, t_restp *restp, t_atoms *atoms, int vsty
             gmx_fatal(FARGS, "Weird geometry passed to gen_lonepairs(), vstype = %d, n = %d\n", vstype, n);
     }
 
-    atom_id     vsite_atomid[n];
+    int         vsite_atomid[n];
     gmx_bool    bAddVSite;
 
     if (debug)
@@ -1885,7 +1886,7 @@ static void gen_lonepairs(t_params *ps, t_restp *restp, t_atoms *atoms, int vsty
             {
                 vsite_atomid[k] = search_atom(restp[residx].rb[subtype].b[j].a[k],
                                               i, atoms, ptr, TRUE);
-                bAddVSite = bAddVSite && (vsite_atomid[k] != NO_ATID);
+                bAddVSite = bAddVSite && (vsite_atomid[k] != -1);
             }
             if (!bAddVSite)
             {
@@ -1933,7 +1934,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
     t_resinfo  *resinfo = atoms->resinfo;
     int         nres    = atoms->nres;
     gmx_bool    bAddCMAP;
-    atom_id     cmap_atomid[NUM_CMAP_ATOMS];
+    int         cmap_atomid[NUM_CMAP_ATOMS];
     int         cmap_chainnum = -1, this_residue_index;
 
     if (debug)
@@ -1979,11 +1980,11 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
 
                 cmap_atomid[k] = search_atom(pname,
                                              i, atoms, ptr, TRUE);
-                bAddCMAP = bAddCMAP && (cmap_atomid[k] != NO_ATID);
+                bAddCMAP = bAddCMAP && (cmap_atomid[k] != -1);
                 if (!bAddCMAP)
                 {
                     /* This break is necessary, because cmap_atomid[k]
-                     * == NO_ATID cannot be safely used as an index
+                     * == -1 cannot be safely used as an index
                      * into the atom array. */
                     break;
                 }

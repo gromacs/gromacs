@@ -45,18 +45,20 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -65,6 +67,43 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+/* TODO: check */
+#if 0
+typedef struct {
+    int     nnucl;
+    int     shell;               /* The shell id				*/
+    int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
+    /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
+    real    k;                   /* force constant		        */
+    real    k_1;                 /* 1 over force constant		*/
+    rvec    xold;
+    rvec    fold;
+    rvec    step;
+} t_shell;
+
+struct gmx_shellfc_t {
+    int         nshell_gl;      /* The number of shells in the system       */
+    t_shell    *shell_gl;       /* All the shells (for DD only)             */
+    int        *shell_index_gl; /* Global shell index (for DD only)         */
+    gmx_bool    bInterCG;       /* Are there inter charge-group shells?     */
+    int         nshell;         /* The number of local shells               */
+    t_shell    *shell;          /* The local shells                         */
+    int         shell_nalloc;   /* The allocation size of shell             */
+    gmx_bool    bPredict;       /* Predict shell positions                  */
+    gmx_bool    bRequireInit;   /* Require initialization of shell positions  */
+    int         nflexcon;       /* The number of flexible constraints       */
+    rvec       *x[2];           /* Array for iterative minimization         */
+    rvec       *f[2];           /* Array for iterative minimization         */
+    int         x_nalloc;       /* The allocation size of x and f           */
+    rvec       *acc_dir;        /* Acceleration direction for flexcon       */
+    rvec       *x_old;          /* Old coordinates for flexcon              */
+    int         flex_nalloc;    /* The allocation size of acc_dir and x_old */
+    rvec       *adir_xnold;     /* Work space for init_adir                 */
+    rvec       *adir_xnew;      /* Work space for init_adir                 */
+    int         adir_nalloc;    /* Work space for init_adir                 */
+};
+#endif
 
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
 {
@@ -283,11 +322,11 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
     /* Initiate the shell structures */
     for (i = 0; (i < nshell); i++)
     {
-        shell[i].shell = NO_ATID;
+        shell[i].shell = -1;
         shell[i].nnucl = 0;
-        shell[i].nucl1 = NO_ATID;
-        shell[i].nucl2 = NO_ATID;
-        shell[i].nucl3 = NO_ATID;
+        shell[i].nucl1 = -1;
+        shell[i].nucl2 = -1;
+        shell[i].nucl3 = -1;
         /* shell[i].bInterCG=FALSE; */
         shell[i].k_1   = 0;
         shell[i].k     = 0;
@@ -331,7 +370,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                     nra   = interaction_function[ftype].nratoms;
 
                     /* Check whether we have a bond with a shell */
-                    aS = NO_ATID;
+                    aS = -1;
 
                     switch (bondtypes[j])
                     {
@@ -363,7 +402,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                             gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                     }
 
-                    if (aS != NO_ATID)
+                    if (aS != -1)
                     {
                         qS = atom[aS].q;
 
@@ -374,7 +413,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                             gmx_fatal(FARGS, "nsi is %d should be within 0 - %d. aS = %d",
                                       nsi, nshell, aS);
                         }
-                        if (shell[nsi].shell == NO_ATID)
+                        if (shell[nsi].shell == -1)
                         {
                             shell[nsi].shell = a_offset + aS;
                             ns++;
@@ -384,15 +423,15 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                             gmx_fatal(FARGS, "Weird stuff in %s, %d", __FILE__, __LINE__);
                         }
 
-                        if      (shell[nsi].nucl1 == NO_ATID)
+                        if      (shell[nsi].nucl1 == -1)
                         {
                             shell[nsi].nucl1 = a_offset + aN;
                         }
-                        else if (shell[nsi].nucl2 == NO_ATID)
+                        else if (shell[nsi].nucl2 == -1)
                         {
                             shell[nsi].nucl2 = a_offset + aN;
                         }
-                        else if (shell[nsi].nucl3 == NO_ATID)
+                        else if (shell[nsi].nucl3 == -1)
                         {
                             shell[nsi].nucl3 = a_offset + aN;
                         }
@@ -445,7 +484,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                                 }
                                 else
                                 {
-                                    shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/ffparams->iparams[type].polarize.alpha;
+                                    shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/ffparams->iparams[type].polarize.alpha;
                                 }
                                 break;
                             case F_ANISO_POL:
@@ -467,7 +506,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                                 alpha          = (ffparams->iparams[type].wpol.al_x+
                                                   ffparams->iparams[type].wpol.al_y+
                                                   ffparams->iparams[type].wpol.al_z)/3.0;
-                                shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
+                                shell[nsi].k  += gmx::square(qS)*ONE_4PI_EPS0/alpha;
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
@@ -771,7 +810,7 @@ static void print_epot(FILE *fp, gmx_int64_t mdstep, int *count, real epot, real
             gmx_step_str(mdstep, buf), *count, epot, df);
     if (ndir)
     {
-        fprintf(fp, ", dir. rmsF: %6.2e\n", sqrt(sf_dir/ndir));
+        fprintf(fp, ", dir. rmsF: %6.2e\n", std::sqrt(sf_dir/ndir));
     }
     else
     {
@@ -807,7 +846,7 @@ static real rms_force(t_commrec *cr, rvec f[], int ns, t_shell s[],
     }
     ntot += ndir;
 
-    return (ntot ? sqrt(buf[0]/ntot) : 0);
+    return (ntot ? std::sqrt(buf[0]/ntot) : 0);
 }
 
 static void check_pbc(FILE *fp, rvec x[], int shell)
@@ -830,7 +869,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
     int  i, shell;
     real ft2, ff2;
 
-    ft2 = sqr(ftol);
+    ft2 = gmx::square(ftol);
 
     for (i = 0; (i < ns); i++)
     {
@@ -839,7 +878,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
         if (ff2 > ft2)
         {
             fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
-                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], sqrt(ff2));
+                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
         }
         check_pbc(fp, x, shell);
     }
@@ -913,7 +952,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
         for (d = 0; d < DIM; d++)
         {
             xnew[n-start][d] =
-                -(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/sqr(dt)
+                -(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/gmx::square(dt)
                 - f[n][d]*md->invmass[n];
         }
         clear_rvec(acc_dir[n]);
@@ -939,7 +978,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 {
 
     int     i, j, m, n;
-    atom_id ia, ib;                 /* heavy atom and drude, respectively */
+    int     ia, ib;                 /* heavy atom and drude, respectively */
     real    ma, mb, mtot;           /* masses of drude and heavy atom, and their sum */
     real    dt, max_t;
     real    fac;
@@ -1276,7 +1315,7 @@ void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], r
     int     d, i;
     int     ns;
     int     power;
-    atom_id s, n;   /* Drude (shell) and atom (nucleus) */
+    int     s, n;   /* Drude (shell) and atom (nucleus) */
     rvec    dx;
     real    dx2;
     real    du;

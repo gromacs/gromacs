@@ -44,7 +44,9 @@
 #include <cmath>
 #include <cstring>
 
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
@@ -56,13 +58,14 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -312,7 +315,7 @@ void set_trxframe_ePBC(t_trxframe *fr, int ePBC)
 }
 
 int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
-                           const atom_id *ind, gmx_conect gc)
+                           const int *ind, gmx_conect gc)
 {
     char  title[STRLEN];
     rvec *xout = NULL, *vout = NULL, *fout = NULL;
@@ -463,7 +466,7 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
                                       const char       *infile,
                                       const int         natoms,
                                       const gmx_mtop_t *mtop,
-                                      const atom_id    *index,
+                                      const int        *index,
                                       const char       *index_group_name)
 {
     if (filemode != 'w' && filemode != 'a')
@@ -588,7 +591,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
     return 0;
 }
 
-int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
+int write_trx(t_trxstatus *status, int nind, const int *ind, t_atoms *atoms,
               int step, real time, matrix box, rvec x[], rvec *v,
               gmx_conect gc)
 {
@@ -702,7 +705,10 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     t_atoms   atoms;
     t_symtab *symtab;
     matrix    boxpdb;
-    int       ePBC, model_nr, na;
+    // Initiate model_nr to -1 rather than NOTSET.
+    // It is not worthwhile introducing extra variables in the
+    // read_pdbfile call to verify that a model_nr was read.
+    int       ePBC, model_nr = -1, na;
     char      title[STRLEN], *time;
     double    dbl;
 
@@ -710,7 +716,6 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     atoms.atom    = NULL;
     atoms.pdbinfo = NULL;
     /* the other pointers in atoms should not be accessed if these are NULL */
-    model_nr = NOTSET;
     snew(symtab, 1);
     open_symtab(symtab);
     na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, NULL);
@@ -730,7 +735,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
         copy_mat(boxpdb, fr->box);
     }
 
-    if (model_nr != NOTSET)
+    if (model_nr != -1)
     {
         fr->bStep = TRUE;
         fr->step  = model_nr;

@@ -40,9 +40,9 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -151,7 +151,7 @@ void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, const t_block *cgs,
     int      icg, k, k0, k1, d;
     rvec     cg;
     real     nrcg, inv_ncg;
-    atom_id *cgindex;
+    int     *cgindex;
 
 #ifdef DEBUG
     fprintf(fplog, "Calculating centre of geometry for charge groups %d to %d\n",
@@ -197,7 +197,7 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
     int      npbcdim, icg, k, k0, k1, d, e;
     rvec     cg;
     real     nrcg, inv_ncg;
-    atom_id *cgindex;
+    int     *cgindex;
     gmx_bool bTric;
 
     if (ePBC == epbcNONE)

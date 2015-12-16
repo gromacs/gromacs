@@ -43,10 +43,9 @@
 
 #include "cmdlinehelpmodule.h"
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/scoped_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -78,7 +77,59 @@ namespace gmx
 namespace
 {
 class IHelpExport;
-class RootHelpTopic;
+
+/********************************************************************
+ * RootHelpTopic declaration
+ */
+
+/*! \brief
+ * Help topic that forms the root of the help tree for the help subcommand.
+ *
+ * \ingroup module_commandline
+ */
+class RootHelpTopic : public AbstractCompositeHelpTopic
+{
+    public:
+        /*! \brief
+         * Creates a root help topic.
+         *
+         * Does not throw.
+         */
+        explicit RootHelpTopic(const CommandLineHelpModuleImpl &helpModule)
+            : helpModule_(helpModule)
+        {
+        }
+
+        virtual const char *name() const;
+        virtual const char *title() const { return title_.c_str(); }
+
+        //! Adds a top-level topic and optionally marks it as exported.
+        void addTopic(HelpTopicPointer topic, bool bExported)
+        {
+            if (bExported)
+            {
+                exportedTopics_.push_back(topic->name());
+            }
+            addSubTopic(std::move(topic));
+        }
+        //! Exports all the top-level topics with the given exporter.
+        void exportHelp(IHelpExport *exporter);
+
+        virtual void writeHelp(const HelpWriterContext &context) const;
+
+    private:
+        // unused because of the writeHelp() override
+        virtual std::string helpText() const { return ""; }
+
+        CommandLineHelpContext createContext(const HelpWriterContext &context) const;
+
+        const CommandLineHelpModuleImpl  &helpModule_;
+        std::string                       title_;
+        std::vector<std::string>          exportedTopics_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
+};
+
 }   // namespace
 
 /********************************************************************
@@ -93,9 +144,12 @@ class CommandLineHelpModuleImpl
                                   const CommandLineModuleMap       &modules,
                                   const CommandLineModuleGroupList &groups);
 
+        std::unique_ptr<IHelpExport> createExporter(
+            const std::string     &format,
+            IFileOutputRedirector *redirector);
         void exportHelp(IHelpExport *exporter);
 
-        boost::scoped_ptr<RootHelpTopic>  rootTopic_;
+        RootHelpTopic                     rootTopic_;
         const IProgramContext            &programContext_;
         std::string                       binaryName_;
         const CommandLineModuleMap       &modules_;
@@ -188,7 +242,7 @@ class IHelpExport
 };
 
 /********************************************************************
- * RootHelpTopic
+ * RootHelpTopic implementation
  */
 
 struct RootHelpText
@@ -210,51 +264,10 @@ const char *const RootHelpText::text[]  = {
     "questions.",
 };
 
-/*! \brief
- * Help topic that forms the root of the help tree for the help subcommand.
- *
- * \ingroup module_commandline
- */
-class RootHelpTopic : public AbstractCompositeHelpTopic
+const char *RootHelpTopic::name() const
 {
-    public:
-        /*! \brief
-         * Creates a root help topic.
-         *
-         * Does not throw.
-         */
-        explicit RootHelpTopic(const CommandLineHelpModuleImpl &helpModule)
-            : helpModule_(helpModule)
-        {
-        }
-
-        virtual const char *name() const { return helpModule_.binaryName_.c_str(); }
-        virtual const char *title() const { return title_.c_str(); }
-
-        //! Adds a top-level topic and optionally marks it as exported.
-        void addTopic(HelpTopicPointer topic, bool bExported)
-        {
-            if (bExported)
-            {
-                exportedTopics_.push_back(topic->name());
-            }
-            addSubTopic(std::move(topic));
-        }
-        //! Exports all the top-level topics with the given exporter.
-        void exportHelp(IHelpExport *exporter);
-
-        virtual void writeHelp(const HelpWriterContext &context) const;
-
-    private:
-        // unused because of the writeHelp() override
-        virtual std::string helpText() const { return ""; }
-
-        const CommandLineHelpModuleImpl  &helpModule_;
-        std::string                       title_;
-        std::vector<std::string>          exportedTopics_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
-};
+    return helpModule_.binaryName_.c_str();
+}
 
 void RootHelpTopic::exportHelp(IHelpExport *exporter)
 {
@@ -277,17 +290,9 @@ void RootHelpTopic::exportHelp(IHelpExport *exporter)
 void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
     {
-        CommandLineCommonOptionsHolder            optionsHolder;
-        boost::scoped_ptr<CommandLineHelpContext> cmdlineContext;
-        if (helpModule_.context_ != NULL)
-        {
-            cmdlineContext.reset(new CommandLineHelpContext(*helpModule_.context_));
-        }
-        else
-        {
-            cmdlineContext.reset(new CommandLineHelpContext(context));
-        }
-        cmdlineContext->setModuleDisplayName(helpModule_.binaryName_);
+        CommandLineCommonOptionsHolder  optionsHolder;
+        CommandLineHelpContext          cmdlineContext(createContext(context));
+        cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
         Options                    &options = *optionsHolder.options();
         ConstArrayRef<const char *> helpText;
@@ -298,7 +303,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         // TODO: Add <command> [<args>] into the synopsis.
         CommandLineHelpWriter(options)
             .setHelpText(helpText)
-            .writeHelp(*cmdlineContext);
+            .writeHelp(cmdlineContext);
     }
     if (context.outputFormat() == eHelpOutputFormat_Console)
     {
@@ -319,6 +324,19 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
                 "for further details.");
         context.writeTextBlock("");
         context.writeTextBlock(".. include:: /fragments/bytopic-man.rst");
+    }
+}
+
+CommandLineHelpContext
+RootHelpTopic::createContext(const HelpWriterContext &context) const
+{
+    if (helpModule_.context_ != NULL)
+    {
+        return CommandLineHelpContext(*helpModule_.context_);
+    }
+    else
+    {
+        return CommandLineHelpContext(context);
     }
 }
 
@@ -520,8 +538,9 @@ class HelpExportReStructuredText : public IHelpExport
         IFileOutputRedirector          *outputRedirector_;
         const std::string              &binaryName_;
         HelpLinks                       links_;
-        boost::scoped_ptr<TextWriter>   indexFile_;
-        boost::scoped_ptr<TextWriter>   manPagesFile_;
+        // These never release ownership.
+        std::unique_ptr<TextWriter>     indexFile_;
+        std::unique_ptr<TextWriter>     manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
@@ -752,11 +771,28 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic(*this)), programContext_(programContext),
+    : rootTopic_(*this), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
       outputRedirector_(&defaultFileOutputRedirector())
 {
+}
+
+std::unique_ptr<IHelpExport>
+CommandLineHelpModuleImpl::createExporter(const std::string     &format,
+                                          IFileOutputRedirector *redirector)
+{
+    if (format == "rst")
+    {
+        return std::unique_ptr<IHelpExport>(
+                new HelpExportReStructuredText(*this, redirector));
+    }
+    else if (format == "completion")
+    {
+        return std::unique_ptr<IHelpExport>(
+                new HelpExportCompletion(*this));
+    }
+    GMX_THROW(NotImplementedError("This help format is not implemented"));
 }
 
 void CommandLineHelpModuleImpl::exportHelp(IHelpExport *exporter)
@@ -787,7 +823,7 @@ void CommandLineHelpModuleImpl::exportHelp(IHelpExport *exporter)
     }
     exporter->finishModuleGroupExport();
 
-    rootTopic_->exportHelp(exporter);
+    rootTopic_.exportHelp(exporter);
 }
 
 namespace
@@ -885,7 +921,7 @@ HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
 
 void CommandLineHelpModule::addTopic(HelpTopicPointer topic, bool bExported)
 {
-    impl_->rootTopic_->addTopic(std::move(topic), bExported);
+    impl_->rootTopic_.addTopic(std::move(topic), bExported);
 }
 
 void CommandLineHelpModule::setShowHidden(bool bHidden)
@@ -919,19 +955,8 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);
-        boost::scoped_ptr<IHelpExport>           exporter;
-        if (exportFormat == "rst")
-        {
-            exporter.reset(new HelpExportReStructuredText(*impl_, &redirector));
-        }
-        else if (exportFormat == "completion")
-        {
-            exporter.reset(new HelpExportCompletion(*impl_));
-        }
-        else
-        {
-            GMX_THROW(NotImplementedError("This help format is not implemented"));
-        }
+        const std::unique_ptr<IHelpExport>       exporter(
+                impl_->createExporter(exportFormat, &redirector));
         impl_->exportHelp(exporter.get());
         return 0;
     }
@@ -950,7 +975,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     }
     impl_->context_ = &context;
 
-    HelpManager helpManager(*impl_->rootTopic_, context.writerContext());
+    HelpManager helpManager(impl_->rootTopic_, context.writerContext());
     try
     {
         for (int i = 1; i < argc; ++i)

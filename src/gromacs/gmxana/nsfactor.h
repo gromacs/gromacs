@@ -37,7 +37,6 @@
 #define GMX_GMXANA_NSFACTOR_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct t_topology;
@@ -82,7 +81,7 @@ gmx_sans_t *gmx_sans_init(struct t_topology *top, gmx_neutron_atomic_structurefa
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t  *gsans,
                                                                           rvec        *x,
                                                                           matrix       box,
-                                                                          atom_id     *index,
+                                                                          int         *index,
                                                                           int          isize,
                                                                           double       binwidth,
                                                                           gmx_bool     bMC,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,11 @@
 
 #include "groupcoord.h"
 
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/network.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -52,14 +54,13 @@
  * anrs_loc[0..nr_loc]. The indices are saved in coll_ind[] for later reduction
  * in communicate_group_positions()
  */
-extern void dd_make_local_group_indices(
-        gmx_ga2la_t    ga2la,
-        const int      nr,         /* IN:  Total number of atoms in the group */
-        int            anrs[],     /* IN:  Global atom numbers of the groups atoms */
-        int           *nr_loc,     /* OUT: Number of group atoms found locally */
-        int           *anrs_loc[], /* OUT: Local atom numbers of the group  */
-        int           *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
-        int            coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
+void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
+                                 const int        nr,         /* IN:  Total number of atoms in the group */
+                                 int              anrs[],     /* IN:  Global atom numbers of the groups atoms */
+                                 int             *nr_loc,     /* OUT: Number of group atoms found locally */
+                                 int             *anrs_loc[], /* OUT: Local atom numbers of the group  */
+                                 int             *nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
+                                 int              coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
     int  i, ii;
     int  localnr;

@@ -39,11 +39,13 @@
 
 #include "vcm.h"
 
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -357,7 +359,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
         {
             for (m = 0; m < vcm->ndim; m++)
             {
-                ekcm += sqr(vcm->group_v[g][m]);
+                ekcm += gmx::square(vcm->group_v[g][m]);
             }
             ekcm   *= 0.5*vcm->group_mass[g];
             Temp_cm = 2*ekcm/vcm->group_ndf[g];

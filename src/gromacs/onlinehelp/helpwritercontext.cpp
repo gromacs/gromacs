@@ -46,10 +46,9 @@
 #include <cctype>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
@@ -475,7 +474,8 @@ class HelpWriterContext::Impl
 
             private:
                 //! Formatter for console output options.
-                mutable boost::scoped_ptr<TextTableFormatter> consoleOptionsFormatter_;
+                // Never releases ownership.
+                mutable std::unique_ptr<TextTableFormatter> consoleOptionsFormatter_;
         };
 
         struct ReplaceItem
@@ -490,7 +490,7 @@ class HelpWriterContext::Impl
         };
 
         //! Smart pointer type for managing the shared state.
-        typedef boost::shared_ptr<const SharedState> StatePointer;
+        typedef std::shared_ptr<const SharedState> StatePointer;
         //! Shorthand for a list of markup/other replacements.
         typedef std::vector<ReplaceItem> ReplaceList;
 

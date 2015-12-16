@@ -62,7 +62,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
@@ -404,7 +404,7 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     }
     else
     {
-        cutoff2_        = sqr(cutoff_);
+        cutoff2_        = gmx::square(cutoff_);
     }
     bXY_             = false;
     nref_            = 0;
@@ -890,7 +890,7 @@ void AnalysisNeighborhoodSearchImpl::init(
         {
             std::string message =
                 formatString("Computations in the XY plane are not supported with PBC type '%s'",
-                             EPBC(pbc->ePBC));
+                             epbc_names[pbc->ePBC]);
             GMX_THROW(NotImplementedError(message));
         }
         if (pbc->ePBC == epbcXYZ &&
@@ -928,7 +928,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     if (bGrid_)
     {
         xrefAlloc_.resize(nref_);
-        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        xref_ = as_rvec_array(xrefAlloc_.data());
 
         for (int i = 0; i < nref_; ++i)
         {
@@ -941,7 +941,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     else if (refIndices_ != NULL)
     {
         xrefAlloc_.resize(nref_);
-        xref_ = as_rvec_array(&xrefAlloc_[0]);
+        xref_ = as_rvec_array(xrefAlloc_.data());
         for (int i = 0; i < nref_; ++i)
         {
             copy_rvec(positions.x_[refIndices_[i]], xrefAlloc_[i]);
@@ -1376,7 +1376,7 @@ real AnalysisNeighborhoodSearch::minimumDistance(
     rvec          dx           = {0.0, 0.0, 0.0};
     MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
-    return sqrt(minDist2);
+    return std::sqrt(minDist2);
 }
 
 AnalysisNeighborhoodPair

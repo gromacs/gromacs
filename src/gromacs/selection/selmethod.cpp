@@ -621,7 +621,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
  * \param[in,out] symtab Symbol table to register the method to.
  * \param[in]     name   Name under which the method should be registered.
  * \param[in]     method Method to register.
- * \returns       0 on success, EINVAL if there was something wrong with the
+ * \returns       0 on success, -1 if there was something wrong with the
  *   method.
  *
  * \p name does not need to match the name of the method, and the same
@@ -665,7 +665,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
     if (!bOk)
     {
         report_error(stderr, name, "warning: not registered");
-        return EINVAL;
+        return -1;
     }
     return 0;
 }

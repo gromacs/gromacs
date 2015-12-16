@@ -50,13 +50,12 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Determines at which point in the array the fit should start */

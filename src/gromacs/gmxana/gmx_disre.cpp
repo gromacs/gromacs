@@ -52,24 +52,23 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/main.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/listed-forces/disre.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -158,7 +157,7 @@ static void check_viol(FILE *log,
                        t_ilist *disres, t_iparams forceparams[],
                        rvec x[], rvec f[],
                        t_pbc *pbc, t_graph *g, t_dr_result dr[],
-                       int clust_id, int isize, atom_id index[], real vvindex[],
+                       int clust_id, int isize, int index[], real vvindex[],
                        t_fcdata *fcd)
 {
     t_iatom         *forceatoms;
@@ -212,10 +211,10 @@ static void check_viol(FILE *log,
             gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[0]);
         }
 
-        rt = std::pow(fcd->disres.Rt_6[0], static_cast<real>(-1.0/6.0));
+        rt = gmx::invsixthroot(fcd->disres.Rt_6[0]);
         dr[clust_id].aver1[ndr]  += rt;
-        dr[clust_id].aver2[ndr]  += sqr(rt);
-        drt = std::pow(rt, static_cast<real>(-3.0));
+        dr[clust_id].aver2[ndr]  += gmx::square(rt);
+        drt = 1.0/gmx::power3(rt);
         dr[clust_id].aver_3[ndr] += drt;
         dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
 
@@ -242,7 +241,7 @@ static void check_viol(FILE *log,
             {
                 if (index[j] == forceparams[type].disres.label)
                 {
-                    vvindex[j] = std::pow(fcd->disres.Rt_6[0], static_cast<real>(-1.0/6.0));
+                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[0]);
                 }
             }
         }
@@ -373,7 +372,7 @@ static void dump_viol(FILE *log, int ndr, t_dr_stats *drs, gmx_bool bLinear)
     }
 }
 
-static gmx_bool is_core(int i, int isize, atom_id index[])
+static gmx_bool is_core(int i, int isize, int index[])
 {
     int      kk;
     gmx_bool bIC = FALSE;
@@ -388,7 +387,7 @@ static gmx_bool is_core(int i, int isize, atom_id index[])
 
 static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
                        t_iparams ip[], t_dr_result *dr,
-                       int isize, atom_id index[], t_atoms *atoms)
+                       int isize, int index[], t_atoms *atoms)
 {
     int         i, j, nra;
     t_dr_stats *drs;
@@ -412,8 +411,8 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
         drs[i].bCore  = is_core(i, isize, index);
         drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
         drs[i].r      = dr->aver1[i]/nsteps;
-        drs[i].rT3    = std::pow(dr->aver_3[i]/nsteps, static_cast<real>(-1.0/3.0));
-        drs[i].rT6    = std::pow(dr->aver_6[i]/nsteps, static_cast<real>(-1.0/6.0));
+        drs[i].rT3    = gmx::invcbrt(dr->aver_3[i]/nsteps);
+        drs[i].rT6    = gmx::invsixthroot(dr->aver_6[i]/nsteps);
         drs[i].viol   = std::max(0.0, static_cast<double>(drs[i].r-drs[i].up1));
         drs[i].violT3 = std::max(0.0, static_cast<double>(drs[i].rT3-drs[i].up1));
         drs[i].violT6 = std::max(0.0, static_cast<double>(drs[i].rT6-drs[i].up1));
@@ -438,7 +437,7 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
 
 static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
                              t_iparams ip[], t_blocka *clust, t_dr_result dr[],
-                             char *clust_name[], int isize, atom_id index[])
+                             char *clust_name[], int isize, int index[])
 {
     int         i, j, k, nra, mmm = 0;
     double      sumV, maxV, sumVT3, sumVT6, maxVT3, maxVT6;
@@ -488,8 +487,8 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             {
                 gmx_fatal(FARGS, "dr[%d].aver_3[%d] = %f", k, i, dr[k].aver_3[i]);
             }
-            drs[i].rT3    = std::pow(dr[k].aver_3[i]/dr[k].nframes, static_cast<real>(-1.0/3.0));
-            drs[i].rT6    = std::pow(dr[k].aver_6[i]/dr[k].nframes, static_cast<real>(-1.0/6.0));
+            drs[i].rT3    = gmx::invcbrt(dr[k].aver_3[i]/dr[k].nframes);
+            drs[i].rT6    = gmx::invsixthroot(dr[k].aver_6[i]/dr[k].nframes);
             drs[i].viol   = std::max(0.0, static_cast<double>(drs[i].r-drs[i].up1));
             drs[i].violT3 = std::max(0.0, static_cast<double>(drs[i].rT3-drs[i].up1));
             drs[i].violT6 = std::max(0.0, static_cast<double>(drs[i].rT6-drs[i].up1));
@@ -535,7 +534,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
     int        n_res, a_offset, mb, mol, a;
     t_atoms   *atoms;
     int        i, j, nra, nratoms, tp, ri, rj, index, nlabel, label;
-    atom_id    ai, aj, *ptr;
+    int        ai, aj, *ptr;
     real     **matrix, *t_res, hi, *w_dr, rav, rviol;
     t_rgb      rlo = { 1, 1, 1 };
     t_rgb      rhi = { 0, 0, 0 };
@@ -619,7 +618,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
             rj = resnr[aj];
             if (bThird)
             {
-                rav = std::pow(dr->aver_3[i]/nsteps, static_cast<real>(-1.0/3.0));
+                rav = gmx::invcbrt(dr->aver_3[i]/nsteps);
             }
             else
             {
@@ -705,7 +704,7 @@ int gmx_disre(int argc, char *argv[])
     matrix            box;
     gmx_bool          bPDB;
     int               isize;
-    atom_id          *index = NULL, *ind_fit = NULL;
+    int              *index = NULL, *ind_fit = NULL;
     char             *grpname;
     t_cluster_ndx    *clust = NULL;
     t_dr_result       dr, *dr_clust = NULL;
@@ -771,7 +770,7 @@ int gmx_disre(int argc, char *argv[])
         }
     }
 
-    top = gmx_mtop_generate_local_top(&mtop, &ir);
+    top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
 
     g        = NULL;
     pbc_null = NULL;
@@ -956,7 +955,7 @@ int gmx_disre(int argc, char *argv[])
         }
     }
 
-    gmx_log_close(fplog);
+    gmx_ffclose(fplog);
 
     return 0;
 }

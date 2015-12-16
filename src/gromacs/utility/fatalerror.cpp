@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 
@@ -59,6 +60,8 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #endif
+
+#include "errorformat.h"
 
 static bool                bDebug         = false;
 static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -68,8 +71,6 @@ gmx_bool                   gmx_debug_at   = FALSE;
 
 static FILE               *log_file       = NULL;
 static tMPI_Thread_mutex_t error_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
-static const char *const   gmxuser
-    = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
 void gmx_init_debug(const int dbglevel, const char *dbgfile)
 {
@@ -137,127 +138,120 @@ void gmx_fatal_set_log_file(FILE *fp)
     log_file = fp;
 }
 
-static int fatal_errno = 0;
-
-static void default_error_handler(const char *msg)
+static void default_error_handler(const char *title, const char *msg,
+                                  const char *file, int line)
 {
-    tMPI_Thread_mutex_lock(&error_mutex);
-    if (fatal_errno == 0)
+    if (log_file)
     {
-        if (log_file)
-        {
-            fprintf(log_file, "%s\n", msg);
-        }
-        fprintf(stderr, "%s\n", msg);
-        /* we set it to no-zero because if this function is called, something
-           has gone wrong */
-        fatal_errno = 255;
+        gmx::internal::printFatalErrorHeader(log_file, title, NULL, file, line);
+        gmx::internal::printFatalErrorMessageLine(log_file, msg, 0);
+        gmx::internal::printFatalErrorFooter(log_file);
     }
-    else
-    {
-        if (fatal_errno != -1)
-        {
-            errno = fatal_errno;
-        }
-        perror(msg);
-    }
-    tMPI_Thread_mutex_unlock(&error_mutex);
+    gmx::internal::printFatalErrorHeader(stderr, title, NULL, file, line);
+    gmx::internal::printFatalErrorMessageLine(stderr, msg, 0);
+    gmx::internal::printFatalErrorFooter(stderr);
 }
 
-static void (*gmx_error_handler)(const char *msg) = default_error_handler;
+static gmx_error_handler_t gmx_error_handler = default_error_handler;
 
-void set_gmx_error_handler(void (*func)(const char *msg))
+void gmx_set_error_handler(gmx_error_handler_t func)
 {
-    // TODO: Either this is unnecessary, or also reads to the handler should be
-    // protected by a mutex.
     tMPI_Thread_mutex_lock(&error_mutex);
     gmx_error_handler = func;
     tMPI_Thread_mutex_unlock(&error_mutex);
 }
 
-static void call_error_handler(const char *key, const char *file, int line, const char *msg)
+static const char *gmx_strerror(const char *key)
 {
-    char        buf[10240], errerrbuf[1024];
-    const char *llines = "-------------------------------------------------------";
-    char       *strerr;
+    struct ErrorKeyEntry {
+        const char *key;
+        const char *msg;
+    };
+    ErrorKeyEntry map[] = {
+        { "call",   "Routine should not have been called" },
+        { "comm",   "Communication (parallel processing) problem" },
+        { "fatal",  "Fatal error" },
+        { "file",   "File input/output error" },
+        { "impl",   "Implementation restriction" },
+        { "incons", "Software inconsistency error" },
+        { "input",  "Input error or input inconsistency" },
+        { "mem",    "Memory allocation/freeing error" },
+        { "open",   "Cannot open file" },
+        { "range",  "Range checking error" }
+    };
 
-    if (msg == NULL)
+    if (key == NULL)
     {
-        sprintf(errerrbuf, "Empty fatal_error message. %s", gmxuser);
+        return "NULL error type (should not occur)";
     }
-    // In case ProgramInfo is not initialized and there is an issue with the
-    // initialization, fall back to "GROMACS".
-    const char *programName = "GROMACS";
-    try
+    for (const ErrorKeyEntry &entry : map)
     {
-        programName = gmx::getProgramContext().displayName();
+        if (std::strcmp(key, entry.key) == 0)
+        {
+            return entry.msg;
+        }
     }
-    catch (const std::exception &)
-    {
-    }
-
-    strerr = gmx_strerror(key);
-    sprintf(buf, "\n%s\nProgram %s, %s\n"
-            "Source code file: %s, line: %d\n\n"
-            "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
-            "website at http://www.gromacs.org/Documentation/Errors\n%s\n",
-            llines, programName, gmx_version(), file, line,
-            strerr, msg ? msg : errerrbuf, llines);
-    free(strerr);
-
-    gmx_error_handler(buf);
+    return gmx::getErrorCodeString(gmx::eeUnknownError);
 }
 
-gmx_noreturn static void do_exit(bool bMaster, bool bFinalize)
+static void call_error_handler(const char *key, const char *file, int line, const char *msg)
 {
+    if (msg == NULL)
+    {
+        msg = "Empty gmx_fatal message (bug).";
+    }
+    tMPI_Thread_mutex_lock(&error_mutex);
+    gmx_error_handler(gmx_strerror(key), msg, file, line);
+    tMPI_Thread_mutex_unlock(&error_mutex);
+}
+
+void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
+{
+    if (log_file)
+    {
+        std::fflush(log_file);
+    }
     if (debug)
     {
-        fflush(debug);
+        std::fflush(debug);
     }
+    std::fflush(stdout);
+    std::fflush(stderr);
 
 #ifdef GMX_MPI
     if (gmx_mpi_initialized())
     {
-        if (bFinalize)
+        switch (exitType)
         {
-            /* Broadcast the fatal error number possibly modified
-             * on the master process, in case the user would like
-             * to use the return status on a non-master process.
-             * The master process in cr and dd always has global rank 0.
-             */
-            MPI_Bcast(&fatal_errno, sizeof(fatal_errno), MPI_BYTE,
-                      0, MPI_COMM_WORLD);
-
-            /* Finalize nicely instead of aborting */
-            MPI_Finalize();
-        }
-        else if (bMaster)
-        {
+            case ExitType_CleanExit:
+                MPI_Finalize();
+                break;
+            case ExitType_Abort:
 #ifdef GMX_LIB_MPI
-            gmx_abort(1);
+                gmx_abort(returnValue);
 #endif
-        }
-        else
-        {
-            /* Let all other processes wait till the master has printed
-             * the error message and issued MPI_Abort.
-             */
-            MPI_Barrier(MPI_COMM_WORLD);
+                break;
+            case ExitType_NonMasterAbort:
+                // Let all other processes wait till the master has printed
+                // the error message and issued MPI_Abort.
+                MPI_Barrier(MPI_COMM_WORLD);
+                break;
         }
     }
-#else
-    GMX_UNUSED_VALUE(bMaster);
-    GMX_UNUSED_VALUE(bFinalize);
 #endif
 
-    if (bDebugMode())
+    if (exitType == ExitType_CleanExit)
     {
-        std::abort();
+        std::exit(returnValue);
     }
-    std::exit(1);
+    // We could possibly use std::_Exit() or other C99/C++11 construct to still
+    // use the exit code, but we cannot use std::exit() if other threads may
+    // still be executing, since that would cause destructors to be called for
+    // global objects that may still be in use elsewhere.
+    std::abort();
 }
 
-void gmx_fatal_mpi_va(int f_errno, const char *file, int line,
+void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
                       gmx_bool bMaster, gmx_bool bFinalize,
                       const char *fmt, va_list ap)
 {
@@ -265,15 +259,15 @@ void gmx_fatal_mpi_va(int f_errno, const char *file, int line,
     {
         char msg[STRLEN];
         vsprintf(msg, fmt, ap);
-
-        tMPI_Thread_mutex_lock(&error_mutex);
-        fatal_errno = f_errno;
-        tMPI_Thread_mutex_unlock(&error_mutex);
-
         call_error_handler("fatal", file, line, msg);
     }
 
-    do_exit(bMaster, bFinalize);
+    ExitType exitType = ExitType_CleanExit;
+    if (!bFinalize)
+    {
+        exitType = bMaster ? ExitType_Abort : ExitType_NonMasterAbort;
+    }
+    gmx_exit_on_fatal_error(exitType, 1);
 }
 
 void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
@@ -284,51 +278,10 @@ void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
     va_end(ap);
 }
 
-char *gmx_strerror(const char *key)
-{
-    typedef struct {
-        const char *key, *msg;
-    } error_msg_t;
-    error_msg_t msg[] = {
-        { "bug",    "Possible bug" },
-        { "call",   "Routine should not have been called" },
-        { "comm",   "Communication (parallel processing) problem" },
-        { "fatal",  "Fatal error" },
-        { "cmd",    "Invalid command line argument" },
-        { "file",   "File input/output error" },
-        { "impl",   "Implementation restriction" },
-        { "incons", "Software inconsistency error" },
-        { "input",  "Input error or input inconsistency" },
-        { "mem",    "Memory allocation/freeing error" },
-        { "open",   "Can not open file" },
-        { "range",  "Range checking error" },
-        { NULL,     NULL}
-    };
-
-    if (key == NULL)
-    {
-        return strdup("Empty message");
-    }
-    else
-    {
-        for (size_t i = 0; msg[i].key != NULL; ++i)
-        {
-            if (strcmp(key, msg[i].key) == 0)
-            {
-                return strdup(msg[i].msg);
-            }
-        }
-        char buf[1024];
-        sprintf(buf, "No error message associated with key %s\n%s", key, gmxuser);
-        return strdup(buf);
-    }
-}
-
-
 void _gmx_error(const char *key, const char *msg, const char *file, int line)
 {
     call_error_handler(key, file, line, msg);
-    do_exit(true, false);
+    gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
 void _range_check(int n, int n_min, int n_max, const char *warn_str,

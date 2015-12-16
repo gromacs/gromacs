@@ -137,7 +137,7 @@ namespace
 {
 
 //! Convenience typedef for a smart pointer to TestReferenceDataImpl.
-typedef boost::shared_ptr<internal::TestReferenceDataImpl>
+typedef std::shared_ptr<internal::TestReferenceDataImpl>
     TestReferenceDataImplPointer;
 
 /*! \brief
@@ -150,13 +150,12 @@ typedef boost::shared_ptr<internal::TestReferenceDataImpl>
  */
 TestReferenceDataImplPointer g_referenceData;
 //! Global reference data mode set with setReferenceDataMode().
-// TODO: Make this a real enum; requires solving a TODO in StringOption.
-int                          g_referenceDataMode = erefdataCompare;
+ReferenceDataMode            g_referenceDataMode = erefdataCompare;
 
 //! Returns the global reference data mode.
 ReferenceDataMode getReferenceDataMode()
 {
-    return static_cast<ReferenceDataMode>(g_referenceDataMode);
+    return g_referenceDataMode;
 }
 
 //! Returns a reference to the global reference data object.
@@ -211,9 +210,8 @@ void initReferenceData(IOptionsContainer *options)
     const char *const refDataEnum[] =
     { "check", "create", "update-changed", "update-all" };
     options->addOption(
-            StringOption("ref-data").enumValue(refDataEnum)
-                .defaultEnumIndex(0)
-                .storeEnumIndex(&g_referenceDataMode)
+            EnumOption<ReferenceDataMode>("ref-data")
+                .enumValue(refDataEnum).store(&g_referenceDataMode)
                 .description("Operation mode for tests that use reference data"));
     ::testing::UnitTest::GetInstance()->listeners().Append(
             new ReferenceDataTestEventListener);
@@ -329,7 +327,7 @@ class TestReferenceChecker::Impl
         static const char * const    cSequenceLengthName;
 
         //! Creates a checker that does nothing.
-        Impl();
+        explicit Impl(bool initialized);
         //! Creates a checker with a given root entry.
         Impl(const std::string &path, ReferenceDataEntry *compareRootEntry,
              ReferenceDataEntry *outputRootEntry, bool updateMismatchingEntries,
@@ -345,7 +343,7 @@ class TestReferenceChecker::Impl
         {
             ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
             checker.fillEntry(entry.get());
-            return move(entry);
+            return entry;
         }
         //! Checks an entry for correct type and using \p checker.
         ::testing::AssertionResult
@@ -401,14 +399,25 @@ class TestReferenceChecker::Impl
         processItem(const char *name, const char *id,
                     const IReferenceDataEntryChecker &checker);
         /*! \brief
+         * Whether the checker is initialized.
+         */
+        bool initialized() const { return initialized_; }
+        /*! \brief
          * Whether the checker should ignore all validation calls.
          *
          * This is used to ignore any calls within compounds for which
          * reference data could not be found, such that only one error is
          * issued for the missing compound, instead of every individual value.
          */
-        bool shouldIgnore() const { return compareRootEntry_ == NULL; }
+        bool shouldIgnore() const
+        {
+            GMX_RELEASE_ASSERT(initialized(),
+                               "Accessing uninitialized reference data checker.");
+            return compareRootEntry_ == NULL;
+        }
 
+        //! Whether initialized with other means than the default constructor.
+        bool                    initialized_;
         //! Default floating-point comparison tolerance.
         FloatingPointTolerance  defaultTolerance_;
         /*! \brief
@@ -475,8 +484,8 @@ const char *const TestReferenceChecker::Impl::cSequenceType       = "Sequence";
 const char *const TestReferenceChecker::Impl::cSequenceLengthName = "Length";
 
 
-TestReferenceChecker::Impl::Impl()
-    : defaultTolerance_(defaultRealTolerance()),
+TestReferenceChecker::Impl::Impl(bool initialized)
+    : initialized_(initialized), defaultTolerance_(defaultRealTolerance()),
       compareRootEntry_(NULL), outputRootEntry_(NULL),
       updateMismatchingEntries_(false), bSelfTestMode_(false), seqIndex_(0)
 {
@@ -488,7 +497,7 @@ TestReferenceChecker::Impl::Impl(const std::string &path,
                                  ReferenceDataEntry *outputRootEntry,
                                  bool updateMismatchingEntries, bool bSelfTestMode,
                                  const FloatingPointTolerance &defaultTolerance)
-    : defaultTolerance_(defaultTolerance), path_(path + "/"),
+    : initialized_(true), defaultTolerance_(defaultTolerance), path_(path + "/"),
       compareRootEntry_(compareRootEntry), outputRootEntry_(outputRootEntry),
       lastFoundEntry_(compareRootEntry->children().end()),
       updateMismatchingEntries_(updateMismatchingEntries),
@@ -604,7 +613,7 @@ TestReferenceChecker TestReferenceData::rootChecker()
     impl_->bInUse_ = true;
     if (!impl_->compareRootEntry_)
     {
-        return TestReferenceChecker(new TestReferenceChecker::Impl());
+        return TestReferenceChecker(new TestReferenceChecker::Impl(true));
     }
     return TestReferenceChecker(
             new TestReferenceChecker::Impl("", impl_->compareRootEntry_.get(),
@@ -618,28 +627,40 @@ TestReferenceChecker TestReferenceData::rootChecker()
  * TestReferenceChecker
  */
 
+TestReferenceChecker::TestReferenceChecker()
+    : impl_(new Impl(false))
+{
+}
+
 TestReferenceChecker::TestReferenceChecker(Impl *impl)
     : impl_(impl)
 {
 }
-
 
 TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
     : impl_(new Impl(*other.impl_))
 {
 }
 
+TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other)
+    : impl_(std::move(other.impl_))
+{
+}
 
 TestReferenceChecker &
-TestReferenceChecker::operator=(const TestReferenceChecker &other)
+TestReferenceChecker::operator=(TestReferenceChecker &&other)
 {
-    impl_.reset(new Impl(*other.impl_));
+    impl_ = std::move(other.impl_);
     return *this;
 }
 
-
 TestReferenceChecker::~TestReferenceChecker()
 {
+}
+
+bool TestReferenceChecker::isValid() const
+{
+    return impl_->initialized();
 }
 
 
@@ -680,7 +701,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
 {
     if (impl_->shouldIgnore())
     {
-        return TestReferenceChecker(new Impl());
+        return TestReferenceChecker(new Impl(true));
     }
     std::string         fullId = impl_->appendPath(id);
     NullChecker         checker;
@@ -688,7 +709,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     if (entry == NULL)
     {
         ADD_FAILURE() << "Reference data item " << fullId << " not found";
-        return TestReferenceChecker(new Impl());
+        return TestReferenceChecker(new Impl(true));
     }
     if (impl_->updateMismatchingEntries_)
     {
@@ -700,7 +721,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         EXPECT_PLAIN(result);
         if (!result)
         {
-            return TestReferenceChecker(new Impl());
+            return TestReferenceChecker(new Impl(true));
         }
     }
     if (impl_->outputRootEntry_ != NULL && entry->correspondingOutputEntry() == NULL)

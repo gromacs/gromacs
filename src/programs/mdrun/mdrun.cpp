@@ -57,15 +57,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/gmxlib/main.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/fileio/readinp.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -238,7 +237,6 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
         { efXVG, "-field",  "field",    ffOPTWR },
         { efXVG, "-table",  "table",    ffOPTRD },
-        { efXVG, "-tabletf", "tabletf",    ffOPTRD },
         { efXVG, "-tablep", "tablep",   ffOPTRD },
         { efXVG, "-tableb", "table",    ffOPTRD },
         { efTRX, "-rerun",  "rerun",    ffOPTRD },
@@ -255,7 +253,6 @@ int gmx_mdrun(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
@@ -270,7 +267,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool          bDDBondComm   = TRUE;
     gmx_bool          bTunePME      = TRUE;
     gmx_bool          bVerbose      = FALSE;
-    gmx_bool          bCompact      = TRUE;
     gmx_bool          bRerunVSite   = FALSE;
     gmx_bool          bConfout      = TRUE;
     gmx_bool          bReproducible = FALSE;
@@ -375,8 +371,6 @@ int gmx_mdrun(int argc, char *argv[])
           "Optimize PME load between PP/PME ranks or GPU/CPU" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
-        { "-compact", FALSE, etBOOL, {&bCompact},
-          "Write a compact log file" },
         { "-pforce",  FALSE, etREAL, {&pforce},
           "Print all forces larger than this (kJ/mol nm)" },
         { "-reprod",  FALSE, etBOOL, {&bReproducible},
@@ -535,7 +529,7 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
+    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
                        nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                        nbpu_opt[0], nstlist,

@@ -39,17 +39,17 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -350,7 +350,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        int ePBC, t_topology top, t_trxframe fr, real temp,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
-                       atom_id *index0, int indexm[], real mass2[],
+                       int *index0, int indexm[], real mass2[],
                        real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;
@@ -810,7 +810,7 @@ int gmx_current(int argc, char *argv[])
     t_trxframe             fr;
     real                  *mass2 = NULL;
     matrix                 box;
-    atom_id               *index0;
+    int                   *index0;
     int                   *indexm = NULL;
     int                    isize;
     t_trxstatus           *status;

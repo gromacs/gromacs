@@ -48,25 +48,29 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 static std::string append_before_extension(std::string pathname,
@@ -837,16 +841,16 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
                         c_a = diprod(r_ij[c], r_ij[c]);
                         c_b = diprod(unc_ij, r_ij[c])*2;
-                        c_c = diprod(unc_ij, unc_ij) - dsqr(pcrd->value_ref);
+                        c_c = diprod(unc_ij, unc_ij) - gmx::square(pcrd->value_ref);
 
                         if (c_b < 0)
                         {
-                            q      = -0.5*(c_b - sqrt(c_b*c_b - 4*c_a*c_c));
+                            q      = -0.5*(c_b - std::sqrt(c_b*c_b - 4*c_a*c_c));
                             lambda = -q/c_a;
                         }
                         else
                         {
-                            q      = -0.5*(c_b + sqrt(c_b*c_b - 4*c_a*c_c));
+                            q      = -0.5*(c_b + std::sqrt(c_b*c_b - 4*c_a*c_c));
                             lambda = -c_c/q;
                         }
 
@@ -1115,8 +1119,8 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             }
 
             pcrd->f_scal  =       -k*dev;
-            *V           += 0.5*   k*dsqr(dev);
-            *dVdl        += 0.5*dkdl*dsqr(dev);
+            *V           += 0.5*   k*gmx::square(dev);
+            *dVdl        += 0.5*dkdl*gmx::square(dev);
             break;
         case epullCONST_F:
             pcrd->f_scal  =   -k;
@@ -1293,7 +1297,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     }
 }
 
-static void make_local_pull_group(gmx_ga2la_t ga2la,
+static void make_local_pull_group(gmx_ga2la_t *ga2la,
                                   pull_group_work_t *pg, int start, int end)
 {
     int i, ii;
@@ -1333,11 +1337,11 @@ static void make_local_pull_group(gmx_ga2la_t ga2la,
 
 void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md)
 {
-    gmx_domdec_t *dd;
-    pull_comm_t  *comm;
-    gmx_ga2la_t   ga2la;
-    gmx_bool      bMustParticipate;
-    int           g;
+    gmx_domdec_t   *dd;
+    pull_comm_t    *comm;
+    gmx_ga2la_t    *ga2la;
+    gmx_bool        bMustParticipate;
+    int             g;
 
     dd = cr->dd;
 
@@ -1710,7 +1714,17 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 copy_rvec(pull_params->coord[c].vec, pcrd->vec);
                 break;
             default:
-                gmx_incons("Pull geometry not handled");
+                /* We allow reading of newer tpx files with new pull geometries,
+                 * but with the same tpx format, with old code. A new geometry
+                 * only adds a new enum value, which will be out of range for
+                 * old code. The first place we need to generate an error is
+                 * here, since the pull code can't handle this.
+                 * The enum can be used before arriving here only for printing
+                 * the string corresponding to the geometry, which will result
+                 * in printing "UNDEFINED".
+                 */
+                gmx_fatal(FARGS, "Pull geometry not supported for pull coordinate %d. The geometry enum %d in the input is larger than that supported by the code (up to %d). You are probably reading a tpr file generated with a newer version of Gromacs with an binary from an older version of Gromacs.",
+                          c + 1, pcrd->params.eGeom, epullgNR - 1);
         }
 
         if (pcrd->params.eType == epullCONSTRAINT)
@@ -1740,7 +1754,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
          * when it is not only used as a cylinder group.
          */
         calc_com_start = (pcrd->params.eGeom == epullgCYL         ? 1 : 0);
-        calc_com_end   = (pcrd->params.eGeom == epullgDIRRELATIVE ? 4 : 2);
+        calc_com_end   = pcrd->params.ngroup;
 
         for (g = calc_com_start; g <= calc_com_end; g++)
         {
@@ -1840,19 +1854,30 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             clear_ivec(pulldim_con);
             for (c = 0; c < pull->ncoord; c++)
             {
-                if (pull->coord[c].params.group[0] == g ||
-                    pull->coord[c].params.group[1] == g ||
-                    (pull->coord[c].params.eGeom == epullgDIRRELATIVE &&
-                     (pull->coord[c].params.group[2] == g ||
-                      pull->coord[c].params.group[3] == g)))
+                pull_coord_work_t *pcrd;
+                int                gi;
+                gmx_bool           bGroupUsed;
+
+                pcrd = &pull->coord[c];
+
+                bGroupUsed = FALSE;
+                for (gi = 0; gi < pcrd->params.ngroup; gi++)
+                {
+                    if (pcrd->params.group[gi] == g)
+                    {
+                        bGroupUsed = TRUE;
+                    }
+                }
+
+                if (bGroupUsed)
                 {
                     for (m = 0; m < DIM; m++)
                     {
-                        if (pull->coord[c].params.dim[m] == 1)
+                        if (pcrd->params.dim[m] == 1)
                         {
                             pulldim[m] = 1;
 
-                            if (pull->coord[c].params.eType == epullCONSTRAINT)
+                            if (pcrd->params.eType == epullCONSTRAINT)
                             {
                                 bConstraint    = TRUE;
                                 pulldim_con[m] = 1;

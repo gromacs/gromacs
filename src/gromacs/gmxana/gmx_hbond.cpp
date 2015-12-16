@@ -56,19 +56,21 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
@@ -78,6 +80,8 @@ typedef int t_hx[max_hx];
 const char *hxtypenames[NRHXTYPES] =
 {"n-n", "n-n+1", "n-n+2", "n-n+3", "n-n+4", "n-n+5", "n-n>6"};
 #define MAXHH 4
+
+static const int NOTSET = -49297;
 
 #ifdef GMX_OPENMP
 #define MASTER_THREAD_ONLY(threadNr) ((threadNr) == 0)
@@ -118,7 +122,7 @@ static gmx_bool    bDebug = FALSE;
 typedef struct {
     int      nr;
     int      maxnr;
-    atom_id *atoms;
+    int     *atoms;
 } t_ncell;
 
 typedef struct {
@@ -127,7 +131,7 @@ typedef struct {
 } t_gridcell;
 
 typedef int     t_icell[grNR];
-typedef atom_id h_id[MAXHYDRO];
+typedef int h_id[MAXHYDRO];
 
 typedef struct {
     int      history[MAXHYDRO];
@@ -150,9 +154,9 @@ typedef struct {
 
 typedef struct {
     int      nra, max_nra;
-    atom_id *acc;             /* Atom numbers of the acceptors     */
-    int     *grp;             /* Group index                       */
-    int     *aptr;            /* Map atom number to acceptor index */
+    int     *acc;         /* Atom numbers of the acceptors     */
+    int     *grp;         /* Group index                       */
+    int     *aptr;        /* Map atom number to acceptor index */
 } t_acceptors;
 
 typedef struct {
@@ -352,7 +356,7 @@ static void inc_nhbonds(t_donors *ddd, int d, int h)
     }
 }
 
-static int _acceptor_index(t_acceptors *a, int grp, atom_id i,
+static int _acceptor_index(t_acceptors *a, int grp, int i,
                            const char *file, int line)
 {
     int ai = a->aptr[i];
@@ -373,7 +377,7 @@ static int _acceptor_index(t_acceptors *a, int grp, atom_id i,
 }
 #define acceptor_index(a, grp, i) _acceptor_index(a, grp, i, __FILE__, __LINE__)
 
-static int _donor_index(t_donors *d, int grp, atom_id i, const char *file, int line)
+static int _donor_index(t_donors *d, int grp, int i, const char *file, int line)
 {
     int di = d->dptr[i];
 
@@ -584,7 +588,7 @@ static char *mkatomname(t_atoms *atoms, int i)
     return buf;
 }
 
-static void gen_datable(atom_id *index, int isize, unsigned char *datable, int natoms)
+static void gen_datable(int *index, int isize, unsigned char *datable, int natoms)
 {
     /* Generates table of all atoms and sets the ingroup bit for atoms in index[] */
     int i;
@@ -626,7 +630,7 @@ static void add_acc(t_acceptors *a, int ia, int grp)
 }
 
 static void search_acceptors(t_topology *top, int isize,
-                             atom_id *index, t_acceptors *a, int grp,
+                             int *index, t_acceptors *a, int grp,
                              gmx_bool bNitAcc,
                              gmx_bool bContact, gmx_bool bDoIt, unsigned char *datable)
 {
@@ -728,14 +732,14 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
     }
 }
 
-static void search_donors(t_topology *top, int isize, atom_id *index,
+static void search_donors(t_topology *top, int isize, int *index,
                           t_donors *ddd, int grp, gmx_bool bContact, gmx_bool bDoIt,
                           unsigned char *datable)
 {
     int            i, j;
     t_functype     func_type;
     t_ilist       *interaction;
-    atom_id        nr1, nr2, nr3;
+    int            nr1, nr2, nr3;
 
     if (!ddd->dptr)
     {
@@ -923,7 +927,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                        ivec ngrid, t_gridcell ***grid)
 {
     int         i, m, gr, xi, yi, zi, nr;
-    atom_id    *ad;
+    int        *ad;
     ivec        grididx;
     rvec        invdelta, dshell;
     t_ncell    *newgrid;
@@ -933,7 +937,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
     int         dum = -1;
 
     bDoRshell = (rshell > 0);
-    rshell2   = sqr(rshell);
+    rshell2   = gmx::square(rshell);
     bInShell  = TRUE;
 
 #define DBB(x) if (debug && bDebug) fprintf(debug, "build_grid, line %d, %s = %d\n", __LINE__,#x, x)
@@ -948,7 +952,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
             {
                 gmx_fatal(FARGS, "Your computational box has shrunk too much.\n"
                           "%s can not handle this situation, sorry.\n",
-                          ShortProgram());
+                          gmx::getProgramContext().displayName());
             }
         }
         else
@@ -1750,12 +1754,12 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
     {
         kkk += tl.kkk[0];
         kkp += tl.kkk[1];
-        kk2 += sqr(tl.kkk[0]);
-        kp2 += sqr(tl.kkk[1]);
+        kk2 += gmx::square(tl.kkk[0]);
+        kp2 += gmx::square(tl.kkk[1]);
         tl.n0++;
     }
-    *sigma_k  = std::sqrt(kk2/NK - sqr(kkk/NK));
-    *sigma_kp = std::sqrt(kp2/NK - sqr(kkp/NK));
+    *sigma_k  = std::sqrt(kk2/NK - gmx::square(kkk/NK));
+    *sigma_kp = std::sqrt(kp2/NK - gmx::square(kkp/NK));
 
     return chi2;
 }
@@ -1778,15 +1782,15 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     {
         for (i = i0; (i < n); i++)
         {
-            sc2 += sqr(ct[i]);
-            sn2 += sqr(nt[i]);
-            sk2 += sqr(kt[i]);
+            sc2 += gmx::square(ct[i]);
+            sn2 += gmx::square(nt[i]);
+            sk2 += gmx::square(kt[i]);
             sck += ct[i]*kt[i];
             snk += nt[i]*kt[i];
             scn += ct[i]*nt[i];
         }
         printf("Hydrogen bond thermodynamics at T = %g K\n", temp);
-        tmp = (sn2*sc2-sqr(scn));
+        tmp = (sn2*sc2-gmx::square(scn));
         if ((tmp > 0) && (sn2 > 0))
         {
             k    = (sn2*sck-scn*snk)/tmp;
@@ -1796,7 +1800,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi2 = 0;
                 for (i = i0; (i < n); i++)
                 {
-                    chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+                    chi2 += gmx::square(k*ct[i]-kp*nt[i]-kt[i]);
                 }
                 compute_weighted_rates(n, t, ct, nt, kt, sigma_ct, sigma_nt,
                                        sigma_kt, &k, &kp,
@@ -1819,7 +1823,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi2 = 0;
                 for (i = i0; (i < n); i++)
                 {
-                    chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+                    chi2 += gmx::square(k*ct[i]-kp*nt[i]-kt[i]);
                 }
                 printf("Fitting parameters chi^2 = %10g\nQ = %10g\n",
                        chi2, Q);
@@ -1882,18 +1886,6 @@ void compute_derivative(int nn, real x[], real y[], real dydx[])
     /* Extrapolate endpoints */
     dydx[0]    = 2*dydx[1]   -  dydx[2];
     dydx[nn-1] = 2*dydx[nn-2] - dydx[nn-3];
-}
-
-static void parallel_print(int *data, int nThreads)
-{
-    /* This prints the donors on which each tread is currently working. */
-    int i;
-
-    fprintf(stderr, "\r");
-    for (i = 0; i < nThreads; i++)
-    {
-        fprintf(stderr, "%-7i", data[i]);
-    }
 }
 
 static void normalizeACF(real *ct, real *gt, int nhb, int len)
@@ -2530,7 +2522,7 @@ int gmx_hbond(int argc, char *argv[])
     int                   npargs, natoms, nframes = 0, shatom;
     int                  *isize;
     char                **grpnames;
-    atom_id             **index;
+    int                 **index;
     rvec                 *x, hbox;
     matrix                box;
     real                  t, ccut, dist = 0.0, ang = 0.0;
@@ -2763,7 +2755,7 @@ int gmx_hbond(int argc, char *argv[])
     if (rshell > 0)
     {
         int      shisz;
-        atom_id *shidx;
+        int     *shidx;
         char    *shgrpnm;
         /* get index group with atom for shell */
         do

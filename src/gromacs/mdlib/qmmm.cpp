@@ -49,21 +49,23 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/ns.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -134,20 +136,6 @@ static int struct_comp(const void *a, const void *b)
     return (int)(((t_j_particle *)a)->j)-(int)(((t_j_particle *)b)->j);
 
 } /* struct_comp */
-
-static int int_comp(const void *a, const void *b)
-{
-
-    return (*(int *)a) - (*(int *)b);
-
-} /* int_comp */
-
-static int QMlayer_comp(const void *a, const void *b)
-{
-
-    return (int)(((t_QMrec *)a)->nrQMatoms)-(int)(((t_QMrec *)b)->nrQMatoms);
-
-} /* QMlayer_comp */
 
 real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
                     t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
@@ -472,7 +460,7 @@ void init_QMMMrec(t_commrec  *cr,
      */
 
     gmx_groups_t            *groups;
-    atom_id                 *qm_arr = NULL, vsite, ai, aj;
+    int                     *qm_arr = NULL, vsite, ai, aj;
     int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l, nrvsite2 = 0;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;
@@ -485,8 +473,8 @@ void init_QMMMrec(t_commrec  *cr,
     t_ilist                 *ilist_mol;
     gmx_mtop_atomlookup_t    alook;
 
-    c6au  = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 6));
-    c12au = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 12));
+    c6au  = (HARTREE2KJ*AVOGADRO*gmx::power6(BOHR2NM));
+    c12au = (HARTREE2KJ*AVOGADRO*gmx::power12(BOHR2NM));
     /* issue a fatal if the user wants to run with more than one node */
     if (PAR(cr))
     {
@@ -794,7 +782,7 @@ void update_QMMMrec(t_commrec      *cr,
     t_QMMMrec
        *qr;
     t_nblist
-        QMMMlist;
+       *QMMMlist;
     rvec
         dx, crd;
     t_QMrec
@@ -808,8 +796,8 @@ void update_QMMMrec(t_commrec      *cr,
     real
         c12au, c6au;
 
-    c6au  = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 6));
-    c12au = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 12));
+    c6au  = (HARTREE2KJ*AVOGADRO*gmx::power6(BOHR2NM));
+    c12au = (HARTREE2KJ*AVOGADRO*gmx::power12(BOHR2NM));
 
     /* every cpu has this array. On every processor we fill this array
      * with 1's and 0's. 1's indicate the atoms is a QM atom on the
@@ -825,7 +813,10 @@ void update_QMMMrec(t_commrec      *cr,
 
 
     /*  init_pbc(box);  needs to be called first, see pbc.h */
-    set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, box);
+    ivec null_ivec;
+    clear_ivec(null_ivec);
+    set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : null_ivec,
+               FALSE, box);
     /* only in standard (normal) QMMM we need the neighbouring MM
      * particles to provide a electric field of point charges for the QM
      * atoms.
@@ -845,18 +836,18 @@ void update_QMMMrec(t_commrec      *cr,
          * the shifts are used for computing virial of the QM/MM particles.
          */
         qm = qr->qm[0]; /* in case of normal QMMM, there is only one group */
-        snew(qm_i_particles, QMMMlist.nri);
-        if (QMMMlist.nri)
+        snew(qm_i_particles, QMMMlist->nri);
+        if (QMMMlist->nri)
         {
             qm_i_particles[0].shift = XYZ2IS(0, 0, 0);
-            for (i = 0; i < QMMMlist.nri; i++)
+            for (i = 0; i < QMMMlist->nri; i++)
             {
-                qm_i_particles[i].j     = QMMMlist.iinr[i];
+                qm_i_particles[i].j     = QMMMlist->iinr[i];
 
                 if (i)
                 {
-                    qm_i_particles[i].shift = pbc_dx_aiuc(&pbc, x[QMMMlist.iinr[0]],
-                                                          x[QMMMlist.iinr[i]], dx);
+                    qm_i_particles[i].shift = pbc_dx_aiuc(&pbc, x[QMMMlist->iinr[0]],
+                                                          x[QMMMlist->iinr[i]], dx);
 
                 }
                 /* However, since nri >= nrQMatoms, we do a quicksort, and throw
@@ -868,12 +859,12 @@ void update_QMMMrec(t_commrec      *cr,
                  * the QM i-particle and store them.
                  */
 
-                crd[0] = IS2X(QMMMlist.shift[i]) + IS2X(qm_i_particles[i].shift);
-                crd[1] = IS2Y(QMMMlist.shift[i]) + IS2Y(qm_i_particles[i].shift);
-                crd[2] = IS2Z(QMMMlist.shift[i]) + IS2Z(qm_i_particles[i].shift);
+                crd[0] = IS2X(QMMMlist->shift[i]) + IS2X(qm_i_particles[i].shift);
+                crd[1] = IS2Y(QMMMlist->shift[i]) + IS2Y(qm_i_particles[i].shift);
+                crd[2] = IS2Z(QMMMlist->shift[i]) + IS2Z(qm_i_particles[i].shift);
                 is     = static_cast<int>(XYZ2IS(crd[0], crd[1], crd[2]));
-                for (j = QMMMlist.jindex[i];
-                     j < QMMMlist.jindex[i+1];
+                for (j = QMMMlist->jindex[i];
+                     j < QMMMlist->jindex[i+1];
                      j++)
                 {
                     if (mm_nr >= mm_max)
@@ -882,7 +873,7 @@ void update_QMMMrec(t_commrec      *cr,
                         srenew(mm_j_particles, mm_max);
                     }
 
-                    mm_j_particles[mm_nr].j     = QMMMlist.jjnr[j];
+                    mm_j_particles[mm_nr].j     = QMMMlist->jjnr[j];
                     mm_j_particles[mm_nr].shift = is;
                     mm_nr++;
                 }
@@ -892,7 +883,7 @@ void update_QMMMrec(t_commrec      *cr,
 
 
 
-            qsort(qm_i_particles, QMMMlist.nri,
+            qsort(qm_i_particles, QMMMlist->nri,
                   (size_t)sizeof(qm_i_particles[0]),
                   struct_comp);
             /* The mm_j_particles argument to qsort is not allowed to be NULL */
@@ -907,7 +898,7 @@ void update_QMMMrec(t_commrec      *cr,
              * here matches the one of QMindex already.
              */
             j = 0;
-            for (i = 0; i < QMMMlist.nri; i++)
+            for (i = 0; i < QMMMlist->nri; i++)
             {
                 if (i == 0 || qm_i_particles[i].j != qm_i_particles[i-1].j)
                 {

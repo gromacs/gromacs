@@ -42,25 +42,25 @@
 
 #include <cstdio>
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct t_commrec;
 struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_output_env_t;
+struct t_commrec;
+struct t_filenm;
 
 namespace gmx
 {
@@ -72,7 +72,6 @@ namespace gmx
  * \param[in] fnm                 Filename structure array
  * \param[in] oenv                Output information
  * \param[in] bVerbose            Verbose output or not
- * \param[in] bCompact            Compact output or not
  * \param[in] nstglobalcomm       How often global communication is done
  * \param[in] vsite               Virtual site information
  * \param[in] shellfc             Shell (Drude) information
@@ -100,7 +99,7 @@ namespace gmx
 typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                             gmx_bool bCompact, int nstglobalcomm,
+                             int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
                              int stepout,
                              t_inputrec *inputrec,

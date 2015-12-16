@@ -47,13 +47,13 @@
 
 #include <cstdio>
 
+#include <algorithm>
+#include <memory>
 #include <string>
-
-#include <boost/scoped_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/optionsvisitor.h"
@@ -192,12 +192,15 @@ class ShellCompletionWriter::Impl
 
         std::string completionFunctionName(const char *moduleName) const
         {
-            // TODO: Consider if some characters need to be escaped.
-            return formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
+            std::string result =
+                formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
+            std::replace(result.begin(), result.end(), '-', '_');
+            return result;
         }
 
         std::string                   binaryName_;
-        boost::scoped_ptr<TextWriter> file_;
+        // Never releases ownership.
+        std::unique_ptr<TextWriter>   file_;
 };
 
 ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,

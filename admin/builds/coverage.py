@@ -32,13 +32,12 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-import os
+import os.path
 
+build_options = ['gcc-4.6']
 extra_projects = [Project.REGRESSIONTESTS]
 
 def do_build(context):
-    context.env.init_gcc(version='4.6')
-
     cmake_opts=dict()
     cmake_opts['CMAKE_BUILD_TYPE'] = 'Debug'
     cmake_opts['GMX_BUILD_FOR_COVERAGE'] = 'ON'
@@ -58,7 +57,7 @@ def do_build(context):
     context.run_ctest(args=['--output-on-failure'])
 
     context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
-    os.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
+    context.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
     cmd = ['perl', 'gmxtest.pl', '-xml', 'all', '-nt', '2']
     context.run_cmd_with_env(cmd, failure_message='Regression tests failed to execute')
 

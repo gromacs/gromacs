@@ -48,9 +48,8 @@
 #ifndef GMX_SELECTION_NBSEARCH_H
 #define GMX_SELECTION_NBSEARCH_H
 
+#include <memory>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -124,7 +123,7 @@ class AnalysisNeighborhoodPositions
          * Initializes positions from a vector of position vectors.
          */
         AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
-            : count_(x.size()), index_(-1), x_(as_rvec_array(&x[0])),
+            : count_(x.size()), index_(-1), x_(as_rvec_array(x.data())),
               exclusionIds_(NULL), indices_(NULL)
         {
         }
@@ -433,7 +432,7 @@ class AnalysisNeighborhoodSearch
          * AnalysisNeighborhood object.  Ownership currently always stays with
          * AnalysisNeighborhood; it always keeps one instance of the pointer.
          */
-        typedef boost::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
+        typedef std::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
             ImplPointer;
 
         /*! \brief
@@ -557,7 +556,7 @@ class AnalysisNeighborhoodPairSearch
          * See AnalysisNeighborhoodSearch::ImplPointer for rationale of using
          * shared_ptr and ownership semantics.
          */
-        typedef boost::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
+        typedef std::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
             ImplPointer;
 
         /*! \brief

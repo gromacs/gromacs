@@ -44,9 +44,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -115,7 +115,7 @@ int gmx_genpr(int argc, char *argv[])
     FILE             *out;
     int               igrp;
     real              d, dd, lo, hi;
-    atom_id          *ind_grp;
+    int              *ind_grp;
     const char       *xfn, *nfn;
     char             *gn_grp;
     matrix            box;

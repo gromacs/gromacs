@@ -44,11 +44,11 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -98,12 +98,12 @@ int gmx_filter(int argc, char *argv[])
     matrix            topbox, *box, boxf;
     char             *grpname;
     int               isize;
-    atom_id          *index;
+    int              *index;
     real             *w_rls = NULL;
     t_trxstatus      *in;
     t_trxstatus      *outl, *outh;
     int               nffr, i, fr, nat, j, d, m;
-    atom_id          *ind;
+    int              *ind;
     real              flen, *filt, sum, *t;
     rvec              xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
     gmx_output_env_t *oenv;

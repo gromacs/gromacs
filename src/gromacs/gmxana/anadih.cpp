@@ -46,11 +46,11 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -663,19 +663,19 @@ void calc_distribution_props(int nh, int histo[], real start,
             c2            = c1*c1;
             Jc            = (kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
             kkk[i].Jc    += histo[j]*Jc;
-            kkk[i].Jcsig += histo[j]*sqr(Jc);
+            kkk[i].Jcsig += histo[j]*gmx::square(Jc);
         }
     }
     for (i = 0; (i < nkkk); i++)
     {
         kkk[i].Jc    /= th;
-        kkk[i].Jcsig  = std::sqrt(kkk[i].Jcsig/th-sqr(kkk[i].Jc));
+        kkk[i].Jcsig  = std::sqrt(kkk[i].Jcsig/th-gmx::square(kkk[i].Jc));
     }
     *S2 = tdc*tdc+tds*tds;
 }
 
 static void calc_angles(struct t_pbc *pbc,
-                        int n3, atom_id index[], real ang[], rvec x_s[])
+                        int n3, int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
     rvec r_ij, r_kj;
@@ -729,7 +729,7 @@ static real calc_fraction(real angles[], int nangles)
 }
 
 static void calc_dihs(struct t_pbc *pbc,
-                      int n4, atom_id index[], real ang[], rvec x_s[])
+                      int n4, int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
@@ -810,7 +810,7 @@ void read_ang_dih(const char *trj_fn,
                   gmx_bool bAngles, gmx_bool bSaveAll, gmx_bool bRb, gmx_bool bPBC,
                   int maxangstat, int angstat[],
                   int *nframes, real **time,
-                  int isize, atom_id index[],
+                  int isize, int index[],
                   real **trans_frac,
                   real **aver_angle,
                   real *dih[],

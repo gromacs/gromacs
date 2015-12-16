@@ -40,18 +40,21 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct df_history_t;
 struct gmx_constr;
 struct gmx_edsam;
 struct gmx_enerdata_t;
+struct gmx_mtop_t;
 struct t_commrec;
 struct t_expanded;
+struct t_extmass;
+struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_simtemp;
+struct t_state;
 
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
@@ -88,10 +91,6 @@ int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
 
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
                                int fep_state, int frequency, gmx_int64_t step);
-
-/* check the version */
-void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
-                               t_inputrec *ir, gmx_mtop_t *mtop);
 
 /* Allocate and initialize node-local state entries. */
 void set_state_entries(t_state *state, const t_inputrec *ir);

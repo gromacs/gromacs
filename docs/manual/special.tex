@@ -1090,22 +1090,22 @@ $I$-$U$ pairs near zero current will then yield $U_{rev}$.
 The following {\tt .mdp} options control the CompEL protocol:
 {\small
 \begin{verbatim}
-swapcoords     = Z            ; Swap positions: no, X, Y, Z
-swap-frequency = 100          ; Swap attempt frequency
+swapcoords     = Z        ; Swap positions: no, X, Y, Z
+swap-frequency = 100      ; Swap attempt frequency
 \end{verbatim}}
-Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup} A, B).
+Choose {\tt Z} if your membrane is in the $xy$-plane (\figref{compelsetup}).
 Ions will be exchanged between compartments depending on their $z$-positions alone.
 {\tt swap-frequency} determines how often a swap attempt will be made.
-This step requires that the positions of the ions, solvent, and swap groups are
+This step requires that the positions of the split groups, the ions, and possibly the solvent molecules are
 communicated between the parallel processes, so if chosen too small it can decrease the simulation
 performance. The {\tt Position swapping} entry in the cycle and time accounting
 table at the end of the {\tt md.log} file summarizes the amount of runtime spent
 in the swap module.
 {\small
 \begin{verbatim}
-split-group0   = channel0     ; Defines compartment boundary
-split-group1   = channel1     ; Defines other compartment boundary
-massw-split0   = no           ; use mass-weighted center?
+split-group0   = channel0 ; Defines compartment boundary
+split-group1   = channel1 ; Defines other compartment boundary
+massw-split0   = no       ; use mass-weighted center?
 massw-split1   = no
 \end{verbatim}}
 {\tt split-group0} and {\tt split-group1} are two index groups that define the boundaries
@@ -1114,49 +1114,52 @@ If {\tt massw-split0} or {\tt massw-split1} are set to {\tt yes}, the center of 
 of each index group is used as boundary, here in $z$-direction. Otherwise, the
 geometrical centers will be used ($\times$ in \figref{compelsetup} A). If, such as here, a membrane
 channel is selected as split group, the center of the channel will define the dividing
-plane between the compartments (dashed horizontal line in the figure). All index groups
+plane between the compartments (dashed horizontal lines). All index groups
 must be defined in the index file.
 
 If, to restore the requested ion counts, an ion from one compartment has to be exchanged
 with a water molecule from the other compartment, then those molecules are swapped
 which have the largest distance to the compartment-defining boundaries
-(dashed horizontal lines in \figref{compelsetup} A). Depending on the ion concentration,
+(dashed horizontal lines). Depending on the ion concentration,
 this effectively results in exchanges of molecules between the light blue volumes.
 If a channel is very asymmetric in $z$-direction and would extend into one of the
 swap volumes, one can offset the swap exchange plane with the {\tt bulk-offset}
 parameter. A value of 0.0 means no offset $b$, values $-1.0 < b < 0$ move the
 swap exchange plane closer to the lower, values $0 < b < 1.0$ closer to the upper
-membrane. The figure \figref{compelsetup} A (left) depicts that for the {\bf A} compartment.
- 
+membrane. \figref{compelsetup} A (left) depicts that for the {\bf A} compartment.
+
 {\small
 \begin{verbatim}
-swap-group     = NA+_CL-      ; Ions to be included in exchange
-solvent-group  = SOL          ; Group name of solvent molecules
-cyl0-r         = 5.0          ; Split cylinder 0: pore radius (nm)
-cyl0-up        = 0.75         ; Split cylinder 0 upper extension (nm)
-cyl0-down      = 0.75         ; Split cylinder 0 lower extension (nm)
-cyl1-r         = 5.0          ; same for other channel
-cyl1-up        = 0.75
-cyl1-down      = 0.75
-coupl-steps    = 10           ; Average over these many swap steps
-threshold      = 1            ; Do not swap if < threshold
+solvent-group  = SOL      ; Group containing the solvent molecules
+iontypes       = 3        ; Number of different ion types to control
+iontype0-name  = NA       ; Group name of the ion type
+iontype0-in-A  = 51       ; Reference count of ions of type 0 in A
+iontype0-in-B  = 35       ; Reference count of ions of type 0 in B
+iontype1-name  = K
+iontype1-in-A  = 10
+iontype1-in-B  = 38
+iontype2-name  = CL
+iontype2-in-A  = -1
+iontype2-in-B  = -1
 \end{verbatim}}
-{\tt swap-group} identifies the index group of ions that 
-should be involved in the flux and exchange cycles, {\tt solvent-group} defines the solvent
-group with which they are swapped. The cylinder options only influence the counting of
-ions, i.e., ions will be counted as having traveled through either channel 0 or channel 1
-according to the definition of (channel) cylinder radius, upper and lower extension,
-relative to the location of the respective split group. This will not affect the actual
-flux or exchange, but will provide you with the ion permeation numbers across
-each of the channels. Note that an ion can only be counted as passing through a particular
-channel if it is detected \emph{within} the defined split cylinder in a swap step.
-If {\tt swap-frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
-in one swap step, and in compartment {\bf B} in the following swap step, so it will be unclear
-through which of the channels it has passed.
+The group name of solvent molecules acting as exchange partners for the ions
+has to be set with {\tt solvent-group}. The number of different ionic species under
+control of the CompEL protocol is given by the {\tt iontypes} parameter,
+while {\tt iontype0-name} gives the name of the index group containing the
+atoms of this ionic species. The reference number of ions of this type 
+can be set with the {\tt iontype0-in-A} and {\tt iontype0-in-B} options
+for compartments {\bf A} and {\bf B}, respectively. Obviously,
+the sum of {\tt iontype0-in-A} and {\tt iontype0-in-B} needs to equal the number
+of ions in the group defined by {\tt iontype0-name}.
+A reference number of {\tt -1} means: use the number of ions as found at the beginning
+of the simulation as the reference value.
 
-{\tt coupl-steps} sets the number of swap attempt steps. A discrepancy between
-actual and reference ion numbers in each compartment must persist over this many attempts
-before an actual exchange takes place. If {\tt coupl-steps} is set to 1, then the momentary ion distribution determines
+{\small
+\begin{verbatim}
+coupl-steps    = 10       ; Average over these many swap steps
+threshold      = 1        ; Do not swap if < threshold
+\end{verbatim}}
+If {\tt coupl-steps} is set to 1, then the momentary ion distribution determines
 whether ions are exchanged. {\tt coupl-steps} \textgreater\ 1 will use the time-average
 of ion distributions over the selected number of attempt steps instead. This can be useful, for example,
 when ions diffuse near compartment boundaries, which would lead to numerous unproductive
@@ -1167,16 +1170,26 @@ number $\pm$ the threshold is reached.
 
 {\small
 \begin{verbatim}
-anionsA  = -1                 ; Reference count of anions in A
-cationsA = -1                 ; ... of cations in A
-anionsB  = -1                 ; ... of anions in B
-cationsB = -1                 ; ... of cations in B
+cyl0-r         = 5.0      ; Split cylinder 0 radius (nm)
+cyl0-up        = 0.75     ; Split cylinder 0 upper extension (nm)
+cyl0-down      = 0.75     ; Split cylinder 0 lower extension (nm)
+cyl1-r         = 5.0      ; same for other channel
+cyl1-up        = 0.75
+cyl1-down      = 0.75
 \end{verbatim}}
-These options set the requested number of anions and cations for each of the two compartments.
-A number of {\tt -1} means fix the numbers found in time step 0. Note that these numbers
-need to add up to the total number of ions in the swap group.
+The cylinder options are used to define virtual geometric cylinders around the
+channel's pore to track how many ions of which type have passed each channel.
+Ions will be counted as having traveled through a channel
+according to the definition of the channel's cylinder radius, upper and lower extension,
+relative to the location of the respective split group. This will not affect the actual
+flux or exchange, but will provide you with the ion permeation numbers across
+each of the channels. Note that an ion can only be counted as passing through a particular
+channel if it is detected \emph{within} the defined split cylinder in a swap step.
+If {\tt swap-frequency} is chosen too high, a particular ion may be detected in compartment {\bf A}
+in one swap step, and in compartment {\bf B} in the following swap step, so it will be unclear
+through which of the channels it has passed.
 
-Note that a double-layered system for CompEL simulations can be easily prepared by
+A double-layered system for CompEL simulations can be easily prepared by
 duplicating an existing membrane/channel MD system in the direction of the membrane
 normal (typically $z$) with {\tt gmx editconf -translate 0 0 <l_z>}, where {\tt l_z}
 is the box length in that direction. If you have already defined index groups for
@@ -1895,202 +1908,6 @@ in the calculation.
 
 What is needed as well is a transition state optimizer.
 
-\section{\normindex{Adaptive Resolution Scheme}}
-\newcommand{\adress}{AdResS}
-The adaptive resolution scheme~\cite{Praprotnik2005,Praprotnik2008} (\seeindex{\adress}{Adaptive Resolution Scheme}) couples two systems with different resolutions by a force interpolation scheme.
-In contrast to the mixed Quantum-Classical simulation techniques of the previous section, the number of high resolution particles is not fixed, but can vary over the simulation time.
-
-Below we discuss {\adress} for a double resolution (atomistic and coarse grained) representation of the same system. See \figref{adress} for illustration.
-The details of implementation described in this section were published in~\cite{Junghans2010,Fritsch2012}.
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=0.5\textwidth]{plots/adress}
-\caption{A schematic illustration of the {\adress} method for water.} 
-\label{fig:adress}
-\end{center}
-\end{figure}
-Every molecule needs a well-defined mapping point (usually the center of mass)
-but any other linear combination of particle coordinates is also sufficient. 
-In the topology the mapping point is defined by a virtual site. The forces in the coarse-grained region are functions of the mapping point positions only.
-In this implementation molecules are modeled by charge groups or sets of charge groups, which actually allows one to have multiple mapping points per molecule. This can be useful for bigger molecules like polymers. In that case one has to also extend the AdResS description to bonded interactions~\cite{Praprotnik2011}, which will be implemented into \gromacs in one of the future versions.
-
-The force between two molecules is given by~\cite{Praprotnik2005}
-\footnote{Note that the equation obeys Newton's third law, which is not the case for other interpolation schemes~\cite{DelleSite2007}.}:
-\begin{equation}
-\vec{F}_{\alpha\beta}=w_\alpha w_\beta \vec{F}^\mathrm{ex,mol}_{\alpha\beta} + \left[1-w_\alpha w_\beta\right] \vec{F}^\mathrm{cg,mol}_{\alpha\beta}~,
-\label{eqn:interpolation}
-\end{equation}
-where $\alpha$ and $\beta$ label the two molecules and $w_\alpha$, $w_\beta$ are the adaptive weights of the two molecules.
-
-The first part, which represents the explicit interaction of the molecules, can be written as:
-\begin{equation}
-\vec{F}^\mathrm{ex,mol}_{\alpha\beta}=\sum_{i\in\alpha}\sum_{j\in\beta} \vec{F}^\mathrm{ex}_{ij}~,
-\end{equation}
-where $\vec{F}^\mathrm{ex}_{ij}$ is the force between the $i$th atom  in  $\alpha$th molecule and the $j$th atom in the $\beta$th molecule, which is given by an explicit force field.
-The second part of \eqnref{interpolation} comes from the coarse-grained interaction of the molecules.
-In \gromacs a slightly extended case is implemented:
-\begin{equation}
-  \vec{F}_{\alpha\beta}=\sum_{i\in\alpha}\sum_{j\in\beta} w_i w_j \vec{F}^\mathrm{ex}_{ij} + \left[1-w_\alpha w_\beta\right] \vec{F}^\mathrm{cg,mol}_{\alpha\beta}~,
-\label{eqn:interpolation2}
-\end{equation}
-where $w_i$ and $w_j$ are atom-wise weights, which are determined by the {\tt adress-site} option. For {\tt adress-site} being the center of mass, atom $i$ has the weight of the center of mass of its \emph{charge group}.
-The weight $w_\alpha$ of molecule $\alpha$ is determined by the position of coarse-grained particle, which is constructed as a virtual site from the atomistic particles as specified in the topology.
-This extension allows one to perform all kind of AdResS variations, but the common case can be recovered by using a center of mass virtual site in the topology, {\tt adress-site=COM} and putting all atoms (except the virtual site representing the coarse-grained interaction) of a molecule into one charge group.
-For big molecules, it is sometimes useful to use an atom-based weight, which can be either be achieved by setting {\tt adress-site=atomperatom} or putting every atom into a separate charge group (the center of mass of a charge group with one atom is the atom itself).
-
-The coarse-grained force field $\vec{F}^\mathrm{cg}$ is usually derived from the atomistic system by structure-based coarse-graining (see \secref{cg-forcefields}). To specify which atoms belong to a coarse-grained representation, energy groups are used.
-Each coarse-grained interaction has to be associated with a specific energy group, which is why the virtual sites representing the coarse-grained interactions also have to be in different charge groups. The energy groups which are treated as coarse-grained interactions are then listed in {\tt adress_cg_grp_names}.
-The most important element of this interpolation (see \eqnref{interpolation} and \eqnref{interpolation2}) is the adaptive weighting function (for illustration see \figref{adress}):
-\begin{equation}
-w(x)=
-\left\{\begin{array}{c@{\;:\;}l}
-1&\mathrm{atomistic/explicit\;region}\\
-0<w<1&\mathrm{hybrid\;region}\\
-0&\mathrm{coarse-grained\;region}
-\end{array}\right.~,
-\label{equ:weighting}
-\end{equation}
-which has a value between 0 and 1.
-This definition of $w$ gives a purely explicit force in the explicit region and a purely coarse-grained force in the coarse-grained region,
-so essentially \eqnref{interpolation} only the hybrid region has mixed interactions which would not appear in a standard simulation.
-In {\gromacs}, a $\cos^2$-like function is implemented as a weighting function:
-\begin{equation}
-w(x)=
-\left\{\begin{array}{c@{\;:\;}r@{x}l}
-0&&>d_\mathrm{ex}+d_\mathrm{hy}\\
-\cos^2\left(\frac{\pi}{2d_\mathrm{hy}}(x-d_\mathrm{ex})\right)&d_\mathrm{ex}+d_\mathrm{hy}>&>d_\mathrm{ex}\\
-1&d_\mathrm{ex}>&
-\end{array}\right.~,
-\label{equ:wf}
-\end{equation}
-where $d_\mathrm{ex}$ and $d_\mathrm{hy}$ are the sizes of the explicit and the hybrid region, respectively.
-Depending on the physical interest of the research, other functions could be implemented as long as the following boundary conditions are fulfilled:
-The function is 1) continuous, 2) monotonic and 3) has zero derivatives at the boundaries.
-Spherical and one-dimensional splitting  of the simulation box has been implemented ({\tt adress-type} option)
-and depending on this, the distance $x$ to the center of the explicit region is calculated as follows:
-\begin{equation}
-x=
-\left\{
-\begin{array}{c@{\;:\;}l}
-  |(\vec{R}_\alpha-\vec{R}_\mathrm{ct})\cdot\hat{e}|&\mathrm{splitting\;in\;}\hat{e}\mathrm{\;direction}\\
-|\vec{R}_\alpha-\vec{R}_\mathrm{ct}|&\mathrm{spherical\;splitting}
-\end{array}
-\right.~,
-\end{equation}
-where $\vec{R}_\mathrm{ct}$ is the center of the explicit zone (defined by {\tt adress-reference-coords} option). $\vec{R}_\alpha$ is the mapping point of the $\alpha$th molecule. For the center of mass mapping, it is given by:
-\begin{equation}
-R_\alpha=\frac{\sum_{i\in\alpha}m_i r_i}{\sum_{i\in\alpha}m_i}
-\label{equ:com-def}
-\end{equation}
-Note that the value of the weighting function depends exclusively on the mapping of the molecule.
-
-The interpolation of forces (see \eqnref{interpolation2}) can produce inhomogeneities in the density and affect the structure of the system in the hybrid region.
-
-One way of reducing the density inhomogeneities is by the application of the so-called thermodynamic force (TF)~\cite{Poblete2010}.
-Such a force consists of a space-dependent external field applied in the hybrid region on the coarse-grained site of each molecule. It can be specified for each of the species of the system.
-The TF compensates the pressure profile~\cite{Fritsch2012b} that emerges under a homogeneous density profile. Therefore, it can correct the local density inhomogeneities in the hybrid region and it also allows the coupling of atomistic and coarse-grained representations which by construction have different pressures at the target density.
-The field can be determined by an iterative procedure, which is described in detail in the \href{http://code.google.com/p/votca/downloads/list?&q=manual}{manual} of the \normindex{VOTCA package}~\cite{ruehle2009}. Setting the {\tt adress-interface-correction} to {\tt thermoforce} enables the TF correction and\newline{\tt adress-tf-grp-names} defines the energy groups to act on.
-
-\subsection{Example: Adaptive resolution simulation of water}\label{subsec:adressexample}
-In this section the set up of  an adaptive resolution simulation coupling atomistic SPC ~\cite{Berendsen81} water to its coarse-grained representation will be explained (as used in \cite{Fritsch2012b}).
-The following steps are required to setup the simulation:
-\begin{itemize}
-\item Perform a reference all-atom simulation
-\item Create a coarse-grained representation and save it as tabulated interaction function 
-\item Create a hybrid topology for the SPC water
-\item Modify the atomistic coordinate file to include the coarse grained representation
-\item Define the geometry of the adaptive simulation in the grompp input file
-\item Create an index file
-\end{itemize}
-The coarse-grained representation of the interaction is stored as tabulated interaction function see \ssecref{userpot}. The convention is to use the $C^{(12)}$  columns with the  $C^{(12)}$- coefficient set to 1. All other columns should be zero. The VOTCA manual has detailed instructions and a tutorial for SPC water on how to coarse-grain the interaction using various techniques.
-Here we named the coarse grained interaction CG, so the corresponding tabulated file is {\tt table_CG_CG.xvg}. To create the topology one can start from the atomistic topology file (e.g. share/gromacs/top/oplsaa.ff/spc.itp), we are assuming rigid water here. In the VOTCA tutorial the file is named {\tt hybrid_spc.itp}.
-The only difference to the atomistic topology is the addition of a coarse-grained virtual site:
-{\small
-\begin{verbatim}
-[ moleculetype ]
-; molname       nrexcl
-SOL             2
-
-[ atoms ]
-;   nr   type  resnr residue  atom   cgnr     charge       mass
-     1  opls_116   1    SOL     OW      1      -0.82
-     2  opls_117   1    SOL    HW1      1       0.41
-     3  opls_117   1    SOL    HW2      1       0.41
-     4     CG      1    SOL     CG      2       0
-
-
-[ settles ]
-; OW    funct   doh     dhh
-1       1       0.1     0.16330
-
-[ exclusions ]
-1       2       3
-2       1       3
-3       1       2
-
-[ virtual_sites3 ]
-; Site from funct a d
-4 1 2 3 1 0.05595E+00 0.05595E+00
-\end{verbatim}}
-The virtual site type 3 with the specified coefficients places the virtual site in the center of mass of the molecule (for larger molecules virtual_sitesn has to be used).
-We now need to include our modified water model in the topology file and define the type {\tt CG}. In {\tt topol.top}:
-{\small
-\begin{verbatim}
-#include "ffoplsaa.itp"
-
-[ atomtypes ]
-;name  mass        charge    ptype   sigma     epsilon
- CG    0.00000     0.0000    V       1    0.25
-
-#include "hybrid_spc.itp"
-
-[ system ]
-Adaptive water
-[ molecules ]
-SOL    8507
-\end{verbatim}}
-The $\sigma$ and $\epsilon$ values correspond to $C_6=1$ and $C_{12}=1$ and thus the table file should contain the coarse-grained interaction in either the $C_6$ or $C_{12}$ column. In the example the OPLS force field is used where $\sigma$ and $\epsilon$ are specified.
-Note that for force fields which define atomtypes directly in terms of $C_6$ and $C_{12}$, one can simply set $C_6=0$ and $C_{12}=1$. See section \ssecref{userpot} for more details on tabulated interactions. Since now the water molecule has a virtual site the coordinate file also needs to include that.
-{\small
-\begin{verbatim}
-adaptive water coordinates
-34028
-    1SOL     OW    1   0.283   0.886   0.647
-    1SOL    HW1    2   0.359   0.884   0.711
-    1SOL    HW2    3   0.308   0.938   0.566
-    1SOL     CG    4   0.289   0.889   0.646
-    1SOL     OW    5   1.848   0.918   0.082
-    1SOL    HW1    6   1.760   0.930   0.129
-    1SOL    HW2    7   1.921   0.912   0.150
-    1SOL     CG    8   1.847   0.918   0.088
-    (...)
-\end{verbatim}}
-This file can be created manually or using the VOTCA tool {\tt csg_map } with the {\tt --hybrid} option.\\
-In the grompp input file the AdResS feature needs to be enabled and the geometry defined.
-{\small
-\begin{verbatim}
-(...)
-; AdResS relevant options
-energygrps               = CG
-energygrp_table          = CG CG
-
-; Method for doing Van der Waals
-vdw-type                 = user
-
-adress                  = yes
-adress_type             = xsplit
-adress_ex_width         = 1.5
-adress_hy_width         = 1.5
-adress_interface_correction = off
-adress_reference_coords = 8 0 0
-adress_cg_grp_names = CG
-\end{verbatim}}
-
-Here we are defining an energy group {\tt CG} which consists of the coarse-grained virtual site.
-As discussed above, the coarse-grained interaction is usually tabulated. This requires the {\tt vdw-type} parameter to be set to {\tt user}. In the case where multi-component systems are coarse-grained, an energy group has to be defined for each component. Note that all the energy groups defining coarse-grained representations have to be listed again in {\tt adress_cg_grp_names} to distinguish them from regular energy groups.\\
-The index file has to be updated to have a group CG which includes all the coarse-grained virtual sites. This can be done easily using the {\tt make_ndx} tool of gromacs.
-
 \section{Using VMD plug-ins for trajectory file I/O}
 \index{VMD plug-ins}\index{trajectory file}{\gromacs} tools are able
 to use the plug-ins found in an existing installation of
@@ -2274,7 +2091,7 @@ be added in the near future.
 % LocalWords:  nstrout rotangles rotslabs rottorque RMSD rmsdfit excl NH amine
 % LocalWords:  positionrestraint es SH phenylalanine solvated sh nanometer QM
 % LocalWords:  Lennard Buckingham UK Svensson ab vsitetop co UHF MP interatomic
-% LocalWords:  AdResS adress cg grp coords TF VOTCA thermoforce tf SPC userpot
+% LocalWords:  cg grp coords SPC userpot
 % LocalWords:  itp sitesn atomtypes ff csg ndx Tesla CHARMM AA gauss
 % LocalWords:  CMAP nocmap fators Monte performant lib LD DIR llllcc
 % LocalWords:  CMake homepage DEV overclocking GT dlopen vmd VMDDIR

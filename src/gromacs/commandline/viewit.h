@@ -42,13 +42,11 @@
  * \inpublicapi
  * \ingroup module_commandline
  */
-
 #ifndef GMX_COMMANDLINE_VIEWIT_H
 #define GMX_COMMANDLINE_VIEWIT_H
 
-#include "gromacs/fileio/filenm.h"
-
 struct gmx_output_env_t;
+struct t_filenm;
 
 /*! \brief
  * Executes an external (X11) command to view a file.

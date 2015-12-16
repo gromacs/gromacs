@@ -37,21 +37,26 @@
 #ifndef GMX_MDLIB_UPDATE_H
 #define GMX_MDLIB_UPDATE_H
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdlib/vcm.h"
 
-#include "tgroup.h"
-#include "vcm.h"
-
+struct ekinstate_t;
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
+struct t_extmass;
 struct t_fcdata;
 struct t_graph;
 struct t_grpopts;
+struct t_idef;
+struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
+struct t_state;
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;
@@ -92,11 +97,7 @@ void update_coords(FILE              *fplog,
                    t_inputrec        *inputrec, /* input record and box stuff	*/
                    t_mdatoms         *md,
                    t_state           *state,
-                   gmx_bool           bMolPBC,
                    rvec              *f, /* forces on home particles */
-                   gmx_bool           bDoLR,
-                   rvec              *f_lr,
-                   tensor            *vir_lr_constr,
                    t_fcdata          *fcd,
                    gmx_ekindata_t    *ekind,
                    matrix             M,
@@ -104,9 +105,7 @@ void update_coords(FILE              *fplog,
                    gmx_bool           bInitStep,
                    int                bUpdatePart,
                    t_commrec         *cr, /* these shouldn't be here -- need to think about it */
-                   t_nrnb            *nrnb,
-                   gmx_constr        *constr,
-                   t_idef            *idef);
+                   gmx_constr        *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -177,9 +176,11 @@ init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
 void
 update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
 
+/*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
+   to the rest of the simulation */
 void
 restore_ekinstate_from_state(t_commrec *cr,
-                             gmx_ekindata_t *ekind, ekinstate_t *ekinstate);
+                             gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
 
 void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt);
 

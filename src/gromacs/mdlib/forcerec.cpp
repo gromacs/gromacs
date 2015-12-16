@@ -49,30 +49,23 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
-#include "gromacs/fileio/trx.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nonbonded.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec-threading.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
@@ -80,17 +73,31 @@
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/mdlib/nbnxn_util.h"
+#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "nbnxn_gpu_jit_support.h"
+
+const char *egrp_nm[egNR+1] = {
+    "Coul-SR", "LJ-SR", "Buck-SR",
+    "Coul-14", "LJ-14", NULL
+};
 
 t_forcerec *mk_forcerec(void)
 {
@@ -168,7 +175,6 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
     int        i, j, k, atnr;
     real       c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real      *grid;
-    const real oneOverSix = 1.0 / 6.0;
 
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
@@ -185,15 +191,15 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
             c12i = idef->iparams[i*(atnr+1)].lj.c12;
             c6j  = idef->iparams[j*(atnr+1)].lj.c6;
             c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = sqrt(c6i * c6j);
+            c6   = std::sqrt(c6i * c6j);
             if (fr->ljpme_combination_rule == eljpmeLB
                 && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
             {
-                sigmai = pow(c12i / c6i, oneOverSix);
-                sigmaj = pow(c12j / c6j, oneOverSix);
+                sigmai = gmx::sixthroot(c12i / c6i);
+                sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
             }
             /* Store the elements at the same relative positions as C6 in nbfp in order
              * to simplify access in the kernels
@@ -210,7 +216,6 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
     int        i, j, atnr;
     real       c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real       c6, c12;
-    const real oneOverSix = 1.0 / 6.0;
 
     atnr = idef->atnr;
     snew(nbfp, 2*atnr*atnr);
@@ -222,17 +227,17 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
             c12i = idef->iparams[i*(atnr+1)].lj.c12;
             c6j  = idef->iparams[j*(atnr+1)].lj.c6;
             c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = sqrt(c6i  * c6j);
-            c12  = sqrt(c12i * c12j);
+            c6   = std::sqrt(c6i  * c6j);
+            c12  = std::sqrt(c12i * c12j);
             if (comb_rule == eCOMB_ARITHMETIC
                 && !gmx_numzero(c6) && !gmx_numzero(c12))
             {
-                sigmai = pow(c12i / c6i, oneOverSix);
-                sigmaj = pow(c12j / c6j, oneOverSix);
+                sigmai = gmx::sixthroot(c12i / c6i);
+                sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
-                c12    = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 12);
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
+                c12    = std::sqrt(epsi * epsj) * gmx::power12(0.5*(sigmai+sigmaj));
             }
             C6(nbfp, atnr, i, j)   = c6*6.0;
             C12(nbfp, atnr, i, j)  = c12*12.0;
@@ -1310,35 +1315,37 @@ static void make_nbf_tables(FILE *fp,
      * the table data to be aligned to 16-byte. The pointers could be freed
      * but currently aren't.
      */
-    nbl->table_elec.interaction   = GMX_TABLE_INTERACTION_ELEC;
-    nbl->table_elec.format        = nbl->table_elec_vdw.format;
-    nbl->table_elec.r             = nbl->table_elec_vdw.r;
-    nbl->table_elec.n             = nbl->table_elec_vdw.n;
-    nbl->table_elec.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_elec.formatsize    = nbl->table_elec_vdw.formatsize;
-    nbl->table_elec.ninteractions = 1;
-    nbl->table_elec.stride        = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
-    snew_aligned(nbl->table_elec.data, nbl->table_elec.stride*(nbl->table_elec.n+1), 32);
+    snew(nbl->table_elec, 1);
+    nbl->table_elec->interaction   = GMX_TABLE_INTERACTION_ELEC;
+    nbl->table_elec->format        = nbl->table_elec_vdw->format;
+    nbl->table_elec->r             = nbl->table_elec_vdw->r;
+    nbl->table_elec->n             = nbl->table_elec_vdw->n;
+    nbl->table_elec->scale         = nbl->table_elec_vdw->scale;
+    nbl->table_elec->formatsize    = nbl->table_elec_vdw->formatsize;
+    nbl->table_elec->ninteractions = 1;
+    nbl->table_elec->stride        = nbl->table_elec->formatsize * nbl->table_elec->ninteractions;
+    snew_aligned(nbl->table_elec->data, nbl->table_elec->stride*(nbl->table_elec->n+1), 32);
 
-    nbl->table_vdw.interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
-    nbl->table_vdw.format        = nbl->table_elec_vdw.format;
-    nbl->table_vdw.r             = nbl->table_elec_vdw.r;
-    nbl->table_vdw.n             = nbl->table_elec_vdw.n;
-    nbl->table_vdw.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_vdw.formatsize    = nbl->table_elec_vdw.formatsize;
-    nbl->table_vdw.ninteractions = 2;
-    nbl->table_vdw.stride        = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
-    snew_aligned(nbl->table_vdw.data, nbl->table_vdw.stride*(nbl->table_vdw.n+1), 32);
+    snew(nbl->table_vdw, 1);
+    nbl->table_vdw->interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
+    nbl->table_vdw->format        = nbl->table_elec_vdw->format;
+    nbl->table_vdw->r             = nbl->table_elec_vdw->r;
+    nbl->table_vdw->n             = nbl->table_elec_vdw->n;
+    nbl->table_vdw->scale         = nbl->table_elec_vdw->scale;
+    nbl->table_vdw->formatsize    = nbl->table_elec_vdw->formatsize;
+    nbl->table_vdw->ninteractions = 2;
+    nbl->table_vdw->stride        = nbl->table_vdw->formatsize * nbl->table_vdw->ninteractions;
+    snew_aligned(nbl->table_vdw->data, nbl->table_vdw->stride*(nbl->table_vdw->n+1), 32);
 
-    for (i = 0; i <= nbl->table_elec_vdw.n; i++)
+    for (i = 0; i <= nbl->table_elec_vdw->n; i++)
     {
         for (j = 0; j < 4; j++)
         {
-            nbl->table_elec.data[4*i+j] = nbl->table_elec_vdw.data[12*i+j];
+            nbl->table_elec->data[4*i+j] = nbl->table_elec_vdw->data[12*i+j];
         }
         for (j = 0; j < 8; j++)
         {
-            nbl->table_vdw.data[8*i+j] = nbl->table_elec_vdw.data[12*i+4+j];
+            nbl->table_vdw->data[8*i+j] = nbl->table_elec_vdw->data[12*i+4+j];
         }
     }
 }
@@ -1434,11 +1441,6 @@ void forcerec_set_ranges(t_forcerec *fr,
     if (fr->natoms_force_constr > fr->nalloc_force)
     {
         fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
-
-        if (fr->bTwinRange)
-        {
-            srenew(fr->f_twin, fr->nalloc_force);
-        }
     }
 
     if (fr->bF_NoVirSum)
@@ -1464,37 +1466,6 @@ static real cutoff_inf(real cutoff)
     }
 
     return cutoff;
-}
-
-static void make_adress_tf_tables(FILE *fp,
-                                  t_forcerec *fr, const t_inputrec *ir,
-                                  const char *tabfn, const gmx_mtop_t *mtop,
-                                  matrix     box)
-{
-    char buf[STRLEN];
-    int  i, j;
-
-    if (tabfn == NULL)
-    {
-        gmx_fatal(FARGS, "No thermoforce table file given. Use -tabletf to specify a file\n");
-        return;
-    }
-
-    snew(fr->atf_tabs, ir->adress->n_tf_grps);
-
-    sprintf(buf, "%s", tabfn);
-    for (i = 0; i < ir->adress->n_tf_grps; i++)
-    {
-        j = ir->adress->tf_table_index[i]; /* get energy group index */
-        sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "tf_%s.%s",
-                *(mtop->groups.grpname[mtop->groups.grps[egcENER].nm_ind[j]]), ftp2ext(efXVG));
-        if (fp)
-        {
-            fprintf(fp, "loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[i], buf);
-        }
-        fr->atf_tabs[i] = make_atf_table(fp, fr, buf, box);
-    }
-
 }
 
 gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
@@ -1599,7 +1570,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
     {
 #ifdef GMX_NBNXN_SIMD_4XN
         *kernel_type = nbnxnk4xN_SIMD_4xN;
@@ -1627,7 +1598,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          */
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 
-#ifndef GMX_SIMD_HAVE_FMA
+#if !GMX_SIMD_HAVE_FMA
         if (EEL_PME_EWALD(ir->coulombtype) ||
             EVDW_PME(ir->vdwtype))
         {
@@ -1666,8 +1637,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * In single precision, this is faster on Bulldozer.
          */
 #if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && defined GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || \
-        defined GMX_SIMD_IBM_QPX
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1680,7 +1650,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
     }
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
 }
 
 
@@ -1697,23 +1667,11 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
             break;
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
-#ifdef GMX_NBNXN_SIMD
-#if defined GMX_SIMD_X86_SSE2
-            returnvalue = "SSE2";
-#elif defined GMX_SIMD_X86_SSE4_1
-            returnvalue = "SSE4.1";
-#elif defined GMX_SIMD_X86_AVX_128_FMA
-            returnvalue = "AVX_128_FMA";
-#elif defined GMX_SIMD_X86_AVX_256
-            returnvalue = "AVX_256";
-#elif defined GMX_SIMD_X86_AVX2_256
-            returnvalue = "AVX2_256";
-#else
+#if GMX_SIMD
             returnvalue = "SIMD";
-#endif
-#else  /* GMX_NBNXN_SIMD */
+#else  // GMX_SIMD
             returnvalue = "not available";
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
             break;
         case nbnxnk8x8x8_GPU: returnvalue    = "GPU"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
@@ -1948,9 +1906,9 @@ static void force_switch_constants(real p,
      * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
      * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
      */
-    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 2));
-    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 3));
-    sc->cpot = -pow(rc, -p) + p*sc->c2/3*pow(rc - rsw, 3) + p*sc->c3/4*pow(rc - rsw, 4);
+    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*gmx::square(rc - rsw));
+    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*gmx::power3(rc - rsw));
+    sc->cpot = -pow(rc, -p) + p*sc->c2/3*gmx::power3(rc - rsw) + p*sc->c3/4*gmx::power4(rc - rsw);
 }
 
 static void potential_switch_constants(real rsw, real rc,
@@ -1964,9 +1922,9 @@ static void potential_switch_constants(real rsw, real rc,
      * force      = force*dsw - potential*sw
      * potential *= sw
      */
-    sc->c3 = -10*pow(rc - rsw, -3);
-    sc->c4 =  15*pow(rc - rsw, -4);
-    sc->c5 =  -6*pow(rc - rsw, -5);
+    sc->c3 = -10/gmx::power3(rc - rsw);
+    sc->c4 =  15/gmx::power4(rc - rsw);
+    sc->c5 =  -6/gmx::power5(rc - rsw);
 }
 
 /*! \brief Construct interaction constants
@@ -1981,8 +1939,6 @@ init_interaction_const(FILE                       *fp,
                        const t_forcerec           *fr)
 {
     interaction_const_t *ic;
-    const real           minusSix          = -6.0;
-    const real           minusTwelve       = -12.0;
 
     snew(ic, 1);
 
@@ -1994,7 +1950,6 @@ init_interaction_const(FILE                       *fp,
     snew_aligned(ic->tabq_coul_V, 16, 32);
 
     ic->rlist           = fr->rlist;
-    ic->rlistlong       = fr->rlistlong;
 
     /* Lennard-Jones */
     ic->vdwtype         = fr->vdwtype;
@@ -2011,14 +1966,14 @@ init_interaction_const(FILE                       *fp,
     {
         case eintmodPOTSHIFT:
             /* Only shift the potential, don't touch the force */
-            ic->dispersion_shift.cpot = -pow(ic->rvdw, minusSix);
-            ic->repulsion_shift.cpot  = -pow(ic->rvdw, minusTwelve);
+            ic->dispersion_shift.cpot = -1.0/gmx::power6(ic->rvdw);
+            ic->repulsion_shift.cpot  = -1.0/gmx::power12(ic->rvdw);
             if (EVDW_PME(ic->vdwtype))
             {
                 real crc2;
 
-                crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, minusSix);
+                crc2            = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+                ic->sh_lj_ewald = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
             }
             break;
         case eintmodFORCESWITCH:
@@ -2313,7 +2268,6 @@ void init_forcerec(FILE              *fp,
                    const t_commrec   *cr,
                    matrix             box,
                    const char        *tabfn,
-                   const char        *tabafn,
                    const char        *tabpfn,
                    const char        *tabbfn,
                    const char        *nbpu_opt,
@@ -2368,39 +2322,20 @@ void init_forcerec(FILE              *fp,
         fr->n_tpi = 0;
     }
 
-    /* Copy AdResS parameters */
+    if (ir->coulombtype == eelRF_NEC_UNSUPPORTED)
+    {
+        gmx_fatal(FARGS, "%s electrostatics is no longer supported",
+                  eel_names[ir->coulombtype]);
+    }
+
     if (ir->bAdress)
     {
-        fr->adress_type           = ir->adress->type;
-        fr->adress_const_wf       = ir->adress->const_wf;
-        fr->adress_ex_width       = ir->adress->ex_width;
-        fr->adress_hy_width       = ir->adress->hy_width;
-        fr->adress_icor           = ir->adress->icor;
-        fr->adress_site           = ir->adress->site;
-        fr->adress_ex_forcecap    = ir->adress->ex_forcecap;
-        fr->adress_do_hybridpairs = ir->adress->do_hybridpairs;
-
-
-        snew(fr->adress_group_explicit, ir->adress->n_energy_grps);
-        for (i = 0; i < ir->adress->n_energy_grps; i++)
-        {
-            fr->adress_group_explicit[i] = ir->adress->group_explicit[i];
-        }
-
-        fr->n_adress_tf_grps = ir->adress->n_tf_grps;
-        snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
-        for (i = 0; i < fr->n_adress_tf_grps; i++)
-        {
-            fr->adress_tf_table_index[i] = ir->adress->tf_table_index[i];
-        }
-        copy_rvec(ir->adress->refs, fr->adress_refs);
+        gmx_fatal(FARGS, "AdResS simulations are no longer supported");
     }
-    else
+    if (ir->useTwinRange)
     {
-        fr->adress_type           = eAdressOff;
-        fr->adress_do_hybridpairs = FALSE;
+        gmx_fatal(FARGS, "Twin-range simulations are no longer supported");
     }
-
     /* Copy the user determined parameters */
     fr->userint1  = ir->userint1;
     fr->userint2  = ir->userint2;
@@ -2420,7 +2355,7 @@ void init_forcerec(FILE              *fp,
     if (ir->fepvals->bScCoul)
     {
         fr->sc_alphacoul  = ir->fepvals->sc_alpha;
-        fr->sc_sigma6_min = pow(ir->fepvals->sc_sigma_min, 6);
+        fr->sc_sigma6_min = gmx::power6(ir->fepvals->sc_sigma_min);
     }
     else
     {
@@ -2429,14 +2364,14 @@ void init_forcerec(FILE              *fp,
     }
     fr->sc_power      = ir->fepvals->sc_power;
     fr->sc_r_power    = ir->fepvals->sc_r_power;
-    fr->sc_sigma6_def = pow(ir->fepvals->sc_sigma, 6);
+    fr->sc_sigma6_def = gmx::power6(ir->fepvals->sc_sigma);
 
     env = getenv("GMX_SCSIGMA_MIN");
     if (env != NULL)
     {
         dbl = 0;
         sscanf(env, "%20lf", &dbl);
-        fr->sc_sigma6_min = pow(dbl, 6);
+        fr->sc_sigma6_min = gmx::power6(dbl);
         if (fp)
         {
             fprintf(fp, "Setting the minimum soft core sigma to %g nm\n", dbl);
@@ -2595,7 +2530,6 @@ void init_forcerec(FILE              *fp,
     copy_rvec(ir->posres_com, fr->posres_com);
     copy_rvec(ir->posres_comB, fr->posres_comB);
     fr->rlist                    = cutoff_inf(ir->rlist);
-    fr->rlistlong                = cutoff_inf(ir->rlistlong);
     fr->eeltype                  = ir->coulombtype;
     fr->vdwtype                  = ir->vdwtype;
     fr->ljpme_combination_rule   = ir->ljpme_combination_rule;
@@ -2612,7 +2546,6 @@ void init_forcerec(FILE              *fp,
 
         case eelRF:
         case eelGRF:
-        case eelRF_NEC:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD;
             break;
 
@@ -2632,6 +2565,7 @@ void init_forcerec(FILE              *fp,
             break;
 
         case eelPME:
+        case eelP3M_AD:
         case eelEWALD:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
             break;
@@ -2679,7 +2613,6 @@ void init_forcerec(FILE              *fp,
     fr->rcoulomb         = cutoff_inf(ir->rcoulomb);
     fr->rcoulomb_switch  = ir->rcoulomb_switch;
 
-    fr->bTwinRange = fr->rlistlong > fr->rlist;
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD);
 
     fr->reppow     = mtop->ffparams.reppow;
@@ -2739,8 +2672,10 @@ void init_forcerec(FILE              *fp,
 
         if (fp)
         {
-            fprintf(fp, "Table routines are used for coulomb: %s\n", bool_names[fr->bcoultab]);
-            fprintf(fp, "Table routines are used for vdw:     %s\n", bool_names[fr->bvdwtab ]);
+            fprintf(fp, "Table routines are used for coulomb: %s\n",
+                    gmx::boolToString(fr->bcoultab));
+            fprintf(fp, "Table routines are used for vdw:     %s\n",
+                    gmx::boolToString(fr->bvdwtab));
         }
 
         if (fr->bvdwtab == TRUE)
@@ -2834,8 +2769,7 @@ void init_forcerec(FILE              *fp,
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       IR_ELEC_FIELD(*ir) ||
-                       (fr->adress_icor != eAdressICOff)
+                       inputrecElecField(ir)
                        );
 
     if (fr->cutoff_scheme == ecutsGROUP &&
@@ -3057,18 +2991,13 @@ void init_forcerec(FILE              *fp,
         }
     }
 
-    if (ir->adress)
-    {
-        fr->nnblists *= 2;
-    }
-
     snew(fr->nblists, fr->nnblists);
 
     /* This code automatically gives table length tabext without cut-off's,
      * in that case grompp should already have checked that we do not need
      * normal tables and we only generate tables for 1-4 interactions.
      */
-    rtab = ir->rlistlong + ir->tabext;
+    rtab = ir->rlist + ir->tabext;
 
     if (bMakeTables)
     {
@@ -3076,10 +3005,6 @@ void init_forcerec(FILE              *fp,
         if (bSomeNormalNbListsAreInUse)
         {
             make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
-            if (ir->adress)
-            {
-                make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
-            }
             if (!bMakeSeparate14Table)
             {
                 fr->tab14 = fr->nblists[0].table_elec_vdw;
@@ -3110,13 +3035,6 @@ void init_forcerec(FILE              *fp,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
-                        if (ir->adress)
-                        {
-                            make_nbf_tables(fp, fr, rtab, tabfn,
-                                            *mtop->groups.grpname[nm_ind[egi]],
-                                            *mtop->groups.grpname[nm_ind[egj]],
-                                            &fr->nblists[fr->nnblists/2+m]);
-                        }
                         m++;
                     }
                     else if (fr->nnblists > 1)
@@ -3143,24 +3061,6 @@ void init_forcerec(FILE              *fp,
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
         fr->tab14 = make_tables(fp, fr, tabpfn, rtab,
                                 GMX_MAKETABLES_14ONLY);
-    }
-
-    /* Read AdResS Thermo Force table if needed */
-    if (fr->adress_icor == eAdressICThermoForce)
-    {
-        /* old todo replace */
-
-        if (ir->adress->n_tf_grps > 0)
-        {
-            make_adress_tf_tables(fp, fr, ir, tabfn, mtop, box);
-
-        }
-        else
-        {
-            /* load the default table */
-            snew(fr->atf_tabs, 1);
-            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp, fr, tabafn, box);
-        }
     }
 
     /* Wall stuff */
@@ -3228,17 +3128,12 @@ void init_forcerec(FILE              *fp,
     fr->timesteps = 0;
 
     /* Initialize neighbor search */
-    init_ns(fp, cr, &fr->ns, fr, mtop);
+    snew(fr->ns, 1);
+    init_ns(fp, cr, fr->ns, fr, mtop);
 
     if (cr->duty & DUTY_PP)
     {
         gmx_nonbonded_setup(fr, bGenericKernelOnly);
-        /*
-           if (ir->bAdress)
-            {
-                gmx_setup_adress_kernels(fp,bGenericKernelOnly);
-            }
-         */
     }
 
     /* Initialize the thread working data for bonded interactions */
@@ -3271,7 +3166,7 @@ void init_forcerec(FILE              *fp,
 
 #define pr_real(fp, r) fprintf(fp, "%s: %e\n",#r, r)
 #define pr_int(fp, i)  fprintf((fp), "%s: %d\n",#i, i)
-#define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, bool_names[b])
+#define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, gmx::boolToString(b))
 
 void pr_forcerec(FILE *fp, t_forcerec *fr)
 {
@@ -3281,12 +3176,11 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
     pr_real(fp, fr->rcoulomb);
     pr_real(fp, fr->fudgeQQ);
     pr_bool(fp, fr->bGrid);
-    pr_bool(fp, fr->bTwinRange);
     /*pr_int(fp,fr->cg0);
        pr_int(fp,fr->hcg);*/
     for (i = 0; i < fr->nnblists; i++)
     {
-        pr_int(fp, fr->nblists[i].table_elec_vdw.n);
+        pr_int(fp, fr->nblists[i].table_elec_vdw->n);
     }
     pr_real(fp, fr->rcoulomb_switch);
     pr_real(fp, fr->rcoulomb);

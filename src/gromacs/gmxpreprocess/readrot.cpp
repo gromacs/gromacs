@@ -38,9 +38,10 @@
 
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

@@ -46,16 +46,18 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nsgrid.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/nsgrid.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of n charge groups */
-static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stddev,
+static void calc_cgcm_av_stddev(const t_block *cgs, int n, const rvec *x,
+                                rvec av, rvec stddev,
                                 t_commrec *cr_sum)
 {
     int   *cgindex;
@@ -122,12 +124,12 @@ static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stdd
     for (d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
     }
 }
 
 /*! \brief Determines if dimensions require triclinic treatment and stores this info in ddbox */
-static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
+static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box)
 {
     int   npbcdim, d, i, j;
     rvec *v, *normal;
@@ -170,7 +172,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                 {
                     v[d+1][i] = 0;
                 }
-                inv_skew_fac2 += sqr(v[d+1][d]);
+                inv_skew_fac2 += gmx::square(v[d+1][d]);
                 if (d == XX)
                 {
                     /* Normalize such that the "diagonal" is 1 */
@@ -187,7 +189,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                     {
                         v[d+2][i] -= dep*v[d+1][i];
                     }
-                    inv_skew_fac2 += sqr(v[d+2][d]);
+                    inv_skew_fac2 += gmx::square(v[d+2][d]);
 
                     cprod(v[d+1], v[d+2], normal[d]);
                 }
@@ -209,7 +211,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                     }
                 }
             }
-            ddbox->skew_fac[d] = 1.0/sqrt(inv_skew_fac2);
+            ddbox->skew_fac[d] = 1.0/std::sqrt(inv_skew_fac2);
             /* Set the normal vector length to skew_fac */
             dep = ddbox->skew_fac[d]/norm(normal[d]);
             svmul(dep, normal[d], normal[d]);
@@ -236,9 +238,9 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
     }
 }
 
-/*! \brief This function calculates and bounding box and pbc infor and populates ddbox */
-static void low_set_ddbox(t_inputrec *ir, ivec *dd_nc, matrix box,
-                          gmx_bool bCalcUnboundedSize, int ncg, t_block *cgs, rvec *x,
+/*! \brief This function calculates bounding box and pbc info and populates ddbox */
+static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix box,
+                          gmx_bool bCalcUnboundedSize, int ncg, const t_block *cgs, const rvec *x,
                           t_commrec *cr_sum,
                           gmx_ddbox_t *ddbox)
 {
@@ -281,8 +283,8 @@ static void low_set_ddbox(t_inputrec *ir, ivec *dd_nc, matrix box,
 }
 
 void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
-               t_inputrec *ir, matrix box,
-               gmx_bool bCalcUnboundedSize, t_block *cgs, rvec *x,
+               const t_inputrec *ir, const matrix box,
+               gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                gmx_ddbox_t *ddbox)
 {
     if (!bMasterState || DDMASTER(dd))
@@ -299,8 +301,9 @@ void set_ddbox(gmx_domdec_t *dd, gmx_bool bMasterState, t_commrec *cr_sum,
     }
 }
 
-void set_ddbox_cr(t_commrec *cr, ivec *dd_nc,
-                  t_inputrec *ir, matrix box, t_block *cgs, rvec *x,
+void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
+                  const t_inputrec *ir, const matrix box,
+                  const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox)
 {
     if (MASTER(cr))

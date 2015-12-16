@@ -34,19 +34,19 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_dyecoupl(int argc, char *argv[])
@@ -101,7 +101,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     const char  *in_trajfile, *out_xvgrkfile = NULL, *out_xvginstefffile = NULL, *out_xvgrhistfile = NULL, *out_xvgkhistfile = NULL, *out_datfile = NULL;
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
-    atom_id     *donindex, *accindex;
+    int         *donindex, *accindex;
     char        *grpnm;
     t_trxstatus *status;
     t_trxframe   fr;

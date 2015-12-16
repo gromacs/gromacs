@@ -47,9 +47,8 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
 #include "gromacs/gmxpreprocess/h_db.h"
@@ -61,20 +60,20 @@
 #include "gromacs/gmxpreprocess/ter_db.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/xlate.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 #define RTP_MAXCHAR 5
 typedef struct {
@@ -714,7 +713,7 @@ static void sort_pdbatoms(t_restp restp[],
     int          i, j;
     t_restp     *rptr;
     t_pdbindex  *pdbi;
-    atom_id     *a;
+    int         *a;
     char        *atomnm;
 
     pdba   = *pdbaptr;
@@ -1262,7 +1261,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     gmx_residuetype_t*rt;
     const char       *top_fn;
     char              fn[256], itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
-    char              molname[STRLEN], title[STRLEN], quote[STRLEN];
+    char              molname[STRLEN], title[STRLEN];
     char             *c, forcefield[STRLEN], ffdir[STRLEN];
     char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
     char             *watermodel;
@@ -2186,8 +2185,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             {
                 sprintf(fn, "chain_%c.pdb", cc->chainid);
             }
-            cool_quote(quote, 255, NULL);
-            write_sto_conf(fn, quote, pdba, x, NULL, ePBC, box);
+            write_sto_conf(fn, "", pdba, x, NULL, ePBC, box);
         }
     }
 

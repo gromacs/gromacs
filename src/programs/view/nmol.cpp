@@ -42,8 +42,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -176,7 +176,7 @@ void done_mw(t_x11 *x11, t_molwin *mw)
 }
 
 static void draw_atom(Display *disp, Window w, GC gc,
-                      atom_id ai, iv2 vec2[], unsigned long col[], int size[],
+                      int ai, iv2 vec2[], unsigned long col[], int size[],
                       bool bBall, bool bPlus)
 {
     int xi, yi;
@@ -240,7 +240,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 }
 
 static void draw_bond(Display *disp, Window w, GC gc,
-                      atom_id ai, atom_id aj, iv2 vec2[],
+                      int ai, int aj, iv2 vec2[],
                       rvec x[], unsigned long col[], int size[], bool bBalls)
 {
     unsigned long   ic, jc;
@@ -331,7 +331,7 @@ void z_fill(t_manager *man, real *zz)
 int filter_vis(t_manager *man)
 {
     int          i, nobj, nvis, nhide;
-    atom_id      ai;
+    int          ai;
     bool         bAdd, *bVis;
     t_object    *obj;
     t_object    *newobj;

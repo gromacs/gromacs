@@ -57,13 +57,14 @@
 #include "gromacs/correlationfunctions/manyautocorrelation.h"
 #include "gromacs/correlationfunctions/polynomials.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/names.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
@@ -428,7 +429,7 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
             /* Copy the vector data in a linear array */
             for (j = 0; (j < nf2); j++)
             {
-                ctmp[j]  = sqr(c1[DIM*j+m]);
+                ctmp[j]  = gmx::square(c1[DIM*j+m]);
             }
             if (debug)
             {
@@ -571,7 +572,8 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
         printf("Will calculate %s of %d thingies for %d frames\n",
                title ? title : "autocorrelation", nitem, nframes);
         printf("bAver = %s, bFour = %s bNormalize= %s\n",
-               bool_names[bAver], bool_names[bFour], bool_names[bNormalize]);
+               gmx::boolToString(bAver), gmx::boolToString(bFour),
+               gmx::boolToString(bNormalize));
         printf("mode = %lu, dt = %g, nrestart = %d\n", mode, dt, nrestart);
     }
     if (bFour)
@@ -709,8 +711,8 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
             Ctav  /= nitem;
             Ct2av /= nitem;
             printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
-                   Ctav, sqrt((Ct2av - sqr(Ctav))),
-                   sqrt((Ct2av - sqr(Ctav))/(nitem-1)));
+                   Ctav, std::sqrt((Ct2av - gmx::square(Ctav))),
+                   std::sqrt((Ct2av - gmx::square(Ctav))/(nitem-1)));
         }
     }
     if (fp)

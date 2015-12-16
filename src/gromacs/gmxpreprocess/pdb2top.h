@@ -42,7 +42,6 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
 /* this *MUST* correspond to array in pdb2top.c */
 enum {

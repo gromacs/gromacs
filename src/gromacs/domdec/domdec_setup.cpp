@@ -50,12 +50,14 @@
 #include <cmath>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -148,7 +150,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
     sfree(div);
     sfree(mdiv);
 
-    npp_root3  = static_cast<int>(std::pow(ntot - npme, 1.0/3.0) + 0.5);
+    npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
     npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
 
     /* The check below gives a reasonable division:
@@ -625,7 +627,7 @@ static real optimize_ncells(FILE *fplog,
     {
         /* For Ewald exclusions pbc_dx is not called */
         bExcl_pbcdx =
-            (IR_EXCL_FORCES(*ir) && !EEL_FULL(ir->coulombtype));
+            (inputrecExclForces(ir) && !EEL_FULL(ir->coulombtype));
         pbcdxr = (double)n_bonded_dx(mtop, bExcl_pbcdx)/(double)mtop->natoms;
     }
     else

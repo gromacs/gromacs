@@ -41,11 +41,11 @@
 #include <cstdio>
 #include <cstring>
 
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -337,7 +337,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
 }
 
 void write_g96_conf(FILE *out, t_trxframe *fr,
-                    int nindex, const atom_id *index)
+                    int nindex, const int *index)
 {
     t_atoms *atoms;
     int      nout, i, a;

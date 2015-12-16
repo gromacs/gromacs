@@ -50,6 +50,11 @@
 
 #include "gromacs/simd/simd.h"
 
+namespace gmx
+{
+
+#if GMX_SIMD
+
 /*! \cond libapi */
 /*! \addtogroup module_simd */
 /*! \{ */
@@ -59,12 +64,10 @@
  * check-source to know that this file depends on simd.h (though
  * symbols like GMX_SIMD_HAVE_FLOAT are actually defined in its
  * implementation headers). */
-#if (defined GMX_SIMD_HAVE_REAL) || (defined DOXYGEN)
+#if GMX_SIMD_HAVE_REAL || defined DOXYGEN
 
-#if (defined GMX_SIMD_HAVE_FLOAT) || (defined DOXYGEN)
+#if GMX_SIMD_HAVE_FLOAT || defined DOXYGEN
 /*! \brief SIMD float inner product of multiple float vectors.
- *
- * For normal usage you should always call the real-precision \ref gmx_simd_iprod_r.
  *
  * \param ax X components of first vectors
  * \param ay Y components of first vectors
@@ -77,22 +80,20 @@
  *
  * \note The SIMD part is that we calculate many scalar products in one call.
  */
-static gmx_inline gmx_simd_float_t gmx_simdcall
-gmx_simd_iprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
-                 gmx_simd_float_t bx, gmx_simd_float_t by, gmx_simd_float_t bz)
+static inline SimdFloat gmx_simdcall
+iprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
+      SimdFloat bx, SimdFloat by, SimdFloat bz)
 {
-    gmx_simd_float_t ret;
+    SimdFloat ret;
 
-    ret = gmx_simd_mul_f(ax, bx);
-    ret = gmx_simd_fmadd_f(ay, by, ret);
-    ret = gmx_simd_fmadd_f(az, bz, ret);
+    ret = ax * bx;
+    ret = ay * by + ret;
+    ret = az * bz + ret;
 
     return ret;
 }
 
 /*! \brief SIMD float norm squared of multiple vectors.
- *
- * For normal usage you should always call the real-precision \ref gmx_simd_norm2_r.
  *
  * \param ax X components of vectors
  * \param ay Y components of vectors
@@ -103,27 +104,19 @@ gmx_simd_iprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
  * \note This corresponds to the scalar product of the vector with itself, but
  * the compiler might be able to optimize it better with identical vectors.
  */
-static gmx_inline gmx_simd_float_t gmx_simdcall
-gmx_simd_norm2_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az)
+static inline SimdFloat gmx_simdcall
+norm2(SimdFloat ax, SimdFloat ay, SimdFloat az)
 {
-    gmx_simd_float_t ret;
+    SimdFloat ret;
 
-    ret = gmx_simd_mul_f(ax, ax);
-    ret = gmx_simd_fmadd_f(ay, ay, ret);
-    ret = gmx_simd_fmadd_f(az, az, ret);
+    ret = ax * ax;
+    ret = ay * ay + ret;
+    ret = az * az + ret;
 
     return ret;
 }
 
-/*! \brief Calculating r^2 is the same as evaluating the norm of dx*dx.
- *
- * For details, see \ref gmx_simd_norm2_f.
- */
-#define gmx_simd_calc_rsq_f gmx_simd_norm2_f
-
 /*! \brief SIMD float cross-product of multiple vectors.
- *
- * For normal usage you should always call the real-precision \ref gmx_simd_cprod_r.
  *
  * \param ax X components of first vectors
  * \param ay Y components of first vectors
@@ -141,203 +134,166 @@ gmx_simd_norm2_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az)
  * The arguments x/y/z denotes the different components, and each element
  * corresponds to a separate vector.
  */
-static gmx_inline void gmx_simdcall
-gmx_simd_cprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
-                 gmx_simd_float_t bx, gmx_simd_float_t by, gmx_simd_float_t bz,
-                 gmx_simd_float_t *cx, gmx_simd_float_t *cy, gmx_simd_float_t *cz)
+static inline void gmx_simdcall
+cprod(SimdFloat ax, SimdFloat ay, SimdFloat az,
+      SimdFloat bx, SimdFloat by, SimdFloat bz,
+      SimdFloat *cx, SimdFloat *cy, SimdFloat *cz)
 {
-    *cx = gmx_simd_mul_f(ay, bz);
-    *cx = gmx_simd_fnmadd_f(az, by, *cx);
+    *cx = ay * bz;
+    *cx = *cx - az * by;
 
-    *cy = gmx_simd_mul_f(az, bx);
-    *cy = gmx_simd_fnmadd_f(ax, bz, *cy);
+    *cy = az * bx;
+    *cy = *cy - ax * bz;
 
-    *cz = gmx_simd_mul_f(ax, by);
-    *cz = gmx_simd_fnmadd_f(ay, bx, *cz);
+    *cz = ax * by;
+    *cz = *cz - ay * bx;
 }
-#endif /* GMX_SIMD_HAVE_FLOAT */
+#endif // GMX_SIMD_HAVE_FLOAT
 
-#if (defined GMX_SIMD_HAVE_DOUBLE) || (defined DOXYGEN)
+#if GMX_SIMD_HAVE_DOUBLE || defined DOXYGEN
 /*! \brief SIMD double inner product of multiple double vectors.
  *
- * \copydetails gmx_simd_iprod_f
+ * \param ax X components of first vectors
+ * \param ay Y components of first vectors
+ * \param az Z components of first vectors
+ * \param bx X components of second vectors
+ * \param by Y components of second vectors
+ * \param bz Z components of second vectors
+ *
+ * \return Element i will be res[i] = ax[i]*bx[i]+ay[i]*by[i]+az[i]*bz[i].
+ *
+ * \note The SIMD part is that we calculate many scalar products in one call.
  */
-static gmx_inline gmx_simd_double_t gmx_simdcall
-gmx_simd_iprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az,
-                 gmx_simd_double_t bx, gmx_simd_double_t by, gmx_simd_double_t bz)
+static inline SimdDouble gmx_simdcall
+iprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
+      SimdDouble bx, SimdDouble by, SimdDouble bz)
 {
-    gmx_simd_double_t ret;
+    SimdDouble ret;
 
-    ret = gmx_simd_mul_d(ax, bx);
-    ret = gmx_simd_fmadd_d(ay, by, ret);
-    ret = gmx_simd_fmadd_d(az, bz, ret);
+    ret = ax * bx;
+    ret = ay * by + ret;
+    ret = az * bz + ret;
 
     return ret;
 }
 
 /*! \brief SIMD double norm squared of multiple vectors.
  *
- * \copydetails gmx_simd_norm2_f
+ * \param ax X components of vectors
+ * \param ay Y components of vectors
+ * \param az Z components of vectors
+ *
+ * \return Element i will be res[i] = ax[i]*ax[i]+ay[i]*ay[i]+az[i]*az[i].
+ *
+ * \note This corresponds to the scalar product of the vector with itself, but
+ * the compiler might be able to optimize it better with identical vectors.
  */
-static gmx_inline gmx_simd_double_t gmx_simdcall
-gmx_simd_norm2_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az)
+static inline SimdDouble gmx_simdcall
+norm2(SimdDouble ax, SimdDouble ay, SimdDouble az)
 {
-    gmx_simd_double_t ret;
+    SimdDouble ret;
 
-    ret = gmx_simd_mul_d(ax, ax);
-    ret = gmx_simd_fmadd_d(ay, ay, ret);
-    ret = gmx_simd_fmadd_d(az, az, ret);
+    ret = ax * ax;
+    ret = ay * ay + ret;
+    ret = az * az + ret;
 
     return ret;
 }
-
-/*! \brief Calculating r^2 is the same as evaluating the norm of dx*dx.
- *
- * For details, see \ref gmx_simd_norm2_d.
- */
-#define gmx_simd_calc_rsq_d gmx_simd_norm2_d
 
 /*! \brief SIMD double cross-product of multiple vectors.
  *
- * \copydetails gmx_simd_cprod_f
- */
-static gmx_inline void gmx_simdcall
-gmx_simd_cprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az,
-                 gmx_simd_double_t bx, gmx_simd_double_t by, gmx_simd_double_t bz,
-                 gmx_simd_double_t *cx, gmx_simd_double_t *cy, gmx_simd_double_t *cz)
-{
-    *cx = gmx_simd_mul_d(ay, bz);
-    *cx = gmx_simd_fnmadd_d(az, by, *cx);
-
-    *cy = gmx_simd_mul_d(az, bx);
-    *cy = gmx_simd_fnmadd_d(ax, bz, *cy);
-
-    *cz = gmx_simd_mul_d(ax, by);
-    *cz = gmx_simd_fnmadd_d(ay, bx, *cz);
-}
-#endif /* GMX_SIMD_HAVE_DOUBLE */
-
-
-#if (defined GMX_SIMD4_HAVE_FLOAT) || (defined DOXYGEN)
-/*! \brief SIMD4 float inner product of four float vectors.
+ * \param ax X components of first vectors
+ * \param ay Y components of first vectors
+ * \param az Z components of first vectors
+ * \param bx X components of second vectors
+ * \param by Y components of second vectors
+ * \param bz Z components of second vectors
+ * \param[out] cx X components of cross product vectors
+ * \param[out] cy Y components of cross product vectors
+ * \param[out] cz Z components of cross product vectors
  *
- * \copydetails gmx_simd_norm2_f
+ * \returns void
+ *
+ * This calculates C = A x B, where the cross denotes the cross product.
+ * The arguments x/y/z denotes the different components, and each element
+ * corresponds to a separate vector.
  */
-static gmx_inline gmx_simd4_float_t gmx_simdcall
-gmx_simd4_norm2_f(gmx_simd4_float_t ax, gmx_simd4_float_t ay, gmx_simd4_float_t az)
+static inline void gmx_simdcall
+cprod(SimdDouble ax, SimdDouble ay, SimdDouble az,
+      SimdDouble bx, SimdDouble by, SimdDouble bz,
+      SimdDouble *cx, SimdDouble *cy, SimdDouble *cz)
 {
-    gmx_simd4_float_t ret;
+    *cx = ay * bz;
+    *cx = *cx - az * by;
 
-    ret = gmx_simd4_mul_f(ax, ax);
-    ret = gmx_simd4_fmadd_f(ay, ay, ret);
-    ret = gmx_simd4_fmadd_f(az, az, ret);
+    *cy = az * bx;
+    *cy = *cy - ax * bz;
+
+    *cz = ax * by;
+    *cz = *cz - ay * bx;
+}
+#endif // GMX_SIMD_HAVE_DOUBLE
+
+
+#if GMX_SIMD4_HAVE_FLOAT || defined DOXYGEN
+/*! \brief SIMD4 float norm squared of multiple vectors.
+ *
+ * \param ax X components of vectors
+ * \param ay Y components of vectors
+ * \param az Z components of vectors
+ *
+ * \return Element i will be res[i] = ax[i]*ax[i]+ay[i]*ay[i]+az[i]*az[i].
+ *
+ * \note This corresponds to the scalar product of the vector with itself, but
+ * the compiler might be able to optimize it better with identical vectors.
+ */
+static inline Simd4Float gmx_simdcall
+norm2(Simd4Float ax, Simd4Float ay, Simd4Float az)
+{
+    Simd4Float ret;
+
+    ret = ax * ax;
+    ret = ay * ay + ret;
+    ret = az * az + ret;
 
     return ret;
 }
 
-/*! \brief Calculating r^2 is the same as evaluating the norm of dx*dx.
- *
- * For details, see \ref gmx_simd4_norm2_f
- */
-#define gmx_simd4_calc_rsq_f gmx_simd4_norm2_f
+#endif // GMX_SIMD4_HAVE_FLOAT
 
-#endif /* GMX_SIMD4_HAVE_FLOAT */
-
-#if (defined GMX_SIMD4_HAVE_DOUBLE)  || (defined DOXYGEN)
+#if GMX_SIMD4_HAVE_DOUBLE || defined DOXYGEN
 /*! \brief SIMD4 double norm squared of multiple vectors.
  *
- * \copydetails gmx_simd_norm2_f
+ * \param ax X components of vectors
+ * \param ay Y components of vectors
+ * \param az Z components of vectors
+ *
+ * \return Element i will be res[i] = ax[i]*ax[i]+ay[i]*ay[i]+az[i]*az[i].
+ *
+ * \note This corresponds to the scalar product of the vector with itself, but
+ * the compiler might be able to optimize it better with identical vectors.
  */
-static gmx_inline gmx_simd4_double_t gmx_simdcall
-gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double_t az)
+static inline Simd4Double gmx_simdcall
+norm2(Simd4Double ax, Simd4Double ay, Simd4Double az)
 {
-    gmx_simd4_double_t ret;
+    Simd4Double ret;
 
-    ret = gmx_simd4_mul_d(ax, ax);
-    ret = gmx_simd4_fmadd_d(ay, ay, ret);
-    ret = gmx_simd4_fmadd_d(az, az, ret);
+    ret = ax * ax;
+    ret = ay * ay + ret;
+    ret = az * az + ret;
 
     return ret;
 }
 
-/*! \brief Calculating r^2 is the same as evaluating the norm of dx*dx.
- *
- * For details, see \ref gmx_simd4_norm2_d.
- */
-#define gmx_simd4_calc_rsq_d gmx_simd4_norm2_d
+#endif // GMX_SIMD4_HAVE_DOUBLE
 
-#endif /* GMX_SIMD4_HAVE_DOUBLE */
-
-
-#ifdef GMX_DOUBLE
-/* Documented for the single branch below */
-#    define gmx_simd_iprod_r      gmx_simd_iprod_d
-#    define gmx_simd_norm2_r      gmx_simd_norm2_d
-#    define gmx_simd_calc_rsq_r   gmx_simd_calc_rsq_d
-#    define gmx_simd_cprod_r      gmx_simd_cprod_d
-#    define gmx_simd4_norm2_r     gmx_simd4_norm2_d
-#    define gmx_simd4_calc_rsq_r  gmx_simd4_calc_rsq_d
-#else /* GMX_DOUBLE */
-
-/*! \brief SIMD real inner product of multiple real vectors.
- *
- * This will call \ref gmx_simd_iprod_d if GMX_DOUBLE is defined, otherwise
- * \ref gmx_simd_iprod_f.
- *
- * \copydetails gmx_simd_iprod_f
- */
-#    define gmx_simd_iprod_r      gmx_simd_iprod_f
-
-/*! \brief SIMD real norm squared of multiple real vectors.
- *
- * This will call \ref gmx_simd_norm2_d if GMX_DOUBLE is defined, otherwise
- * \ref gmx_simd_norm2_f.
- *
- * \copydetails gmx_simd_norm2_f
- */
-#    define gmx_simd_norm2_r      gmx_simd_norm2_f
-
-/*! \brief Calculating r^2 is the same as evaluating the norm of dx*dx.
- *
- * This will call \ref gmx_simd_calc_rsq_d if GMX_DOUBLE is defined, otherwise
- * \ref gmx_simd_calc_rsq_f.
- *
- * \copydetails gmx_simd_calc_rsq_f
- */
-#    define gmx_simd_calc_rsq_r   gmx_simd_calc_rsq_f
-
-/*! \brief SIMD real cross-product of multiple real vectors.
- *
- * This will call \ref gmx_simd_cprod_d if GMX_DOUBLE is defined, otherwise
- * \ref gmx_simd_cprod_f.
- *
- * \copydetails gmx_simd_cprod_f
- */
-#    define gmx_simd_cprod_r      gmx_simd_cprod_f
-
-/*! \brief SIMD4 real norm squared of multiple vectors.
- *
- * This will call \ref gmx_simd4_norm2_d if GMX_DOUBLE is defined, otherwise
- * \ref gmx_simd4_norm2_f.
- *
- * \copydetails gmx_simd4_norm2_f
- */
-#    define gmx_simd4_norm2_r     gmx_simd4_norm2_f
-
-/*! \brief Calculating r^2 is the same as evaluating the norm of dx*dx.
- *
- * This will call \ref gmx_simd4_calc_rsq_d if GMX_DOUBLE is defined, otherwise
- * \ref gmx_simd4_calc_rsq_f.
- *
- * \copydetails gmx_simd4_calc_rsq_f
- */
-#    define gmx_simd4_calc_rsq_r  gmx_simd4_calc_rsq_f
-
-#endif /* GMX_DOUBLE */
-
-#endif /* (defined GMX_SIMD_HAVE REAL) || (defined DOXYGEN) */
+#endif // GMX_SIMD_HAVE REAL || defined DOXYGEN
 
 /*! \} */
 /*! \endcond */
 
-#endif /* GMX_SIMD_VECTOR_OPERATIONS_H */
+#endif // GMX_SIMD
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_VECTOR_OPERATIONS_H

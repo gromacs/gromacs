@@ -38,11 +38,11 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_shakedata
@@ -78,19 +78,6 @@ gmx_shakedata_t shake_init()
     return d;
 }
 
-static void pv(FILE *log, char *s, rvec x)
-{
-    int m;
-
-    fprintf(log, "%5s:", s);
-    for (m = 0; (m < DIM); m++)
-    {
-        fprintf(log, "  %10.3f", x[m]);
-    }
-    fprintf(log, "\n");
-    fflush(log);
-}
-
 /*! \brief Inner kernel for SHAKE constraints
  *
  * Original implementation from R.C. van Schaik and W.F. van Gunsteren
@@ -120,7 +107,7 @@ static void pv(FILE *log, char *s, rvec x)
  *                                             problematic constraint if the input was malformed
  *
  * \todo Make SHAKE use better data structures, in particular for iatom. */
-void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
+void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             const real constraint_distance_squared[], real positions[],
             const real initial_displacements[], const real half_of_reduced_mass[], real omega,
             const real invmass[], const real distance_squared_tolerance[],
@@ -266,7 +253,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         {
             constraint_distance = ip[type].constr.dA;
         }
-        constraint_distance_squared[ll]  = sqr(constraint_distance);
+        constraint_distance_squared[ll]  = gmx::square(constraint_distance);
         distance_squared_tolerance[ll]   = 0.5/(constraint_distance_squared[ll]*tol);
     }
 
@@ -462,7 +449,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         {
             real bondA, bondB;
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
-            dt_2 = 1/sqr(ir->delta_t);
+            dt_2 = 1/gmx::square(ir->delta_t);
             dvdl = 0;
             for (ll = 0; ll < ncon; ll++)
             {
@@ -505,7 +492,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     return TRUE;
 }
 
-void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
+void crattle(int iatom[], int ncon, int *nnit, int maxnit,
              real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
              real invmass[], real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
              int *nerror, real invdt)

@@ -44,10 +44,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/utility/classhelpers.h"
@@ -179,7 +178,7 @@ class TrajectoryAnalysisModuleData
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
-typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
+typedef std::unique_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
@@ -389,18 +388,6 @@ class TrajectoryAnalysisModule
         virtual void writeOutput() = 0;
 
         /*! \brief
-         * Returns the name of the analysis module.
-         *
-         * Does not throw.
-         */
-        const char *name() const;
-        /*! \brief
-         * Returns short description for the analysis module.
-         *
-         * Does not throw.
-         */
-        const char *description() const;
-        /*! \brief
          * Returns the number of datasets provided by the module.
          *
          * Does not throw.
@@ -461,11 +448,9 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Initializes the dataset registration mechanism.
          *
-         * \param[in] name         Name for the module.
-         * \param[in] description  One-line description for the module.
          * \throws    std::bad_alloc if out of memory.
          */
-        TrajectoryAnalysisModule(const char *name, const char *description);
+        TrajectoryAnalysisModule();
 
         /*! \brief
          * Registers a dataset that exports data.
@@ -511,7 +496,7 @@ class TrajectoryAnalysisModule
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
-typedef boost::shared_ptr<TrajectoryAnalysisModule>
+typedef std::unique_ptr<TrajectoryAnalysisModule>
     TrajectoryAnalysisModulePointer;
 
 } // namespace gmx

@@ -44,10 +44,10 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -85,7 +85,7 @@ int gmx_rotacf(int argc, char *argv[])
 
     t_trxstatus      *status;
     int               isize;
-    atom_id          *index;
+    int              *index;
     char             *grpname;
     rvec             *x, *x_s;
     matrix            box;

@@ -39,7 +39,7 @@
  * ranks to try to distribute work evenly with minimal communication
  * overheads.
  *
- * \todo Get domdec stuff out of legacyheaders/types/commrec.h
+ * \todo Get domdec stuff out of mdtypes/commrec.h
  *
  * \author Berk Hess <hess@kth.se>
  *
@@ -60,16 +60,16 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -175,7 +175,8 @@ void set_dd_parameters(FILE *fplog, struct gmx_domdec_t *dd, real dlb_scale,
  * This could fail when trying to increase the cut-off,
  * then FALSE will be returned and the cut-off is not modified.
  */
-gmx_bool change_dd_cutoff(struct t_commrec *cr, t_state *state, t_inputrec *ir,
+gmx_bool change_dd_cutoff(struct t_commrec *cr,
+                          t_state *state, const t_inputrec *ir,
                           real cutoff_req );
 
 /*! \brief Limit DLB to preserve the option of returning to the current cut-off.
@@ -398,13 +399,14 @@ real dd_choose_grid(FILE *fplog,
 
 /*! \brief Set the box and PBC data in \p ddbox */
 void set_ddbox(struct gmx_domdec_t *dd, gmx_bool bMasterState, struct t_commrec *cr_sum,
-               t_inputrec *ir, matrix box,
-               gmx_bool bCalcUnboundedSize, t_block *cgs, rvec *x,
+               const t_inputrec *ir, const matrix box,
+               gmx_bool bCalcUnboundedSize, const t_block *cgs, const rvec *x,
                struct gmx_ddbox_t *ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(struct t_commrec *cr, ivec *dd_nc,
-                  t_inputrec *ir, matrix box, t_block *cgs, rvec *x,
+void set_ddbox_cr(struct t_commrec *cr, const ivec *dd_nc,
+                  const t_inputrec *ir, const matrix box,
+                  const t_block *cgs, const rvec *x,
                   struct gmx_ddbox_t *ddbox);
 
 #ifdef __cplusplus

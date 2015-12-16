@@ -50,9 +50,9 @@
 #ifndef GMX_EWALD_LONG_RANGE_CORRECTION_H
 #define GMX_EWALD_LONG_RANGE_CORRECTION_H
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

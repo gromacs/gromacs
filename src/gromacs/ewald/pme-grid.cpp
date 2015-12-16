@@ -301,6 +301,7 @@ int copy_pmegrid_to_fftgrid(struct gmx_pme_t *pme, real *pmegrid, real *fftgrid,
 }
 
 
+#ifdef PME_TIME_THREADS
 static gmx_cycles_t omp_cyc_start()
 {
     return gmx_cycles_read();
@@ -310,6 +311,7 @@ static gmx_cycles_t omp_cyc_end(gmx_cycles_t c)
 {
     return gmx_cycles_read() - c;
 }
+#endif
 
 
 int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pmegrid, int grid_index,

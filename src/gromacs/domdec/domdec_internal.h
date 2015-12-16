@@ -46,7 +46,8 @@
 #include "config.h"
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/topology/block.h"
 
 /*! \cond INTERNAL */
@@ -203,7 +204,7 @@ typedef struct
  * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
  * unless stated otherwise.
  */
-typedef struct gmx_domdec_comm
+struct gmx_domdec_comm_t
 {
     /* PME and Cartesian communicator stuff */
     int         npmedecompdim;     /**< The number of decomposition dimensions for PME, 0: no PME */
@@ -375,7 +376,7 @@ typedef struct gmx_domdec_comm
     int  nstDDDump;                    /**< Step interval for dumping the local+non-local atoms to pdb */
     int  nstDDDumpGrid;                /**< Step interval for duming the DD grid to pdb */
     int  DD_debug;                     /**< DD debug print level: 0, 1, 2 */
-} gmx_domdec_comm_t;
+};
 
 /*! \brief DD zone permutation
  *

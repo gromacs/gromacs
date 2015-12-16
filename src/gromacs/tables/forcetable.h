@@ -35,10 +35,15 @@
 #ifndef GMX_TABLES_FORCETABLE_H
 #define GMX_TABLES_FORCETABLE_H
 
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
+#include <cstdio>
+
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
+
+#define GMX_MAKETABLES_FORCEUSER  (1<<0)
+#define GMX_MAKETABLES_14ONLY     (1<<1)
 
 /* Index in the tables that says which function to use */
 enum {
@@ -74,9 +79,9 @@ double v_q_ewald_lr(double beta, double r);
 double v_lj_ewald_lr(double beta, double r);
 /* Return the real space grid contribution for LJ-Ewald*/
 
-t_forcetable make_tables(FILE *fp,
-                         const t_forcerec *fr,
-                         const char *fn, real rtab, int flags);
+t_forcetable *make_tables(FILE *fp,
+                          const t_forcerec *fr,
+                          const char *fn, real rtab, int flags);
 /* Return tables for inner loops. */
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
@@ -85,12 +90,6 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
  */
 
 /* Return a table for GB calculations */
-t_forcetable make_gb_table(const t_forcerec              *fr);
-
-/* Read a table for AdResS Thermo Force calculations */
-t_forcetable make_atf_table(FILE                          *out,
-                            const t_forcerec              *fr,
-                            const char                    *fn,
-                            matrix                         box);
+t_forcetable *make_gb_table(const t_forcerec              *fr);
 
 #endif  /* GMX_TABLES_FORCETABLE_H */

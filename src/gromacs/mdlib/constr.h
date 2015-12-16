@@ -39,10 +39,10 @@
 #define GMX_MBLIB_CONSTR_H
 
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
 
@@ -63,6 +63,7 @@ extern "C" {
 #endif
 
 struct t_pbc;
+struct t_state;
 
 enum
 {
@@ -140,12 +141,12 @@ void settle_proj(gmx_settledata_t settled, int econq,
  * of coordinates working on settle type constraint.
  */
 
-void cshake(const atom_id iatom[], int ncon, int *nnit, int maxnit,
+void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
             const real dist2[], real xp[], const real rij[], const real m2[], real omega,
             const real invmass[], const real tt[], real lagr[], int *nerror);
 /* Regular iterative shake */
 
-void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
+void crattle(int iatom[], int ncon, int *nnit, int maxnit,
              real dist2[], real vp[], real rij[], real m2[], real omega,
              real invmass[], real tt[], real lagr[], int *nerror, real invdt);
 

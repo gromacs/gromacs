@@ -46,12 +46,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/gmxlib/warninp.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -148,8 +147,8 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     RTYPE("ticklinewidth",  psr->ticklinewidth,  psr->linewidth);
     RTYPE("zerolinewidth",  psr->zerolinewidth,  psr->ticklinewidth);
     ETYPE("x-lineat0value", psr->X.lineatzero,   colors);
-    RTYPE("x-major",        psr->X.major,        NOTSET);
-    RTYPE("x-minor",        psr->X.minor,        NOTSET);
+    RTYPE("x-major",        psr->X.major,        1);
+    RTYPE("x-minor",        psr->X.minor,        1);
     RTYPE("x-firstmajor",   psr->X.offset,       0.0);
     ETYPE("x-majorat0",     psr->X.first,        gmx_bools);
     RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);

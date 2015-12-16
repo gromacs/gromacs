@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,20 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares functions to get basic version information.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
+ * \inpublicapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_BASEVERSION_H
 #define GMX_UTILITY_BASEVERSION_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \brief
  * Version string, containing the version, date, and abbreviated hash.
@@ -76,8 +72,27 @@ const char *gmx_version_git_full_hash(void);
  */
 const char *gmx_version_git_central_base_hash(void);
 
-#ifdef __cplusplus
-}
-#endif
+/*! \brief
+ * Defined if ``libgromacs`` has been compiled in double precision.
+ *
+ * Allows detecting the compiled precision of the library through checking the
+ * presence of the symbol, e.g., from autoconf or other types of build systems.
+ *
+ * \ingroup module_utility
+ */
+void gmx_is_double_precision();
+/*! \brief
+ * Defined if ``libgromacs`` has been compiled in single/mixed precision.
+ *
+ * Allows detecting the compiled precision of the library through checking the
+ * presence of the symbol, e.g., from autoconf or other types of build systems.
+ *
+ * \ingroup module_utility
+ */
+
+void gmx_is_single_precision();
+
+/*! \brief Return a string describing what kind of GPU suport was configured in the build. */
+const char *getGpuImplementationString();
 
 #endif

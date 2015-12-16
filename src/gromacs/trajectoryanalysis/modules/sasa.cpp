@@ -54,8 +54,6 @@
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -67,10 +65,12 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -93,9 +93,9 @@ namespace
 struct t_conect
 {
     //! Index of the second nearest neighbor dot.
-    atom_id  aa;
+    int      aa;
     //! Index of the nearest neighbor dot.
-    atom_id  ab;
+    int      ab;
     //! Squared distance to `aa`.
     real     d2a;
     //! Squared distance to `ab`.
@@ -110,14 +110,14 @@ struct t_conect
  * \param[in]     j  Index of the other surface dot to add to the array.
  * \param[in]     d2 Squared distance between `i` and `j`.
  */
-void add_rec(t_conect c[], atom_id i, atom_id j, real d2)
+void add_rec(t_conect c[], int i, int j, real d2)
 {
-    if (c[i].aa == NO_ATID)
+    if (c[i].aa == -1)
     {
         c[i].aa  = j;
         c[i].d2a = d2;
     }
-    else if (c[i].ab == NO_ATID)
+    else if (c[i].ab == -1)
     {
         c[i].ab  = j;
         c[i].d2b = d2;
@@ -167,7 +167,7 @@ void do_conect(const char *fn, int n, rvec x[])
     snew(c, n);
     for (i = 0; (i < n); i++)
     {
-        c[i].aa = c[i].ab = NO_ATID;
+        c[i].aa = c[i].ab = -1;
     }
 
     for (i = 0; (i < n); i++)
@@ -183,7 +183,7 @@ void do_conect(const char *fn, int n, rvec x[])
     fp = gmx_ffopen(fn, "a");
     for (i = 0; (i < n); i++)
     {
-        if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
+        if ((c[i].aa == -1) || (c[i].ab == -1))
         {
             fprintf(stderr, "Warning dot %d has no conections\n", i+1);
         }
@@ -394,8 +394,7 @@ class Sasa : public TrajectoryAnalysisModule
 };
 
 Sasa::Sasa()
-    : TrajectoryAnalysisModule(SasaInfo::name, SasaInfo::shortDescription),
-      solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
+    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
 {
     //minarea_ = 0.5;
     registerAnalysisDataset(&area_, "area");
@@ -485,10 +484,10 @@ Sasa::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settin
     // The calculation group uses dynamicMask() so that the coordinates
     // match a static array of VdW radii.
     options->addOption(SelectionOption("surface").store(&surfaceSel_)
-                           .required().onlyAtoms().dynamicMask()
+                           .required().onlySortedAtoms().dynamicMask()
                            .description("Surface calculation selection"));
     options->addOption(SelectionOption("output").storeVector(&outputSel_)
-                           .onlyAtoms().multiValue()
+                           .onlySortedAtoms().multiValue()
                            .description("Output selection(s)"));
 
     // Atom names etc. are required for the VdW radii lookup.
@@ -928,7 +927,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     real *area = NULL, *surfacedots = NULL;
     int   nsurfacedots;
     calculator_.calculate(surfaceSel.coordinates().data(), pbc,
-                          frameData.index_.size(), &frameData.index_[0], flag,
+                          frameData.index_.size(), frameData.index_.data(), flag,
                           &totarea, &totvolume, &area,
                           &surfacedots, &nsurfacedots);
     // Unpack the atomwise areas into the frameData.atomAreas_ array for easier

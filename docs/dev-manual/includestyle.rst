@@ -8,7 +8,7 @@ between each group, and headers within each group sorted alphabetically.
 2. If a *source* file has a corresponding header, it should be included next.
    If the header is in the same directory as the source, then it is included
    without any path (i.e., relative to the source), otherwise relative to
-   ``src/``.  The latter case is for headers in ``legacyheaders/`` and for tests.
+   ``src/`` (the latter case should be rare).
 3. If the file depends on defines from ``config.h``, that comes next.
 4. This is followed by standard C/C++ headers, grouped as follows:
 
@@ -20,7 +20,7 @@ between each group, and headers within each group sorted alphabetically.
    enforced.
 5. This is followed by other system headers: platform-specific headers such as
    ``<unistd.h>``, as well as external libraries such as
-   ``<boost/scoped_ptr.hpp>``.
+   ``<gtest/gtest.h>``.
 6. |Gromacs|-specific libraries from ``src/external/``, such as
    ``"thread_mpi/threads.h"``.
 7. |Gromacs|-specific headers that are not internal to the including module,
@@ -38,7 +38,7 @@ other headers with angle brackets (``<stdio.h>``).  Headers under ``src/external
 are generally included with quotes (whenever the include path is relative to
 ``src/``, as well as for thread-MPI and TNG), but larger third-party entities are
 included as if they were provided by the system.  The latter group currently
-includes boost and gtest/gmock.
+includes gtest/gmock.
 
 If there are any conditionally included headers (typically, only when some
 #defines from ``config.h`` are set), these should be included at the end of

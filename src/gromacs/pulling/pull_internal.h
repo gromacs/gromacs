@@ -52,11 +52,8 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/mdtypes/pull-params.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
@@ -71,7 +68,7 @@ typedef struct
 
     int           nat_loc;    /* Number of local pull atoms */
     int           nalloc_loc; /* Allocation size for ind_loc and weight_loc */
-    atom_id      *ind_loc;    /* Local pull indices */
+    int          *ind_loc;    /* Local pull indices */
     real         *weight_loc; /* Weights for the local indices */
 
     real          mwscale;    /* mass*weight scaling factor 1/sum w m */
@@ -145,8 +142,5 @@ struct pull_t
     FILE              *out_f;        /* Output file for pull data */
 };
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif

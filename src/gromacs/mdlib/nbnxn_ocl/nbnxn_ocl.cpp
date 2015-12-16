@@ -51,9 +51,9 @@
 #include <limits>
 #endif
 
-#include "gromacs/gmxlib/ocl_tools/oclutils.h"
-#include "gromacs/legacyheaders/types/force_flags.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -251,11 +251,16 @@ static inline int calc_shmem_required()
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    //shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately */
     shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);       /* cjs  */
-#ifdef IATYPE_SHMEM                                         // CUDA ARCH >= 300
+#ifdef IATYPE_SHMEM
+    /* FIXME: this should not be compile-time decided but rather at runtime.
+     * This issue propagated from the CUDA code where due to the source to source
+     * compilation there was confusion the way to set up arch-dependent launch parameters.
+     * Here too this should be converted to a hardware/arch/generation dependent
+     * conditional when re-evaluating the need for i atom type preloading.
+     */
     /* i-atom types in shared memory */
     #pragma error "Should not be defined"
     shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);       /* atib */
@@ -338,7 +343,7 @@ void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     *ocl_event = 0;
 }
 
-/*! \brief Returns the duration in miliseconds for the command associated with the event.
+/*! \brief Returns the duration in milliseconds for the command associated with the event.
  *
  * It then releases the event and sets it to 0.
  * Before calling this function, make sure the command has finished either by
@@ -1135,9 +1140,12 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
                    "requested through environment variables.");
     }
 
-    /* CUDA: By default, on SM 3.0 and later use analytical Ewald, on earlier tabulated. */
-    /* OpenCL: By default, use analytical Ewald, on earlier tabulated. */
-    // TODO: decide if dev_info parameter should be added to recognize NVIDIA CC>=3.0 devices.
+    /* OpenCL: By default, use analytical Ewald
+     * TODO: tabulated does not work, it needs fixing, see init_nbparam() in nbnxn_ocl_data_mgmt.cpp
+     *
+     * TODO: decide if dev_info parameter should be added to recognize NVIDIA CC>=3.0 devices.
+     *
+     */
     //if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
     if ((1                         || bForceAnalyticalEwald) && !bForceTabulatedEwald)
     {

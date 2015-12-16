@@ -40,10 +40,12 @@
 
 #include <cmath>
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/nonbonded.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
 void
@@ -94,6 +96,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent, sh_lj_ewald;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
+    gmx_bool      do_tab;
 
     x                   = xx[0];
     f                   = ff[0];
@@ -103,9 +106,19 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     fshift              = fr->fshift[0];
     velecgrp            = kernel_data->energygrp_elec;
     vvdwgrp             = kernel_data->energygrp_vdw;
-    tabscale            = kernel_data->table_elec_vdw->scale;
-    VFtab               = kernel_data->table_elec_vdw->data;
 
+    do_tab = (ielec == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
+              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
+    if (do_tab)
+    {
+        tabscale         = kernel_data->table_elec_vdw->scale;
+        VFtab            = kernel_data->table_elec_vdw->data;
+    }
+    else
+    {
+        tabscale        = 0;
+        VFtab           = NULL;
+    }
     ewtab               = fr->ic->tabq_coul_FDV0;
     ewtabscale          = fr->ic->tabq_scale;
     ewtabhalfspace      = 0.5/ewtabscale;
@@ -216,7 +229,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             dy               = iy - jy;
             dz               = iz - jz;
             rsq              = dx*dx+dy*dy+dz*dz;
-            rinv             = gmx_invsqrt(rsq);
+            rinv             = gmx::invsqrt(rsq);
             rinvsq           = rinv*rinv;
             felec            = 0;
             fvdw             = 0;

@@ -165,6 +165,7 @@
 #ifndef GMX_UTILITY_H
 #define GMX_UTILITY_H
 
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"

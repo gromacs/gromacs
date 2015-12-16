@@ -41,7 +41,10 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/topology/topology.h"
 
 static int div_nsteps(int nsteps, int nst)
 {

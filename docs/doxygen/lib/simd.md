@@ -7,7 +7,7 @@ Coding with SIMD instructions
 One important way for \Gromacs to achieve high performance is
 to use modern hardware capabilities where a single assembly
 instruction operates on multiple data units, essentially short
-fixed-length vectors (usually 2,4,8, or 16 elements). This provides
+fixed-length vectors (usually 2, 4, 8, or 16 elements). This provides
 a very efficient way for the CPU to increase floating-point
 performance, but it is much less versatile than general purpose
 registers. For this reason it is difficult for the compiler to
@@ -25,7 +25,7 @@ use a vendor-agnostic \Gromacs SIMD module, as documented in
 Design of the \Gromacs SIMD module
 ==================================
 
-The macros in `src/gromacs/simd` are intended to be used for writing
+The functions in `src/gromacs/simd` are intended to be used for writing
 architecture-independent SIMD intrinsics code. Rather than making assumptions
 based on architecture, we have introduced a limited number of
 predefined preprocessor macros that describe the capabilities of the
@@ -38,6 +38,26 @@ in a generic way that can be implemented efficiently regardless of the
 hardware. However, the advantage of this approach is that it is straightforward
 to extend with support for new simd instruction sets in the future,
 and that will instantly speed up old code too.
+
+To support the more complex stuff in the \Gromacs nonbonded kernels and
+to make it possible to use SIMD intrinsics even for some parts of the code
+where the data is not in SIMD-friendly layout, we have also added about 10
+higher-level utility routines. These perform gather/scatter operations
+on coordinate triplets, they load table data and aligned pairs (Lennard-Jones
+parameters), and sum up the forces needed in the outer loop of the nonbonded
+kernels. They are very straightforward to implement, but since they are
+performance-critical we want to exploit all features of each architecture,
+and for this reason they are part of the SIMD implementation.
+
+Finally, for some architectures with large or very large SIMD width (e.g. AVX
+with 8 elements in single precision, or AVX-512 with 16), the nonbonded
+kernels can become inefficient. Since all such architectures presently known
+(AVX, AVX2, MIC, AVX512) also provide extensive support for accessing
+parts of the register, we optionally define a handful of routines to
+perform load, store, and reduce operations based on half-SIMD-width data,
+which can improve performance. It is only useful for wide implementations,
+and it can safely be ignored first when porting to new platforms - they
+are only needed for the so-called 2xnn SIMD kernels.
 
 Unfortunately there is no standard for SIMD architectures. The available
 features vary a lot, but we still need to use quite a few of them to
@@ -98,7 +118,7 @@ provides the API to define and manipulate SIMD datatypes. This will be enough
 for lots of cases, and it is a huge advantage that there is roughly
 parity between different architectures.
 </dd>
-<dt>Larger architecture-specific SIMD functions</dt>
+<dt>Higher-level architecture-specific SIMD utility functions</dt>
 <dd>
 For some parts of the code this is not enough. In particular, both the
 group and Verlet kernels do insane amounts of floating-point operations,
@@ -107,20 +127,36 @@ we can optimize them as much as possible. Here, our strategy is first to
 define larger high-level functions that e.g. take a number of distances
 and loads the table interactions for this interaction. This way we can
 move this architecture-specific implementation to the SIMD module, and
-both achieve a reasonably clean kernel but still optimize a lot.
+both achieve a reasonably clean kernel but still optimize a lot. This
+is what we have done for the approximately 10 functions for the nonbonded
+kernels, to load tables and Lennard-Jones parameters, and to sum up the
+forces in the outer loop. These functions have intentionally been given
+names that describe what they do with the data, rather than what their
+function is in \Gromacs. By looking at the documentation for these routines,
+and the reference implementation, it should be quite straightforward to
+implement them for a new architecture too.
+</dd>
+<dt>Half-SIMD-width architecture-specific utility functions</dt>
+<dd>
+As described earlier, as the SIMD width increases to 8 or more elements,
+the nonbonded kernels can become inefficient due to the large j-particle
+cluster size. Things will still work, but if an architecture supports
+efficient access to partial SIMD registers (e.g. loading half the width),
+we can use this to alter the balance between memory load/store operations
+and floating-point arithmetic operations by processing either e.g. 4-by-4
+or 2-by-8 interactions in one iteration. When \ref
+GMX_SIMD_HAVE_HSIMD_UTIL_REAL is set, a handful of routines to
+use this in the nonbonded kernels is present. Avoid using these routines
+outside the nonbonded kernels since they are slightly more complex, and
+is is not straightforward to determine which alternative provides the best
+performance.
 </dd>
 <dt>Architecture-specific kernels (directories/files)</dt>
 <dd>
-When it is absolutely impossible to use a shared implementation we might
-have to code SIMD (just as GPU code). When this happens, we should create
-subdirectory or otherwise clearly names a file with a suffix for the
-SIMD architecture, to clarify to the user that the SIMD file has a
-direct non-SIMD correspondence. Since this code can be very hard to read,
-it is important to be explicit and use lots of comments - this is not the
-type of code where you should use smart optimization with hundreds of
-preprocessor directives. Keep it simple so other developers can help you
-support it. The question is not whether you can get a function 20% faster,
-but whether it justifies the added complexity of the code.
+No code outside the SIMD module implementation directories should try
+to execute anything hardware specific. Note that this includes even checking
+for what architecture the current SIMD implementation is - you should check
+for features instead, so it will work with future ports too.
 </dd>
 </dl>
 
@@ -144,11 +180,15 @@ double precision but the hardware only supports single-precision SIMD
 there will not be any SIMD routines for default \Gromacs 'real' precision.
 There are \#defines you can use to check this, as described further down.
 </dd>
-<dt>`gromacs/simd/impl_reference.h`</dt>
+<dt>`gromacs/simd/impl_reference/impl_reference.h`</dt>
 <dd>
 This is an example of a low-level implementation. You should never, ever,
 work directly with these in higher-level code. The reference implementation
-contains the documentation for all SIMD wrappers, though.
+contains the documentation for all SIMD wrappers, though. This file will
+in turn include other separate implementation files for single, double,
+simd4, etc. Since we want to be able to run the low-level SIMD implementation
+in simulators for new platforms, these files are intentionally not using
+the rest of the GROMACS infrastructure, e.g. for asserts().
 </dd>
 <dt>`gromacs/simd/simd_math.h`</dt>
 <dd>
@@ -181,25 +221,21 @@ Floating-point data
 -------------------
 
 <dl>
-<dt>`#gmx_simd_real_t`</dt>
+<dt>`#gmx::SimdReal`</dt>
 <dd>
 This is the SIMD-version of \Gromacs' real type,
 which is set based on the CMake configuration and internally aliased
 to one of the next two types.
-Operations on these variables have the suffix `_r`, e.g. `gmx_simd_add_r()`.
 </dd>
-<dt>`#gmx_simd_float_t`</dt>
+<dt>`#gmx::SimdFloat`</dt>
 <dd>
 This is always single-precision data, but it
-might not be supported on all architectures. Suffix `_f` is used for
-explicit single-precision routines, e.g. `gmx_simd_mul_f()`.
+might not be supported on all architectures.
 </dd>
-<dt>`gmx_simd_double_t`</dt>
+<dt>`gmx::SimdDouble`</dt>
 <dd>
 This is always double precision when available,
 and in rare cases you might want to use a specific precision.
-Suffix `_d` is used for explicit double-precision routines,
-e.g. `gmx_simd_mul_d()`
 </dd>
 </dl>
 
@@ -214,12 +250,11 @@ for single SIMD variables, and then we only get half the number of
 integers too.
 
 <dl>
-<dt>`#gmx_simd_int32_t`</dt>
+<dt>`#gmx::SimdInt32`</dt>
 <dd>
 This is used for integers when converting to/from \Gromacs default "real" type.
-The corresponding routines have suffix `_i`, e.g. `gmx_simd_add_i()`.
 </dd>
-<dt>`gmx_simd_fint32_t`</dt>
+<dt>`gmx::SimdFInt32`</dt>
 <dd>
 Integers obtained when converting from single precision, or intended to be
 converted to single precision floating-point. These are normal integers
@@ -227,17 +262,18 @@ converted to single precision floating-point. These are normal integers
 SSE or AVX use different registers for integer SIMD variables having the
 same width as float and double, respectively, we need to separate these
 two types of integers. The actual operations you perform on the are normal
-ones such as addition or multiplication. The routines
-operating on these variables have suffix `_fi`, like `gmx_simd_add_fi()`.
+ones such as addition or multiplication.
 This will also be the widest integer data type if you want to do pure
 integer SIMD operations, but that will not be supported on all platforms.
+If the architecture does not support any SIMD integer type at all, this
+will likely be defined from the floating-point SIMD type, without support
+for any integer operations apart from load/store/convert.
 </dd>
-<dt>`gmx_simd_dint32_t`</dt>
+<dt>`gmx::SimdDInt32`</dt>
 <dd>
 Integers used when converting to/from double. See the preceding item
 for a detailed explanation. On many architectures,
-including all x86 ones, this will be a narrower type than `gmx_simd_fint32_t`.
-The correspoding routines have suffix `_di`, like `gmx_simd_add_di()`.
+including all x86 ones, this will be a narrower type than `gmx::SimdFInt32`.
 </dd>
 </dl>
 
@@ -254,38 +290,42 @@ we cannot assume they are identical either to integers, floats or double -
 some implementations use specific predicate registers for booleans.
 
 <dl>
-<dt>`#gmx_simd_bool_t`</dt>
+<dt>`#gmx::SimdBool`</dt>
 <dd>
 Results from boolean operations involving reals, and the booleans we use
-to select between real values. The corresponding routines have suffix `_b`,
-like `gmx_simd_or_b()`.
+to select between real values. The corresponding routines have suffix `B`,
+like `gmx::simdOrB()`.
 </dd>
-<dt>`gmx_simd_fbool_t`</dt>
+<dt>`gmx::SimdFBool`</dt>
 <dd>
-Booleans specifically for single precision. Corresponding function suffix
-is `_fb`, like `gmx_simd_or_fb()`.
+Booleans specifically for single precision.
 </dd>
-<dt>`gmx_simd_dbool_t`</dt>
+<dt>`gmx::SimdDBool`</dt>
 <dd>
-Operations specifically on double. Operations have suffix `_db`: `gmx_simd_or_db()`
+Operations specifically on double.
 </dd>
-<dt>`#gmx_simd_ibool_t`</dt>
+<dt>`#gmx::SimdIBool`</dt>
 <dd>
 Boolean operations on integers corresponding to real (see floating-point
-descriptions above). Operations on these booleans use suffix `_ib`,
-like `gmx_simd_or_ib()`.
+descriptions above).
 </dd>
-<dt>`gmx_simd_fibool_t`</dt>
+<dt>`gmx::SimdFIBool`</dt>
 <dd>
-Booleans for integers corresponding to float. Operation suffix is `_fib`,
-like `gmx_simd_or_fib()`.
+Booleans for integers corresponding to float.
 </dd>
-<dt>`gmx_simd_dibool_t`</dt>
+<dt>`gmx::SimdDIBool`</dt>
 <dd>
-Booleans for integers corresponding to double. Operation suffix is `_dib`,
-like `gmx_simd_or_dib()`.
+Booleans for integers corresponding to double.
 </dd>
 </dl>
+
+Note: You should NOT try to store and load boolean SIMD types to memory - that
+is the whole reason why there are no store or load operations provided for
+them. While it will be technically possible to achieve by defining objects
+inside a structure and then doing a placement new with aligned memory, this
+can be a very expensive operation on platforms where special single-bit
+predicate registers are used to represent booleans. You will need to find
+a more portable algorithm for your code instead.
 
 The subset you should use in practice
 -------------------------------------
@@ -294,40 +334,55 @@ If this seems daunting, in practice you should only need to use these types
 when you start coding:
 
 <dl>
-<dt>`#gmx_simd_real_t`</dt>
+<dt>`#gmx::SimdReal`</dt>
 <dd>
 Floating-point data.
 </dd>
-<dt>`#gmx_simd_bool_t`</dt>
+<dt>`#gmx::SimdBool`</dt>
 <dd>
 Booleans.
 </dd>
-<dt>`#gmx_simd_int32_t`</dt>
+<dt>`#gmx::SimdInt32`</dt>
 <dd>
 Integer data. Might not be supported, so you must check
 the preprocessor macros described below.
 </dd>
 </dl>
 
-Operations on these types will be defined to either float/double (or corresponding integers) based on the current \Gromacs precision, so the documentation is occasionally more detailed for the lower-level actual implementation functions.
+Operations on these types will be defined to either float/double (or
+corresponding integers) based on the current \Gromacs precision, so the
+documentation is occasionally more detailed for the lower-level actual
+implementation functions.
 
-SIMD4 Macros
-------------
+Note that it is critical for these types to be aligned in memory. This
+should always be the case when you declare variables on the stack, but
+unfortunately some compilers (at least clang-3.7 on OS X) appear to be
+buggy when our SIMD datatypes are placed inside a structure. Somewhere
+in the processes where this structure includes our class, which in turn
+includes the actual SIMD datatype, the alignment appears to be lost.
+Thus, even though the compiler will not warn you, until further notice
+we need to avoid putting the SIMD datatypes into other structures. This
+is particular severe when allocating memory on the heap, but it occurs
+for stack structures/classes too.
+
+
+SIMD4 implementation
+--------------------
 
 The above should be sufficient for code that works with the full SIMD width.
 Unfortunately reality is not that simple. Some algorithms like lattice
 summation need quartets of elements, so even when the SIMD width is >4 we
-need width-4 SIMD if it is supported. These datatypes and operations use the
-prefix `gmx_simd4_`, and availability is indicated by `GMX_SIMD4_HAVE_FLOAT`
-and `GMX_SIMD4_HAVE_DOUBLE`. For now we only support a small subset of SIMD
-operations for SIMD4, but that is trivial to extend if we need to.
+need width-4 SIMD if it is supported. The availability of SIMD4 is indicated
+by \ref GMX_SIMD4_HAVE_FLOAT and \ref GMX_SIMD4_HAVE_DOUBLE. For now we only
+support a small subset of SIMD operations for SIMD4.
 
 Predefined SIMD preprocessor macros
 ===================================
 
 Functionality-wise, we have a small set of core set of features that we
 require to be present on all platforms, while more avanced features can be
-used in the code when defines like e.g. `GMX_SIMD_HAVE_LOADU` are set.
+used in the code when defines like e.g. \ref GMX_SIMD_HAVE_LOADU have the
+value 1.
 
 This is a summary of the currently available preprocessor defines that
 you should use to check for support when using the corresponding features.
@@ -337,82 +392,86 @@ you should instead use the derived "real" defines set in this file - we list
 those at the end below.
 
 Preprocessor predefined macro defines set by the low-level implementation.
-These are only set if they work for all datatypes; `GMX_SIMD_HAVE_LOADU`
-thus means we can load both float, double, and integers from unaligned memory,
-and that the unaligned loads are available for SIMD4 too.
+These only have the value 1 if they work for all datatypes;
+\ref GMX_SIMD_HAVE_LOADU thus means we can load both float, double, and
+integers from unaligned memory, and that the unaligned loads are available
+for SIMD4 too.
 
 <dl>
-<dt>`GMX_SIMD_HAVE_FLOAT`</dt>
+<dt>\ref GMX_SIMD</dt>
+<dd>
+Some sort of SIMD architecture is enabled.
+</dd>
+<dt>\ref GMX_SIMD_HAVE_FLOAT</dt>
 <dd>
 Single-precision instructions available.
 </dd>
-<dt>`GMX_SIMD_HAVE_DOUBLE `</dt>
+<dt>\ref GMX_SIMD_HAVE_DOUBLE</dt>
 <dd>
 Double-precision instructions available.
 </dd>
-<dt>`GMX_SIMD_HAVE_HARDWARE`</dt>
-<dd>
-Set when we are NOT emulating SIMD.
-</dd>
-<dt>`GMX_SIMD_HAVE_LOADU`</dt>
+<dt>\ref GMX_SIMD_HAVE_LOADU</dt>
 <dd>
 Load from unaligned memory available.
 </dd>
-<dt>`GMX_SIMD_HAVE_STOREU`</dt>
+<dt>\ref GMX_SIMD_HAVE_STOREU</dt>
 <dd>
 Store to unaligned memory available.
 </dd>
-<dt>`GMX_SIMD_HAVE_LOGICAL`</dt>
+<dt>\ref GMX_SIMD_HAVE_LOGICAL</dt>
 <dd>
 Support for and/andnot/or/xor on floating-point variables.
 </dd>
-<dt>`GMX_SIMD_HAVE_FMA`</dt>
+<dt>\ref GMX_SIMD_HAVE_FMA</dt>
 <dd>
 Floating-point fused multiply-add.
 Note: We provide emulated FMA instructions if you do not have FMA
 support, but in that case you might be able to code it more efficient w/o FMA.
 </dd>
-<dt>`GMX_SIMD_HAVE_FRACTION`</dt>
+<dt>\ref GMX_SIMD_HAVE_FINT32_EXTRACT</dt>
 <dd>
-Instruction to get decimal fraction. Same as FMA: This denotes
-hardware support, otherwise instruction will be emulated.
+Support for extracting integer SIMD elements from `gmx::SimdFInt32`.
 </dd>
-<dt>`GMX_SIMD_HAVE_FINT32`</dt>
+<dt>\ref GMX_SIMD_HAVE_FINT32_LOGICAL</dt>
 <dd>
-Integer conversions to/from float available.
+Bitwise shifts on `gmx::SimdFInt32`.
 </dd>
-<dt>`GMX_SIMD_HAVE_FINT32_EXTRACT`</dt>
+<dt>\ref GMX_SIMD_HAVE_FINT32_ARITHMETICS</dt>
 <dd>
-Support for extracting integer SIMD elements from `gmx_simd_fint32_t`.
+Arithmetic ops for `gmx::SimdFInt32`.
 </dd>
-<dt>`GMX_SIMD_HAVE_FINT32_LOGICAL`</dt>
+<dt>\ref GMX_SIMD_HAVE_DINT32_EXTRACT</dt>
 <dd>
-Bitwise shifts on `gmx_simd_fint32_t`.
+Support for extracting integer SIMD elements from `gmx::SimdDInt32`.
 </dd>
-<dt>`GMX_SIMD_HAVE_FINT32_ARITHMETICS`</dt>
+<dt>\ref GMX_SIMD_HAVE_DINT32_LOGICAL</dt>
 <dd>
-Arithmetic ops for `gmx_simd_fint32_t`.
+Bitwise shifts on `gmx::SimdDInt32`.
 </dd>
-<dt>`GMX_SIMD_HAVE_DINT32`</dt>
+<dt>\ref GMX_SIMD_HAVE_DINT32_ARITHMETICS</dt>
 <dd>
-Integer conversions to/from double available.
+Arithmetic ops for `gmx::SimdDInt32`.
 </dd>
-<dt>`GMX_SIMD_HAVE_DINT32_EXTRACT`</dt>
+<dt>\ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT</dt>
 <dd>
-Support for extracting integer SIMD elements from `gmx_simd_dint32_t`.
+Half-SIMD-width nonbonded kernel utilities available for float SIMD.
 </dd>
-<dt>`GMX_SIMD_HAVE_DINT32_LOGICAL`</dt>
+<dt>\ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE</dt>
 <dd>
-Bitwise shifts on `gmx_simd_dint32_t`.
+Half-SIMD-width nonbonded kernel utilities available for double SIMD.
 </dd>
-<dt>`GMX_SIMD_HAVE_DINT32_ARITHMETICS`</dt>
+<dt>\ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT</dt>
 <dd>
-Arithmetic ops for `gmx_simd_dint32_t`.
+Can load pairs of unaligned floats from simd offsets (meant for linear tables).
+</dd>
+<dt>\ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE</dt>
+<dd>
+Can load pairs of unaligned doubles from simd offsets (meant for linear tables).
 </dd>
 </dl>
 
-There are also two macros specific to SIMD4: `GMX_SIMD4_HAVE_FLOAT` is set
-if we can use SIMD4 in single precision, and `GMX_SIMD4_HAVE_DOUBLE`
+There are also two macros specific to SIMD4: \ref GMX_SIMD4_HAVE_FLOAT is set
+if we can use SIMD4 in single precision, and \ref GMX_SIMD4_HAVE_DOUBLE
 similarly denotes support for a double-precision SIMD4 implementation. For
 generic properties (e.g. whether SIMD4 FMA is supported), you should check
 the normal SIMD macros above.
@@ -424,18 +483,18 @@ Higher-level code can use these macros to find information about the implementat
 for instance what the SIMD width is:
 
 <dl>
-<dt>`GMX_SIMD_FLOAT_WIDTH`</dt>
+<dt>\ref GMX_SIMD_FLOAT_WIDTH</dt>
 <dd>
-Number of elements in `gmx_simd_float_t`, and practical width of `gmx_simd_fint32_t`.
+Number of elements in `gmx::SimdFloat`, and practical width of `gmx::SimdFInt32`.
 </dd>
-<dt>`GMX_SIMD_DOUBLE_WIDTH`</dt>
+<dt>\ref GMX_SIMD_DOUBLE_WIDTH</dt>
 <dd>
-Number of elements in `gmx_simd_double_t`, and practical width of `gmx_simd_dint32_t`</dd>
-<dt>`GMX_SIMD_RSQRT_BITS`</dt>
+Number of elements in `gmx::SimdDouble`, and practical width of `gmx::SimdDInt32`</dd>
+<dt>\ref GMX_SIMD_RSQRT_BITS</dt>
 <dd>
 Accuracy (bits) of 1/sqrt(x) lookup step.
 </dd>
-<dt>`GMX_SIMD_RCP_BITS`</dt>
+<dt>\ref GMX_SIMD_RCP_BITS</dt>
 <dd>
 Accuracy (bits) of 1/x lookup step.
 </dd>
@@ -447,41 +506,41 @@ these are the ones you should check for unless you absolutely want to dig
 deep into the explicit single/double precision implementations:
 
 <dl>
-<dt>`GMX_SIMD_HAVE_REAL`</dt>
+<dt>\ref GMX_SIMD_HAVE_REAL</dt>
 <dd>
-Set either to `GMX_SIMD_HAVE_FLOAT` or `GMX_SIMD_HAVE_DOUBLE`
+Set to either \ref GMX_SIMD_HAVE_FLOAT or \ref GMX_SIMD_HAVE_DOUBLE
 </dd>
-<dt>`GMX_SIMD4_HAVE_REAL`</dt>
+<dt>\ref GMX_SIMD4_HAVE_REAL</dt>
 <dd>
-Set either to `GMX_SIMD4_HAVE_FLOAT` or `GMX_SIMD4_HAVE_DOUBLE`
+Set to either \ref GMX_SIMD4_HAVE_FLOAT or \ref GMX_SIMD4_HAVE_DOUBLE
 </dd>
-<dt>`GMX_SIMD_REAL_WIDTH`</dt>
+<dt>\ref GMX_SIMD_REAL_WIDTH</dt>
 <dd>
-Set either to `GMX_SIMD_FLOAT_WIDTH` or `GMX_SIMD_DOUBLE_WIDTH`
+Set to either \ref GMX_SIMD_FLOAT_WIDTH or \ref GMX_SIMD_DOUBLE_WIDTH
 </dd>
-<dt>`GMX_SIMD_HAVE_INT32`</dt>
+<dt>\ref GMX_SIMD_HAVE_INT32_EXTRACT</dt>
 <dd>
-Set either to `GMX_SIMD_HAVE_FINT32` or `GMX_SIMD_HAVE_DINT32`
+Set to either \ref GMX_SIMD_HAVE_FINT32_EXTRACT or \ref GMX_SIMD_HAVE_DINT32_EXTRACT
 </dd>
-<dt>`GMX_SIMD_INT32_WIDTH`</dt>
+<dt>\ref GMX_SIMD_HAVE_INT32_LOGICAL</dt>
 <dd>
-Set either to `GMX_SIMD_FINT32_WIDTH` or `GMX_SIMD_DINT32_WIDTH`
+Set to either \ref GMX_SIMD_HAVE_FINT32_LOGICAL or \ref GMX_SIMD_HAVE_DINT32_LOGICAL
 </dd>
-<dt>`GMX_SIMD_HAVE_INT32_EXTRACT`</dt>
+<dt>\ref GMX_SIMD_HAVE_INT32_ARITHMETICS</dt>
 <dd>
-Set either to `GMX_SIMD_HAVE_FINT32_EXTRACT` or `GMX_SIMD_HAVE_DINT32_EXTRACT`
+Set to either \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS
 </dd>
-<dt>`GMX_SIMD_HAVE_INT32_LOGICAL`</dt>
+<dt>\ref GMX_SIMD_HAVE_HSIMD_UTIL_REAL</dt>
 <dd>
-Set either to `GMX_SIMD_HAVE_FINT32_LOGICAL` or `GMX_SIMD_HAVE_DINT32_LOGICAL`
+Set to either \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
 </dd>
-<dt>`GMX_SIMD_HAVE_INT32_ARITHMETICS`</dt>
+<dt>\ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL</dt>
 <dd>
-Set either to `GMX_SIMD_HAVE_FINT32_ARITHMETICS` or `GMX_SIMD_HAVE_DINT32_ARITHMETICS`
+Set to either \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT or \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
 </dd>
 </dl>
 
-For convenience we also define `GMX_SIMD4_WIDTH` to 4. This will never vary,
+For convenience we also define \ref GMX_SIMD4_WIDTH to 4. This will never vary,
 but using it helps you make it clear that a loop or array refers to the
 SIMD4 width rather than some other '4'.
 
@@ -493,11 +552,22 @@ this with faster architecture-specific versions for some implementations. The
 recommended way to do that is to add a define around the generic function
 that skips it if the name is already defined. The actual implementations in
 the lowest-level files are typically defined to an architecture-specific name
-(such as `gmx_simd_sincos_d_sse2`) so we can override it (e.g. in SSE4) by
+(such as `simdSinCosD_Sse2`) so we can override it (e.g. in SSE4) by
 simply undefining and setting a new definition. Still, this is an
 implementation detail you won't have to worry about until you start writing
 support for a new SIMD architecture.
 
+
+Function naming
+---------------
+
+We rely on C++ overloading, so the name of a function is usually identical
+regardless of what datatype it operates on. There are a few exceptions to this
+for functions that do not take arguments but only return a value, e.g. setZero(),
+since overloading only works if the formal parameters are different. To solve this,
+we use different low-level function names in these cases, but then create proxy
+objects in the high-level `gromacs/simd/simd.h` so that you can still get the
+functionality by simply writing setZero() in the code.
 
 Automated checking
 ------------------

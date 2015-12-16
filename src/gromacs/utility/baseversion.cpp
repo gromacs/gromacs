@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
 
 #include "baseversion.h"
 
+#include "config.h"
+
 #include "baseversion-gen.h"
 
 const char *gmx_version()
@@ -51,4 +53,23 @@ const char *gmx_version_git_full_hash()
 const char *gmx_version_git_central_base_hash()
 {
     return _gmx_central_base_hash;
+}
+
+#ifdef GMX_DOUBLE
+void gmx_is_double_precision()
+{
+}
+#else
+void gmx_is_single_precision()
+{
+}
+#endif
+
+/* Note that this array (and some which follow) must match the "GPU
+ * support enumeration" in src/config.h.cmakein */
+static const char * const gpuImplementationStrings[] = { "disabled", "CUDA", "OpenCL" };
+
+const char *getGpuImplementationString()
+{
+    return gpuImplementationStrings[GMX_GPU];
 }

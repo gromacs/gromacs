@@ -45,18 +45,17 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -310,7 +309,7 @@ int gmx_tcaf(int argc, char *argv[])
     matrix            box;
     gmx_bool          bTop;
     int               gnx;
-    atom_id          *index, *atndx = NULL, at;
+    int              *index, *atndx = NULL, at;
     char             *grpname;
     char              title[256];
     real              t0, t1, dt, m, mtot, sysmass, rho, sx, cx;

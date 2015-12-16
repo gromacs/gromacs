@@ -37,6 +37,8 @@
 #ifndef GMX_TOPOLOGY_ATOMS_H
 #define GMX_TOPOLOGY_ATOMS_H
 
+#include <stdio.h>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -46,10 +48,13 @@ extern "C" {
 
 struct t_symtab;
 
+/* The particle type */
 enum {
     eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
-/* The particle type */
+
+/* The particle type names */
+extern const char *ptype_str[eptNR+1];
 
 typedef struct t_atom
 {
@@ -59,7 +64,7 @@ typedef struct t_atom
     unsigned short typeB;       /* Atom type for Free Energy calc       */
     int            ptype;       /* Particle type                        */
     int            resind;      /* Index into resinfo (in t_atoms)      */
-    int            atomnumber;  /* Atomic Number or NOTSET              */
+    int            atomnumber;  /* Atomic Number or 0                   */
     char           elem[4];     /* Element name                         */
 } t_atom;
 
@@ -142,6 +147,11 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */
+
+void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
+              gmx_bool bShownumbers);
+void pr_atomtypes(FILE *fp, int indent, const char *title,
+                  const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
 
 #ifdef __cplusplus
 }

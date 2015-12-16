@@ -52,13 +52,13 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -147,9 +147,9 @@ class PairDistance : public TrajectoryAnalysisModule
         std::string             fnDist_;
 
         double                  cutoff_;
-        int                     distanceType_;
-        int                     refGroupType_;
-        int                     selGroupType_;
+        DistanceType            distanceType_;
+        GroupType               refGroupType_;
+        GroupType               selGroupType_;
 
         //! Number of groups in `refSel_`.
         int                     refGroupCount_;
@@ -167,8 +167,7 @@ class PairDistance : public TrajectoryAnalysisModule
 };
 
 PairDistance::PairDistance()
-    : TrajectoryAnalysisModule(PairDistanceInfo::name, PairDistanceInfo::shortDescription),
-      cutoff_(0.0), distanceType_(eDistanceType_Min),
+    : cutoff_(0.0), distanceType_(eDistanceType_Min),
       refGroupType_(eGroupType_All), selGroupType_(eGroupType_All),
       refGroupCount_(0), maxGroupCount_(0), initialDist2_(0.0), cutoff2_(0.0)
 {
@@ -222,14 +221,14 @@ PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings
 
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
                            .description("Maximum distance to consider"));
-    options->addOption(StringOption("type").storeEnumIndex(&distanceType_)
-                           .defaultEnumIndex(0).enumValue(c_distanceTypes)
+    options->addOption(EnumOption<DistanceType>("type").store(&distanceType_)
+                           .enumValue(c_distanceTypes)
                            .description("Type of distances to calculate"));
-    options->addOption(StringOption("refgrouping").storeEnumIndex(&refGroupType_)
-                           .defaultEnumIndex(0).enumValue(c_groupTypes)
+    options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_)
+                           .enumValue(c_groupTypes)
                            .description("Grouping of -ref positions to compute the min/max over"));
-    options->addOption(StringOption("selgrouping").storeEnumIndex(&selGroupType_)
-                           .defaultEnumIndex(0).enumValue(c_groupTypes)
+    options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_)
+                           .enumValue(c_groupTypes)
                            .description("Grouping of -sel positions to compute the min/max over"));
 
     options->addOption(SelectionOption("ref").store(&refSel_).required()

@@ -41,7 +41,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/mdtypes/commrec.h"
 
 
 void md_print_info(const t_commrec *cr, FILE *fplog,

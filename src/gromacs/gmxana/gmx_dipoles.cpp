@@ -47,22 +47,25 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -277,7 +280,7 @@ static real normalize_cmap(t_gkrbin *gb)
     hi = 0;
     for (i = 0; (i < gb->nx); i++)
     {
-        vol = 4*M_PI*sqr(gb->spacing*i)*gb->spacing;
+        vol = 4*M_PI*gmx::square(gb->spacing*i)*gb->spacing;
         for (j = 0; (j < gb->ny); j++)
         {
             gb->cmap[i][j] /= vol;
@@ -1019,7 +1022,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     {
         /* Use 0.7 iso 0.5 to account for pressure scaling */
         /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
-        rcut   = 0.7*std::sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
+        rcut   = 0.7*std::sqrt(gmx::square(box[XX][XX])+gmx::square(box[YY][YY])+gmx::square(box[ZZ][ZZ]));
 
         gkrbin = mk_gkrbin(rcut, rcmax, bPhi, ndegrees);
     }
@@ -1206,9 +1209,9 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         if (cosaver)
         {
             compute_avercos(gnx_tot, dipole, &dd, dipaxis, bPairs);
-            rms_cos = std::sqrt(sqr(dipaxis[XX]-0.5)+
-                                sqr(dipaxis[YY]-0.5)+
-                                sqr(dipaxis[ZZ]-0.5));
+            rms_cos = std::sqrt(gmx::square(dipaxis[XX]-0.5)+
+                                gmx::square(dipaxis[YY]-0.5)+
+                                gmx::square(dipaxis[ZZ]-0.5));
             if (bPairs)
             {
                 fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
@@ -1249,7 +1252,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         {
             M[m]  += M_av[m];
             M2[m] += M_av2[m];
-            M4[m] += sqr(M_av2[m]);
+            M4[m] += gmx::square(M_av2[m]);
         }
         /* Increment loop counter */
         teller++;
@@ -1584,7 +1587,7 @@ int gmx_dipoles(int argc, char *argv[])
     };
     int              *gnx;
     int               nFF[2];
-    atom_id         **grpindex;
+    int             **grpindex;
     char            **grpname = NULL;
     gmx_bool          bGkr, bMU, bSlab;
     t_filenm          fnm[] = {

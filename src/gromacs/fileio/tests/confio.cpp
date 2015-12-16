@@ -49,7 +49,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
@@ -104,7 +104,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void writeReferenceFile()
         {
             write_sto_conf(referenceFilename_.c_str(), *refTop_->name,
-                           &refTop_->atoms, as_rvec_array(&refX_[0]), NULL, -1,
+                           &refTop_->atoms, as_rvec_array(refX_.data()), NULL, -1,
                            refBox_);
         }
 

@@ -52,13 +52,13 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -490,7 +490,7 @@ static void overlap(const char *outfile, int natoms,
             {
                 inp += iprod(eigvec1[vec][i], eigvec2[x][i]);
             }
-            overlap += sqr(inp);
+            overlap += gmx::square(inp);
         }
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
@@ -502,8 +502,8 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                     const char *projfile, const char *twodplotfile,
                     const char *threedplotfile, const char *filterfile, int skip,
                     const char *extremefile, gmx_bool bExtrAll, real extreme,
-                    int nextr, t_atoms *atoms, int natoms, atom_id *index,
-                    gmx_bool bFit, rvec *xref, int nfit, atom_id *ifit, real *w_rls,
+                    int nextr, t_atoms *atoms, int natoms, int *index,
+                    gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
                     real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
                     int noutvec, int *outvec, gmx_bool bSplit,
@@ -515,7 +515,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
     t_trxstatus *status;
     int          noutvec_extr, imin, imax;
     real        *pmin, *pmax;
-    atom_id     *all_at;
+    int         *all_at;
     matrix       box;
     rvec        *xread, *x;
     real         t, inp, **inprod = NULL;
@@ -1081,7 +1081,7 @@ int gmx_anaeig(int argc, char *argv[])
     const char       *indexfile;
     int               i, j, d;
     int               nout, *iout, noutvec, *outvec, nfit;
-    atom_id          *index = NULL, *ifit = NULL;
+    int              *index = NULL, *ifit = NULL;
     const char       *VecFile, *Vec2File, *topfile;
     const char       *EigFile, *Eig2File;
     const char       *CompFile, *RmsfFile, *ProjOnVecFile;
@@ -1349,8 +1349,8 @@ int gmx_anaeig(int argc, char *argv[])
         {
             for (d = 0; (d < DIM); d++)
             {
-                t       += sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
-                totmass += sqr(sqrtm[i]);
+                t       += gmx::square((xav1[i][d]-xav2[i][d])*sqrtm[i]);
+                totmass += gmx::square(sqrtm[i]);
             }
         }
         fprintf(stdout, "RMSD (without fit) between the two average structures:"

@@ -41,8 +41,8 @@
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/legacyheaders/typedefs.h"
+
+#include "pdb2top.h"
 
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);

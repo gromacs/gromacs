@@ -52,21 +52,23 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;
+static const int  NOTSET   = -23451;
 
 typedef struct {
     real sum;
@@ -377,7 +379,7 @@ static void get_orires_parms(const char *topnm,
     matrix          box;
 
     read_tpx(topnm, &ir, box, &natoms, NULL, NULL, &mtop);
-    top = gmx_mtop_generate_local_top(&mtop, &ir);
+    top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
 
     ip       = top->idef.iparams;
     iatom    = top->idef.il[F_ORIRES].iatoms;
@@ -423,7 +425,7 @@ static int get_bounds(const char *topnm,
 
     read_tpx(topnm, ir, box, &natoms, NULL, NULL, mtop);
     snew(*ltop, 1);
-    top   = gmx_mtop_generate_local_top(mtop, ir);
+    top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
     *ltop = top;
 
     functype = top->idef.functype;
@@ -507,7 +509,7 @@ static void calc_violations(real rt[], real rav3[], int nb, int index[],
             {
                 viol[j] += mypow(rt[j], -3.0);
             }
-            rav     += sqr(rav3[j]);
+            rav     += gmx::square(rav3[j]);
             rsum    += mypow(rt[j], -6);
         }
         rsum    = std::max(0.0, mypow(rsum, -sixth)-bounds[i]);
@@ -549,7 +551,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
         sumaver = 0;
         for (j = pair[i]; (j < pair[i+1]); j++)
         {
-            sumaver += sqr(violaver[j]/nframes);
+            sumaver += gmx::square(violaver[j]/nframes);
         }
         sumaver = std::max(0.0, mypow(sumaver, minsixth)-bounds[i]);
 
@@ -602,7 +604,7 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         {
             for (m = 0; m < nsets; m++)
             {
-                di   = sqr(eneint[m][j+i] - eneint[m][j]);
+                di   = gmx::square(eneint[m][j+i] - eneint[m][j]);
 
                 av[m]     += di;
                 av[nsets] += di/nsets;
@@ -670,7 +672,7 @@ static void add_ee_av(ee_sum_t *ees)
 
 static double calc_ee2(int nb, ee_sum_t *ees)
 {
-    return (ees->sav2/nb - dsqr(ees->sav/nb))/(nb - 1);
+    return (ees->sav2/nb - gmx::square(ees->sav/nb))/(nb - 1);
 }
 
 static void set_ee_av(ener_ee_t *eee)
@@ -758,7 +760,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
                 sum2 += es->sum2;
                 if (np > 0)
                 {
-                    sum2 += dsqr(sum/np - (sum + es->sum)/(np + p))
+                    sum2 += gmx::square(sum/np - (sum + es->sum)/(np + p))
                         *np*(np + p)/p;
                 }
             }
@@ -767,7 +769,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
                 /* Add a single value to the sum and sum of squares. */
                 p     = 1;
                 sump  = ed->ener[f];
-                sum2 += dsqr(sump);
+                sum2 += gmx::square(sump);
             }
 
             /* sum has to be increased after sum2 */
@@ -825,7 +827,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
         }
         else
         {
-            edat->s[i].rmsd = std::sqrt(sum2/np - dsqr(edat->s[i].av));
+            edat->s[i].rmsd = std::sqrt(sum2/np - gmx::square(edat->s[i].av));
         }
 
         if (edat->nframes > 1)
@@ -1019,7 +1021,7 @@ static void calc_fluctuation_props(FILE *fp,
     if ((ii[eVol] < nset) && (ii[eTemp] < nset))
     {
         vv    = edat->s[ii[eVol]].av*NANO3;
-        varv  = dsqr(edat->s[ii[eVol]].rmsd*NANO3);
+        varv  = gmx::square(edat->s[ii[eVol]].rmsd*NANO3);
         kappa = (varv/vv)/(BOLTZMANN*tt);
     }
     /* Enthalpy */
@@ -1027,7 +1029,7 @@ static void calc_fluctuation_props(FILE *fp,
     if ((ii[eEnth] < nset) && (ii[eTemp] < nset))
     {
         hh    = KILO*edat->s[ii[eEnth]].av/AVOGADRO;
-        varh  = dsqr(KILO*edat->s[ii[eEnth]].rmsd/AVOGADRO);
+        varh  = gmx::square(KILO*edat->s[ii[eEnth]].rmsd/AVOGADRO);
         cp    = AVOGADRO*((varh/nmol)/(BOLTZMANN*tt*tt));
     }
     /* Total energy */
@@ -1036,7 +1038,7 @@ static void calc_fluctuation_props(FILE *fp,
         /* Only compute cv in constant volume runs, which we can test
            by checking whether the enthalpy was computed.
          */
-        varet = sqr(edat->s[ii[eEtot]].rmsd);
+        varet = gmx::square(edat->s[ii[eEtot]].rmsd);
         cv    = KILO*((varet/nmol)/(BOLTZ*tt*tt));
     }
     /* Alpha, dcp */
@@ -1056,7 +1058,7 @@ static void calc_fluctuation_props(FILE *fp,
         v_aver  = v_sum  / edat->nframes;
         h_aver  = h_sum  / edat->nframes;
         alpha   = (vh_aver-v_aver*h_aver)/(v_aver*BOLTZMANN*tt*tt);
-        dcp     = (v_aver*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
+        dcp     = (v_aver*AVOGADRO/nmol)*tt*gmx::square(alpha)/(kappa);
     }
 
     if (tt != NOTSET)
@@ -2644,7 +2646,7 @@ int gmx_energy(int argc, char *argv[])
                         {
                             for (i = 0; i < nor; i++)
                             {
-                                odrms[i] += sqr(vals[i]-oobs[i]);
+                                odrms[i] += gmx::square(vals[i]-oobs[i]);
                             }
                         }
                         if (bORT)

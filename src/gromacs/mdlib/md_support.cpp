@@ -42,20 +42,25 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -188,8 +193,11 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
     if (statea->nalloc > stateb->nalloc)
     {
         stateb->nalloc = statea->nalloc;
-        srenew(stateb->x, stateb->nalloc);
-        srenew(stateb->v, stateb->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        srenew(stateb->x, stateb->nalloc + 1);
+        srenew(stateb->v, stateb->nalloc + 1);
     }
 
     stateb->natoms     = statea->natoms;
@@ -260,9 +268,11 @@ real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass 
     return quantity;
 }
 
+/* TODO Specialize this routine into init-time and loop-time versions?
+   e.g. bReadEkin is only true when restoring from checkpoint */
 void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
-                     t_state *state, t_state *state_global, t_mdatoms *mdatoms,
+                     t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
@@ -306,20 +316,13 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         {
             accumulate_u(cr, &(ir->opts), ekind);
         }
-        debug_gmx();
-        if (bReadEkin)
-        {
-            restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
-        }
-        else
+        if (!bReadEkin)
         {
             /* idef is only used in case of Drude simulations, ir->opts always needed,
              * but other data in ir are needed by Drude algorithms, so instead of just
              * passing opts, we use ir directly */
             calc_ke_part(ir, state, mdatoms, ekind, nrnb, idef, bEkinAveVel);
         }
-
-        debug_gmx();
     }
 
     /* Calculate center of mass velocity if necessary, also parallellized */
@@ -404,7 +407,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bTemp)
     {
         /* Sum the kinetic energies of the groups & calc temp */
-        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
+        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with inputrecNptTrotter */
         /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).
            Leap with AveVel is not supported; it's not clear that it will actually work.
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
@@ -671,49 +674,6 @@ int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
     return nstglobalcomm;
 }
 
-void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
-                               t_inputrec *ir, gmx_mtop_t *mtop)
-{
-    /* Check required for old tpx files */
-    if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
-        ir->nstcalcenergy % ir->nstlist != 0)
-    {
-        md_print_warn(cr, fplog, "Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies\n");
-
-        if (gmx_mtop_ftype_count(mtop, F_CONSTR) +
-            gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0 &&
-            ir->eConstrAlg == econtSHAKE)
-        {
-            md_print_warn(cr, fplog, "With twin-range cut-off's and SHAKE the virial and pressure are incorrect\n");
-            if (ir->epc != epcNO)
-            {
-                gmx_fatal(FARGS, "Can not do pressure coupling with twin-range cut-off's and SHAKE");
-            }
-        }
-        check_nst_param(fplog, cr, "nstlist", ir->nstlist,
-                        "nstcalcenergy", &ir->nstcalcenergy);
-        if (ir->epc != epcNO)
-        {
-            check_nst_param(fplog, cr, "nstlist", ir->nstlist,
-                            "nstpcouple", &ir->nstpcouple);
-        }
-        check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
-                        "nstenergy", &ir->nstenergy);
-        check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
-                        "nstlog", &ir->nstlog);
-        if (ir->efep != efepNO)
-        {
-            check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
-                            "nstdhdl", &ir->fepvals->nstdhdl);
-        }
-    }
-
-    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
-    {
-        gmx_fatal(FARGS, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
-    }
-}
-
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bNotLastFrame)
 {
@@ -751,14 +711,17 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
     if (state->x == NULL)
     {
-        snew(state->x, state->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        snew(state->x, state->nalloc + 1);
     }
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
         if (state->v == NULL)
         {
-            snew(state->v, state->nalloc);
+            snew(state->v, state->nalloc + 1);
         }
     }
     if (ir->eI == eiSD2)
@@ -767,7 +730,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if (state->sd_X == NULL)
         {
             /* sd_X is not stored in the tpx file, so we need to allocate it */
-            snew(state->sd_X, state->nalloc);
+            snew(state->sd_X, state->nalloc + 1);
         }
     }
     if (ir->eI == eiCG)
@@ -776,7 +739,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if (state->cg_p == NULL)
         {
             /* cg_p is not stored in the tpx file, so we need to allocate it */
-            snew(state->cg_p, state->nalloc);
+            snew(state->cg_p, state->nalloc + 1);
         }
     }
 
@@ -784,7 +747,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     if (ir->ePBC != epbcNONE)
     {
         state->flags |= (1<<estBOX);
-        if (PRESERVE_SHAPE(*ir))
+        if (inputrecPreserveShape(ir))
         {
             state->flags |= (1<<estBOX_REL);
         }
@@ -794,7 +757,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         }
         if (ir->epc != epcNO)
         {
-            if (IR_NPT_TROTTER(ir) || (IR_NPH_TROTTER(ir)))
+            if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
             {
                 state->nnhpres = 1;
                 state->flags  |= (1<<estNHPRES_XI);
@@ -824,8 +787,8 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
-
-    init_energyhistory(&state->enerhist);
+    snew(state->enerhist, 1);
+    init_energyhistory(state->enerhist);
     init_df_history(&state->dfhist, ir->fepvals->n_lambda);
     state->swapstate.eSwapCoords = ir->eSwapCoords;
 }

@@ -54,53 +54,55 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/gmxlib/orires.h"
-#include "gromacs/gmxlib/sighandler.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/gmx_thread_affinity.h"
-#include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/integrator.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/minimize.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/tpi.h"
+#include "gromacs/mdrunutility/threadaffinity.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
@@ -136,7 +138,6 @@ struct mdrunner_arglist
     const t_filenm         *fnm;
     const gmx_output_env_t *oenv;
     gmx_bool                bVerbose;
-    gmx_bool                bCompact;
     int                     nstglobalcomm;
     ivec                    ddxyz;
     int                     dd_node_order;
@@ -190,7 +191,7 @@ static void mdrunner_start_fn(void *arg)
         }
 
         gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                      mc.bVerbose, mc.nstglobalcomm,
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
@@ -210,7 +211,7 @@ static void mdrunner_start_fn(void *arg)
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                         gmx_bool bCompact, int nstglobalcomm,
+                                         int nstglobalcomm,
                                          ivec ddxyz, int dd_node_order, real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -251,7 +252,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->fnm             = fnmn;
     mda->oenv            = oenv;
     mda->bVerbose        = bVerbose;
-    mda->bCompact        = bCompact;
     mda->nstglobalcomm   = nstglobalcomm;
     mda->ddxyz[XX]       = ddxyz[XX];
     mda->ddxyz[YY]       = ddxyz[YY];
@@ -344,7 +344,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     const char            *box_err  = "Can not increase nstlist because the box is too small";
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
-    const float            oneThird = 1.0f / 3.0f;
 
     if (nstlist_cmdline <= 0)
     {
@@ -441,8 +440,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
                                               mtop->natoms/det(box));
-    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_ok, oneThird) - rlist_inc;
-    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_max, oneThird) - rlist_inc;
+    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_ok) - rlist_inc;
+    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_max) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
@@ -462,7 +461,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
-        bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC, box));
+        bBox = (gmx::square(rlist_new) < max_cutoff2(ir->ePBC, box));
         bDD  = TRUE;
         if (bBox && DOMAINDECOMP(cr))
         {
@@ -529,7 +528,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             fprintf(fp, "%s\n\n", buf);
         }
         ir->rlist     = rlist_new;
-        ir->rlistlong = rlist_new;
     }
 }
 
@@ -566,7 +564,6 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                         ls.cluster_size_i, ls.cluster_size_j);
             }
             ir->rlist     = rlist_new;
-            ir->rlistlong = rlist_new;
         }
     }
 
@@ -666,7 +663,7 @@ static integrator_t *my_integrator(unsigned int ei)
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
+             int nstglobalcomm,
              ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -695,13 +692,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
     gmx_wallcycle_t           wcycle;
-    gmx_bool                  bReadEkin;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
     gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
     int                       nthreads_pme = 1;
-    int                       nthreads_pp  = 1;
     gmx_membed_t             *membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
@@ -839,7 +834,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             t_commrec *cr_old       = cr;
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
-                                        oenv, bVerbose, bCompact, nstglobalcomm,
+                                        oenv, bVerbose, nstglobalcomm,
                                         ddxyz, dd_node_order, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt, nstlist_cmdline,
@@ -925,7 +920,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         if (cr->npmenodes > 0)
         {
-            gmx_fatal_collective(FARGS, cr, NULL,
+            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "PME-only ranks are requested, but the system does not use PME for electrostatics or LJ");
         }
 
@@ -963,7 +958,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     init_orires(fplog, mtop, state->x, inputrec, cr, &(fcd->orires),
                 state);
 
-    if (DEFORM(*inputrec))
+    if (inputrecDeform(inputrec))
     {
         /* Store the deform reference box before reading the checkpoint */
         if (SIMMASTER(cr))
@@ -986,23 +981,22 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
     }
 
-    if (opt2bSet("-cpi", nfile, fnm))
+    if (Flags & MD_STARTFROMCPT)
     {
         /* Check if checkpoint file exists before doing continuation.
          * This way we can use identical input options for the first and subsequent runs...
          */
-        if (gmx_fexist_master(opt2fn_master("-cpi", nfile, fnm, cr), cr) )
-        {
-            load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                            cr, ddxyz,
-                            inputrec, state, &bReadEkin,
-                            (Flags & MD_APPENDFILES),
-                            (Flags & MD_APPENDFILESSET));
+        gmx_bool bReadEkin;
 
-            if (bReadEkin)
-            {
-                Flags |= MD_READ_EKIN;
-            }
+        load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
+                        cr, ddxyz,
+                        inputrec, state, &bReadEkin,
+                        (Flags & MD_APPENDFILES),
+                        (Flags & MD_APPENDFILESSET));
+
+        if (bReadEkin)
+        {
+            Flags |= MD_READ_EKIN;
         }
     }
 
@@ -1143,13 +1137,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    /* TODO nthreads_pp is only used for pinning threads.
-     * This is a temporary solution until we have a hw topology library.
-     */
-    nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
     nthreads_pme = gmx_omp_nthreads_get(emntPME);
 
-    wcycle = wallcycle_init(fplog, resetstep, cr, nthreads_pp, nthreads_pme);
+    wcycle = wallcycle_init(fplog, resetstep, cr);
 
     if (PAR(cr))
     {
@@ -1171,7 +1161,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr->gpu_opt = &hw_opt->gpu_opt;
         init_forcerec(fplog, fr, fcd, inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
-                      opt2fn("-tabletf", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       opt2fn("-tableb", nfile, fnm),
                       nbpu_opt,
@@ -1364,7 +1353,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, nfile, fnm,
-                                     oenv, bVerbose, bCompact,
+                                     oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, shellfc, constr,
                                      nstepout, inputrec, mtop,

@@ -160,7 +160,7 @@ std::string formatString(const char *fmt, ...)
             length *= 2;
         }
         dynamicBuf.resize(length);
-        buf = &dynamicBuf[0];
+        buf = dynamicBuf.data();
     }
 }
 

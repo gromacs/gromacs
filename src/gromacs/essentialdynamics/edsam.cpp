@@ -42,23 +42,25 @@
 #include <string.h>
 #include <time.h>
 
-#include "gromacs/fileio/confio.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -308,7 +310,7 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec)
     for (i = 0; i < vec->neig; i++)
     {
         vec->refproj[i] = projectx(edi, x, vec->vec[i]);
-        rad            += pow((vec->refproj[i]-vec->xproj[i]), 2);
+        rad            += gmx::square((vec->refproj[i]-vec->xproj[i]));
     }
     vec->radius = sqrt(rad);
 
@@ -377,7 +379,7 @@ static real calc_radius(t_eigvec *vec)
 
     for (i = 0; i < vec->neig; i++)
     {
-        rad += pow((vec->refproj[i]-vec->xproj[i]), 2);
+        rad += gmx::square((vec->refproj[i]-vec->xproj[i]));
     }
 
     return rad = sqrt(rad);
@@ -2051,7 +2053,7 @@ static void do_radfix(rvec *xcoll, t_edpar *edi)
     {
         /* calculate the projections, radius */
         proj[i] = projectx(edi, xcoll, edi->vecs.radfix.vec[i]);
-        rad    += pow(proj[i] - edi->vecs.radfix.refproj[i], 2);
+        rad    += gmx::square(proj[i] - edi->vecs.radfix.refproj[i]);
     }
 
     rad                      = sqrt(rad);
@@ -2096,7 +2098,7 @@ static void do_radacc(rvec *xcoll, t_edpar *edi)
     {
         /* calculate the projections, radius */
         proj[i] = projectx(edi, xcoll, edi->vecs.radacc.vec[i]);
-        rad    += pow(proj[i] - edi->vecs.radacc.refproj[i], 2);
+        rad    += gmx::square(proj[i] - edi->vecs.radacc.refproj[i]);
     }
     rad = sqrt(rad);
 
@@ -2167,7 +2169,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
     {
         /* calculate the projections, radius */
         loc->proj[i] = projectx(edi, xcoll, edi->vecs.radcon.vec[i]);
-        rad         += pow(loc->proj[i] - edi->vecs.radcon.refproj[i], 2);
+        rad         += gmx::square(loc->proj[i] - edi->vecs.radcon.refproj[i]);
     }
     rad = sqrt(rad);
     /* only correct when radius increased */

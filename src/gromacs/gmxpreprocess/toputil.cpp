@@ -40,14 +40,16 @@
 
 #include <string.h>
 
+#include <climits>
 #include <cmath>
 
 #include <algorithm>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -390,7 +392,7 @@ void print_blocka(FILE *out, const char *szName,
 
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
-    atom_id     i;
+    int         i;
     gmx_bool    have_excl;
     int         j;
 

@@ -96,9 +96,8 @@ AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection *sele
 void
 AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
 {
-    options->addOption(StringOption("xvg").enumValue(g_plotFormats)
-                           .defaultValue("xmgrace")
-                           .storeEnumIndex(&plotFormat_)
+    options->addOption(EnumIntOption("xvg").enumValue(g_plotFormats)
+                           .store(&plotFormat_)
                            .description("Plot formatting"));
 }
 
@@ -368,7 +367,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                 {
                     legend.push_back(impl_->legend_[i].c_str());
                 }
-                xvgr_legend(impl_->fp_, legend.size(), &legend[0], oenv);
+                xvgr_legend(impl_->fp_, legend.size(), legend.data(), oenv);
             }
         }
     }

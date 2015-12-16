@@ -156,11 +156,9 @@ Run control
       molecule. When :mdp:`nstlist` is larger than one,
       :mdp:`nstlist` insertions are performed in a sphere with radius
       :mdp:`rtpi` around a the same random location using the same
-      neighborlist (and the same long-range energy when :mdp:`rvdw`
-      or :mdp:`rcoulomb` > :mdp:`rlist`, which is only allowed for
-      single-atom molecules). Since neighborlist construction is
-      expensive, one can perform several extra insertions with the
-      same list almost for free. The random seed is set with
+      neighborlist. Since neighborlist construction is expensive,
+      one can perform several extra insertions with the same list
+      almost for free. The random seed is set with
       :mdp:`ld-seed`. The temperature for the Boltzmann weighting is
       set with :mdp:`ref-t`, this should match the temperature of the
       simulation of the original trajectory. Dispersion correction is
@@ -360,9 +358,7 @@ Output control
 
    (100)
    number of steps that elapse between calculating the energies, 0 is
-   never. This option is only relevant with dynamics. With a
-   twin-range cut-off setup :mdp:`nstcalcenergy` should be equal to
-   or a multiple of :mdp:`nstlist`. This option affects the
+   never. This option is only relevant with dynamics. This option affects the
    performance in parallel simulations, because calculating energies
    requires global communication between all processes which can
    become a bottleneck at high parallelization.
@@ -438,8 +434,7 @@ Neighbor searching
 
    .. mdp-value:: >0
 
-      Frequency to update the neighbor list (and the long-range
-      forces, when using twin-range cut-offs). When this is 0, the
+      Frequency to update the neighbor list. When this is 0, the
       neighbor list is made only once. With energy minimization the
       neighborlist will be updated for every energy evaluation when
       :mdp:`nstlist` is greater than 0. With :mdp:`Verlet` and
@@ -460,48 +455,6 @@ Neighbor searching
    .. mdp-value:: <0
 
       Unused.
-
-.. mdp:: nstcalclr
-
-   (-1) \[steps\]
-   Controls the period between calculations of long-range forces when
-   using the group cut-off scheme.
-
-   .. mdp-value:: 1
-
-      Calculate the long-range forces every single step. This is
-      useful to have separate neighbor lists with buffers for
-      electrostatics and Van der Waals interactions, and in particular
-      it makes it possible to have the Van der Waals cutoff longer
-      than electrostatics (useful *e.g.* with PME). However, there is
-      no point in having identical long-range cutoffs for both
-      interaction forms and update them every step - then it will be
-      slightly faster to put everything in the short-range list.
-
-   .. mdp-value:: >1
-
-      Calculate the long-range forces every :mdp:`nstcalclr` steps
-      and use a multiple-time-step integrator to combine forces. This
-      can now be done more frequently than :mdp:`nstlist` since the
-      lists are stored, and it might be a good idea *e.g.* for Van der
-      Waals interactions that vary slower than electrostatics.
-
-   .. mdp-value:: \-1
-
-      Calculate long-range forces on steps where neighbor searching is
-      performed. While this is the default value, you might want to
-      consider updating the long-range forces more frequently.
-
-      Note that twin-range force evaluation might be enabled
-      automatically by PP-PME load balancing. This is done in order to
-      maintain the chosen Van der Waals interaction radius even if the
-      load balancing is changing the electrostatics cutoff. If the
-      :ref:`mdp` file already specifies twin-range interactions (*e.g.* to
-      evaluate Lennard-Jones interactions with a longer cutoff than
-      the PME electrostatics every 2-3 steps), the load balancing will
-      have also a small effect on Lennard-Jones, since the short-range
-      cutoff (inside which forces are evaluated every step) is
-      changed.
 
 .. mdp:: ns-type
 
@@ -591,15 +544,6 @@ Neighbor searching
    :mdp:`verlet-buffer-tolerance` option and the value of
    :mdp:`rlist` is ignored.
 
-.. mdp:: rlistlong
-
-   (-1) \[nm\]
-   Cut-off distance for the long-range neighbor list. This parameter
-   is only relevant for a twin-range cut-off setup with switched
-   potentials. In that case a buffer region is required to account for
-   the size of charge groups. In all other cases this parameter is
-   automatically set to the longest cut-off distance.
-
 
 Electrostatics
 ^^^^^^^^^^^^^^
@@ -608,9 +552,9 @@ Electrostatics
 
    .. mdp-value:: Cut-off
 
-      Twin range cut-offs with neighborlist cut-off :mdp:`rlist` and
-      Coulomb cut-off :mdp:`rcoulomb`, where :mdp:`rcoulomb` >=
-      :mdp:`rlist`.
+      Plain cut-off with neighborlist radius :mdp:`rlist` and
+      Coulomb cut-off :mdp:`rcoulomb`, where :mdp:`rlist` >=
+      :mdp:`rcoulomb`.
 
    .. mdp-value:: Ewald
 
@@ -649,7 +593,7 @@ Electrostatics
    .. mdp-value:: Reaction-Field
 
       Reaction field electrostatics with Coulomb cut-off
-      :mdp:`rcoulomb`, where :mdp:`rcoulomb` >= :mdp:`rlist`. The
+      :mdp:`rcoulomb`, where :mdp:`rlist` >= :mdp:`rvdw`. The
       dielectric constant beyond the cut-off is
       :mdp:`epsilon-rf`. The dielectric constant can be set to
       infinity by setting :mdp:`epsilon-rf` =0.
@@ -657,7 +601,7 @@ Electrostatics
    .. mdp-value:: Generalized-Reaction-Field
 
       Generalized reaction field with Coulomb cut-off
-      :mdp:`rcoulomb`, where :mdp:`rcoulomb` >= :mdp:`rlist`. The
+      :mdp:`rcoulomb`, where :mdp:`rlist` >= :mdp:`rcoulomb`. The
       dielectric constant beyond the cut-off is
       :mdp:`epsilon-rf`. The ionic strength is computed from the
       number of charged (*i.e.* with non zero charge) charge
@@ -678,17 +622,6 @@ Electrostatics
       that table lookups are used instead of analytical functions make
       :mdp:`Reaction-Field-zero` computationally more expensive than
       normal reaction-field.
-
-   .. mdp-value:: Reaction-Field-nec
-
-      The same as :mdp-value:`coulombtype=Reaction-Field`, but
-      implemented as in |Gromacs| versions before 3.3. No
-      reaction-field correction is applied to excluded atom pairs and
-      self pairs. The 1-4 interactions are calculated using a
-      reaction-field. The missing correction due to the excluded pairs
-      that do not have a 1-4 interaction is up to a few percent of the
-      total electrostatic energy and causes a minor difference in the
-      forces and the pressure.
 
    .. mdp-value:: Shift
 
@@ -2825,114 +2758,6 @@ Implicit solvent
    calculations are done.
 
 
-Adaptive Resolution Simulation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. mdp:: adress
-
-   (no)
-   Decide whether the AdResS feature is turned on.
-
-.. mdp:: adress-type
-
-   .. mdp-value:: Off
-
-      Do an AdResS simulation with weight equal 1, which is equivalent
-      to an explicit (normal) MD simulation. The difference to
-      disabled AdResS is that the AdResS variables are still read-in
-      and hence are defined.
-
-   .. mdp-value:: Constant
-
-      Do an AdResS simulation with a constant weight,
-      :mdp:`adress-const-wf` defines the value of the weight
-
-   .. mdp-value:: XSplit
-
-      Do an AdResS simulation with simulation box split in
-      x-direction, so basically the weight is only a function of the x
-      coordinate and all distances are measured using the x coordinate
-      only.
-
-   .. mdp-value:: Sphere
-
-      Do an AdResS simulation with spherical explicit zone.
-
-.. mdp:: adress-const-wf
-
-   (1)
-   Provides the weight for a constant weight simulation
-   (:mdp:`adress-type` =Constant)
-
-.. mdp:: adress-ex-width
-
-   (0)
-   Width of the explicit zone, measured from
-   :mdp:`adress-reference-coords`.
-
-.. mdp:: adress-hy-width
-
-   (0)
-   Width of the hybrid zone.
-
-.. mdp:: adress-reference-coords
-
-   (0,0,0)
-   Position of the center of the explicit zone. Periodic boundary
-   conditions apply for measuring the distance from it.
-
-.. mdp:: adress-cg-grp-names
-
-   The names of the coarse-grained energy groups. All other energy
-   groups are considered explicit and their interactions will be
-   automatically excluded with the coarse-grained groups.
-
-.. mdp:: adress-site
-
-   The mapping point from which the weight is calculated.
-
-   .. mdp-value:: COM
-
-      The weight is calculated from the center of mass of each charge group.
-
-   .. mdp-value:: COG
-
-      The weight is calculated from the center of geometry of each charge group.
-
-   .. mdp-value:: Atom
-
-      The weight is calculated from the position of 1st atom of each charge group.
-
-   .. mdp-value:: AtomPerAtom
-
-      The weight is calculated from the position of each individual atom.
-
-.. mdp:: adress-interface-correction
-
-   .. mdp-value:: Off
-
-      Do not apply any interface correction.
-
-   .. mdp-value:: thermoforce
-
-      Apply thermodynamic force interface correction. The table can be
-      specified using the ``-tabletf`` option of :ref:`gmx mdrun`. The
-      table should contain the potential and force (acting on
-      molecules) as function of the distance from
-      :mdp:`adress-reference-coords`.
-
-.. mdp:: adress-tf-grp-names
-
-   The names of the energy groups to which the thermoforce is applied
-   if enabled in :mdp:`adress-interface-correction`. If no group is
-   given the default table is applied.
-
-.. mdp:: adress-ex-forcecap
-
-   (0)
-   Cap the force in the hybrid region, useful for big molecules. 0
-   disables force capping.
-
 Polarizable simulations
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -3093,10 +2918,6 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
    (no) As above, but for split-group #1.
 
-.. mdp:: swap-group
-
-   Group name of the ions that can be swapped with solvent molecules.
-
 .. mdp:: solvent-group
 
    Name of the index group of solvent molecules.
@@ -3107,23 +2928,24 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
    This can be used to prevent that ions near a compartment boundary
    (diffusing through a channel, e.g.) lead to unwanted back and forth swaps.
 
-.. mdp:: anionsA
+.. mdp:: iontypes
 
-   (-1) Requested (=reference) number of anions in compartment A.
+   (1) The number of different ion types to be controlled. These are during the
+   simulation exchanged with solvent molecules to reach the desired reference numbers.
+
+.. mdp:: iontype0-name
+
+   Name of the first ion type.
+
+.. mdp:: iontype0-in-A
+
+   (-1) Requested (=reference) number of ions of type 0 in compartment A.
    The default value of -1 means: use the number of ions as found in time step 0
    as reference value.
 
-.. mdp:: cationsA
+.. mdp:: iontype0-in-B
 
-   (-1) Reference number of cations for compartment A.
-
-.. mdp:: anionsB
-
-   (-1) Reference number of anions for compartment B.
-
-.. mdp:: cationsB
-
-   (-1) Reference number of cations for compartment B.
+   (-1) Reference number of ions of type 0 for compartment B.
 
 .. mdp:: bulk-offsetA
 
@@ -3187,6 +3009,18 @@ User defined thingies
 
    These you can use if you modify code. You can pass integers and
    reals and groups to your subroutine. Check the inputrec definition
-   in ``src/gromacs/legacyheaders/types/inputrec.h``
+   in ``src/gromacs/mdtypes/inputrec.h``
+
+Removed features
+^^^^^^^^^^^^^^^^
+
+This feature has been removed from |Gromacs|, but so that old
+:ref:`mdp` and :ref:`tpr` files cannot be mistakenly misused, we still
+parse this option. :ref:`gmx grompp` and :ref:`gmx mdrun` will issue a
+fatal error if this is set.
+
+.. mdp:: adress
+
+   (no)
 
 .. _reference manual: gmx-manual-parent-dir_

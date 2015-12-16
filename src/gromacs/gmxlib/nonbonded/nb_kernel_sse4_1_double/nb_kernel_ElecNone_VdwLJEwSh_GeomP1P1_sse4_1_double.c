@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse4_1_double.h"
 #include "kernelutil_x86_sse4_1_double.h"
 
 /*
@@ -181,7 +179,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse4_1_double
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_pd(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
+            rinv00           = sse41_invsqrt_d(rsq00);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
 
@@ -208,7 +206,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
@@ -264,7 +262,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse4_1_double
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_pd(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
+            rinv00           = sse41_invsqrt_d(rsq00);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
 
@@ -289,7 +287,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* vvdw6 = [C6 - C6grid * (1-poly)]/r6 */
@@ -482,7 +480,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse4_1_double
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_pd(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
+            rinv00           = sse41_invsqrt_d(rsq00);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
 
@@ -509,7 +507,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* f6A = 6 * C6grid * (1 - poly) */
@@ -560,7 +558,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse4_1_double
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_pd(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_pd(rsq00);
+            rinv00           = sse41_invsqrt_d(rsq00);
 
             rinvsq00         = _mm_mul_pd(rinv00,rinv00);
 
@@ -585,7 +583,7 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse4_1_double
             rinvsix          = _mm_mul_pd(_mm_mul_pd(rinvsq00,rinvsq00),rinvsq00);
             ewcljrsq         = _mm_mul_pd(ewclj2,rsq00);
             ewclj6           = _mm_mul_pd(ewclj2,_mm_mul_pd(ewclj2,ewclj2));
-            exponent         = gmx_simd_exp_d(ewcljrsq);
+            exponent         = sse41_exp_d(ewcljrsq);
             /* poly = exp(-(beta*r)^2) * (1 + (beta*r)^2 + (beta*r)^4 /2) */
             poly             = _mm_mul_pd(exponent,_mm_add_pd(_mm_sub_pd(one,ewcljrsq),_mm_mul_pd(_mm_mul_pd(ewcljrsq,ewcljrsq),one_half)));
             /* f6A = 6 * C6grid * (1 - poly) */

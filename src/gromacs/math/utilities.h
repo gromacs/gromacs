@@ -119,13 +119,6 @@ gmx_within_tol(double   f1,
 int
 gmx_numzero(double a);
 
-/*! \brief Compute floor of logarithm to base 2
- *
- * \return log2(x)
- */
-unsigned int
-gmx_log2i(unsigned int x);
-
 /*! \brief Multiply two large ints
  *
  * \return False iff overflow occured
@@ -148,6 +141,17 @@ gmx_greatest_common_divisor(int p, int q);
  * Enables division-by-zero, invalid, and overflow.
  */
 int gmx_feenableexcept();
+
+/*! \brief Return cut-off to use
+ *
+ * Takes the max of two cut-offs. However a cut-off of 0
+ * signifies that the cut-off in fact is infinite, and
+ * this requires this special routine.
+ * \param[in] cutoff1 The first cutoff (e.g. coulomb)
+ * \param[in] cutoff2 The second cutoff (e.g. vdw)
+ * \return 0 if either is 0, the normal max of the two otherwise.
+ */
+real max_cutoff(real cutoff1, real cutoff2);
 
 #ifdef __cplusplus
 }

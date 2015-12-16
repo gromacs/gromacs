@@ -37,11 +37,11 @@
 
 #include "config.h"
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/nblist.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 
 #ifdef __cplusplus
 extern "C" {

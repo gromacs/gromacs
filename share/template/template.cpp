@@ -74,8 +74,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 
 
 AnalysisTemplate::AnalysisTemplate()
-    : TrajectoryAnalysisModule("template", "Template analysis tool"),
-      cutoff_(0.0)
+    : cutoff_(0.0)
 {
     registerAnalysisDataset(&data_, "avedist");
 }

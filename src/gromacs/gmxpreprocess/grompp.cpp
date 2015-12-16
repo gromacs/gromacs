@@ -49,39 +49,42 @@
 #include <sys/types.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/splitter.h"
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/gmxpreprocess/sortwater.h"
 #include "gromacs/gmxpreprocess/tomorse.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/nblist.h"
+#include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -246,9 +249,9 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     ip = mtop->ffparams.iparams;
 
-    twopi2 = sqr(2*M_PI);
+    twopi2 = gmx::square(2*M_PI);
 
-    limit2 = sqr(min_steps_note*dt);
+    limit2 = gmx::square(min_steps_note*dt);
 
     w_a1      = w_a2 = -1;
     w_period2 = -1.0;
@@ -329,7 +332,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     if (w_moltype != NULL)
     {
-        bWarn = (w_period2 < sqr(min_steps_warn*dt));
+        bWarn = (w_period2 < gmx::square(min_steps_warn*dt));
         /* A check that would recognize most water models */
         bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O' &&
                   w_moltype->atoms.nr <= 5);
@@ -396,12 +399,6 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
         {
             nshells++;
         }
-    }
-    if (IR_TWINRANGE(*ir) && (nshells > 0))
-    {
-        snprintf(warn_buf, STRLEN,
-                 "The combination of using shells and a twin-range cut-off is not supported");
-        warning_error(wi, warn_buf);
     }
     if ((nshells > 0) && (ir->nstcalcenergy != 1) && (ir->drude->drudemode != edrudeLagrangian))
     {
@@ -1398,16 +1395,15 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     printf("Calculated rlist for %dx%d atom pair-list as %.3f nm, buffer size %.3f nm\n",
            1, 1, rlist_1x1, rlist_1x1-std::max(ir->rvdw, ir->rcoulomb));
 
-    ir->rlistlong = ir->rlist;
     printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
            ls.cluster_size_i, ls.cluster_size_j,
            ir->rlist, ir->rlist-std::max(ir->rvdw, ir->rcoulomb));
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
-    if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
+    if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
     {
-        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, std::sqrt(max_cutoff2(ir->ePBC, box)));
+        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlist, std::sqrt(max_cutoff2(ir->ePBC, box)));
     }
 }
 
@@ -1715,15 +1711,6 @@ int gmx_grompp(int argc, char *argv[])
                       "for QM/MM. The good news is that it is easy to add - put the atom number as\n"
                       "an integer just before the mass column in ffXXXnb.itp.\n"
                       "NB: United atoms have the same atom numbers as normal ones.\n\n");
-    }
-
-    if (ir->bAdress)
-    {
-        if ((ir->adress->const_wf > 1) || (ir->adress->const_wf < 0))
-        {
-            warning_error(wi, "AdResS contant weighting function should be between 0 and 1\n\n");
-        }
-        /** TODO check size of ex+hy width against box size */
     }
 
     if (ir->bDrude)

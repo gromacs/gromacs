@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FastsqrtFloat">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0.99999994</Real>
+    <Real>1.4142135</Real>
+    <Real>1.7320508</Real>
+    <Real>1.9999999</Real>
+    <Real>2.236068</Real>
+    <Real>2.4494896</Real>
+    <Real>2.6457512</Real>
+    <Real>2.8284271</Real>
+    <Real>3</Real>
+  </Sequence>
+</ReferenceData>

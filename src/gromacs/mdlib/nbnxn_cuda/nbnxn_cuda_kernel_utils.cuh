@@ -37,7 +37,7 @@
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
-#include "gromacs/gmxlib/cuda_tools/vectype_ops.cuh"
+#include "gromacs/gpu_utils/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH

@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/force.h"
+#include "force.h"
 
 #include "config.h"
 
@@ -45,24 +45,23 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nonbonded.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/forcerec-threading.h"
+#include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -80,24 +79,18 @@ void ns(FILE              *fp,
         t_mdatoms         *md,
         t_commrec         *cr,
         t_nrnb            *nrnb,
-        gmx_bool           bFillGrid,
-        gmx_bool           bDoLongRangeNS)
+        gmx_bool           bFillGrid)
 {
     int     nsearch;
 
 
-    if (!fr->ns.nblist_initialized)
+    if (!fr->ns->nblist_initialized)
     {
         init_neighbor_list(fp, fr, md->homenr);
     }
 
-    if (fr->bTwinRange)
-    {
-        fr->nlr = 0;
-    }
-
     nsearch = search_neighbours(fp, fr, box, top, groups, cr, nrnb, md,
-                                bFillGrid, bDoLongRangeNS);
+                                bFillGrid);
     if (debug)
     {
         fprintf(debug, "nsearch = %d\n", nsearch);
@@ -108,9 +101,9 @@ void ns(FILE              *fp,
        count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
        &(top->idef),opts->ngener);
      */
-    if (fr->ns.dump_nl > 0)
+    if (fr->ns->dump_nl > 0)
     {
-        dump_nblist(fp, cr, fr, fr->ns.dump_nl);
+        dump_nblist(fp, cr, fr, fr->ns->dump_nl);
     }
 }
 
@@ -139,7 +132,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        t_mdatoms  *md,
                        rvec       x[],      history_t  *hist,
                        rvec       f[],
-                       rvec       f_longrange[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
                        gmx_localtop_t *top,
@@ -182,8 +174,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         box_size[i] = box[i][i];
     }
 
-    debug_gmx();
-
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
@@ -222,7 +212,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
         if (bBornRadii)
         {
-            calc_gb_rad(cr, fr, ir, top, x, &(fr->gblist), born, md, nrnb);
+            calc_gb_rad(cr, fr, ir, top, x, fr->gblist, born, md, nrnb);
         }
 
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
@@ -250,13 +240,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
         }
-        if (flags & GMX_FORCE_DO_LR)
-        {
-            donb_flags |= GMX_NONBONDED_DO_LR;
-        }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, f, f_longrange, md, excl,
+        do_nonbonded(fr, x, f, md, excl,
                      &enerd->grpp, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
 
@@ -274,7 +260,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, f, f_longrange, md, excl,
+                do_nonbonded(fr, x, f, md, excl,
                              &(enerd->foreign_grpp), nrnb,
                              lam_i, dvdl_dum, -1, -1,
                              (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
@@ -326,9 +312,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
     }
 
-    debug_gmx();
-
-
     if (debug)
     {
         pr_rvecs(debug, 0, "fshift after SR", fr->fshift, SHIFTS);
@@ -371,9 +354,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
          */
-        set_pbc_dd(&pbc, fr->ePBC, cr->dd, TRUE, box);
+        set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr,
+                   TRUE, box);
     }
-    debug_gmx();
 
     do_force_listed(wcycle, box, ir->fepvals, cr->ms,
                     idef, (const rvec *) x, hist, f, fr,
@@ -608,31 +591,26 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
     else
     {
-        /* Is there a reaction-field exclusion correction needed? */
-        if (EEL_RF(fr->eeltype) && eelRF_NEC != fr->eeltype)
+        /* Is there a reaction-field exclusion correction needed?
+         * With the Verlet scheme, exclusion forces are calculated
+         * in the non-bonded kernel.
+         */
+        if (ir->cutoff_scheme != ecutsVERLET && EEL_RF(fr->eeltype))
         {
-            /* With the Verlet scheme, exclusion forces are calculated
-             * in the non-bonded kernel.
-             */
-            if (ir->cutoff_scheme != ecutsVERLET)
-            {
-                real dvdl_rf_excl      = 0;
-                enerd->term[F_RF_EXCL] =
-                    RF_excl_correction(fr, graph, md, excl, x, f,
-                                       fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
+            real dvdl_rf_excl      = 0;
+            enerd->term[F_RF_EXCL] =
+                RF_excl_correction(fr, graph, md, excl, x, f,
+                                   fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
-                enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
-            }
+            enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
         }
     }
     where();
-    debug_gmx();
 
     if (debug)
     {
         print_nrnb(debug, nrnb);
     }
-    debug_gmx();
 
 #ifdef GMX_MPI
     if (TAKETIME)
@@ -744,8 +722,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     epot[F_LJ]       = sum_v(grpp->nener, grpp->ener[egLJSR]);
     epot[F_LJ14]     = sum_v(grpp->nener, grpp->ener[egLJ14]);
     epot[F_COUL14]   = sum_v(grpp->nener, grpp->ener[egCOUL14]);
-    epot[F_COUL_LR]  = sum_v(grpp->nener, grpp->ener[egCOULLR]);
-    epot[F_LJ_LR]    = sum_v(grpp->nener, grpp->ener[egLJLR]);
     /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
     epot[F_GBPOL]   += sum_v(grpp->nener, grpp->ener[egGB]);
 
@@ -753,7 +729,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
  * and has been added earlier
  */
     epot[F_BHAM]     = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
-    epot[F_BHAM_LR]  = sum_v(grpp->nener, grpp->ener[egBHAMLR]);
 
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)
@@ -822,10 +797,6 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
      * For the constraints this is not exact, but we have no other option
      * without literally changing the lengths and reevaluating the energies at each step.
      * (try to remedy this post 4.6 - MRS)
-     * For the non-bonded LR term we assume that the soft-core (if present)
-     * no longer affects the energy beyond the short-range cut-off,
-     * which is a very good approximation (except for exotic settings).
-     * (investigate how to overcome this post 4.6 - MRS)
      */
     if (fepvals->separate_dvdl[efptBONDED])
     {
@@ -886,26 +857,16 @@ void reset_foreign_enerdata(gmx_enerdata_t *enerd)
     }
 }
 
-void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
-                    gmx_enerdata_t *enerd,
-                    gmx_bool bMaster)
+void reset_enerdata(gmx_enerdata_t *enerd)
 {
-    gmx_bool bKeepLR;
     int      i, j;
 
-    /* First reset all energy components, except for the long range terms
-     * on the master at non neighbor search steps, since the long range
-     * terms have already been summed at the last neighbor search step.
-     */
-    bKeepLR = (fr->bTwinRange && !bNS);
+    /* First reset all energy components. */
     for (i = 0; (i < egNR); i++)
     {
-        if (!(bKeepLR && bMaster && (i == egCOULLR || i == egLJLR)))
+        for (j = 0; (j < enerd->grpp.nener); j++)
         {
-            for (j = 0; (j < enerd->grpp.nener); j++)
-            {
-                enerd->grpp.ener[i][j] = 0.0;
-            }
+            enerd->grpp.ener[i][j] = 0.0;
         }
     }
     for (i = 0; i < efptNR; i++)
@@ -919,8 +880,6 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
     {
         enerd->term[i] = 0.0;
     }
-    /* Initialize the dVdlambda term with the long range contribution */
-    /* Initialize the dvdl term with the long range contribution */
     enerd->term[F_DVDL]            = 0.0;
     enerd->term[F_DVDL_COUL]       = 0.0;
     enerd->term[F_DVDL_VDW]        = 0.0;

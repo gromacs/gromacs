@@ -45,12 +45,12 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -100,7 +100,7 @@ int gmx_nmens(int argc, char *argv[])
     const char         *indexfile;
     int                 i, j, d, s, v;
     int                 nout, *iout, noutvec, *outvec;
-    atom_id            *index;
+    int                *index;
     real                rfac, rhalf, jr;
     gmx_output_env_t   *oenv;
     gmx_rng_t           rng;
@@ -147,7 +147,7 @@ int gmx_nmens(int argc, char *argv[])
     {
         for (i = 0; (i < natoms); i++)
         {
-            invsqrtm[i] = gmx_invsqrt(atoms->atom[index[i]].m);
+            invsqrtm[i] = gmx::invsqrt(atoms->atom[index[i]].m);
         }
     }
     else

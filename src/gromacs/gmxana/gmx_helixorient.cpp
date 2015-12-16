@@ -43,12 +43,12 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -85,8 +85,8 @@ int gmx_helixorient(int argc, char *argv[])
 
     int               i, j, teller = 0;
     int               iCA, iSC;
-    atom_id          *ind_CA;
-    atom_id          *ind_SC;
+    int              *ind_CA;
+    int              *ind_SC;
     char             *gn_CA;
     char             *gn_SC;
     rvec              v1, v2;

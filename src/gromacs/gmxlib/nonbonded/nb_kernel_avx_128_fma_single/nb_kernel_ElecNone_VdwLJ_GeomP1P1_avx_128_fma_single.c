@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_avx_128_fma_single.h"
 #include "kernelutil_x86_avx_128_fma_single.h"
 
 /*
@@ -180,7 +178,7 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
@@ -264,7 +262,7 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
@@ -467,7 +465,7 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];
@@ -545,7 +543,7 @@ nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_128_fma_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinvsq00         = gmx_mm_inv_ps(rsq00);
+            rinvsq00         = avx128fma_inv_f(rsq00);
 
             /* Load parameters for j particles */
             vdwjidx0A        = 2*vdwtype[jnrA+0];

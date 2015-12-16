@@ -41,23 +41,24 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/calcgrid.h"
+#include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/main.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 /* We use the same defines as in broadcaststructs.cpp here */
@@ -183,7 +184,7 @@ static real estimate_direct(
     beta      = info->ewald_beta[0];
     r_coulomb = info->rcoulomb[0];
 
-    e_dir  = 2.0 * info->q2all * gmx_invsqrt( info->q2allnr  *  r_coulomb * info->volume );
+    e_dir  = 2.0 * info->q2all * gmx::invsqrt( info->q2allnr  *  r_coulomb * info->volume );
     e_dir *= exp (-beta*beta*r_coulomb*r_coulomb);
 
     return ONE_4PI_EPS0*e_dir;
@@ -1129,8 +1130,7 @@ int gmx_pme_error(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    cr = init_commrec();
-
+    cr         = init_commrec();
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(&argc, argv, PCA_Flags,

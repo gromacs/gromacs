@@ -44,14 +44,14 @@
 
 #include <cstdio>
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
 struct t_commrec;
+struct t_filenm;
 
 namespace gmx
 {
@@ -65,8 +65,6 @@ namespace gmx
  * \param[in] fnm      Array of filenames and file properties
  * \param[in] oenv     Output variables for storing xvg files etc.
  * \param[in] bVerbose Verbose output or not
- * \param[in] bCompact Whether to store virial and pressure components
- *                     the log files.
  * \param[in] nstglobalcomm Number of steps between global communication
  * \param[in] ddxyz    Division of sub-boxes over processors for
  *                     use in domain decomposition parallellization
@@ -96,7 +94,7 @@ namespace gmx
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, struct t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
+             int nstglobalcomm, ivec ddxyz, int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,

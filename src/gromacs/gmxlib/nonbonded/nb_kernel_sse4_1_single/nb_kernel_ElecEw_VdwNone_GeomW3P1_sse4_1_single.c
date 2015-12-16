@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse4_1_single.h"
 #include "kernelutil_x86_sse4_1_single.h"
 
 /*
@@ -207,9 +205,9 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_VF_sse4_1_single
             rsq10            = gmx_mm_calc_rsq_ps(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -411,9 +409,9 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_VF_sse4_1_single
             rsq10            = gmx_mm_calc_rsq_ps(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -762,9 +760,9 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_F_sse4_1_single
             rsq10            = gmx_mm_calc_rsq_ps(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);
@@ -942,9 +940,9 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_F_sse4_1_single
             rsq10            = gmx_mm_calc_rsq_ps(dx10,dy10,dz10);
             rsq20            = gmx_mm_calc_rsq_ps(dx20,dy20,dz20);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
-            rinv10           = gmx_mm_invsqrt_ps(rsq10);
-            rinv20           = gmx_mm_invsqrt_ps(rsq20);
+            rinv00           = sse41_invsqrt_f(rsq00);
+            rinv10           = sse41_invsqrt_f(rsq10);
+            rinv20           = sse41_invsqrt_f(rsq20);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
             rinvsq10         = _mm_mul_ps(rinv10,rinv10);

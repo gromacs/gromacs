@@ -48,15 +48,14 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -71,7 +70,7 @@
 #define FLAGS (TRX_READ_X | TRX_READ_V | TRX_READ_F)
 
 static void scan_trj_files(char **fnms, int nfiles, real *readtime,
-                           real *timestep, atom_id imax,
+                           real *timestep, int imax,
                            const gmx_output_env_t *oenv)
 {
     /* Check start time of all files */
@@ -104,7 +103,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
         }
         else
         {
-            if (imax == NO_ATID)
+            if (imax == -1)
             {
                 if (natoms != fr.natoms)
                 {
@@ -310,7 +309,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
 
 static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
                      real **value, real *time, real dt_remd, int isize,
-                     atom_id index[], real dt, const gmx_output_env_t *oenv)
+                     int index[], real dt, const gmx_output_env_t *oenv)
 {
     int           i, j, k, natoms, nnn;
     t_trxstatus **fp_in, **fp_out;
@@ -483,10 +482,11 @@ int gmx_trjcat(int argc, char *argv[])
     gmx_bool          bNewFile, bIndex, bWrite;
     int               nfile_in, nfile_out, *cont_type;
     real             *readtime, *timest, *settime;
-    real              first_time = 0, lasttime = NOTSET, last_ok_t = -1, timestep;
+    real              first_time  = 0, lasttime, last_ok_t = -1, timestep;
+    gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0, j;
-    atom_id          *index = NULL, imax;
+    int              *index = NULL, imax;
     char             *grpname;
     real            **val = NULL, *t = NULL, dt_remd;
     int               n, nset, ftpout = -1, prevEndStep = 0, filetype;
@@ -512,7 +512,7 @@ int gmx_trjcat(int argc, char *argv[])
     bDeMux = ftp2bSet(efXVG, NFILE, fnm);
     bSort  = bSort && !bDeMux;
 
-    imax = NO_ATID;
+    imax = -1;
     if (bIndex)
     {
         printf("Select group for output\n");
@@ -701,6 +701,7 @@ int gmx_trjcat(int argc, char *argv[])
                     }
                     lasttime = fr.time;
                 }
+                lastTimeSet     = TRUE;
                 bKeepLastAppend = TRUE;
                 close_trj(status);
                 trxout = open_trx(out_file, "a");
@@ -735,8 +736,9 @@ int gmx_trjcat(int argc, char *argv[])
                     gmx_fatal(FARGS, "Error seeking: attempted to seek to %f but got %f.",
                               searchtime, fr.time);
                 }
-                lasttime = fr.time;
-                fpos     = gmx_fio_ftell(stfio);
+                lasttime    = fr.time;
+                lastTimeSet = TRUE;
+                fpos        = gmx_fio_ftell(stfio);
                 close_trj(status);
                 trxout = open_trx(out_file, "r+");
                 if (gmx_fio_seek(trx_get_fileio(trxout), fpos))
@@ -744,7 +746,10 @@ int gmx_trjcat(int argc, char *argv[])
                     gmx_fatal(FARGS, "Error seeking to append position.");
                 }
             }
-            printf("\n Will append after %f \n", lasttime);
+            if (lastTimeSet)
+            {
+                printf("\n Will append after %f \n", lasttime);
+            }
             frout = fr;
         }
         /* Lets stitch up some files */
@@ -827,11 +832,13 @@ int gmx_trjcat(int argc, char *argv[])
 
             bNewFile = TRUE;
 
-            printf("\n");
-            if (lasttime != NOTSET)
+            if (!lastTimeSet)
             {
-                printf("lasttime %g\n", lasttime);
+                lasttime    = 0;
+                lastTimeSet = true;
             }
+            printf("\n");
+            printf("lasttime %g\n", lasttime);
 
             do
             {
@@ -873,7 +880,8 @@ int gmx_trjcat(int argc, char *argv[])
                     {
                         first_time = frout.time;
                     }
-                    lasttime = frout.time;
+                    lasttime    = frout.time;
+                    lastTimeSet = TRUE;
                     if (dt == 0 || bRmod(frout.time, first_time, dt))
                     {
                         frame_out++;

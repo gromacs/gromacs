@@ -300,6 +300,16 @@ std::string joinStrings(const char *const (&array)[count], const char *separator
 }
 
 /*! \brief
+ * Converts a boolean to a "true"/"false" string.
+ *
+ * Does not throw.
+ */
+static inline const char *boolToString(bool value)
+{
+    return value ? "true" : "false";
+}
+
+/*! \brief
  * Splits a string to whitespace separated tokens.
  *
  * \param[in] str  String to process.

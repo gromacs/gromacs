@@ -40,6 +40,8 @@
 
 #include <cmath>
 
+#include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -142,7 +144,7 @@ void calc_h_pos(int nht, int nadd, rvec xa[], rvec xh[], int *l)
                 xd     = xAJ[d];
                 sij[d] = xAI[d]-xd;
                 sb[d]  = xd-xAK[d];
-                rij   += sqr(sij[d]);
+                rij   += gmx::square(sij[d]);
             }
             rij    = std::sqrt(rij);
             sa[XX] = sij[YY]*sb[ZZ]-sij[ZZ]*sb[YY];
@@ -152,7 +154,7 @@ void calc_h_pos(int nht, int nadd, rvec xa[], rvec xh[], int *l)
             for (d = 0; (d < DIM); d++)
             {
                 sij[d] = sij[d]/rij;
-                ra    += sqr(sa[d]);
+                ra    += gmx::square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
@@ -175,8 +177,8 @@ void calc_h_pos(int nht, int nadd, rvec xa[], rvec xh[], int *l)
             {
                 sij[d] = xAI[d]-xAJ[d];
                 sb[d]  = xAI[d]-xAK[d];
-                rij   += sqr(sij[d]);
-                rb    += sqr(sb[d]);
+                rij   += gmx::square(sij[d]);
+                rb    += gmx::square(sb[d]);
             }
             rij = std::sqrt(rij);
             rb  = std::sqrt(rb);
@@ -184,7 +186,7 @@ void calc_h_pos(int nht, int nadd, rvec xa[], rvec xh[], int *l)
             for (d = 0; (d < DIM); d++)
             {
                 sa[d] = sij[d]/rij+sb[d]/rb;
-                ra   += sqr(sa[d]);
+                ra   += gmx::square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)

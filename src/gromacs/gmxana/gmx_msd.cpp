@@ -46,12 +46,13 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -95,7 +96,7 @@ typedef struct {
                                  point. */
 } t_corr;
 
-typedef real t_calc_func (t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
+typedef real t_calc_func (t_corr *curr, int nx, int index[], int nx0, rvec xc[],
                           rvec dcom, gmx_bool bTen, matrix mat);
 
 static real thistime(t_corr *curr)
@@ -217,7 +218,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
 }
 
 /* called from corr_loop, to do the main calculations */
-static void calc_corr(t_corr *curr, int nr, int nx, atom_id index[], rvec xc[],
+static void calc_corr(t_corr *curr, int nr, int nx, int index[], rvec xc[],
                       gmx_bool bRmCOMM, rvec com, t_calc_func *calc1, gmx_bool bTen)
 {
     int    nx0;
@@ -265,7 +266,7 @@ static void calc_corr(t_corr *curr, int nr, int nx, atom_id index[], rvec xc[],
 }
 
 /* the non-mass-weighted mean-squared displacement calcuation */
-static real calc1_norm(t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
+static real calc1_norm(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
                        rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i, ix, m, m2;
@@ -403,7 +404,7 @@ static real calc_one_mw(t_corr *curr, int ix, int nx0, rvec xc[], real *tm,
 }
 
 /* the normal, mass-weighted mean-squared displacement calcuation */
-static real calc1_mw(t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
+static real calc1_mw(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
                      rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i;
@@ -431,7 +432,7 @@ static real calc1_mw(t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
    xcur = the current coordinates
    xprev = the previous coordinates
    box = the box matrix */
-static void prep_data(gmx_bool bMol, int gnx, atom_id index[],
+static void prep_data(gmx_bool bMol, int gnx, int index[],
                       rvec xcur[], rvec xprev[], matrix box)
 {
     int  i, m, ind;
@@ -480,7 +481,7 @@ static void prep_data(gmx_bool bMol, int gnx, atom_id index[],
    box = the box matrix
    atoms = atom data (for mass)
    com(output) = center of mass  */
-static void calc_com(gmx_bool bMol, int gnx, atom_id index[],
+static void calc_com(gmx_bool bMol, int gnx, int index[],
                      rvec xcur[], rvec xprev[], matrix box, t_atoms *atoms,
                      rvec com)
 {
@@ -519,7 +520,7 @@ static void calc_com(gmx_bool bMol, int gnx, atom_id index[],
 }
 
 
-static real calc1_mol(t_corr *curr, int nx, atom_id gmx_unused index[], int nx0, rvec xc[],
+static real calc1_mol(t_corr *curr, int nx, int gmx_unused index[], int nx0, rvec xc[],
                       rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i;
@@ -590,7 +591,7 @@ void printmol(t_corr *curr, const char *fn,
             D   = 0;
         }
         Dav  += D;
-        D2av += sqr(D);
+        D2av += gmx::square(D);
         fprintf(out, "%10d  %10g\n", i, D);
         if (pdbinfo)
         {
@@ -611,7 +612,7 @@ void printmol(t_corr *curr, const char *fn,
     /* Compute variance, stddev and error */
     Dav  /= curr->nmol;
     D2av /= curr->nmol;
-    VarD  = D2av - sqr(Dav);
+    VarD  = D2av - gmx::square(Dav);
     printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n",
            Dav, std::sqrt(VarD), std::sqrt(VarD/curr->nmol));
 
@@ -640,8 +641,8 @@ void printmol(t_corr *curr, const char *fn,
  * read_next_x
  */
 int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
-              gmx_bool bMol, int gnx[], atom_id *index[],
-              t_calc_func *calc1, gmx_bool bTen, int *gnx_com, atom_id *index_com[],
+              gmx_bool bMol, int gnx[], int *index[],
+              t_calc_func *calc1, gmx_bool bTen, int *gnx_com, int *index_com[],
               real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
               const gmx_output_env_t *oenv)
 {
@@ -880,14 +881,14 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 {
     t_corr        *msd;
     int           *gnx;   /* the selected groups' sizes */
-    atom_id      **index; /* selected groups' indices */
+    int          **index; /* selected groups' indices */
     char         **grpname;
     int            i, i0, i1, j, N, nat_trx;
     real          *DD, *SigmaD, a, a2, b, r, chi2;
     rvec          *x;
     matrix         box;
     int           *gnx_com     = NULL; /* the COM removal group size  */
-    atom_id      **index_com   = NULL; /* the COM removal group atom indices */
+    int          **index_com   = NULL; /* the COM removal group atom indices */
     char         **grpname_com = NULL; /* the COM removal group name */
 
     snew(gnx, nrgrp);

@@ -41,15 +41,16 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -86,7 +87,7 @@ static void rotate_ends(t_bundle *bun, rvec axis, int c0, int c1)
     axis[c1] = ax[c0]*tmp[c0] + ax[c1]*tmp[c1];
 }
 
-static void calc_axes(rvec x[], t_atom atom[], int gnx[], atom_id *index[],
+static void calc_axes(rvec x[], t_atom atom[], int gnx[], int *index[],
                       gmx_bool bRot, t_bundle *bun)
 {
     int   end, i, div, d;
@@ -236,7 +237,7 @@ int gmx_bundle(int argc, char *argv[])
     /* FIXME: The constness should not be cast away */
     char             *anm = (char *)"CA", *rnm = (char *)"GLY";
     int               i, gnx[MAX_ENDS];
-    atom_id          *index[MAX_ENDS];
+    int              *index[MAX_ENDS];
     t_bundle          bun;
     gmx_bool          bKink;
     rvec              va, vb, vc, vr, vl;
@@ -380,10 +381,10 @@ int gmx_bundle(int argc, char *argv[])
             fprintf(ftilt, " %6g", RAD2DEG*acos(bun.dir[i][ZZ]));
             comp = bun.mid[i][XX]*bun.dir[i][XX]+bun.mid[i][YY]*bun.dir[i][YY];
             fprintf(ftiltr, " %6g", RAD2DEG*
-                    std::asin(comp/std::sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
             comp = bun.mid[i][YY]*bun.dir[i][XX]-bun.mid[i][XX]*bun.dir[i][YY];
             fprintf(ftiltl, " %6g", RAD2DEG*
-                    std::asin(comp/std::sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
             if (bKink)
             {
                 rvec_sub(bun.end[0][i], bun.end[2][i], va);

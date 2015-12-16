@@ -37,12 +37,12 @@
 #ifndef GMX_MDLIB_MD_SUPPORT_H
 #define GMX_MDLIB_MD_SUPPORT_H
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
+struct gmx_multisim_t;
 struct gmx_signalling_t;
 struct t_trxframe;
 
@@ -109,7 +109,7 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
 
 void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
-                     t_state *state, t_state *state_global, t_mdatoms *mdatoms,
+                     t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr *constr,

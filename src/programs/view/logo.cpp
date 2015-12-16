@@ -41,8 +41,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -128,7 +128,7 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             c[i].x *= wfac;
             c[i].y *= hfac;
         }
-        Mess[1].text = GromacsVersion();
+        Mess[1].text = gmx_version();
         for (i = 0; (i < NMESS); i++)
         {
             Mess[i].y  *= hfac;

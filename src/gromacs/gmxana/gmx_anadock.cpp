@@ -44,14 +44,14 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *etitles[] = { "E-docked", "Free Energy" };
@@ -384,7 +384,6 @@ int gmx_anadock(int argc, char *argv[])
 
     cluster_em_all(fp, npdbf, pdbf, bFree, bRMS, cutoff);
 
-    gmx_thanx(fp);
     gmx_ffclose(fp);
 
     return 0;

@@ -62,8 +62,7 @@
 
 #include "config.h"
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
 #ifdef GMX_NATIVE_WINDOWS
@@ -75,8 +74,11 @@ struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct t_filenm;
 struct t_gmx_IMD;
 struct t_IMD;
+struct t_inputrec;
+struct t_state;
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
 

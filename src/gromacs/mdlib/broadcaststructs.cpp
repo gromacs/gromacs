@@ -39,16 +39,17 @@
 
 #include <string.h>
 
-#include "gromacs/gmxlib/main.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/enums.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -533,21 +534,6 @@ static void bc_rot(const t_commrec *cr, t_rot *rot)
     }
 }
 
-static void bc_adress(const t_commrec *cr, t_adress *adress)
-{
-    block_bc(cr, *adress);
-    if (adress->n_tf_grps > 0)
-    {
-        snew_bc(cr, adress->tf_table_index, adress->n_tf_grps);
-        nblock_bc(cr, adress->n_tf_grps, adress->tf_table_index);
-    }
-    if (adress->n_energy_grps > 0)
-    {
-        snew_bc(cr, adress->group_explicit, adress->n_energy_grps);
-        nblock_bc(cr, adress->n_energy_grps, adress->group_explicit);
-    }
-}
-
 static void bc_imd(const t_commrec *cr, t_IMD *imd)
 {
     block_bc(cr, *imd);
@@ -640,25 +626,27 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
 
 static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 {
-    int i;
-
-
     block_bc(cr, *swap);
 
-    /* Broadcast ion group atom indices */
-    snew_bc(cr, swap->ind, swap->nat);
-    nblock_bc(cr, swap->nat, swap->ind);
-
-    /* Broadcast split groups atom indices */
-    for (i = 0; i < 2; i++)
+    /* Broadcast atom indices for split groups, solvent group, and for all user-defined swap groups */
+    snew_bc(cr, swap->grp, swap->ngrp);
+    for (int i = 0; i < swap->ngrp; i++)
     {
-        snew_bc(cr, swap->ind_split[i], swap->nat_split[i]);
-        nblock_bc(cr, swap->nat_split[i], swap->ind_split[i]);
-    }
+        t_swapGroup *g = &swap->grp[i];
 
-    /* Broadcast solvent group atom indices */
-    snew_bc(cr, swap->ind_sol, swap->nat_sol);
-    nblock_bc(cr, swap->nat_sol, swap->ind_sol);
+        block_bc(cr, *g);
+        snew_bc(cr, g->ind, g->nat);
+        nblock_bc(cr, g->nat, g->ind);
+
+        int len = 0;
+        if (MASTER(cr))
+        {
+            len = strlen(g->molname);
+        }
+        block_bc(cr, len);
+        snew_bc(cr, g->molname, len);
+        nblock_bc(cr, len, g->molname);
+    }
 }
 
 
@@ -713,11 +701,6 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         snew_bc(cr, inputrec->swap, 1);
         bc_swapions(cr, inputrec->swap);
-    }
-    if (inputrec->bAdress)
-    {
-        snew_bc(cr, inputrec->adress, 1);
-        bc_adress(cr, inputrec->adress);
     }
 }
 

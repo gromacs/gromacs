@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/nonbonded.h"
+#include "nonbonded.h"
 
 #include "config.h"
 
@@ -46,23 +46,18 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
-#include "gromacs/gmxlib/nonbonded/nb_generic_adress.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/nblist.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -76,31 +71,31 @@
 /* Different default (c) and SIMD instructions interaction-specific kernels */
 #include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
 
-#if (defined GMX_SIMD_X86_SSE2) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && !(defined GMX_DOUBLE)
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
 #endif
-#if (defined GMX_SIMD_X86_SSE4_1) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && !(defined GMX_DOUBLE)
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
 #endif
-#if (defined GMX_SIMD_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
 #endif
-#if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER) && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
 #endif
-#if (defined GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #endif
-#if (defined GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
 #endif
-#if (defined GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
 #endif
-#if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
-#if (defined GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE)
+#if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
 
@@ -126,32 +121,32 @@ gmx_nonbonded_setup(t_forcerec *   fr,
             {
                 /* Add interaction-specific kernels for different architectures */
                 /* Single precision */
-#if (defined GMX_SIMD_X86_SSE2) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sse2_single, kernellist_sse2_single_size);
 #endif
-#if (defined GMX_SIMD_X86_SSE4_1) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sse4_1_single, kernellist_sse4_1_single_size);
 #endif
-#if (defined GMX_SIMD_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_single, kernellist_avx_128_fma_single_size);
 #endif
-#if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER) && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_avx_256_single, kernellist_avx_256_single_size);
 #endif
                 /* Double precision */
-#if (defined GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse2_double, kernellist_sse2_double_size);
 #endif
-#if (defined GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse4_1_double, kernellist_sse4_1_double_size);
 #endif
-#if (defined GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_double, kernellist_avx_128_fma_double_size);
 #endif
-#if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
 #endif
-#if (defined GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE)
+#if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double, kernellist_sparc64_hpc_ace_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
@@ -185,38 +180,38 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     arch_and_padding[] =
     {
         /* Single precision */
-#if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER) && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
         { "avx_256_single", 8 },
 #endif
-#if (defined GMX_SIMD_X86_AVX_128_FMA) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
         { "avx_128_fma_single", 4 },
 #endif
-#if (defined GMX_SIMD_X86_SSE4_1) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && !(defined GMX_DOUBLE)
         { "sse4_1_single", 4 },
 #endif
-#if (defined GMX_SIMD_X86_SSE2) && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && !(defined GMX_DOUBLE)
         { "sse2_single", 4 },
 #endif
         /* Double precision */
-#if (defined GMX_SIMD_X86_AVX_256_OR_HIGHER && defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
         { "avx_256_double", 4 },
 #endif
-#if (defined GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
         /* Sic. Double precision 2-way SIMD does not require neighbor list padding,
          * since the kernels execute a loop unrolled a factor 2, followed by
          * a possible single odd-element epilogue.
          */
         { "avx_128_fma_double", 1 },
 #endif
-#if (defined GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
         /* No padding - see comment above */
         { "sse2_double", 1 },
 #endif
-#if (defined GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE
         /* No padding - see comment above */
         { "sse4_1_double", 1 },
 #endif
-#if (defined GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE)
+#if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
         /* No padding - see comment above */
         { "sparc64_hpc_ace_double", 1 },
 #endif
@@ -245,14 +240,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     vdw      = gmx_nbkernel_vdw_names[nl->ivdw];
     vdw_mod  = eintmod_names[nl->ivdwmod];
     geom     = gmx_nblist_geometry_names[nl->igeometry];
-
-    if (nl->type == GMX_NBLIST_INTERACTION_ADRESS)
-    {
-        nl->kernelptr_vf       = (void *) gmx_nb_generic_adress_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_generic_adress_kernel;
-        nl->simd_padding_width = 1;
-        return;
-    }
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
@@ -330,13 +317,13 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
 }
 
 void do_nonbonded(t_forcerec *fr,
-                  rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
+                  rvec x[], rvec f_shortrange[], t_mdatoms *mdatoms, t_blocka *excl,
                   gmx_grppairener_t *grppener,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
 {
     t_nblist *        nlist;
-    int               n, n0, n1, i, i0, i1, range;
+    int               n, n0, n1, i, i0, i1;
     t_nblists *       nblists;
     nb_kernel_data_t  kernel_data;
     nb_kernel_t *     kernelptr = NULL;
@@ -388,14 +375,11 @@ void do_nonbonded(t_forcerec *fr,
         /* cppcheck-suppress duplicateExpression */
         assert(etiNR == 3);
 
-        kernel_data.table_elec              = &nblists->table_elec;
-        kernel_data.table_vdw               = &nblists->table_vdw;
-        kernel_data.table_elec_vdw          = &nblists->table_elec_vdw;
+        kernel_data.table_elec              = nblists->table_elec;
+        kernel_data.table_vdw               = nblists->table_vdw;
+        kernel_data.table_elec_vdw          = nblists->table_elec_vdw;
 
-        for (range = 0; range < 2; range++)
         {
-            /* Are we doing short/long-range? */
-            if (range == 0)
             {
                 /* Short-range */
                 if (!(flags & GMX_NONBONDED_DO_SR))
@@ -407,19 +391,6 @@ void do_nonbonded(t_forcerec *fr,
                 kernel_data.energygrp_polarization  = grppener->ener[egGB];
                 nlist = nblists->nlist_sr;
                 f                                   = f_shortrange;
-            }
-            else
-            {
-                /* Long-range */
-                if (!(flags & GMX_NONBONDED_DO_LR))
-                {
-                    continue;
-                }
-                kernel_data.energygrp_elec          = grppener->ener[egCOULLR];
-                kernel_data.energygrp_vdw           = grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR];
-                kernel_data.energygrp_polarization  = grppener->ener[egGB];
-                nlist = nblists->nlist_lr;
-                f                                   = f_longrange;
             }
 
             for (i = i0; (i < i1); i++)

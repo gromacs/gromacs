@@ -36,16 +36,15 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/nrnb.h"
+#include "nrnb.h"
 
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -84,7 +83,6 @@ static const t_nrnb_data nbdata[eNRNB] = {
 
     { "NB Generic kernel",               1 },
     { "NB Generic charge grp kernel",    1 },
-    { "NB Generic AdResS kernel",        1 },
     { "NB Free energy kernel",           1 },
     { "NB All-vs-all",                   1 },
     { "NB All-vs-all, GB",               1 },

@@ -37,14 +37,15 @@
 #ifndef GMX_MDLIB_SHELLFC_H
 #define GMX_MDLIB_SHELLFC_H
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
+#include <cstdio>
+
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
 typedef struct {
     int     nnucl;
-    atom_id shell;               /* The shell id                */
-    atom_id nucl1, nucl2, nucl3; /* The nuclei connected to the shell   */
+    int     shell;               /* The shell id                */
+    int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell   */
     /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
     real    k;                   /* force constant              */
     real    k_1;                 /* 1 over force constant       */
@@ -96,11 +97,14 @@ typedef struct gmx_shellfc *gmx_shellfc_t;
 
 struct gmx_constr;
 struct gmx_enerdata_t;
+struct gmx_groups_t;
 struct gmx_mtop_t;
 struct t_fcdata;
 struct t_forcerec;
 struct t_graph;
 struct t_pbc;
+struct t_inputrec;
+struct t_state;
 
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.

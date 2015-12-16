@@ -38,17 +38,16 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
 typedef struct {
     int       nr;   /* The number of entries in the list            */
     int       nra2; /* The total number of entries in a			*/
-    atom_id  *nra;  /* The number of entries in each a array (dim nr)   */
-    atom_id **a;    /* The atom numbers (dim nr) the length of each element	*/
+    int      *nra;  /* The number of entries in each a array (dim nr)   */
+    int     **a;    /* The atom numbers (dim nr) the length of each element	*/
     /* i is nra[i]						*/
 } t_block2;
 

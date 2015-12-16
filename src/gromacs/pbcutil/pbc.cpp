@@ -49,19 +49,22 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+const char *epbc_names[epbcNR+1] =
+{
+    "xyz", "no", "xy", "screw", NULL
+};
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum {
@@ -125,7 +128,7 @@ void dump_pbc(FILE *fp, t_pbc *pbc)
     }
 }
 
-const char *check_box(int ePBC, matrix box)
+const char *check_box(int ePBC, const matrix box)
 {
     const char *ptr;
 
@@ -162,7 +165,7 @@ const char *check_box(int ePBC, matrix box)
     return ptr;
 }
 
-real max_cutoff2(int ePBC, matrix box)
+real max_cutoff2(int ePBC, const matrix box)
 {
     real       min_hv2, min_ss;
     const real oneFourth = 0.25;
@@ -196,7 +199,7 @@ real max_cutoff2(int ePBC, matrix box)
 //! Set to true if warning has been printed
 static gmx_bool bWarnedGuess = FALSE;
 
-int guess_ePBC(matrix box)
+int guess_ePBC(const matrix box)
 {
     int ePBC;
 
@@ -333,7 +336,8 @@ int ndof_com(t_inputrec *ir)
 }
 
 //! Do the real arithmetic for filling the pbc struct
-static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
+static void low_set_pbc(t_pbc *pbc, int ePBC,
+                        const ivec dd_pbc, const matrix box)
 {
     int         order[3] = { 0, -1, 1 };
     ivec        bPBC;
@@ -368,7 +372,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     }
     else
     {
-        if (ePBC == epbcSCREW && NULL != dd_nc)
+        if (ePBC == epbcSCREW && NULL != dd_pbc)
         {
             /* This combinated should never appear here */
             gmx_incons("low_set_pbc called with screw pbc and dd_nc != NULL");
@@ -377,7 +381,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
         int npbcdim = 0;
         for (int i = 0; i < DIM; i++)
         {
-            if ((dd_nc && (*dd_nc)[i] > 1) || (ePBC == epbcXY && i == ZZ))
+            if ((dd_pbc && dd_pbc[i] == 0) || (ePBC == epbcXY && i == ZZ))
             {
                 bPBC[i] = 0;
             }
@@ -524,8 +528,8 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                         pos[d] = std::max(-pbc->hbox_diag[d], -trial[d]);
                                     }
                                 }
-                                d2old += sqr(pos[d]);
-                                d2new += sqr(pos[d] + trial[d]);
+                                d2old += gmx::square(pos[d]);
+                                d2new += gmx::square(pos[d] + trial[d]);
                             }
                             if (BOX_MARGIN*d2new < d2old)
                             {
@@ -539,7 +543,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                                         real d2new_c = 0;
                                         for (int d = 0; d < DIM; d++)
                                         {
-                                            d2new_c += sqr(pos[d] + trial[d] - shift*box[dd][d]);
+                                            d2new_c += gmx::square(pos[d] + trial[d] - shift*box[dd][d]);
                                         }
                                         if (d2new_c <= BOX_MARGIN*d2new)
                                         {
@@ -583,7 +587,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     }
 }
 
-void set_pbc(t_pbc *pbc, int ePBC, matrix box)
+void set_pbc(t_pbc *pbc, int ePBC, const matrix box)
 {
     if (ePBC == -1)
     {
@@ -594,46 +598,52 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box)
 }
 
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  struct gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box)
+                  const ivec domdecCells,
+                  gmx_bool bSingleDir, const matrix box)
 {
-    ivec nc2;
-    int  npbcdim, i;
-
-    if (dd == NULL)
+    if (ePBC == epbcNONE)
     {
-        npbcdim = DIM;
+        pbc->ePBC = ePBC;
+
+        return NULL;
+    }
+
+    if (nullptr == domdecCells)
+    {
+        low_set_pbc(pbc, ePBC, NULL, box);
     }
     else
     {
-        if (ePBC == epbcSCREW && dd->nc[XX] > 1)
+        if (ePBC == epbcSCREW && domdecCells[XX] > 1)
         {
             /* The rotation has been taken care of during coordinate communication */
             ePBC = epbcXYZ;
         }
-        npbcdim = 0;
-        for (i = 0; i < DIM; i++)
+
+        ivec usePBC;
+        int  npbcdim = 0;
+        for (int i = 0; i < DIM; i++)
         {
-            if (dd->nc[i] <= (bSingleDir ? 1 : 2))
+            usePBC[i] = 0;
+            if (domdecCells[i] <= (bSingleDir ? 1 : 2) &&
+                !(ePBC == epbcXY && i == ZZ))
             {
-                nc2[i] = 1;
-                if (!(ePBC == epbcXY && i == ZZ))
-                {
-                    npbcdim++;
-                }
+                usePBC[i] = 1;
+                npbcdim++;
             }
-            else
-            {
-                nc2[i] = dd->nc[i];
-            }
+        }
+
+        if (npbcdim > 0)
+        {
+            low_set_pbc(pbc, ePBC, usePBC, box);
+        }
+        else
+        {
+            pbc->ePBC = epbcNONE;
         }
     }
 
-    if (npbcdim > 0)
-    {
-        low_set_pbc(pbc, ePBC, npbcdim < DIM ? &nc2 : NULL, box);
-    }
-
-    return (npbcdim > 0 ? pbc : NULL);
+    return (pbc->ePBC != epbcNONE ? pbc : NULL);
 }
 
 void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
@@ -1292,7 +1302,7 @@ gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
     return TRUE;
 }
 
-void calc_shifts(matrix box, rvec shift_vec[])
+void calc_shifts(const matrix box, rvec shift_vec[])
 {
     int k, l, m, d, n, test;
 
@@ -1317,7 +1327,7 @@ void calc_shifts(matrix box, rvec shift_vec[])
     }
 }
 
-void calc_box_center(int ecenter, matrix box, rvec box_center)
+void calc_box_center(int ecenter, const matrix box, rvec box_center)
 {
     int d, m;
 
@@ -1346,7 +1356,7 @@ void calc_box_center(int ecenter, matrix box, rvec box_center)
     }
 }
 
-void calc_triclinic_images(matrix box, rvec img[])
+void calc_triclinic_images(const matrix box, rvec img[])
 {
     int i;
 
@@ -1383,7 +1393,7 @@ void calc_triclinic_images(matrix box, rvec img[])
     }
 }
 
-void calc_compact_unitcell_vertices(int ecenter, matrix box, rvec vert[])
+void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[])
 {
     rvec       img[NTRICIMG], box_center;
     int        n, i, j, tmp[4], d;
@@ -1507,28 +1517,7 @@ int *compact_unitcell_edges()
     return edge;
 }
 
-void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[])
-{
-    int t, nth;
-    nth = gmx_omp_nthreads_get(emntDefault);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (t = 0; t < nth; t++)
-    {
-        try
-        {
-            int offset, len;
-
-            offset = (natoms*t    )/nth;
-            len    = (natoms*(t + 1))/nth - offset;
-            put_atoms_in_box(ePBC, box, len, x + offset);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-
-}
-
-void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[])
+void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])
 {
     int npbcdim, i, m, d;
 
@@ -1640,7 +1629,7 @@ void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[])
     }
 }
 
-void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
+void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
                                      int natoms, rvec x[])
 {
     rvec   box_center, shift_center;
@@ -1698,7 +1687,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
     }
 }
 
-void put_atoms_in_compact_unitcell(int ePBC, int ecenter, matrix box,
+void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box,
                                    int natoms, rvec x[])
 {
     t_pbc pbc;

@@ -123,7 +123,7 @@ class SelectionParserValue
         {
             SelectionParserValueListPointer list(new SelectionParserValueList);
             list->push_back(value);
-            return std::move(list);
+            return list;
         }
         /*! \brief
          * Allocates and initializes an expression value.

@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/nsgrid.h"
+#include "nsgrid.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,10 +47,9 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
@@ -220,7 +219,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
     }
 
     /* Use the ideal number of cg's per cell to set the ideal cell size */
-    inv_r_ideal = std::pow((real)(grid_density/grid->ncg_ideal), (real)(1.0/3.0));
+    inv_r_ideal = std::cbrt(grid_density/grid->ncg_ideal);
     if (rlist > 0 && inv_r_ideal*rlist < 1)
     {
         inv_r_ideal = 1/rlist;
@@ -476,11 +475,11 @@ static void set_grid_ncg(t_grid *grid, int ncg)
 void grid_first(FILE *fplog, t_grid *grid,
                 gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                 matrix box, rvec izones_x0, rvec izones_x1,
-                real rlistlong, real grid_density)
+                real rlist, real grid_density)
 {
     int    i, m;
 
-    set_grid_sizes(box, izones_x0, izones_x1, rlistlong, dd, ddbox, grid, grid_density);
+    set_grid_sizes(box, izones_x0, izones_x1, rlist, dd, ddbox, grid, grid_density);
 
     grid->ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
@@ -684,7 +683,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         fprintf(debug, "Filling grid from %d to %d\n", cg0, cg1);
     }
 
-    debug_gmx();
     if (dd_zones == NULL)
     {
         for (cg = cg0; cg < cg1; cg++)
@@ -810,7 +808,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
             }
         }
     }
-    debug_gmx();
 
 }
 

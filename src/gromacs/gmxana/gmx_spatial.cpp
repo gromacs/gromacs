@@ -39,14 +39,14 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
@@ -141,7 +141,7 @@ int gmx_spatial(int argc, char *argv[])
     t_atoms          *atoms;
     int               natoms;
     char             *grpnm, *grpnmp;
-    atom_id          *index, *indexp;
+    int              *index, *indexp;
     int               i, nidx, nidxp;
     int               v;
     int               j, k;

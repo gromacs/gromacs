@@ -43,14 +43,13 @@
 #include <algorithm>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -123,11 +122,6 @@ typedef struct {
     double *x, *v, *f;
 } t_tabledata;
 
-#define pow2(x) ((x)*(x))
-#define pow3(x) ((x)*(x)*(x))
-#define pow4(x) ((x)*(x)*(x)*(x))
-#define pow5(x) ((x)*(x)*(x)*(x)*(x))
-
 double v_q_ewald_lr(double beta, double r)
 {
     if (r == 0)
@@ -145,15 +139,15 @@ double v_lj_ewald_lr(double beta, double r)
     double br, br2, br4, r6, factor;
     if (r == 0)
     {
-        return pow(beta, 6)/6;
+        return gmx::power6(beta)/6;
     }
     else
     {
         br     = beta*r;
         br2    = br*br;
         br4    = br2*br2;
-        r6     = pow(r, 6.0);
-        factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
+        r6     = gmx::power6(r);
+        factor = (1.0 - std::exp(-br2)*(1 + br2 + 0.5*br4))/r6;
         return factor;
     }
 }
@@ -323,7 +317,7 @@ static double spline3_table_scale(double third_deriv_max,
 
     /* Don't try to be more accurate on energy than the precision */
     func_tol  = std::max(func_tol, static_cast<double>(GMX_REAL_EPS));
-    sc_func   = pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
+    sc_func   = std::cbrt(third_deriv_max/(6*12*sqrt(3)*func_tol))*x_scale;
 
     return std::max(sc_deriv, sc_func);
 }
@@ -372,8 +366,8 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
         real   sc_lj;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        xrc2  = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-        etol  = 0.1*exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
+        xrc2  = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+        etol  = 0.1*std::exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
 
         sc_lj = spline3_table_scale(func_d3, ic->ewaldcoeff_lj, etol);
 
@@ -856,7 +850,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
     }
     if (bPotentialSwitch)
     {
-        ksw  = 1.0/(pow5(rc-r1));
+        ksw  = 1.0/(gmx::power5(rc-r1));
     }
     else
     {
@@ -877,9 +871,9 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
             p = reppow;
         }
 
-        A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc, p+2)*pow2(rc-r1));
-        B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc, p+2)*pow3(rc-r1));
-        C = 1.0/pow(rc, p)-A/3.0*pow3(rc-r1)-B/4.0*pow4(rc-r1);
+        A = p * ((p+1)*r1-(p+4)*rc)/(std::pow(rc, p+2)*gmx::square(rc-r1));
+        B = -p * ((p+1)*r1-(p+3)*rc)/(std::pow(rc, p+2)*gmx::power3(rc-r1));
+        C = 1.0/std::pow(rc, p)-A/3.0*gmx::power3(rc-r1)-B/4.0*gmx::power4(rc-r1);
         if (tp == etabLJ6Shift)
         {
             A = -A;
@@ -914,7 +908,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 Vcut = -rc6;
                 break;
             case etabLJ6Ewald:
-                Vcut  = -rc6*exp(-ewclj*ewclj*rc2)*(1 + ewclj*ewclj*rc2 + pow4(ewclj)*rc2*rc2/2);
+                Vcut  = -rc6*exp(-ewclj*ewclj*rc2)*(1 + ewclj*ewclj*rc2 + gmx::power4(ewclj)*rc2*rc2/2);
                 break;
             case etabLJ12:
                 /* Repulsion */
@@ -984,10 +978,10 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
             }
             else
             {
-                swi      = 1 - 10*pow3(r-r1)*ksw*pow2(rc-r1)
-                    + 15*pow4(r-r1)*ksw*(rc-r1) - 6*pow5(r-r1)*ksw;
-                swi1     = -30*pow2(r-r1)*ksw*pow2(rc-r1)
-                    + 60*pow3(r-r1)*ksw*(rc-r1) - 30*pow4(r-r1)*ksw;
+                swi      = 1 - 10*gmx::power3(r-r1)*ksw*gmx::square(rc-r1)
+                    + 15*gmx::power4(r-r1)*ksw*(rc-r1) - 6*gmx::power5(r-r1)*ksw;
+                swi1     = -30*gmx::square(r-r1)*ksw*gmx::square(rc-r1)
+                    + 60*gmx::power3(r-r1)*ksw*(rc-r1) - 30*gmx::power4(r-r1)*ksw;
             }
         }
         else /* not really needed, but avoids compiler warnings... */
@@ -1078,8 +1072,8 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 Ftab  = -std::erf(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
                 break;
             case etabLJ6Ewald:
-                Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
-                Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
+                Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + gmx::power4(ewclj)*r2*r2/2);
+                Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*gmx::power5(ewclj)*ewclj*r2*r2*r;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1196,9 +1190,6 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     {
         switch (fr->eeltype)
         {
-            case eelRF_NEC:
-                eltype = eelRF;
-                break;
             case eelUSER:
             case eelPMEUSER:
             case eelPMEUSERSWITCH:
@@ -1247,9 +1238,6 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
             break;
         case eelRF:
         case eelGRF:
-        case eelRF_NEC:
-            tabsel[etiCOUL] = etabRF;
-            break;
         case eelRF_ZERO:
             tabsel[etiCOUL] = etabRF_ZERO;
             break;
@@ -1350,18 +1338,19 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
 }
 
-t_forcetable make_tables(FILE *out,
-                         const t_forcerec *fr,
-                         const char *fn,
-                         real rtab, int flags)
+t_forcetable *make_tables(FILE *out,
+                          const t_forcerec *fr,
+                          const char *fn,
+                          real rtab, int flags)
 {
     t_tabledata    *td;
     gmx_bool        b14only, useUserTable;
     int             nx0, tabsel[etiNR];
     real            scalefactor;
 
-    t_forcetable    table;
+    t_forcetable   *table;
 
+    snew(table, 1);
     b14only = (flags & GMX_MAKETABLES_14ONLY);
 
     if (flags & GMX_MAKETABLES_FORCEUSER)
@@ -1375,15 +1364,15 @@ t_forcetable make_tables(FILE *out,
         set_table_type(tabsel, fr, b14only);
     }
     snew(td, etiNR);
-    table.r         = rtab;
-    table.scale     = 0;
-    table.n         = 0;
+    table->r         = rtab;
+    table->scale     = 0;
+    table->n         = 0;
 
-    table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
-    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
-    table.formatsize    = 4;
-    table.ninteractions = etiNR;
-    table.stride        = table.formatsize*table.ninteractions;
+    table->interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
+    table->format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+    table->formatsize    = 4;
+    table->ninteractions = etiNR;
+    table->stride        = table->formatsize*table->ninteractions;
 
     /* Check whether we have to read or generate */
     useUserTable = FALSE;
@@ -1399,7 +1388,7 @@ t_forcetable make_tables(FILE *out,
         read_tables(out, fn, etiNR, 0, td);
         if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY))
         {
-            table.n   = td[0].nx;
+            table->n   = td[0].nx;
         }
         else
         {
@@ -1408,28 +1397,28 @@ t_forcetable make_tables(FILE *out,
                 gmx_fatal(FARGS, "Tables in file %s not long enough for cut-off:\n"
                           "\tshould be at least %f nm\n", fn, rtab);
             }
-            table.n = (int)(rtab*td[0].tabscale + 0.5);
+            table->n = (int)(rtab*td[0].tabscale + 0.5);
         }
-        table.scale = td[0].tabscale;
-        nx0         = td[0].nx0;
+        table->scale = td[0].tabscale;
+        nx0          = td[0].nx0;
     }
     else
     {
         // No tables are read
 #ifdef GMX_DOUBLE
-        table.scale = 2000.0;
+        table->scale = 2000.0;
 #else
-        table.scale = 500.0;
+        table->scale = 500.0;
 #endif
-        table.n = static_cast<int>(rtab*table.scale);
-        nx0     = 10;
+        table->n = static_cast<int>(rtab*table->scale);
+        nx0      = 10;
     }
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
-     * numbers per table.n+1 data points. For performance reasons we want
+     * numbers per table->n+1 data points. For performance reasons we want
      * the table data to be aligned to a 32-byte boundary.
      */
-    snew_aligned(table.data, table.stride*(table.n+1)*sizeof(real), 32);
+    snew_aligned(table->data, table->stride*(table->n+1)*sizeof(real), 32);
 
     for (int k = 0; (k < etiNR); k++)
     {
@@ -1437,12 +1426,12 @@ t_forcetable make_tables(FILE *out,
            overwriting data that was read but should not be used) */
         if (!ETAB_USER(tabsel[k]))
         {
-            real scale = table.scale;
+            real scale = table->scale;
             if (fr->bBHAM && (fr->bham_b_max != 0) && tabsel[k] == etabEXPMIN)
             {
                 scale /= fr->bham_b_max;
             }
-            init_table(table.n, nx0, scale, &(td[k]), !useUserTable);
+            init_table(table->n, nx0, scale, &(td[k]), !useUserTable);
 
             fill_table(&(td[k]), tabsel[k], fr, b14only);
             if (out)
@@ -1473,7 +1462,7 @@ t_forcetable make_tables(FILE *out,
             scalefactor = 1.0;
         }
 
-        copy2table(table.n, k*table.formatsize, table.stride, td[k].x, td[k].v, td[k].f, scalefactor, table.data);
+        copy2table(table->n, k*table->formatsize, table->stride, td[k].x, td[k].v, td[k].f, scalefactor, table->data);
 
         done_tabledata(&(td[k]));
     }
@@ -1482,27 +1471,28 @@ t_forcetable make_tables(FILE *out,
     return table;
 }
 
-t_forcetable make_gb_table(const t_forcerec              *fr)
+t_forcetable *make_gb_table(const t_forcerec              *fr)
 {
     t_tabledata    *td;
     int             nx0;
     double          r, r2, Vtab, Ftab, expterm;
 
-    t_forcetable    table;
+    t_forcetable   *table;
 
     /* Set the table dimensions for GB, not really necessary to
      * use etiNR (since we only have one table, but ...)
      */
+    snew(table, 1);
     snew(td, 1);
-    table.interaction   = GMX_TABLE_INTERACTION_ELEC;
-    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
-    table.r             = fr->gbtabr;
-    table.scale         = fr->gbtabscale;
-    table.n             = static_cast<int>(table.scale*table.r);
-    table.formatsize    = 4;
-    table.ninteractions = 1;
-    table.stride        = table.formatsize*table.ninteractions;
-    nx0                 = 0;
+    table->interaction   = GMX_TABLE_INTERACTION_ELEC;
+    table->format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+    table->r             = fr->gbtabr;
+    table->scale         = fr->gbtabscale;
+    table->n             = static_cast<int>(table->scale*table->r);
+    table->formatsize    = 4;
+    table->ninteractions = 1;
+    table->stride        = table->formatsize*table->ninteractions;
+    nx0                  = 0;
 
     /* Each table type (e.g. coul,lj6,lj12) requires four numbers per
      * datapoint. For performance reasons we want the table data to be
@@ -1511,9 +1501,9 @@ t_forcetable make_gb_table(const t_forcerec              *fr)
      * to do this :-)
      */
 
-    snew_aligned(table.data, table.stride*table.n, 32);
+    snew_aligned(table->data, table->stride*table->n, 32);
 
-    init_table(table.n, nx0, table.scale, &(td[0]), TRUE);
+    init_table(table->n, nx0, table->scale, &(td[0]), TRUE);
 
     /* Local implementation so we don't have to use the etabGB
      * enum above, which will cause problems later when
@@ -1523,7 +1513,7 @@ t_forcetable make_gb_table(const t_forcerec              *fr)
      * be defined in fill_table and set_table_type
      */
 
-    for (int i = nx0; i < table.n; i++)
+    for (int i = nx0; i < table->n; i++)
     {
         r       = td->x[i];
         r2      = r*r;
@@ -1533,13 +1523,13 @@ t_forcetable make_gb_table(const t_forcerec              *fr)
         Ftab = (r-0.25*r*expterm)/((r2+expterm)*sqrt(r2+expterm));
 
         /* Convert to single precision when we store to mem */
-        td->x[i]  = i/table.scale;
+        td->x[i]  = i/table->scale;
         td->v[i]  = Vtab;
         td->f[i]  = Ftab;
 
     }
 
-    copy2table(table.n, 0, table.stride, td[0].x, td[0].v, td[0].f, 1.0, table.data);
+    copy2table(table->n, 0, table->stride, td[0].x, td[0].v, td[0].f, 1.0, table->data);
 
     done_tabledata(&(td[0]));
     sfree(td);
@@ -1547,84 +1537,6 @@ t_forcetable make_gb_table(const t_forcerec              *fr)
     return table;
 
 
-}
-
-t_forcetable make_atf_table(FILE             *out,
-                            const t_forcerec *fr,
-                            const char       *fn,
-                            matrix            box)
-{
-    t_tabledata *td;
-    real         rtab;
-    real         rx, ry, rz, box_r;
-
-    t_forcetable table;
-
-
-    /* Set the table dimensions for ATF, not really necessary to
-     * use etiNR (since we only have one table, but ...)
-     */
-    snew(td, 1);
-
-    if (fr->adress_type == eAdressSphere)
-    {
-        /* take half box diagonal direction as tab range */
-        rx    = 0.5*box[0][0]+0.5*box[1][0]+0.5*box[2][0];
-        ry    = 0.5*box[0][1]+0.5*box[1][1]+0.5*box[2][1];
-        rz    = 0.5*box[0][2]+0.5*box[1][2]+0.5*box[2][2];
-        box_r = sqrt(rx*rx+ry*ry+rz*rz);
-
-    }
-    else
-    {
-        /* xsplit: take half box x direction as tab range */
-        box_r        = box[0][0]/2;
-    }
-    table.r         = box_r;
-    table.scale     = 0;
-    table.n         = 0;
-
-    read_tables(out, fn, 1, 0, td);
-    rtab      = td[0].x[td[0].nx-1];
-
-    if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2))
-    {
-        gmx_fatal(FARGS, "AdResS full box therm force table in file %s extends to %f:\n"
-                  "\tshould extend to at least half the length of the box in x-direction"
-                  "%f\n", fn, rtab, box[0][0]/2);
-    }
-    if (rtab < box_r)
-    {
-        gmx_fatal(FARGS, "AdResS full box therm force table in file %s extends to %f:\n"
-                  "\tshould extend to at least for spherical adress"
-                  "%f (=distance from center to furthermost point in box \n", fn, rtab, box_r);
-    }
-
-
-    table.n     = td[0].nx;
-    table.scale = td[0].tabscale;
-
-    table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
-    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
-    table.formatsize    = 4;
-    table.ninteractions = 1;
-    table.stride        = table.formatsize*table.ninteractions;
-
-    /* Each table type (e.g. coul,lj6,lj12) requires four numbers per
-     * datapoint. For performance reasons we want the table data to be
-     * aligned to a 32-byte boundary. This new pointer must not be
-     * used in a free() call, but thankfully we're sloppy enough not
-     * to do this :-)
-     */
-
-    snew_aligned(table.data, table.stride*table.n, 32);
-
-    copy2table(table.n, 0, table.stride, td[0].x, td[0].v, td[0].f, 1.0, table.data);
-
-    done_tabledata(&(td[0]));
-    sfree(td);
-
-    return table;
 }
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)

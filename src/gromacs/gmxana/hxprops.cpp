@@ -43,11 +43,12 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -84,7 +85,7 @@ real ellipticity(int nres, t_bb bb[])
         psi = bb[i].psi;
         for (j = 0; (j < NPPW); j++)
         {
-            pp2 = sqr(phi-ppw[j].phi)+sqr(psi-ppw[j].psi);
+            pp2 = gmx::square(phi-ppw[j].phi)+gmx::square(psi-ppw[j].psi);
             if (pp2 < 64)
             {
                 bb[i].nhx++;
@@ -96,7 +97,7 @@ real ellipticity(int nres, t_bb bb[])
     return ell;
 }
 
-real ahx_len(int gnx, atom_id index[], rvec x[])
+real ahx_len(int gnx, int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     rvec dx;
@@ -106,7 +107,7 @@ real ahx_len(int gnx, atom_id index[], rvec x[])
     return norm(dx);
 }
 
-real radius(FILE *fp, int nca, atom_id ca_index[], rvec x[])
+real radius(FILE *fp, int nca, int ca_index[], rvec x[])
 /* Assume we have all the backbone */
 {
     real dl2, dlt;
@@ -116,7 +117,7 @@ real radius(FILE *fp, int nca, atom_id ca_index[], rvec x[])
     for (i = 0; (i < nca); i++)
     {
         ai  = ca_index[i];
-        dl2 = sqr(x[ai][XX])+sqr(x[ai][YY]);
+        dl2 = gmx::square(x[ai][XX])+gmx::square(x[ai][YY]);
 
         if (fp)
         {
@@ -149,7 +150,7 @@ static real rot(rvec x1, rvec x2)
     return dphi;
 }
 
-real twist(int nca, atom_id caindex[], rvec x[])
+real twist(int nca, int caindex[], rvec x[])
 {
     real pt, dphi;
     int  i, a0, a1;
@@ -172,7 +173,7 @@ real twist(int nca, atom_id caindex[], rvec x[])
     return (pt/(nca-1));
 }
 
-real ca_phi(int gnx, atom_id index[], rvec x[])
+real ca_phi(int gnx, int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real phi, phitot;
@@ -202,7 +203,7 @@ real ca_phi(int gnx, atom_id index[], rvec x[])
     return (phitot/(gnx-4.0));
 }
 
-real dip(int nbb, atom_id bbind[], rvec x[], t_atom atom[])
+real dip(int nbb, int bbind[], rvec x[], t_atom atom[])
 {
     int  i, m, ai;
     rvec dipje;
@@ -221,7 +222,7 @@ real dip(int nbb, atom_id bbind[], rvec x[], t_atom atom[])
     return norm(dipje);
 }
 
-real rise(int gnx, atom_id index[], rvec x[])
+real rise(int gnx, int index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real z, z0, ztot;
@@ -311,7 +312,7 @@ static void set_ahcity(int nbb, t_bb bb[])
 
     for (n = 0; (n < nbb); n++)
     {
-        pp2 = sqr(bb[n].phi-PHI_AHX)+sqr(bb[n].psi-PSI_AHX);
+        pp2 = gmx::square(bb[n].phi-PHI_AHX)+gmx::square(bb[n].psi-PSI_AHX);
 
         bb[n].bHelix = FALSE;
         if (pp2 < 2500)
@@ -325,7 +326,7 @@ static void set_ahcity(int nbb, t_bb bb[])
 }
 
 t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
-              int *nall, atom_id **index,
+              int *nall, int **index,
               char ***atomname, t_atom atom[],
               t_resinfo *resinfo)
 {
@@ -471,7 +472,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
         }
     }
     fprintf(fp, "\n");
-    rms = std::sqrt(rms2/n-sqr(rmst/n));
+    rms = std::sqrt(rms2/n-gmx::square(rmst/n));
 
     return rms;
 }
@@ -513,7 +514,7 @@ void calc_hxprops(int nres, t_bb bb[], rvec x[])
             dih_angle(x[bb[i].N], x[bb[i].CA], x[bb[i].C], x[bb[i].Nnext], NULL,
                       r_ij, r_kj, r_kl, m, n,
                       &sign, &t1, &t2, &t3);
-        bb[i].pprms2 = sqr(bb[i].phi-PHI_AHX)+sqr(bb[i].psi-PSI_AHX);
+        bb[i].pprms2 = gmx::square(bb[i].phi-PHI_AHX)+gmx::square(bb[i].psi-PSI_AHX);
 
         bb[i].jcaha +=
             1.4*std::sin((bb[i].psi+138.0)*DEG2RAD) -
@@ -555,8 +556,8 @@ static void check_ahx(int nres, t_bb bb[],
     *hend   = h1sav;
 }
 
-void do_start_end(int nres, t_bb bb[], int *nbb, atom_id bbindex[],
-                  int *nca, atom_id caindex[],
+void do_start_end(int nres, t_bb bb[], int *nbb, int bbindex[],
+                  int *nca, int caindex[],
                   gmx_bool bRange, int rStart, int rEnd)
 {
     int    i, j, hstart = 0, hend = 0;

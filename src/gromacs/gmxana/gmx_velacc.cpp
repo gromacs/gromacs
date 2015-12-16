@@ -45,23 +45,23 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void index_atom2mol(int *n, atom_id *index, t_block *mols)
+static void index_atom2mol(int *n, int *index, t_block *mols)
 {
     int nat, i, nmol, mol, j;
 
@@ -169,7 +169,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
         /* Computing the square magnitude of a complex number, since this is a power
          * spectrum.
          */
-        fprintf(fp, "%10g  %10g\n", omega, sqr(data[i])+sqr(data[i+1]));
+        fprintf(fp, "%10g  %10g\n", omega, gmx::square(data[i])+gmx::square(data[i+1]));
     }
     xvgrclose(fp);
     gmx_fft_destroy(fft);
@@ -207,7 +207,7 @@ int gmx_velacc(int argc, char *argv[])
     matrix          box;
     gmx_bool        bTPS = FALSE, bTop = FALSE;
     int             gnx;
-    atom_id        *index;
+    int            *index;
     char           *grpname;
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.

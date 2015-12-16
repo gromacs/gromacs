@@ -50,7 +50,7 @@
 
 #define MSIZE 4
 
-static void ps_draw_atom(t_psdata ps, atom_id ai, iv2 vec2[], char **atomnm[])
+static void ps_draw_atom(t_psdata ps, int ai, iv2 vec2[], char **atomnm[])
 {
     int xi, yi;
 
@@ -97,7 +97,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 }
 
 static void ps_draw_bond(t_psdata ps,
-                         atom_id ai, atom_id aj, iv2 vec2[],
+                         int ai, int aj, iv2 vec2[],
                          rvec x[], char **atomnm[])
 {
     char    *ic, *jc;

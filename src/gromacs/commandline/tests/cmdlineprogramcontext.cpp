@@ -45,10 +45,10 @@
 
 #include "config.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
 
 #include "buildinfo.h"
@@ -97,7 +97,7 @@ class TestExecutableEnvironment : public gmx::IExecutableEnvironment
 };
 
 //! Shorthand for a smart pointer to TestExecutableEnvironment.
-typedef boost::shared_ptr<TestExecutableEnvironment>
+typedef std::unique_ptr<TestExecutableEnvironment>
     TestExecutableEnvironmentPointer;
 
 class CommandLineProgramContextTest : public ::testing::Test
@@ -115,7 +115,7 @@ class CommandLineProgramContextTest : public ::testing::Test
         void testBinaryPathSearch(const char *argv0)
         {
             ASSERT_TRUE(env_.get() != NULL);
-            gmx::CommandLineProgramContext  info(1, &argv0, env_);
+            gmx::CommandLineProgramContext  info(1, &argv0, move(env_));
             EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
         }
         void testBinaryPathSearch(const std::string &argv0)

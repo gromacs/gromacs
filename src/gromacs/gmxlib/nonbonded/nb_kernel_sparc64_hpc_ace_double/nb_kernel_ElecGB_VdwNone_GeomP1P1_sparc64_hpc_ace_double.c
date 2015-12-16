@@ -42,8 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
 #include "kernelutil_sparc64_hpc_ace_double.h"
 
@@ -111,8 +110,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_VF_sparc64_hpc_ace_double
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
@@ -412,8 +411,8 @@ nb_kernel_ElecGB_VdwNone_GeomP1P1_F_sparc64_hpc_ace_double
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */

@@ -50,19 +50,20 @@
 #include "gromacs/gmxana/cmat.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
+static void norm_princ(t_atoms *atoms, int isize, int *index, int natoms,
                        rvec *x)
 {
     int  i, m;
@@ -78,7 +79,7 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
     {
         for (i = 0; i < isize; i++)
         {
-            vec[m] += sqr(x[index[i]][m]);
+            vec[m] += gmx::square(x[index[i]][m]);
         }
         vec[m] = std::sqrt(vec[m] / isize);
         /* calculate scaling constants */
@@ -247,7 +248,7 @@ int gmx_rms(int argc, char *argv[])
     gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = NULL;
     int               ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
         0;
-    atom_id          *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
+    int              *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
         NULL;
     char             *gn_fit, **gn_rms;
     t_rgb             rlo, rhi;

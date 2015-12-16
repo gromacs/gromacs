@@ -44,13 +44,14 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -58,7 +59,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void insert_ion(int nsa, int *nwater,
-                       gmx_bool bSet[], int repl[], atom_id index[],
+                       gmx_bool bSet[], int repl[], int index[],
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
                        t_atoms *atoms,
@@ -152,7 +153,7 @@ static char *aname(const char *mname)
     return str;
 }
 
-void sort_ions(int nsa, int nw, int repl[], atom_id index[],
+void sort_ions(int nsa, int nw, int repl[], int index[],
                t_atoms *atoms, rvec x[],
                const char *p_name, const char *n_name,
                gmx_bool bDrude)
@@ -476,7 +477,7 @@ int gmx_genion(int argc, char *argv[])
     t_atoms            atoms;
     t_pbc              pbc;
     int               *repl, ePBC;
-    atom_id           *index;
+    int               *index;
     char              *grpname;
     gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;

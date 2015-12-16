@@ -333,7 +333,7 @@ gmx_ana_index_clear(gmx_ana_index_t *g)
  * No copy if \p index is made.
  */
 void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, int nalloc)
+gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc)
 {
     g->isize        = isize;
     g->index        = index;
@@ -479,11 +479,11 @@ gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms)
 static int
 cmp_atomid(const void *a, const void *b)
 {
-    if (*(atom_id *)a < *(atom_id *)b)
+    if (*(int *)a < *(int *)b)
     {
         return -1;
     }
-    if (*(atom_id *)a > *(atom_id *)b)
+    if (*(int *)a > *(int *)b)
     {
         return 1;
     }

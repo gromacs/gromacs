@@ -37,7 +37,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/genborn.h"
+#include "genborn.h"
 
 #include <string.h>
 
@@ -46,15 +46,17 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/genborn_allvsall.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -242,7 +244,7 @@ int init_gb(gmx_genborn_t **p_born,
     natoms   = mtop->natoms;
 
     atoms    = gmx_mtop_global_atoms(mtop);
-    localtop = gmx_mtop_generate_local_top(mtop, ir);
+    localtop = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
 
     snew(born, 1);
     *p_born = born;
@@ -272,7 +274,8 @@ int init_gb(gmx_genborn_t **p_born,
     /* snew(born->dasurf,natoms); */
 
     /* Initialize the gb neighbourlist */
-    init_gb_nblist(natoms, &(fr->gblist));
+    snew(fr->gblist, 1);
+    init_gb_nblist(natoms, fr->gblist);
 
     /* Do the Vsites exclusions (if any) */
     for (i = 0; i < natoms; i++)
@@ -411,7 +414,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             dz11  = iz1-jz1;
 
             dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv  = gmx_invsqrt(dr2);
+            rinv  = gmx::invsqrt(dr2);
             idr2  = rinv*rinv;
             idr4  = idr2*idr2;
             idr6  = idr4*idr2;
@@ -435,7 +438,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 term  = 0.5*(1.0-cosq);
                 ccf   = term*term;
                 sinq  = 1.0 - cosq*cosq;
-                dccf  = 2.0*term*sinq*gmx_invsqrt(sinq)*theta;
+                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq)*theta;
             }
 
             prod                       = STILL_P4*vaj;
@@ -464,8 +467,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
         {
             gpi             = born->gpol[i]+born->gpol_still_work[i];
             gpi2            = gpi * gpi;
-            born->bRad[i]   = factor*gmx_invsqrt(gpi2);
-            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+            born->bRad[i]   = factor*gmx::invsqrt(gpi2);
+            fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
         }
     }
 
@@ -547,7 +550,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             dz11  = iz1 - jz1;
 
             dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv  = gmx_invsqrt(dr2);
+            rinv  = gmx::invsqrt(dr2);
             dr    = rinv*dr2;
 
             sk    = born->param[aj];
@@ -574,7 +577,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
                 diff2    = uij2-lij2;
 
-                lij_inv  = gmx_invsqrt(lij2);
+                lij_inv  = gmx::invsqrt(lij2);
                 sk2      = sk*sk;
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
@@ -628,7 +631,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
                 diff2    = uij2-lij2;
 
-                lij_inv  = gmx_invsqrt(lij2);
+                lij_inv  = gmx::invsqrt(lij2);
                 sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25 * sk2_rinv;
@@ -681,7 +684,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             rad     = 1.0/sum_ai;
 
             born->bRad[i]   = std::max(rad, min_rad);
-            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+            fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
         }
     }
 
@@ -761,7 +764,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             dz11  = iz1 - jz1;
 
             dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv  = gmx_invsqrt(dr2);
+            rinv  = gmx::invsqrt(dr2);
             dr    = dr2*rinv;
 
             /* sk is precalculated in init_gb() */
@@ -788,7 +791,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
                 diff2    = uij2-lij2;
 
-                lij_inv  = gmx_invsqrt(lij2);
+                lij_inv  = gmx::invsqrt(lij2);
                 sk2      = sk*sk;
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
@@ -839,7 +842,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
                 diff2    = uij2-lij2;
 
-                lij_inv  = gmx_invsqrt(lij2);
+                lij_inv  = gmx::invsqrt(lij2);
                 sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25 * sk2_rinv;
@@ -896,7 +899,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             born->bRad[i] = rai_inv - tsum*rai_inv2;
             born->bRad[i] = 1.0 / born->bRad[i];
 
-            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+            fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
 
             tchain         = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
             born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;
@@ -1081,7 +1084,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
             isai          = invsqrta[ai];
             iq            = (-1)*facel*charge[ai];
 
-            rinv11        = gmx_invsqrt(rsq11);
+            rinv11        = gmx::invsqrt(rsq11);
             isaj          = invsqrta[aj];
             isaprod       = isai*isaj;
             qq            = isaprod*iq*charge[aj];
@@ -1362,7 +1365,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     /* Calculate the bonded GB-interactions using either table or analytical formula */
     enerd->term[F_GBPOL]       += gb_bonds_tab(x, f, fr->fshift, md->chargeA, &(fr->gbtabscale),
-                                               fr->invsqrta, fr->dvda, fr->gbtab.data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
+                                               fr->invsqrta, fr->dvda, fr->gbtab->data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
     enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, fr->epsfac);
@@ -1383,13 +1386,13 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
         return;
     }
 
-    calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda,
+    calc_gb_chainrule(fr->natoms_force, fr->gblist, fr->dadx, fr->dvda,
                       x, f, fr->fshift, fr->shift_vec, gb_algorithm, born);
 
     if (!fr->bAllvsAll)
     {
         /* 9 flops for outer loop, 15 for inner */
-        inc_nrnb(nrnb, eNR_BORN_CHAINRULE, fr->gblist.nri*9+fr->gblist.nrj*15);
+        inc_nrnb(nrnb, eNR_BORN_CHAINRULE, fr->gblist->nri*9+fr->gblist->nrj*15);
     }
 }
 
@@ -1490,13 +1493,6 @@ static void add_bondeds_to_gblist(t_ilist *il,
     }
 }
 
-static int
-compare_int (const void * a, const void * b)
-{
-    return ( *(int*)a - *(int*)b );
-}
-
-
 
 int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                    rvec x[], matrix box,
@@ -1519,7 +1515,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
 
     if (fr->bMolPBC)
     {
-        set_pbc_dd(&pbc, fr->ePBC, cr->dd, TRUE, box);
+        set_pbc_dd(&pbc, fr->ePBC, cr->dd->nc, TRUE, box);
     }
 
     switch (gb_algorithm)
@@ -1571,10 +1567,10 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
     }
 
     /* Zero out some counters */
-    fr->gblist.nri = 0;
-    fr->gblist.nrj = 0;
+    fr->gblist->nri = 0;
+    fr->gblist->nrj = 0;
 
-    fr->gblist.jindex[0] = fr->gblist.nri;
+    fr->gblist->jindex[0] = fr->gblist->nri;
 
     for (i = 0; i < fr->natoms_force; i++)
     {
@@ -1585,23 +1581,23 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
             /* Only add those atoms that actually have neighbours */
             if (born->use[i] != 0)
             {
-                fr->gblist.iinr[fr->gblist.nri]  = i;
-                fr->gblist.shift[fr->gblist.nri] = list->shift;
-                fr->gblist.nri++;
+                fr->gblist->iinr[fr->gblist->nri]  = i;
+                fr->gblist->shift[fr->gblist->nri] = list->shift;
+                fr->gblist->nri++;
 
                 for (k = 0; k < list->naj; k++)
                 {
                     /* Memory allocation for jjnr */
-                    if (fr->gblist.nrj >= fr->gblist.maxnrj)
+                    if (fr->gblist->nrj >= fr->gblist->maxnrj)
                     {
-                        fr->gblist.maxnrj += over_alloc_large(fr->gblist.maxnrj);
+                        fr->gblist->maxnrj += over_alloc_large(fr->gblist->maxnrj);
 
                         if (debug)
                         {
-                            fprintf(debug, "Increasing GB neighbourlist j size to %d\n", fr->gblist.maxnrj);
+                            fprintf(debug, "Increasing GB neighbourlist j size to %d\n", fr->gblist->maxnrj);
                         }
 
-                        srenew(fr->gblist.jjnr, fr->gblist.maxnrj);
+                        srenew(fr->gblist->jjnr, fr->gblist->maxnrj);
                     }
 
                     /* Put in list */
@@ -1609,42 +1605,13 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                     {
                         gmx_incons("i == list->aj[k]");
                     }
-                    fr->gblist.jjnr[fr->gblist.nrj++] = list->aj[k];
+                    fr->gblist->jjnr[fr->gblist->nrj++] = list->aj[k];
                 }
 
-                fr->gblist.jindex[fr->gblist.nri] = fr->gblist.nrj;
+                fr->gblist->jindex[fr->gblist->nri] = fr->gblist->nrj;
             }
         }
     }
-
-
-#ifdef SORT_GB_LIST
-    for (i = 0; i < fr->gblist.nri; i++)
-    {
-        nj0 = fr->gblist.jindex[i];
-        nj1 = fr->gblist.jindex[i+1];
-        ai  = fr->gblist.iinr[i];
-
-        /* Temporary fix */
-        for (j = nj0; j < nj1; j++)
-        {
-            if (fr->gblist.jjnr[j] < ai)
-            {
-                fr->gblist.jjnr[j] += fr->natoms_force;
-            }
-        }
-        qsort(fr->gblist.jjnr+nj0, nj1-nj0, sizeof(int), compare_int);
-        /* Fix back */
-        for (j = nj0; j < nj1; j++)
-        {
-            if (fr->gblist.jjnr[j] >= fr->natoms_force)
-            {
-                fr->gblist.jjnr[j] -= fr->natoms_force;
-            }
-        }
-
-    }
-#endif
 
     return 0;
 }

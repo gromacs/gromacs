@@ -43,12 +43,14 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/ns.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -131,29 +133,6 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
             }
         }
         fflush(out);
-    }
-}
-
-static void set_mat(FILE *fp, int **mat, int i0, int ni, int j0, int nj,
-                    gmx_bool bSymm, int shift)
-{
-    int i, j;
-
-    for (i = i0; (i < i0+ni); i++)
-    {
-        for (j = j0; (j < j0+nj); j++)
-        {
-            if (mat[i][j] != 0)
-            {
-                fprintf(fp, "mat[%d][%d] changing from %d to %d\n",
-                        i, j, mat[i][j], shift+1);
-            }
-            mat[i][j] = shift+1;
-            if (bSymm)
-            {
-                mat[j][i] = 27-shift;
-            }
-        }
     }
 }
 

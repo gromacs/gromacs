@@ -42,8 +42,7 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -289,8 +288,8 @@ nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
     type                = mdatoms->typeA;
     gbfactor            = ((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     facel               = fr->epsfac;
-    GBtab               = fr->gbtab.data;
-    gbtabscale          = fr->gbtab.scale;
+    GBtab               = fr->gbtab->data;
+    gbtabscale          = fr->gbtab->scale;
     invsqrta            = fr->invsqrta;
     dvda                = fr->dvda;
     vpol                = kernel_data->energygrp_polarization;
@@ -362,7 +361,7 @@ nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
                 rsq               = dx*dx+dy*dy+dz*dz;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv             = gmx_invsqrt(rsq);
+                rinv             = 1.0/sqrt(rsq);
 
                 /* Load parameters for j atom */
                 isaj              = invsqrta[k];
@@ -443,7 +442,7 @@ nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
             rsq               = dx*dx+dy*dy+dz*dz;
 
             /* Calculate 1/r and 1/r2 */
-            rinv             = gmx_invsqrt(rsq);
+            rinv             = 1.0/sqrt(rsq);
 
             /* Load parameters for j atom */
             isaj              = invsqrta[k];

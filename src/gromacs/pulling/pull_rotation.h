@@ -48,13 +48,15 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_domdec_t;
+struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_commrec;
+struct t_filenm;
+struct t_inputrec;
 struct t_rot;
 
 #ifdef __cplusplus

@@ -78,8 +78,7 @@ class SelectionTester : public TrajectoryAnalysisModule
 };
 
 SelectionTester::SelectionTester()
-    : TrajectoryAnalysisModule("testing", "Selection testing and debugging"),
-      nmaxind_(20)
+    : nmaxind_(20)
 {
 }
 

@@ -51,11 +51,10 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/gmx_hash.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "domdec_specatomcomm.h"
+#include "hash.h"
 
 void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift)
 {
@@ -95,12 +95,12 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
 
 int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 {
-    gmx_domdec_specat_comm_t *spac;
-    ind_req_t                *ireq;
-    gmx_hash_t                ga2la_specat;
+    gmx_domdec_specat_comm_t   *spac;
+    ind_req_t                  *ireq;
+    gmx_hash_t                 *ga2la_specat;
     int  ftype, nral, i, j, a;
-    t_ilist                  *lilf;
-    t_iatom                  *iatoms;
+    t_ilist                    *lilf;
+    t_iatom                    *iatoms;
     int  at_end;
 
     spac         = dd->vsite_comm;

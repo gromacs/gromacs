@@ -41,14 +41,15 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_internal.h"
@@ -194,12 +195,12 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                              t_pbc *pbc, double t, rvec *x)
 {
     /* The size and stride per coord for the reduction buffer */
-    const int     stride = 9;
-    int           c, i, ii, m, start, end;
-    rvec          g_x, dx, dir;
-    double        inv_cyl_r2;
-    pull_comm_t  *comm;
-    gmx_ga2la_t   ga2la = NULL;
+    const int       stride = 9;
+    int             c, i, ii, m, start, end;
+    rvec            g_x, dx, dir;
+    double          inv_cyl_r2;
+    pull_comm_t    *comm;
+    gmx_ga2la_t    *ga2la = NULL;
 
     comm = &pull->comm;
 
@@ -216,7 +217,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
     start = 0;
     end   = md->homenr;
 
-    inv_cyl_r2 = 1/dsqr(pull->params.cylinder_r);
+    inv_cyl_r2 = 1.0/gmx::square(pull->params.cylinder_r);
 
     /* loop over all groups to make a reference group for each*/
     for (c = 0; c < pull->ncoord; c++)

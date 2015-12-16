@@ -41,10 +41,8 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -52,6 +50,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 void check_binwidth(real binwidth)
 {
@@ -193,7 +192,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         gmx_sans_t  *gsans,
         rvec        *x,
         matrix       box,
-        atom_id     *index,
+        int         *index,
         int          isize,
         double       binwidth,
         gmx_bool     bMC,

@@ -50,14 +50,14 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/powerspect.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -101,7 +101,7 @@ static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
+static void density_in_time (const char *fn, int **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
 
 {
 /*
@@ -677,7 +677,7 @@ int gmx_densorder(int argc, char *argv[])
     static int         nsttblock = 100;
     static int         axis      = 2;
     static const char *axtitle   = "Z";
-    atom_id          **index; /* Index list for single group*/
+    int              **index; /* Index list for single group*/
     int                xslices, yslices, zslices, tblock;
     static gmx_bool    bGraph   = FALSE;
     static gmx_bool    bCenter  = FALSE;

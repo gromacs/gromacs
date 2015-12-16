@@ -46,8 +46,6 @@
 #include <functional>
 #include <memory>
 
-#include <boost/shared_ptr.hpp>
-
 #include "gromacs/commandline/cmdlinemodule.h"
 
 namespace gmx
@@ -103,7 +101,7 @@ class ICommandLineOptionsModuleSettings
          * as owned by the options module after this call.
          */
         virtual void addOptionsBehavior(
-            const boost::shared_ptr<IOptionsBehavior> &behavior) = 0;
+            const std::shared_ptr<IOptionsBehavior> &behavior) = 0;
 
     protected:
         // Disallow deletion through the interface.
@@ -162,10 +160,9 @@ class ICommandLineOptionsModule
          * \param[in] description Short description for the module.
          * \param[in] module      Module to run.
          * \returns ICommandLineModule object that runs \p module module.
-         *     Caller must `delete` the object.
          * \throws  std::bad_alloc if out of memory.
          */
-        static ICommandLineModule *
+        static std::unique_ptr<ICommandLineModule>
         createModule(const char *name, const char *description,
                      ICommandLineOptionsModulePointer module);
         /*! \brief

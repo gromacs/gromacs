@@ -44,14 +44,18 @@
 #ifndef NBNXN_OPENCL_TYPES_H
 #define NBNXN_OPENCL_TYPES_H
 
+/*! \brief Declare to OpenCL SDKs that we intend to use OpenCL API
+   features that were deprecated in 2.0, so that they don't warn about
+   it. */
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #ifdef __APPLE__
 #    include <OpenCL/opencl.h>
 #else
 #    include <CL/opencl.h>
 #endif
 
-#include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
 
 /* kernel does #include "gromacs/math/utilities.h" */

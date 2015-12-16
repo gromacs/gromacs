@@ -47,11 +47,11 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/powerspect.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -59,34 +59,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Print name of first atom in all groups in index file */
-static void print_types(atom_id index[], atom_id a[], int ngrps,
-                        char *groups[], t_topology *top)
-{
-    int i;
-
-    fprintf(stderr, "Using following groups: \n");
-    for (i = 0; i < ngrps; i++)
-    {
-        fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %d\n",
-                groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
-    }
-    fprintf(stderr, "\n");
-}
-
-static void check_length(real length, int a, int b)
-{
-    if (length > 0.3)
-    {
-        fprintf(stderr, "WARNING: distance between atoms %d and "
-                "%d > 0.3 nm (%f). Index file might be corrupt.\n",
-                a, b, length);
-    }
-}
-
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
-                                  rvec x[], int maxidx, atom_id index[],
+                                  rvec x[], int maxidx, int index[],
                                   real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
                                   real ***sggrid, real ***skgrid)
@@ -285,7 +260,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     rvec         *xtop, *x;
     matrix        box;
     real          sg, sk, sgintf;
-    atom_id     **index   = NULL;
+    int         **index   = NULL;
     char        **grpname = NULL;
     int           i, j, k, n, *isize, ng, nslicez, framenr;
     real       ***sg_grid = NULL, ***sk_grid = NULL, ***sg_fravg = NULL, ***sk_fravg = NULL, ****sk_4d = NULL, ****sg_4d = NULL;

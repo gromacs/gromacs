@@ -53,11 +53,11 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -268,6 +268,9 @@ class CommandLineModuleManager::Impl
         processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
                              int *argc, char ***argv);
 
+        //! Prints the footer at the end of execution.
+        void printThanks(FILE *fp);
+
         /*! \brief
          * Maps module names to module objects.
          *
@@ -418,6 +421,11 @@ CommandLineModuleManager::Impl::processCommonOptions(
     return module;
 }
 
+void CommandLineModuleManager::Impl::printThanks(FILE *fp)
+{
+    fprintf(fp, "\n%s\n\n", getCoolQuote().c_str());
+}
+
 /********************************************************************
  * CommandLineModuleManager
  */
@@ -556,7 +564,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (!bQuiet)
     {
-        gmx_thanx(stderr);
+        impl_->printThanks(stderr);
     }
     return rc;
 }

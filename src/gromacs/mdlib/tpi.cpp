@@ -52,39 +52,40 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 //! Global max algorithm
@@ -129,7 +130,7 @@ namespace gmx
     \copydoc integrator_t (FILE *fplog, t_commrec *cr,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           gmx_bool bCompact, int nstglobalcomm,
+                           int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
                            t_inputrec *inputrec,
@@ -148,7 +149,7 @@ namespace gmx
  */
 double do_tpi(FILE *fplog, t_commrec *cr,
               int nfile, const t_filenm fnm[],
-              const gmx_output_env_t *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+              const gmx_output_env_t *oenv, gmx_bool bVerbose,
               int gmx_unused nstglobalcomm,
               gmx_vsite_t gmx_unused *vsite, gmx_shellfc_t gmx_unused shellfc, gmx_constr_t gmx_unused constr,
               int gmx_unused stepout,
@@ -212,7 +213,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     nnodes = cr->nnodes;
 
-    top = gmx_mtop_generate_local_top(top_global, inputrec);
+    top = gmx_mtop_generate_local_top(top_global, inputrec->efep != efepNO);
 
     groups = &top_global->groups;
 
@@ -308,12 +309,9 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     {
         fprintf(debug, "TPI cg %d, atoms %d-%d\n", cg_tp, a_tp0, a_tp1);
     }
-    if (a_tp1 - a_tp0 > 1 &&
-        (inputrec->rlist < inputrec->rcoulomb ||
-         inputrec->rlist < inputrec->rvdw))
-    {
-        gmx_fatal(FARGS, "Can not do TPI for multi-atom molecule with a twin-range cut-off");
-    }
+
+    GMX_RELEASE_ASSERT(inputrec->rcoulomb <= inputrec->rlist && inputrec->rvdw <= inputrec->rlist, "Twin-range interactions are not supported with TPI");
+
     snew(x_mol, a_tp1-a_tp0);
 
     bDispCorr = (inputrec->eDispCorr != edispcNO);
@@ -326,7 +324,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         bCharge |= (mdatoms->chargeA[i] != 0 ||
                     (mdatoms->chargeB && mdatoms->chargeB[i] != 0));
     }
-    bRFExcl = (bCharge && EEL_RF(fr->eeltype) && fr->eeltype != eelRF_NEC);
+    bRFExcl = (bCharge && EEL_RF(fr->eeltype));
 
     calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x, fr->cg_cm);
     if (bCavity)
@@ -671,12 +669,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
              * and the RF exclusion terms of the inserted molecule occur
              * within a single charge group we can pass NULL for the graph.
              * This also avoids shifts that would move charge groups
-             * out of the box.
-             *
-             * Some checks above ensure than we can not have
-             * twin-range interactions together with nstlist > 1,
-             * therefore we do not need to remember the LR energies.
-             */
+             * out of the box. */
             /* Make do_force do a single node force calculation */
             cr->nnodes = 1;
             do_force(fplog, cr, inputrec,
@@ -686,7 +679,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                      state_global->lambda,
                      NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
-                     (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DO_LR : 0) |
+                     (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
@@ -742,8 +735,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     for (i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++] +=
-                            (enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] +
-                             enerd->grpp.ener[egBHAMLR][GID(i, gid_tp, ngid)])*embU;
+                            enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)]*embU;
                     }
                 }
                 else
@@ -751,8 +743,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     for (i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++] +=
-                            (enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] +
-                             enerd->grpp.ener[egLJLR][GID(i, gid_tp, ngid)])*embU;
+                            enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)]*embU;
                     }
                 }
                 if (bDispCorr)
@@ -763,9 +754,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 {
                     for (i = 0; i < ngid; i++)
                     {
-                        sum_UgembU[e++] +=
-                            (enerd->grpp.ener[egCOULSR][GID(i, gid_tp, ngid)] +
-                             enerd->grpp.ener[egCOULLR][GID(i, gid_tp, ngid)])*embU;
+                        sum_UgembU[e++] += enerd->grpp.ener[egCOULSR][GID(i, gid_tp, ngid)] * embU;
                     }
                     if (bRFExcl)
                     {

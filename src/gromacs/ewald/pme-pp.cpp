@@ -53,12 +53,13 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/gmxlib/sighandler.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
@@ -132,7 +133,7 @@ struct gmx_pme_pp {
 };
 
 /*! \brief Helper struct for PP-PME communication of parameters */
-typedef struct gmx_pme_comm_n_box {
+struct gmx_pme_comm_n_box_t {
     int             natoms;     /**< Number of atoms */
     matrix          box;        /**< Box */
     int             maxshift_x; /**< Maximum shift in x direction */
@@ -147,7 +148,7 @@ typedef struct gmx_pme_comm_n_box {
     real            ewaldcoeff_q;
     real            ewaldcoeff_lj;
     //@}
-} gmx_pme_comm_n_box_t;
+};
 
 /*! \brief Helper struct for PP-PME communication of virial and energy */
 typedef struct {

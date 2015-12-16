@@ -53,7 +53,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
-                     rvec head, rvec tail, int isize, atom_id index[],
+                     rvec head, rvec tail, int isize, int index[],
                      rvec xout[], rvec vout[])
 {
     rvec     arrow, xcm;
@@ -190,7 +190,7 @@ int gmx_dyndom(int argc, char *argv[])
     };
     int               i, j, natoms, isize;
     t_trxstatus      *status;
-    atom_id          *index = NULL, *index_all;
+    int              *index = NULL, *index_all;
     char             *grpname;
     real              angle, trans;
     rvec             *x, *v, *xout, *vout;

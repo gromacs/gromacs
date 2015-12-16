@@ -42,14 +42,15 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -88,12 +89,13 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     double     x1, y1, z1, x2, y2, z2;
     rvec       xmin, xmax;
     int        natoms, i, m, resnr, newres, oldres, ddist, c;
-    gmx_bool   bFirst, bVel;
+    gmx_bool   bFirst, bVel, oldResFirst;
     char      *p1, *p2, *p3;
 
-    newres  = -1;
-    oldres  = -12345; /* Unlikely number for the first residue! */
-    ddist   = 0;
+    oldres      = -1;
+    newres      = -1;
+    oldResFirst = FALSE;
+    ddist       = 0;
 
     /* Read the title and number of atoms */
     get_coordnum_fp(in, title, &natoms);
@@ -165,9 +167,10 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         sscanf(name, "%d", &resnr);
         sscanf(line+5, "%5s", resname);
 
-        if (resnr != oldres || strncmp(resname, oldresname, sizeof(resname)))
+        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)))
         {
-            oldres = resnr;
+            oldres      = resnr;
+            oldResFirst = TRUE;
             newres++;
             if (newres >= natoms)
             {
@@ -459,14 +462,13 @@ static void write_hconf_box(FILE *out, int pr, matrix box)
 }
 
 void write_hconf_indexed_p(FILE *out, const char *title, t_atoms *atoms,
-                           int nx, const atom_id index[], int pr,
+                           int nx, const int index[], int pr,
                            rvec *x, rvec *v, matrix box)
 {
     char resnm[6], nm[6], format[100];
     int  ai, i, resind, resnr;
 
-    bromacs(format, 99);
-    fprintf(out, "%s\n", (title && title[0]) ? title : format);
+    fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", nx);
 
     make_hconf_format(pr, v != NULL, format);
@@ -525,8 +527,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
     t_atom                 *atom;
     char                   *atomname, *resname;
 
-    bromacs(format, 99);
-    fprintf(out, "%s\n", (title && title[0]) ? title : format);
+    fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
 
     make_hconf_format(pr, v != NULL, format);
@@ -559,7 +560,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
 void write_hconf_p(FILE *out, const char *title, t_atoms *atoms, int pr,
                    rvec *x, rvec *v, matrix box)
 {
-    atom_id *aa;
+    int     *aa;
     int      i;
 
     snew(aa, atoms->nr);

@@ -43,11 +43,12 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -132,7 +133,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
                     {
                         xf += R[r][c]*xi[j][a][c];
                     }
-                    msd += w_rls[a]*sqr(xi[i][a][r] - xf);
+                    msd += w_rls[a]*gmx::square(xi[i][a][r] - xf);
                 }
             }
             msd      /= tot_mass;
@@ -226,7 +227,7 @@ int gmx_rotmat(int argc, char *argv[])
     char             *grpname;
     int               gnx;
     gmx_rmpbc_t       gpbc = NULL;
-    atom_id          *index;
+    int              *index;
     gmx_output_env_t *oenv;
     real             *w_rls;
     const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };

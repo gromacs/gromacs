@@ -46,12 +46,12 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptionbehavior.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
@@ -74,7 +74,7 @@ class RunnerModule : public ICommandLineOptionsModule
 {
     public:
         explicit RunnerModule(TrajectoryAnalysisModulePointer module)
-            : module_(module), common_(&settings_)
+            : module_(std::move(module)), common_(&settings_)
         {
         }
 
@@ -93,9 +93,9 @@ class RunnerModule : public ICommandLineOptionsModule
 void RunnerModule::initOptions(
         IOptionsContainer *options, ICommandLineOptionsModuleSettings *settings)
 {
-    boost::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
+    std::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
             new TimeUnitBehavior());
-    boost::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
+    std::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
             new SelectionOptionBehavior(&selections_,
                                         common_.topologyProvider()));
     settings->addOptionsBehavior(timeUnitBehavior);
@@ -103,7 +103,9 @@ void RunnerModule::initOptions(
     IOptionsContainer &commonOptions = options->addGroup();
     IOptionsContainer &moduleOptions = options->addGroup();
 
+    settings_.setOptionsModuleSettings(settings);
     module_->initOptions(&moduleOptions, &settings_);
+    settings_.setOptionsModuleSettings(nullptr);
     common_.initOptions(&commonOptions, timeUnitBehavior.get());
     selectionOptionBehavior->initOptions(&commonOptions);
 }
@@ -210,7 +212,7 @@ std::unique_ptr<ICommandLineOptionsModule>
 TrajectoryAnalysisCommandLineRunner::createModule(
         TrajectoryAnalysisModulePointer module)
 {
-    return ICommandLineOptionsModulePointer(new RunnerModule(module));
+    return ICommandLineOptionsModulePointer(new RunnerModule(std::move(module)));
 }
 
 } // namespace gmx

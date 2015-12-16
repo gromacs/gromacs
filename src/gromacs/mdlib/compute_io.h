@@ -38,7 +38,8 @@
 #ifndef GMX_MDLIB_COMPUTE_IO_H
 #define GMX_MDLIB_COMPUTE_IO_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+struct gmx_groups_t;
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {

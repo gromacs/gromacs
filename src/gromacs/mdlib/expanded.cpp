@@ -45,20 +45,20 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
@@ -464,7 +464,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         for (i = 0; i < nlim-1; i++)
         {   /* only through the second to last */
             lam_dg[i]       = dfhist->sum_dg[i+1] - dfhist->sum_dg[i];
-            lam_variance[i] = sqr(dfhist->sum_variance[i+1]) - sqr(dfhist->sum_variance[i]);
+            lam_variance[i] = gmx::square(dfhist->sum_variance[i+1]) - gmx::square(dfhist->sum_variance[i]);
         }
 
         /* accumulate running averages */
@@ -710,7 +710,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         for (i = 1; i < nlim; i++)
         {
             dfhist->sum_dg[i]       = lam_dg[i-1] + dfhist->sum_dg[i-1];
-            dfhist->sum_variance[i] = std::sqrt(lam_variance[i-1] + sqr(dfhist->sum_variance[i-1]));
+            dfhist->sum_variance[i] = std::sqrt(lam_variance[i-1] + gmx::square(dfhist->sum_variance[i-1]));
             dfhist->sum_weights[i]  = dfhist->sum_dg[i] + dfhist->sum_minvar[i];
         }
 
@@ -1073,7 +1073,7 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
             {
                 dw = dfhist->sum_weights[ifep+1] - dfhist->sum_weights[ifep];
                 dg = dfhist->sum_dg[ifep+1] - dfhist->sum_dg[ifep];
-                dv = std::sqrt(sqr(dfhist->sum_variance[ifep+1]) - sqr(dfhist->sum_variance[ifep]));
+                dv = std::sqrt(gmx::square(dfhist->sum_variance[ifep+1]) - gmx::square(dfhist->sum_variance[ifep]));
             }
             fprintf(outfile, "%3d", (ifep+1));
             for (i = 0; i < efptNR; i++)
@@ -1339,7 +1339,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
             }
         }
 
-        if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir))
+        if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir))
         {
             /* we need to recalculate the masses if the temperature has changed */
             init_npt_masses(ir, state, MassQ, FALSE);

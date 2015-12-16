@@ -42,10 +42,8 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
-#include "gromacs/simd/math_x86_sse4_1_single.h"
 #include "kernelutil_x86_sse4_1_single.h"
 
 /*
@@ -125,8 +123,8 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_sse4_1_single
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = _mm_set1_ps(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = _mm_set1_ps(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = _mm_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
@@ -203,7 +201,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_sse4_1_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = sse41_invsqrt_f(rsq00);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
 
@@ -334,7 +332,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_sse4_1_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = sse41_invsqrt_f(rsq00);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
 
@@ -541,8 +539,8 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_sse4_1_single
 
     invsqrta         = fr->invsqrta;
     dvda             = fr->dvda;
-    gbtabscale       = _mm_set1_ps(fr->gbtab.scale);
-    gbtab            = fr->gbtab.data;
+    gbtabscale       = _mm_set1_ps(fr->gbtab->scale);
+    gbtab            = fr->gbtab->data;
     gbinvepsdiff     = _mm_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
@@ -615,7 +613,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_sse4_1_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = sse41_invsqrt_f(rsq00);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
 
@@ -738,7 +736,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_sse4_1_single
             /* Calculate squared distance and things based on it */
             rsq00            = gmx_mm_calc_rsq_ps(dx00,dy00,dz00);
 
-            rinv00           = gmx_mm_invsqrt_ps(rsq00);
+            rinv00           = sse41_invsqrt_f(rsq00);
 
             rinvsq00         = _mm_mul_ps(rinv00,rinv00);
 

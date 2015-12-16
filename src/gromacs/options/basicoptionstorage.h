@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #ifndef GMX_OPTIONS_BASICOPTIONSTORAGE_H
 #define GMX_OPTIONS_BASICOPTIONSTORAGE_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -204,13 +205,60 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 
     private:
         virtual void convertValue(const std::string &value);
+
+        StringOptionInfo        info_;
+        ValueList               allowed_;
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores enum values.
+ */
+class EnumOptionStorage : public OptionStorageTemplate<int>
+{
+    public:
+        //! Shorthand for the enum index storage interface.
+        typedef std::unique_ptr<internal::EnumIndexStoreInterface>
+            EnumIndexStorePointer;
+
+        /*! \brief
+         * Initializes the storage from option settings.
+         *
+         * \param[in] settings      Basic storage settings.
+         * \param[in] enumValues    Allowed values.
+         * \param[in] count         Number of elements in \p enumValues,
+         *     or -1 if \p enumValues is `NULL`-terminated.
+         * \param[in] defaultValue  Default value, or -1 if no default.
+         * \param[in] defaultValueIfSet  Default value if set, or -1 if none.
+         * \param[in] store         Storage to convert the values to/from `int`.
+         *
+         * This constructor takes more parameters than other storage parameters
+         * because the front-end option type is a template, and as such cannot
+         * be passed here without exposing also this header as an installed
+         * header.
+         */
+        EnumOptionStorage(const AbstractOption &settings,
+                          const char *const *enumValues, int count,
+                          int defaultValue, int defaultValueIfSet,
+                          EnumIndexStorePointer store);
+
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual std::string typeString() const { return "enum"; }
+        virtual std::string formatExtraDescription() const;
+        virtual std::string formatSingleValue(const int &value) const;
+
+        //! \copydoc EnumOptionInfo::allowedValues()
+        const std::vector<std::string> &allowedValues() const { return allowed_; }
+
+    private:
+        virtual void convertValue(const std::string &value);
+        virtual void processSetValues(ValueList *values);
         virtual void refreshValues();
 
         void refreshEnumIndexStore();
 
-        StringOptionInfo        info_;
-        ValueList               allowed_;
-        int                    *enumIndexStore_;
+        EnumOptionInfo            info_;
+        std::vector<std::string>  allowed_;
+        EnumIndexStorePointer     store_;
 };
 
 /*!\}*/

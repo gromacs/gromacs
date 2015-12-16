@@ -51,22 +51,24 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/force_flags.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -86,50 +88,38 @@ isPairInteraction(int ftype)
     return ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB);
 }
 
-/*! \brief Zero thread-local force-output buffers */
-void
-zero_thread_forces(f_thread_t *f_t, int n,
-                   int nblock, int blocksize)
+/*! \brief Zero thread-local output buffers */
+static void
+zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
-    int b, a0, a1, a, i, j;
+    f_thread_t *f_t = &bt->f_t[thread];
 
-    if (n > f_t->f_nalloc)
+    for (int i = 0; i < f_t->nblock_used; i++)
     {
-        f_t->f_nalloc = over_alloc_large(n);
-        srenew(f_t->f, f_t->f_nalloc);
-    }
-
-    if (!bitmask_is_zero(f_t->red_mask))
-    {
-        for (b = 0; b < nblock; b++)
+        int a0 = f_t->block_index[i]*reduction_block_size;
+        int a1 = a0 + reduction_block_size;
+        for (int a = a0; a < a1; a++)
         {
-            if (bitmask_is_set(f_t->red_mask, b))
-            {
-                a0 = b*blocksize;
-                a1 = std::min((b+1)*blocksize, n);
-                for (a = a0; a < a1; a++)
-                {
-                    clear_rvec(f_t->f[a]);
-                }
-            }
+            clear_rvec(f_t->f[a]);
         }
     }
-    for (i = 0; i < SHIFTS; i++)
+
+    for (int i = 0; i < SHIFTS; i++)
     {
         clear_rvec(f_t->fshift[i]);
     }
-    for (i = 0; i < F_NRE; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         f_t->ener[i] = 0;
     }
-    for (i = 0; i < egNR; i++)
+    for (int i = 0; i < egNR; i++)
     {
-        for (j = 0; j < f_t->grpp.nener; j++)
+        for (int j = 0; j < f_t->grpp.nener; j++)
         {
             f_t->grpp.ener[i][j] = 0;
         }
     }
-    for (i = 0; i < efptNR; i++)
+    for (int i = 0; i < efptNR; i++)
     {
         f_t->dvdl[i] = 0;
     }
@@ -141,13 +131,11 @@ zero_thread_forces(f_thread_t *f_t, int n,
 #define MAX_BONDED_THREADS 256
 
 /*! \brief Reduce thread-local force buffers */
-void
-reduce_thread_force_buffer(int n, rvec *f,
-                           int nthreads, f_thread_t *f_t,
-                           int nblock, int block_size)
+static void
+reduce_thread_forces(int n, rvec *f,
+                     struct bonded_threading_t *bt,
+                     int nthreads)
 {
-    int b;
-
     if (nthreads > MAX_BONDED_THREADS)
     {
         gmx_fatal(FARGS, "Can not reduce bonded forces on more than %d threads",
@@ -155,35 +143,40 @@ reduce_thread_force_buffer(int n, rvec *f,
     }
 
     /* This reduction can run on any number of threads,
-     * independently of nthreads.
+     * independently of bt->nthreads.
+     * But if nthreads matches bt->nthreads (which it currently does)
+     * the uniform distribution of the touched blocks over nthreads will
+     * match the distribution of bonded over threads well in most cases,
+     * which means that threads mostly reduce their own data which increases
+     * the number of cache hits.
      */
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (b = 0; b < nblock; b++)
+    for (int b = 0; b < bt->nblock_used; b++)
     {
         try
         {
+            int   ind = bt->block_index[b];
             rvec *fp[MAX_BONDED_THREADS];
-            int   nfb, ft, fb;
-            int   a0, a1, a;
 
             /* Determine which threads contribute to this block */
-            nfb = 0;
-            for (ft = 1; ft < nthreads; ft++)
+            int nfb = 0;
+            for (int ft = 1; ft < bt->nthreads; ft++)
             {
-                if (bitmask_is_set(f_t[ft].red_mask, b))
+                if (bitmask_is_set(bt->mask[ind], ft))
                 {
-                    fp[nfb++] = f_t[ft].f;
+                    fp[nfb++] = bt->f_t[ft].f;
                 }
             }
             if (nfb > 0)
             {
                 /* Reduce force buffers for threads that contribute */
-                a0 =  b   *block_size;
-                a1 = (b+1)*block_size;
-                a1 = std::min(a1, n);
-                for (a = a0; a < a1; a++)
+                int a0 =  ind     *reduction_block_size;
+                int a1 = (ind + 1)*reduction_block_size;
+                /* It would be nice if we could pad f to avoid this min */
+                a1     = std::min(a1, n);
+                for (int a = a0; a < a1; a++)
                 {
-                    for (fb = 0; fb < nfb; fb++)
+                    for (int fb = 0; fb < nfb; fb++)
                     {
                         rvec_inc(f[a], fp[fb][a]);
                     }
@@ -194,57 +187,55 @@ reduce_thread_force_buffer(int n, rvec *f,
     }
 }
 
-/*! \brief Reduce thread-local forces */
-void
-reduce_thread_forces(int n, rvec *f, rvec *fshift,
+/*! \brief Reduce thread-local forces, shift forces and energies */
+static void
+reduce_thread_output(int n, rvec *f, rvec *fshift,
                      real *ener, gmx_grppairener_t *grpp, real *dvdl,
-                     int nthreads, f_thread_t *f_t,
-                     int nblock, int block_size,
+                     struct bonded_threading_t *bt,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
-    if (nblock > 0)
+    if (bt->nblock_used > 0)
     {
         /* Reduce the bonded force buffer */
-        reduce_thread_force_buffer(n, f, nthreads, f_t, nblock, block_size);
+        reduce_thread_forces(n, f, bt, bt->nthreads);
     }
 
     /* When necessary, reduce energy and virial using one thread only */
     if (bCalcEnerVir)
     {
-        int t, i, j;
+        f_thread_t *f_t = bt->f_t;
 
-        for (i = 0; i < SHIFTS; i++)
+        for (int i = 0; i < SHIFTS; i++)
         {
-            for (t = 1; t < nthreads; t++)
+            for (int t = 1; t < bt->nthreads; t++)
             {
                 rvec_inc(fshift[i], f_t[t].fshift[i]);
             }
         }
-        for (i = 0; i < F_NRE; i++)
+        for (int i = 0; i < F_NRE; i++)
         {
-            for (t = 1; t < nthreads; t++)
+            for (int t = 1; t < bt->nthreads; t++)
             {
                 ener[i] += f_t[t].ener[i];
             }
         }
-        for (i = 0; i < egNR; i++)
+        for (int i = 0; i < egNR; i++)
         {
-            for (j = 0; j < f_t[1].grpp.nener; j++)
+            for (int j = 0; j < f_t[1].grpp.nener; j++)
             {
-                for (t = 1; t < nthreads; t++)
+                for (int t = 1; t < bt->nthreads; t++)
                 {
-
                     grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
                 }
             }
         }
         if (bDHDL)
         {
-            for (i = 0; i < efptNR; i++)
+            for (int i = 0; i < efptNR; i++)
             {
 
-                for (t = 1; t < nthreads; t++)
+                for (int t = 1; t < bt->nthreads; t++)
                 {
                     dvdl[i] += f_t[t].dvdl[i];
                 }
@@ -268,8 +259,8 @@ calc_one_bond(int thread,
               gmx_bool bCalcEnerVir,
               int *global_atom_index)
 {
-#ifdef GMX_SIMD_HAVE_REAL
-    gmx_bool bUseSIMD = fr->use_simd_kernels;
+#if GMX_SIMD_HAVE_REAL
+    bool bUseSIMD = fr->use_simd_kernels;
 #endif
 
     int      nat1, nbonds, efptFTYPE;
@@ -307,7 +298,7 @@ calc_one_bond(int thread,
                           pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                           md, fcd, global_atom_index);
         }
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
         else if (ftype == F_ANGLES && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -324,7 +315,7 @@ calc_one_bond(int thread,
                  !bCalcEnerVir && fr->efep == efepNO)
         {
             /* No energies, shift forces, dvdl */
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
             if (bUseSIMD)
             {
                 pdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
@@ -344,7 +335,7 @@ calc_one_bond(int thread,
             }
             v = 0;
         }
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
         else if (ftype == F_RBDIHS && bUseSIMD &&
                  !bCalcEnerVir && fr->efep == efepNO)
         {
@@ -514,8 +505,7 @@ void calc_listed(const struct gmx_multisim_t *ms,
             }
             else
             {
-                zero_thread_forces(&bt->f_t[thread], fr->natoms_force,
-                                   bt->red_nblock, 1<<bt->red_ashift);
+                zero_thread_output(bt, thread);
 
                 ft     = bt->f_t[thread].f;
                 fshift = bt->f_t[thread].fshift;
@@ -544,10 +534,9 @@ void calc_listed(const struct gmx_multisim_t *ms,
     if (bt->nthreads > 1)
     {
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-        reduce_thread_forces(fr->natoms_force, f, fr->fshift,
+        reduce_thread_output(fr->natoms_force, f, fr->fshift,
                              enerd->term, &enerd->grpp, dvdl,
-                             bt->nthreads, bt->f_t,
-                             bt->red_nblock, 1<<bt->red_ashift,
+                             bt,
                              bCalcEnerVir,
                              force_flags & GMX_FORCE_DHDL);
         wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
@@ -705,5 +694,4 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
             wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }
     }
-    debug_gmx();
 }

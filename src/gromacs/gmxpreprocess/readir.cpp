@@ -46,23 +46,25 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/readinp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -116,7 +118,6 @@ void done_inputrec_strings()
     is = NULL;
 }
 
-static char swapgrp[STRLEN], splitgrp0[STRLEN], splitgrp1[STRLEN], solgrp[STRLEN];
 
 enum {
     egrptpALL,         /* All particles have to be a member of a group.     */
@@ -256,6 +257,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     set_warning_line(wi, mdparin, -1);
 
+    if (ir->coulombtype == eelRF_NEC_UNSUPPORTED)
+    {
+        sprintf(warn_buf, "%s electrostatics is no longer supported",
+                eel_names[eelRF_NEC_UNSUPPORTED]);
+        warning_error(wi, warn_buf);
+    }
+
     /* BASIC CUT-OFF STUFF */
     if (ir->rcoulomb < 0)
     {
@@ -283,44 +291,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                      "release when all interaction forms are supported for the verlet scheme. The verlet "
                      "scheme already scales better, and it is compatible with GPUs and other accelerators.");
 
-        /* BASIC CUT-OFF STUFF */
-        if (ir->rlist == 0 ||
-            !((ir_coulomb_might_be_zero_at_cutoff(ir) && ir->rcoulomb > ir->rlist) ||
-              (ir_vdw_might_be_zero_at_cutoff(ir)     && ir->rvdw     > ir->rlist)))
+        if (ir->rlist > 0 && ir->rlist < ir->rcoulomb)
         {
-            /* No switched potential and/or no twin-range:
-             * we can set the long-range cut-off to the maximum of the other cut-offs.
-             */
-            ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
+            gmx_fatal(FARGS, "rcoulomb must not be greater than rlist (twin-range schemes are not supported)");
         }
-        else if (ir->rlistlong < 0)
+        if (ir->rlist > 0 && ir->rlist < ir->rvdw)
         {
-            ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
-            sprintf(warn_buf, "rlistlong was not set, setting it to %g (no buffer)",
-                    ir->rlistlong);
-            warning(wi, warn_buf);
+            gmx_fatal(FARGS, "rvdw must not be greater than rlist (twin-range schemes are not supported)");
         }
-        if (ir->rlistlong == 0 && ir->ePBC != epbcNONE)
+
+        if (ir->rlist == 0 && ir->ePBC != epbcNONE)
         {
             warning_error(wi, "Can not have an infinite cut-off with PBC");
         }
-        if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist))
-        {
-            warning_error(wi, "rlistlong can not be shorter than rlist");
-        }
-        if (IR_TWINRANGE(*ir) && ir->nstlist == 0)
-        {
-            warning_error(wi, "Can not have nstlist == 0 with twin-range interactions");
-        }
-    }
-
-    if (ir->rlistlong == ir->rlist)
-    {
-        ir->nstcalclr = 0;
-    }
-    else if (ir->rlistlong > ir->rlist && ir->nstcalclr == 0)
-    {
-        warning_error(wi, "With different cutoffs for electrostatics and VdW, nstcalclr must be -1 or a positive number");
     }
 
     if (ir->cutoff_scheme == ecutsVERLET)
@@ -359,8 +342,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
         }
-        if (!(ir->coulombtype == eelCUT ||
-              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+        if (!(ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype) ||
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
@@ -436,31 +418,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 }
             }
         }
-
-        /* No twin-range calculations with Verlet lists */
-        ir->rlistlong = ir->rlist;
-    }
-
-    if (ir->nstcalclr == -1)
-    {
-        /* if rlist=rlistlong, this will later be changed to nstcalclr=0 */
-        ir->nstcalclr = ir->nstlist;
-    }
-    else if (ir->nstcalclr > 0)
-    {
-        if (ir->nstlist > 0 && (ir->nstlist % ir->nstcalclr != 0))
-        {
-            warning_error(wi, "nstlist must be evenly divisible by nstcalclr. Use nstcalclr = -1 to automatically follow nstlist");
-        }
-    }
-    else if (ir->nstcalclr < -1)
-    {
-        warning_error(wi, "nstcalclr must be a positive number (divisor of nstcalclr), or -1 to follow nstlist.");
-    }
-
-    if (EEL_PME(ir->coulombtype) && ir->rcoulomb > ir->rlist && ir->nstcalclr > 1)
-    {
-        warning_error(wi, "When used with PME, the long-range component of twin-range interactions must be updated every step (nstcalclr)");
     }
 
     /* GENERAL INTEGRATOR STUFF */
@@ -544,16 +501,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             if (ir->nstpcouple < 0)
             {
                 ir->nstpcouple = ir_optimal_nstpcouple(ir);
-            }
-        }
-        if (IR_TWINRANGE(*ir))
-        {
-            check_nst("nstcalclr", ir->nstcalclr,
-                      "nstcalcenergy", &ir->nstcalcenergy, wi);
-            if (ir->epc != epcNO)
-            {
-                check_nst("nstlist", ir->nstlist,
-                          "nstpcouple", &ir->nstpcouple, wi);
             }
         }
 
@@ -775,19 +722,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 CHECK((fep->all_lambda[i][j] < 0) || (fep->all_lambda[i][j] > 1));
             }
         }
-
-        if (IR_TWINRANGE(*ir))
-        {
-            sprintf(err_buf, "nstdhdl must be divisible by nstcalclr");
-            CHECK(ir->fepvals->nstdhdl > 0 &&
-                  ir->fepvals->nstdhdl % ir->nstcalclr != 0);
-
-            if (ir->efep == efepEXPANDED)
-            {
-                sprintf(err_buf, "nstexpanded must be divisible by nstcalclr");
-                CHECK(ir->expandedvals->nstexpanded % ir->nstcalclr != 0);
-            }
-        }
     }
 
     if ((ir->bSimTemp) || (ir->efep == efepEXPANDED))
@@ -953,11 +887,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         warning_note(wi, "Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
     }
-
-    sprintf(err_buf, "Twin-range neighbour searching (NS) with simple NS"
-            " algorithm not implemented");
-    CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist))
-          && (ir->ns_type == ensSIMPLE));
 
     /* TEMPERATURE COUPLING */
     if (ir->etc == etcYES)
@@ -1228,17 +1157,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD)
             {
                 sprintf(err_buf,
-                        "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist,\n"
-                        "or rlistlong if nstcalclr=1. For optimal energy conservation,consider using\n"
+                        "With coulombtype = %s (without modifier), rcoulomb must be equal to rlist.\n"
+                        "For optimal energy conservation,consider using\n"
                         "a potential modifier.", eel_names[ir->coulombtype]);
-                if (ir->nstcalclr == 1)
-                {
-                    CHECK(ir->rcoulomb != ir->rlist && ir->rcoulomb != ir->rlistlong);
-                }
-                else
-                {
-                    CHECK(ir->rcoulomb != ir->rlist);
-                }
+                CHECK(ir->rcoulomb != ir->rlist);
             }
         }
     }
@@ -1311,8 +1233,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (!(ir->vdw_modifier == eintmodNONE || ir->vdw_modifier == eintmodPOTSHIFT))
         {
-            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s a\
-nd %s",
+            sprintf(err_buf, "With vdwtype = %s, the only supported modifiers are %s and %s",
                     evdw_names[ir->vdwtype],
                     eintmod_names[eintmodPOTSHIFT],
                     eintmod_names[eintmodNONE]);
@@ -1330,16 +1251,14 @@ nd %s",
                          "between neighborsearch steps");
         }
 
-        if (ir_coulomb_is_zero_at_cutoff(ir) && ir->rlistlong <= ir->rcoulomb)
+        if (ir_coulomb_is_zero_at_cutoff(ir) && ir->rlist <= ir->rcoulomb)
         {
-            sprintf(warn_buf, "For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
-                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+            sprintf(warn_buf, "For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
             warning_note(wi, warn_buf);
         }
-        if (ir_vdw_switched(ir) && (ir->rlistlong <= ir->rvdw))
+        if (ir_vdw_switched(ir) && (ir->rlist <= ir->rvdw))
         {
-            sprintf(warn_buf, "For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
-                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+            sprintf(warn_buf, "For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
             warning_note(wi, warn_buf);
         }
     }
@@ -1375,12 +1294,6 @@ nd %s",
                     eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
             warning_note(wi, warn_buf);
         }
-    }
-
-    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
-    {
-        sprintf(warn_buf, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
-        warning_error(wi, warn_buf);
     }
 
     /* IMPLICIT SOLVENT */
@@ -1447,22 +1360,7 @@ nd %s",
 
     if (ir->bAdress)
     {
-        if (ir->cutoff_scheme != ecutsGROUP)
-        {
-            warning_error(wi, "AdresS simulation supports only cutoff-scheme=group");
-        }
-        if (!EI_SD(ir->eI))
-        {
-            warning_error(wi, "AdresS simulation supports only stochastic dynamics");
-        }
-        if (ir->epc != epcNO)
-        {
-            warning_error(wi, "AdresS simulation does not support pressure coupling");
-        }
-        if (EEL_FULL(ir->coulombtype))
-        {
-            warning_error(wi, "AdresS simulation does not support long-range electrostatics");
-        }
+        gmx_fatal(FARGS, "AdResS simulations are no longer supported");
     }
 }
 
@@ -1875,6 +1773,19 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("nstdihreout");
     REM_TYPE("nstcheckpoint");
     REM_TYPE("optimize-fft");
+    REM_TYPE("adress_type");
+    REM_TYPE("adress_const_wf");
+    REM_TYPE("adress_ex_width");
+    REM_TYPE("adress_hy_width");
+    REM_TYPE("adress_ex_forcecap");
+    REM_TYPE("adress_interface_correction");
+    REM_TYPE("adress_site");
+    REM_TYPE("adress_reference_coords");
+    REM_TYPE("adress_tf_grp_names");
+    REM_TYPE("adress_cg_grp_names");
+    REM_TYPE("adress_do_hybridpairs");
+    REM_TYPE("rlistlong");
+    REM_TYPE("nstcalclr");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1966,8 +1877,6 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("nblist cut-off");
     RTYPE ("rlist",   ir->rlist,  1.0);
     CTYPE ("long-range cut-off for switched potentials");
-    RTYPE ("rlistlong",   ir->rlistlong,  -1);
-    ITYPE ("nstcalclr",   ir->nstcalclr,  -1);
 
     /* Electrostatics */
     CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
@@ -2267,24 +2176,38 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
     if (ir->eSwapCoords != eswapNO)
     {
+        char buf[STRLEN];
+        int  nIonTypes;
+
+
         snew(ir->swap, 1);
         CTYPE("Swap attempt frequency");
         ITYPE("swap-frequency", ir->swap->nstswap, 1);
+        CTYPE("Number of ion types to be controlled");
+        ITYPE("iontypes", nIonTypes, 1);
+        if (nIonTypes < 1)
+        {
+            warning_error(wi, "You need to provide at least one ion type for position exchanges.");
+        }
+        ir->swap->ngrp = nIonTypes + eSwapFixedGrpNR;
+        snew(ir->swap->grp, ir->swap->ngrp);
+        for (i = 0; i < ir->swap->ngrp; i++)
+        {
+            snew(ir->swap->grp[i].molname, STRLEN);
+        }
         CTYPE("Two index groups that contain the compartment-partitioning atoms");
-        STYPE("split-group0", splitgrp0, NULL);
-        STYPE("split-group1", splitgrp1, NULL);
+        STYPE("split-group0", ir->swap->grp[eGrpSplit0].molname, NULL);
+        STYPE("split-group1", ir->swap->grp[eGrpSplit1].molname, NULL);
         CTYPE("Use center of mass of split groups (yes/no), otherwise center of geometry is used");
         EETYPE("massw-split0", ir->swap->massw_split[0], yesno_names);
         EETYPE("massw-split1", ir->swap->massw_split[1], yesno_names);
 
-        CTYPE("Group name of ions that can be exchanged with solvent molecules");
-        STYPE("swap-group", swapgrp, NULL);
-        CTYPE("Group name of solvent molecules");
-        STYPE("solvent-group", solgrp, NULL);
+        CTYPE("Name of solvent molecules");
+        STYPE("solvent-group", ir->swap->grp[eGrpSolvent].molname, NULL);
 
         CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
         CTYPE("Note that the split cylinder settings do not have an influence on the swapping protocol,");
-        CTYPE("however, if correctly defined, the ion permeation events are counted per channel");
+        CTYPE("however, if correctly defined, the permeation events are recorded per channel");
         RTYPE("cyl0-r", ir->swap->cyl0r, 2.0);
         RTYPE("cyl0-up", ir->swap->cyl0u, 1.0);
         RTYPE("cyl0-down", ir->swap->cyl0l, 1.0);
@@ -2294,12 +2217,21 @@ void get_ir(const char *mdparin, const char *mdparout,
 
         CTYPE("Average the number of ions per compartment over these many swap attempt steps");
         ITYPE("coupl-steps", ir->swap->nAverage, 10);
-        CTYPE("Requested number of anions and cations for each of the two compartments");
-        CTYPE("-1 means fix the numbers as found in time step 0");
-        ITYPE("anionsA", ir->swap->nanions[0], -1);
-        ITYPE("cationsA", ir->swap->ncations[0], -1);
-        ITYPE("anionsB", ir->swap->nanions[1], -1);
-        ITYPE("cationsB", ir->swap->ncations[1], -1);
+
+        CTYPE("Names of the ion types that can be exchanged with solvent molecules,");
+        CTYPE("and the requested number of ions of this type in compartments A and B");
+        CTYPE("-1 means fix the numbers as found in step 0");
+        for (i = 0; i < nIonTypes; i++)
+        {
+            int ig = eSwapFixedGrpNR + i;
+
+            sprintf(buf, "iontype%d-name", i);
+            STYPE(buf, ir->swap->grp[ig].molname, NULL);
+            sprintf(buf, "iontype%d-in-A", i);
+            ITYPE(buf, ir->swap->grp[ig].nmolReq[0], -1);
+            sprintf(buf, "iontype%d-in-B", i);
+            ITYPE(buf, ir->swap->grp[ig].nmolReq[1], -1);
+        }
 
         CTYPE("By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
         CTYPE("at maximum distance (= bulk concentration) to the split group layers. However,");
@@ -2317,14 +2249,8 @@ void get_ir(const char *mdparin, const char *mdparout,
         RTYPE("threshold", ir->swap->threshold, 1.0);
     }
 
-    /* AdResS defined thingies */
-    CCTYPE ("AdResS parameters");
-    EETYPE("adress",       ir->bAdress, yesno_names);
-    if (ir->bAdress)
-    {
-        snew(ir->adress, 1);
-        read_adressparams(&ninp, &inp, ir->adress, wi);
-    }
+    /* AdResS is no longer supported, but we need mdrun to be able to refuse to run old AdResS .tpr files */
+    EETYPE("adress", ir->bAdress, yesno_names);
 
     /* Drude options */
     CCTYPE ("Drude parameters");
@@ -3161,86 +3087,42 @@ static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
 
 
 static void make_swap_groups(
-        t_swapcoords *swap,
-        char         *swapgname,
-        char         *splitg0name,
-        char         *splitg1name,
-        char         *solgname,
-        t_blocka     *grps,
-        char        **gnames)
+        t_swapcoords  *swap,
+        t_blocka      *grps,
+        char         **gnames)
 {
-    int   ig = -1, i = 0, j;
-    char *splitg;
+    int          ig = -1, i = 0, gind;
+    t_swapGroup *swapg;
 
 
     /* Just a quick check here, more thorough checks are in mdrun */
-    if (strcmp(splitg0name, splitg1name) == 0)
+    if (strcmp(swap->grp[eGrpSplit0].molname, swap->grp[eGrpSplit1].molname) == 0)
     {
-        gmx_fatal(FARGS, "The split groups can not both be '%s'.", splitg0name);
+        gmx_fatal(FARGS, "The split groups can not both be '%s'.", swap->grp[eGrpSplit0].molname);
     }
 
-    /* First get the swap group index atoms */
-    ig        = search_string(swapgname, grps->nr, gnames);
-    swap->nat = grps->index[ig+1] - grps->index[ig];
-    if (swap->nat > 0)
+    /* Get the index atoms of the split0, split1, solvent, and swap groups */
+    for (ig = 0; ig < swap->ngrp; ig++)
     {
-        fprintf(stderr, "Swap group '%s' contains %d atoms.\n", swapgname, swap->nat);
-        snew(swap->ind, swap->nat);
-        for (i = 0; i < swap->nat; i++)
-        {
-            swap->ind[i] = grps->a[grps->index[ig]+i];
-        }
-    }
-    else
-    {
-        gmx_fatal(FARGS, "You defined an empty group of atoms for swapping.");
-    }
+        swapg      = &swap->grp[ig];
+        gind       = search_string(swap->grp[ig].molname, grps->nr, gnames);
+        swapg->nat = grps->index[gind+1] - grps->index[gind];
 
-    /* Now do so for the split groups */
-    for (j = 0; j < 2; j++)
-    {
-        if (j == 0)
+        if (swapg->nat > 0)
         {
-            splitg = splitg0name;
-        }
-        else
-        {
-            splitg = splitg1name;
-        }
-
-        ig                 = search_string(splitg, grps->nr, gnames);
-        swap->nat_split[j] = grps->index[ig+1] - grps->index[ig];
-        if (swap->nat_split[j] > 0)
-        {
-            fprintf(stderr, "Split group %d '%s' contains %d atom%s.\n",
-                    j, splitg, swap->nat_split[j], (swap->nat_split[j] > 1) ? "s" : "");
-            snew(swap->ind_split[j], swap->nat_split[j]);
-            for (i = 0; i < swap->nat_split[j]; i++)
+            fprintf(stderr, "%s group '%s' contains %d atoms.\n",
+                    ig < 3 ? eSwapFixedGrp_names[ig] : "Swap",
+                    swap->grp[ig].molname, swapg->nat);
+            snew(swapg->ind, swapg->nat);
+            for (i = 0; i < swapg->nat; i++)
             {
-                swap->ind_split[j][i] = grps->a[grps->index[ig]+i];
+                swapg->ind[i] = grps->a[grps->index[gind]+i];
             }
         }
         else
         {
-            gmx_fatal(FARGS, "Split group %d has to contain at least 1 atom!", j);
+            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swap->grp[ig].molname);
         }
-    }
-
-    /* Now get the solvent group index atoms */
-    ig            = search_string(solgname, grps->nr, gnames);
-    swap->nat_sol = grps->index[ig+1] - grps->index[ig];
-    if (swap->nat_sol > 0)
-    {
-        fprintf(stderr, "Solvent group '%s' contains %d atoms.\n", solgname, swap->nat_sol);
-        snew(swap->ind_sol, swap->nat_sol);
-        for (i = 0; i < swap->nat_sol; i++)
-        {
-            swap->ind_sol[i] = grps->a[grps->index[ig]+i];
-        }
-    }
-    else
-    {
-        gmx_fatal(FARGS, "You defined an empty group of solvent. Cannot exchange ions.");
     }
 }
 
@@ -3293,7 +3175,6 @@ void do_index(const char* mdparin, const char *ndx,
     {
         fprintf(stderr, "processing index file...\n");
     }
-    debug_gmx();
     if (ndx == NULL)
     {
         snew(grps, 1);
@@ -3612,7 +3493,7 @@ void do_index(const char* mdparin, const char *ndx,
 
     if (ir->eSwapCoords != eswapNO)
     {
-        make_swap_groups(ir->swap, swapgrp, splitgrp0, splitgrp1, solgrp, grps, gnames);
+        make_swap_groups(ir->swap, grps, gnames);
     }
 
     /* Make indices for IMD session */
@@ -3872,11 +3753,6 @@ void do_index(const char* mdparin, const char *ndx,
     decode_cos(is->efield_z, &(ir->ex[ZZ]));
     decode_cos(is->efield_zt, &(ir->et[ZZ]));
 
-    if (ir->bAdress)
-    {
-        do_adress_index(ir->adress, groups, gnames, &(ir->opts), wi);
-    }
-
     for (i = 0; (i < grps->nr); i++)
     {
         sfree(gnames[i]);
@@ -4067,11 +3943,11 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
             {
                 if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
                 {
-                    sigmai   = std::pow(c12i / c6i, 1.0/6.0);
-                    sigmaj   = std::pow(c12j / c6j, 1.0/6.0);
+                    sigmai   = gmx::sixthroot(c12i / c6i);
+                    sigmaj   = gmx::sixthroot(c12j / c6j);
                     epsi     = c6i * c6i /(4.0 * c12i);
                     epsj     = c6j * c6j /(4.0 * c12j);
-                    c6_LB    = 4.0 * std::pow(epsi * epsj, 1.0/2.0) * std::pow(0.5 * (sigmai + sigmaj), 6);
+                    c6_LB    = 4.0 * std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
                 }
                 else
                 {
@@ -4418,7 +4294,6 @@ void double_check(t_inputrec *ir, matrix box,
                   warninp_t wi)
 {
     real        min_size;
-    gmx_bool    bTWIN;
     char        warn_buf[STRLEN];
     const char *ptr;
 
@@ -4435,19 +4310,6 @@ void double_check(t_inputrec *ir, matrix box,
             sprintf(warn_buf, "ERROR: shake-tol must be > 0 instead of %g\n",
                     ir->shake_tol);
             warning_error(wi, warn_buf);
-        }
-
-        if (IR_TWINRANGE(*ir) && ir->nstlist > 1)
-        {
-            sprintf(warn_buf, "With twin-range cut-off's and SHAKE the virial and the pressure are incorrect.");
-            if (ir->epc == epcNO)
-            {
-                warning(wi, warn_buf);
-            }
-            else
-            {
-                warning_error(wi, warn_buf);
-            }
         }
     }
 
@@ -4490,20 +4352,18 @@ void double_check(t_inputrec *ir, matrix box,
         {
             warning(wi, "With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
         }
-        bTWIN = (ir->rlistlong > ir->rlist);
         if (ir->ns_type == ensGRID)
         {
-            if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
+            if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
             {
-                sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
-                        bTWIN ? (ir->rcoulomb == ir->rlistlong ? "rcoulomb" : "rvdw") : "rlist");
+                sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease rlist.\n");
                 warning_error(wi, warn_buf);
             }
         }
         else
         {
             min_size = std::min(box[XX][XX], std::min(box[YY][YY], box[ZZ][ZZ]));
-            if (2*ir->rlistlong >= min_size)
+            if (2*ir->rlist >= min_size)
             {
                 sprintf(warn_buf, "ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
                 warning_error(wi, warn_buf);
@@ -4554,16 +4414,15 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
              * not be zero at the cut-off.
              */
             if (ir_vdw_is_zero_at_cutoff(ir) &&
-                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
+                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
             {
                 sprintf(warn_buf, "The sum of the two largest charge group "
-                        "radii (%f) is larger than %s (%f) - rvdw (%f).\n"
+                        "radii (%f) is larger than rlist (%f) - rvdw (%f).\n"
                         "With exact cut-offs, better performance can be "
                         "obtained with cutoff-scheme = %s, because it "
                         "does not use charge groups at all.",
                         rvdw1+rvdw2,
-                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
-                        ir->rlistlong, ir->rvdw,
+                        ir->rlist, ir->rvdw,
                         ecutscheme_names[ecutsVERLET]);
                 if (ir_NVE(ir))
                 {
@@ -4575,13 +4434,12 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 }
             }
             if (ir_coulomb_is_zero_at_cutoff(ir) &&
-                rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
+                rcoul1 + rcoul2 > ir->rlist - ir->rcoulomb)
             {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f).\n"
+                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rcoulomb (%f).\n"
                         "With exact cut-offs, better performance can be obtained with cutoff-scheme = %s, because it does not use charge groups at all.",
                         rcoul1+rcoul2,
-                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
-                        ir->rlistlong, ir->rcoulomb,
+                        ir->rlist, ir->rcoulomb,
                         ecutscheme_names[ecutsVERLET]);
                 if (ir_NVE(ir))
                 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,9 +44,11 @@
 #ifndef GMX_DOMDEC_DOMDEC_SPECATOMCOMM_H
 #define GMX_DOMDEC_DOMDEC_SPECATOMCOMM_H
 
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
+
+struct gmx_hash_t;
 
 typedef struct {
     int  nsend;
@@ -62,7 +64,7 @@ typedef struct {
 } ind_req_t;
 
 /*! \internal \brief Struct with setup and buffers for special atom communication */
-typedef struct gmx_domdec_specat_comm {
+struct gmx_domdec_specat_comm_t {
     /* The number of indices to receive during the setup */
     int              nreq[DIM][2][2];  /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
     /* The atoms to send */
@@ -85,7 +87,7 @@ typedef struct gmx_domdec_specat_comm {
      */
     int        nthread;                /**< Number of threads used for spec.atom communication */
     ind_req_t *ireq;                   /**< Index request buffer per thread, allocation size \p nthread */
-} gmx_domdec_specat_comm_t;
+};
 
 /*! \brief Communicates the force for special atoms, the shift forces are reduced with \p fshift != NULL */
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
@@ -116,14 +118,14 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  * \param[in]     specat_type  Name of the special atom, used for error message
  * \param[in]     add_err      Text to add at the end of error message when atoms can't be found
  */
-int setup_specat_communication(gmx_domdec_t             *dd,
-                               ind_req_t                *ireq,
-                               gmx_domdec_specat_comm_t *spac,
-                               gmx_hash_t                ga2la_specat,
-                               int                       at_start,
-                               int                       vbuf_fac,
-                               const char               *specat_type,
-                               const char               *add_err);
+int setup_specat_communication(gmx_domdec_t               *dd,
+                               ind_req_t                  *ireq,
+                               gmx_domdec_specat_comm_t   *spac,
+                               gmx_hash_t                 *ga2la_specat,
+                               int                         at_start,
+                               int                         vbuf_fac,
+                               const char                 *specat_type,
+                               const char                 *add_err);
 
 /*! \brief Initialize a special communication struct */
 gmx_domdec_specat_comm_t *specat_comm_init(int nthread);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,12 +34,14 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
 #include "simd4.h"
+
+#if GMX_SIMD
 
 namespace gmx
 {
@@ -52,20 +54,20 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD4_HAVE_REAL
+#if GMX_SIMD4_HAVE_REAL
 
 /*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
 typedef Simd4Test Simd4VectorOperationsTest;
 
-TEST_F(Simd4VectorOperationsTest, gmxSimd4CalcRsqR)
+TEST_F(Simd4VectorOperationsTest, norm2)
 {
-    gmx_simd4_real_t simdX  = setSimd4RealFrom3R(1, 2, 3);
-    gmx_simd4_real_t simdY  = setSimd4RealFrom3R(3, 0, 5);
-    gmx_simd4_real_t simdZ  = setSimd4RealFrom3R(4, 1, 8);
-    gmx_simd4_real_t simdR2 = setSimd4RealFrom3R(26, 5, 98);
+    Simd4Real simdX  = setSimd4RealFrom3R(1, 2, 3);
+    Simd4Real simdY  = setSimd4RealFrom3R(3, 0, 5);
+    Simd4Real simdZ  = setSimd4RealFrom3R(4, 1, 8);
+    Simd4Real simdR2 = setSimd4RealFrom3R(26, 5, 98);
 
     setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, gmx_simd4_calc_rsq_r(simdX, simdY, simdZ));
+    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, norm2(simdX, simdY, simdZ));
 }
 
 #endif      // GMX_SIMD4_HAVE_REAL
@@ -76,3 +78,5 @@ TEST_F(Simd4VectorOperationsTest, gmxSimd4CalcRsqR)
 }      // namespace
 }      // namespace
 }      // namespace
+
+#endif // GMX_SIMD

@@ -46,10 +46,11 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -98,7 +99,7 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
     return;
 }
 
-void calc_potential(const char *fn, atom_id **index, int gnx[],
+void calc_potential(const char *fn, int **index, int gnx[],
                     double ***slPotential, double ***slCharge,
                     double ***slField, int *nslices,
                     t_topology *top, int ePBC,
@@ -253,7 +254,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
                 /* charge per volume is now the summed charge, divided by the nr
                    of frames and by the volume of the slice it's in, 4pi r^2 dr
                  */
-                slVolume = 4*M_PI * sqr(i) * sqr(*slWidth) * *slWidth;
+                slVolume = 4*M_PI * gmx::square(i) * gmx::square(*slWidth) * *slWidth;
                 if (slVolume == 0)
                 {
                     (*slCharge)[n][i] = 0;
@@ -453,7 +454,7 @@ int gmx_potential(int argc, char *argv[])
     int        *ngx;                           /* sizes of groups            */
     t_topology *top;                           /* topology        */
     int         ePBC;
-    atom_id   **index;                         /* indices for all groups     */
+    int       **index;                         /* indices for all groups     */
     t_filenm    fnm[] = {                      /* files for g_order       */
         { efTRX, "-f", NULL,  ffREAD },        /* trajectory file             */
         { efNDX, NULL, NULL,  ffREAD },        /* index file          */

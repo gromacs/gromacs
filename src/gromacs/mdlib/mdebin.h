@@ -40,9 +40,9 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/state.h"
 
 struct gmx_constr;
 struct gmx_ekindata_t;
@@ -60,7 +60,7 @@ typedef struct t_mde_delta_h_coll t_mde_delta_h_coll;
 
 /* This is the collection of energy averages collected during mdrun, and to
    be written out to the .edr file. */
-typedef struct {
+typedef struct t_mdebin {
     double              delta_t;
     t_ebin             *ebin;
     int                 ie, iconrmsd, ib, ivol, idens, ipv, ienthalpy;
@@ -81,9 +81,6 @@ typedef struct {
     gmx_bool            bMTTK;
     gmx_bool            bMu; /* true if dipole is calculated */
     gmx_bool            bDiagPres;
-    gmx_bool            bVir;
-    gmx_bool            bPress;
-    gmx_bool            bSurft;
     int                 f_nre;
     int                 epc;
     real                ref_p;
@@ -151,7 +148,7 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time);
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
                 gmx_int64_t step, double time,
-                int mode, gmx_bool bCompact,
+                int mode,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts);
 

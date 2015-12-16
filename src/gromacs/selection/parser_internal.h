@@ -47,9 +47,7 @@
 #define GMX_SELECTION_PARSER_INTERNAL_H
 
 #include <exception>
-
-#include <boost/exception_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -73,11 +71,11 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
             context = gmx::formatString("Near '%s'", context.c_str());
             ex.prependContext(context);
         }
-        _gmx_sel_lexer_set_exception(scanner, boost::copy_exception(ex));
+        _gmx_sel_lexer_set_exception(scanner, std::make_exception_ptr(ex));
     }
     catch (const std::exception &)
     {
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception());
     }
 }
 
@@ -144,7 +142,7 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
     }                                                           \
     catch (const std::exception &)                              \
     {                                                           \
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception()); \
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception()); \
         YYABORT;                                                \
     }
 //!\}
@@ -170,7 +168,7 @@ template <typename ValueType> static
 ValueType get(ValueType *src)
 {
     GMX_RELEASE_ASSERT(src != NULL, "Semantic value pointers should be non-NULL");
-    boost::scoped_ptr<ValueType> srcGuard(src);
+    const std::unique_ptr<ValueType> srcGuard(src);
     return ValueType(std::move(*src));
 }
 /*! \brief

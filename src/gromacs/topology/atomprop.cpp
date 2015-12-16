@@ -44,14 +44,15 @@
 
 #include <cmath>
 
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 typedef struct {
     gmx_bool    bSet;
@@ -337,7 +338,7 @@ static void vdw_warning(FILE *fp)
     if (NULL != fp)
     {
         fprintf(fp, "NOTE: From version 5.0 %s uses the Van der Waals radii\n",
-                ShortProgram());
+                gmx::getProgramContext().displayName());
         fprintf(fp, "from the source below. This means the results may be different\n");
         fprintf(fp, "compared to previous GROMACS versions.\n");
         please_cite(fp, "Bondi1964a");

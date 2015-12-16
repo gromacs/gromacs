@@ -37,8 +37,10 @@
  * kernel type 4xn.
  */
 
-#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief Run-time dispatcher for nbnxn kernel functions. */
 void

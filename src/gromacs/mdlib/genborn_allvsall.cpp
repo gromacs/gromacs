@@ -42,12 +42,15 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/genborn.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
 
@@ -429,7 +432,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
                 rsq               = dx*dx+dy*dy+dz*dz;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv              = gmx_invsqrt(rsq);
+                rinv              = gmx::invsqrt(rsq);
                 irsq              = rinv*rinv;
                 idr4              = irsq*irsq;
                 idr6              = idr4*irsq;
@@ -454,7 +457,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
                     term  = 0.5*(1.0-cosq);
                     ccf   = term*term;
                     sinq  = 1.0 - cosq*cosq;
-                    dccf  = 2.0*term*sinq*gmx_invsqrt(sinq)*theta;
+                    dccf  = 2.0*term*sinq*gmx::invsqrt(sinq)*theta;
                 }
 
                 prod          = STILL_P4*vaj;
@@ -490,7 +493,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
             rsq               = dx*dx+dy*dy+dz*dz;
 
             /* Calculate 1/r and 1/r2 */
-            rinv              = gmx_invsqrt(rsq);
+            rinv              = gmx::invsqrt(rsq);
             irsq              = rinv*rinv;
             idr4              = irsq*irsq;
             idr6              = idr4*irsq;
@@ -514,7 +517,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
                 term  = 0.5*(1.0-cosq);
                 ccf   = term*term;
                 sinq  = 1.0 - cosq*cosq;
-                dccf  = 2.0*term*sinq*gmx_invsqrt(sinq)*theta;
+                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq)*theta;
             }
 
             prod          = STILL_P4*vaj;
@@ -540,8 +543,8 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
         {
             gpi             = born->gpol[i]+born->gpol_still_work[i];
             gpi2            = gpi * gpi;
-            born->bRad[i]   = factor*gmx_invsqrt(gpi2);
-            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+            born->bRad[i]   = factor*gmx::invsqrt(gpi2);
+            fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
         }
     }
 
@@ -642,7 +645,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 rsq               = dx*dx+dy*dy+dz*dz;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv              = gmx_invsqrt(rsq);
+                rinv              = gmx::invsqrt(rsq);
                 dr                = rsq*rinv;
 
                 /* sk is precalculated in init_gb() */
@@ -671,7 +674,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
                     diff2    = uij2-lij2;
 
-                    lij_inv  = gmx_invsqrt(lij2);
+                    lij_inv  = gmx::invsqrt(lij2);
                     sk2      = sk*sk;
                     sk2_rinv = sk2*rinv;
                     prod     = 0.25*sk2_rinv;
@@ -721,7 +724,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
                     diff2    = uij2-lij2;
 
-                    lij_inv  = gmx_invsqrt(lij2);
+                    lij_inv  = gmx::invsqrt(lij2);
                     sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                     sk2_rinv = sk2*rinv;
                     prod     = 0.25 * sk2_rinv;
@@ -771,7 +774,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
             rsq               = dx*dx+dy*dy+dz*dz;
 
             /* Calculate 1/r and 1/r2 */
-            rinv              = gmx_invsqrt(rsq);
+            rinv              = gmx::invsqrt(rsq);
             dr                = rsq*rinv;
 
             /* sk is precalculated in init_gb() */
@@ -798,7 +801,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
                 diff2    = uij2-lij2;
 
-                lij_inv  = gmx_invsqrt(lij2);
+                lij_inv  = gmx::invsqrt(lij2);
                 sk2      = sk*sk;
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
@@ -848,7 +851,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
                 diff2    = uij2-lij2;
 
-                lij_inv  = gmx_invsqrt(lij2);
+                lij_inv  = gmx::invsqrt(lij2);
                 sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25 * sk2_rinv;
@@ -896,7 +899,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 rad     = 1.0/sum_ai;
 
                 born->bRad[i]   = std::max(rad, min_rad);
-                fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+                fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
             }
         }
 
@@ -921,7 +924,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 born->bRad[i] = rai_inv - tsum*rai_inv2;
                 born->bRad[i] = 1.0 / born->bRad[i];
 
-                fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
+                fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
 
                 tchain         = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
                 born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;

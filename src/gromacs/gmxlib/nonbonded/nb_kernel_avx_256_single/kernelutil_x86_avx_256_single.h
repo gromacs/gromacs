@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include <immintrin.h>
+
 #define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
 
 static gmx_inline __m256 gmx_simdcall
@@ -58,7 +60,7 @@ gmx_mm256_set_m128(__m128 hi, __m128 lo)
 }
 
 /* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
-#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
 #    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
 #    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), _mm256_castsi256_ps(mask))
@@ -1188,5 +1190,158 @@ gmx_mm256_update_2pot_ps(__m256 pot1, float * gmx_restrict ptrA,
     _mm_store_ss(ptrB, _mm_add_ss(_mm_load_ss(ptrB), t2));
 }
 
+#ifdef __PGI
+#    define AVX256_FLOAT_NEGZERO   ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
+#else
+#    define AVX256_FLOAT_NEGZERO  (-0.0f)
+#endif
+
+static gmx_inline __m256 gmx_simdcall
+avx256_set_exponent_f(__m256 x)
+{
+    const __m128i expbias      = _mm_set1_epi32(127);
+    __m256i       iexp256;
+    __m128i       iexp128a, iexp128b;
+
+    iexp256   = _mm256_cvtps_epi32(x);
+    iexp128b  = _mm256_extractf128_si256(iexp256, 0x1);
+    iexp128a  = _mm256_castsi256_si128(iexp256);
+    iexp128a  = _mm_slli_epi32(_mm_add_epi32(iexp128a, expbias), 23);
+    iexp128b  = _mm_slli_epi32(_mm_add_epi32(iexp128b, expbias), 23);
+    iexp256   = _mm256_castsi128_si256(iexp128a);
+    iexp256   = _mm256_insertf128_si256(iexp256, iexp128b, 0x1);
+    return _mm256_castsi256_ps(iexp256);
+}
+
+static gmx_inline __m256 gmx_simdcall
+avx256_exp_f(__m256 x)
+{
+    const __m256  argscale     = _mm256_set1_ps(1.44269504088896341f);
+    /* Lower bound: Disallow numbers that would lead to an IEEE fp exponent reaching +-127. */
+    const __m256  arglimit     = _mm256_set1_ps(126.0f);
+    const __m256  invargscale0 = _mm256_set1_ps(-0.693145751953125f);
+    const __m256  invargscale1 = _mm256_set1_ps(-1.428606765330187045e-06f);
+    const __m256  CC4          = _mm256_set1_ps(0.00136324646882712841033936f);
+    const __m256  CC3          = _mm256_set1_ps(0.00836596917361021041870117f);
+    const __m256  CC2          = _mm256_set1_ps(0.0416710823774337768554688f);
+    const __m256  CC1          = _mm256_set1_ps(0.166665524244308471679688f);
+    const __m256  CC0          = _mm256_set1_ps(0.499999850988388061523438f);
+    const __m256  one          = _mm256_set1_ps(1.0f);
+    __m256        fexppart;
+    __m256        intpart;
+    __m256        y, p;
+    __m256        valuemask;
+
+    y         = _mm256_mul_ps(x, argscale);
+    fexppart  = avx256_set_exponent_f(y);
+    intpart   = _mm256_cvtepi32_ps(_mm256_cvtps_epi32(y));
+    valuemask = _mm256_cmp_ps(_mm256_andnot_ps(_mm256_set1_ps(AVX256_FLOAT_NEGZERO), y), arglimit, _CMP_LE_OQ);
+    fexppart  = _mm256_and_ps(fexppart, valuemask);
+
+    /* Extended precision arithmetics */
+    x         = _mm256_add_ps(_mm256_mul_ps(invargscale0, intpart), x);
+    x         = _mm256_add_ps(_mm256_mul_ps(invargscale1, intpart), x);
+
+    p         = _mm256_add_ps(_mm256_mul_ps(CC4, x), CC3);
+    p         = _mm256_add_ps(_mm256_mul_ps(p, x), CC2);
+    p         = _mm256_add_ps(_mm256_mul_ps(p, x), CC1);
+    p         = _mm256_add_ps(_mm256_mul_ps(p, x), CC0);
+    p         = _mm256_add_ps(_mm256_mul_ps(_mm256_mul_ps(x, x), p), x);
+    p         = _mm256_add_ps(p, one);
+    x         = _mm256_mul_ps(p, fexppart);
+    return x;
+}
+
+static gmx_inline __m256 gmx_simdcall
+avx256_invsqrt_f(__m256 x)
+{
+    __m256 lu = _mm256_rsqrt_ps(x);
+
+    return _mm256_mul_ps(_mm256_set1_ps(0.5f), _mm256_mul_ps(_mm256_sub_ps(_mm256_set1_ps(3.0f), _mm256_mul_ps(_mm256_mul_ps(lu, lu), x)), lu));
+}
+
+static gmx_inline __m256 gmx_simdcall
+avx256_inv_f(__m256 x)
+{
+    __m256 lu = _mm256_rcp_ps(x);
+
+    return _mm256_mul_ps(lu, _mm256_sub_ps(_mm256_set1_ps(2.0f), _mm256_mul_ps(lu, x)));
+}
+
+static gmx_inline __m256 gmx_simdcall
+avx256_pmecorrF_f(__m256 z2)
+{
+    const __m256  FN6      = _mm256_set1_ps(-1.7357322914161492954e-8f);
+    const __m256  FN5      = _mm256_set1_ps(1.4703624142580877519e-6f);
+    const __m256  FN4      = _mm256_set1_ps(-0.000053401640219807709149f);
+    const __m256  FN3      = _mm256_set1_ps(0.0010054721316683106153f);
+    const __m256  FN2      = _mm256_set1_ps(-0.019278317264888380590f);
+    const __m256  FN1      = _mm256_set1_ps(0.069670166153766424023f);
+    const __m256  FN0      = _mm256_set1_ps(-0.75225204789749321333f);
+
+    const __m256  FD4      = _mm256_set1_ps(0.0011193462567257629232f);
+    const __m256  FD3      = _mm256_set1_ps(0.014866955030185295499f);
+    const __m256  FD2      = _mm256_set1_ps(0.11583842382862377919f);
+    const __m256  FD1      = _mm256_set1_ps(0.50736591960530292870f);
+    const __m256  FD0      = _mm256_set1_ps(1.0f);
+
+    __m256        z4;
+    __m256        polyFN0, polyFN1, polyFD0, polyFD1;
+
+    z4             = _mm256_mul_ps(z2, z2);
+
+    polyFD0        = _mm256_add_ps(_mm256_mul_ps(FD4, z4), FD2);
+    polyFD1        = _mm256_add_ps(_mm256_mul_ps(FD3, z4), FD1);
+    polyFD0        = _mm256_add_ps(_mm256_mul_ps(polyFD0, z4), FD0);
+    polyFD0        = _mm256_add_ps(_mm256_mul_ps(polyFD1, z2), polyFD0);
+
+    polyFD0        = avx256_inv_f(polyFD0);
+
+    polyFN0        = _mm256_add_ps(_mm256_mul_ps(FN6, z4), FN4);
+    polyFN1        = _mm256_add_ps(_mm256_mul_ps(FN5, z4), FN3);
+    polyFN0        = _mm256_add_ps(_mm256_mul_ps(polyFN0, z4), FN2);
+    polyFN1        = _mm256_add_ps(_mm256_mul_ps(polyFN1, z4), FN1);
+    polyFN0        = _mm256_add_ps(_mm256_mul_ps(polyFN0, z4), FN0);
+    polyFN0        = _mm256_add_ps(_mm256_mul_ps(polyFN1, z2), polyFN0);
+
+    return _mm256_mul_ps(polyFN0, polyFD0);
+}
+
+static gmx_inline __m256 gmx_simdcall
+avx256_pmecorrV_f(__m256 z2)
+{
+    const __m256  VN6      = _mm256_set1_ps(1.9296833005951166339e-8f);
+    const __m256  VN5      = _mm256_set1_ps(-1.4213390571557850962e-6f);
+    const __m256  VN4      = _mm256_set1_ps(0.000041603292906656984871f);
+    const __m256  VN3      = _mm256_set1_ps(-0.00013134036773265025626f);
+    const __m256  VN2      = _mm256_set1_ps(0.038657983986041781264f);
+    const __m256  VN1      = _mm256_set1_ps(0.11285044772717598220f);
+    const __m256  VN0      = _mm256_set1_ps(1.1283802385263030286f);
+
+    const __m256  VD3      = _mm256_set1_ps(0.0066752224023576045451f);
+    const __m256  VD2      = _mm256_set1_ps(0.078647795836373922256f);
+    const __m256  VD1      = _mm256_set1_ps(0.43336185284710920150f);
+    const __m256  VD0      = _mm256_set1_ps(1.0f);
+
+    __m256        z4;
+    __m256        polyVN0, polyVN1, polyVD0, polyVD1;
+
+    z4             = _mm256_mul_ps(z2, z2);
+
+    polyVD1        = _mm256_add_ps(_mm256_mul_ps(VD3, z4), VD1);
+    polyVD0        = _mm256_add_ps(_mm256_mul_ps(VD2, z4), VD0);
+    polyVD0        = _mm256_add_ps(_mm256_mul_ps(polyVD1, z2), polyVD0);
+
+    polyVD0        = avx256_inv_f(polyVD0);
+
+    polyVN0        = _mm256_add_ps(_mm256_mul_ps(VN6, z4), VN4);
+    polyVN1        = _mm256_add_ps(_mm256_mul_ps(VN5, z4), VN3);
+    polyVN0        = _mm256_add_ps(_mm256_mul_ps(polyVN0, z4), VN2);
+    polyVN1        = _mm256_add_ps(_mm256_mul_ps(polyVN1, z4), VN1);
+    polyVN0        = _mm256_add_ps(_mm256_mul_ps(polyVN0, z4), VN0);
+    polyVN0        = _mm256_add_ps(_mm256_mul_ps(polyVN1, z2), polyVN0);
+
+    return _mm256_mul_ps(polyVN0, polyVD0);
+}
 
 #endif /* _kernelutil_x86_avx_256_single_h_ */

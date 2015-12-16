@@ -56,11 +56,13 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -302,7 +304,7 @@ real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
         /* Apply charge correction */
         vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
 
-        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*sqr(fr->ewaldcoeff_q));
+        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*gmx::square(fr->ewaldcoeff_q));
 
         qs2A = fr->qsum[0]*fr->qsum[0];
         qs2B = fr->qsum[1]*fr->qsum[1];

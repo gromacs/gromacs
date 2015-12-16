@@ -46,13 +46,10 @@
 #include <cctype>
 #include <cstdio>
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include "gromacs/fileio/trx.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -60,6 +57,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
@@ -329,13 +327,13 @@ void printHelp(TextWriter *writer, gmx_ana_selcollection_t *sc,
 SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
                         bool bInteractive, int maxnr, const std::string &context)
 {
-    boost::shared_ptr<void>  scannerGuard(scanner, &_gmx_sel_free_lexer);
+    std::shared_ptr<void>    scannerGuard(scanner, &_gmx_sel_free_lexer);
     gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
     gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
 
     size_t                   oldCount = sc->sel.size();
     {
-        boost::shared_ptr<_gmx_sel_yypstate> parserState(
+        std::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bInteractive)
         {
@@ -519,10 +517,8 @@ SelectionCollection::initOptions(IOptionsContainer   *options,
     }
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
                        "Debug level out of range");
-    options->addOption(StringOption("seldebug").hidden(impl_->debugLevel_ == 0)
-                           .enumValue(debug_levels)
-                           .defaultValue(debug_levels[impl_->debugLevel_])
-                           .storeEnumIndex(&impl_->debugLevel_)
+    options->addOption(EnumIntOption("seldebug").hidden(impl_->debugLevel_ == 0)
+                           .enumValue(debug_levels).store(&impl_->debugLevel_)
                            .description("Print out selection trees for debugging"));
 }
 
@@ -684,6 +680,23 @@ SelectionCollection::parseFromStdin(int count, bool bInteractive,
                             context);
 }
 
+namespace
+{
+
+//! Helper function to initialize status writer for interactive selection parsing.
+std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
+{
+    std::unique_ptr<TextWriter> statusWriter;
+    if (statusStream != NULL)
+    {
+        statusWriter.reset(new TextWriter(statusStream));
+        statusWriter->wrapperSettings().setLineLength(78);
+    }
+    return statusWriter;
+}
+
+}   // namespace
+
 SelectionList
 SelectionCollection::parseInteractive(int                count,
                                       TextInputStream   *inputStream,
@@ -692,12 +705,8 @@ SelectionCollection::parseInteractive(int                count,
 {
     yyscan_t scanner;
 
-    boost::scoped_ptr<TextWriter> statusWriter;
-    if (statusStream != NULL)
-    {
-        statusWriter.reset(new TextWriter(statusStream));
-        statusWriter->wrapperSettings().setLineLength(78);
-    }
+    const std::unique_ptr<TextWriter> statusWriter(
+            initStatusWriter(statusStream));
     _gmx_sel_init_lexer(&scanner, &impl_->sc_, statusWriter.get(),
                         count, impl_->bExternalGroupsSet_, impl_->grps_);
     return runParser(scanner, inputStream, true, count, context);
@@ -791,6 +800,18 @@ SelectionCollection::compile()
                             "This is not allowed in this context.",
                             sel.selectionText());
                 GMX_THROW(InvalidInputError(message));
+            }
+            if (sel.hasFlag(efSelection_OnlySorted))
+            {
+                if (!sel.hasSortedAtomIndices())
+                {
+                    const std::string message = formatString(
+                                "Selection '%s' does not evaluate to atoms in an "
+                                "ascending (sorted) order. "
+                                "This is not allowed in this context.",
+                                sel.selectionText());
+                    GMX_THROW(InvalidInputError(message));
+                }
             }
         }
         if (sel.hasFlag(efSelection_DisallowEmpty))

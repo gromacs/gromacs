@@ -48,12 +48,13 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -63,7 +64,7 @@
 
 
 static void periodic_dist(int ePBC,
-                          matrix box, rvec x[], int n, atom_id index[],
+                          matrix box, rvec x[], int n, int index[],
                           real *rmin, real *rmax, int *min_ind)
 {
 #define NSHIFT_MAX 26
@@ -141,7 +142,7 @@ static void periodic_dist(int ePBC,
 
 static void periodic_mindist_plot(const char *trxfn, const char *outfn,
                                   t_topology *top, int ePBC,
-                                  int n, atom_id index[], gmx_bool bSplit,
+                                  int n, int index[], gmx_bool bSplit,
                                   const gmx_output_env_t *oenv)
 {
     FILE        *out;
@@ -216,14 +217,14 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
 }
 
 static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
-                      int nx1, int nx2, atom_id index1[], atom_id index2[],
+                      int nx1, int nx2, int index1[], int index2[],
                       gmx_bool bGroup,
                       real *rmin, real *rmax, int *nmin, int *nmax,
                       int *ixmin, int *jxmin, int *ixmax, int *jxmax)
 {
     int      i, j, i0 = 0, j1;
     int      ix, jx;
-    atom_id *index3;
+    int     *index3;
     rvec     dx;
     real     r2, rmin2, rmax2, rcut2;
     t_pbc    pbc;
@@ -236,7 +237,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
     *nmin  = 0;
     *nmax  = 0;
 
-    rcut2 = sqr(rcut);
+    rcut2 = gmx::square(rcut);
 
     /* Must init pbc every step because of pressure coupling */
     if (bPBC)
@@ -327,8 +328,8 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
 void dist_plot(const char *fn, const char *afile, const char *dfile,
                const char *nfile, const char *rfile, const char *xfile,
                real rcut, gmx_bool bMat, t_atoms *atoms,
-               int ng, atom_id *index[], int gnx[], char *grpn[], gmx_bool bSplit,
-               gmx_bool bMin, int nres, atom_id *residue, gmx_bool bPBC, int ePBC,
+               int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
+               gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
                gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
                const gmx_output_env_t *oenv)
 {
@@ -343,7 +344,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     int              min2, max2, min1r, min2r, max1r, max2r;
     int              min1 = 0;
     int              max1 = 0;
-    atom_id          oindex[2];
+    int              oindex[2];
     rvec            *x0;
     matrix           box;
     gmx_bool         bFirst;
@@ -595,23 +596,24 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     sfree(x0);
 }
 
-int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
+int find_residues(t_atoms *atoms, int n, int index[], int **resindex)
 {
     int  i;
-    int  nres = 0, resnr, presnr;
+    int  nres      = 0, resnr, presnr = 0;
+    bool presFound = false;
     int *residx;
 
     /* build index of first atom numbers for each residue */
-    presnr = NOTSET;
     snew(residx, atoms->nres+1);
     for (i = 0; i < n; i++)
     {
         resnr = atoms->atom[index[i]].resind;
-        if (resnr != presnr)
+        if (!presFound || resnr != presnr)
         {
             residx[nres] = i;
             nres++;
-            presnr = resnr;
+            presnr    = resnr;
+            presFound = true;
         }
     }
     if (debug)
@@ -626,7 +628,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
     return nres;
 }
 
-void dump_res(FILE *out, int nres, atom_id *resindex, atom_id index[])
+void dump_res(FILE *out, int nres, int *resindex, int index[])
 {
     int i, j;
 
@@ -701,7 +703,7 @@ int gmx_mindist(int argc, char *argv[])
     const char       *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
     char            **grpname;
     int              *gnx;
-    atom_id         **index, *residues = NULL;
+    int             **index, *residues = NULL;
     t_filenm          fnm[] = {
         { efTRX, "-f",  NULL,      ffREAD },
         { efTPS,  NULL, NULL,      ffOPTRD },

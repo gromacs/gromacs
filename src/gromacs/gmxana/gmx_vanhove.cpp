@@ -48,10 +48,11 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
@@ -136,7 +137,7 @@ int gmx_vanhove(int argc, char *argv[])
     rvec             *xtop, *x, **sx;
     int               isize, nalloc, nallocn;
     t_trxstatus      *status;
-    atom_id          *index;
+    int              *index;
     char             *grpname;
     int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
     real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
@@ -252,7 +253,7 @@ int gmx_vanhove(int argc, char *argv[])
         {
             snew(mat[f], nbin);
         }
-        rmax2 = sqr(nbin*rbin);
+        rmax2 = gmx::square(nbin*rbin);
         /* Initialize time zero */
         mat[0][0]  = nfr*isize;
         mcount[0] += nfr;

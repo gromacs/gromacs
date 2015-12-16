@@ -36,34 +36,11 @@
 #ifndef _nbnxn_simd_h
 #define _nbnxn_simd_h
 
-#include "config.h"
-
-#include "gromacs/legacyheaders/typedefs.h"
-
-/* Include SIMD, below we select kernels based on the SIMD width */
+#include "gromacs/math/vectypes.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
-#ifdef GMX_SIMD_REFERENCE
-#define GMX_NBNXN_SIMD
-#endif
-
-/* As we modularize the verlet kernels, we should remove stuff like this
- * that checks internal SIMD implementation details.
- */
-#if (defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
-    (defined GMX_SIMD_X86_AVX_128_FMA) || (defined GMX_SIMD_X86_AVX_256) || \
-    (defined GMX_SIMD_X86_AVX2_256) || (defined GMX_SIMD_IBM_QPX)
-/* Use SIMD accelerated nbnxn search and kernels */
-#define GMX_NBNXN_SIMD
-#endif
-
-/* MIC for double is implemented in the SIMD module but so far missing in
-   mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h */
-#if defined GMX_SIMD_X86_MIC && !defined GMX_DOUBLE
-#define GMX_NBNXN_SIMD
-#endif
-
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 /* The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
  *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
@@ -80,6 +57,6 @@
 #error "No SIMD kernel type defined"
 #endif
 
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
 
 #endif /* _nbnxn_simd_h */

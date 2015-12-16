@@ -52,15 +52,16 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/gmx_hash.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "hash.h"
 
 void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       rvec *f, rvec *fshift)
@@ -350,14 +351,14 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-int setup_specat_communication(gmx_domdec_t             *dd,
-                               ind_req_t                *ireq,
-                               gmx_domdec_specat_comm_t *spac,
-                               gmx_hash_t                ga2la_specat,
-                               int                       at_start,
-                               int                       vbuf_fac,
-                               const char               *specat_type,
-                               const char               *add_err)
+int setup_specat_communication(gmx_domdec_t               *dd,
+                               ind_req_t                  *ireq,
+                               gmx_domdec_specat_comm_t   *spac,
+                               gmx_hash_t                 *ga2la_specat,
+                               int                         at_start,
+                               int                         vbuf_fac,
+                               const char                 *specat_type,
+                               const char                 *add_err)
 {
     int               nsend[2], nlast, nsend_zero[2] = {0, 0}, *nsend_ptr;
     int               d, dim, ndir, dir, nr, ns, i, nrecv_local, n0, start, indr, ind, buf[2];

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,19 +44,58 @@
 #include "testasserts.h"
 
 #include <cmath>
+#include <cstdio>
 
 #include <limits>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "testutils/testoptions.h"
 
 namespace gmx
 {
 
 namespace test
 {
+
+namespace
+{
+
+//! Whether to print the message from expected exceptions.
+bool g_showExpectedExceptions = false;
+
+//! \cond
+GMX_TEST_OPTIONS(ExceptionOptions, options)
+{
+    options->addOption(BooleanOption("show-error-messages")
+                           .store(&g_showExpectedExceptions)
+                           .description("Show error messages from expected "
+                                        "exceptions"));
+}
+//! \endcond
+}
+
+namespace internal
+{
+
+//! \cond internal
+void processExpectedException(const std::exception &ex)
+{
+    if (g_showExpectedExceptions)
+    {
+        std::printf("Exception message (from expected exception):\n");
+        formatExceptionMessageToFile(stdout, ex);
+    }
+}
+//! \endcond
+
+}       // namespace internal
 
 namespace
 {

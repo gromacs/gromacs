@@ -43,21 +43,19 @@
 
 #include "exceptions.h"
 
-#include "config.h"
-
 #include <cstring>
 
+#include <map>
+#include <memory>
 #include <new>
 #include <stdexcept>
 #include <typeinfo>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/exception/get_error_info.hpp>
 
 #include "thread_mpi/system_error.h"
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
@@ -66,6 +64,21 @@
 
 namespace gmx
 {
+
+namespace internal
+{
+
+IExceptionInfo::~IExceptionInfo()
+{
+}
+
+class ExceptionData
+{
+    public:
+        std::map<std::type_index, ExceptionInfoPointer> infos_;
+};
+
+}    // namespace internal
 
 namespace
 {
@@ -121,7 +134,7 @@ class ErrorMessage
 
     private:
         std::string                     text_;
-        boost::shared_ptr<ErrorMessage> child_;
+        std::shared_ptr<ErrorMessage>   child_;
 };
 
 /*! \internal \brief
@@ -129,8 +142,8 @@ class ErrorMessage
  *
  * \ingroup module_utility
  */
-typedef boost::error_info<struct errinfo_message_, ErrorMessage>
-    errinfo_message;
+typedef ExceptionInfo<struct ExceptionInfoMessage_, ErrorMessage>
+    ExceptionInfoMessage;
 
 ErrorMessage::ErrorMessage(const std::string &text)
     : text_(text)
@@ -156,8 +169,8 @@ ErrorMessage::prependContext(const std::string &context) const
  *
  * \ingroup module_utility
  */
-typedef boost::error_info<struct errinfo_message_, internal::NestedExceptionList>
-    errinfo_nested_exceptions;
+typedef ExceptionInfo<struct ExceptionInfoNestedExceptions_, internal::NestedExceptionList>
+    ExceptionInfoNestedExceptions;
 
 }   // namespace
 
@@ -166,17 +179,18 @@ typedef boost::error_info<struct errinfo_message_, internal::NestedExceptionList
  */
 
 GromacsException::GromacsException(const ExceptionInitializer &details)
+    : data_(new internal::ExceptionData)
 {
-    *this << errinfo_message(ErrorMessage(details.reason_));
+    setInfo(ExceptionInfoMessage(ErrorMessage(details.reason_)));
     if (details.hasNestedExceptions())
     {
-        *this << errinfo_nested_exceptions(details.nested_);
+        setInfo(ExceptionInfoNestedExceptions(details.nested_));
     }
 }
 
 const char *GromacsException::what() const throw()
 {
-    const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
+    const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
     if (msg == NULL)
     {
         return "No reason provided";
@@ -190,9 +204,26 @@ const char *GromacsException::what() const throw()
 
 void GromacsException::prependContext(const std::string &context)
 {
-    const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
+    const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
     GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
-    *this << errinfo_message(msg->prependContext(context));
+    setInfo(ExceptionInfoMessage(msg->prependContext(context)));
+}
+
+const internal::IExceptionInfo *
+GromacsException::getInfo(const std::type_index &index) const
+{
+    auto iter = data_->infos_.find(index);
+    if (iter != data_->infos_.end())
+    {
+        return iter->second.get();
+    }
+    return nullptr;
+}
+
+void GromacsException::setInfo(
+        const std::type_index &index, internal::ExceptionInfoPointer &&item)
+{
+    data_->infos_[index] = std::move(item);
 }
 
 /********************************************************************
@@ -397,16 +428,10 @@ class MessageWriterString : public IMessageWriter
 void formatExceptionMessageInternal(IMessageWriter *writer,
                                     const std::exception &ex, int indent)
 {
-    const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
-    if (boostEx != NULL)
+    const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
+    if (gmxEx != NULL)
     {
-        // TODO: Add an option to print this information for the tests
-        // const char *const *funcPtr =
-        //     boost::get_error_info<boost::throw_function>(*boostEx);
-        // const char *const *filePtr =
-        //     boost::get_error_info<boost::throw_file>(*boostEx);
-        // const int         *linePtr =
-        //     boost::get_error_info<boost::throw_line>(*boostEx);
+        // TODO: Add an option to print location information for the tests
 
         // std::string        result;
         // if (filePtr != NULL && linePtr != NULL)
@@ -417,7 +442,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
 
         bool                bAnythingWritten = false;
         // TODO: Remove duplicate context if present in multiple nested exceptions.
-        const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*boostEx);
+        const ErrorMessage *msg = gmxEx->getInfo<ExceptionInfoMessage>();
         if (msg != NULL)
         {
             while (msg != NULL && msg->isContext())
@@ -438,22 +463,19 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
             bAnythingWritten = true;
         }
 
-        const int *errorNumber
-            = boost::get_error_info<boost::errinfo_errno>(*boostEx);
+        const int *errorNumber = gmxEx->getInfo<ExceptionInfoErrno>();
         if (errorNumber != NULL && *errorNumber != 0)
         {
             const char * const *funcName
-                = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
+                = gmxEx->getInfo<ExceptionInfoApiFunction>();
             writer->writeErrNoInfo(*errorNumber,
                                    funcName != NULL ? *funcName : NULL,
                                    (indent+1)*2);
             bAnythingWritten = true;
         }
 
-        // TODO: Treat also boost::nested_exception (not currently used, though)
-
         const internal::NestedExceptionList *nested
-            = boost::get_error_info<errinfo_nested_exceptions>(*boostEx);
+            = gmxEx->getInfo<ExceptionInfoNestedExceptions>();
         if (nested != NULL)
         {
             internal::NestedExceptionList::const_iterator ni;
@@ -461,7 +483,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
             {
                 try
                 {
-                    rethrow_exception(*ni);
+                    std::rethrow_exception(*ni);
                 }
                 catch (const std::exception &nestedEx)
                 {
@@ -513,23 +535,20 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     {
         bPrintType = true;
     }
-    // We can't call get_error_info directly on ex since our internal boost
-    // needs to be compiled with BOOST_NO_RTTI. So we do the dynamic_cast
-    // here instead.
-    const char *const      *funcPtr = NULL;
-    const char *const      *filePtr = NULL;
-    const int              *linePtr = NULL;
-    const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
-    if (boostEx != NULL)
+    const char *func = nullptr;
+    const char *file = nullptr;
+    int         line = 0;
+    if (gmxEx != nullptr)
     {
-        funcPtr = boost::get_error_info<boost::throw_function>(*boostEx);
-        filePtr = boost::get_error_info<boost::throw_file>(*boostEx);
-        linePtr = boost::get_error_info<boost::throw_line>(*boostEx);
+        const ThrowLocation *loc = gmxEx->getInfo<ExceptionInfoLocation>();
+        if (loc != nullptr)
+        {
+            func = loc->func;
+            file = loc->file;
+            line = loc->line;
+        }
     }
-    internal::printFatalErrorHeader(fp, title,
-                                    funcPtr != NULL ? *funcPtr : NULL,
-                                    filePtr != NULL ? *filePtr : NULL,
-                                    linePtr != NULL ? *linePtr : 0);
+    internal::printFatalErrorHeader(fp, title, func, file, line);
     if (bPrintType)
     {
         std::fprintf(fp, "(exception type: %s)\n", typeid(ex).name());
@@ -563,12 +582,22 @@ void formatExceptionMessageToWriter(TextWriter           *writer,
 int processExceptionAtExit(const std::exception & /*ex*/)
 {
     int returnCode = 1;
-#ifdef GMX_LIB_MPI
-    // TODO: Consider moving the output done in gmx_abort() into the message
-    // printing routine above, so that this could become a simple MPI_Abort().
-    gmx_abort(returnCode);
-#endif
+    // If we have more than one rank (whether real MPI or thread-MPI),
+    // we cannot currently know whether just one rank or all ranks
+    // actually threw the error, so we need to exit here.
+    // Returning would mean graceful cleanup, which is not possible if
+    // some code is still executing on other ranks/threads.
+    if (gmx_node_num() > 1)
+    {
+        gmx_exit_on_fatal_error(ExitType_Abort, returnCode);
+    }
     return returnCode;
+}
+
+void processExceptionAsFatalError(const std::exception &ex)
+{
+    printFatalErrorMessage(stderr, ex);
+    gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
 } // namespace gmx

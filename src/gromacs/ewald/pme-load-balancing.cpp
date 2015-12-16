@@ -55,14 +55,17 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
-#include "gromacs/gmxlib/calcgrid.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/fft/calcgrid.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
@@ -75,8 +78,6 @@
 struct pme_setup_t {
     real              rcut_coulomb;    /**< Coulomb cut-off                              */
     real              rlist;           /**< pair-list cut-off                            */
-    real              rlistlong;       /**< LR pair-list cut-off                         */
-    int               nstcalclr;       /**< frequency of evaluating long-range forces for group scheme */
     real              spacing;         /**< (largest) PME grid spacing                   */
     ivec              grid;            /**< the PME grid dimensions                      */
     real              grid_efficiency; /**< ineffiency factor for non-uniform grids <= 1 */
@@ -124,7 +125,6 @@ struct pme_load_balancing_t {
     real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
     real         rcut_vdw;           /**< Vdw cutoff (does not change) */
     real         rcut_coulomb_start; /**< Initial electrostatics cutoff */
-    int          nstcalclr_start;    /**< Initial electrostatics cutoff */
     real         rbuf_coulomb;       /**< the pairlist buffer size */
     real         rbuf_vdw;           /**< the pairlist buffer size */
     matrix       box_start;          /**< the initial simulation box */
@@ -184,22 +184,8 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     }
     else
     {
-        if (ic->rcoulomb > ic->rlist)
-        {
-            pme_lb->rbuf_coulomb = ic->rlistlong - ic->rcoulomb;
-        }
-        else
-        {
-            pme_lb->rbuf_coulomb = ic->rlist - ic->rcoulomb;
-        }
-        if (ic->rvdw > ic->rlist)
-        {
-            pme_lb->rbuf_vdw = ic->rlistlong - ic->rvdw;
-        }
-        else
-        {
-            pme_lb->rbuf_vdw = ic->rlist - ic->rvdw;
-        }
+        pme_lb->rbuf_coulomb = ic->rlist - ic->rcoulomb;
+        pme_lb->rbuf_vdw     = ic->rlist - ic->rvdw;
     }
 
     copy_mat(box, pme_lb->box_start);
@@ -213,13 +199,10 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->rcut_vdw                 = ic->rvdw;
     pme_lb->rcut_coulomb_start       = ir->rcoulomb;
-    pme_lb->nstcalclr_start          = ir->nstcalclr;
 
     pme_lb->cur                      = 0;
     pme_lb->setup[0].rcut_coulomb    = ic->rcoulomb;
     pme_lb->setup[0].rlist           = ic->rlist;
-    pme_lb->setup[0].rlistlong       = ic->rlistlong;
-    pme_lb->setup[0].nstcalclr       = ir->nstcalclr;
     pme_lb->setup[0].grid[XX]        = ir->nkx;
     pme_lb->setup[0].grid[YY]        = ir->nky;
     pme_lb->setup[0].grid[ZZ]        = ir->nkz;
@@ -258,6 +241,11 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     pme_lb->cycles_n = 0;
     pme_lb->cycles_c = 0;
+
+    if (!wallcycle_have_counter())
+    {
+        md_print_warn(cr, fp_log, "NOTE: Cycle counters unsupported or not enabled in kernel. Cannot use PME-PP balancing.\n");
+    }
 
     /* Tune with GPUs and/or separate PME ranks.
      * When running only on a CPU without PME ranks, PME tuning will only help
@@ -366,47 +354,12 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     if (pme_lb->cutoff_scheme == ecutsVERLET)
     {
         set->rlist        = set->rcut_coulomb + pme_lb->rbuf_coulomb;
-        /* We dont use LR lists with Verlet, but this avoids if-statements in further checks */
-        set->rlistlong    = set->rlist;
     }
     else
     {
         tmpr_coulomb          = set->rcut_coulomb + pme_lb->rbuf_coulomb;
         tmpr_vdw              = pme_lb->rcut_vdw + pme_lb->rbuf_vdw;
         set->rlist            = std::min(tmpr_coulomb, tmpr_vdw);
-        set->rlistlong        = std::max(tmpr_coulomb, tmpr_vdw);
-
-        /* Set the long-range update frequency */
-        if (set->rlist == set->rlistlong)
-        {
-            /* No long-range interactions if the short-/long-range cutoffs are identical */
-            set->nstcalclr = 0;
-        }
-        else if (pme_lb->nstcalclr_start == 0 || pme_lb->nstcalclr_start == 1)
-        {
-            /* We were not doing long-range before, but now we are since rlist!=rlistlong */
-            set->nstcalclr = 1;
-        }
-        else
-        {
-            /* We were already doing long-range interactions from the start */
-            if (pme_lb->rcut_vdw > pme_lb->rcut_coulomb_start)
-            {
-                /* We were originally doing long-range VdW-only interactions.
-                 * If rvdw is still longer than rcoulomb we keep the original nstcalclr,
-                 * but if the coulomb cutoff has become longer we should update the long-range
-                 * part every step.
-                 */
-                set->nstcalclr = (tmpr_vdw > tmpr_coulomb) ? pme_lb->nstcalclr_start : 1;
-            }
-            else
-            {
-                /* We were not doing any long-range interaction from the start,
-                 * since it is not possible to do twin-range coulomb for the PME interaction.
-                 */
-                set->nstcalclr = 1;
-            }
-        }
     }
 
     set->spacing      = sp;
@@ -551,7 +504,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                  t_commrec                 *cr,
                  FILE                      *fp_err,
                  FILE                      *fp_log,
-                 t_inputrec                *ir,
+                 const t_inputrec          *ir,
                  t_state                   *state,
                  double                     cycles,
                  interaction_const_t       *ic,
@@ -574,7 +527,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     set = &pme_lb->setup[pme_lb->cur];
     set->count++;
 
-    rtab = ir->rlistlong + ir->tabext;
+    rtab = ir->rlist + ir->tabext;
 
     if (set->count % 2 == 1)
     {
@@ -632,7 +585,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
              * better overal performance can be obtained with a slightly
              * shorter cut-off and better DD load balancing.
              */
-            set_dd_dlb_max_cutoff(cr, pme_lb->setup[pme_lb->fastest].rlistlong);
+            set_dd_dlb_max_cutoff(cr, pme_lb->setup[pme_lb->fastest].rlist);
         }
     }
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
@@ -674,7 +627,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
             if (OK && ir->ePBC != epbcNONE)
             {
-                OK = (sqr(pme_lb->setup[pme_lb->cur+1].rlistlong)
+                OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlist)
                       <= max_cutoff2(ir->ePBC, state->box));
                 if (!OK)
                 {
@@ -689,7 +642,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                 if (DOMAINDECOMP(cr))
                 {
                     OK = change_dd_cutoff(cr, state, ir,
-                                          pme_lb->setup[pme_lb->cur].rlistlong);
+                                          pme_lb->setup[pme_lb->cur].rlist);
                     if (!OK)
                     {
                         /* Failed: do not use this setup */
@@ -758,7 +711,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     if (DOMAINDECOMP(cr) && pme_lb->stage > 0)
     {
-        OK = change_dd_cutoff(cr, state, ir, pme_lb->setup[pme_lb->cur].rlistlong);
+        OK = change_dd_cutoff(cr, state, ir, pme_lb->setup[pme_lb->cur].rlist);
         if (!OK)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
@@ -794,8 +747,6 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     ic->rcoulomb     = set->rcut_coulomb;
     ic->rlist        = set->rlist;
-    ic->rlistlong    = set->rlistlong;
-    ir->nstcalclr    = set->nstcalclr;
     ic->ewaldcoeff_q = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
     if (ic->coulomb_modifier == eintmodPOTSHIFT)
@@ -811,11 +762,11 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
         {
             real       crc2;
 
-            ic->dispersion_shift.cpot = -std::pow(static_cast<double>(ic->rvdw), -6.0);
-            ic->repulsion_shift.cpot  = -std::pow(static_cast<double>(ic->rvdw), -12.0);
+            ic->dispersion_shift.cpot = -1.0/gmx::power6(static_cast<double>(ic->rvdw));
+            ic->repulsion_shift.cpot  = -1.0/gmx::power12(static_cast<double>(ic->rvdw));
             ic->sh_invrc6             = -ic->dispersion_shift.cpot;
-            crc2                      = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*std::pow(static_cast<double>(ic->rvdw), -6.0);
+            crc2                      = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+            ic->sh_lj_ewald           = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
         }
     }
 
@@ -902,7 +853,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                     t_commrec            *cr,
                     FILE                 *fp_err,
                     FILE                 *fp_log,
-                    t_inputrec           *ir,
+                    const t_inputrec     *ir,
                     t_forcerec           *fr,
                     t_state              *state,
                     gmx_wallcycle_t       wcycle,
@@ -1002,7 +953,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(cr, fr->ic->rlistlong);
+            set_dd_dlb_max_cutoff(cr, fr->ic->rlist);
         }
     }
 
@@ -1022,7 +973,6 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
         fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
         fr->rlist         = fr->ic->rlist;
-        fr->rlistlong     = fr->ic->rlistlong;
         fr->rcoulomb      = fr->ic->rcoulomb;
         fr->rvdw          = fr->ic->rvdw;
 
@@ -1057,23 +1007,6 @@ static int pme_grid_points(const pme_setup_t *setup)
     return setup->grid[XX]*setup->grid[YY]*setup->grid[ZZ];
 }
 
-/*! \brief Retuern the largest short-range list cut-off radius */
-static real pme_loadbal_rlist(const pme_setup_t *setup)
-{
-    /* With the group cut-off scheme we can have twin-range either
-     * for Coulomb or for VdW, so we need a check here.
-     * With the Verlet cut-off scheme rlist=rlistlong.
-     */
-    if (setup->rcut_coulomb > setup->rlist)
-    {
-        return setup->rlistlong;
-    }
-    else
-    {
-        return setup->rlist;
-    }
-}
-
 /*! \brief Print one load-balancing setting */
 static void print_pme_loadbal_setting(FILE              *fplog,
                                       const char        *name,
@@ -1082,7 +1015,7 @@ static void print_pme_loadbal_setting(FILE              *fplog,
     fprintf(fplog,
             "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
             name,
-            setup->rcut_coulomb, pme_loadbal_rlist(setup),
+            setup->rcut_coulomb, setup->rlist,
             setup->grid[XX], setup->grid[YY], setup->grid[ZZ],
             setup->spacing, 1/setup->ewaldcoeff_q);
 }
@@ -1096,8 +1029,8 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
     double     pp_ratio, grid_ratio;
     real       pp_ratio_temporary;
 
-    pp_ratio_temporary = pme_loadbal_rlist(&pme_lb->setup[pme_lb->cur])/pme_loadbal_rlist(&pme_lb->setup[0]);
-    pp_ratio           = std::pow(static_cast<double>(pp_ratio_temporary), 3.0);
+    pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlist / pme_lb->setup[0].rlist;
+    pp_ratio           = gmx::power3(pp_ratio_temporary);
     grid_ratio         = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
 

@@ -52,9 +52,10 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/md_support.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
@@ -89,8 +90,8 @@ prepareSignalBuffer(struct gmx_signalling_t *gs)
 {
     if (gs)
     {
-        gmx::ArrayRef<char> sig(gs->sig);
-        gmx::ArrayRef<real> temp(gs->mpiBuffer);
+        gmx::ArrayRef<signed char> sig(gs->sig);
+        gmx::ArrayRef<real>        temp(gs->mpiBuffer);
 
         std::copy(sig.begin(), sig.end(), temp.begin());
 
@@ -123,7 +124,7 @@ handleSignals(struct gmx_signalling_t  *gs,
             gmx_sum_sim(eglsNR, gs->mpiBuffer, cr->ms);
         }
         /* Communicate the signals from the master to the others */
-        gmx_bcast(eglsNR*sizeof(gs->mpiBuffer), gs->mpiBuffer, cr);
+        gmx_bcast(eglsNR*sizeof(gs->mpiBuffer[0]), gs->mpiBuffer, cr);
     }
     for (int i = 0; i < eglsNR; i++)
     {
@@ -132,9 +133,9 @@ handleSignals(struct gmx_signalling_t  *gs,
             /* Set the communicated signal only when it is non-zero,
              * since signals might not be processed at each MD step.
              */
-            char gsi = (gs->mpiBuffer[i] >= 0.0 ?
-                        static_cast<char>(gs->mpiBuffer[i] + 0.5) :
-                        static_cast<char>(gs->mpiBuffer[i] - 0.5));
+            signed char gsi = (gs->mpiBuffer[i] >= 0.0 ?
+                               static_cast<signed char>(gs->mpiBuffer[i] + 0.5) :
+                               static_cast<signed char>(gs->mpiBuffer[i] - 0.5));
             if (gsi != 0)
             {
                 gs->set[i] = gsi;

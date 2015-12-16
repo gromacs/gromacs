@@ -43,13 +43,13 @@
 
 #include <cmath>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -81,7 +81,7 @@ static void copy_bond (t_params *pr, int to, int from)
     }
 }
 
-static int count_hydrogens (char ***atomname, int nra, atom_id a[])
+static int count_hydrogens (char ***atomname, int nra, int a[])
 {
     int  i, nh;
 

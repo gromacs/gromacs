@@ -41,22 +41,23 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/mtxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 static double cv_corr(double nu, double T)
@@ -70,7 +71,7 @@ static double cv_corr(double nu, double T)
     }
     else
     {
-        return BOLTZ*KILO*(ex*sqr(x)/sqr(ex-1) - 1);
+        return BOLTZ*KILO*(ex*gmx::square(x)/gmx::square(ex-1) - 1);
     }
 }
 
@@ -162,7 +163,7 @@ nma_full_hessian(real     *           hess,
             {
                 for (k = 0; (k < natoms); k++)
                 {
-                    mass_fac = gmx_invsqrt(top->atoms.atom[i].m*top->atoms.atom[k].m);
+                    mass_fac = gmx::invsqrt(top->atoms.atom[i].m*top->atoms.atom[k].m);
                     for (l = 0; (l < DIM); l++)
                     {
                         hess[(i*DIM+j)*ndim+k*DIM+l] *= mass_fac;
@@ -186,7 +187,7 @@ nma_full_hessian(real     *           hess,
         {
             for (j = 0; j < natoms; j++)
             {
-                mass_fac = gmx_invsqrt(top->atoms.atom[j].m);
+                mass_fac = gmx::invsqrt(top->atoms.atom[j].m);
                 for (k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
@@ -232,7 +233,7 @@ nma_sparse_hessian(gmx_sparsematrix_t     *     sparse_hessian,
                 {
                     col      = sparse_hessian->data[row][k].col;
                     katom    = col/3;
-                    mass_fac = gmx_invsqrt(top->atoms.atom[iatom].m*top->atoms.atom[katom].m);
+                    mass_fac = gmx::invsqrt(top->atoms.atom[iatom].m*top->atoms.atom[katom].m);
                     sparse_hessian->data[row][k].value *= mass_fac;
                 }
             }
@@ -250,7 +251,7 @@ nma_sparse_hessian(gmx_sparsematrix_t     *     sparse_hessian,
         {
             for (j = 0; j < natoms; j++)
             {
-                mass_fac = gmx_invsqrt(top->atoms.atom[j].m);
+                mass_fac = gmx::invsqrt(top->atoms.atom[j].m);
                 for (k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
@@ -560,7 +561,7 @@ int gmx_nmeig(int argc, char *argv[])
             wfac = eigenvalues[i-begin]/(width*std::sqrt(2*M_PI));
             for (j = 0; (j < maxspec); j++)
             {
-                spectrum[j] += wfac*std::exp(-sqr(j-value)/(2*sqr(width)));
+                spectrum[j] += wfac*std::exp(-gmx::square(j-value)/(2*gmx::square(width)));
             }
         }
         if (NULL != qc)

@@ -198,13 +198,6 @@ Tests, and data required for them, are in a :file:`tests/` subdirectory under
 the module directory.
 See :doc:`testutils` for more details.
 
-For historical reasons, there are directories :file:`src/gromacs/gmxana/`,
-:file:`src/gromacs/gmxlib/`, :file:`src/gromacs/mdlib/`, and
-:file:`src/gromacs/gmxpreprocess/` that do not follow the above rules.
-The installed headers for these are in :file:`src/gromacs/legacyheaders/`.
-The aim is to gradually get rid of these directories and move code into proper
-modules.
-
 .. _dev-doc-layout:
 
 Documentation organization

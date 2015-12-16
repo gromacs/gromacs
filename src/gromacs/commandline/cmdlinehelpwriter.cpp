@@ -48,8 +48,6 @@
 #include <algorithm>
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,24 +32,24 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# GLOB is used to get full paths
-file(GLOB FFT_SOURCES
-     fft.cpp fft5d.cpp parallel_3dfft.cpp)
+gmx_add_libgromacs_sources(
+     calcgrid.cpp
+     fft.cpp
+     fft5d.cpp
+     parallel_3dfft.cpp
+     )
 
 if (GMX_FFT_FFTPACK)
-    file(GLOB FFT_SPECIFIC_SOURCES fft_fftpack.cpp)
-    list(APPEND FFT_SPECIFIC_SOURCES
-         ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
+    gmx_add_libgromacs_sources(
+        fft_fftpack.cpp
+        ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.c)
 endif()
 if (GMX_FFT_FFTW3)
-    file(GLOB FFT_SPECIFIC_SOURCES fft_fftw3.cpp)
+    gmx_add_libgromacs_sources(fft_fftw3.cpp)
 endif()
 if (GMX_FFT_MKL)
-    file(GLOB FFT_SPECIFIC_SOURCES fft_mkl.cpp)
+    gmx_add_libgromacs_sources(fft_mkl.cpp)
 endif()
-
-set(LIBGROMACS_SOURCES
-    ${LIBGROMACS_SOURCES} ${FFT_SOURCES} ${FFT_SPECIFIC_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(fft.h)
 

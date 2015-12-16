@@ -49,8 +49,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
@@ -107,7 +105,8 @@ struct gmx_ana_selcollection_t
     /** Memory pool used for selection evaluation. */
     gmx_sel_mempool_t                                 *mempool;
     //! Parser symbol table.
-    boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
+    // Never releases ownership.
+    std::unique_ptr<gmx::SelectionParserSymbolTable>   symtab;
     //! Root of help topic tree (NULL is no help yet requested).
     gmx::HelpTopicPointer                              rootHelp;
 };

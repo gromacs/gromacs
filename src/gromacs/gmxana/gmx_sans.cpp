@@ -44,17 +44,17 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/nsfactor.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_sans(int argc, char *argv[])
@@ -131,7 +131,7 @@ int gmx_sans(int argc, char *argv[])
     int                                   natoms;
     real                                  t;
     char                                **grpname = NULL;
-    atom_id                              *index   = NULL;
+    int                                  *index   = NULL;
     int                                   isize;
     int                                   i;
     char                                 *hdr            = NULL;

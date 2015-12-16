@@ -45,23 +45,24 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
-static void calc_dist(int nind, atom_id index[], rvec x[], int ePBC, matrix box,
+static void calc_dist(int nind, int index[], rvec x[], int ePBC, matrix box,
                       real **d)
 {
     int      i, j;
@@ -83,7 +84,7 @@ static void calc_dist(int nind, atom_id index[], rvec x[], int ePBC, matrix box,
     }
 }
 
-static void calc_dist_tot(int nind, atom_id index[], rvec x[],
+static void calc_dist_tot(int nind, int index[], rvec x[],
                           int ePBC, matrix box,
                           real **d, real **dtot, real **dtot2,
                           gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
@@ -126,8 +127,8 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
     {
         for (j = i+1; (j < nind); j++)
         {
-            temp1_3 = std::pow(dtot1_3[i][j]/nframes, static_cast<real>(-1.0/3.0));
-            temp1_6 = std::pow(dtot1_6[i][j]/nframes, static_cast<real>(-1.0/6.0));
+            temp1_3 = gmx::invcbrt(dtot1_3[i][j]/nframes);
+            temp1_6 = gmx::invsixthroot(dtot1_6[i][j]/nframes);
             if (temp1_3 > *max1_3)
             {
                 *max1_3 = temp1_3;
@@ -163,6 +164,7 @@ typedef struct {
 } t_noe_gr;
 
 typedef struct {
+    bool  set;
     int   rnr;
     char *nname;
     char *rname;
@@ -195,6 +197,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
             {
                 /* this is not efficient, but I'm lazy (again) */
                 srenew(equiv[neq], na+1);
+                equiv[neq][na].set   = true;
                 equiv[neq][na].rnr   = resnr-1;
                 equiv[neq][na].rname = gmx_strdup(resname);
                 equiv[neq][na].aname = gmx_strdup(atomname);
@@ -208,7 +211,8 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
         }
         /* make empty element as flag for end of array */
         srenew(equiv[neq], na+1);
-        equiv[neq][na].rnr   = NOTSET;
+        equiv[neq][na].set   = false;
+        equiv[neq][na].rnr   = 0;
         equiv[neq][na].rname = NULL;
         equiv[neq][na].aname = NULL;
 
@@ -230,7 +234,7 @@ static void dump_equiv(FILE *out, int neq, t_equiv **equiv)
     for (i = 0; i < neq; i++)
     {
         fprintf(out, "%s", equiv[i][0].nname);
-        for (j = 0; equiv[i][j].rnr != NOTSET; j++)
+        for (j = 0; equiv[i][j].set; j++)
         {
             fprintf(out, " %d %s %s",
                     equiv[i][j].rnr, equiv[i][j].rname, equiv[i][j].aname);
@@ -251,7 +255,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
     for (i = 0; i < neq && !bFound; i++)
     {
         /* find first atom */
-        for (j = 0; equiv[i][j].rnr != NOTSET && !bFound; j++)
+        for (j = 0; equiv[i][j].set && !bFound; j++)
         {
             bFound = ( equiv[i][j].rnr == rnr1 &&
                        std::strcmp(equiv[i][j].rname, rname1) == 0 &&
@@ -261,7 +265,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
         {
             /* find second atom */
             bFound = FALSE;
-            for (j = 0; equiv[i][j].rnr != NOTSET && !bFound; j++)
+            for (j = 0; equiv[i][j].set && !bFound; j++)
             {
                 bFound = ( equiv[i][j].rnr == rnr2 &&
                            std::strcmp(equiv[i][j].rname, rname2) == 0 &&
@@ -278,9 +282,9 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 }
 
 static int analyze_noe_equivalent(const char *eq_fn,
-                                  t_atoms *atoms, int isize, atom_id *index,
+                                  t_atoms *atoms, int isize, int *index,
                                   gmx_bool bSumH,
-                                  atom_id *noe_index, t_noe_gr *noe_gr)
+                                  int *noe_index, t_noe_gr *noe_gr)
 {
     int       i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
     char     *anmi, *anmj, **nnm;
@@ -462,7 +466,7 @@ static char *noe2scale(real r3, real r6, real rmax)
     return buf;
 }
 
-static void calc_noe(int isize, atom_id *noe_index,
+static void calc_noe(int isize, int *noe_index,
                      real **dtot1_3, real **dtot1_6, int gnr, t_noe **noe)
 {
     int i, j, gi, gj;
@@ -475,8 +479,8 @@ static void calc_noe(int isize, atom_id *noe_index,
         {
             gj = noe_index[j];
             noe[gi][gj].nr++;
-            noe[gi][gj].i_3 += std::pow(dtot1_3[i][j], static_cast<real>(-3.0));
-            noe[gi][gj].i_6 += std::pow(dtot1_6[i][j], static_cast<real>(-6.0));
+            noe[gi][gj].i_3 += 1.0/gmx::power3(dtot1_3[i][j]);
+            noe[gi][gj].i_6 += 1.0/gmx::power6(dtot1_6[i][j]);
         }
     }
 
@@ -485,8 +489,8 @@ static void calc_noe(int isize, atom_id *noe_index,
     {
         for (j = i+1; j < gnr; j++)
         {
-            noe[i][j].r_3 = std::pow(noe[i][j].i_3/noe[i][j].nr, static_cast<real>(-1.0/3.0));
-            noe[i][j].r_6 = std::pow(noe[i][j].i_6/noe[i][j].nr, static_cast<real>(-1.0/6.0));
+            noe[i][j].r_3 = gmx::invcbrt(noe[i][j].i_3/noe[i][j].nr);
+            noe[i][j].r_6 = gmx::invsixthroot(noe[i][j].i_6/noe[i][j].nr);
             noe[j][i]     = noe[i][j];
         }
     }
@@ -665,7 +669,7 @@ int gmx_rmsdist(int argc, char *argv[])
 
     t_trxstatus      *status;
     int               isize, gnr = 0;
-    atom_id          *index, *noe_index;
+    int              *index, *noe_index;
     char             *grpname;
     real            **d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
     real            **dtot1_3 = NULL, **dtot1_6 = NULL;

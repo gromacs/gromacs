@@ -46,7 +46,10 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
@@ -898,8 +901,8 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
             eav_all          = fr->ener[i].eav;
             fr->ener[i].esum = esum_all - ener_old->ener_prev[i].esum;
             fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
-                - dsqr(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
-                       - esum_all/nstep_all)*
+                - gmx::square(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
+                              - esum_all/nstep_all)*
                 (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;
@@ -1196,7 +1199,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
             bufi = *(groups->grpname[ni]);
             for (j = 0; (j < state->nhchainlength); j++)
             {
-                if (IR_NVT_TROTTER(ir))
+                if (inputrecNvtTrotter(ir))
                 {
                     sprintf(cns, "-%d", j);
                 }
@@ -1209,7 +1212,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
         }
         fprintf(stderr, "\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n", state->ngtc, fn);
 
-        if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
+        if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
         {
             for (i = 0; i < state->nnhpres; i++)
             {

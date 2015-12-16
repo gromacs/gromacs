@@ -45,18 +45,20 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdebin_bar.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/mtop_util.h"
@@ -142,11 +144,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     snew(md, 1);
 
-    md->bVir   = TRUE;
-    md->bPress = TRUE;
-    md->bSurft = TRUE;
-    md->bMu    = TRUE;
-
     if (EI_DYNAMICS(ir->eI))
     {
         md->delta_t = ir->delta_t;
@@ -207,21 +204,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             md->bEner[i] = ir->bQMMM;
         }
-        else if (i == F_COUL_LR)
-        {
-            md->bEner[i] = (ir->rcoulomb > ir->rlist);
-        }
-        else if (i == F_LJ_LR)
-        {
-            md->bEner[i] = (!bBHAM && ir->rvdw > ir->rlist);
-        }
-        else if (i == F_BHAM_LR)
-        {
-            md->bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
-        }
         else if (i == F_RF_EXCL)
         {
-            md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC && ir->cutoff_scheme == ecutsGROUP);
+            md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == ecutsGROUP);
         }
         else if (i == F_COUL_RECIP)
         {
@@ -317,27 +302,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
-    if (ir->bAdress && !debug)
-    {
-        for (i = 0; i < F_NRE; i++)
-        {
-            md->bEner[i] = FALSE;
-            if (i == F_EKIN)
-            {
-                md->bEner[i] = TRUE;
-            }
-            if (i == F_TEMP)
-            {
-                md->bEner[i] = TRUE;
-            }
-        }
-        md->bVir   = FALSE;
-        md->bPress = FALSE;
-        md->bSurft = FALSE;
-        md->bMu    = FALSE;
-    }
-
     md->f_nre = 0;
     for (i = 0; i < F_NRE; i++)
     {
@@ -352,12 +316,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     md->bDiagPres      = !TRICLINIC(ir->ref_p);
     md->ref_p          = (ir->ref_p[XX][XX]+ir->ref_p[YY][YY]+ir->ref_p[ZZ][ZZ])/DIM;
     md->bTricl         = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
-    md->bDynBox        = DYNAMIC_BOX(*ir);
+    md->bDynBox        = inputrecDynamicBox(ir);
     md->etc            = ir->etc;
-    md->bNHC_trotter   = IR_NVT_TROTTER(ir);
+    md->bNHC_trotter   = inputrecNvtTrotter(ir);
     md->bPrintNHChains = ir->bPrintNHChains;
-    md->bMTTK          = (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir));
-    md->bMu            = NEED_MUTOT(*ir);
+    md->bMTTK          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir));
+    md->bMu            = inputrecNeedMutot(ir);
 
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
@@ -390,19 +354,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         md->isvir = get_ebin_space(md->ebin, asize(sv_nm), sv_nm, unit_energy);
         md->ifvir = get_ebin_space(md->ebin, asize(fv_nm), fv_nm, unit_energy);
     }
-    if (md->bVir)
-    {
-        md->ivir   = get_ebin_space(md->ebin, asize(vir_nm), vir_nm, unit_energy);
-    }
-    if (md->bPress)
-    {
-        md->ipres  = get_ebin_space(md->ebin, asize(pres_nm), pres_nm, unit_pres_bar);
-    }
-    if (md->bSurft)
-    {
-        md->isurft = get_ebin_space(md->ebin, asize(surft_nm), surft_nm,
-                                    unit_surft_bar);
-    }
+    md->ivir   = get_ebin_space(md->ebin, asize(vir_nm), vir_nm, unit_energy);
+    md->ipres  = get_ebin_space(md->ebin, asize(pres_nm), pres_nm, unit_pres_bar);
+    md->isurft = get_ebin_space(md->ebin, asize(surft_nm), surft_nm,
+                                unit_surft_bar);
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         md->ipc = get_ebin_space(md->ebin, md->bTricl ? 6 : 3,
@@ -427,25 +382,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     md->bEInd[egCOULSR] = TRUE;
     md->bEInd[egLJSR  ] = TRUE;
 
-    if (ir->rcoulomb > ir->rlist)
-    {
-        md->bEInd[egCOULLR] = TRUE;
-    }
-    if (!bBHAM)
-    {
-        if (ir->rvdw > ir->rlist)
-        {
-            md->bEInd[egLJLR]   = TRUE;
-        }
-    }
-    else
+    if (bBHAM)
     {
         md->bEInd[egLJSR]   = FALSE;
         md->bEInd[egBHAMSR] = TRUE;
-        if (ir->rvdw > ir->rlist)
-        {
-            md->bEInd[egBHAMLR]   = TRUE;
-        }
     }
     if (b14)
     {
@@ -461,23 +401,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
     }
 
-    n = groups->grps[egcENER].nr;
-    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
-    if (!ir->bAdress)
-    {
-        /*standard simulation*/
-        md->nEg = n;
-        md->nE  = (n*(n+1))/2;
-    }
-    else if (!debug)
-    {
-        /*AdResS simulation*/
-        md->nU    = 0;
-        md->nEg   = 0;
-        md->nE    = 0;
-        md->nEc   = 0;
-        md->isvir = FALSE;
-    }
+    n       = groups->grps[egcENER].nr;
+    md->nEg = n;
+    md->nE  = (n*(n+1))/2;
+
     snew(md->igrp, md->nE);
     if (md->nE > 1)
     {
@@ -1069,19 +996,10 @@ void upd_mdebin(t_mdebin       *md,
         add_ebin(md->ebin, md->isvir, 9, svir[0], bSum);
         add_ebin(md->ebin, md->ifvir, 9, fvir[0], bSum);
     }
-    if (md->bVir)
-    {
-        add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
-    }
-    if (md->bPress)
-    {
-        add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
-    }
-    if (md->bSurft)
-    {
-        tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
-        add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
-    }
+    add_ebin(md->ebin, md->ivir, 9, vir[0], bSum);
+    add_ebin(md->ebin, md->ipres, 9, pres[0], bSum);
+    tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+    add_ebin(md->ebin, md->isurft, 1, &tmp, bSum);
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         tmp6[0] = state->boxv[XX][XX];
@@ -1103,7 +1021,7 @@ void upd_mdebin(t_mdebin       *md,
         add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *dens*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+                 *dens*gmx::square(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
     }
     if (md->nE > 1)
@@ -1345,7 +1263,7 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
                 gmx_int64_t step, double time,
-                int mode, gmx_bool bCompact,
+                int mode,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts)
 {
@@ -1507,7 +1425,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
         pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, mode, TRUE);
         fprintf(log, "\n");
 
-        if (!bCompact)
+        if (mode == eprAVER)
         {
             if (md->bDynBox)
             {
@@ -1524,18 +1442,12 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 pr_ebin(log, md->ebin, md->ifvir, 9, 3, mode, FALSE);
                 fprintf(log, "\n");
             }
-            if (md->bVir)
-            {
-                fprintf(log, "   Total Virial (%s)\n", unit_energy);
-                pr_ebin(log, md->ebin, md->ivir, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
-            if (md->bPress)
-            {
-                fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
-                pr_ebin(log, md->ebin, md->ipres, 9, 3, mode, FALSE);
-                fprintf(log, "\n");
-            }
+            fprintf(log, "   Total Virial (%s)\n", unit_energy);
+            pr_ebin(log, md->ebin, md->ivir, 9, 3, mode, FALSE);
+            fprintf(log, "\n");
+            fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
+            pr_ebin(log, md->ebin, md->ipres, 9, 3, mode, FALSE);
+            fprintf(log, "\n");
             if (md->bMu)
             {
                 fprintf(log, "   Total Dipole (%s)\n", unit_dipole_D);

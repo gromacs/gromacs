@@ -46,13 +46,14 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/smalloc.h"
 
 #define TIME_EXPLICIT 0
@@ -339,77 +340,6 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
 }
 
 
-static void copy_ee(t_energy *src, t_energy *dst, int nre)
-{
-    int i;
-
-    for (i = 0; i < nre; i++)
-    {
-        dst[i].e    = src[i].e;
-        dst[i].esum = src[i].esum;
-        dst[i].eav  = src[i].eav;
-    }
-}
-
-static void update_ee(t_energy *lastee, gmx_int64_t laststep,
-                      t_energy *startee, gmx_int64_t startstep,
-                      t_energy *ee, int step,
-                      t_energy *outee, int nre)
-{
-    int    i;
-    double sigmacorr, nom, denom;
-    double prestart_esum;
-    double prestart_sigma;
-
-    for (i = 0; i < nre; i++)
-    {
-        outee[i].e = ee[i].e;
-        /* add statistics from earlier file if present */
-        if (laststep > 0)
-        {
-            outee[i].esum = lastee[i].esum+ee[i].esum;
-            nom           = (lastee[i].esum*(step+1)-ee[i].esum*(laststep));
-            denom         = ((step+1.0)*(laststep)*(step+1.0+laststep));
-            sigmacorr     = nom*nom/denom;
-            outee[i].eav  = lastee[i].eav+ee[i].eav+sigmacorr;
-        }
-        else
-        {
-            /* otherwise just copy to output */
-            outee[i].esum = ee[i].esum;
-            outee[i].eav  = ee[i].eav;
-        }
-
-        /* if we didnt start to write at the first frame
-         * we must compensate the statistics for this
-         * there are laststep frames in the earlier file
-         * and step+1 frames in this one.
-         */
-        if (startstep > 0)
-        {
-            gmx_int64_t q = laststep+step;
-            gmx_int64_t p = startstep+1;
-            prestart_esum  = startee[i].esum-startee[i].e;
-            sigmacorr      = prestart_esum-(p-1)*startee[i].e;
-            prestart_sigma = startee[i].eav-
-                sigmacorr*sigmacorr/(p*(p-1));
-            sigmacorr = prestart_esum/(p-1)-
-                outee[i].esum/(q);
-            outee[i].esum -= prestart_esum;
-            if (q-p+1 > 0)
-            {
-                outee[i].eav = outee[i].eav-prestart_sigma-
-                    sigmacorr*sigmacorr*((p-1)*q)/(q-p+1);
-            }
-        }
-
-        if ((outee[i].eav/(laststep+step+1)) < (GMX_REAL_EPS))
-        {
-            outee[i].eav = 0;
-        }
-    }
-}
-
 static void update_ee_sum(int nre,
                           gmx_int64_t *ee_sum_step,
                           gmx_int64_t *ee_sum_nsteps,
@@ -457,8 +387,8 @@ static void update_ee_sum(int nre,
             for (i = 0; i < nre; i++)
             {
                 ee_sum[i].eav  +=
-                    dsqr(ee_sum[i].esum/nsum
-                         - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
+                    gmx::square(ee_sum[i].esum/nsum
+                                - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
         }
@@ -468,8 +398,8 @@ static void update_ee_sum(int nre,
             {
                 ee_sum[i].eav  +=
                     fr->ener[i].eav +
-                    dsqr(ee_sum[i].esum/nsum
-                         - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
+                    gmx::square(ee_sum[i].esum/nsum
+                                - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
                     nsum*(nsum + fr->nsum)/static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014.2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,8 +42,7 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 
 /*
  * Gromacs nonbonded kernel:   nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_c
@@ -250,15 +249,15 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_c
             rsq32            = dx32*dx32+dy32*dy32+dz32*dz32;
             rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
-            rinv11           = gmx_invsqrt(rsq11);
-            rinv12           = gmx_invsqrt(rsq12);
-            rinv13           = gmx_invsqrt(rsq13);
-            rinv21           = gmx_invsqrt(rsq21);
-            rinv22           = gmx_invsqrt(rsq22);
-            rinv23           = gmx_invsqrt(rsq23);
-            rinv31           = gmx_invsqrt(rsq31);
-            rinv32           = gmx_invsqrt(rsq32);
-            rinv33           = gmx_invsqrt(rsq33);
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv12           = 1.0/sqrt(rsq12);
+            rinv13           = 1.0/sqrt(rsq13);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv22           = 1.0/sqrt(rsq22);
+            rinv23           = 1.0/sqrt(rsq23);
+            rinv31           = 1.0/sqrt(rsq31);
+            rinv32           = 1.0/sqrt(rsq32);
+            rinv33           = 1.0/sqrt(rsq33);
 
             rinvsq11         = rinv11*rinv11;
             rinvsq12         = rinv12*rinv12;
@@ -984,15 +983,15 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_c
             rsq32            = dx32*dx32+dy32*dy32+dz32*dz32;
             rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
-            rinv11           = gmx_invsqrt(rsq11);
-            rinv12           = gmx_invsqrt(rsq12);
-            rinv13           = gmx_invsqrt(rsq13);
-            rinv21           = gmx_invsqrt(rsq21);
-            rinv22           = gmx_invsqrt(rsq22);
-            rinv23           = gmx_invsqrt(rsq23);
-            rinv31           = gmx_invsqrt(rsq31);
-            rinv32           = gmx_invsqrt(rsq32);
-            rinv33           = gmx_invsqrt(rsq33);
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv12           = 1.0/sqrt(rsq12);
+            rinv13           = 1.0/sqrt(rsq13);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv22           = 1.0/sqrt(rsq22);
+            rinv23           = 1.0/sqrt(rsq23);
+            rinv31           = 1.0/sqrt(rsq31);
+            rinv32           = 1.0/sqrt(rsq32);
+            rinv33           = 1.0/sqrt(rsq33);
 
             rinvsq11         = rinv11*rinv11;
             rinvsq12         = rinv12*rinv12;

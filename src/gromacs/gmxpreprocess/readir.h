@@ -38,15 +38,16 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
-#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_groups_t;
+struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;
-struct t_adress;
 struct t_drude;
 struct t_grpopts;
+struct t_inputrec;
 struct t_rot;
 
 enum {
@@ -147,12 +148,6 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
 
 int str_nelem(const char *str, int maxptr, char *ptr[]);
 /* helper function from readir.c to convert strings */
-
-void read_adressparams(int *ninp_p, t_inpfile **inp_p, t_adress *adress, warninp_t wi);
-/* Reads in AdResS related parameters */
-
-void do_adress_index(t_adress *adress, gmx_groups_t *groups, char **gnames, t_grpopts *opts, warninp_t wi);
-/* Generate adress groups */
 
 void read_drude_opts(int *ninp_p, t_inpfile **inp_p, t_drude *drude, warninp_t wi);
 /* Reads in Drude options */

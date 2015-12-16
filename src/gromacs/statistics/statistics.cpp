@@ -40,6 +40,7 @@
 
 #include <cmath>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
@@ -212,10 +213,10 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         d2   = 0;
         for (int i = 0; (i < N); i++)
         {
-            d2 += dsqr(stats->x[i]-stats->y[i]);
+            d2 += gmx::square(stats->x[i]-stats->y[i]);
             if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
             {
-                w = 1/dsqr(stats->dy[i]);
+                w = 1/gmx::square(stats->dy[i]);
             }
             else
             {
@@ -224,11 +225,11 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
 
             wtot  += w;
 
-            xx    += w*dsqr(stats->x[i]);
-            xx_nw += dsqr(stats->x[i]);
+            xx    += w*gmx::square(stats->x[i]);
+            xx_nw += gmx::square(stats->x[i]);
 
-            yy    += w*dsqr(stats->y[i]);
-            yy_nw += dsqr(stats->y[i]);
+            yy    += w*gmx::square(stats->y[i]);
+            yy_nw += gmx::square(stats->y[i]);
 
             yx    += w*stats->y[i]*stats->x[i];
             yx_nw += stats->y[i]*stats->x[i];
@@ -242,7 +243,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
 
         /* Compute average, sigma and error */
         stats->aver       = sy_nw/N;
-        stats->sigma_aver = std::sqrt(yy_nw/N - dsqr(sy_nw/N));
+        stats->sigma_aver = std::sqrt(yy_nw/N - gmx::square(sy_nw/N));
         stats->error      = stats->sigma_aver/std::sqrt(static_cast<double>(N));
 
         /* Compute RMSD between x and y */
@@ -254,10 +255,10 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         yy_nw       /= N;
         sx_nw       /= N;
         sy_nw       /= N;
-        ssxx         = N*(xx_nw - dsqr(sx_nw));
-        ssyy         = N*(yy_nw - dsqr(sy_nw));
+        ssxx         = N*(xx_nw - gmx::square(sx_nw));
+        ssyy         = N*(yy_nw - gmx::square(sy_nw));
         ssxy         = N*(yx_nw - (sx_nw*sy_nw));
-        stats->Rdata = std::sqrt(dsqr(ssxy)/(ssxx*ssyy));
+        stats->Rdata = std::sqrt(gmx::square(ssxy)/(ssxx*ssyy));
 
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
@@ -285,8 +286,8 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
             {
                 dy = 1;
             }
-            chi2aa += dsqr((stats->y[i]-(stats->aa*stats->x[i]))/dy);
-            chi2   += dsqr((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
+            chi2aa += gmx::square((stats->y[i]-(stats->aa*stats->x[i]))/dy);
+            chi2   += gmx::square((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
         }
         if (N > 2)
         {
@@ -674,12 +675,10 @@ int lsq_y_ax(int n, real x[], real y[], real *a)
     real        da, chi2, Rfit;
 
     gmx_stats_add_points(lsq, n, x, y, 0, 0);
-    if ((ok = gmx_stats_get_a(lsq, elsqWEIGHT_NONE, a, &da, &chi2, &Rfit)) != estatsOK)
-    {
-        return ok;
-    }
+    ok = gmx_stats_get_a(lsq, elsqWEIGHT_NONE, a, &da, &chi2, &Rfit);
+    gmx_stats_free(lsq);
 
-    return estatsOK;
+    return ok;
 }
 
 static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
@@ -707,15 +706,14 @@ static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
 
         if ((ok = gmx_stats_add_point(lsq, pt, yr[i], 0, 0)) != estatsOK)
         {
+            gmx_stats_free(lsq);
             return ok;
         }
     }
-    if ((ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, NULL, NULL, chi2, r)) != estatsOK)
-    {
-        return ok;
-    }
+    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, NULL, NULL, chi2, r);
+    gmx_stats_free(lsq);
 
-    return estatsOK;
+    return ok;
 }
 
 int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r, real *chi2)
@@ -738,16 +736,15 @@ int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
 
     for (int i = 0; (i < n); i++)
     {
-        if ((ok = gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i])) != estatsOK)
+        ok = gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i]);
+        if (ok != estatsOK)
         {
+            gmx_stats_free(lsq);
             return ok;
         }
     }
-    if ((ok = gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r)) != estatsOK)
-    {
-        return ok;
-    }
+    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r);
     gmx_stats_free(lsq);
 
-    return estatsOK;
+    return ok;
 }

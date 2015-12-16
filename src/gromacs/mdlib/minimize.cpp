@@ -54,37 +54,38 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/gmxlib/md_logging.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -252,7 +253,7 @@ static void get_f_norm_max(t_commrec *cr,
             {
                 if (!opts->nFreeze[gf][m])
                 {
-                    fam += sqr(f[i][m]);
+                    fam += gmx::square(f[i][m]);
                 }
             }
             fnorm2 += fam;
@@ -393,7 +394,10 @@ void init_em(FILE *fplog, const char *title,
 
         /* Just copy the state */
         ems->s = *state_global;
-        snew(ems->s.x, ems->s.nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        snew(ems->s.x, ems->s.nalloc + 1);
         snew(ems->f, ems->s.nalloc);
         for (i = 0; i < state_global->natoms; i++)
         {
@@ -401,7 +405,7 @@ void init_em(FILE *fplog, const char *title,
         }
         copy_mat(state_global->box, ems->s.box);
 
-        *top      = gmx_mtop_generate_local_top(top_global, ir);
+        *top      = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
         *f_global = *f;
 
         forcerec_set_excl_load(fr, *top);
@@ -612,11 +616,14 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     if (s2->nalloc != s1->nalloc)
     {
         s2->nalloc = s1->nalloc;
-        srenew(s2->x, s1->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        srenew(s2->x, s1->nalloc + 1);
         srenew(ems2->f,  s1->nalloc);
         if (s2->flags & (1<<estCGP))
         {
-            srenew(s2->cg_p,  s1->nalloc);
+            srenew(s2->cg_p,  s1->nalloc + 1);
         }
     }
 
@@ -688,7 +695,10 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                 s2->cg_gl_nalloc = s1->cg_gl_nalloc;
                 try
                 {
-                    srenew(s2->cg_gl, s2->cg_gl_nalloc);
+                    /* We need to allocate one element extra, since we might use
+                     * (unaligned) 4-wide SIMD loads to access rvec entries.
+                     */
+                    srenew(s2->cg_gl, s2->cg_gl_nalloc + 1);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 #pragma omp barrier
@@ -798,7 +808,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, NULL, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
-             (bNS ? GMX_FORCE_NS | GMX_FORCE_DO_LR : 0));
+             (bNS ? GMX_FORCE_NS : 0));
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -988,7 +998,7 @@ static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
         gmx_sumd(1, &sum, cr);
     }
 
-    return sum/sqr(s_min->fnorm);
+    return sum/gmx::square(s_min->fnorm);
 }
 
 namespace gmx
@@ -998,7 +1008,7 @@ namespace gmx
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -1017,7 +1027,7 @@ namespace gmx
  */
 double do_cg(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
-             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
              int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
              gmx_constr_t constr,
@@ -1108,7 +1118,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
     where();
 
@@ -1547,7 +1557,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
-                       TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
@@ -1596,7 +1606,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             /* Write final energy file entries */
             print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
                        !do_log ? fplog : NULL, step, step, eprNORMAL,
-                       TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
     }
 
@@ -1646,7 +1656,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -1665,7 +1675,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
  */
 double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
                 int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
                 gmx_constr_t constr,
@@ -1835,7 +1845,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
     where();
 
@@ -2383,7 +2393,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
-                       TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
@@ -2431,7 +2441,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     {
         print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
                    !do_log ? fplog : NULL, step, step, eprNORMAL,
-                   TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
 
     /* Print some stuff... */
@@ -2476,7 +2486,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -2495,7 +2505,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
  */
 double do_steep(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+                const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
                 int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
                 gmx_constr_t constr,
@@ -2624,7 +2634,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 print_ebin(mdoutf_get_fp_ene(outf), TRUE,
                            do_per_step(steps_accepted, inputrec->nstdisreout),
                            do_per_step(steps_accepted, inputrec->nstorireout),
-                           fplog, count, count, eprNORMAL, TRUE,
+                           fplog, count, count, eprNORMAL,
                            mdebin, fcd, &(top_global->groups), &(inputrec->opts));
                 fflush(fplog);
             }
@@ -2736,7 +2746,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     \copydoc integrator_t(FILE *fplog, t_commrec *cr,
                           int nfile, const t_filenm fnm[],
                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                          gmx_bool bCompact, int nstglobalcomm,
+                          int nstglobalcomm,
                           gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
                           int stepout,
                           t_inputrec *inputrec,
@@ -2755,7 +2765,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
  */
 double do_nm(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
-             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose, gmx_bool gmx_unused  bCompact,
+             const gmx_output_env_t gmx_unused *oenv, gmx_bool bVerbose,
              int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
              int gmx_unused stepout,
@@ -2967,7 +2977,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 #else
 #define mpi_type MPI_FLOAT
 #endif
-                MPI_Send(dfdx[0], natoms*DIM, mpi_type, MASTERNODE(cr), cr->nodeid,
+                MPI_Send(dfdx[0], natoms*DIM, mpi_type, MASTER(cr), cr->nodeid,
                          cr->mpi_comm_mygroup);
 #endif
             }

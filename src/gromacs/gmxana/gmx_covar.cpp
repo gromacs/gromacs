@@ -46,13 +46,13 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -128,7 +128,7 @@ int gmx_covar(int argc, char *argv[])
     const char       *asciifile, *xpmfile, *xpmafile;
     char              str[STRLEN], *fitname, *ananame;
     int               d, dj, nfit;
-    atom_id          *index, *ifit;
+    int              *index, *ifit;
     gmx_bool          bDiffMass1, bDiffMass2;
     char              timebuf[STRLEN];
     t_rgb             rlo, rmi, rhi;

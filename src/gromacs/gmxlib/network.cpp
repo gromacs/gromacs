@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/network.h"
+#include "network.h"
 
 #include "config.h"
 
@@ -45,8 +45,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -701,44 +701,27 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 #endif
 }
 
-gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
+const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
+                          t_commrec *cr)
 {
-    gmx_bool bExist;
-
-    if (SIMMASTER(cr))
-    {
-        bExist = gmx_fexist(fname);
-    }
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(bExist), &bExist, cr);
-    }
-    return bExist;
+    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : NULL;
 }
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,
-                          const t_commrec *cr, gmx_domdec_t *dd,
+                          MPI_Comm comm, gmx_bool bMaster,
                           const char *fmt, ...)
 {
     va_list  ap;
-    gmx_bool bMaster, bFinalize;
+    gmx_bool bFinalize;
 #ifdef GMX_MPI
     int      result;
     /* Check if we are calling on all processes in MPI_COMM_WORLD */
-    if (cr != NULL)
-    {
-        MPI_Comm_compare(cr->mpi_comm_mysim, MPI_COMM_WORLD, &result);
-    }
-    else
-    {
-        MPI_Comm_compare(dd->mpi_comm_all, MPI_COMM_WORLD, &result);
-    }
+    MPI_Comm_compare(comm, MPI_COMM_WORLD, &result);
     /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
     bFinalize = (result != MPI_UNEQUAL);
 #else
     bFinalize = TRUE;
 #endif
-    bMaster = (cr != NULL && MASTER(cr)) || (dd != NULL && DDMASTER(dd));
 
     va_start(ap, fmt);
     gmx_fatal_mpi_va(f_errno, file, line, bMaster, bFinalize, fmt, ap);

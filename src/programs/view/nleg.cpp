@@ -42,7 +42,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/fileio/rgb.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 

@@ -60,22 +60,25 @@
 #include <unistd.h>
 #endif
 
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/sighandler.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/imd/imdsocket.h"
-#include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -144,8 +147,8 @@ typedef struct t_gmx_IMD
 
     int        nat;                  /**< Number of atoms that can be pulled via IMD. */
     int        nat_loc;              /**< Part of the atoms that are local.           */
-    atom_id   *ind;                  /**< Global indices of the IMD atoms.            */
-    atom_id   *ind_loc;              /**< Local indices of the IMD atoms.             */
+    int       *ind;                  /**< Global indices of the IMD atoms.            */
+    int       *ind_loc;              /**< Local indices of the IMD atoms.             */
     int        nalloc_loc;           /**< Allocation size for ind_loc.                */
     rvec      *xa;                   /**< Positions for all IMD atoms assembled on
                                           the master node.                            */
@@ -179,7 +182,7 @@ typedef struct t_gmx_IMD
     float          *vmd_forces;      /**< The VMD forces flat in memory.              */
     int             nforces;         /**< Number of actual MD forces;
                                           this gets communicated to the clients.      */
-    atom_id        *f_ind;           /**< Force indices.                              */
+    int            *f_ind;           /**< Force indices.                              */
     rvec           *f;               /**< The IMD pulling forces.                     */
 
     char           *forcesendbuf;    /**< Buffer for force sending.                   */
@@ -193,9 +196,9 @@ typedef struct t_gmx_IMD
     /* The next block is used on the master node only to reduce the output
      * without sacrificing information. If any of these values changes,
      * we need to write output */
-    int       old_nforces;           /**< Old value for nforces.                      */
-    atom_id  *old_f_ind;             /**< Old values for force indices.               */
-    rvec     *old_forces;            /**< Old values for IMD pulling forces.          */
+    int       old_nforces;       /**< Old value for nforces.                      */
+    int      *old_f_ind;         /**< Old values for force indices.               */
+    rvec     *old_forces;        /**< Old values for IMD pulling forces.          */
 
 } t_gmx_IMD_setup;
 
@@ -445,9 +448,8 @@ void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
 
 void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
 {
-    gmx_ga2la_t         ga2la;
-    t_gmx_IMD_setup    *IMDsetup;
-
+    gmx_ga2la_t       *ga2la;
+    t_gmx_IMD_setup   *IMDsetup;
 
     if (bIMD)
     {
@@ -994,7 +996,7 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
 
             /* Catch all rule for the remaining IMD types which we don't expect */
             default:
-                fprintf(stderr, " %s Received unexpected %s.\n", IMDstr, ENUM_NAME((int)itype, IMD_NR, eIMDType_names));
+                fprintf(stderr, " %s Received unexpected %s.\n", IMDstr, enum_name((int)itype, IMD_NR, eIMDType_names));
                 imd_fatal(IMDsetup, "Terminating connection\n");
                 break;
         } /* end switch */
@@ -1078,7 +1080,7 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
     int      gstart, gend, count;
     t_block  gmols, lmols;
     int      nat;
-    atom_id *ind;
+    int     *ind;
 
     gmols = top_global->mols;
     nat   = IMDsetup->nat;
@@ -1616,7 +1618,7 @@ void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
                 ene->E_dihe  = (float)  enerd->term[F_PDIHS  ];
                 ene->E_impr  = (float)  enerd->term[F_IDIHS  ];
                 ene->E_vdw   = (float)  enerd->term[F_LJ     ];
-                ene->E_coul  = (float) (enerd->term[F_COUL_SR] + enerd->term[F_COUL_LR]);
+                ene->E_coul  = (float)  enerd->term[F_COUL_SR];
             }
         }
 #else

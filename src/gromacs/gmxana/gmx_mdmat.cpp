@@ -41,18 +41,19 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -106,7 +107,7 @@ int *res_natm(t_atoms *atoms)
 }
 
 static void calc_mat(int nres, int natoms, int rndx[],
-                     rvec x[], atom_id *index,
+                     rvec x[], int *index,
                      real trunc, real **mdmat, int **nmat, int ePBC, matrix box)
 {
     int   i, j, resi, resj;
@@ -115,7 +116,7 @@ static void calc_mat(int nres, int natoms, int rndx[],
     rvec  ddx;
 
     set_pbc(&pbc, ePBC, box);
-    trunc2 = sqr(trunc);
+    trunc2 = gmx::square(trunc);
     for (resi = 0; (resi < nres); resi++)
     {
         for (resj = 0; (resj < nres); resj++)
@@ -207,7 +208,7 @@ int gmx_mdmat(int argc, char *argv[])
     int               ePBC;
     t_atoms           useatoms;
     int               isize;
-    atom_id          *index;
+    int              *index;
     char             *grpname;
     int              *rndx, *natm, prevres, newres;
 

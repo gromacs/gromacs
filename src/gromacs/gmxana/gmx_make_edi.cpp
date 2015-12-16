@@ -46,14 +46,14 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -106,7 +106,7 @@ typedef struct edipar
 
 
 
-void make_t_edx(struct edix *edx, int natoms, rvec *pos, atom_id index[])
+void make_t_edx(struct edix *edx, int natoms, rvec *pos, int index[])
 {
     edx->nr   = natoms;
     edx->anrs = index;
@@ -492,8 +492,8 @@ void init_edx(struct edix *edx)
     snew(edx->anrs, 1);
 }
 
-void filter2edx(struct edix *edx, int nindex, atom_id index[], int ngro,
-                atom_id igro[], rvec *x, const char* structure)
+void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
+                int igro[], rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */
@@ -520,9 +520,9 @@ void filter2edx(struct edix *edx, int nindex, atom_id index[], int ngro,
 
 void get_structure(t_atoms *atoms, const char *IndexFile,
                    const char *StructureFile, struct edix *edx, int nfit,
-                   atom_id ifit[], int nav, atom_id index[])
+                   int ifit[], int nav, int index[])
 {
-    atom_id *igro; /*index corresponding to target or origin structure*/
+    int     *igro; /*index corresponding to target or origin structure*/
     int      ngro;
     int      ntar;
     rvec    *xtar;
@@ -731,7 +731,7 @@ int gmx_make_edi(int argc, char *argv[])
     char             *grpname;
     const char       *indexfile;
     int               i;
-    atom_id          *index, *ifit;
+    int              *index, *ifit;
     int               nfit;           /* Number of atoms in the reference/fit structure */
     int               ev_class;       /* parameter _class i.e. evMON, evRADFIX etc. */
     int               nvecs;
@@ -913,12 +913,12 @@ int gmx_make_edi(int argc, char *argv[])
         {
             /* Trick: invert sign of Efl and alpha2 then this will give the same sign in the exponential and inverted sign outside */
             edi_params.flood.constEfl = -constEfl;
-            edi_params.flood.alpha2   = -sqr(alpha);
+            edi_params.flood.alpha2   = -gmx::square(alpha);
         }
         else
         {
             edi_params.flood.constEfl = constEfl;
-            edi_params.flood.alpha2   = sqr(alpha);
+            edi_params.flood.alpha2   = gmx::square(alpha);
         }
     }
 

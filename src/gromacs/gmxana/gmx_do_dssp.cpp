@@ -46,20 +46,20 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,
@@ -198,7 +198,7 @@ static gmx_bool *bPhobics(t_atoms *atoms)
     gmx_bool   *bb;
 
 
-    nb = get_strings("phbres.dat", &cb);
+    nb = get_lines("phbres.dat", &cb);
     snew(bb, atoms->nres);
 
     for (i = 0; (i < atoms->nres); i++)
@@ -502,7 +502,7 @@ int gmx_do_dssp(int argc, char *argv[])
     matrix             box = {{0}};
     int                gnx;
     char              *grpnm, *ss_str;
-    atom_id           *index;
+    int               *index;
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = NULL, *av_area, *norm_av_area;

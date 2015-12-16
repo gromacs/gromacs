@@ -42,11 +42,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 
 void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
              int nChargePerturbed,

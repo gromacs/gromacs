@@ -138,7 +138,7 @@ class ReferenceDataEntry
             setCorrespondingOutputEntry(entry.get());
             entry->setValue(value());
             entry->isTextBlock_ = isTextBlock_;
-            return move(entry);
+            return entry;
         }
 
         void setValue(const std::string &value)

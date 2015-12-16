@@ -42,11 +42,13 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/nonbonded.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
 void
@@ -321,8 +323,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         dlfac_vdw[i]  = DLF[i]*lam_power/sc_r_power*(lam_power == 2 ? (1-LFV[i]) : 1);
     }
     /* precalculate */
-    sigma2_def = std::pow(sigma6_def, 1.0/3.0);
-    sigma2_min = std::pow(sigma6_min, 1.0/3.0);
+    sigma2_def = std::cbrt(sigma6_def);
+    sigma2_min = std::cbrt(sigma6_min);
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
@@ -385,7 +387,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
             if (rsq > 0)
             {
-                rinv         = gmx_invsqrt(rsq);
+                rinv         = gmx::invsqrt(rsq);
                 r            = rsq*rinv;
             }
             else
@@ -437,8 +439,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     {
                         /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
                         sigma6[i]       = half*c12[i]/c6[i];
-                        sigma2[i]       = std::pow(sigma6[i], 1.0/3.0);
-                        /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
+                        sigma2[i]       = std::cbrt(sigma6[i]);
+                        /* should be able to get rid of cbrt call eventually.  Will require agreement on
                            what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
                         if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
                         {

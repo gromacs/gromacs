@@ -49,16 +49,16 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -128,7 +128,7 @@ void
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index);
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /* As angles(), but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.

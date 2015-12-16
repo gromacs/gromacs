@@ -50,15 +50,22 @@
 #ifndef GMX_PULLING_PULL_H
 #define GMX_PULLING_PULL_H
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;
+struct t_commrec;
+struct t_filenm;
+struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 

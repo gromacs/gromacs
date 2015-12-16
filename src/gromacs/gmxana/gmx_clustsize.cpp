@@ -43,18 +43,18 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -71,7 +71,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const gmx_output_env_t *oenv)
 {
     FILE                 *fp, *gp, *hp, *tp;
-    atom_id              *index = NULL;
+    int                  *index = NULL;
     int                   nindex, natoms;
     t_trxstatus          *status;
     rvec                 *x = NULL, *v = NULL, dx;

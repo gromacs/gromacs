@@ -41,7 +41,6 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -103,7 +102,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box);
 
 void write_pdbfile_indexed(FILE *out, const char *title, struct t_atoms *atoms,
                            rvec x[], int ePBC, matrix box, char chain,
-                           int model_nr, atom_id nindex, const atom_id index[],
+                           int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains);
 /* REALLY low level */
 

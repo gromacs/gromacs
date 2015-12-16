@@ -45,26 +45,26 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
 real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
@@ -87,7 +87,7 @@ real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
     return tmass;
 }
 
-real calc_geom(int isize, atom_id *index, rvec *x, rvec geom_center, rvec minval,
+real calc_geom(int isize, int *index, rvec *x, rvec geom_center, rvec minval,
                rvec maxval, gmx_bool bDiam)
 {
     real  diam2, d;
@@ -704,7 +704,7 @@ int gmx_editconf(int argc, char *argv[])
     t_topology       *top     = NULL;
     char             *grpname, *sgrpname, *agrpname;
     int               isize, ssize, asize;
-    atom_id          *index, *sindex, *aindex;
+    int              *index, *sindex, *aindex;
     rvec             *x, *v, gc, rmin, rmax, size;
     int               ePBC;
     matrix            box, rotmatrix, trans;
@@ -857,7 +857,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         sig6 = c12/c6;
                     }
-                    vdw   = 0.5*std::pow(sig6, static_cast<real>(1.0/6.0));
+                    vdw   = 0.5*gmx::sixthroot(sig6);
                 }
                 else
                 {
@@ -952,7 +952,7 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bOrient)
     {
-        atom_id *index;
+        int     *index;
         char    *grpnames;
 
         /* Get a group for principal component analysis */
@@ -984,7 +984,7 @@ int gmx_editconf(int argc, char *argv[])
                           "zero mass (%g) or volume (%g)\n", mass, vol);
             }
 
-            scale[XX] = scale[YY] = scale[ZZ] = std::pow(dens/rho, static_cast<real>(1.0/3.0));
+            scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens/rho);
             fprintf(stderr, "Scaling all box vectors by %g\n", scale[XX]);
         }
         scale_conf(atoms.nr, x, box, scale);

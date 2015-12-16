@@ -46,16 +46,18 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
 {
@@ -137,12 +139,12 @@ static gmx_bool cmp_bool(FILE *fp, const char *s, int index, gmx_bool b1, gmx_bo
         if (index != -1)
         {
             fprintf(fp, "%s[%d] (%s - %s)\n", s, index,
-                    bool_names[b1], bool_names[b2]);
+                    gmx::boolToString(b1), gmx::boolToString(b2));
         }
         else
         {
             fprintf(fp, "%s (%s - %s)\n", s,
-                    bool_names[b1], bool_names[b2]);
+                    gmx::boolToString(b1), gmx::boolToString(b2));
         }
     }
     return b1 && b2;
@@ -634,19 +636,6 @@ static void cmp_cosines(FILE *fp, const char *s, t_cosines c1[DIM], t_cosines c2
         }
     }
 }
-static void cmp_adress(FILE *fp, t_adress *ad1, t_adress *ad2,
-                       real ftol, real abstol)
-{
-    cmp_int(fp, "ir->adress->type", -1, ad1->type, ad2->type);
-    cmp_real(fp, "ir->adress->const_wf", -1, ad1->const_wf, ad2->const_wf, ftol, abstol);
-    cmp_real(fp, "ir->adress->ex_width", -1, ad1->ex_width, ad2->ex_width, ftol, abstol);
-    cmp_real(fp, "ir->adress->hy_width", -1, ad1->hy_width, ad2->hy_width, ftol, abstol);
-    cmp_int(fp, "ir->adress->icor", -1, ad1->icor, ad2->icor);
-    cmp_int(fp, "ir->adress->site", -1, ad1->site, ad2->site);
-    cmp_rvec(fp, "ir->adress->refs", -1, ad1->refs, ad2->refs, ftol, abstol);
-    cmp_real(fp, "ir->adress->ex_forcecap", -1, ad1->ex_forcecap, ad2->ex_forcecap, ftol, abstol);
-}
-
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
@@ -786,8 +775,6 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_rvec(fp, "inputrec->posres_comB", -1, ir1->posres_comB, ir2->posres_comB, ftol, abstol);
     cmp_real(fp, "inputrec->verletbuf_tol", -1, ir1->verletbuf_tol, ir2->verletbuf_tol, ftol, abstol);
     cmp_real(fp, "inputrec->rlist", -1, ir1->rlist, ir2->rlist, ftol, abstol);
-    cmp_real(fp, "inputrec->rlistlong", -1, ir1->rlistlong, ir2->rlistlong, ftol, abstol);
-    cmp_int(fp, "inputrec->nstcalclr", -1, ir1->nstcalclr, ir2->nstcalclr);
     cmp_real(fp, "inputrec->rtpi", -1, ir1->rtpi, ir2->rtpi, ftol, abstol);
     cmp_int(fp, "inputrec->coulombtype", -1, ir1->coulombtype, ir2->coulombtype);
     cmp_int(fp, "inputrec->coulomb_modifier", -1, ir1->coulomb_modifier, ir2->coulomb_modifier);
@@ -866,12 +853,6 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_rvec(fp, "inputrec->deform(b)", -1, ir1->deform[YY], ir2->deform[YY], ftol, abstol);
     cmp_rvec(fp, "inputrec->deform(c)", -1, ir1->deform[ZZ], ir2->deform[ZZ], ftol, abstol);
 
-
-    cmp_bool(fp, "ir->bAdress->type", -1, ir1->bAdress, ir2->bAdress);
-    if (ir1->bAdress && ir2->bAdress)
-    {
-        cmp_adress(fp, ir1->adress, ir2->adress, ftol, abstol);
-    }
 
     cmp_int(fp, "inputrec->userint1", -1, ir1->userint1, ir2->userint1);
     cmp_int(fp, "inputrec->userint2", -1, ir1->userint2, ir2->userint2);

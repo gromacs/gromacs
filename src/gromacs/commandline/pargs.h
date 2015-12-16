@@ -44,7 +44,7 @@
 #ifndef GMX_COMMANDLINE_PARGS_H
 #define GMX_COMMANDLINE_PARGS_H
 
-#include "gromacs/fileio/filenm.h"
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"

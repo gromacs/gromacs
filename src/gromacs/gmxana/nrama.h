@@ -55,7 +55,7 @@ typedef struct {
 } t_phipsi;
 
 typedef struct {
-    atom_id ai[4];
+    int     ai[4];
     int     mult;
     real    phi0;
     real    ang;

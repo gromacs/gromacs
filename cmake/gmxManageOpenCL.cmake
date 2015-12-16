@@ -64,7 +64,7 @@ endif()
 
 add_definitions(${OPENCL_DEFINITIONS})
 
-include_directories(${OPENCL_INCLUDE_DIRS})
+include_directories(SYSTEM ${OPENCL_INCLUDE_DIRS})
 
 macro(gmx_gpu_setup)
     # no OpenMP is no good!

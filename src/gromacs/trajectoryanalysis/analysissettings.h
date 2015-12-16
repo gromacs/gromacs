@@ -57,6 +57,7 @@ namespace gmx
 template <typename T> class ConstArrayRef;
 
 class AnalysisDataPlotSettings;
+class ICommandLineOptionsModuleSettings;
 class Options;
 class TrajectoryAnalysisRunnerCommon;
 
@@ -124,6 +125,9 @@ class TrajectoryAnalysisSettings
         //! Initializes default settings.
         TrajectoryAnalysisSettings();
         ~TrajectoryAnalysisSettings();
+
+        //! Injects command line options module settings for some methods to use.
+        void setOptionsModuleSettings(ICommandLineOptionsModuleSettings *settings);
 
         //! Returns the time unit the user has requested.
         TimeUnit timeUnit() const;
@@ -220,8 +224,6 @@ class TrajectoryAnalysisSettings
          */
         void setFrameFlags(int frflags);
 
-        //! Returns the help text.
-        const std::string &helpText() const;
         //! \copydoc ICommandLineOptionsModuleSettings::setHelpText(const std::string &)
         void setHelpText(const ConstArrayRef<const char *> &help);
 

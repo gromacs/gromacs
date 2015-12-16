@@ -46,19 +46,18 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxlib/splitter.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/splitter.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/block.h"
@@ -66,7 +65,9 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 typedef struct gmx_constr {
     int                ncon_tot;       /* The total number of constraints    */
@@ -96,14 +97,14 @@ typedef struct gmx_constr {
 } t_gmx_constr;
 
 typedef struct {
-    atom_id iatom[3];
-    atom_id blocknr;
+    int iatom[3];
+    int blocknr;
 } t_sortblock;
 
 static int pcomp(const void *p1, const void *p2)
 {
     int          db;
-    atom_id      min1, min2, max1, max2;
+    int          min1, min2, max1, max2;
     t_sortblock *a1 = (t_sortblock *)p1;
     t_sortblock *a2 = (t_sortblock *)p2;
 
@@ -360,7 +361,9 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc, ir->ePBC, cr->dd, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ir->ePBC,
+                              DOMAINDECOMP(cr) ? cr->dd->nc : nullptr,
+                              FALSE, box);
     }
     else
     {
@@ -677,7 +680,7 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
     t_blocka     sblocks;
     t_sortblock *sb;
     t_iatom     *iatom;
-    atom_id     *inv_sblock;
+    int         *inv_sblock;
 
     /* Since we are processing the local topology,
      * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.

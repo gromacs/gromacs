@@ -46,11 +46,10 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -141,7 +140,7 @@ int gmx_densmap(int argc, char *argv[])
     char             **grpname, buf[STRLEN];
     const char        *unit;
     int                i, j, k, l, ngrps, anagrp, *gnx = NULL, nindex, nradial = 0, nfr, nmpower;
-    atom_id          **ind = NULL, *index;
+    int              **ind = NULL, *index;
     real             **grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
     real               invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
     int                nlev   = 51;

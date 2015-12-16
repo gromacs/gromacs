@@ -34,7 +34,23 @@
 
 set(LIBGROMACS_SOURCES)
 
+set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+
+function (_gmx_add_files_to_property PROPERTY)
+    foreach (_file ${ARGN})
+        if (IS_ABSOLUTE "${_file}")
+            set_property(GLOBAL APPEND PROPERTY ${PROPERTY} ${_file})
+        else()
+            set_property(GLOBAL APPEND PROPERTY ${PROPERTY}
+                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
+        endif()
+    endforeach()
+endfunction ()
+
+function (gmx_add_libgromacs_sources)
+    _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
+endfunction ()
 
 function (gmx_install_headers)
     if (NOT GMX_BUILD_MDRUN_ONLY)
@@ -43,14 +59,7 @@ function (gmx_install_headers)
                 DESTINATION "${INCL_INSTALL_DIR}/${_dest}"
                 COMPONENT   development)
     endif()
-    foreach (_file ${ARGN})
-        if (IS_ABSOLUTE "${_file}")
-            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS ${_file})
-        else()
-            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS
-                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
-        endif()
-    endforeach()
+    _gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
 endfunction ()
 
 function (gmx_write_installed_header_list)
@@ -71,7 +80,7 @@ if(GMX_USE_TNG)
                 "TNG >= 1.6.0 not found. "
                 "You can set GMX_EXTERNAL_TNG=OFF to compile TNG.")
         endif()
-        include_directories(${TNG_IO_INCLUDE_DIRS})
+        include_directories(SYSTEM ${TNG_IO_INCLUDE_DIRS})
     endif()
     if(NOT GMX_EXTERNAL_TNG)
         include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
@@ -81,7 +90,7 @@ if(GMX_USE_TNG)
 
         if (HAVE_ZLIB)
             list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
-            include_directories(${ZLIB_INCLUDE_DIRS})
+            include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
 else()
@@ -96,9 +105,12 @@ add_subdirectory(commandline)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
 add_subdirectory(fft)
+add_subdirectory(gpu_utils)
+add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
 add_subdirectory(mdrunutility)
+add_subdirectory(mdtypes)
 add_subdirectory(random)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
@@ -106,6 +118,7 @@ add_subdirectory(pbcutil)
 add_subdirectory(tables)
 add_subdirectory(timing)
 add_subdirectory(topology)
+add_subdirectory(trajectory)
 add_subdirectory(utility)
 add_subdirectory(fileio)
 add_subdirectory(swap)
@@ -114,7 +127,6 @@ add_subdirectory(pulling)
 add_subdirectory(simd)
 add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
     add_subdirectory(correlationfunctions)
@@ -125,7 +137,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(tools)
 endif()
 
-list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
+get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
+list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
 
 # This would be the standard way to include thread_mpi, but
 # we want libgromacs to link the functions directly
@@ -159,7 +172,7 @@ gmx_configure_version_file(
     REMOTE_HASH SOURCE_FILE)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
-if (GMX_GPU AND NOT GMX_USE_OPENCL)
+if (GMX_USE_CUDA)
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
@@ -168,9 +181,7 @@ endif()
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so
 # we do it in the compilation command (after testing that the compiler
-# supports the suppressions). Setting the properties only works after
-# the related target has been created, e.g. after when the file is
-# used with add_library().
+# supports the suppressions).
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
 if (HAS_NO_UNUSED_PARAMETER)
@@ -217,8 +228,11 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     include(InstallLibInfo.cmake)
 endif()
 
+# Technically, the user could want to do this for an OpenCL build
+# using the CUDA runtime, but currently there's no reason to want to
+# do that.
 if (INSTALL_CUDART_LIB) #can be set manual by user
-    if (GMX_GPU AND NOT GMX_USE_OPENCL)
+    if (GMX_USE_CUDA)
         foreach(CUDA_LIB ${CUDA_LIBRARIES})
             string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
             if(IS_CUDART) #libcuda should not be installed
@@ -229,11 +243,11 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
             endif()
         endforeach()
     else()
-        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
+        message(WARNING "INSTALL_CUDART_LIB only makes sense when configuring for CUDA support")
     endif()
 endif()
 
-if(GMX_GPU AND GMX_USE_OPENCL)
+if(GMX_USE_OPENCL)
     set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
 
     install(FILES ${OPENCL_KERNELS} DESTINATION

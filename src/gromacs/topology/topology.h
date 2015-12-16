@@ -37,6 +37,8 @@
 #ifndef GMX_TOPOLOGY_TOPOLOGY_H
 #define GMX_TOPOLOGY_TOPOLOGY_H
 
+#include <cstdio>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -53,6 +55,8 @@ enum {
     egcORFIT, egcQMMM,
     egcNR
 };
+/* Names corresponding to groups */
+extern const char *gtypes[egcNR+1];
 
 typedef struct gmx_moltype_t
 {
@@ -145,6 +149,10 @@ void done_top(t_topology *top);
 
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */
+
+void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
+             gmx_bool bShowNumbers);
+void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_bool bShowNumbers);
 
 #ifdef __cplusplus
 }

@@ -184,6 +184,14 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
 
 }       // namespace
 
+bool
+SelectionData::hasSortedAtomIndices() const
+{
+    gmx_ana_index_t g;
+    gmx_ana_index_set(&g, rawPositions_.m.mapb.nra, rawPositions_.m.mapb.a, -1);
+    return gmx_ana_index_check_sorted(&g);
+}
+
 void
 SelectionData::refreshName()
 {

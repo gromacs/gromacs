@@ -42,13 +42,13 @@
 #include <time.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/calch.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/ter_db.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
@@ -89,7 +89,7 @@ static void add_lonepair_pdba(t_atoms *atoms1, int a1, t_atoms *atoms2, int a2, 
     *atoms2->atomname[a2] = strdup(lpname);
 }
 
-static atom_id pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
+static int pdbasearch_atom(const char *name, int resind, t_atoms *pdba,
                                const char *searchtype, gmx_bool bAllowMissing)
 {
     int  i;
@@ -625,7 +625,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                     srenew(newpdba->atom, natoms+nadd);
                     srenew(newpdba->atomname, natoms+nadd);
                 }
-                debug_gmx();
             }
             if (debug)
             {
@@ -657,7 +656,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                             srenew(newpdba->atom, natoms+nadd);
                             srenew(newpdba->atomname, natoms+nadd);
                         }
-                        debug_gmx();
                     }
                     if (bUpdate_pdba)
                     {
@@ -964,7 +962,7 @@ void add_drudes(t_atoms **pdbaptr, rvec *xptr[])
 }
 
 /* Build lone pair (virtual site) coordinates based on input constructing atoms */
-static void build_lonepair_coords(int bt, int f, atom_id ai[], real *params, rvec *xptr[], rvec *xlp)
+static void build_lonepair_coords(int bt, int f, int ai[], real *params, rvec *xptr[], rvec *xlp)
 {
 
     real    a, b, c, d, a1, b1, c1, invdij;
@@ -1010,7 +1008,7 @@ static void build_lonepair_coords(int bt, int f, atom_id ai[], real *params, rve
                     temp[XX] = xij[XX] + a*xjk[XX];
                     temp[YY] = xij[YY] + a*xjk[YY];
                     temp[ZZ] = xij[ZZ] + a*xjk[ZZ];
-                    c = b*gmx_invsqrt(iprod(temp, temp));
+                    c = b*gmx::invsqrt(iprod(temp, temp));
                     (*xlp)[XX] = xi[XX] + c*temp[XX];
                     (*xlp)[YY] = xi[YY] + c*temp[YY];
                     (*xlp)[ZZ] = xi[ZZ] + c*temp[ZZ];
@@ -1021,13 +1019,13 @@ static void build_lonepair_coords(int bt, int f, atom_id ai[], real *params, rve
                     /* special case for calculating a and b, so replace values from above (same as convparm.c) */
                     a = params[1] * cos(DEG2RAD * params[0]);
                     b = params[1] * sin(DEG2RAD * params[0]);
-                    invdij = gmx_invsqrt(iprod(xij, xij));
+                    invdij = gmx::invsqrt(iprod(xij, xij));
                     c1     = invdij * invdij * iprod(xij, xjk);
                     xp[XX] = xjk[XX] - c1*xij[XX];
                     xp[YY] = xjk[YY] - c1*xij[YY];
                     xp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
                     a1     = a*invdij;
-                    b1     = b*gmx_invsqrt(iprod(xp, xp));
+                    b1     = b*gmx::invsqrt(iprod(xp, xp));
                     (*xlp)[XX] = xi[XX] + a1*xij[XX] + b1*xp[XX];
                     (*xlp)[YY] = xi[YY] + a1*xij[YY] + b1*xp[YY];
                     (*xlp)[ZZ] = xi[ZZ] + a1*xij[ZZ] + b1*xp[ZZ];
@@ -1069,7 +1067,7 @@ static void build_lonepair_coords(int bt, int f, atom_id ai[], real *params, rve
             rvec_sub(ra, xij, rja);
             rvec_sub(rb, xij, rjb);
             cprod(rja, rjb, rm);
-            d = c*gmx_invsqrt(norm2(rm));
+            d = c*gmx::invsqrt(norm2(rm));
             (*xlp)[XX] = xi[XX] + d*rm[XX];
             (*xlp)[YY] = xi[YY] + d*rm[YY];
             (*xlp)[ZZ] = xi[ZZ] + d*rm[ZZ];
@@ -1093,9 +1091,9 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
     int         f, i, j, k, m, ss, index, natoms, nadd, bt, start;
     int         nat;                /* number of atoms in vsite interaction definition */
     int         r1, r2;             /* residues involved in disulfide */
-    atom_id     cb1, sg1, sg2, cb2; /* atom indices of CB and SG in a disulfide */
-    atom_id     lpsa, lpsb;         /* atom indices of LPSA and LPSB of SG */
-    atom_id     ai[MAXATOMLIST];
+    int         cb1, sg1, sg2, cb2; /* atom indices of CB and SG in a disulfide */
+    int         lpsa, lpsb;         /* atom indices of LPSA and LPSB of SG */
+    int         ai[MAXATOMLIST];
     real       *params;             /* constructing constants for vsite */
     rvec       *xlp;                /* coordinates of added lone pair */
     rvec       *xn;                 /* new coordinate array */
@@ -1217,7 +1215,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                     /* initialize */
                     for (m = 0; m < MAXATOMLIST; m++)
                     {
-                        ai[m] = NO_ATID; 
+                        ai[m] = -1; 
                     }
 
                     /* find the LP and constructing atoms for each vsite in the residue */
@@ -1233,14 +1231,14 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                            to which it is "bonded" is the next index (m+1), so the LP needs to be inserted
                            in newpdba at the position of ai[m+1] */
                         /* NOTE: The array a[m] holds atom names, ai[m] holds their indices */
-                        if (ai[m] == NO_ATID)
+                        if (ai[m] == -1)
                         {
                             /* Here, we have to guard against atoms that have been removed/replaced when combining
                              * .rtp and .tdb entries.  For instance, for a backbone carbonyl LP at the C-terminus,
-                             * O has been renamed (so O will be NO_ATID) and the LP have been built already, so we
+                             * O has been renamed (so O will be -1) and the LP have been built already, so we
                              * we don't need to do this, but we still need to build other LP that may be in the .rtp
                              * entry (e.g. side chain LP). */
-                            if (is_lonepair(bvsite->a[m]) && ai[m+1] != NO_ATID)
+                            if (is_lonepair(bvsite->a[m]) && ai[m+1] != -1)
                             {
                                 if (debug)
                                 {
@@ -1294,7 +1292,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
     {
         for (m = 0; m < MAXATOMLIST; m++)
         {
-            ai[m] = NO_ATID;
+            ai[m] = -1;
         }
 
         for (ss=0; ss<nssbonds; ss++)
@@ -1306,7 +1304,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
             /* check to see if LPSA is already there */
             lpsa = search_res_atom("LPSA", r1, pdba, "check", TRUE);
 
-            if (lpsa == NO_ATID)
+            if (lpsa == -1)
             { 
                 /* LPSA construction constants */
                 sscanf(ss_lpa, "%d %f %f %f", &f, &(params[0]), &(params[1]), &(params[2]));
@@ -1317,7 +1315,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                 cb2 = search_res_atom("CB", r2, pdba, "special bond", FALSE);
                 sg2 = search_res_atom("SG", r2, pdba, "special bond", FALSE);
 
-                ai[0] = NO_ATID;
+                ai[0] = -1;
                 ai[1] = sg1;
                 ai[2] = cb1;
                 ai[3] = sg2;
@@ -1356,7 +1354,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
             /* same for LPSB */
             lpsb = search_res_atom("LPSB", r1, pdba, "check", TRUE);
 
-            if (lpsb == NO_ATID)
+            if (lpsb == -1)
             {            
                 /* LPSB construction constants */
                 sscanf(ss_lpb, "%d %f %f %f", &f, &(params[0]), &(params[1]), &(params[2]));
@@ -1367,7 +1365,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                 cb2 = search_res_atom("CB", r2, pdba, "special bond", FALSE);
                 sg2 = search_res_atom("SG", r2, pdba, "special bond", FALSE);
 
-                ai[0] = NO_ATID;
+                ai[0] = -1;
                 ai[1] = sg1;
                 ai[2] = cb1;
                 ai[3] = sg2;

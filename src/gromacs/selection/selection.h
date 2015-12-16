@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,8 @@ class SelectionData
         e_index_t type() const { return rawPositions_.m.type; }
         //! Returns true if the selection only contains positions with a single atom each.
         bool hasOnlyAtoms() const { return type() == INDEX_ATOM; }
+        //! Returns `true` if the atom indices in the selection are in ascending order.
+        bool hasSortedAtomIndices() const;
 
         //! Number of positions in the selection.
         int posCount() const { return rawPositions_.count(); }
@@ -326,6 +328,8 @@ class Selection
         e_index_t type() const { return data().type(); }
         //! Returns true if the selection only contains positions with a single atom each.
         bool hasOnlyAtoms() const { return data().hasOnlyAtoms(); }
+        //! Returns `true` if the atom indices in the selection are in ascending order.
+        bool hasSortedAtomIndices() const { return data().hasSortedAtomIndices(); }
 
         //! Total number of atoms in the selection.
         int atomCount() const

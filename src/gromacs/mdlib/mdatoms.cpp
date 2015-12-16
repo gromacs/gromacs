@@ -40,10 +40,12 @@
 
 #include <math.h>
 
-#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -119,7 +121,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
     const t_grpopts      *opts;
     const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
-    const real            oneOverSix = 1.0 / 6.0;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
@@ -217,11 +218,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         if (ir->bQMMM)
         {
             srenew(md->bQM, md->nalloc);
-        }
-        if (ir->bAdress)
-        {
-            srenew(md->wf, md->nalloc);
-            srenew(md->tf_table_index, md->nalloc);
         }
     }
 
@@ -332,7 +328,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 }
                 else
                 {
-                    md->sigmaA[i] = pow(c12/c6, oneOverSix);
+                    md->sigmaA[i] = gmx::sixthroot(c12/c6);
                 }
                 md->sigma3A[i]    = 1/(md->sigmaA[i]*md->sigmaA[i]*md->sigmaA[i]);
             }
@@ -352,7 +348,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     }
                     else
                     {
-                        md->sigmaB[i] = pow(c12/c6, oneOverSix);
+                        md->sigmaB[i] = gmx::sixthroot(c12/c6);
                     }
                     md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
                 }
@@ -396,26 +392,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 else
                 {
                     md->bQM[i]      = FALSE;
-                }
-            }
-            /* Initialize AdResS weighting functions to adressw */
-            if (ir->bAdress)
-            {
-                md->wf[i]           = 1.0;
-                /* if no tf table groups specified, use default table */
-                md->tf_table_index[i] = DEFAULT_TF_TABLE;
-                if (ir->adress->n_tf_grps > 0)
-                {
-                    /* if tf table groups specified, tf is only applied to thoose energy groups*/
-                    md->tf_table_index[i] = NO_TF_TABLE;
-                    /* check wether atom is in one of the relevant energy groups and assign a table index */
-                    for (g = 0; g < ir->adress->n_tf_grps; g++)
-                    {
-                        if (md->cENER[i] == ir->adress->tf_table_index[g])
-                        {
-                            md->tf_table_index[i] = g;
-                        }
-                    }
                 }
             }
         }

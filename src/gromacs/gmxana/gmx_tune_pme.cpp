@@ -48,19 +48,20 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/calcgrid.h"
+#include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
@@ -107,13 +108,12 @@ typedef struct
 
 typedef struct
 {
-    int             nr_inputfiles;  /* The number of tpr and mdp input files */
-    gmx_int64_t     orig_sim_steps; /* Number of steps to be done in the real simulation */
-    gmx_int64_t     orig_init_step; /* Init step for the real simulation */
-    real           *rcoulomb;       /* The coulomb radii [0...nr_inputfiles] */
-    real           *rvdw;           /* The vdW radii */
-    real           *rlist;          /* Neighbourlist cutoff radius */
-    real           *rlistlong;
+    int             nr_inputfiles;   /* The number of tpr and mdp input files */
+    gmx_int64_t     orig_sim_steps;  /* Number of steps to be done in the real simulation */
+    gmx_int64_t     orig_init_step;  /* Init step for the real simulation */
+    real           *rcoulomb;        /* The coulomb radii [0...nr_inputfiles] */
+    real           *rvdw;            /* The vdW radii */
+    real           *rlist;           /* Neighbourlist cutoff radius */
     int            *nkx, *nky, *nkz;
     real           *fsx, *fsy, *fsz; /* Fourierspacing in x,y,z dimension */
 } t_inputinfo;
@@ -488,7 +488,7 @@ static gmx_bool analyze_data(
                     s = 0.0;
                     for (j = 0; j < nrepeats; j++)
                     {
-                        s += std::pow( pd->Gcycles[j] - pd->Gcycles_Av, 2 );
+                        s += gmx::square( pd->Gcycles[j] - pd->Gcycles_Av );
                     }
                     s /= (nrepeats - 1);
                     s  = std::sqrt(s);
@@ -1034,10 +1034,6 @@ static void make_benchmark_tprs(
     {
         fprintf(fp, "   rlist                : %f nm\n", ir->rlist);
     }
-    if (ir->rlistlong != max_cutoff(ir->rvdw, ir->rcoulomb))
-    {
-        fprintf(fp, "   rlistlong            : %f nm\n", ir->rlistlong);
-    }
 
     /* Print a descriptive line about the tpr settings tested */
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
@@ -1051,10 +1047,6 @@ static void make_benchmark_tprs(
     if (EPME_SWITCHED(ir->coulombtype))
     {
         fprintf(fp, "     rlist");
-    }
-    if (ir->rlistlong != max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb)) )
-    {
-        fprintf(fp, " rlistlong");
     }
     fprintf(fp, "  tpr file\n");
 
@@ -1092,7 +1084,7 @@ static void make_benchmark_tprs(
             /* Adjust other radii since various conditions need to be fulfilled */
             if (eelPME == ir->coulombtype)
             {
-                /* plain PME, rcoulomb must be equal to rlist */
+                /* plain PME, rcoulomb must be equal to rlist TODO only in the group scheme? */
                 ir->rlist = ir->rcoulomb;
             }
             else
@@ -1117,9 +1109,6 @@ static void make_benchmark_tprs(
                     ir->rvdw = std::max(info->rvdw[0], ir->rlist);
                 }
             }
-
-            ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));
-
         } /* end of "if (j != 0)" */
 
         /* for j==0: Save the original settings
@@ -1130,7 +1119,6 @@ static void make_benchmark_tprs(
         info->nky[j]       = ir->nky;
         info->nkz[j]       = ir->nkz;
         info->rlist[j]     = ir->rlist;
-        info->rlistlong[j] = ir->rlistlong;
         info->fsx[j]       = fac*fourierspacing;
         info->fsy[j]       = fac*fourierspacing;
         info->fsz[j]       = fac*fourierspacing;
@@ -1164,15 +1152,11 @@ static void make_benchmark_tprs(
         {
             fprintf(fp, "%10f", ir->rlist);
         }
-        if (info->rlistlong[0] != max_cutoff(info->rlist[0], max_cutoff(info->rvdw[0], info->rcoulomb[0])) )
-        {
-            fprintf(fp, "%10f", ir->rlistlong);
-        }
         fprintf(fp, "  %-14s\n", fn_bench_tprs[j]);
 
         /* Make it clear to the user that some additional settings were modified */
         if (!gmx_within_tol(ir->rvdw, info->rvdw[0], GMX_REAL_EPS)
-            || !gmx_within_tol(ir->rlistlong, info->rlistlong[0], GMX_REAL_EPS) )
+            || !gmx_within_tol(ir->rlist, info->rlist[0], GMX_REAL_EPS) )
         {
             bNote = TRUE;
         }
@@ -1342,7 +1326,7 @@ static void make_npme_list(
             case eNpmeSubset:
                 /* For 2d PME we want a common largest factor of at least the cube
                  * root of the number of PP nodes */
-                min_factor = static_cast<int>(std::pow(npp, 1.0/3.0));
+                min_factor = static_cast<int>(std::cbrt(npp));
                 break;
             default:
                 gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
@@ -2256,7 +2240,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
         { efXVG, "-field",  "field",    ffOPTWR },
         { efXVG, "-table",  "table",    ffOPTRD },
-        { efXVG, "-tabletf", "tabletf",   ffOPTRD },
         { efXVG, "-tablep", "tablep",   ffOPTRD },
         { efXVG, "-tableb", "table",    ffOPTRD },
         { efTRX, "-rerun",  "rerun",    ffOPTRD },
@@ -2273,7 +2256,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efXVG, "-swap",   "swapions", ffOPTWR },
         /* Output files that are deleted after each benchmark run */
         { efTRN, "-bo",     "bench",    ffWRITE },
@@ -2305,7 +2287,7 @@ int gmx_tune_pme(int argc, char *argv[])
     int             nthreads = 1;
 
     const char     *procstring[] =
-    { NULL, "-np", "-n", "none", NULL };
+    { NULL, "np", "n", "none", NULL };
     const char     *npmevalues_opt[] =
     { NULL, "auto", "all", "subset", NULL };
 
@@ -2326,7 +2308,7 @@ int gmx_tune_pme(int argc, char *argv[])
         { "-np",       FALSE, etINT,  {&nnodes},
           "Number of ranks to run the tests on (must be > 2 for separate PME ranks)" },
         { "-npstring", FALSE, etENUM, {procstring},
-          "Specify the number of ranks to [TT]$MPIRUN[tt] using this string"},
+          "Name of the [TT]$MPIRUN[tt] option that specifies the number of ranks to use ('np', or 'n'; use 'none' if there is no such option)" },
         { "-ntmpi",    FALSE, etINT,  {&nthreads},
           "Number of MPI-threads to run the tests on (turns MPI & mpirun off)"},
         { "-r",        FALSE, etINT,  {&repeats},
@@ -2433,7 +2415,7 @@ int gmx_tune_pme(int argc, char *argv[])
          * mpirun command. */
         if (std::strcmp(procstring[0], "none") != 0)
         {
-            sprintf(bbuf, " %s %d ", procstring[0], nnodes);
+            sprintf(bbuf, " -%s %d ", procstring[0], nnodes);
         }
         else
         {
@@ -2472,7 +2454,7 @@ int gmx_tune_pme(int argc, char *argv[])
                 asize(pa), pa);
     /* Check any GPU IDs passed make sense, and fill the data structure for them */
     snew(gpu_ids, 1);
-    parse_digits_from_plain_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
+    parse_digits_from_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
 
     /* Determine the maximum and minimum number of PME nodes to test,
      * the actual list of settings is build in do_the_tests(). */
@@ -2534,7 +2516,7 @@ int gmx_tune_pme(int argc, char *argv[])
         fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
         if (std::strcmp(procstring[0], "none") != 0)
         {
-            fprintf(fp, "Passing # of ranks via  : %s\n", procstring[0]);
+            fprintf(fp, "Passing # of ranks via  : -%s\n", procstring[0]);
         }
         else
         {
@@ -2591,7 +2573,6 @@ int gmx_tune_pme(int argc, char *argv[])
         snew(info->rcoulomb, ntprs);
         snew(info->rvdw, ntprs);
         snew(info->rlist, ntprs);
-        snew(info->rlistlong, ntprs);
         snew(info->nkx, ntprs);
         snew(info->nky, ntprs);
         snew(info->nkz, ntprs);

@@ -39,8 +39,7 @@
 
 #include "rbin.h"
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/smalloc.h"
 
 t_bin *mk_bin(void)
