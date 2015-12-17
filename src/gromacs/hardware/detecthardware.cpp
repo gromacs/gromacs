@@ -609,7 +609,13 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
 
 static int get_ncores(const gmx::HardwareTopology &hwTop)
 {
-    if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::None)
+    if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
+    {
+        // We assume all sockets have the same number of cores as socket 0.
+        // Since topology information is present, we can assume there is at least one socket.
+        return hwTop.machine().sockets.size() * hwTop.machine().sockets[0].cores.size();
+    }
+    else if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
     {
         return hwTop.machine().logicalProcessorCount;
     }
