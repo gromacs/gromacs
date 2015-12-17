@@ -121,7 +121,7 @@ void gmx_tng_open(const char       *filename,
 #ifdef GMX_DOUBLE
         precisionString = " (double precision)";
 #endif
-        sprintf(programInfo, "%.100s, %.128s%.24s",
+        sprintf(programInfo, "%.100s %.128s%.24s",
                 gmx::getProgramContext().displayName(),
                 gmx_version(), precisionString);
         if (mode == 'w')

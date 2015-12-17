@@ -1767,12 +1767,11 @@ static void check_match(FILE *fplog,
          * different patch level versions, but we do not guarantee
          * compatibility between different major/minor versions - check this.
          */
-        int   gmx_major, gmx_minor;
-        int   cpt_major, cpt_minor;
-        sscanf(gmx_version(), "VERSION %5d.%5d", &gmx_major, &gmx_minor);
-        int   ret = sscanf(version, "VERSION %5d.%5d", &cpt_major, &cpt_minor);
-        version_differs = (ret < 2 || gmx_major != cpt_major ||
-                           gmx_minor != cpt_minor);
+        int   gmx_major;
+        int   cpt_major;
+        sscanf(gmx_version(), "%5d", &gmx_major);
+        int   ret = sscanf(version, "%5d", &cpt_major);
+        version_differs = (ret < 1 || gmx_major != cpt_major);
     }
 
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
@@ -1802,13 +1801,13 @@ static void check_match(FILE *fplog,
     if (mm)
     {
         const char msg_version_difference[] =
-            "The current GROMACS major & minor version are not identical to those that\n"
+            "The current GROMACS major version is not identical to the one that\n"
             "generated the checkpoint file. In principle GROMACS does not support\n"
             "continuation from checkpoints between different versions, so we advise\n"
             "against this. If you still want to try your luck we recommend that you use\n"
             "the -noappend flag to keep your output files from the two versions separate.\n"
             "This might also work around errors where the output fields in the energy\n"
-            "file have changed between the different major & minor versions.\n";
+            "file have changed between the different versions.\n";
 
         const char msg_mismatch_notice[] =
             "GROMACS patchlevel, binary or parallel settings differ from previous run.\n"

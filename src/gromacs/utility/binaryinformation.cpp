@@ -348,7 +348,7 @@ void printBinaryInformation(FILE                            *fp,
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
+        fprintf(fp, "%sGROMACS:      %s, version %s%s%s\n", prefix, name,
                 gmx_version(), precisionString, suffix);
     }
     const char *const binaryPath = programContext.fullBinaryPath();

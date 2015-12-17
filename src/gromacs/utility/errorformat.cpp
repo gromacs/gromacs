@@ -75,7 +75,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     }
 
     std::fprintf(fp, "\n-------------------------------------------------------\n");
-    std::fprintf(fp, "Program:     %s, %s\n", programName, gmx_version());
+    std::fprintf(fp, "Program:     %s, version %s\n", programName, gmx_version());
     if (file != NULL)
     {
         // TODO: Check whether this works on Windows. If it doesn't, perhaps

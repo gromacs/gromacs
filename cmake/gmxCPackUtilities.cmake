@@ -102,7 +102,6 @@ function (gmx_cpack_write_config)
         "GROMACS - a toolkit for high-performance molecular simulation")
     # Set version info.
     set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
-    set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
     set(CPACK_PACKAGE_VERSION_PATCH ${GMX_VERSION_PATCH})
     set(CPACK_PACKAGE_VERSION       ${GMX_VERSION_STRING})
     # Add various text resources for some installers.
