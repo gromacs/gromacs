@@ -68,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
 
 #define TPX_TAG_RELEASE  "release"
@@ -3251,7 +3252,8 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     }
     else
     {
-        gmx_fio_write_string(fio, gmx_version());
+        snprintf(buf, STRLEN, "VERSION %s", gmx_version());
+        gmx_fio_write_string(fio, buf);
         bDouble = (precision == sizeof(double));
         gmx_fio_setprecision(fio, bDouble);
         gmx_fio_do_int(fio, precision);

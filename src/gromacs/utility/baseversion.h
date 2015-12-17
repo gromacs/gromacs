@@ -48,7 +48,8 @@
  *
  * This can be a plain version if git version info was disabled during the
  * build.
- * The returned string starts with a literal word `VERSION`.
+ * The returned string used to start with a literal word `VERSION` before
+ * \Gromacs 2016, but no longer does.
  *
  * \ingroup module_utility
  */
