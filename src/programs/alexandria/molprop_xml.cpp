@@ -89,7 +89,7 @@ static const char *exml_names[exmlNR] = {
 
 static void add_xml_string(xmlNodePtr ptr, const char *name, std::string val)
 {
-    if (xmlSetProp(ptr, (xmlChar *)name, (xmlChar *)val.c_str()) == 0)
+    if (xmlSetProp(ptr, xmlCharStrdup(name), xmlCharStrdup(val.c_str())) == 0)
     {
         gmx_fatal(FARGS, "Setting", (char *)name);
     }

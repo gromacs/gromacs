@@ -154,7 +154,7 @@ static void gmx_molprop_read_babel(const char *g98,
     OpenBabel::OBMatrixData   *quadrupole, *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
     OpenBabel::OBElementTable *OBet;
-    std::string                formula, attr, value, inchi;
+    std::string                formula, attr, value;
 
     std::vector<alexandria::ElectrostaticPotential> espv;
 
@@ -271,13 +271,6 @@ static void gmx_molprop_read_babel(const char *g98,
     mpt.SetMass(mol.GetMolWt());
     mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());
     mpt.SetFormula(mol.GetFormula());
-
-    conv->SetOutFormat("inchi");
-    inchi = conv->WriteString(&mol, true);
-
-    delete conv;
-
-    mpt.SetInchi(inchi);
 
     if (NULL != molnm)
     {
