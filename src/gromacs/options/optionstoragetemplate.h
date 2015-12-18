@@ -95,7 +95,10 @@ class OptionStorageTemplate : public AbstractOptionStorage
 
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
+        // The various copydoc calls are needed with Doxygen 1.8.10, although
+        // things work without with 1.8.5...
         virtual std::string typeString() const = 0;
+        //! \copydoc gmx::AbstractOptionStorage::valueCount()
         virtual int valueCount() const { return static_cast<int>(values_->size()); }
         /*! \copydoc gmx::AbstractOptionStorage::formatValue()
          *
@@ -129,6 +132,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          */
         explicit OptionStorageTemplate(const AbstractOption &settings);
 
+        //! \copydoc gmx::AbstractOptionStorage::clearSet()
         virtual void clearSet();
         /*! \copydoc gmx::AbstractOptionStorage::convertValue()
          *

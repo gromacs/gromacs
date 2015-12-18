@@ -224,7 +224,7 @@ class TrajectoryAnalysisSettings
          */
         void setFrameFlags(int frflags);
 
-        //! \copydoc ICommandLineOptionsModuleSettings::setHelpText(const std::string &)
+        //! \copydoc ICommandLineOptionsModuleSettings::setHelpText()
         void setHelpText(const ConstArrayRef<const char *> &help);
 
     private:

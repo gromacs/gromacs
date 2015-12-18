@@ -113,7 +113,7 @@ class TextInputFile : public TextInputStream
          * additional details (including the file name and `errno`).
          */
         static FILE *openRawHandle(const char *filename);
-        //! \copydoc openRawHandle(const char *, const char *)
+        //! \copydoc openRawHandle(const char *)
         static FILE *openRawHandle(const std::string &filename);
 
         /*! \brief

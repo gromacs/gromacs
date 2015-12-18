@@ -94,14 +94,14 @@ namespace gmx
  * \param[in] Flags               Flags to control mdrun
  * \param[in] walltime_accounting More timing information
  */
-typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
+typedef double integrator_t (FILE *fplog, t_commrec *cr,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv, gmx_bool bVerbose,
                              int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              int stepout,
                              t_inputrec *inputrec,
-                             struct gmx_mtop_t *top_global, t_fcdata *fcd,
+                             gmx_mtop_t *top_global, t_fcdata *fcd,
                              t_state *state_global,
                              t_mdatoms *mdatoms,
                              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
