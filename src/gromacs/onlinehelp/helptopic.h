@@ -257,16 +257,20 @@ template <class HelpText>
 class CompositeHelpTopic : public AbstractCompositeHelpTopic
 {
     public:
+        // copydocs are needed with Doxygen 1.8.10, but not 1.8.5...
+        //! \copydoc gmx::AbstractCompositeHelpTopic::name()
         virtual const char *name() const
         {
             return HelpText::name;
         }
+        //! \copydoc gmx::AbstractCompositeHelpTopic::title()
         virtual const char *title() const
         {
             return HelpText::title;
         }
 
     protected:
+        //! \copydoc gmx::AbstractCompositeHelpTopic::helpText()
         virtual std::string helpText() const
         {
             return joinStrings(HelpText::text, "\n");

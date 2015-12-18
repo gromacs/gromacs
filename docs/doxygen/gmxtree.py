@@ -417,7 +417,7 @@ class Directory(object):
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the directory."""
         assert self._rawdoc is None
-        assert self._abspath == rawdoc.get_path().rstrip('/')
+        assert rawdoc.get_path().rstrip('/') in (self._abspath, self._relpath)
         self._rawdoc = rawdoc
 
     def set_module(self, module):
@@ -864,9 +864,7 @@ class GromacsTree(object):
         """Load Doxygen XML directory information for a single directory."""
         path = dirdoc.get_path().rstrip('/')
         if not os.path.isabs(path):
-            self._reporter.xml_assert(dirdoc.get_xml_path(),
-                    "expected absolute path in Doxygen-produced XML file")
-            return
+            path = os.path.join(self._source_root, path)
         relpath = self._get_rel_path(path)
         dirobj = self._dirs.get(relpath)
         if not dirobj:
@@ -899,9 +897,7 @@ class GromacsTree(object):
                 # the path information is not set for unloaded files.
                 continue
             if not os.path.isabs(path):
-                self._reporter.xml_assert(filedoc.get_xml_path(),
-                        "expected absolute path in Doxygen-produced XML file")
-                continue
+                path = os.path.join(self._source_root, path)
             extension = os.path.splitext(path)[1]
             # We don't care about Markdown files that only produce pages
             # (and fail the directory check below).

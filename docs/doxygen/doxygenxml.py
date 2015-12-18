@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -587,7 +587,7 @@ class Compound(Entity):
         self._groups = set()
         self._loaded = False
 
-    def _get_xml_path(self):
+    def get_xml_path(self):
         """Return path to the details XML file for this compound."""
         return os.path.join(self._docset.get_xmlroot(), self.get_id() + '.xml')
 
@@ -620,7 +620,7 @@ class Compound(Entity):
         if self._loaded:
             return
         reporter = self._get_reporter()
-        xmlpath = self._get_xml_path()
+        xmlpath = self.get_xml_path()
         compoundtree = ET.parse(xmlpath)
         root = compoundtree.getroot()
         if len(root) > 1:
@@ -692,7 +692,7 @@ class Compound(Entity):
     def _unexpected_inner_compound(self, typename, compound):
         """Report a parsing error for an unexpected inner compound reference."""
         reporter = self._get_reporter()
-        xmlpath = self._get_xml_path()
+        xmlpath = self.get_xml_path()
         reporter.xml_assert(xmlpath,
                 "unexpected inner {0}: {1}".format(typename, compound))
 

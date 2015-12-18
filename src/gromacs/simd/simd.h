@@ -396,7 +396,7 @@ loadU(const std::int32_t *m);
 
 /*! \libinternal \brief Proxy object to enable loadU() for SimdFInt32 & SImdDInt32
  *
- * \copydetails SimdLoadIProxy
+ * \copydetails SimdLoadIProxyInternal
  */
 class SimdLoadUIProxyInternal
 {
