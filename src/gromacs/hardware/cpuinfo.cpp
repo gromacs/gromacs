@@ -187,14 +187,24 @@ executeX86CpuID(unsigned int     gmx_unused level,
 
 #    else
 
-    // No compiler support for cpuid if we get here
+    // We are on x86, but without compiler support for cpuid if we get here
     *eax = 0;
     *ebx = 0;
     *ecx = 0;
     *edx = 0;
     return 1;
 
-#    endif // gcc inline asm, msvc, or no cpuid support
+#    endif // check for inline asm on x86
+
+#else
+
+    // We are not on x86
+    *eax = 0;
+    *ebx = 0;
+    *ecx = 0;
+    *edx = 0;
+    return 1;
+
 #endif     // x86
 }
 
