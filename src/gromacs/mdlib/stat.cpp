@@ -224,7 +224,7 @@ void global_stat(gmx_global_stat_t gs,
     }
     where();
 
-    if (bPres || !bVV)
+    if (bPres)
     {
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
@@ -333,7 +333,7 @@ void global_stat(gmx_global_stat_t gs,
             where();
         }
     }
-    if (bPres || !bVV)
+    if (bPres)
     {
         extract_binr(rb, ifv, DIM*DIM, fvir[0]);
     }
