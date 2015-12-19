@@ -3248,14 +3248,21 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 gmx_fatal(FARGS, "Cannot do Nose-Hoover temperature with Berendsen pressure control with md-vv; use either vrescale temperature with berendsen pressure or Nose-Hoover temperature with MTTK pressure");
             }
-            if ((ir->epc == epcMTTK) && (ir->etc > etcNO))
+            if (ir->epc == epcMTTK)
             {
-                if (ir->nstpcouple != ir->nsttcouple)
+                if (ir->etc != etcNOSEHOOVER)
                 {
-                    int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
-                    ir->nstpcouple = ir->nsttcouple = mincouple;
-                    sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
-                    warning_note(wi, warn_buf);
+                    gmx_fatal(FARGS, "Cannot do MTTK pressure coupling without Nose-Hoover temperature control");
+                }
+                else
+                {
+                    if (ir->nstpcouple != ir->nsttcouple)
+                    {
+                        int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
+                        ir->nstpcouple = ir->nsttcouple = mincouple;
+                        sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
+                        warning_note(wi, warn_buf);
+                    }
                 }
             }
         }
