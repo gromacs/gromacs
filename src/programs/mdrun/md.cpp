@@ -582,6 +582,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   | (bStopCM ? CGLO_STOPCM : 0)
                   | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
                   | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
+                  | (EI_VV(ir->eI) ? CGLO_EKINFROMFULLSTEPVELOCITIES : 0)
                   | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
@@ -592,17 +593,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     if (ir->eI == eiVVAK)
     {
-        /* a second call to get the half step temperature initialized as well */
-        /* we do the same call as above, but turn the pressure off -- internally to
-           compute_globals, this is recognized as a velocity verlet half-step
-           kinetic energy calculation.  This minimized excess variables, but
-           perhaps loses some logic?*/
-
+        /* We do the same call as above, but trigger a velocity-Verlet
+           half-step kinetic energy calculation to get the half-step
+           temperature initialized also. We also avoid doing
+           computations that would use that KE. */
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
                         NULL, &bSumEkinhOld,
-                        cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
+                        cglo_flags & ~(CGLO_STOPCM | CGLO_PRESSURE | CGLO_EKINFROMFULLSTEPVELOCITIES));
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -1135,8 +1134,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    called in the previous step */
                 unshift_self(graph, state->box, state->x);
             }
-            /* if VV, compute the pressure and constraints */
-            /* For VV2, we strictly only need this if using pressure
+            /* if md-vv, compute the pressure and constraints */
+            /* For md-vv-avek, we strictly only need this if using pressure
              * control, but we really would like to have accurate pressures
              * printed out.
              * Think about ways around this in the future?
@@ -1146,6 +1145,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && inputrecNptTrotter(ir)));*/
             bPres = TRUE;
             bTemp = ((ir->eI == eiVV && (!bInitStep)) || (ir->eI == eiVVAK));
+            bool computeEkinFromFullStepVelocities = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres));
             if (bCalcEner && ir->eI == eiVVAK)
             {
                 bSumEkinhOld = TRUE;
@@ -1165,6 +1165,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
                                 | (bStopCM ? CGLO_STOPCM : 0)
+                                | (computeEkinFromFullStepVelocities ? CGLO_EKINFROMFULLSTEPVELOCITIES : 0)
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 | CGLO_SCALEEKIN
                                 );
@@ -1203,11 +1204,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* We need the kinetic energy at minus the half step for determining
                      * the full step kinetic energy and possibly for T-coupling.*/
                     /* This may not be quite working correctly yet . . . . */
+                    bool computeEkinFromFullStepVelocities = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres));
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                     constr, NULL, FALSE, state->box,
                                     NULL, &bSumEkinhOld,
-                                    CGLO_GSTAT | CGLO_TEMPERATURE);
+                                    CGLO_GSTAT | CGLO_TEMPERATURE
+                                    | (computeEkinFromFullStepVelocities ? CGLO_EKINFROMFULLSTEPVELOCITIES : 0));
                     wallcycle_start(wcycle, ewcUPDATE);
                 }
             }
@@ -1439,7 +1442,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 );
                 wallcycle_start(wcycle, ewcUPDATE);
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
-                /* now we know the scaling, we can compute the positions again again */
+                /* now we know the scaling, we can compute the positions again */
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,

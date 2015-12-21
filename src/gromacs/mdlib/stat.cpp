@@ -158,16 +158,16 @@ void global_stat(gmx_global_stat_t gs,
     int        nener, j;
     real      *rmsd_data = NULL;
     double     nb;
-    gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
+    gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, computeEkinFromFullStepVelocities, bReadEkin;
     bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
 
-    bVV           = EI_VV(inputrec->eI);
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bEner         = flags & CGLO_ENERGY;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrVir    = (flags & CGLO_CONSTRAINT);
-    bEkinAveVel   = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
-    bReadEkin     = (flags & CGLO_READEKIN);
+    bVV                               = EI_VV(inputrec->eI);
+    bTemp                             = flags & CGLO_TEMPERATURE;
+    bEner                             = flags & CGLO_ENERGY;
+    bPres                             = (flags & CGLO_PRESSURE);
+    bConstrVir                        = (flags & CGLO_CONSTRAINT);
+    computeEkinFromFullStepVelocities = (flags & CGLO_EKINFROMFULLSTEPVELOCITIES);
+    bReadEkin                         = (flags & CGLO_READEKIN);
 
     rb   = gs->rb;
     itc0 = gs->itc0;
@@ -205,13 +205,16 @@ void global_stat(gmx_global_stat_t gs,
                 {
                     itc0[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
                 }
-                if (bEkinAveVel && !bReadEkin)
+                if (!bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinf[0]);
-                }
-                else if (!bReadEkin)
-                {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    if (computeEkinFromFullStepVelocities)
+                    {
+                        itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    }
+                    else
+                    {
+                        itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    }
                 }
             }
             /* these probably need to be put into one of these categories */
@@ -319,13 +322,16 @@ void global_stat(gmx_global_stat_t gs,
                 {
                     extract_binr(rb, itc0[j], DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
                 }
-                if (bEkinAveVel && !bReadEkin)
+                if (!bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinf[0]);
-                }
-                else if (!bReadEkin)
-                {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    if (computeEkinFromFullStepVelocities)
+                    {
+                        extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    }
+                    else
+                    {
+                        extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    }
                 }
             }
             extract_binr(rb, idedl, 1, &(ekind->dekindl));
