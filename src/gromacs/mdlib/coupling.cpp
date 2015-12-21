@@ -795,6 +795,7 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
 }
 
 
+/* Note this code relies on the half-step temperature, and is thus only called by leap-frog */
 void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], t_extmass *MassQ)
 {
