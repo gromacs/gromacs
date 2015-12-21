@@ -97,7 +97,8 @@ static const double* sy_const[] = {
 
 /* these integration routines are only referenced inside this file */
 static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real dtfull,
-                        double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ, gmx_bool bEkinAveVel)
+                        double xi[], double vxi[], double scalefac[], real *veta, t_extmass *MassQ,
+                        gmx_bool computeEkinFromFullStepVelocities)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -146,7 +147,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
             tcstat = &ekind->tcstat[i];
             nd     = opts->nrdf[i];
             reft   = std::max<real>(0, opts->ref_t[i]);
-            if (bEkinAveVel)
+            if (computeEkinFromFullStepVelocities)
             {
                 Ekin = 2*trace(tcstat->ekinf)*tcstat->ekinscalef_nhc;
             }
@@ -795,6 +796,7 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
 }
 
 
+/* Note this code relies on the half-step temperature, and is thus only called by leap-frog */
 void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], t_extmass *MassQ)
 {
@@ -907,6 +909,9 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:
+                /* It is correct to pass FALSE as the last argument,
+                 * because even md-vv-avek uses on-step KE for
+                 * pressure coupling. */
                 NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
                             state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
                 break;

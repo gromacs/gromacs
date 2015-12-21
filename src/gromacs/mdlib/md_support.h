@@ -50,8 +50,8 @@ struct t_trxframe;
  * passed to compute_globals in md.c and global_stat.
  */
 
-/* we are computing the kinetic energy from average velocities */
-#define CGLO_EKINAVEVEL     (1<<2)
+/* calculate the full-step kinetic energy from full-step velocities */
+#define CGLO_EKINFROMFULLSTEPVELOCITIES (1<<2)
 /* we are removing the center of mass momenta */
 #define CGLO_STOPCM         (1<<3)
 /* bGStat is defined in do_md */

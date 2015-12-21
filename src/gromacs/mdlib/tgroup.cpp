@@ -243,7 +243,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
+              gmx_bool computeEkinFromFullStepVelocities, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T;
@@ -271,13 +271,17 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
 
         if (nd > 0)
         {
-            if (bEkinAveVel)
+            /* Compute the full-step kinetic-energy
+               contribution. After any N-H scaling factors have been
+               multiplied in, we can reset them. */
+            if (computeEkinFromFullStepVelocities)
             {
                 if (!bScaleEkin)
                 {
                     /* in this case, kinetic energy is from the current velocities already */
                     msmul(tcstat->ekinf, tcstat->ekinscalef_nhc, tcstat->ekinf);
                 }
+                tcstat->ekinscalef_nhc = 1.0;
             }
             else
             {
@@ -290,21 +294,13 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
                             0.5*(tcstat->ekinh[j][m]*tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
                     }
                 }
-            }
-            m_add(tcstat->ekinf, ekind->ekin, ekind->ekin);
-
-            tcstat->Th = calc_temp(trace(tcstat->ekinh), nd);
-            tcstat->T  = calc_temp(trace(tcstat->ekinf), nd);
-
-            /* after the scaling factors have been multiplied in, we can remove them */
-            if (bEkinAveVel)
-            {
-                tcstat->ekinscalef_nhc = 1.0;
-            }
-            else
-            {
                 tcstat->ekinscaleh_nhc = 1.0;
+                tcstat->Th             = calc_temp(trace(tcstat->ekinh), nd);
             }
+            /* However we calculated ekinf, accumulate it to ekin, and
+               compute a full-step temperature. */
+            tcstat->T = calc_temp(trace(tcstat->ekinf), nd);
+            m_add(tcstat->ekinf, ekind->ekin, ekind->ekin);
         }
         else
         {
@@ -320,7 +316,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
     }
     if (dekindlambda)
     {
-        if (bEkinAveVel)
+        if (computeEkinFromFullStepVelocities)
         {
             *dekindlambda = ekind->dekindl;
         }

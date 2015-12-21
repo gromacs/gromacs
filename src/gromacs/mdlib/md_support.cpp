@@ -283,26 +283,29 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
-             bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
+             bReadEkin, computeEkinFromFullStepVelocities, bScaleEkin, bConstrain;
     real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bStopCM       = flags & CGLO_STOPCM;
-    bGStat        = flags & CGLO_GSTAT;
-    bReadEkin     = (flags & CGLO_READEKIN);
-    bScaleEkin    = (flags & CGLO_SCALEEKIN);
-    bEner         = flags & CGLO_ENERGY;
-    bTemp         = flags & CGLO_TEMPERATURE;
-    bPres         = (flags & CGLO_PRESSURE);
-    bConstrain    = (flags & CGLO_CONSTRAINT);
+    bStopCM                           = flags & CGLO_STOPCM;
+    bGStat                            = flags & CGLO_GSTAT;
+    bReadEkin                         = (flags & CGLO_READEKIN);
+    bScaleEkin                        = (flags & CGLO_SCALEEKIN);
+    bEner                             = flags & CGLO_ENERGY;
+    bTemp                             = flags & CGLO_TEMPERATURE;
+    bPres                             = (flags & CGLO_PRESSURE);
+    bConstrain                        = (flags & CGLO_CONSTRAINT);
+    computeEkinFromFullStepVelocities = flags & CGLO_EKINFROMFULLSTEPVELOCITIES;
+    /* Note md-vv integrator computes kinetic energy (and thus
+       temperature) based upon the full-step velocities, whereas md
+       (leap-frog) and md-vv-avek integrators compute the kinetic
+       energy based upon averaged half-step kinetic energies (see
+       reference manual for details).
 
-    /* we calculate a full state kinetic energy either with full-step velocity verlet
-       or half step where we need the pressure */
-
-    bEkinAveVel = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres) || bReadEkin);
-
-    /* in initalization, it sums the shake virial in vv, and to
-       sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
+       In the implementation, this affects whether KE values labelled
+       as full-step (ekinf; for md-vv) or half-step (ekinh; for md and
+       md-vv-avek) are accumulated.
+     */
 
     /* ########## Kinetic energy  ############## */
 
@@ -318,7 +321,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         if (!bReadEkin)
         {
-            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);
+            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, computeEkinFromFullStepVelocities);
         }
     }
 
@@ -382,15 +385,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bTemp)
     {
-        /* Sum the kinetic energies of the groups & calc temp */
-        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with inputrecNptTrotter */
-        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).
-           Leap with AveVel is not supported; it's not clear that it will actually work.
-           bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
-           If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
-         */
+        /* Sum the kinetic energies of the groups & calculate the full-step temperature */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
-                                       bEkinAveVel, bScaleEkin);
+                                       computeEkinFromFullStepVelocities, bScaleEkin);
         enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);

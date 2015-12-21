@@ -142,7 +142,7 @@ void update_box(FILE             *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
+                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinFromFullStepVel);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -157,6 +157,8 @@ void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
  * Now also computes the contribution of the kinetic energy to the
  * free energy
  *
+ * bEkinFromFullStepVel: If TRUE, we sum into ekinf member of
+ * ekind->tcstat[*]. If FALSE, into ekinh member.
  */
 
 
