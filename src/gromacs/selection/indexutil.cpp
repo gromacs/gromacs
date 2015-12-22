@@ -422,7 +422,7 @@ gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn)
             writer->writeString(" ...");
         }
     }
-    writer->writeLine();
+    writer->ensureLineBreak();
 }
 
 int
