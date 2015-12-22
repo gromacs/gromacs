@@ -148,11 +148,6 @@ TextWriter::~TextWriter()
 {
 }
 
-TextOutputStream &TextWriter::stream()
-{
-    return *impl_->stream_;
-}
-
 TextLineWrapperSettings &TextWriter::wrapperSettings()
 {
     return impl_->wrapper_.settings();

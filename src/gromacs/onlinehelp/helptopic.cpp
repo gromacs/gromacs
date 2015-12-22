@@ -154,7 +154,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
             const char *const title = (*topic)->title();
             if (!isNullOrEmpty(title))
             {
-                context.outputFile().writeLine();
+                context.paragraphBreak();
                 HelpWriterContext subContext(context);
                 subContext.enterSubSection(title);
                 (*topic)->writeHelp(subContext);

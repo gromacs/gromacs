@@ -371,9 +371,7 @@ void SynopsisFormatter::start(const char *name)
 
 void SynopsisFormatter::finish()
 {
-    TextWriter &file = context_.outputFile();
-    file.writeLine();
-    file.writeLine();
+    context_.outputFile().ensureLineBreak();
 }
 
 void SynopsisFormatter::formatOption(const OptionInfo &option)
@@ -428,7 +426,6 @@ class OptionsListFormatter : public IOptionsFormatter
             if (bDidOutput_)
             {
                 context_.writeOptionListEnd();
-                context_.outputFile().writeLine();
             }
         }
 
@@ -446,8 +443,9 @@ class OptionsListFormatter : public IOptionsFormatter
             {
                 if (header_ != NULL)
                 {
+                    context_.paragraphBreak();
                     context_.writeTextBlock(header_);
-                    context_.writeTextBlock("");
+                    context_.paragraphBreak();
                 }
                 context_.writeOptionListStart();
             }
@@ -603,7 +601,6 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
     {
         writerContext.writeTitle("Description");
         writerContext.writeTextBlock(impl_->helpText_);
-        writerContext.outputFile().writeLine();
     }
     CommonFormatterData    common(TimeUnitManager().timeUnitAsString());
     OptionsListFormatter   formatter(writerContext, common, "Options");

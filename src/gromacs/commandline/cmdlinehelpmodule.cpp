@@ -309,6 +309,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     {
         // TODO: Consider printing a list of "core" commands. Would require someone
         // to determine such a set...
+        context.paragraphBreak();
         writeSubTopicList(context,
                           "Additional help is available on the following topics:");
         context.writeTextBlock("To access the help, use '[PROGRAM] help <topic>'.");
@@ -592,14 +593,14 @@ void HelpExportReStructuredText::exportModuleHelp(
         // MPI-specific documentation
         writer.writeLine(".. _mdrun_mpi:");
     }
-    writer.writeLine();
+    writer.ensureEmptyLine();
 
-    CommandLineHelpContext context(file.get(), eHelpOutputFormat_Rst, &links_, binaryName_);
+    CommandLineHelpContext context(&writer, eHelpOutputFormat_Rst, &links_, binaryName_);
     context.enterSubSection(displayName);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
 
-    writer.writeLine();
+    writer.ensureEmptyLine();
     writer.writeLine(".. only:: man");
     writer.writeLine();
     writer.writeLine("   See also");
@@ -646,8 +647,10 @@ void HelpExportReStructuredText::exportModuleGroup(
         const char                *title,
         const ModuleGroupContents &modules)
 {
+    indexFile_->ensureEmptyLine();
     indexFile_->writeLine(title);
     indexFile_->writeLine(std::string(std::strlen(title), '^'));
+    manPagesFile_->ensureEmptyLine();
     manPagesFile_->writeLine(title);
     manPagesFile_->writeLine(std::string(std::strlen(title), '^'));
 
@@ -669,8 +672,6 @@ void HelpExportReStructuredText::exportModuleGroup(
                                               tag.c_str(),
                                               module->second));
     }
-    indexFile_->writeLine();
-    manPagesFile_->writeLine();
 }
 
 void HelpExportReStructuredText::finishModuleGroupExport()
@@ -684,12 +685,12 @@ void HelpExportReStructuredText::finishModuleGroupExport()
 void HelpExportReStructuredText::exportTopic(const IHelpTopic &topic)
 {
     const std::string       path("onlinehelp/" + std::string(topic.name()) + ".rst");
-    TextOutputStreamPointer file(outputRedirector_->openTextOutputFile(path));
-    CommandLineHelpContext  context(file.get(), eHelpOutputFormat_Rst, &links_,
+    TextWriter              writer(outputRedirector_->openTextOutputFile(path));
+    CommandLineHelpContext  context(&writer, eHelpOutputFormat_Rst, &links_,
                                     binaryName_);
     HelpManager             manager(topic, context.writerContext());
     manager.writeCurrentTopic();
-    file->close();
+    writer.close();
 }
 
 /********************************************************************
@@ -962,9 +963,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     }
 
     TextOutputStream      &outputFile = impl_->outputRedirector_->standardOutput();
+    TextWriter             writer(&outputFile);
     HelpLinks              links(eHelpOutputFormat_Console);
     initProgramLinks(&links, *impl_);
-    CommandLineHelpContext context(&outputFile, eHelpOutputFormat_Console, &links,
+    CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, &links,
                                    impl_->binaryName_);
     context.setShowHidden(impl_->bHidden_);
     if (impl_->moduleOverride_ != NULL)

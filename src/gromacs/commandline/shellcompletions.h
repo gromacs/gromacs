@@ -54,7 +54,7 @@ namespace gmx
 
 class CommandLineHelpContext;
 class Options;
-class TextOutputStream;
+class TextWriter;
 
 //! \cond internal
 //! \addtogroup module_commandline
@@ -78,7 +78,7 @@ class ShellCompletionWriter
                               ShellCompletionFormat  format);
         ~ShellCompletionWriter();
 
-        TextOutputStream &outputStream();
+        TextWriter &outputWriter();
 
         void startCompletions();
         void writeModuleCompletions(const char    *moduleName,

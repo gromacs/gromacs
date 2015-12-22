@@ -642,7 +642,6 @@ KeywordsHelpTopic::KeywordsHelpTopic()
 void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
     context.writeTextBlock(helpText());
-    context.writeTextBlock("");
 
     // Print the list of keywords
     writeKeywordListStart(context, "Keywords that select atoms by an integer property:");
@@ -676,14 +675,15 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext &context,
                                               const char              *heading) const
 {
+    context.paragraphBreak();
     std::string fullHeading("* ");
     fullHeading.append(heading);
     context.writeTextBlock(fullHeading);
     if (context.outputFormat() == eHelpOutputFormat_Rst)
     {
-        context.writeTextBlock("");
+        context.paragraphBreak();
         context.writeTextBlock("  ::");
-        context.writeTextBlock("");
+        context.paragraphBreak();
     }
 }
 
@@ -692,7 +692,7 @@ void KeywordsHelpTopic::writeKeywordListEnd(const HelpWriterContext &context,
 {
     if (context.outputFormat() == eHelpOutputFormat_Rst)
     {
-        context.writeTextBlock("");
+        context.paragraphBreak();
     }
     if (!isNullOrEmpty(extraInfo))
     {
@@ -700,7 +700,6 @@ void KeywordsHelpTopic::writeKeywordListEnd(const HelpWriterContext &context,
         fullInfo.append(extraInfo);
         context.writeTextBlock(fullInfo);
     }
-    context.writeTextBlock("");
 }
 
 void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
@@ -778,7 +777,6 @@ void KeywordsHelpTopic::writeKeywordSubTopics(const HelpWriterContext &context) 
         HelpWriterContext         subContext(context);
         subContext.enterSubSection(title);
         subTopic->writeHelp(subContext);
-        context.writeTextBlock("");
     }
 }
 

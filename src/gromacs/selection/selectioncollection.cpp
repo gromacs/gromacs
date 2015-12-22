@@ -285,7 +285,7 @@ void printHelp(TextWriter *writer, gmx_ana_selcollection_t *sc,
     {
         sc->rootHelp = createSelectionHelpTopic();
     }
-    HelpWriterContext context(&writer->stream(), eHelpOutputFormat_Console);
+    HelpWriterContext context(writer, eHelpOutputFormat_Console);
     HelpManager       manager(*sc->rootHelp, context);
     try
     {
