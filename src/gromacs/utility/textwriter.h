@@ -135,9 +135,6 @@ class TextWriter
         explicit TextWriter(const TextOutputStreamPointer &stream);
         ~TextWriter();
 
-        //! Returns the underlying stream for this writer.
-        TextOutputStream &stream();
-
         /*! \brief
          * Allows adjusting wrapping settings for the writer.
          *

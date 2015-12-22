@@ -448,7 +448,8 @@ TestReferenceChecker CommandLineTestBase::rootChecker()
 void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)
 {
     StringOutputStream     stream;
-    CommandLineHelpContext context(&stream, eHelpOutputFormat_Console, nullptr, "test");
+    TextWriter             writer(&stream);
+    CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, nullptr, "test");
     context.setModuleDisplayName(formatString("%s %s", "test", module->name()));
     module->writeHelp(context);
     TestReferenceChecker   checker(rootChecker());

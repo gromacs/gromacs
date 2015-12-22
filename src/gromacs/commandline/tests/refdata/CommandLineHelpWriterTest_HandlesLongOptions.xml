@@ -17,6 +17,5 @@ Other options:
  -string <string>           (A very long string value that overflows even the description column Another very long string value that overflows even the description column)
            String option with very long values (may be less relevant with
            selections having their own option type)
-
 ]]></String>
 </ReferenceData>

@@ -22,6 +22,5 @@ Options to specify input files:
            File name option with a long name
  -longfileopt2 [<.dat>]     (path/to/long/file/name.dat) (Opt., Lib.)
            File name option with multiple long fields
-
 ]]></String>
 </ReferenceData>

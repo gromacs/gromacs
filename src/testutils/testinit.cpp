@@ -64,6 +64,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/mpi-printer.h"
 #include "testutils/refdata.h"
@@ -142,8 +143,8 @@ void printHelp(const Options &options)
     std::fprintf(stderr,
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
-    CommandLineHelpContext context(&TextOutputFile::standardError(),
-                                   eHelpOutputFormat_Console, NULL, program);
+    TextWriter             writer(&TextOutputFile::standardError());
+    CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, NULL, program);
     context.setModuleDisplayName(program);
     CommandLineHelpWriter(options).writeHelp(context);
 }
