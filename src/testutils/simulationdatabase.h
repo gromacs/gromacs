@@ -77,6 +77,7 @@ using MdpFieldValues = std::map<std::string, std::string>;
  *     - argon12
  *     - argon5832
  *     - tip3p5
+ *     - spc2
  *     - spc216
  *     - alanine_vsite_vacuo
  *     - alanine_vsite_solvated
