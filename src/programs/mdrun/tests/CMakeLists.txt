@@ -47,6 +47,7 @@ gmx_add_gtest_executable(
     # files with code for tests
     tabulated_bonded_interactions.cpp
     energyreader.cpp
+    exactcontinuation.cpp
     grompp.cpp
     rerun.cpp
     trajectory_writing.cpp

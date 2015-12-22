@@ -137,9 +137,16 @@ class MdrunComparisonFixture : public MdrunTestFixture
                                const char            *integrator,
                                const char            *tcoupl,
                                const char            *pcoupl);
+        /*! Return the actual value for .mdp field \c key that has already been used in \c runGrompp().
+         *
+         * \throws InternalError  if runGrompp() has not already been called.
+         * \throws RangeError     if \c key is not in the set of keys that were used. */
+        std::string queryMdpKeyValue(const std::string &key);
     protected:
         //! Permit test fixtures of derived classes to check whether grompp was run.
         bool gromppWasRun_;
+        //! Store the .mdp keys and values that were used in grompp, so they can be queried afterwards.
+        MdpFieldValues mdpFieldValuesUsedInGrompp_;
 };
 
 } // namespace test

@@ -48,6 +48,7 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
@@ -250,6 +251,7 @@ void MdrunComparisonFixture::runGrompp(const CommandLine     &gromppCallerRef,
     prepareMdpFile(mdpFieldValues, integrator, tcoupl, pcoupl);
     EXPECT_EQ(0, runner_.callGrompp(gromppCallerRef));
     gromppWasRun_ = true;
+    mdpFieldValuesUsedInGrompp_ = mdpFieldValues;
 }
 
 void MdrunComparisonFixture::runGrompp(const char            *simulationName,
@@ -260,6 +262,26 @@ void MdrunComparisonFixture::runGrompp(const char            *simulationName,
     CommandLine caller;
     caller.append("grompp");
     runGrompp(caller, simulationName, integrator, tcoupl, pcoupl);
+}
+
+std::string MdrunComparisonFixture::queryMdpKeyValue(const std::string &key)
+{
+    if (!gromppWasRun_)
+    {
+        GMX_THROW(InternalError("runGrompp() must be called before queryMdpKeyValue"));
+    }
+
+    MdrunComparisonFixture::MdpFieldValues::mapped_type value;
+    try
+    {
+        value = mdpFieldValuesUsedInGrompp_.at(key);
+    }
+    catch (std::out_of_range &e)
+    {
+        GMX_THROW(RangeError("Mdp key '" + key + "' was not set, so cannot be queried for mdrun comparison tests"));
+    }
+
+    return value;
 }
 
 } // namespace test
