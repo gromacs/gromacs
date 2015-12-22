@@ -41,6 +41,8 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/mdlib/forcerec.h"
 
 struct ekinstate_t;
 struct gmx_constr;
@@ -103,7 +105,14 @@ void update_coords(FILE              *fplog,
                    gmx_bool           bInitStep,
                    int                bUpdatePart,
                    t_commrec         *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr        *constr);
+                   gmx_constr        *constr,
+                   rvec              *vold,
+                   t_forcerec        *fr,
+                   const t_pbc       *pbc1);
+
+
+
+
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -126,7 +135,12 @@ void update_constraints(FILE              *fplog,
                         gmx_update_t       upd,
                         gmx_constr        *constr,
                         gmx_bool           bFirstHalf,
-                        gmx_bool           bCalcVir);
+                        gmx_bool           bCalcVir,
+                        rvec              *vold,
+                        t_forcerec        *fr,
+                        const t_pbc       *pbc1,
+                        gmx_bool           bInitStep);
+
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
