@@ -78,22 +78,6 @@ namespace test
 namespace
 {
 
-//! Functor for comparing reference and test frames on particular energies to match.
-class EnergyComparator
-{
-    public:
-        //! Constructor
-        EnergyComparator(const EnergyTolerances &energiesToMatch)
-            : energiesToMatch_(energiesToMatch) {}
-        //! The functor method.
-        void operator()(const EnergyFrame &reference, const EnergyFrame &test)
-        {
-            compareEnergyFrames(reference, test, energiesToMatch_);
-        }
-        //! Container of the energies to match and the tolerance required.
-        const EnergyTolerances &energiesToMatch_;
-};
-
 //! Run grompp for a normal mdrun, the run, and its rerun.
 void executeRerunTest(TestFileManager        *fileManager,
                       SimulationRunner       *runner,
