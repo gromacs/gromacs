@@ -156,6 +156,9 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
  */
 const char *check_box(int ePBC, const matrix box);
 
+/*computer matrix vectors from base vectors and angles */
+void matrix_convert(matrix box, const rvec vec, rvec angle);
+
 /*! \brief Compute the maximum cutoff for the box
 
  * Returns the square of the maximum cut-off allowed for the box,

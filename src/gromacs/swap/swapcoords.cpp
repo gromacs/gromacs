@@ -1275,7 +1275,7 @@ static void init_swapstate(
 
         /* Remove pbc, make molecule whole. */
         snew(x_pbc, mtop->natoms);
-        m_rveccopy(mtop->natoms, x, x_pbc);
+        copy_rvecn(x, x_pbc, 0, mtop->natoms);
 
         /* This can only make individual molecules whole, not multimers */
         do_pbc_mtop(NULL, ePBC, box, mtop, x_pbc);

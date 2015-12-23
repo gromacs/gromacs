@@ -130,7 +130,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
 
     if (norm2(box[YY])*norm2(box[ZZ]) != 0)
     {
-        alpha = RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ]));
+        alpha = RAD2DEG*gmx_angle(box[YY], box[ZZ]);
     }
     else
     {
@@ -138,7 +138,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
     }
     if (norm2(box[XX])*norm2(box[ZZ]) != 0)
     {
-        beta  = RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ]));
+        beta  = RAD2DEG*gmx_angle(box[XX], box[ZZ]);
     }
     else
     {
@@ -146,7 +146,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
     }
     if (norm2(box[XX])*norm2(box[YY]) != 0)
     {
-        gamma = RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY]));
+        gamma = RAD2DEG*gmx_angle(box[XX], box[YY]);
     }
     else
     {
