@@ -71,10 +71,8 @@
    void dprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
    void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
    real cos_angle(rvec a,rvec b)
-   real cos_angle_no_table(rvec a,rvec b)
    real distance2(rvec v1, rvec v2)                 = | v2 - v1 |^2
    void unitv(rvec src,rvec dest)                   dest = src / |src|
-   void unitv_no_table(rvec src,rvec dest)          dest = src / |src|
 
    matrix (3x3) operations:
     ! indicates that dest should not be the same as a, b or src
@@ -101,30 +99,12 @@
    real trace(matrix m)                             = trace(m)
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#elif 0
-} /* avoid screwing up indentation */
-#endif
-
-/* Maclaurin series for sinh(x)/x, useful for NH chains and MTTK pressure control
-   Here, we compute it to 10th order, which might be overkill, 8th is probably enough,
-   but it's not very much more expensive. */
-
-static gmx_inline real series_sinhx(real x)
-{
-    real x2 = x*x;
-    return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
-}
 
 static gmx_inline void rvec_add(const rvec a, const rvec b, rvec c)
 {
@@ -377,7 +357,7 @@ static gmx_inline double dnorm2(const dvec a)
  * don't need 1/dnorm(), otherwise use dnorm2()*dinvnorm(). */
 static gmx_inline double dnorm(const dvec a)
 {
-    return sqrt(diprod(a, a));
+    return std::sqrt(diprod(a, a));
 }
 
 /* WARNING:
@@ -385,7 +365,7 @@ static gmx_inline double dnorm(const dvec a)
  * don't need 1/norm(), otherwise use norm2()*invnorm(). */
 static gmx_inline real norm(const rvec a)
 {
-    return sqrt(iprod(a, a));
+    return std::sqrt(iprod(a, a));
 }
 
 static gmx_inline real invnorm(const rvec a)
@@ -447,44 +427,6 @@ cos_angle(const rvec a, const rvec b)
     return cosval;
 }
 
-/* WARNING:
- * Do _not_ use these routines to calculate the angle between two vectors
- * as acos(cos_angle(u,v)). While it might seem obvious, the acos function
- * is very flat close to -1 and 1, which will lead to accuracy-loss.
- * Instead, use the new gmx_angle() function directly.
- */
-static gmx_inline real
-cos_angle_no_table(const rvec a, const rvec b)
-{
-    /* This version does not need the invsqrt lookup table */
-    real   cosval;
-    int    m;
-    double aa, bb, ip, ipa, ipb; /* For accuracy these must be double! */
-
-    ip = ipa = ipb = 0.0;
-    for (m = 0; (m < DIM); m++) /* 18 */
-    {
-        aa   = a[m];
-        bb   = b[m];
-        ip  += aa*bb;
-        ipa += aa*aa;
-        ipb += bb*bb;
-    }
-    cosval = ip/sqrt(ipa*ipb);  /* 12 */
-    /* 30 TOTAL */
-    if (cosval > 1.0)
-    {
-        return 1.0;
-    }
-    if (cosval < -1.0)
-    {
-        return -1.0;
-    }
-
-    return cosval;
-}
-
-
 static gmx_inline void cprod(const rvec a, const rvec b, rvec c)
 {
     c[XX] = a[YY]*b[ZZ]-a[ZZ]*b[YY];
@@ -523,11 +465,11 @@ static gmx_inline void mmul_ur0(gmx_cxx_const matrix a, gmx_cxx_const matrix b, 
     dest[XX][YY] = 0.0;
     dest[XX][ZZ] = 0.0;
     dest[YY][XX] = a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX];
-    dest[YY][YY] =                    a[YY][YY]*b[YY][YY];
+    dest[YY][YY] =                     a[YY][YY]*b[YY][YY];
     dest[YY][ZZ] = 0.0;
     dest[ZZ][XX] = a[ZZ][XX]*b[XX][XX]+a[ZZ][YY]*b[YY][XX]+a[ZZ][ZZ]*b[ZZ][XX];
-    dest[ZZ][YY] =                    a[ZZ][YY]*b[YY][YY]+a[ZZ][ZZ]*b[ZZ][YY];
-    dest[ZZ][ZZ] =                                        a[ZZ][ZZ]*b[ZZ][ZZ];
+    dest[ZZ][YY] =                     a[ZZ][YY]*b[YY][YY]+a[ZZ][ZZ]*b[ZZ][YY];
+    dest[ZZ][ZZ] =                                         a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
 static gmx_inline void mmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
@@ -667,56 +609,9 @@ static gmx_inline void unitv(const rvec src, rvec dest)
     dest[ZZ] = linv*src[ZZ];
 }
 
-static gmx_inline void unitv_no_table(const rvec src, rvec dest)
-{
-    real linv;
-
-    linv     = 1.0/sqrt(norm2(src));
-    dest[XX] = linv*src[XX];
-    dest[YY] = linv*src[YY];
-    dest[ZZ] = linv*src[ZZ];
-}
-
-static void calc_lll(const rvec box, rvec lll)
-{
-    lll[XX] = 2.0*M_PI/box[XX];
-    lll[YY] = 2.0*M_PI/box[YY];
-    lll[ZZ] = 2.0*M_PI/box[ZZ];
-}
-
 static gmx_inline real trace(gmx_cxx_const matrix m)
 {
     return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
-
-/* Operations on multidimensional rvecs, used e.g. in edsam.c */
-static gmx_inline void m_rveccopy(int dim, gmx_cxx_const rvec *a, rvec *b)
-{
-    /* b = a */
-    int i;
-
-    for (i = 0; i < dim; i++)
-    {
-        copy_rvec(a[i], b[i]);
-    }
-}
-
-/*computer matrix vectors from base vectors and angles */
-static gmx_inline void matrix_convert(matrix box, const rvec vec, rvec angle)
-{
-    svmul(DEG2RAD, angle, angle);
-    box[XX][XX] = vec[XX];
-    box[YY][XX] = vec[YY]*cos(angle[ZZ]);
-    box[YY][YY] = vec[YY]*sin(angle[ZZ]);
-    box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
-    box[ZZ][YY] = vec[ZZ]
-        *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
-    box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
-                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
-}
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -46,6 +46,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include "gromacs/utility/real.h"
+
 namespace gmx
 {
 
@@ -407,6 +409,18 @@ T
 power12(T x)
 {
     return square(power6(x));
+}
+
+/*! \brief Maclaurin series for sinh(x)/x.
+ *
+ * Used for NH chains and MTTK pressure control.
+ * Here, we compute it to 10th order, which might be an overkill.
+ * 8th is probably enough, but it's not very much more expensive.
+ */
+static inline real series_sinhx(real x)
+{
+    real x2 = x*x;
+    return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
 }
 
 } // namespace gmx
