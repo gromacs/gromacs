@@ -937,11 +937,11 @@ int gmx_editconf(int argc, char *argv[])
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ])),
+               RAD2DEG*gmx_angle(box[YY], box[ZZ]),
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ])),
+               RAD2DEG*gmx_angle(box[XX], box[ZZ]),
                norm2(box[YY]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY])));
+               RAD2DEG*gmx_angle(box[XX], box[YY]));
         printf("    box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -1191,11 +1191,11 @@ int gmx_editconf(int argc, char *argv[])
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ])),
+               RAD2DEG*gmx_angle(box[YY], box[ZZ]),
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ])),
+               RAD2DEG*gmx_angle(box[XX], box[ZZ]),
                norm2(box[YY]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY])));
+               RAD2DEG*gmx_angle(box[XX], box[YY]));
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
