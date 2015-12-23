@@ -389,13 +389,13 @@ int gmx_bundle(int argc, char *argv[])
             {
                 rvec_sub(bun.end[0][i], bun.end[2][i], va);
                 rvec_sub(bun.end[2][i], bun.end[1][i], vb);
-                unitv_no_table(va, va);
-                unitv_no_table(vb, vb);
+                unitv(va, va);
+                unitv(vb, vb);
                 fprintf(fkink, " %6g", RAD2DEG*acos(iprod(va, vb)));
                 cprod(va, vb, vc);
                 copy_rvec(bun.mid[i], vr);
                 vr[ZZ] = 0;
-                unitv_no_table(vr, vr);
+                unitv(vr, vr);
                 fprintf(fkinkr, " %6g", RAD2DEG*std::asin(iprod(vc, vr)));
                 vl[XX] = vr[YY];
                 vl[YY] = -vr[XX];
