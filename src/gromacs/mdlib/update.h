@@ -108,7 +108,11 @@ void update_coords(FILE              *fplog,
                    gmx_constr        *constr,
                    rvec              *vold,
                    t_forcerec        *fr,
-                   const t_pbc       *pbc1);
+                   const t_pbc       *pbc1,
+                   real              *invmass1,
+                   int               *DPD_Made,
+                   real              *vi
+                   );
 
 
 
@@ -139,7 +143,10 @@ void update_constraints(FILE              *fplog,
                         rvec              *vold,
                         t_forcerec        *fr,
                         const t_pbc       *pbc1,
-                        gmx_bool           bInitStep);
+                        gmx_bool           bInitStep,
+                        real              *invmass1,
+                        int               *DPD_Made,
+                        real              *vi);
 
 
 /* Return TRUE if OK, FALSE in case of Shake Error */

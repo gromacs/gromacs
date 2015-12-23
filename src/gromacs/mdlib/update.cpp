@@ -75,7 +75,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
-//new from now
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -132,6 +131,26 @@ typedef struct gmx_update
 } t_gmx_update;
 
 
+
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
+
+
+#define X_STRIDE   3
+#define F_STRIDE   3
+
+#define XI_STRIDE  3
+#define FI_STRIDE  3
+
+
+#if GMX_SIMD_REAL_WIDTH >= UNROLLI
+#define STRIDE     GMX_SIMD_REAL_WIDTH
+#else
+#define STRIDE     (UNROLLI)
+#endif
+
+
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
     if (pbc)
@@ -157,61 +176,8 @@ real max_f(real f1, real f2)
     }
 }
 
-/* SECTION BASED ON VELOCITY VERLET CUT-OFF SCHEME */
 
-/*
-   Note 1: NICU:
-
-   from sim_util.cpp compiled: line 489:
-
-   nbnxn_kernel_ref(&nbvg->nbl_lists,
-                             nbvg->nbat, ic,
-                             fr->shift_vec,
-                             flags,
-                             clearF,
-                             fr->fshift[0],
-                             enerd->grpp.ener[egCOULSR],
-                             fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
-   Note 2: NICU:
-   inspired from
-   - nbnxn_kernel_ref.c
-   - nbnxn_kernel_common.c
-   - nbnxn_kernel_ref_outer.c
-   - nbnxn_kernel_ref_inner.c
-   - nbnxn_atomdata.c
-
- */
-
-
-/* Nicu: Completely New Function */
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
-
-/* We could use nbat->xstride and nbat->fstride, but macros might be faster */
-#define X_STRIDE   3
-#define F_STRIDE   3
-/* Local i-atom buffer strides */
-#define XI_STRIDE  3
-#define FI_STRIDE  3
-
-
-#if GMX_SIMD_REAL_WIDTH >= UNROLLI
-#define STRIDE     GMX_SIMD_REAL_WIDTH
-#else
-#define STRIDE     (UNROLLI)
-#endif
-
-
-// Nicu: we need some functions to call to initialize "nbat" or so-like
-
-// functions for copying data from one part to another
-
-
-
-void copy_v_values(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real * v, real * vi,  real * invmass_source, real * invmass_dest, int start, int end,  int type, int nfa)
-// inspired from function "nbnxn_atomdata_add_nbat_f_to_f_part" in file "nbnxn_atomdata.c"
+void copy_v_values(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real * v, real * vi,  real * invmass_source, real * invmass_dest, int start, int end,  int type)
 {
     int         i;
     int         a;
@@ -223,52 +189,28 @@ void copy_v_values(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real 
     {
         case nbatXYZ:
         case nbatXYZQ:
-            if (nfa == 1)
+            for (a = start; a < end; a++)
             {
-
-                for (a = start; a < end; a++)
-                {
-                    i = cell[a]*nbat->fstride;
+                i = cell[a]*nbat->fstride;
 
 
-                    vi[i]           = v[3*a];
-                    vi[i+1]         = v[3*a+1];
-                    vi[i+2]         = v[3*a+2];
-                    invmass_dest[i] = invmass_source[a];
-
-                }
+                vi[i]           = v[3*a];
+                vi[i+1]         = v[3*a+1];
+                vi[i+2]         = v[3*a+2];
+                invmass_dest[i] = invmass_source[a];
             }
-            else  // to be made
-            {
-            }
+
             break;
-        case nbatX4:
-            if (nfa == 1)
-            {
-                for (a = start; a < end; a++)
-                {
-                    i = X4_IND_A(cell[a]);
 
-                    vi[i + XX*PACK_X4]         = v[3*a];
-                    vi[i + YY*PACK_X4]         = v[3*a+1];
-                    vi[i + ZZ*PACK_X4]         = v[3*a+2];
-                    invmass_dest[i+XX*PACK_X4] = invmass_source[a];
 
-                }
-            }
-            else // to be made
-            {
-            }
-            break;
-        // other cases to be made
+
         default:
             gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 
 
-void copy_v_values_back(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real * v, real * vi, int start, int end,  int type, int nfa)
-// inspired from function "nbnxn_atomdata_add_nbat_f_to_f_part" in file "nbnxn_atomdata.c"
+void copy_v_values_back(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real * v, real * vi, int start, int end,  int type)
 {
     int         i;
     int         a;
@@ -280,54 +222,24 @@ void copy_v_values_back(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, 
     {
         case nbatXYZ:
         case nbatXYZQ:
-            if (nfa == 1)
+            for (a = start; a < end; a++)
             {
-
-                for (a = start; a < end; a++)
-                {
-                    i = cell[a]*nbat->fstride;
+                i = cell[a]*nbat->fstride;
 
 
-                    v[3*a]   = vi[i];
-                    v[3*a+1] = vi[i+1];
-                    v[3*a+2] = vi[i+2];
-
-
-
-                }
-
+                v[3*a]   = vi[i];
+                v[3*a+1] = vi[i+1];
+                v[3*a+2] = vi[i+2];
             }
-            else  // to be made
-            {
-            }
-
             break;
-        case nbatX4:
-            if (nfa == 1)
-            {
-                for (a = start; a < end; a++)
-                {
-                    i = X4_IND_A(cell[a]);
 
-                    v[3*a]     = vi[i + XX*PACK_X4];
-                    v[3*a + 1] = vi[i + YY*PACK_X4];
-                    v[3*a + 2] = vi[i + ZZ*PACK_X4];
-                }
-            }
-            else // to be made
-            {
-            }
-
-            break;
-        // other cases to be made
         default:
             gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 
 }
 
-void compute_z_y_ext(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, int * Yi, int * Zi, int type, int nfa)
-// inspired from function "nbnxn_atomdata_add_nbat_f_to_f_part" in file "nbnxn_atomdata.c"
+void compute_z_y_ext(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, int * Yi, int * Zi, int type)
 {
     const int  *cell;
 
@@ -337,27 +249,10 @@ void compute_z_y_ext(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, int
     {
         case nbatXYZ:
         case nbatXYZQ:
-            if (nfa == 1)
-            {
-                *Yi = 1;
-                *Zi = 2;
-            }
-            else  // to be made
-            {
-            }
+            *Yi = 1;
+            *Zi = 2;
             break;
-        case nbatX4:
-            if (nfa == 1)
-            {
-                *Yi = YY*PACK_X4;
-                *Zi = ZZ*PACK_X4;
 
-            }
-            else // to be made
-            {
-            }
-            break;
-        // other cases to be made
         default:
             gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
@@ -368,7 +263,7 @@ void compute_z_y_ext(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, int
 void apply_dpd_iso_verlet(
         const nbnxn_atomdata_t     *nbat,
         const nbnxn_search_t        nbs,
-        const nbnxn_pairlist_t     *nbl,            //new
+        const nbnxn_pairlist_t     *nbl,
         real             *          x,
         real             *          v,
         real                       *invmass,
@@ -401,7 +296,7 @@ void apply_dpd_iso_verlet(
 
     l_cj = nbl->cj;
 
-    compute_z_y_ext(nbs, nbat, &Yi, &Zi, nbat->FFormat, 1);
+    compute_z_y_ext(nbs, nbat, &Yi, &Zi, nbat->FFormat);
 
 
     for (n = 0; n < nbl->nci; n++)
@@ -427,68 +322,45 @@ void apply_dpd_iso_verlet(
             {
                 int ai;
 
-                // load the mass
+                /* load the mass  */
 
 
                 ii = (ci*UNROLLI+i)*F_STRIDE;
                 mi = invmass[ii];
 
+                /* Sometimes the mass is 0 because of exclussions or whatever else;
+                 *  We check also whether ii was already thermostated
+                 * This will tell us where we are */
+
+                ai = ci*UNROLLI + i;
+
+                if ((mi != 0) && (DPD_Made[ii] == 0))
+                {
 
 
-                if ((mi != 0) && (DPD_Made[ii] == 0)) //Sometimes the mass is 0 because of exclussions or whatever else;
-                {                         // We check also whether ii was already thermostated
-                                                      // This will tell us where we are
-                    ai = ci*UNROLLI + i;
 
+                    /* Load limits for loop over neighbors */
 
-
-                    // Load limits for loop over neighbors
                     nj0              = 0;
                     nj1              = UNROLLJ;
 
-                    // if (cTC)
-                    //  {
-                    //    gt_ii  = cTC[ii];
-                    // }
-
-                    // Load velocities
-
 
                     vix1  = v[ii];
-                    viy1  = v[ii+Yi];  //mod
-                    viz1  = v[ii+ Zi]; //mod
+                    viy1  = v[ii+Yi];
+                    viz1  = v[ii+ Zi];
 
 
-                    // We try to get the particle pair just through one random choice
-
-                    /* if(nj1!=(nj0+1))
-                       nj_i = rand() % (nj1 -nj0 -1 );
-                       else
-                       nj_i= nj0; */
-                    //  if (nj_i==nj0)
-                    // printf("\n 2*: ii=%d mi=%f DPD_Made=%d", ii, mi, DPD_Made[ii]);
 
                     for (nj_i = nj0; nj_i < nj1; nj_i++)
                     {
-                        // for having full extend;
-                        // "DPD_Made" will allow only one thermostating
                         jnr = (cj*UNROLLJ + nj_i) * X_STRIDE;
-
-                        // if (cTC)
-                        // {
-                        //    gt_jnr  = cTC[jnr];
-                        // }
 
 
                         mj = invmass[jnr];
 
+                        if (mj != 0)
+                        {
 
-
-
-                        if (mj != 0) // if mj!=0
-
-
-                        { // right computing
                             rvec x_aux, y_aux;
 
                             x_aux[XX] = x[ii];
@@ -514,20 +386,20 @@ void apply_dpd_iso_verlet(
                             w      = (1- r/rc1);
 
 
-                            if ((r > 0) & (w > 0)) // if success
-
+                            if ((r > 0) & (w > 0))
                             {
+
                                 f_iso  = w*max_f(f_iso1[0], f_iso1[0]);
 
 
-                                // Computation of velocity differences
+                                /* Computation of velocity differences */
                                 dvx =   vix1-v[jnr];
                                 dvy =   viy1-v[jnr+Yi];
                                 dvz =   viz1-v[jnr+ Zi];
 
-                                // Application of dissipative and random terms
+                                /* Application of dissipative and random terms */
                                 real rnd[3];
-                                real df_frac = 0.66666666666666666666666667;
+                                real df_frac = 2.0/3.0;
                                 int  ng      = gatindex ? gatindex[ii] : ii;
 
 
@@ -540,7 +412,7 @@ void apply_dpd_iso_verlet(
 
 
 
-                                // Distribute the velocity change 'dv' over the two particles
+                                /* Distribute the velocity change 'dv' over the two particles */
 
 
 
@@ -552,223 +424,25 @@ void apply_dpd_iso_verlet(
                                 v[ii+Yi]  =       v[ii+Yi] + m1*dvy;
                                 v[ii+Zi]  =       v[ii+Zi] + m1*dvz;
 
-
-
-
-
-
-                                m2 = (1/((mi/mj)+1));
-
-
-
+                                m2          = (1/((mi/mj)+1));
                                 v[jnr]      = v[jnr] - m2*dvx;
                                 v[jnr+Yi]   = v[jnr+Yi] - m2*dvy;
                                 v[jnr+Zi]   = v[jnr+Zi] - m2*dvz;
 
 
 
+                                /* Mark that jnr and ii were thermostated */
+                                DPD_Made[jnr] = 1;
+                                DPD_Made[ii]  = 1;
 
-                                DPD_Made[jnr] = 1; // mark that jnr was thermostated
-                                DPD_Made[ii]  = 1; // mark that ii was thermostated
-
-                            }                      // (w == 0) && (r > 0)
-                        }                          // mj ==0
-                    }                              // mi == 0
-                }                                  // nj_i
+                            }
+                        }
+                    }
+                }
             }
         }
-    } // cjind
+    }
 }
-
-
-
-// inspired from file: nbnxn_kernel_simd_4xn_outer/inner.h
-void apply_dpd_iso_verlet_4xn(
-        const nbnxn_atomdata_t     *nbat,
-        const nbnxn_search_t        nbs,
-        const nbnxn_pairlist_t     *nbl,            //new
-        real             *          x,
-        real             *          v,
-        real                       *invmass,
-        real                        f_iso1[],
-        real                        kT,
-        real                        rc1,
-        const t_pbc                *pbc,
-        gmx_int64_t                 step,
-        int                         seed,
-        int                        *gatindex,
-        int                        *DPD_Made)
-{
-    int           n, ii,  jnr = 0;
-    real          dx11, dy11, dz11;
-    real          vix1, viy1, viz1;
-    real          r;
-    real          w;
-    real          dvx, dvy, dvz;
-    real          mi, mj, m1, m2;
-    real          f_iso;
-    real          rsq11;
-    rvec          dx;
-    int           cjind0, cjind1, cjind;
-    int           Yi, Zi;
-    int           sci, scix;
-
-
-    const nbnxn_ci_t   *nbln;
-    const nbnxn_cj_t   *l_cj;
-
-    l_cj = nbl->cj;
-
-    compute_z_y_ext(nbs, nbat, &Yi, &Zi, nbat->FFormat, 1);
-
-
-    for (n = 0; n < nbl->nci; n++)
-    {
-        int i;
-        int ci;
-        int cj;
-
-
-        nbln = &nbl->ci[n];
-        ci   = nbln->ci;
-
-        cjind0 = nbln->cj_ind_start;
-        cjind1 = nbln->cj_ind_end;
-
-
-        for (cjind = cjind0; cjind < cjind1; cjind++)
-        {
-
-            cj = l_cj[cjind].cj;
-
-            for (i = 0; i < UNROLLI; i++)
-            {
-                int ai;
-
-                // load the mass
-
-       #if UNROLLJ <= 4
-                sci              = ci*STRIDE;
-                scix             = sci*DIM;
-      #else
-                sci              = (ci>>1)*STRIDE;
-                scix             = sci*DIM + (ci & 1)*(STRIDE>>1);
-      #endif
-
-                ii       = scix + i;
-                mi       = invmass[ii];
-
-
-
-                if ((mi != 0)  && (DPD_Made[ii] == 0)) //Sometimes the mass is 0 because of exclussions or whatever else;
-                {                         // We check also whether ii was already thermostated
-                                                       // This will tell us where we are
-                    ai = ci*UNROLLI + i;
-
-                    real rnd[3];
-                    int  ng = gatindex ? gatindex[n] : n;
-
-
-
-
-
-
-                    // Load velocities
-
-
-                    vix1  = v[ii];
-                    viy1  = v[ii+Yi];
-                    viz1  = v[ii+ Zi];
-
-
-
-
-    #if UNROLLJ == STRIDE
-                    jnr           = cj*UNROLLJ*DIM;
-    #else
-                    jnr           = (cj>>1)*DIM*STRIDE + (cj & 1)*UNROLLJ;
-    #endif
-
-
-                    mj = invmass[jnr];
-
-
-
-                    if ((mj != 0) && (DPD_Made[jnr] == 0)) // if mj!=0
-
-                    { // right computing
-                        rvec x_aux, y_aux;
-                        x_aux[XX] = x[ii];
-                        x_aux[YY] = x[ii + Yi];
-                        x_aux[ZZ] = x[ii + Zi];
-
-                        y_aux[XX] = x[jnr];
-                        y_aux[YY] = x[jnr + Yi];
-                        y_aux[ZZ] = x[jnr + Zi];
-
-
-
-                        pbc_rvec_sub(pbc, x_aux, y_aux, dx);
-
-                        dx11 = dx[XX];
-                        dy11 = dx[YY];
-                        dz11 = dx[ZZ];
-
-
-
-                        rsq11  = dx11*dx11+dy11*dy11+dz11*dz11;
-                        r      = sqrt(rsq11);
-                        w      = (1- r/rc1);
-
-
-                        if ((r > 0) & (w > 0)) // if success
-
-                        {
-                            f_iso  = w*max_f(f_iso1[0], f_iso1[0]);
-
-
-                            // Computation of velocity differences
-                            dvx =   vix1-v[jnr];
-                            dvy =   viy1-v[jnr+Yi];
-                            dvz =   viz1-v[jnr+ Zi];
-
-
-                            // Application of dissipative and random terms
-                            gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-                            real df_frac = 0.66666666666666666666666667;
-
-                            dvx = -f_iso*dvx + sqrt(df_frac*(kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[0];
-                            dvy = -f_iso*dvy + sqrt(df_frac*(kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[1];
-                            dvz = -f_iso*dvz + sqrt(df_frac*(kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[2];
-
-
-
-                            // Distribute the velocity change 'dv' over the two particles
-
-                            m1 = (1/((mj/mi)+1));
-
-                            v[ii]     =       v[ii] + m1*dvx;
-                            v[ii+Yi]  =       v[ii+Yi] + m1*dvy;
-                            v[ii+Zi]  =       v[ii+Zi] + m1*dvz;
-
-
-                            m2 = (1/((mi/mj)+1));
-
-                            v[jnr]      = v[jnr] - m2*dvx;
-                            v[jnr+Yi]   = v[jnr+Yi] - m2*dvy;
-                            v[jnr+Zi]   = v[jnr+Zi] - m2*dvz;
-
-
-                            DPD_Made[jnr] = 1; // mark that jnr was thermostated
-                            DPD_Made[ii]  = 1; // mark that ii was thermostated
-                        }                      // (w == 0) && (r > 0)
-                    }                          // mj ==0
-                }                              // mi == 0
-            }
-        }
-    } // cjind
-}
-
 
 
 
@@ -785,29 +459,26 @@ void call_iso_verlet_threads(
         gmx_int64_t                 step,
         int                         seed,
         int                        *gatindex,
-        int                         kernel_type)
+        int                         kernel_type,
+        real                       *invmass1,
+        int                        *DPD_Made,
+        real                       *vi,
+        int                         start,
+        int                         nrend)
 {
-    int                nnbl;      //new
-    nbnxn_pairlist_t **nbl;       //new
-    int                nthreads;  //new
+    int                nnbl;
+    nbnxn_pairlist_t **nbl;
+    int                nthreads;
     int                nb;
-    real               vi[50000]; // should be moved in md.c
     int                i;
     const int         *cell;
-    real               invmass1[50000]; //should be moved in md.c
-    int                DPD_Made[50000]; //should be moved in md.c
 
 
 
-    nnbl = nbl_list->nnbl;  //new
-    nbl  = nbl_list->nbl;   //new
-
-
-
+    nnbl = nbl_list->nnbl;
+    nbl  = nbl_list->nbl;
 
     cell = nbs->cell;
-
-
 
     for (i = 0; i < 50000; i++)
     {
@@ -816,43 +487,30 @@ void call_iso_verlet_threads(
         DPD_Made[i] = 0;
     }
 
+    // copy_v_values(nbs, nbat,  v, vi, invmass, invmass1, 0, nbs->natoms_local, nbat->FFormat);
 
-    copy_v_values(nbs, nbat,  v, vi, invmass, invmass1, 0, nbs->natoms_local, nbat->FFormat, 1);
+    copy_v_values(nbs, nbat,  v, vi, invmass, invmass1, start, nrend, nbat->FFormat);
+    nthreads = gmx_omp_nthreads_get(emntNonbonded);
+   #pragma omp parallel for schedule(static) num_threads(nthreads)
 
-
-
-
-    nthreads = gmx_omp_nthreads_get(emntNonbonded);                //new
-   #pragma omp parallel for schedule(static) num_threads(nthreads) //new
-
-    for (nb = 0; nb < nnbl; nb++)                                  //new
+    for (nb = 0; nb < nnbl; nb++)
     {
-        nbnxn_atomdata_output_t *out;                              //new: maybe not necessary
+        nbnxn_atomdata_output_t *out;
         out = &nbat->out[nb];
 
-        switch (kernel_type)  // nicu: similar as function "do_nb_verlet" from "sim_util.cpp"
-        {        // rest of the cases should be taken from there
+        switch (kernel_type)
+        {
 
+            /* Only this case is supported now */
             case nbnxnk4x4_PlainC:
                 apply_dpd_iso_verlet(nbat, nbs, nbl[nb],  nbat->x, vi,
                                      invmass1, f_iso1, kT, rc1, pbc, step, seed, gatindex, DPD_Made);
                 break;
-
-
-            case nbnxnk4xN_SIMD_4xN:
-                apply_dpd_iso_verlet_4xn(nbat, nbs,  nbl[nb],  nbat->x, vi,
-                                         invmass1, f_iso1, kT, rc1, pbc,  step, seed, gatindex, DPD_Made);
-                break;
         }
-
-        // Nicu: we need to define the other cases as well
-
     }
+    // copy_v_values_back(nbs, nbat,  v, vi, 0, nbs->natoms_local, nbat->FFormat);
 
-
-    copy_v_values_back(nbs, nbat,  v, vi, 0, nbs->natoms_local, nbat->FFormat, 1);
-
-
+    copy_v_values_back(nbs, nbat,  v, vi, start, nrend, nbat->FFormat);
 }
 
 
@@ -869,16 +527,17 @@ static void do_update_iso_verlet(gmx_stochd_t *sd,
                                  gmx_int64_t step,
                                  int seed,
                                  int *gatindex,
-                                 const nbnxn_pairlist_set_t *nbl_list, //new
+                                 const nbnxn_pairlist_set_t *nbl_list,
                                  const nbnxn_atomdata_t     *nbat,
                                  const nbnxn_search_t    nbs,
-                                 int kernel_type) //new
+                                 int kernel_type,
+                                 real  *invmass1,
+                                 int   *DPD_Made,
+                                 real  *vi)
 {
     real            kT;
     int             n, d;
     int             gf = 0, ga = 0;
-    rvec            vaux[50000];
-
 
     if ((nrend-start) > sd->sd_V_nalloc)
     {
@@ -886,9 +545,9 @@ static void do_update_iso_verlet(gmx_stochd_t *sd,
         srenew(sd->sd_V, sd->sd_V_nalloc);
     }
 
-    kT = BOLTZ*ref_t[0]; /* For the time being, we assume all the particles to be in the same group - maybe wrong */
+    /* For the time being, we assume all the particles to be in the same group - maybe wrong */
 
-
+    kT = BOLTZ*ref_t[0];
 
     for (n = start; n < nrend; n++)
     {
@@ -916,7 +575,7 @@ static void do_update_iso_verlet(gmx_stochd_t *sd,
 
 
     call_iso_verlet_threads(nbl_list, nbat, nbs, v[0],
-                            invmass, f_iso, kT, rc1, pbc, step, seed, gatindex, kernel_type);
+                            invmass, f_iso, kT, rc1, pbc, step, seed, gatindex, kernel_type, invmass1, DPD_Made, vi, start, nrend );
 
 
 
@@ -960,10 +619,13 @@ static void do_update_iso1_verlet(gmx_stochd_t *sd,
                                   gmx_int64_t step,
                                   int seed,
                                   int *gatindex,
-                                  const nbnxn_pairlist_set_t *nbl_list, //new
+                                  const nbnxn_pairlist_set_t *nbl_list,
                                   const nbnxn_atomdata_t     *nbat,
                                   const nbnxn_search_t    nbs,
-                                  int kernel_type) //new
+                                  int kernel_type,
+                                  real  *invmass1,
+                                  int   *DPD_Made,
+                                  real  *vi)
 {
     real            kT;
     int             n, d;
@@ -976,7 +638,8 @@ static void do_update_iso1_verlet(gmx_stochd_t *sd,
         srenew(sd->sd_V, sd->sd_V_nalloc);
     }
 
-    kT = BOLTZ*ref_t[0]; /* For the time being, we assume all the particles to be in the same group - maybe wrong */
+    /* For the time being, we assume all the particles to be in the same group - maybe wrong */
+    kT = BOLTZ*ref_t[0];
 
 
 
@@ -1001,7 +664,7 @@ static void do_update_iso1_verlet(gmx_stochd_t *sd,
 
 
     call_iso_verlet_threads(nbl_list, nbat, nbs,  v[0],
-                            invmass, f_iso, kT, rc1, pbc, step, seed, gatindex, kernel_type);
+                            invmass, f_iso, kT, rc1, pbc, step, seed, gatindex, kernel_type, invmass1, DPD_Made, vi, start, nrend );
 
 
 
@@ -1045,6 +708,8 @@ static void do_update_positions(gmx_stochd_t *sd,
 {
     int             gf = 0, ga = 0;
     int             n, d;
+
+
 
     if ((nrend-start) > sd->sd_V_nalloc)
     {
@@ -1144,8 +809,7 @@ void apply_dpd_iso(int start, int nrend,
         viy1  = v[ii3+1];
         viz1  = v[ii3+2];
 
-        /* The following code is for testing purposes
-           we put in an auxiliary array all the particles in the current process
+        /* We put in an auxiliary array all the particles in the current process
            and get one random out of it */
 
         /* We try to get the particle pair just through one random choice */
@@ -1246,7 +910,7 @@ void apply_dpd_iso(int start, int nrend,
             dz11  = 0;
             f_iso = 0;
         }
-        /* end */
+
 
         /* Computation of velocity differences */
         dvx =   vix1-v[j3+0];
@@ -1303,7 +967,9 @@ static void do_update_iso(gmx_stochd_t *sd,
         srenew(sd->sd_V, sd->sd_V_nalloc);
     }
 
-    kT = BOLTZ*ref_t[0]; /* For the time being, we assume all the particles to be in the same group - maybe wrong */
+
+    kT = BOLTZ*ref_t[0];
+
 
     for (n = start; n < nrend; n++)
     {
@@ -1456,7 +1122,7 @@ static void do_update_iso1(gmx_stochd_t *sd,
         sd->sd_V_nalloc = over_alloc_dd(nrend-start);
         srenew(sd->sd_V, sd->sd_V_nalloc);
     }
-    kT = BOLTZ*ref_t[0]; // For the time being, we assume all the particles to be in the same group - maybe wrong
+    kT = BOLTZ*ref_t[0];
 
 
     for (n = start; n < nrend; n++)
@@ -1575,7 +1241,9 @@ static void do_update_iso1(gmx_stochd_t *sd,
     }
 }
 
-/* nicu: end */
+
+
+
 static void do_update_md(int start, int nrend, double dt,
                          t_grp_tcstat *tcstat,
                          double nh_vxi[],
@@ -2920,7 +2588,10 @@ void update_constraints(FILE             *fplog,
                         rvec             *vold,
                         t_forcerec       *fr,
                         const t_pbc      *pbc1,
-                        gmx_bool          bInitStep)
+                        gmx_bool          bInitStep,
+                        real             *invmass1,
+                        int              *DPD_Made,
+                        real             *vi)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
@@ -3264,7 +2935,7 @@ void update_constraints(FILE             *fplog,
                                   &nbvg->nbl_lists,
                                   nbvg->nbat,
                                   nbv->nbs,
-                                  nbvg->kernel_type);
+                                  nbvg->kernel_type, invmass1, DPD_Made, vi );
 
         }
 
@@ -3446,7 +3117,10 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    rvec             *vold,
                    t_forcerec       *fr,
-                   const t_pbc      *pbc1)
+                   const t_pbc      *pbc1,
+                   real             *invmass1,
+                   int              *DPD_Made,
+                   real             *vi)
 {
     gmx_bool          bNH, bPR, bDoConstr = FALSE;
     double            dt, alpha;
@@ -3676,7 +3350,7 @@ void update_coords(FILE             *fplog,
                                                  &nbvg->nbl_lists,
                                                  nbvg->nbat,
                                                  nbv->nbs,
-                                                 nbvg->kernel_type);
+                                                 nbvg->kernel_type, invmass1, DPD_Made, vi );
                         }
                     }
                     break;
