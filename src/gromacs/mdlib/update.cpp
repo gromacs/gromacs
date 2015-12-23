@@ -75,6 +75,15 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
+#include "gromacs/simd/vector_operations.h"
+
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -120,6 +129,1119 @@ typedef struct gmx_update
     gmx_int64_t     deformref_step;
     matrix          deformref_box;
 } t_gmx_update;
+
+
+
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
+
+
+#define X_STRIDE   3
+#define F_STRIDE   3
+
+#define XI_STRIDE  3
+#define FI_STRIDE  3
+
+
+#if GMX_SIMD_REAL_WIDTH >= UNROLLI
+#define STRIDE     GMX_SIMD_REAL_WIDTH
+#else
+#define STRIDE     (UNROLLI)
+#endif
+
+
+static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
+{
+    if (pbc)
+    {
+        return pbc_dx_aiuc(pbc, xi, xj, dx);
+    }
+    else
+    {
+        rvec_sub(xi, xj, dx);
+        return CENTRAL;
+    }
+}
+
+real max_f(real f1, real f2)
+{
+    if (f1 > f2)
+    {
+        return f1;
+    }
+    else
+    {
+        return f2;
+    }
+}
+
+
+void copy_v_values(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real * v, real * vi,  real * invmass_source, real * invmass_dest, int start, int end,  int type)
+{
+    int         i;
+    int         a;
+    const int  *cell;
+
+    cell = nbs->cell;
+
+    switch (type)
+    {
+        case nbatXYZ:
+        case nbatXYZQ:
+            for (a = start; a < end; a++)
+            {
+                i = cell[a]*nbat->fstride;
+
+
+                vi[i]           = v[3*a];
+                vi[i+1]         = v[3*a+1];
+                vi[i+2]         = v[3*a+2];
+                invmass_dest[i] = invmass_source[a];
+            }
+
+            break;
+
+
+
+        default:
+            gmx_incons("Unsupported nbnxn_atomdata_t format");
+    }
+}
+
+
+void copy_v_values_back(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, real * v, real * vi, int start, int end,  int type)
+{
+    int         i;
+    int         a;
+    const int  *cell;
+
+    cell = nbs->cell;
+
+    switch (type)
+    {
+        case nbatXYZ:
+        case nbatXYZQ:
+            for (a = start; a < end; a++)
+            {
+                i = cell[a]*nbat->fstride;
+
+
+                v[3*a]   = vi[i];
+                v[3*a+1] = vi[i+1];
+                v[3*a+2] = vi[i+2];
+            }
+            break;
+
+        default:
+            gmx_incons("Unsupported nbnxn_atomdata_t format");
+    }
+
+}
+
+void compute_z_y_ext(const nbnxn_search_t nbs, const nbnxn_atomdata_t *nbat, int * Yi, int * Zi, int type)
+{
+    const int  *cell;
+
+    cell = nbs->cell;
+
+    switch (type)
+    {
+        case nbatXYZ:
+        case nbatXYZQ:
+            *Yi = 1;
+            *Zi = 2;
+            break;
+
+        default:
+            gmx_incons("Unsupported nbnxn_atomdata_t format");
+    }
+}
+
+
+
+void apply_dpd_iso_verlet(
+        const nbnxn_atomdata_t     *nbat,
+        const nbnxn_search_t        nbs,
+        const nbnxn_pairlist_t     *nbl,
+        real             *          x,
+        real             *          v,
+        real                       *invmass,
+        real                        f_iso1[],
+        real                        kT,
+        real                        rc1,
+        const t_pbc                *pbc,
+        gmx_int64_t                 step,
+        int                         seed,
+        int                        *gatindex,
+        int                        *DPD_Made)
+{
+    int           n, ii, nj0, nj1, jnr = 0;
+    real          dx11, dy11, dz11;
+    real          vix1, viy1, viz1;
+    real          r;
+    real          w;
+    real          dvx, dvy, dvz;
+    real          mi, mj, m1, m2;
+    real          f_iso;
+    real          rsq11;
+    rvec          dx;
+    int           nj_i;
+    int           cjind0, cjind1, cjind;
+    int           Yi, Zi;
+
+
+    const nbnxn_ci_t   *nbln;
+    const nbnxn_cj_t   *l_cj;
+
+    l_cj = nbl->cj;
+
+    compute_z_y_ext(nbs, nbat, &Yi, &Zi, nbat->FFormat);
+
+
+    for (n = 0; n < nbl->nci; n++)
+    {
+        int i;
+        int ci;
+        int cj;
+
+
+        nbln = &nbl->ci[n];
+        ci   = nbln->ci;
+
+        cjind0 = nbln->cj_ind_start;
+        cjind1 = nbln->cj_ind_end;
+
+
+        for (cjind = cjind0; cjind < cjind1; cjind++)
+        {
+
+            cj = l_cj[cjind].cj;
+
+            for (i = 0; i < UNROLLI; i++)
+            {
+                int ai;
+
+                /* load the mass  */
+
+
+                ii = (ci*UNROLLI+i)*F_STRIDE;
+                mi = invmass[ii];
+
+                /* Sometimes the mass is 0 because of exclussions or whatever else;
+                 *  We check also whether ii was already thermostated
+                 * This will tell us where we are */
+
+                ai = ci*UNROLLI + i;
+
+                if ((mi != 0) && (DPD_Made[ii] == 0))
+                {
+
+
+
+                    /* Load limits for loop over neighbors */
+
+                    nj0              = 0;
+                    nj1              = UNROLLJ;
+
+
+                    vix1  = v[ii];
+                    viy1  = v[ii+Yi];
+                    viz1  = v[ii+ Zi];
+
+
+
+                    for (nj_i = nj0; nj_i < nj1; nj_i++)
+                    {
+                        jnr = (cj*UNROLLJ + nj_i) * X_STRIDE;
+
+
+                        mj = invmass[jnr];
+
+                        if (mj != 0)
+                        {
+
+                            rvec x_aux, y_aux;
+
+                            x_aux[XX] = x[ii];
+                            x_aux[YY] = x[ii + Yi];
+                            x_aux[ZZ] = x[ii + Zi];
+
+                            y_aux[XX] = x[jnr];
+                            y_aux[YY] = x[jnr + Yi];
+                            y_aux[ZZ] = x[jnr + Zi];
+
+
+
+                            pbc_rvec_sub(pbc, x_aux, y_aux, dx);
+
+                            dx11 = dx[XX];
+                            dy11 = dx[YY];
+                            dz11 = dx[ZZ];
+
+
+
+                            rsq11  = dx11*dx11+dy11*dy11+dz11*dz11;
+                            r      = sqrt(rsq11);
+                            w      = (1- r/rc1);
+
+
+                            if ((r > 0) & (w > 0))
+                            {
+
+                                f_iso  = w*max_f(f_iso1[0], f_iso1[0]);
+
+
+                                /* Computation of velocity differences */
+                                dvx =   vix1-v[jnr];
+                                dvy =   viy1-v[jnr+Yi];
+                                dvz =   viz1-v[jnr+ Zi];
+
+                                /* Application of dissipative and random terms */
+                                real rnd[3];
+                                real df_frac = 2.0/3.0;
+                                int  ng      = gatindex ? gatindex[ii] : ii;
+
+
+                                gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
+
+
+                                dvx = -f_iso*dvx + sqrt(df_frac*(kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[0];
+                                dvy = -f_iso*dvy + sqrt(df_frac*(kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[1];
+                                dvz = -f_iso*dvz + sqrt(df_frac*(kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[2];
+
+
+
+                                /* Distribute the velocity change 'dv' over the two particles */
+
+
+
+                                m1 = (1/((mj/mi)+1));
+
+
+
+                                v[ii]     =       v[ii] + m1*dvx;
+                                v[ii+Yi]  =       v[ii+Yi] + m1*dvy;
+                                v[ii+Zi]  =       v[ii+Zi] + m1*dvz;
+
+                                m2          = (1/((mi/mj)+1));
+                                v[jnr]      = v[jnr] - m2*dvx;
+                                v[jnr+Yi]   = v[jnr+Yi] - m2*dvy;
+                                v[jnr+Zi]   = v[jnr+Zi] - m2*dvz;
+
+
+
+                                /* Mark that jnr and ii were thermostated */
+                                DPD_Made[jnr] = 1;
+                                DPD_Made[ii]  = 1;
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+void call_iso_verlet_threads(
+        const nbnxn_pairlist_set_t *nbl_list,
+        const nbnxn_atomdata_t     *nbat,
+        const nbnxn_search_t        nbs,
+        real             *          v,
+        real                       *invmass,
+        real                        f_iso1[],
+        real                        kT,
+        real                        rc1,
+        const t_pbc                *pbc,
+        gmx_int64_t                 step,
+        int                         seed,
+        int                        *gatindex,
+        int                         kernel_type,
+        real                       *invmass1,
+        int                        *DPD_Made,
+        real                       *vi,
+        int                         start,
+        int                         nrend)
+{
+    int                nnbl;
+    nbnxn_pairlist_t **nbl;
+    int                nthreads;
+    int                nb;
+    int                i;
+    const int         *cell;
+
+
+
+    nnbl = nbl_list->nnbl;
+    nbl  = nbl_list->nbl;
+
+    cell = nbs->cell;
+
+    for (i = 0; i < 50000; i++)
+    {
+        vi[i]       = 0;
+        invmass1[i] = 0;
+        DPD_Made[i] = 0;
+    }
+
+    // copy_v_values(nbs, nbat,  v, vi, invmass, invmass1, 0, nbs->natoms_local, nbat->FFormat);
+
+    copy_v_values(nbs, nbat,  v, vi, invmass, invmass1, start, nrend, nbat->FFormat);
+    nthreads = gmx_omp_nthreads_get(emntNonbonded);
+   #pragma omp parallel for schedule(static) num_threads(nthreads)
+
+    for (nb = 0; nb < nnbl; nb++)
+    {
+        nbnxn_atomdata_output_t *out;
+        out = &nbat->out[nb];
+
+        switch (kernel_type)
+        {
+
+            /* Only this case is supported now */
+            case nbnxnk4x4_PlainC:
+                apply_dpd_iso_verlet(nbat, nbs, nbl[nb],  nbat->x, vi,
+                                     invmass1, f_iso1, kT, rc1, pbc, step, seed, gatindex, DPD_Made);
+                break;
+        }
+    }
+    // copy_v_values_back(nbs, nbat,  v, vi, 0, nbs->natoms_local, nbat->FFormat);
+
+    copy_v_values_back(nbs, nbat,  v, vi, start, nrend, nbat->FFormat);
+}
+
+
+
+
+
+static void do_update_iso_verlet(gmx_stochd_t *sd,
+                                 int start, int nrend, double dt,
+                                 rvec accel[], ivec nFreeze[],
+                                 real invmass[], unsigned short ptype[],
+                                 unsigned short cFREEZE[], unsigned short cACC[],
+                                 rvec x[], rvec xprime[], rvec v[], rvec f[], real ref_t[],
+                                 rvec *vold, real f_iso[], real rc1, const t_pbc *pbc,
+                                 gmx_int64_t step,
+                                 int seed,
+                                 int *gatindex,
+                                 const nbnxn_pairlist_set_t *nbl_list,
+                                 const nbnxn_atomdata_t     *nbat,
+                                 const nbnxn_search_t    nbs,
+                                 int kernel_type,
+                                 real  *invmass1,
+                                 int   *DPD_Made,
+                                 real  *vi)
+{
+    real            kT;
+    int             n, d;
+    int             gf = 0, ga = 0;
+
+    if ((nrend-start) > sd->sd_V_nalloc)
+    {
+        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
+    }
+
+    /* For the time being, we assume all the particles to be in the same group - maybe wrong */
+
+    kT = BOLTZ*ref_t[0];
+
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                vold[n][d] = (v[n][d]+ (invmass[n]*f[n][d] + accel[ga][d])*dt);
+            }
+            v[n][d] =   vold[n][d];
+
+
+        }
+    }
+
+
+
+    call_iso_verlet_threads(nbl_list, nbat, nbs, v[0],
+                            invmass, f_iso, kT, rc1, pbc, step, seed, gatindex, kernel_type, invmass1, DPD_Made, vi, start, nrend );
+
+
+
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                xprime[n][d] = x[n][d] + (0.5*v[n][d]+0.5*vold[n][d])*dt;
+            }
+            else
+            {
+                v[n][d]      = 0.0;
+                xprime[n][d] = x[n][d];
+            }
+        }
+    }
+}
+
+
+
+
+static void do_update_iso1_verlet(gmx_stochd_t *sd,
+                                  int start, int nrend, double dt,
+                                  ivec nFreeze[],
+                                  real invmass[], unsigned short ptype[],
+                                  unsigned short cFREEZE[],
+                                  rvec x[], rvec xprime[], rvec v[],  real ref_t[],
+                                  rvec *vold, real f_iso[], real rc1, const t_pbc *pbc,
+                                  gmx_int64_t step,
+                                  int seed,
+                                  int *gatindex,
+                                  const nbnxn_pairlist_set_t *nbl_list,
+                                  const nbnxn_atomdata_t     *nbat,
+                                  const nbnxn_search_t    nbs,
+                                  int kernel_type,
+                                  real  *invmass1,
+                                  int   *DPD_Made,
+                                  real  *vi)
+{
+    real            kT;
+    int             n, d;
+    int             gf = 0;
+
+
+    if ((nrend-start) > sd->sd_V_nalloc)
+    {
+        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
+    }
+
+    /* For the time being, we assume all the particles to be in the same group - maybe wrong */
+    kT = BOLTZ*ref_t[0];
+
+
+
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                vold[n][d] = v[n][d];
+            }
+
+        }
+
+    }
+
+
+    call_iso_verlet_threads(nbl_list, nbat, nbs,  v[0],
+                            invmass, f_iso, kT, rc1, pbc, step, seed, gatindex, kernel_type, invmass1, DPD_Made, vi, start, nrend );
+
+
+
+
+
+    for (n = start; n < nrend; n++)
+    {
+
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+
+
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                xprime[n][d] = xprime[n][d] + 0.5*(v[n][d]- vold[n][d])*dt;
+            }
+            else
+            {
+                v[n][d]      = 0.0;
+                xprime[n][d] = x[n][d];
+            }
+        }
+
+    }
+}
+
+/* Velocity Verlet: ends */
+
+
+static void do_update_positions(gmx_stochd_t *sd,
+                                int start, int nrend, double dt,
+                                rvec accel[], ivec nFreeze[],
+                                real invmass[], unsigned short ptype[],
+                                unsigned short cFREEZE[], unsigned short cACC[],
+                                rvec x[], rvec xprime[], rvec v[], rvec f[])
+{
+    int             gf = 0, ga = 0;
+    int             n, d;
+
+
+
+    if ((nrend-start) > sd->sd_V_nalloc)
+    {
+        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
+    }
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                v[n][d]      =  v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+                xprime[n][d] = x[n][d] + v[n][d]*dt;
+            }
+            else
+            {
+                v[n][d]      = 0.0;
+                xprime[n][d] = x[n][d];
+            }
+        }
+    }
+}
+
+void apply_dpd_iso(int start, int nrend,
+                   int *           p_nri,
+                   int *           iinr,
+                   int *           jindex,
+                   int *           jjnr,
+                   rvec *          x,
+                   real *          v,
+                   real *invmass,
+                   real f_iso1[],
+                   real  kT,
+                   real rc1,
+                   const t_pbc *pbc,
+                   unsigned short cTC[],
+                   gmx_int64_t step,
+                   int seed,
+                   int *gatindex)
+{
+    int           nri, nn0, nn1;
+    int           n, ii, ii3, nj0, nj1, jnr, j3;
+    real          dx11, dy11, dz11;
+    real          vix1, viy1, viz1;
+    real          r;
+    real          w;
+    real          dvx, dvy, dvz;
+    real          mi, mj, m1, m2;
+    real          f_iso;
+    real          rsq11;
+    rvec          dx;
+    int           nj_i, gt_ii = 0, gt_jnr = 0;
+    int           aux_process[4000];
+
+    nri = *p_nri;
+    jnr = -1;
+
+#ifdef GMX_THREADS
+    gmx_fatal (FARGS, "Threads not supported for dissipative force computations"); /* Check whether is OK */
+#else
+    nn0 = 0;
+    nn1 = nri;
+#endif
+
+    for (n = nn0; (n < nn1); n++)
+    {
+        real rnd[3];
+        int  ng = gatindex ? gatindex[n] : n;
+
+        /* Load limits for loop over neighbors */
+        nj0              = jindex[n];
+        nj1              = jindex[n+1];
+
+        /* Get outer coordinate index */
+        ii               = iinr[n];
+        ii3              = 3*ii;
+
+        if (cTC)
+        {
+            gt_ii  = cTC[ii];
+        }
+
+        /* Load inverss-mass and velocities */
+        mi = invmass[ii];
+
+        vix1  = v[ii3+0];
+        viy1  = v[ii3+1];
+        viz1  = v[ii3+2];
+
+        /* We put in an auxiliary array all the particles in the current process
+           and get one random out of it */
+
+        /* We try to get the particle pair just through one random choice */
+        int i5 = 0;
+        int i6 = 0;
+
+        if ((nj1 -nj0 -1) != 0)
+        {
+            nj_i = rand() % (nj1 -nj0 -1 );
+            for (i5 = nj0+nj_i; i5 < nj1; i5++)
+            {
+                if ((jjnr[i5] >= start) && (jjnr[i5] < nrend))
+                {
+                    jnr = jjnr[i5];
+                    break;
+                }
+            }
+        }
+
+        /* If we don't succeed, we take something computationally more expensive */
+        if (i5 == nj1)
+        {
+            int lim1 = 0;
+
+            if (nj1-nj0-1 < 4000)
+            {
+                lim1 = nj1;
+            }
+            else
+            {
+                lim1 = nj0 + 4000;
+            }
+
+            for (i5 = nj0; i5 < lim1; i5++)
+            {
+                if ((jjnr[i5] >= start) && (jjnr[i5] < nrend))
+                {
+                    aux_process[i6++] = jjnr[i5];
+                }
+            }
+
+            if (i6 != 0)
+            {
+                nj_i = rand() % i6;
+            }
+            else
+            {
+                nj_i = 0;
+            }
+
+            /* Get j neighbor index, and coordinate index */
+            jnr = aux_process[nj_i];
+        }
+
+        j3 = 3*jnr;
+
+        if (cTC)
+        {
+            gt_jnr  = cTC[jnr];
+        }
+
+        mj = invmass[jnr];
+
+        /* right computing */
+        pbc_rvec_sub(pbc, x[ii], x[jnr], dx);
+
+        dx11 = dx[XX];
+        dy11 = dx[YY];
+        dz11 = dx[ZZ];
+
+        rsq11  = dx11*dx11+dy11*dy11+dz11*dz11;
+        r      = sqrt(rsq11);
+
+        /* begin */
+        if (r > 0) /* No coupling is distance is 0 or somthing strange with the distance r (out of the radius-sphere) */
+        {          /* Transformation to unit vector */
+            w = (1- r/rc1);
+            if (w > 0)
+            {
+                f_iso  = w*max_f(f_iso1[gt_jnr], f_iso1[gt_ii]);
+
+                dx11 = dx11/r;
+                dy11 = dy11/r;
+                dz11 = dz11/r;
+            }
+            else
+            {
+                dx11  =  0;
+                dy11  = 0;
+                dz11  = 0;
+                f_iso = 0;
+            }
+        }
+        else
+        {
+            dx11  =  0;
+            dy11  = 0;
+            dz11  = 0;
+            f_iso = 0;
+        }
+
+
+        /* Computation of velocity differences */
+        dvx =   vix1-v[j3+0];
+        dvy =   viy1-v[j3+1];
+        dvz =   viz1-v[j3+2];
+
+        /* Application of dissipative and random terms */
+        gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
+        dvx = -f_iso*dvx + sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[0];
+        dvy = -f_iso*dvy + sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[1];
+        dvz = -f_iso*dvz + sqrt((kT)*(2*f_iso - f_iso*f_iso)*(mi+mj))*rnd[2];
+
+        /* Distribute the velocity change 'dv' over the two particles */
+        m1 = (1/((mj/mi)+1));
+
+        v[ii3+0]   =     v[ii3+0] + m1*dvx;
+        v[ii3+1]   =     v[ii3+1] + m1*dvy;
+        v[ii3+2]   =     v[ii3+2] + m1*dvz;
+
+        m2 = (1/((mi/mj)+1));
+
+        v[j3+0]    = v[j3+0] - m2*dvx;
+        v[j3+1]    = v[j3+1] - m2*dvy;
+        v[j3+2]    = v[j3+2] - m2*dvz;
+    }
+}
+
+static void do_update_iso(gmx_stochd_t *sd,
+                          int start, int nrend, double dt,
+                          rvec accel[], ivec nFreeze[],
+                          real invmass[], unsigned short ptype[],
+                          unsigned short cFREEZE[], unsigned short cACC[],
+                          unsigned short cTC[],
+                          rvec x[], rvec xprime[], rvec v[], rvec f[], real ref_t[], t_forcerec *fr,
+                          rvec *vold, real f_iso[], real rc1, const t_pbc *pbc,
+                          gmx_int64_t step,
+                          int seed,
+                          int *gatindex)
+{
+    real            kT;
+    int             n, d;
+    int             gf = 0, ga = 0;
+    t_nblist       *nblist;
+    t_nblists      *nblists;
+    int             i0, i1;
+    int             n0, n1;
+    int             aux_i;
+    int             i;
+    int             nri1 = 0;
+
+    if ((nrend-start) > sd->sd_V_nalloc)
+    {
+        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
+    }
+
+
+    kT = BOLTZ*ref_t[0];
+
+
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                vold[n][d] = (v[n][d]+ (invmass[n]*f[n][d] + accel[ga][d])*dt);
+            }
+            v[n][d] =   vold[n][d];
+        }
+    }
+
+    /* Adition from do_nonbonded
+       Compute the right i0 and i1 */
+    i0 = 0;
+    i1 = eNL_NR;
+
+
+    /* Compute the right n0 and n1 */
+    n0 = 0;
+    n1 = fr->nnblists;
+
+    /* Choose the right nlist */
+    int trial1 = 0;
+
+    while ((nri1 < 2) && (trial1 < 3))
+    {
+        if ((n1 -n0 -1) != 0)
+        {
+            aux_i = rand() % (n1 -n0 -1 );
+        }
+        else
+        {
+            aux_i = 0;
+        }
+
+        n = n0 + aux_i;
+
+        nblists = &fr->nblists[n];
+
+        if ((i1 -i0 -1) != 0)
+        {
+            aux_i = rand() % (i1 -i0 -1 );
+        }
+        else
+        {
+            aux_i = 0;
+        }
+
+        i = i0 + aux_i;
+
+        nblist = &(nblists->nlist_sr[i]);
+
+        nri1   = nblist->nri;
+        trial1 = trial1 +1;
+    }
+
+    if ((trial1 == 3) && (nri1 <= 2))
+    {
+        nri1 = 0;
+        for (n = 0; (n < fr->nnblists); n++)
+        {
+            for (n = n0; (n < n1); n++)
+            {
+                nblists = &fr->nblists[n];
+                for (i = i0; (i < i1); i++)
+                {
+                    nblist = &(nblists->nlist_lr[i]);
+                    nri1   = nblist->nri;
+
+                    if (nri1 > 2)
+                    {
+                        break;
+                    }
+                }
+                if (nri1 > 2)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    apply_dpd_iso(start, nrend, &(nblist->nri), nblist->iinr, nblist->jindex, nblist->jjnr, x, v[0],
+                  invmass, f_iso, kT, rc1, pbc, cTC, step, seed, gatindex);
+
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                xprime[n][d] = x[n][d] + (0.5*v[n][d]+0.5*vold[n][d])*dt;
+            }
+            else
+            {
+                v[n][d]      = 0.0;
+                xprime[n][d] = x[n][d];
+            }
+        }
+    }
+}
+
+static void do_update_iso1(gmx_stochd_t *sd,
+                           int start, int nrend, double dt,
+                           ivec nFreeze[],
+                           real invmass[], unsigned short ptype[],
+                           unsigned short cFREEZE[],
+                           unsigned short cTC[],
+                           rvec x[], rvec xprime[], rvec v[],
+                           real ref_t[], t_forcerec *fr,
+                           rvec *vold, real f_iso[], real rc1, const t_pbc *pbc,
+                           gmx_int64_t step, int seed, int *gatindex)
+{
+    real            kT;
+    int             n, d;
+    int             gf = 0;
+    t_nblist       *nblist;
+    t_nblists      *nblists;
+    int             i0, i1;
+    int             n0, n1;
+    int             aux_i;
+    int             i;
+    int             nri1 = 0;
+
+
+
+
+    if ((nrend-start) > sd->sd_V_nalloc)
+    {
+        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
+    }
+    kT = BOLTZ*ref_t[0];
+
+
+    for (n = start; n < nrend; n++)
+    {
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                vold[n][d] = v[n][d];
+            }
+        }
+    }
+
+    /* Adition from do_nonbonded
+       Compute the right i0 and i1 */
+    i0 = 0;
+    i1 = eNL_NR;
+
+
+    /* Compute the right n0 and n1 */
+    n0 = 0;
+    n1 = fr->nnblists;
+
+    /* Choose the right nlist */
+    int trial1 = 0;
+
+    while ((nri1 < 2) && (trial1 < 3))
+    {
+        if ((n1 -n0 -1) != 0)
+        {
+            aux_i = rand() % (n1 -n0 -1 );
+        }
+        else
+        {
+            aux_i = 0;
+        }
+
+        n = n0 + aux_i;
+
+        nblists = &fr->nblists[n];
+
+        if ((i1 -i0 -1) != 0)
+        {
+            aux_i = rand() % (i1 -i0 -1 );
+        }
+        else
+        {
+            aux_i = 0;
+        }
+
+        i = i0 + aux_i;
+
+        nblist = &(nblists->nlist_sr[i]);
+
+        nri1   = nblist->nri;
+        trial1 = trial1 +1;
+    }
+
+    if ((trial1 == 3) && (nri1 <= 2))
+    {
+        nri1 = 0;
+        for (n = 0; (n < fr->nnblists); n++)
+        {
+            for (n = n0; (n < n1); n++)
+            {
+                nblists = &fr->nblists[n];
+                for (i = i0; (i < i1); i++)
+                {
+                    nblist = &(nblists->nlist_lr[i]);
+                    nri1   = nblist->nri;
+
+                    if (nri1 > 2)
+                    {
+                        break;
+                    }
+                }
+                if (nri1 > 2)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    apply_dpd_iso(start, nrend, &(nblist->nri), nblist->iinr, nblist->jindex, nblist->jjnr, x, v[0], invmass, f_iso, kT, rc1, pbc, cTC, step, seed, gatindex);
+
+
+
+
+
+    for (n = start; n < nrend; n++)
+    {
+
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                xprime[n][d] = xprime[n][d] + 0.5*(v[n][d]- vold[n][d])*dt;
+            }
+            else
+            {
+                v[n][d]      = 0.0;
+                xprime[n][d] = x[n][d];
+            }
+        }
+    }
+}
+
+
 
 
 static void do_update_md(int start, int nrend, double dt,
@@ -1462,7 +2584,14 @@ void update_constraints(FILE             *fplog,
                         gmx_update_t      upd,
                         gmx_constr_t      constr,
                         gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir)
+                        gmx_bool          bCalcVir,
+                        rvec             *vold,
+                        t_forcerec       *fr,
+                        const t_pbc      *pbc1,
+                        gmx_bool          bInitStep,
+                        real             *invmass1,
+                        int              *DPD_Made,
+                        real             *vi)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
@@ -1470,6 +2599,7 @@ void update_constraints(FILE             *fplog,
     tensor               vir_con;
     rvec                *xprime = NULL;
     int                  nth, th;
+    const t_pbc         *pbc;
 
     if (constr)
     {
@@ -1664,6 +2794,173 @@ void update_constraints(FILE             *fplog,
     }
 
 
+
+/* ISO - jeroene - begin */
+    if ((inputrec->eI == eiISO) && bDoConstr && !bFirstHalf)
+    {
+
+
+        static gmx_stochd_t *sd1;
+        int                  ngtc;
+        int                  n;
+        ngtc = inputrec->opts.ngtc;
+        static real         *f_iso;
+
+
+        if (bInitStep)
+        {
+            snew(sd1, 1);
+            snew(sd1->sdc, ngtc);
+            snew(sd1->sdsig, ngtc);
+            snew(f_iso, ngtc);
+
+            for (n = 0; n < ngtc; n++)
+            {
+                f_iso[n] = inputrec->delta_t/inputrec->opts.tau_t[n];
+            }
+        }
+
+
+        pbc = pbc1;
+        // Peters's staff: begin
+        int  n1, gf = 0, i;
+        real ism, kT, max_d;
+        rvec vold1[10000], xprime1[10000];
+        real fact1 = 0.5;
+        real rnd[3];
+        int *gatindex = DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL;
+
+        // obtaining the maxwellian distribution
+        kT    = BOLTZ*inputrec->opts.ref_t[0];
+        max_d = sqrt(kT);
+
+        for (n1 = start; n1 < start+homenr; n1++)
+        {
+
+            int  ng = gatindex ? gatindex[n1] : n1;
+            ism = sqrt(md->invmass[n1]);
+            if (md->cFREEZE)
+            {
+                gf  = md->cFREEZE[n1];
+            }
+
+
+            for (i = 0; i < DIM; i++)
+            {
+                if ((md->ptype[n1] != eptVSite) && (md->ptype[n1] != eptShell) && !inputrec->opts.nFreeze[gf][i])
+                {
+                    gmx_rng_cycle_3gaussian_table(step, ng, inputrec->ld_seed, RND_SEED_UPDATE, rnd);
+                    vold[n1][i]  = max_d*ism*rnd[0];
+                    vold1[n1][i] = vold[n1][i];
+
+                    xprime1[n1][i] = xprime[n1][i];
+                    xprime[n1][i]  = state->x[n1][i]+ vold[n1][i]*fact1 * inputrec->delta_t;
+                }
+            }
+        }
+
+        // obtaining the maxwellian distribution constrained
+
+        if (bDoConstr)
+        {
+            /* Constrain the coordinates xprime */
+            wallcycle_start(wcycle, ewcCONSTR);
+            inputrec->delta_t =  0.5 * inputrec->delta_t;
+            constrain(NULL, bLog, bEner, constr, idef,
+                      inputrec, cr, step, 1, 1.0, md,
+                      state->x, xprime, NULL,
+                      bMolPBC, state->box,
+                      state->lambda[efptBONDED], dvdlambda,
+                      vold, NULL, nrnb, econqCoord);
+            inputrec->delta_t = 2 * inputrec->delta_t;
+            wallcycle_stop(wcycle, ewcCONSTR);
+        }
+
+        //correcting the velocities
+
+        for (n1 = start; n1 < nrend; n1++)
+        {
+
+            if (md->cFREEZE)
+            {
+                gf  = md->cFREEZE[n1];
+            }
+
+            for (i = 0; i < DIM; i++)
+            {
+                if ((md->ptype[n1] != eptVSite) && (md->ptype[n1] != eptShell) && !inputrec->opts.nFreeze[gf][i])
+                {
+
+                    state->v[n1][i]   = state->v[n1][i] + vold1[n1][i]-vold[n1][i];
+
+                    xprime[n1][i] = xprime1[n1][i] + (vold1[n1][i]-vold[n1][i])*fact1*inputrec->delta_t;
+                }
+            }
+        }
+        //Peters's staff: end
+
+        wallcycle_start(wcycle, ewcUPDATE);
+        if (inputrec->cutoff_scheme)      // old group scheme
+        {
+            do_update_iso1(sd1, start, nrend, dt,
+                           inputrec->opts.nFreeze,
+                           md->invmass, md->ptype,
+                           md->cFREEZE, md->cTC,
+                           state->x, xprime, state->v,
+                           inputrec->opts.ref_t,
+                           fr, vold, f_iso,
+                           inputrec->userreal4, pbc1, step, inputrec->ld_seed,
+                           DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+
+        }
+        else       //Verlet scheme
+
+
+        {
+            nonbonded_verlet_group_t  *nbvg;
+            nonbonded_verlet_t        *nbv;
+
+            nbvg = &fr->nbv->grp[eintLocal];
+            nbv  = fr->nbv;
+
+            do_update_iso1_verlet(sd1, start, nrend, dt,
+                                  inputrec->opts.nFreeze,
+                                  md->invmass, md->ptype,
+                                  md->cFREEZE,
+                                  state->x, xprime, state->v,
+                                  inputrec->opts.ref_t,
+                                  vold, f_iso,
+                                  inputrec->userreal4, pbc,
+                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                                  &nbvg->nbl_lists,
+                                  nbvg->nbat,
+                                  nbv->nbs,
+                                  nbvg->kernel_type, invmass1, DPD_Made, vi );
+
+        }
+
+
+        inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        wallcycle_stop(wcycle, ewcUPDATE);
+
+        if (bDoConstr)
+        {
+            // Constrain the coordinates xprime
+            wallcycle_start(wcycle, ewcCONSTR);
+            inputrec->delta_t = 0.5* inputrec->delta_t;
+            constrain(NULL, bLog, bEner, constr, idef,
+                      inputrec, cr, step, 1, 1.0, md,
+                      state->x, xprime, NULL, bMolPBC,
+                      state->box, state->lambda[efptBONDED], dvdlambda,
+                      state->v, NULL, nrnb, econqCoord);
+            inputrec->delta_t = 2 * inputrec->delta_t;
+            wallcycle_stop(wcycle, ewcCONSTR);
+        }
+
+
+    }
+    /* ISO - jeroene - end */
+
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
 
@@ -1817,13 +3114,21 @@ void update_coords(FILE             *fplog,
                    gmx_bool          bInitStep,
                    int               UpdatePart,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
-                   gmx_constr_t      constr)
+                   gmx_constr_t      constr,
+                   rvec             *vold,
+                   t_forcerec       *fr,
+                   const t_pbc      *pbc1,
+                   real             *invmass1,
+                   int              *DPD_Made,
+                   real             *vi)
 {
     gmx_bool          bNH, bPR, bDoConstr = FALSE;
     double            dt, alpha;
     int               start, homenr, nrend;
     rvec             *xprime;
     int               nth, th;
+    const t_pbc      *pbc;
+    static real      *f_iso;
 
     bDoConstr = (NULL != constr);
 
@@ -1855,6 +3160,34 @@ void update_coords(FILE             *fplog,
 
     bNH = inputrec->etc == etcNOSEHOOVER;
     bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
+
+    static gmx_stochd_t *sd1;
+    int                  ngtc;
+
+    if (inputrec->eI == eiISO)
+    {
+        if (bInitStep)
+        {
+
+            int n;
+            ngtc = inputrec->opts.ngtc;
+
+            snew(sd1, 1);
+            snew(sd1->sdc, ngtc);
+            snew(sd1->sdsig, ngtc);
+            snew(f_iso, ngtc);
+
+            /* ISO case */
+            if (inputrec->eI == eiISO)
+            {
+                for (n = 0; n < ngtc; n++)
+                {
+                    f_iso[n] = inputrec->delta_t/inputrec->opts.tau_t[n];
+                }
+            }
+        }
+        pbc = pbc1;
+    }
 
     /* ############# START The update of velocities and positions ######### */
     where();
@@ -1972,6 +3305,55 @@ void update_coords(FILE             *fplog,
                                              (bNH || bPR), state->veta);
                             break;
                     }
+                case (eiISO):
+                    if (constr)
+                    {
+
+                        do_update_positions(sd1, start_th, end_th, dt,
+                                            inputrec->opts.acc, inputrec->opts.nFreeze,
+                                            md->invmass, md->ptype,
+                                            md->cFREEZE, md->cACC,
+                                            state->x, xprime, state->v, f);
+                    }
+                    else
+                    {
+                        if (inputrec->cutoff_scheme) // old group scheme
+                        {
+                            do_update_iso(sd1, start_th, end_th, dt,
+                                          inputrec->opts.acc, inputrec->opts.nFreeze,
+                                          md->invmass, md->ptype,
+                                          md->cFREEZE, md->cACC, md->cTC,
+                                          state->x, xprime, state->v, f,
+                                          inputrec->opts.ref_t,
+                                          fr, vold, f_iso,
+                                          inputrec->userreal4, pbc,
+                                          step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                        }
+                        else // Verlet scheme
+
+                        {
+                            nonbonded_verlet_group_t  *nbvg;
+                            nonbonded_verlet_t        *nbv;
+
+                            nbvg = &fr->nbv->grp[eintLocal];
+                            nbv  = fr->nbv;
+
+                            do_update_iso_verlet(sd1, start_th, end_th, dt,
+                                                 inputrec->opts.acc, inputrec->opts.nFreeze,
+                                                 md->invmass, md->ptype,
+                                                 md->cFREEZE, md->cACC,
+                                                 state->x, xprime, state->v, f,
+                                                 inputrec->opts.ref_t,
+                                                 vold, f_iso,
+                                                 inputrec->userreal4, pbc,
+                                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                                                 &nbvg->nbl_lists,
+                                                 nbvg->nbat,
+                                                 nbv->nbs,
+                                                 nbvg->kernel_type, invmass1, DPD_Made, vi );
+                        }
+                    }
+                    break;
                     break;
                 default:
                     gmx_fatal(FARGS, "Don't know how to update coordinates");
