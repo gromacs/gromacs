@@ -50,6 +50,7 @@
 #include <algorithm>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -163,6 +164,20 @@ const char *check_box(int ePBC, const matrix box)
     }
 
     return ptr;
+}
+
+void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees)
+{
+    rvec angle;
+    svmul(DEG2RAD, angleInDegrees, angle);
+    box[XX][XX] = vec[XX];
+    box[YY][XX] = vec[YY]*cos(angle[ZZ]);
+    box[YY][YY] = vec[YY]*sin(angle[ZZ]);
+    box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
+    box[ZZ][YY] = vec[ZZ]
+        *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
+    box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
+                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
 
 real max_cutoff2(int ePBC, const matrix box)
