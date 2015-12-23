@@ -39,6 +39,8 @@
 
 #include "md_support.h"
 
+#include <climits>
+
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"

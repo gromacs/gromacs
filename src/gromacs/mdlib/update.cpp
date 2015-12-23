@@ -281,7 +281,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     {
         g        = 0.25*dt*veta*alpha;
         mv1      = exp(-g);
-        mv2      = series_sinhx(g);
+        mv2      = gmx::series_sinhx(g);
     }
     else
     {
@@ -329,7 +329,7 @@ static void do_update_vv_pos(int start, int nrend, double dt,
     {
         g        = 0.5*dt*veta;
         mr1      = exp(g);
-        mr2      = series_sinhx(g);
+        mr2      = gmx::series_sinhx(g);
     }
     else
     {

@@ -50,6 +50,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/groupcoord.h"
@@ -2704,7 +2705,7 @@ void init_edsam(const gmx_mtop_t *mtop,
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
             snew(x_pbc, mtop->natoms);
-            m_rveccopy(mtop->natoms, x, x_pbc);
+            copy_rvecn(x, x_pbc, 0, mtop->natoms);
             do_pbc_first_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
