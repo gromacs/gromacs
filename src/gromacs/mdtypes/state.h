@@ -57,7 +57,8 @@ struct energyhistory_t;
 enum {
     estLAMBDA,
     estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-    estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
+    estX,   estV,       est_SDX_NOTSUPPORTED,  estCGP,
+    estLD_RNG, estLD_RNGI,
     estDISRE_INITF, estDISRE_RM3TAV,
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
@@ -212,10 +213,9 @@ typedef struct t_state
     double                 *therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
     real                    veta;            /* trotter based isotropic P-coupling             */
     real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    int                     nalloc;          /* Allocation size for x, v and sd_x when !=NULL*/
+    int                     nalloc;          /* Allocation size for x and v when !=NULL*/
     rvec                   *x;               /* the coordinates (natoms)                     */
     rvec                   *v;               /* the velocities (natoms)                      */
-    rvec                   *sd_X;            /* random part of the x update for stoch. dyn.  */
     rvec                   *cg_p;            /* p vector for conjugate gradient minimization */
 
     history_t               hist;            /* Time history for restraints                  */
