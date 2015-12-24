@@ -605,7 +605,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             fprintf(fplog,
                     "RMS relative constraint deviation after constraining: %.2e\n",
-                    constr_rmsd(constr, FALSE));
+                    constr_rmsd(constr));
         }
         if (EI_STATE_VELOCITY(ir->eI))
         {
@@ -1084,7 +1084,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
 
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                          ekind, M, upd, bInitStep, etrtVELOCITY1,
+                          ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
@@ -1365,7 +1365,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* velocity half-step update */
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, FALSE, etrtVELOCITY2,
+                              ekind, M, upd, etrtVELOCITY2,
                               cr, constr);
             }
 
@@ -1386,7 +1386,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
 
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                          ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
+                          ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
@@ -1411,7 +1411,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
+                              ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */

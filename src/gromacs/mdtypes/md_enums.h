@@ -227,6 +227,7 @@ extern const char *ens_names[ensNR+1];
 
 /*! \brief Integrator algorithm
  *
+ * eiSD2 has been removed, but we keep the enum entry so we can refuse to do MD with such .tpr files
  * eiVV is normal velocity verlet
  * eiVVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy,
  * and the half step kinetic energy for temperature control
@@ -243,7 +244,7 @@ extern const char *ei_names[eiNR+1];
 //! Do we use molecular dynamics
 #define EI_MD(e) ((e) == eiMD || EI_VV(e))
 //! Do we use stochastic dynamics
-#define EI_SD(e) ((e) == eiSD1 || (e) == eiSD2)
+#define EI_SD(e) ((e) == eiSD1)
 //! Do we use any stochastic integrator
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
