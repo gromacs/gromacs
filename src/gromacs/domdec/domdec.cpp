@@ -1311,8 +1311,7 @@ void dd_collect_state(gmx_domdec_t *dd,
                 case estV:
                     dd_collect_vec(dd, state_local, state_local->v, state->v);
                     break;
-                case estSDX:
-                    dd_collect_vec(dd, state_local, state_local->sd_X, state->sd_X);
+                case est_SDX_NOTSUPPORTED:
                     break;
                 case estCGP:
                     dd_collect_vec(dd, state_local, state_local->cg_p, state->cg_p);
@@ -1354,9 +1353,6 @@ static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
                     break;
                 case estV:
                     srenew(state->v, state->nalloc + 1);
-                    break;
-                case estSDX:
-                    srenew(state->sd_X, state->nalloc + 1);
                     break;
                 case estCGP:
                     srenew(state->cg_p, state->nalloc + 1);
@@ -1611,9 +1607,6 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                     break;
                 case estV:
                     dd_distribute_vec(dd, cgs, state->v, state_local->v);
-                    break;
-                case estSDX:
-                    dd_distribute_vec(dd, cgs, state->sd_X, state_local->sd_X);
                     break;
                 case estCGP:
                     dd_distribute_vec(dd, cgs, state->cg_p, state_local->cg_p);
@@ -4130,10 +4123,6 @@ static void rotate_state_atom(t_state *state, int a)
                     state->v[a][YY] = -state->v[a][YY];
                     state->v[a][ZZ] = -state->v[a][ZZ];
                     break;
-                case estSDX:
-                    state->sd_X[a][YY] = -state->sd_X[a][YY];
-                    state->sd_X[a][ZZ] = -state->sd_X[a][ZZ];
-                    break;
                 case estCGP:
                     state->cg_p[a][YY] = -state->cg_p[a][YY];
                     state->cg_p[a][ZZ] = -state->cg_p[a][ZZ];
@@ -4357,7 +4346,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     int                sbuf[2], rbuf[2];
     int                home_pos_cg, home_pos_at, buf_pos;
     int                flag;
-    gmx_bool           bV = FALSE, bSDX = FALSE, bCGP = FALSE;
+    gmx_bool           bV = FALSE, bCGP = FALSE;
     real               pos_d;
     matrix             tcm;
     rvec              *cg_cm = NULL, cell_x0, cell_x1, limitd, limit0, limit1;
@@ -4386,7 +4375,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             {
                 case estX: /* Always present */ break;
                 case estV:   bV   = (state->flags & (1<<i)); break;
-                case estSDX: bSDX = (state->flags & (1<<i)); break;
                 case estCGP: bCGP = (state->flags & (1<<i)); break;
                 case estLD_RNG:
                 case estLD_RNGI:
@@ -4517,10 +4505,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     {
         nvec++;
     }
-    if (bSDX)
-    {
-        nvec++;
-    }
     if (bCGP)
     {
         nvec++;
@@ -4573,11 +4557,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     {
         compact_and_copy_vec_at(dd->ncg_home, move, cgindex,
                                 nvec, vec++, state->v, comm, bCompact);
-    }
-    if (bSDX)
-    {
-        compact_and_copy_vec_at(dd->ncg_home, move, cgindex,
-                                nvec, vec++, state->sd_X, comm, bCompact);
     }
     if (bCGP)
     {
@@ -4801,14 +4780,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                     {
                         copy_rvec(comm->vbuf.v[buf_pos++],
                                   state->v[home_pos_at+i]);
-                    }
-                }
-                if (bSDX)
-                {
-                    for (i = 0; i < nrcg; i++)
-                    {
-                        copy_rvec(comm->vbuf.v[buf_pos++],
-                                  state->sd_X[home_pos_at+i]);
                     }
                 }
                 if (bCGP)
@@ -8943,9 +8914,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
                     break;
                 case estV:
                     order_vec_atom(dd->ncg_home, cgindex, cgsort, state->v, vbuf);
-                    break;
-                case estSDX:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, state->sd_X, vbuf);
                     break;
                 case estCGP:
                     order_vec_atom(dd->ncg_home, cgindex, cgsort, state->cg_p, vbuf);

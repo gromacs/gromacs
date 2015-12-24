@@ -182,7 +182,6 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
         state->x = NULL;
         state->v = NULL;
     }
-    state->sd_X = NULL;
     state->cg_p = NULL;
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
@@ -205,10 +204,6 @@ void done_state(t_state *state)
     if (state->v)
     {
         sfree(state->v);
-    }
-    if (state->sd_X)
-    {
-        sfree(state->sd_X);
     }
     if (state->cg_p)
     {
