@@ -100,7 +100,6 @@ void update_coords(FILE              *fplog,
                    gmx_ekindata_t    *ekind,
                    matrix             M,
                    gmx_update_t       upd,
-                   gmx_bool           bInitStep,
                    int                bUpdatePart,
                    t_commrec         *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr        *constr);

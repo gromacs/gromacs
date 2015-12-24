@@ -155,11 +155,11 @@ real *lincs_rmsd_data(struct gmx_lincsdata *lincsd)
     return lincsd->rmsd_data;
 }
 
-real lincs_rmsd(struct gmx_lincsdata *lincsd, gmx_bool bSD2)
+real lincs_rmsd(struct gmx_lincsdata *lincsd)
 {
     if (lincsd->rmsd_data[0] > 0)
     {
-        return std::sqrt(lincsd->rmsd_data[bSD2 ? 2 : 1]/lincsd->rmsd_data[0]);
+        return std::sqrt(lincsd->rmsd_data[1]/lincsd->rmsd_data[0]);
     }
     else
     {
@@ -2332,15 +2332,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         if (bLog || bEner)
         {
             lincsd->rmsd_data[0] = 0;
-            if (ir->eI == eiSD2 && v == NULL)
-            {
-                i = 2;
-            }
-            else
-            {
-                i = 1;
-            }
-            lincsd->rmsd_data[i] = 0;
+            lincsd->rmsd_data[1] = 0;
         }
 
         return bOK;
@@ -2435,17 +2427,8 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             cconerr(lincsd, xprime, pbc,
                     &ncons_loc, &p_ssd, &p_max, &p_imax);
-            /* Check if we are doing the second part of SD */
-            if (ir->eI == eiSD2 && v == NULL)
-            {
-                i = 2;
-            }
-            else
-            {
-                i = 1;
-            }
             lincsd->rmsd_data[0] = ncons_loc;
-            lincsd->rmsd_data[i] = p_ssd;
+            lincsd->rmsd_data[1] = p_ssd;
         }
         else
         {

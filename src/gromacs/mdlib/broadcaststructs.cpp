@@ -301,7 +301,6 @@ void bcast_state(const t_commrec *cr, t_state *state)
                 case estVOL0:    block_bc(cr, state->vol0); break;
                 case estX:       nblock_abc(cr, state->natoms, state->x); break;
                 case estV:       nblock_abc(cr, state->natoms, state->v); break;
-                case estSDX:     nblock_abc(cr, state->natoms, state->sd_X); break;
                 case estCGP:     nblock_abc(cr, state->natoms, state->cg_p); break;
                 case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
                 case estDISRE_RM3TAV:

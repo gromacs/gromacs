@@ -240,7 +240,7 @@ void global_stat(gmx_global_stat_t gs,
             rmsd_data = constr_rmsd_data(constr);
             if (rmsd_data)
             {
-                irmsd = add_binr(rb, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
+                irmsd = add_binr(rb, 2, rmsd_data);
             }
         }
         if (!inputrecNeedMutot(inputrec))
@@ -343,7 +343,7 @@ void global_stat(gmx_global_stat_t gs,
         extract_binr(rb, ie, nener, copyenerd);
         if (rmsd_data)
         {
-            extract_binr(rb, irmsd, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
+            extract_binr(rb, irmsd, 2, rmsd_data);
         }
         if (!inputrecNeedMutot(inputrec))
         {

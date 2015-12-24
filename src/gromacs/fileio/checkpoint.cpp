@@ -99,7 +99,7 @@ const char *est_names[estNR] =
     "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "thermostat-integral",
-    "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
+    "x", "v", "sdx-unsupported", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
     "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng", "MC-rng-i"
@@ -970,7 +970,6 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
                 case estVOL0:    ret      = do_cpte_real(xd, cptpEST, i, sflags, &state->vol0, list); break;
                 case estX:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->x, list); break;
                 case estV:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->v, list); break;
-                case estSDX:     ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->sd_X, list); break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
                  */
@@ -984,7 +983,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
                 case estORIRE_DTAV:   ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
-                              "You are probably reading a new checkpoint file with old code", i);
+                              "You are reading a checkpoint file written by different code, which is not supported", i);
             }
         }
     }

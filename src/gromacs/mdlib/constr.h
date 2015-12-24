@@ -242,14 +242,14 @@ real *constr_rmsd_data(gmx_constr_t constr);
  * Returns NULL when LINCS is not used.
  */
 
-real constr_rmsd(gmx_constr_t constr, gmx_bool bSD2);
-/* Return the RMSD of the constraint, bSD2 selects the second SD step */
+real constr_rmsd(gmx_constr_t constr);
+/* Return the RMSD of the constraint */
 
 real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 /* Return the data for determining constraint RMS relative deviations */
 
-real lincs_rmsd(gmx_lincsdata_t lincsd, gmx_bool bSD2);
-/* Return the RMSD of the constraint, bSD2 selects the second SD step */
+real lincs_rmsd(gmx_lincsdata_t lincsd);
+/* Return the RMSD of the constraint */
 
 gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
                            int nflexcon_global, const t_blocka *at2con,

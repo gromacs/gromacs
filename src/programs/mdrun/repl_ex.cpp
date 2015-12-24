@@ -546,7 +546,6 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_doubles(ms, b, state->therm_integral, state->ngtc);
     exchange_rvecs(ms, b, state->x, state->natoms);
     exchange_rvecs(ms, b, state->v, state->natoms);
-    exchange_rvecs(ms, b, state->sd_X, state->natoms);
 }
 
 static void copy_rvecs(rvec *s, rvec *d, int n)
@@ -627,7 +626,6 @@ static void copy_state_nonatomdata(t_state *state, t_state *state_local)
     scopy_doubles(therm_integral, state->ngtc);
     scopy_rvecs(x, state->natoms);
     scopy_rvecs(v, state->natoms);
-    scopy_rvecs(sd_X, state->natoms);
     copy_ints(&(state->fep_state), &(state_local->fep_state), 1);
     scopy_reals(lambda, efptNR);
 }

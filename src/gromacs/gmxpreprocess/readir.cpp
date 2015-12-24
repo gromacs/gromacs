@@ -3221,7 +3221,7 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 warning_error(wi, "Invalid value for mdp option tau-t. tau-t should only consist of real numbers separated by spaces.");
             }
-            if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
+            if ((ir->eI == eiBD) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
                 warning_error(wi, warn_buf);
@@ -4152,15 +4152,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                 " ref-t for temperature coupling should be > 0",
                 eel_names[eelGRF]);
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
-    }
-
-    if (ir->eI == eiSD2)
-    {
-        sprintf(warn_buf, "The stochastic dynamics integrator %s is deprecated, since\n"
-                "it is slower than integrator %s and is slightly less accurate\n"
-                "with constraints. Use the %s integrator.",
-                ei_names[ir->eI], ei_names[eiSD1], ei_names[eiSD1]);
-        warning_note(wi, warn_buf);
     }
 
     bAcc = FALSE;

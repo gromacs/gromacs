@@ -3025,13 +3025,6 @@ void do_edsam(const t_inputrec *ir,
         return;
     }
 
-    /* Suppress output on first call of do_edsam if
-     * two-step sd2 integrator is used */
-    if ( (ir->eI == eiSD2) && (v != NULL) )
-    {
-        bSuppress = TRUE;
-    }
-
     dt_1 = 1.0/ir->delta_t;
 
     /* Loop over all ED groups (usually one) */

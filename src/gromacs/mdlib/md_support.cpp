@@ -696,15 +696,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
             snew(state->v, state->nalloc + 1);
         }
     }
-    if (ir->eI == eiSD2)
-    {
-        state->flags |= (1<<estSDX);
-        if (state->sd_X == NULL)
-        {
-            /* sd_X is not stored in the tpx file, so we need to allocate it */
-            snew(state->sd_X, state->nalloc + 1);
-        }
-    }
     if (ir->eI == eiCG)
     {
         state->flags |= (1<<estCGP);

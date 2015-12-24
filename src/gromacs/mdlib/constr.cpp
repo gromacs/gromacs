@@ -662,11 +662,11 @@ real *constr_rmsd_data(struct gmx_constr *constr)
     }
 }
 
-real constr_rmsd(struct gmx_constr *constr, gmx_bool bSD2)
+real constr_rmsd(struct gmx_constr *constr)
 {
     if (constr->lincsd)
     {
-        return lincs_rmsd(constr->lincsd, bSD2);
+        return lincs_rmsd(constr->lincsd);
     }
     else
     {
