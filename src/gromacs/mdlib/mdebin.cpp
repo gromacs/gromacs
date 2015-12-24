@@ -167,14 +167,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         if (ncon > 0 && ir->eConstrAlg == econtLINCS)
         {
-            if (ir->eI == eiSD2)
-            {
-                md->nCrmsd = 2;
-            }
-            else
-            {
-                md->nCrmsd = 1;
-            }
+            md->nCrmsd = 1;
         }
         md->bConstrVir = (getenv("GMX_CONSTRAINTVIR") != NULL);
     }
@@ -938,11 +931,7 @@ void upd_mdebin(t_mdebin       *md,
     add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
     if (md->nCrmsd)
     {
-        crmsd[0] = constr_rmsd(constr, FALSE);
-        if (md->nCrmsd > 1)
-        {
-            crmsd[1] = constr_rmsd(constr, TRUE);
-        }
+        crmsd[0] = constr_rmsd(constr);
         add_ebin(md->ebin, md->iconrmsd, md->nCrmsd, crmsd, FALSE);
     }
     if (md->bDynBox)
