@@ -39,7 +39,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
-void m_inv_ur0(gmx_cxx_const matrix src, matrix dest)
+void m_inv_ur0(const matrix src, matrix dest)
 {
     double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
     if (std::fabs(tmp) <= 100*GMX_REAL_MIN)
@@ -59,7 +59,7 @@ void m_inv_ur0(gmx_cxx_const matrix src, matrix dest)
     dest[YY][ZZ] = 0.0;
 }
 
-void m_inv(gmx_cxx_const matrix src, matrix dest)
+void m_inv(const matrix src, matrix dest)
 {
     const real smallreal = (real)1.0e-24;
     const real largereal = (real)1.0e24;
