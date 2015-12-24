@@ -260,8 +260,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bTemp, bPres, bTrotter;
     real              dvdl_constr;
-    rvec             *cbuf        = NULL;
-    int               cbuf_nalloc = 0;
     matrix            lastbox;
     int               lamnew  = 0;
     /* for FEP */
@@ -311,7 +309,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     /* md-vv uses averaged full step velocities for T-control
-       md-vv-avek uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
     bTrotter = (EI_VV(ir->eI) && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
 
@@ -591,18 +588,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     constr, NULL, FALSE, state->box,
                     NULL, &bSumEkinhOld, cglo_flags
                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
-    if (ir->eI == eiVVAK)
-    {
-        /* We do the same call as above, but trigger a velocity-Verlet
-           half-step kinetic energy calculation to get the half-step
-           temperature initialized also. We also avoid doing
-           computations that would use that KE. */
-        compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                        NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                        constr, NULL, FALSE, state->box,
-                        NULL, &bSumEkinhOld,
-                        cglo_flags & ~(CGLO_STOPCM | CGLO_PRESSURE | CGLO_EKINFROMFULLSTEPVELOCITIES));
-    }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
     if (!(Flags & MD_STARTFROMCPT))
@@ -1091,7 +1076,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
-        if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)
+        if (ir->eI == eiVV && !startingFromCheckpoint && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
             rvec *vbuf = NULL;
@@ -1135,21 +1120,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 unshift_self(graph, state->box, state->x);
             }
             /* if md-vv, compute the pressure and constraints */
-            /* For md-vv-avek, we strictly only need this if using pressure
-             * control, but we really would like to have accurate pressures
-             * printed out.
-             * Think about ways around this in the future?
-             * For now, keep this choice in comments.
-             */
-            /*bPres = (ir->eI==eiVV || inputrecNptTrotter(ir)); */
-            /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && inputrecNptTrotter(ir)));*/
             bPres = TRUE;
-            bTemp = ((ir->eI == eiVV && (!bInitStep)) || (ir->eI == eiVVAK));
-            bool computeEkinFromFullStepVelocities = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres));
-            if (bCalcEner && ir->eI == eiVVAK)
-            {
-                bSumEkinhOld = TRUE;
-            }
+            bTemp = !bInitStep;
             /* for vv, the first half of the integration actually corresponds to the previous step.
                So we need information from the last step in the first half of the integration */
             if (bGStat || do_per_step(step-1, nstglobalcomm))
@@ -1165,7 +1137,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
                                 | (bStopCM ? CGLO_STOPCM : 0)
-                                | (computeEkinFromFullStepVelocities ? CGLO_EKINFROMFULLSTEPVELOCITIES : 0)
+                                | CGLO_EKINFROMFULLSTEPVELOCITIES
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                                 | CGLO_SCALEEKIN
                                 );
@@ -1204,13 +1176,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* We need the kinetic energy at minus the half step for determining
                      * the full step kinetic energy and possibly for T-coupling.*/
                     /* This may not be quite working correctly yet . . . . */
-                    bool computeEkinFromFullStepVelocities = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres));
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                                     wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                     constr, NULL, FALSE, state->box,
                                     NULL, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE
-                                    | (computeEkinFromFullStepVelocities ? CGLO_EKINFROMFULLSTEPVELOCITIES : 0));
+                                    | CGLO_EKINFROMFULLSTEPVELOCITIES);
                     wallcycle_start(wcycle, ewcUPDATE);
                 }
             }
@@ -1224,7 +1195,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         /* compute the conserved quantity */
-        if (EI_VV(ir->eI))
+        if (ir->eI == eiVV)
         {
             saved_conserved_quantity = compute_conserved_from_auxiliary(ir, state, &MassQ);
             if (ir->eI == eiVV)
@@ -1270,7 +1241,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
-        if (startingFromCheckpoint && EI_VV(ir->eI))
+        if (startingFromCheckpoint && ir->eI == eiVV)
         {
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
@@ -1346,7 +1317,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         /* at the start of step, randomize or scale the velocities (trotter done elsewhere) */
-        if (EI_VV(ir->eI))
+        if (ir->eI == eiVV)
         {
             if (!bInitStep)
             {
@@ -1396,7 +1367,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 update_pcouple(fplog, step, ir, state, pcoupl_mu, M, bInitStep);
             }
 
-            if (EI_VV(ir->eI))
+            if (ir->eI == eiVV)
             {
                 /* velocity half-step update */
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
@@ -1409,17 +1380,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * and entire integrator for MD.
              */
 
-            if (ir->eI == eiVVAK)
-            {
-                /* We probably only need md->homenr, not state->natoms */
-                if (state->natoms > cbuf_nalloc)
-                {
-                    cbuf_nalloc = state->natoms;
-                    srenew(cbuf, cbuf_nalloc);
-                }
-                copy_rvecn(state->x, cbuf, 0, state->natoms);
-            }
-
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1430,37 +1390,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                cr, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
 
-            if (ir->eI == eiVVAK)
-            {
-                /* erase F_EKIN and F_TEMP here? */
-                /* just compute the kinetic energy at the half step to perform a trotter step */
-                compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                                wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
-                                constr, NULL, FALSE, lastbox,
-                                NULL, &bSumEkinhOld,
-                                (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
-                                );
-                wallcycle_start(wcycle, ewcUPDATE);
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
-                /* now we know the scaling, we can compute the positions again */
-                copy_rvecn(cbuf, state->x, 0, state->natoms);
-
-                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
-                wallcycle_stop(wcycle, ewcUPDATE);
-
-                /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
-                /* are the small terms in the shake_vir here due
-                 * to numerical errors, or are they important
-                 * physically? I'm thinking they are just errors, but not completely sure.
-                 * For now, will call without actually constraining, constr=NULL*/
-                update_constraints(fplog, step, NULL, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
-                                   &top->idef, tmp_vir,
-                                   cr, nrnb, wcycle, upd, NULL,
-                                   FALSE, bCalcVir);
-            }
-            if (EI_VV(ir->eI))
+            if (ir->eI == eiVV)
             {
                 /* this factor or 2 correction is necessary
                    because half of the constraint force is removed
@@ -1512,7 +1442,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * non-communication steps, but we need to calculate
          * the kinetic energy one step before communication.
          */
-        if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)))
+        if (bGStat || (ir->eI != eiVV && do_per_step(step+1, nstglobalcomm)))
         {
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
@@ -1522,10 +1452,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             lastbox,
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             (bGStat ? CGLO_GSTAT : 0)
-                            | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
-                            | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
-                            | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
-                            | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0)
+                            | (ir->eI != eiVV || bRerunMD ? CGLO_ENERGY : 0)
+                            | (ir->eI != eiVV && bStopCM ? CGLO_STOPCM : 0)
+                            | (ir->eI != eiVV ? CGLO_TEMPERATURE : 0)
+                            | (ir->eI != eiVV || bRerunMD ? CGLO_PRESSURE : 0)
                             | CGLO_CONSTRAINT
                             | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
                             );
@@ -1541,7 +1471,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
-        if (ir->efep != efepNO && (!EI_VV(ir->eI) || bRerunMD))
+        if (ir->efep != efepNO && (ir->eI != eiVV || bRerunMD))
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
@@ -1571,7 +1501,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
 
-        if (EI_VV(ir->eI))
+        if (ir->eI == eiVV)
         {
             enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + saved_conserved_quantity;
         }
@@ -1592,7 +1522,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
                                           &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
-            if (!(startingFromCheckpoint && (EI_VV(ir->eI))))
+            if (!(startingFromCheckpoint && (ir->eI == eiVV)))
             {
                 if (bCalcEner)
                 {

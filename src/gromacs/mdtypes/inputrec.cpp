@@ -1073,18 +1073,18 @@ gmx_bool inputrecExclForces(const t_inputrec *ir)
 
 gmx_bool inputrecNptTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+    return ( (ir->eI == eiVV) &&
              (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
 }
 
 gmx_bool inputrecNvtTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+    return ( (ir->eI == eiVV) &&
              (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
 }
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
+    return ( (ir->eI == eiVV) &&
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }
