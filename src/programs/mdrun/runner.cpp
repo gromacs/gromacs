@@ -628,7 +628,6 @@ static integrator_t *my_integrator(unsigned int ei)
         case eiSD2:
         case eiSD1:
         case eiVV:
-        case eiVVAK:
             if (!EI_DYNAMICS(ei))
             {
                 GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
@@ -918,6 +917,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         cr->npmenodes = 0;
+    }
+
+    if (inputrec->eI == eiVVAK)
+    {
+        gmx_fatal(FARGS, "The velocity-Verlet integrator that averages KE is temporarily disabled");
     }
 
     if (bUseGPU && cr->npmenodes < 0)

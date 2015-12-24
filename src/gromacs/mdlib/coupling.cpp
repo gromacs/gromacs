@@ -1164,57 +1164,6 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
         }
     }
-    else if (ir->eI == eiVVAK)
-    {
-        if (inputrecNptTrotter(ir))
-        {
-            /* This is the complicated version - there are 4 possible calls, depending on ordering.
-               We start with the initial one. */
-            /* first, a round that estimates veta. */
-            trotter_seq[0][0] = etrtBAROV;
-
-            /* The first half trotter update, part 1 -- double update, because it commutes */
-            trotter_seq[1][0] = etrtNHC;
-
-            /* The first half trotter update, part 2 */
-            trotter_seq[2][0] = etrtBAROV;
-            trotter_seq[2][1] = etrtBARONHC;
-
-            /* The second half trotter update, part 1 */
-            trotter_seq[3][0] = etrtBARONHC;
-            trotter_seq[3][1] = etrtBAROV;
-
-            /* The second half trotter update */
-            trotter_seq[4][0] = etrtNHC;
-        }
-        else if (inputrecNvtTrotter(ir))
-        {
-            /* This is the easy version - there is only one call, both the same.
-               Otherwise, even easier -- no calls  */
-            trotter_seq[1][0] = etrtNHC;
-            trotter_seq[4][0] = etrtNHC;
-        }
-        else if (inputrecNphTrotter(ir))
-        {
-            /* This is the complicated version - there are 4 possible calls, depending on ordering.
-               We start with the initial one. */
-            /* first, a round that estimates veta. */
-            trotter_seq[0][0] = etrtBAROV;
-
-            /* The first half trotter update, part 1 -- leave zero */
-            trotter_seq[1][0] = etrtNHC;
-
-            /* The first half trotter update, part 2 */
-            trotter_seq[2][0] = etrtBAROV;
-            trotter_seq[2][1] = etrtBARONHC;
-
-            /* The second half trotter update, part 1 */
-            trotter_seq[3][0] = etrtBARONHC;
-            trotter_seq[3][1] = etrtBAROV;
-
-            /* The second half trotter update -- blank for now */
-        }
-    }
 
     switch (ir->epct)
     {

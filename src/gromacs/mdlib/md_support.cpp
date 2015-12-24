@@ -298,13 +298,13 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     computeEkinFromFullStepVelocities = flags & CGLO_EKINFROMFULLSTEPVELOCITIES;
     /* Note md-vv integrator computes kinetic energy (and thus
        temperature) based upon the full-step velocities, whereas md
-       (leap-frog) and md-vv-avek integrators compute the kinetic
+       (leap-frog) integrator computes the kinetic
        energy based upon averaged half-step kinetic energies (see
        reference manual for details).
 
        In the implementation, this affects whether KE values labelled
-       as full-step (ekinf; for md-vv) or half-step (ekinh; for md and
-       md-vv-avek) are accumulated.
+       as full-step (ekinf; for md-vv) or half-step (ekinh; for md)
+       are accumulated.
      */
 
     /* ########## Kinetic energy  ############## */

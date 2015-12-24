@@ -81,7 +81,8 @@ Run control
       as in the :mdp-value:`integrator=md` integrator, and this thus
       more accurate.  With Nose-Hoover and/or Parrinello-Rahman
       coupling this comes with a slight increase in computational
-      cost.
+      cost. The implementation is currently disabled while being
+      re-implemented.
 
    .. mdp-value:: sd
 

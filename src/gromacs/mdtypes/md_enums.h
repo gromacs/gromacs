@@ -228,8 +228,6 @@ extern const char *ens_names[ensNR+1];
 /*! \brief Integrator algorithm
  *
  * eiVV is normal velocity verlet
- * eiVVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy,
- * and the half step kinetic energy for temperature control
  */
 enum {
     eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
@@ -239,7 +237,7 @@ extern const char *ei_names[eiNR+1];
 //! Macro returning integrator string
 #define EI(e)          enum_name(e, eiNR, ei_names)
 //! Do we use velocity Verlet
-#define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
+#define EI_VV(e) ((e) == eiVV)
 //! Do we use molecular dynamics
 #define EI_MD(e) ((e) == eiMD || EI_VV(e))
 //! Do we use stochastic dynamics
