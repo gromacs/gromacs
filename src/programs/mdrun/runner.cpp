@@ -625,7 +625,6 @@ static integrator_t *my_integrator(unsigned int ei)
     {
         case eiMD:
         case eiBD:
-        case eiSD2:
         case eiSD1:
         case eiVV:
         case eiVVAK:
@@ -649,6 +648,8 @@ static integrator_t *my_integrator(unsigned int ei)
                 GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
             }
             return do_tpi;
+        case eiSD2:
+            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
         default:
             GMX_THROW(APIError("Non existing integrator selected"));
     }
@@ -784,14 +785,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           "      BlueGene/Q. You will observe better performance from using the\n"
                           "      Verlet cut-off scheme.\n");
 #endif
-        }
-
-        if (inputrec->eI == eiSD2)
-        {
-            md_print_warn(cr, fplog, "The stochastic dynamics integrator %s is deprecated, since\n"
-                          "it is slower than integrator %s and is slightly less accurate\n"
-                          "with constraints. Use the %s integrator.",
-                          ei_names[inputrec->eI], ei_names[eiSD1], ei_names[eiSD1]);
         }
     }
 
