@@ -252,6 +252,14 @@ class CommandLineTestHelper::Impl
             {
             }
 
+            OutputFileInfo &operator=(OutputFileInfo &&other)
+            {
+                option  = std::move(other.option);
+                path    = std::move(other.path);
+                matcher = std::move(other.matcher);
+                return *this;
+            }
+
             std::string              option;
             std::string              path;
             TextBlockMatcherPointer  matcher;
