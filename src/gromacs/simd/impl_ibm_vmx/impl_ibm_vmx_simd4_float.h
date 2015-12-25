@@ -71,11 +71,6 @@ class Simd4FBool
     public:
         Simd4FBool() {}
 
-        Simd4FBool(bool b)
-        {
-            simdInternal_ = reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0));
-        }
-
         // Internal utility constructor to simplify return statements
         Simd4FBool(__vector vmxBool int simd) : simdInternal_(simd) {}
 

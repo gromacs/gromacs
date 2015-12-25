@@ -79,8 +79,6 @@ class SimdDBool
     public:
         SimdDBool() {}
 
-        SimdDBool(bool b) : simdInternal_(_mm_castsi128_pd(_mm_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
-
         // Internal utility constructor to simplify return statements
         SimdDBool(__m128d simd) : simdInternal_(simd) {}
 
@@ -91,8 +89,6 @@ class SimdDIBool
 {
     public:
         SimdDIBool() {}
-
-        SimdDIBool(bool b) : simdInternal_(_mm_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
 
         // Internal utility constructor to simplify return statements
         SimdDIBool(__m128i simd) : simdInternal_(simd) {}

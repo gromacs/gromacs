@@ -90,8 +90,6 @@ class SimdDBool
     public:
         SimdDBool() {}
 
-        SimdDBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
-
         // Internal utility constructor to simplify return statements
         SimdDBool(vector4double simd) : simdInternal_(simd) {}
 

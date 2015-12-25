@@ -109,9 +109,6 @@ class Simd4FBool
     public:
         Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) { simdInternal_.fill(b); }
-
         /*! \brief Internal SIMD data. Implementation dependent, don't touch.
          *
          * This has to be public to enable usage in combination with static inline

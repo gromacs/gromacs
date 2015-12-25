@@ -78,8 +78,6 @@ class SimdDBool
     public:
         SimdDBool() {}
 
-        SimdDBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool long long>(vec_splats( b ? 0xFFFFFFFFFFFFFFFFULL : 0))) {}
-
         // Internal utility constructor to simplify return statements
         SimdDBool(__vector vsxBool long long simd) : simdInternal_(simd) {}
 
@@ -90,8 +88,6 @@ class SimdDIBool
 {
     public:
         SimdDIBool() {}
-
-        SimdDIBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
 
         // Internal utility constructor to simplify return statements
         SimdDIBool(__vector vsxBool int simd) : simdInternal_(simd) {}
