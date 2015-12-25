@@ -65,9 +65,6 @@ class Simd4FBool
     public:
         Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
-
         // Internal utility constructor to simplify return statements
         Simd4FBool(__vector vsxBool int simd) : simdInternal_(simd) {}
 
