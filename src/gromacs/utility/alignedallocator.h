@@ -207,11 +207,13 @@ class AlignedAllocator
 
         /*! \brief Construct an object without allocating memory
          *
+         * \tparam Args  Variable-length list of types for constructor args
          * \param p      Adress of memory where to construct object
-         * \param value  Reference to object to copy
+         * \param args   Variable-length list of arguments to constructor
          */
+        template<class ... Args>
         void
-        construct(pointer p, const_reference value) { new (p) value_type(value); }
+        construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
 
         /*! \brief Call the destructor of object without releasing memory
          *
