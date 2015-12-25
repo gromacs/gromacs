@@ -116,6 +116,7 @@ function (gmx_cpack_write_config)
     set(CPACK_PROJECT_CONFIG_FILE "${PROJECT_SOURCE_DIR}/CPackInit.cmake")
 
     # Settings specific to source packages.
+    set(CPACK_SOURCE_GENERATOR TGZ)
     set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
     set(CPACK_SOURCE_IGNORE_FILES
         "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$;\\\\.gitattributes;")
