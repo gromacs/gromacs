@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,9 +67,6 @@ class Simd4DBool
 {
     public:
         Simd4DBool() {}
-
-        //! \brief Construct from scalar bool
-        Simd4DBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
 
         // Internal utility constructor to simplify return statements
         Simd4DBool(vector4double simd) : simdInternal_(simd) {}

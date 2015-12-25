@@ -95,8 +95,6 @@ class SimdFBool
     public:
         SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
-
         // Internal utility constructor to simplify return statements
         SimdFBool(__vector vmxBool int simd) : simdInternal_(simd) {}
 
@@ -107,8 +105,6 @@ class SimdFIBool
 {
     public:
         SimdFIBool() {}
-
-        SimdFIBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
 
         // Internal utility constructor to simplify return statements
         SimdFIBool(__vector vmxBool int simd) : simdInternal_(simd) {}
