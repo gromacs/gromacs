@@ -77,8 +77,6 @@ class SimdFBool
     public:
         SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
-
         // Internal utility constructor to simplify return statements
         SimdFBool(uint32x4_t simd) : simdInternal_(simd) {}
 
@@ -89,8 +87,6 @@ class SimdFIBool
 {
     public:
         SimdFIBool() {}
-
-        SimdFIBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
 
         // Internal utility constructor to simplify return statements
         SimdFIBool(uint32x4_t simd) : simdInternal_(simd) {}

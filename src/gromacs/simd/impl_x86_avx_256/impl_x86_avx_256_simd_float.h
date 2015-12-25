@@ -78,8 +78,6 @@ class SimdFBool
     public:
         SimdFBool() {}
 
-        SimdFBool(bool b) : simdInternal_(_mm256_castsi256_ps(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
-
         // Internal utility constructor to simplify return statements
         SimdFBool(__m256 simd) : simdInternal_(simd) {}
 

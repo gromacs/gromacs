@@ -143,9 +143,6 @@ class SimdDBool
     public:
         SimdDBool() {}
 
-        //! \brief Construct from scalar bool
-        SimdDBool(bool b) { simdInternal_.fill(b); }
-
         /*! \brief Internal SIMD data. Implementation dependent, don't touch.
          *
          * This has to be public to enable usage in combination with static inline
@@ -169,9 +166,6 @@ class SimdDIBool
 {
     public:
         SimdDIBool() {}
-
-        //! \brief Construct from scalar
-        SimdDIBool(bool b) { simdInternal_.fill(b); }
 
         /*! \brief Internal SIMD data. Implementation dependent, don't touch.
          *
