@@ -63,9 +63,6 @@ class Simd4FBool
     public:
         Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) : simdInternal_(_mm_castsi128_ps(_mm_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
-
         // Internal utility constructor to simplify return statements
         Simd4FBool(__m128 simd) : simdInternal_(simd) {}
 

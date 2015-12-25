@@ -63,9 +63,6 @@ class Simd4FBool
     public:
         Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
-
         // Internal utility constructor to simplify return statements
         Simd4FBool(uint32x4_t simd) : simdInternal_(simd) {}
 

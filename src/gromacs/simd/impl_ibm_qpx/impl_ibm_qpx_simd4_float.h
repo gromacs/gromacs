@@ -66,9 +66,6 @@ class Simd4FBool
     public:
         Simd4FBool() {}
 
-        //! \brief Construct from scalar bool
-        Simd4FBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
-
         // Internal utility constructor to simplify return statements
         Simd4FBool(vector4double simd) : simdInternal_(simd) {}
 
