@@ -59,7 +59,8 @@ def do_build(context):
 
     context.build_target(target='package_source')
 
-    cpack_config = read_source_package_config(context.workspace.build_dir)
+    cpack_config_path = os.path.join(context.workspace.build_dir, 'CPackSourceConfig.cmake')
+    cpack_config = context.read_cmake_variable_file(cpack_config_path)
     package_name = cpack_config['CPACK_PACKAGE_FILE_NAME'] + '.tar.gz'
     package_info = {
             'SOURCE_PACKAGE_FILE_NAME': package_name,
@@ -68,13 +69,3 @@ def do_build(context):
         }
     log_path = context.workspace.get_path_for_logfile('package-info.log')
     context.write_property_file(log_path, package_info)
-
-def read_source_package_config(build_dir):
-    values = dict()
-    set_re = r'SET\((\w+)\s*"(.*)"\)\s*'
-    with open(os.path.join(build_dir, 'CPackSourceConfig.cmake'), 'r') as fp:
-        for line in fp:
-            match = re.match(set_re, line)
-            if match:
-                values[match.group(1)] = match.group(2)
-    return values
