@@ -119,7 +119,7 @@ class Simd4FBool
          * the corresponding implementation directory since the type will depend
          * on the architecture.
          */
-        std::array<bool, GMX_SIMD_FLOAT_WIDTH>  simdInternal_;
+        std::array<bool, GMX_SIMD4_WIDTH>  simdInternal_;
 };
 
 /*! \brief Load 4 float values from aligned memory into SIMD4 variable.
