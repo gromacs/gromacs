@@ -1,0 +1,11 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Code-Review+1: Erik Lindahl <erik.lindahl@gmail.com>
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+1: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Sun, 27 Dec 2015 08:35:15 +0100
+Reviewed-on: https://gerrit.gromacs.org/5494
+Project: gromacs
+Branch: refs/heads/master
