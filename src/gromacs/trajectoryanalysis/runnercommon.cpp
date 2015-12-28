@@ -190,7 +190,10 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     }
     time_unit_t time_unit
         = static_cast<time_unit_t>(settings_.timeUnit() + 1);
-    output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
+        
+    xvg_format_t xvg = static_cast<xvg_format_t>(settings_.impl_->plotSettings.plotFormat());
+    
+    output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, xvg, 0);
 
     int frflags = settings_.frflags();
     frflags |= TRX_NEED_X;
