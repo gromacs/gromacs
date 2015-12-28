@@ -188,9 +188,10 @@ contexts.
 
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The current version is recommended for use with
-GCN-based AMD GPUs. It does work with NVIDIA GPUs, but see the
-known limitations in the user guide. The minimum
-OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|.
+GCN-based AMD GPUs. It does work with NVIDIA GPUs, but using the latest
+NVIDIA driver (which includes the NVIDIA OpenCL runtime) is recommended,
+and please see the known limitations in the |Gromacs| user guide. The
+minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|.
 
 It is not possible to configure both CUDA and OpenCL support in the
 same version of |Gromacs|.
