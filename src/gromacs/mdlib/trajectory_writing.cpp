@@ -44,6 +44,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"

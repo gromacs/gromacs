@@ -38,10 +38,10 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct t_inputrec;
 struct t_state;
 
 /*! \brief Make sure the relative box shape remains the same

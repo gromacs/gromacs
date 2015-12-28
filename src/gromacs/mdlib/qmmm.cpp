@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
