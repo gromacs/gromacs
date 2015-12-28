@@ -57,6 +57,7 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/mtop_util.h"

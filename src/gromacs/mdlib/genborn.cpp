@@ -55,6 +55,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/genborn_allvsall.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"

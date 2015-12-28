@@ -47,7 +47,6 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
@@ -60,6 +59,7 @@ struct gmx_membed_t;
 struct gmx_output_env_t;
 struct t_commrec;
 struct t_filenm;
+struct t_inputrec;
 
 namespace gmx
 {

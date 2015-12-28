@@ -40,11 +40,12 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
+
+struct t_inputrec;
 
 /* Abstract type for LINCS that is defined only in the file that uses it */
 typedef struct gmx_lincsdata *gmx_lincsdata_t;

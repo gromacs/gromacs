@@ -49,10 +49,10 @@
 #ifndef GMX_MDLIB_MDRUN_SIGNALLING_H
 #define GMX_MDLIB_MDRUN_SIGNALLING_H
 
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
+struct t_inputrec;
 
 namespace gmx
 {

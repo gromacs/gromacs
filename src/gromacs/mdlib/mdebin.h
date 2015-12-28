@@ -48,7 +48,10 @@ struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct t_expanded;
 struct t_fcdata;
+struct t_grpopts;
+struct t_lambda;
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions

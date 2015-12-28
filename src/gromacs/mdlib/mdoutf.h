@@ -39,7 +39,6 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -47,6 +46,7 @@ struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_commrec;
 struct t_filenm;
+struct t_inputrec;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 

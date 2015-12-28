@@ -40,11 +40,11 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {

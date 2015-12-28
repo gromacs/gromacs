@@ -38,10 +38,10 @@
 #define GMX_MDLIB_PERF_EST_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_mtop_t;
+struct t_inputrec;
 
 void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
                             double *ndistance_c, double *ndistance_simd);
