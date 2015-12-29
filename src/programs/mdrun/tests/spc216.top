@@ -1,0 +1,12 @@
+#include "oplsaa.ff/forcefield.itp"
+
+; Include water topology
+#include "oplsaa.ff/tip3p.itp"
+
+[ system ]
+; Name
+spc2
+
+[ molecules ]
+; Compound        #mols
+SOL              216

@@ -621,6 +621,10 @@ int write_trx(t_trxstatus *status, int nind, const int *ind, t_atoms *atoms,
 
 void close_trx(t_trxstatus *status)
 {
+    if (status == nullptr)
+    {
+        return;
+    }
     gmx_tng_close(&status->tng);
     if (status->fio)
     {
@@ -1119,6 +1123,10 @@ gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
 
 void close_trj(t_trxstatus *status)
 {
+    if (status == nullptr)
+    {
+        return;
+    }
     gmx_tng_close(&status->tng);
     if (status->fio)
     {
