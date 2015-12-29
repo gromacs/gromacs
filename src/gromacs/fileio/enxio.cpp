@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -746,10 +746,22 @@ void free_enxnms(int n, gmx_enxnm_t *nms)
 
 void close_enx(ener_file_t ef)
 {
+    if (ef == NULL)
+    {
+        // Nothing to do
+        return;
+    }
     if (gmx_fio_close(ef->fio) != 0)
     {
         gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of disk space?");
     }
+}
+
+void done_ener_file(ener_file_t ef)
+{
+    // Free the contents, then the pointer itself
+    close_enx(ef);
+    sfree(ef);
 }
 
 /*!\brief Return TRUE if a file exists but is empty, otherwise FALSE.
