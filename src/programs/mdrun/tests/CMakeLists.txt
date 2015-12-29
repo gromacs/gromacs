@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,13 +39,16 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    energyreader.cpp
     grompp.cpp
     rerun.cpp
     trajectory_writing.cpp
+    trajectoryreader.cpp
     compressed_x_output.cpp
     swapcoords.cpp
     interactiveMD.cpp
     # files with code for test fixtures
+    mdruncomparisonfixture.cpp
     moduletest.cpp
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
