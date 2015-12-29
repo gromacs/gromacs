@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -182,41 +183,217 @@ std::string TrajectoryFrame::getFrameName() const
     return formatString("Time %f Step %" GMX_PRId64, frame_->time, frame_->step);
 }
 
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance)
+// === Free functions ===
+
+static void compareBox(const TrajectoryFrame              &reference,
+                       const TrajectoryFrame              &test,
+                       const TrajectoryFrameMatchSettings &matchSettings,
+                       const FloatingPointTolerance        tolerance)
 {
-    auto &reference = frames.first;
-    auto &test      = frames.second;
+    if (!matchSettings.mustCompareBox)
+    {
+        return;
+    }
+    bool canCompareBox = true;
+    if (!reference.frame_->bBox)
+    {
+        ADD_FAILURE() << "Comparing the box was required, but the reference frame did not have one";
+        canCompareBox = false;
+    }
+    if (!test.frame_->bBox)
+    {
+        ADD_FAILURE() << "Comparing the box was required, but the test frame did not have one";
+        canCompareBox = false;
+    }
+    if (!canCompareBox)
+    {
+        return;
+    }
 
-    // NB We checked earlier for both frames that bStep and bTime are set
+    // Do the comparing.
+    for (int d = 0; d < DIM; ++d)
+    {
+        for (int dd = 0; dd < DIM; ++dd)
+        {
+            EXPECT_REAL_EQ_TOL(reference.frame_->box[d][dd], test.frame_->box[d][dd], tolerance)
+            << " box[" << d <<"][" << dd << " didn't match between reference frame " << reference.getFrameName() << " and test frame " << test.getFrameName();
+        }
+    }
+}
 
-    EXPECT_EQ(reference.frame_->step, test.frame_->step)
-    << "step didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+static void comparePositions(const TrajectoryFrame              &reference,
+                             const TrajectoryFrame              &test,
+                             const TrajectoryFrameMatchSettings &matchSettings,
+                             const FloatingPointTolerance        tolerance)
+{
+    // Note we don't need to compare bPBC because put_atoms_in_box
+    // implements a fallback if nothing specific was set in the
+    // trajectory frame.
+    bool canHandlePbc = true;
+    if (!reference.frame_->bBox)
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Comparing positions required PBC handling, but the reference frame did not have a box";
+        }
+        canHandlePbc = false;
+    }
+    if (!test.frame_->bBox)
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Comparing positions required PBC handling, but the test frame did not have a box";
+        }
+        canHandlePbc = false;
+    }
 
-    EXPECT_EQ(reference.frame_->time, test.frame_->time)
-    << "time didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+    bool positionsAreMissing = false;
+    if (!reference.frame_->bX)
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Comparing positions requires that the reference frame have positions, which it does not";
+        }
+        positionsAreMissing = true;
+    }
+    if (!test.frame_->bX)
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Comparing positions requires that the test frame have positions, which it does not";
+        }
+        positionsAreMissing = true;
+    }
 
+    if (!canHandlePbc)
+    {
+        if (matchSettings.requirePbcHandling)
+        {
+            ADD_FAILURE() << "Cannot compare positions for the above reason(s)";
+            return;
+        }
+    }
+    if (positionsAreMissing)
+    {
+        if (matchSettings.mustComparePositions)
+        {
+            ADD_FAILURE() << "Cannot compare positions for the above reason(s)";
+        }
+        return;
+    }
+
+    // If we get here, we have positions, and we know whether we can
+    // handle PBC, so we can get to work.
+    if ((matchSettings.handlePbcIfPossible || matchSettings.requirePbcHandling) && canHandlePbc)
+    {
+        // Put all atoms in the box.
+        put_atoms_in_box(reference.frame_->ePBC, reference.frame_->box, reference.frame_->natoms, reference.frame_->x);
+        put_atoms_in_box(test.frame_->ePBC, test.frame_->box, test.frame_->natoms, test.frame_->x);
+    }
     for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
     {
         for (int d = 0; d < DIM; ++d)
         {
-            if (reference.frame_->bX && test.frame_->bX)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_->x[i][d], test.frame_->x[i][d], tolerance)
-                << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-            }
-            if (reference.frame_->bV && test.frame_->bV)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_->v[i][d], test.frame_->v[i][d], tolerance)
-                << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-            }
-            if (reference.frame_->bF && test.frame_->bF)
-            {
-                EXPECT_REAL_EQ_TOL(reference.frame_->f[i][d], test.frame_->f[i][d], tolerance)
-                << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
-            }
+            EXPECT_REAL_EQ_TOL(reference.frame_->x[i][d], test.frame_->x[i][d], tolerance)
+            << " x[" << i << "][" << d <<"] didn't match between reference frame " << reference.getFrameName() << " and test frame " << test.getFrameName();
         }
     }
+}
+
+static void compareVelocities(const TrajectoryFrame              &reference,
+                              const TrajectoryFrame              &test,
+                              const TrajectoryFrameMatchSettings &matchSettings,
+                              const FloatingPointTolerance        tolerance)
+{
+    if (!matchSettings.mustCompareVelocities)
+    {
+        return;
+    }
+    bool canCompareBox = true;
+    if (!reference.frame_->bF)
+    {
+        ADD_FAILURE() << "Comparing the velocities was required, but the reference frame did not have any";
+        canCompareBox = false;
+    }
+    if (!test.frame_->bF)
+    {
+        ADD_FAILURE() << "Comparing the velocities was required, but the test frame did not have any";
+        canCompareBox = false;
+    }
+    if (!canCompareBox)
+    {
+        return;
+    }
+
+    // Do the comparing.
+    for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
+    {
+        for (int d = 0; d < DIM; ++d)
+        {
+            EXPECT_REAL_EQ_TOL(reference.frame_->v[i][d], test.frame_->v[i][d], tolerance)
+            << " v[" << i << "][" << d <<"] didn't match between reference frame " << reference.getFrameName() << " and test frame " << test.getFrameName();
+        }
+    }
+}
+
+static void compareForces(const TrajectoryFrame              &reference,
+                          const TrajectoryFrame              &test,
+                          const TrajectoryFrameMatchSettings &matchSettings,
+                          const FloatingPointTolerance        tolerance)
+{
+    if (!matchSettings.mustCompareForces)
+    {
+        return;
+    }
+    bool canCompareBox = true;
+    if (!reference.frame_->bV)
+    {
+        ADD_FAILURE() << "Comparing the forces was required, but the reference frame did not have any";
+        canCompareBox = false;
+    }
+    if (!test.frame_->bV)
+    {
+        ADD_FAILURE() << "Comparing the forces was required, but the test frame did not have any";
+        canCompareBox = false;
+    }
+    if (!canCompareBox)
+    {
+        return;
+    }
+
+    // Do the comparing.
+    for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
+    {
+        for (int d = 0; d < DIM; ++d)
+        {
+            EXPECT_REAL_EQ_TOL(reference.frame_->f[i][d], test.frame_->f[i][d], tolerance)
+            << " f[" << i << "][" << d <<"] didn't match between reference frame " << reference.getFrameName() << " and test frame " << test.getFrameName();
+        }
+    }
+}
+
+
+void compareFrames(const TrajectoryFrame              &reference,
+                   const TrajectoryFrame              &test,
+                   const TrajectoryFrameMatchSettings &matchSettings,
+                   const FloatingPointTolerance        tolerance)
+{
+    // The trajectory reader ensures that bStep and bTime are set
+    GMX_RELEASE_ASSERT(reference.frame_->bStep, "Reference trajectory must have bStep set");
+    GMX_RELEASE_ASSERT(reference.frame_->bTime, "Reference trajectory must have bTime set");
+    GMX_RELEASE_ASSERT(test.frame_->bStep, "Test trajectory must have bStep set");
+    GMX_RELEASE_ASSERT(test.frame_->bTime, "Test trajectory must have bTime set");
+
+    EXPECT_EQ(reference.frame_->step, test.frame_->step)
+    << "step didn't match between reference frame " << reference.getFrameName() << " and test frame " << test.getFrameName();
+
+    EXPECT_EQ(reference.frame_->time, test.frame_->time)
+    << "time didn't match between reference frame " << reference.getFrameName() << " and test frame " << test.getFrameName();
+
+    compareBox(reference, test, matchSettings, tolerance);
+    comparePositions(reference, test, matchSettings, tolerance);
+    compareVelocities(reference, test, matchSettings, tolerance);
+    compareForces(reference, test, matchSettings, tolerance);
 }
 
 } // namespace

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,15 +140,46 @@ class TrajectoryFrameReader
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
 
-/*! \brief Compare the fields of the two frames for equality within
- * the \c tolerance.
+/*! \brief Helper struct to specify the expected behaviour of compareFrames().
+ *
+ * By default, nothing is required to be compared, but the comparer will
+ * compare what it can with the frames it is given.
+ *
+ * Handling PBC refers to putting all the atoms in the simulation box,
+ * which requires that both the PBC type and a simulation box are
+ * available from the trajectory frame. */
+struct TrajectoryFrameMatchSettings
+{
+    //! Whether boxes must be compared.
+    bool mustCompareBox;
+    //! Whether positions must be compared.
+    bool mustComparePositions;
+    //! Whether PBC will be handled if it can be handled.
+    bool handlePbcIfPossible;
+    //! Whether PBC handling must occur for a valid comparison.
+    bool requirePbcHandling;
+    //! Whether velocities must be compared.
+    bool mustCompareVelocities;
+    //! Whether forces must be compared.
+    bool mustCompareForces;
+};
+
+/*! \brief Compare the fields of the two frames for equality given
+ * the \c matchSettings and \c tolerance.
  *
  * The two frames are required to have valid and matching values for
- * time and step. Positions, velocities and/or forces will be compared
- * when present in both frames, and expected to be equal within \c
- * tolerance. */
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
-                   FloatingPointTolerance tolerance);
+ * time and step. According to \c matchSettings, box, positions,
+ * velocities and/or forces will be compared between frames, using the
+ * \c tolerance. Comparisons will only occur when both frames have the
+ * requisite data, and will be expected to be equal within \c
+ * tolerance. If a comparison fails, a GoogleTest expectation failure
+ * will be given. If a comparison is required by \c matchSettings but
+ * cannot be done because either (or both) frames lack the requisite
+ * data, descriptive expectation failures will be given. */
+void compareFrames(const TrajectoryFrame              &reference,
+                   const TrajectoryFrame              &test,
+                   const TrajectoryFrameMatchSettings &matchSettings,
+                   const FloatingPointTolerance        tolerance);
 
 /*! \internal
  * \brief Contains the content of a trajectory frame read by an TrajectoryFrameReader
