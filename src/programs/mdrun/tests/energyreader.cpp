@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,21 +225,23 @@ const real &EnergyFrame::at(const std::string &name) const
     return valueIterator->second;
 }
 
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
+void compareFrames(const EnergyFrame     &reference,
+                   const EnergyFrame     &test,
                    FloatingPointTolerance tolerance)
 {
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
     for (auto referenceIt = reference.values_.begin(); referenceIt != reference.values_.end(); ++referenceIt)
     {
+        SCOPED_TRACE("Comparing " + referenceIt->first + " between frames");
         auto testIt = test.values_.find(referenceIt->first);
         if (testIt != test.values_.end())
         {
             auto energyFieldInReference = referenceIt->second;
             auto energyFieldInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance);
+        }
+        else
+        {
+            ADD_FAILURE() << "Could not find energy component from reference frame in test frame";
         }
     }
 }
