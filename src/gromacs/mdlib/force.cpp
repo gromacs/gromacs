@@ -741,6 +741,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *
 
     enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
     enerd->term[F_DVDL]       = 0.0;
+    fprintf(stderr, "Entering sum_dhdl\n");
     for (int i = 0; i < efptNR; i++)
     {
         if (fepvals->separate_dvdl[i])
@@ -768,19 +769,19 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *
                     break;
             }
             enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
-            if (debug)
+            //if (debug)
             {
-                fprintf(debug, "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
+                fprintf(stderr, "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
                         efpt_names[i], i, enerd->term[index], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
             }
         }
         else
         {
             enerd->term[F_DVDL] += enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
-            if (debug)
+            //if (debug)
             {
-                fprintf(debug, "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
-                        efpt_names[0], i, enerd->term[F_DVDL], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
+                fprintf(stderr, "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
+                        efpt_names[i], i, enerd->term[F_DVDL], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
             }
         }
     }
@@ -802,6 +803,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *
     }
     enerd->term[F_DVDL_CONSTR] = 0;
 
+    fprintf(stderr, "Looping fepvals in sum_dhdl\n");
     for (int i = 0; i < fepvals->n_lambda; i++)
     {
         /* note we are iterating over fepvals here!
@@ -818,15 +820,16 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ConstArrayRef<real> lambda, t_lambda *
             /* Note that this loop is over all dhdl components, not just the separated ones */
             dlam = (fepvals->all_lambda[j][i] - lambda[j]);
             enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
-            if (debug)
+            //if (debug)
             {
-                fprintf(debug, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
+                fprintf(stderr, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
                         fepvals->all_lambda[j][i], efpt_names[j],
                         (enerd->enerpart_lambda[i+1] - enerd->enerpart_lambda[0]),
                         dlam, enerd->dvdl_lin[j]);
             }
         }
     }
+    fprintf(stderr, "Leaving sum_dhdl\n");
 }
 
 
