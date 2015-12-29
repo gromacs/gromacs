@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,7 +155,8 @@ class EnergyFrameReader
  * Ignore any key found in either \c reference or \c test that is not
  * found in the other. For all keys found in both frames, compare the
  * values with EXPECT_REAL_EQ_TOL and the given tolerance. */
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
+void compareFrames(const EnergyFrame     &rerefence,
+                   const EnergyFrame     &test,
                    FloatingPointTolerance tolerance);
 
 /*! \internal
@@ -188,7 +189,8 @@ class EnergyFrame
         double time_;
 
         friend class EnergyFrameReader;
-        friend void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
+        friend void compareFrames(const EnergyFrame     &reference,
+                                  const EnergyFrame     &test,
                                   FloatingPointTolerance tolerance);
 };
 
