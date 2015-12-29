@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,14 +34,14 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in mdruncomparisonfixture.h.
+ * Implements declarations from in mdruncomparison.h.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
 
-#include "mdruncomparisonfixture.h"
+#include "mdruncomparison.h"
 
 #include <map>
 #include <string>
@@ -57,17 +57,13 @@ namespace gmx
 namespace test
 {
 
-MdrunComparisonFixture::~MdrunComparisonFixture()
-{
-}
-
 namespace
 {
 
 //! Helper typedef
-typedef std::map<std::string, MdrunComparisonFixture::MdpFieldValues> MdpFileValues;
+using MdpFileValues = std::map<std::string, MdpFieldValues>;
 
-//! Database of .mdp strings that supports MdrunComparisonFixture::prepareSimulation()
+//! Database of .mdp strings that supports prepareDefaultMdpValues()
 MdpFileValues mdpFileValueDatabase_g
 {
     // Simple system with 12 argon atoms, fairly widely separated
@@ -135,35 +131,36 @@ MdpFileValues mdpFileValueDatabase_g
                            },
                            {
                                "other",
-                               "free-energy       = yes\n"
-                               "sc-alpha          = 0.5\n"
-                               "sc-r-power        = 6\n"
-                               "nstdhdl           = 4\n"
-                               "init-lambda-state = 3\n"
-                               "fep_lambdas       = 0.00 0.50 1.00 1.00 1.00\n"
-                               "vdw_lambdas       = 0.00 0.00 0.00 0.50 1.00\n"
-                               "couple-moltype    = nonanol\n"
-                               "couple-lambda0    = vdw-q\n"
-                               "couple-lambda1    = none\n"
-                               "couple-intramol   = yes\n"
+                               R"(free-energy       = yes
+                                  sc-alpha          = 0.5
+                                  sc-r-power        = 6
+                                  nstdhdl           = 4
+                                  init-lambda-state = 3
+                                  fep_lambdas       = 0.00 0.50 1.00 1.00 1.00
+                                  vdw_lambdas       = 0.00 0.00 0.00 0.50 1.00
+                                  couple-moltype    = nonanol
+                                  couple-lambda0    = vdw-q
+                                  couple-lambda1    = none
+                                  couple-intramol   = yes)"
                            } }
     }
 };
 
-}       // namespace
-
-MdrunComparisonFixture::MdpFieldValues MdrunComparisonFixture::prepareMdpFieldValues(const char *simulationName)
+/*! \brief Prepare default .mdp values
+ *
+ * Insert suitable .mdp defaults, so that \c mdpFileValueDatabase_g
+ * does not need to specify repetitive values. This works because
+ * std::map.insert() does not over-write elements that already exist.
+ *
+ * \todo ideally some of these default values should be the same as
+ * grompp uses, and sourced from the same place, but that code is a
+ * bit of a jungle until we transition to using IMdpOptions more.
+ *
+ * \throws  std::bad_alloc     if out of memory
+ *          std::out_of_range  if \c simulationName is not in the database */
+MdpFieldValues prepareDefaultMdpFieldValues(const char *simulationName)
 {
-    /* Insert suitable .mdp defaults, so that the database set up
-     * above does not need to specify redundant values. This works
-     * because std::map.insert() does not over-write elements that
-     * already exist.
-     *
-     * TODO ideally some of these default values should be the same as
-     * grompp uses, and sourced from the same place, but that code is
-     * a bit of a jungle. */
-
-    typedef MdpFieldValues::value_type MdpField;
+    using MdpField = MdpFieldValues::value_type;
 
     auto &mdpFieldValues = mdpFileValueDatabase_g.at(simulationName);
     mdpFieldValues.insert(MdpField("nsteps", "16"));
@@ -176,10 +173,25 @@ MdrunComparisonFixture::MdpFieldValues MdrunComparisonFixture::prepareMdpFieldVa
     return mdpFieldValues;
 }
 
-void MdrunComparisonFixture::prepareMdpFile(const MdpFieldValues &mdpFieldValues,
-                                            const char           *integrator,
-                                            const char           *tcoupl,
-                                            const char           *pcoupl)
+}       // namespace
+
+MdpFieldValues
+prepareMdpFieldValues(const char *simulationName,
+                      const char *integrator,
+                      const char *tcoupl,
+                      const char *pcoupl)
+{
+    using MdpField = MdpFieldValues::value_type;
+
+    auto mdpFieldValues = prepareDefaultMdpFieldValues(simulationName);
+    mdpFieldValues.insert(MdpField("integrator", integrator));
+    mdpFieldValues.insert(MdpField("tcoupl", tcoupl));
+    mdpFieldValues.insert(MdpField("pcoupl", pcoupl));
+    return mdpFieldValues;
+}
+
+std::string
+prepareMdpFileContents(const MdpFieldValues &mdpFieldValues)
 {
     /* Set up an .mdp file that permits a highly reproducible
      * simulation. The format string needs to be configured with
@@ -200,52 +212,42 @@ void MdrunComparisonFixture::prepareMdpFile(const MdpFieldValues &mdpFieldValues
      * energies were not computed with those from rerun on the same
      * coordinates.
      */
-    runner_.useStringAsMdpFile(formatString("rcoulomb                = 0.7\n"
-                                            "rvdw                    = 0.7\n"
-                                            "rlist                   = -1\n"
-                                            "bd-fric                 = 1000\n"
-                                            "verlet-buffer-tolerance = 0.000001\n"
-                                            "nsteps                  = %s\n"
-                                            "nstenergy               = 4\n"
-                                            "nstlist                 = 8\n"
-                                            "nstxout                 = 4\n"
-                                            "nstvout                 = 4\n"
-                                            "nstfout                 = 4\n"
-                                            "integrator              = %s\n"
-                                            "ld-seed                 = 234262\n"
-                                            "tcoupl                  = %s\n"
-                                            "ref-t                   = %s\n"
-                                            "tau-t                   = 1\n"
-                                            "tc-grps                 = System\n"
-                                            "pcoupl                  = %s\n"
-                                            "pcoupltype              = isotropic\n"
-                                            "ref-p                   = 1\n"
-                                            "tau-p                   = %s\n"
-                                            "compressibility         = %s\n"
-                                            "constraints             = %s\n"
-                                            "constraint-algorithm    = lincs\n"
-                                            "lincs-order             = 2\n"
-                                            "lincs-iter              = 5\n"
-                                            "%s",
-                                            mdpFieldValues.at("nsteps").c_str(),
-                                            integrator, tcoupl,
-                                            mdpFieldValues.at("ref-t").c_str(),
-                                            pcoupl,
-                                            mdpFieldValues.at("tau-p").c_str(),
-                                            mdpFieldValues.at("compressibility").c_str(),
-                                            mdpFieldValues.at("constraints").c_str(),
-                                            mdpFieldValues.at("other").c_str()));
-}
-
-void MdrunComparisonFixture::runTest(const char            *simulationName,
-                                     const char            *integrator,
-                                     const char            *tcoupl,
-                                     const char            *pcoupl,
-                                     FloatingPointTolerance tolerance)
-{
-    CommandLine caller;
-    caller.append("grompp");
-    runTest(caller, simulationName, integrator, tcoupl, pcoupl, tolerance);
+    return formatString(R"(rcoulomb                = 0.7
+                           rvdw                    = 0.7
+                           rlist                   = -1
+                           bd-fric                 = 1000
+                           verlet-buffer-tolerance = 0.000001
+                           nsteps                  = %s
+                           nstenergy               = 4
+                           nstlist                 = 8
+                           nstxout                 = 4
+                           nstvout                 = 4
+                           nstfout                 = 4
+                           integrator              = %s
+                           ld-seed                 = 234262
+                           tcoupl                  = %s
+                           ref-t                   = %s
+                           tau-t                   = 1
+                           tc-grps                 = System
+                           pcoupl                  = %s
+                           pcoupltype              = isotropic
+                           ref-p                   = 1
+                           tau-p                   = %s
+                           compressibility         = %s
+                           constraints             = %s
+                           constraint-algorithm    = lincs
+                           lincs-order             = 2
+                           lincs-iter              = 5
+                           %s)",
+                        mdpFieldValues.at("nsteps").c_str(),
+                        mdpFieldValues.at("integrator").c_str(),
+                        mdpFieldValues.at("tcoupl").c_str(),
+                        mdpFieldValues.at("ref-t").c_str(),
+                        mdpFieldValues.at("pcoupl").c_str(),
+                        mdpFieldValues.at("tau-p").c_str(),
+                        mdpFieldValues.at("compressibility").c_str(),
+                        mdpFieldValues.at("constraints").c_str(),
+                        mdpFieldValues.at("other").c_str());
 }
 
 } // namespace test
