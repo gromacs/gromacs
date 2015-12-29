@@ -237,15 +237,29 @@ void MdrunComparisonFixture::prepareMdpFile(const MdpFieldValues &mdpFieldValues
                                             mdpFieldValues.at("other").c_str()));
 }
 
-void MdrunComparisonFixture::runTest(const char            *simulationName,
-                                     const char            *integrator,
-                                     const char            *tcoupl,
-                                     const char            *pcoupl,
-                                     FloatingPointTolerance tolerance)
+void MdrunComparisonFixture::runGrompp(const CommandLine     &gromppCallerRef,
+                                       const char            *simulationName,
+                                       const char            *integrator,
+                                       const char            *tcoupl,
+                                       const char            *pcoupl)
+{
+    /* Note that the database lookups will throw std::out_of_range if
+     * the simulationName key is not found */
+    runner_.useTopGroAndNdxFromDatabase(simulationName);
+    auto mdpFieldValues = prepareMdpFieldValues(simulationName);
+    prepareMdpFile(mdpFieldValues, integrator, tcoupl, pcoupl);
+    EXPECT_EQ(0, runner_.callGrompp(gromppCallerRef));
+    gromppWasRun_ = true;
+}
+
+void MdrunComparisonFixture::runGrompp(const char            *simulationName,
+                                       const char            *integrator,
+                                       const char            *tcoupl,
+                                       const char            *pcoupl)
 {
     CommandLine caller;
     caller.append("grompp");
-    runTest(caller, simulationName, integrator, tcoupl, pcoupl, tolerance);
+    runGrompp(caller, simulationName, integrator, tcoupl, pcoupl);
 }
 
 } // namespace test
