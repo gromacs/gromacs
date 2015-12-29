@@ -49,6 +49,7 @@
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/scoped_cptr.h"
@@ -197,21 +198,48 @@ void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
     EXPECT_EQ(reference.frame_->time, test.frame_->time)
     << "time didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
 
-    for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
+    bool haveBox = false;
+
+    if (reference.frame_->bBox && test.frame_->bBox)
     {
+        haveBox = true;
         for (int d = 0; d < DIM; ++d)
         {
-            if (reference.frame_->bX && test.frame_->bX)
+            for (int dd = 0; dd < DIM; ++dd)
+            {
+                EXPECT_REAL_EQ_TOL(reference.frame_->box[d][dd], test.frame_->box[d][dd], tolerance)
+                << " box[" << d <<"][" << dd << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+            }
+        }
+    }
+    for (int i = 0; i < reference.frame_->natoms && i < test.frame_->natoms; ++i)
+    {
+        // Can't test positions reliably unless we have a box and can correct PBC
+        if (haveBox &&
+            reference.frame_->bPBC && test.frame_->bPBC &&
+            reference.frame_->bX  && test.frame_->bX)
+        {
+            // Put all atoms in box
+            put_atoms_in_box(reference.frame_->ePBC, reference.frame_->box, reference.frame_->natoms, reference.frame_->x);
+            put_atoms_in_box(test.frame_->ePBC, test.frame_->box, test.frame_->natoms, test.frame_->x);
+
+            for (int d = 0; d < DIM; ++d)
             {
                 EXPECT_REAL_EQ_TOL(reference.frame_->x[i][d], test.frame_->x[i][d], tolerance)
                 << " x[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
             }
-            if (reference.frame_->bV && test.frame_->bV)
+        }
+        if (reference.frame_->bV && test.frame_->bV)
+        {
+            for (int d = 0; d < DIM; ++d)
             {
                 EXPECT_REAL_EQ_TOL(reference.frame_->v[i][d], test.frame_->v[i][d], tolerance)
                 << " v[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
             }
-            if (reference.frame_->bF && test.frame_->bF)
+        }
+        if (reference.frame_->bF && test.frame_->bF)
+        {
+            for (int d = 0; d < DIM; ++d)
             {
                 EXPECT_REAL_EQ_TOL(reference.frame_->f[i][d], test.frame_->f[i][d], tolerance)
                 << " f[" << i << "][" << d <<"] didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
