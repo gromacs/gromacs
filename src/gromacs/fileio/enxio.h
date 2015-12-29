@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,7 +177,11 @@ ener_file_t open_enx(const char *fn, const char *mode);
 
 struct t_fileio *enx_file_pointer(const ener_file_t ef);
 
+/* Free the contents of ef */
 void close_enx(ener_file_t ef);
+
+/* Free the contents of ef, and ef itself */
+void done_ener_file(ener_file_t ef);
 
 void do_enxnms(ener_file_t ef, int *nre, gmx_enxnm_t **enms);
 
