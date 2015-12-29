@@ -146,8 +146,10 @@ typedef std::unique_ptr<TrajectoryFrameReader> TrajectoryFrameReaderPtr;
  * The two frames are required to have valid and matching values for
  * time and step. Positions, velocities and/or forces will be compared
  * when present in both frames, and expected to be equal within \c
- * tolerance. */
-void compareFrames(const std::pair<TrajectoryFrame, TrajectoryFrame> &frames,
+ * tolerance. Comparing positions requires that both PBC and box
+ * information is present. */
+void compareFrames(const TrajectoryFrame &reference,
+                   const TrajectoryFrame &test,
                    FloatingPointTolerance tolerance);
 
 /*! \internal

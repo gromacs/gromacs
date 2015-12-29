@@ -76,6 +76,7 @@ class FloatingPointTolerance;
 class MdrunComparisonFixture : public MdrunTestFixture
 {
     public:
+        MdrunComparisonFixture() : gromppWasRun_(false) {};
         //! Destructor
         virtual ~MdrunComparisonFixture();
         //! Helper typedef
@@ -117,24 +118,28 @@ class MdrunComparisonFixture : public MdrunTestFixture
                             const char           *integrator,
                             const char           *tcoupl,
                             const char           *pcoupl);
-        /*! \brief Run mdrun two ways in a test. Subclasses must override this method.
+        /*! \brief Run grompp to prepare for a test.
          *
-         * It is expected that this method calls
-         * prepareMdpFieldValues() and prepareMdpFile() to help set up
-         * a call to grompp with gromppCallerRef. Then mdrun will be
-         * called and perhaps energies and forces compared. */
-        virtual void runTest(const CommandLine     &gromppCallerRef,
-                             const char            *simulationName,
-                             const char            *integrator,
-                             const char            *tcoupl,
-                             const char            *pcoupl,
-                             FloatingPointTolerance tolerance) = 0;
+         * This method calls prepareMdpFieldValues() and
+         * prepareMdpFile() to help set up a call to grompp with
+         * gromppCallerRef. Then the caller should call mdrun.
+         *
+         * Responsibility for the code that makes any assertions about
+         * the result of the simulation lies with the derived
+         * class. */
+        virtual void runGrompp(const CommandLine     &gromppCallerRef,
+                               const char            *simulationName,
+                               const char            *integrator,
+                               const char            *tcoupl,
+                               const char            *pcoupl);
         //! Convenience overload of runTest() for cases that don't need to customize the command line for grompp
-        virtual void runTest(const char            *simulationName,
-                             const char            *integrator,
-                             const char            *tcoupl,
-                             const char            *pcoupl,
-                             FloatingPointTolerance tolerance);
+        virtual void runGrompp(const char            *simulationName,
+                               const char            *integrator,
+                               const char            *tcoupl,
+                               const char            *pcoupl);
+    protected:
+        //! Permit test fixtures of derived classes to check whether grompp was run.
+        bool gromppWasRun_;
 };
 
 } // namespace test

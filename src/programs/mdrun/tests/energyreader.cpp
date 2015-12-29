@@ -225,21 +225,24 @@ const real &EnergyFrame::at(const std::string &name) const
     return valueIterator->second;
 }
 
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
+void compareFrames(const EnergyFrame     &reference,
+                   const EnergyFrame     &test,
                    FloatingPointTolerance tolerance)
 {
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
     for (auto referenceIt = reference.values_.begin(); referenceIt != reference.values_.end(); ++referenceIt)
     {
+        SCOPED_TRACE("Comparing " + referenceIt->first + " between frames");
         auto testIt = test.values_.find(referenceIt->first);
         if (testIt != test.values_.end())
         {
             auto energyFieldInReference = referenceIt->second;
             auto energyFieldInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+            EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance);
+            ADD_FAILURE();
+        }
+        else
+        {
+            ADD_FAILURE() << "Could not find energy component from first frame in second frame";
         }
     }
 }
