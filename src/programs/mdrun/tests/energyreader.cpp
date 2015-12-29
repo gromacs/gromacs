@@ -225,12 +225,10 @@ const real &EnergyFrame::at(const std::string &name) const
     return valueIterator->second;
 }
 
-void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
+void compareFrames(const EnergyFrame     &reference,
+                   const EnergyFrame     &test,
                    FloatingPointTolerance tolerance)
 {
-    auto &reference = frames.first;
-    auto &test      = frames.second;
-
     for (auto referenceIt = reference.values_.begin(); referenceIt != reference.values_.end(); ++referenceIt)
     {
         auto testIt = test.values_.find(referenceIt->first);
