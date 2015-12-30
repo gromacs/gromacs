@@ -216,7 +216,7 @@ macro(GMX_SET_CUDA_NVCC_FLAGS)
         # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
         # this by not propagating the flag in this case.
         if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
-            string(REGEX REPLACE "-qaltivec" _CMAKE_CXX_FLAGS_NOCXX11 "$_CMAKE_CXX_FLAGS_NOCXX11")
+            string(REGEX REPLACE "-qaltivec" "" _CMAKE_CXX_FLAGS_NOCXX11 "${_CMAKE_CXX_FLAGS_NOCXX11}")
         endif()
 
         string(REPLACE " " "," _flags "${_CMAKE_CXX_FLAGS_NOCXX11}")
