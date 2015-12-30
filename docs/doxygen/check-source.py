@@ -88,8 +88,13 @@ def check_file(fileobj, tree, reporter):
                             "includes \"{0}\" unnecessarily".format(define_file.get_name()))
             else:
                 if define_file in used_define_files:
+                    used_defines = list(fileobj.get_used_defines(define_file))
+                    if len(used_defines) > 3:
+                        used_defines = used_defines[:3] + ['...']
+                    used_defines = ', '.join(used_defines)
                     reporter.code_issue(fileobj,
-                            "should include \"{0}\"".format(define_file.get_name()))
+                            "should include \"{0}\"".format(define_file.get_name()),
+                            details=["uses " + used_defines])
 
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
