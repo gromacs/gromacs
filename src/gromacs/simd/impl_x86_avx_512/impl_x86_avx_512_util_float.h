@@ -242,6 +242,64 @@ transposeScatterIncrU(float *              base,
                       SimdFloat            v1,
                       SimdFloat            v2)
 {
+    SimdFInt32 simdoffset;
+
+    assert(std::size_t(offset) % 64 == 0);
+
+    simdoffset = loadFI(offset);
+
+    // All instructions might be latency ~4 on MIC, so we use shifts where we
+    // only need a single instruction (since the shift parameter is an immediate),
+    // but multiplication otherwise.
+    if (align == 4)
+    {
+        simdoffset = simdoffset << 2;
+    }
+    else if (align == 8)
+    {
+        simdoffset = simdoffset << 3;
+    }
+    else
+    {
+        simdoffset = simdoffset * SimdFInt32(align);
+    }
+
+    __m512 tmp0 = _mm512_i32gather_ps(simdoffset.simdInternal_, base,   4);
+    __m512 tmp1 = _mm512_i32gather_ps(simdoffset.simdInternal_, base+1, 4);
+    __m512 tmp2 = _mm512_i32gather_ps(simdoffset.simdInternal_, base+2, 4);
+ 
+    __m512i conflict = _mm512_conflict_epi32(simdoffset.simdInternal_);
+ 
+    tmp0 = _mm512_add_ps(tmp0, v0.simdInternal_);
+    tmp1 = _mm512_add_ps(tmp1, v1.simdInternal_);
+    tmp2 = _mm512_add_ps(tmp2, v2.simdInternal_);
+ 
+    __mmask16 m = _mm512_test_epi32_mask(conflict, conflict);
+    if (m) 
+    {
+        __m512i idx = _mm512_lzcnt_epi32(conflict);
+        idx = _mm512_sub_epi32(_mm512_set1_epi32(31), idx);
+        __mmask16 m2 = m;
+        do
+        {
+            tmp0 = _mm512_castsi512_ps(_mm512_mask_permutevar_epi32(_mm512_castps_si512(tmp0), m2, idx, 
+                                                                    _mm512_castps_si512(tmp0)));
+            tmp1 = _mm512_castsi512_ps(_mm512_mask_permutevar_epi32(_mm512_castps_si512(tmp1), m2, idx, 
+                                                                    _mm512_castps_si512(tmp1)));
+            tmp2 = _mm512_castsi512_ps(_mm512_mask_permutevar_epi32(_mm512_castps_si512(tmp2), m2, idx, 
+                                                                    _mm512_castps_si512(tmp2)));
+            tmp0 = _mm512_mask_add_ps(tmp0, m2, tmp0, v0.simdInternal_);
+            tmp1 = _mm512_mask_add_ps(tmp1, m2, tmp1, v1.simdInternal_);
+            tmp2 = _mm512_mask_add_ps(tmp2, m2, tmp2, v2.simdInternal_);
+ 
+            m2 = _mm512_test_epi32_mask(_mm512_broadcastmw_epi32(m2), conflict);
+        } while (m2);
+    }
+    _mm512_i32scatter_ps(base  , simdoffset.simdInternal_, tmp0, 4);
+    _mm512_i32scatter_ps(base+1, simdoffset.simdInternal_, tmp1, 4);
+    _mm512_i32scatter_ps(base+2, simdoffset.simdInternal_, tmp2, 4);
+
+    /*
     GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata0[GMX_SIMD_FLOAT_WIDTH];
     GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata1[GMX_SIMD_FLOAT_WIDTH];
     GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata2[GMX_SIMD_FLOAT_WIDTH];
@@ -255,7 +313,7 @@ transposeScatterIncrU(float *              base,
         base[ align * offset[i] + 0] += rdata0[i];
         base[ align * offset[i] + 1] += rdata1[i];
         base[ align * offset[i] + 2] += rdata2[i];
-    }
+        }*/
 }
 
 template <int align>
