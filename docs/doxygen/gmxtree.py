@@ -164,7 +164,7 @@ class File(object):
         self._lines = None
         self._filter = None
         self._declared_defines = None
-        self._used_define_files = set()
+        self._used_defines = dict()
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -247,7 +247,7 @@ class File(object):
         """Add defines used in this file.
 
         Used internally by find_define_file_uses()."""
-        self._used_define_files.add(define_file)
+        self._used_defines[define_file] = set(defines)
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -355,11 +355,16 @@ class File(object):
         return self._declared_defines
 
     def get_used_define_files(self):
-        """Return set of defines from config.h that are used in this file.
+        """Return files like config.h whose defines are used in this file.
 
         The return value is empty if find_define_file_uses() has not been called,
         as well as for headers that declare these defines."""
-        return self._used_define_files
+        return set(self._used_defines.iterkeys())
+
+    def get_used_defines(self, define_file):
+        """Return set of defines used in this file for a given file like config.h.
+        """
+        return self._used_defines.get(define_file, set())
 
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
