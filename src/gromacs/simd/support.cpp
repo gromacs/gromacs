@@ -229,7 +229,7 @@ simdCheck(gmx::SimdType    wanted,
                 simdString(wanted).c_str(),
                 simdString(compiled).c_str());
     }
-    else
+    else if (wanted != compiled)
     {
         // This warning will also occur if compiled is X86_Avx and wanted is X86_Avx128Fma
 
