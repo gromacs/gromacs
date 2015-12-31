@@ -244,6 +244,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_localtop_t   *top;
     t_mdebin         *mdebin   = NULL;
     t_state          *state    = NULL;
+    rvec             *f_global = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     gmx_global_stat_t gstat;
@@ -253,7 +254,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind;
     gmx_shellfc_t    *shellfc;
-    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    int               count, nconverged = 0;
+    double            tcount                 = 0;
+    gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bTemp, bPres, bTrotter;
     real              dvdl_constr;
@@ -364,7 +367,22 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog,
                                  top_global, n_flexible_constraints(constr),
-                                 ir->nstcalcenergy, DOMAINDECOMP(cr), ir->eI == eiNM);
+                                 (ir->bContinuation ||
+                                  (DOMAINDECOMP(cr) && !MASTER(cr))) ?
+                                 NULL : state_global->x);
+    if (shellfc && ir->nstcalcenergy != 1)
+    {
+        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
+    }
+    if (shellfc && DOMAINDECOMP(cr))
+    {
+        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
+    }
+    if (shellfc && ir->eI == eiNM)
+    {
+        /* Currently shells don't work with Normal Modes */
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
 
     if (vsite && ir->eI == eiNM)
     {
@@ -397,6 +415,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         snew(state, 1);
         dd_init_local_state(cr->dd, state_global, state);
+
+        if (DDMASTER(cr->dd) && ir->nstfout)
+        {
+            snew(f_global, state_global->natoms);
+        }
     }
     else
     {
@@ -405,6 +428,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         forcerec_set_excl_load(fr, top);
 
         state    = serial_init_local_state(state_global);
+        f_global = f;
 
         atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
 
@@ -436,7 +460,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             state, &f, mdatoms, top, fr,
-                            vsite, constr,
+                            vsite, shellfc, constr,
                             nrnb, NULL, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
     }
@@ -743,6 +767,18 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* and stop now if we should */
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
                  ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
+
+    rvec             * vold;
+    t_pbc              pbc1;
+    real              *invmass1;
+    int               *DPD_Made;
+    real              *vi;
+
+    snew (vold, top_global->natoms);
+    snew (vi, 10*top_global->natoms);
+    snew (DPD_Made, 10*top_global->natoms);
+    snew (invmass1, 10*top_global->natoms);
+
     while (!bLastStep || (bRerunMD && bNotLastFrame))
     {
 
@@ -947,7 +983,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
                                     state, &f, mdatoms, top, fr,
-                                    vsite, constr,
+                                    vsite, shellfc, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
@@ -1037,13 +1073,21 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog, cr, bVerbose, step,
-                                ir, bNS, force_flags, top,
-                                constr, enerd, fcd,
-                                state, f, force_vir, mdatoms,
-                                nrnb, wcycle, graph, groups,
-                                shellfc, fr, bBornRadii, t, mu_tot,
-                                vsite, mdoutf_get_fp_field(outf));
+            count = relax_shell_flexcon(fplog, cr, bVerbose, step,
+                                        ir, bNS, force_flags,
+                                        top,
+                                        constr, enerd, fcd,
+                                        state, f, force_vir, mdatoms,
+                                        nrnb, wcycle, graph, groups,
+                                        shellfc, fr, bBornRadii, t, mu_tot,
+                                        &bConverged, vsite,
+                                        mdoutf_get_fp_field(outf));
+            tcount += count;
+
+            if (bConverged)
+            {
+                nconverged++;
+            }
         }
         else
         {
@@ -1085,7 +1129,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
-                          cr, constr);
+                          cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi);
 
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
             {
@@ -1094,7 +1138,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                                   TRUE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
             else if (graph)
@@ -1227,7 +1271,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
-                                 outf, mdebin, ekind, f,
+                                 outf, mdebin, ekind, f, f_global,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
@@ -1328,7 +1372,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, constr,
-                                       TRUE, bCalcVir);
+                                       TRUE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi );
                 }
             }
         }
@@ -1366,7 +1410,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* velocity half-step update */
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, FALSE, etrtVELOCITY2,
-                              cr, constr);
+                              cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi);
             }
 
             /* Above, initialize just copies ekinh into ekin,
@@ -1385,15 +1429,20 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 copy_rvecn(state->x, cbuf, 0, state->natoms);
             }
 
+            if (ir->eI == eiISO)
+            {
+                set_pbc(&pbc1, ir->ePBC, state->box);
+            }
+
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                          ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
+                          ekind, M, upd, bInitStep, etrtPOSITION, cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
-                               FALSE, bCalcVir);
+                               FALSE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
 
             if (ir->eI == eiVVAK)
             {
@@ -1411,7 +1460,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, bInitStep, etrtPOSITION, cr, constr);
+                              ekind, M, upd, bInitStep, etrtPOSITION, cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi);
+
+
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
@@ -1423,7 +1474,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, NULL,
-                                   FALSE, bCalcVir);
+                                   FALSE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
             }
             if (EI_VV(ir->eI))
             {
@@ -1642,7 +1693,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdatoms, top, fr,
-                                vsite, constr,
+                                vsite, shellfc, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
         }
@@ -1777,7 +1828,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         pme_loadbal_done(pme_loadbal, cr, fplog, use_GPU(fr->nbv));
     }
 
-    done_shellfc(fplog, shellfc, step_rel);
+    if (shellfc && fplog)
+    {
+        fprintf(fplog, "Fraction of iterations that converged:           %.2f %%\n",
+                (nconverged*100.0)/step_rel);
+        fprintf(fplog, "Average number of force evaluations per MD step: %.2f\n\n",
+                tcount/step_rel);
+    }
 
     if (repl_ex_nst > 0 && MASTER(cr))
     {

@@ -70,7 +70,6 @@
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
@@ -141,8 +140,7 @@ struct mdrunner_arglist
     gmx_bool                bVerbose;
     int                     nstglobalcomm;
     ivec                    ddxyz;
-    int                     dd_rank_order;
-    int                     npme;
+    int                     dd_node_order;
     real                    rdd;
     real                    rconstr;
     const char             *dddlb_opt;
@@ -194,7 +192,7 @@ static void mdrunner_start_fn(void *arg)
 
         gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
                       mc.bVerbose, mc.nstglobalcomm,
-                      mc.ddxyz, mc.dd_rank_order, mc.npme, mc.rdd,
+                      mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
                       mc.nbpu_opt, mc.nstlist_cmdline,
@@ -214,8 +212,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
                                          int nstglobalcomm,
-                                         ivec ddxyz, int dd_rank_order, int npme,
-                                         real rdd, real rconstr,
+                                         ivec ddxyz, int dd_node_order, real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt, int nstlist_cmdline,
@@ -253,8 +250,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->ddxyz[XX]       = ddxyz[XX];
     mda->ddxyz[YY]       = ddxyz[YY];
     mda->ddxyz[ZZ]       = ddxyz[ZZ];
-    mda->dd_rank_order   = dd_rank_order;
-    mda->npme            = npme;
+    mda->dd_node_order   = dd_node_order;
     mda->rdd             = rdd;
     mda->rconstr         = rconstr;
     mda->dddlb_opt       = dddlb_opt;
@@ -633,6 +629,7 @@ static integrator_t *my_integrator(unsigned int ei)
         case eiSD1:
         case eiVV:
         case eiVVAK:
+        case eiISO:
             if (!EI_DYNAMICS(ei))
             {
                 GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
@@ -662,7 +659,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
              int nstglobalcomm,
-             ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
+             ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
@@ -809,7 +806,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #ifdef GMX_THREAD_MPI
     if (SIMMASTER(cr))
     {
-        if (npme > 0 && hw_opt->nthreads_tmpi <= 0)
+        if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
@@ -832,7 +829,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
                                         oenv, bVerbose, nstglobalcomm,
-                                        ddxyz, dd_rank_order, npme, rdd, rconstr,
+                                        ddxyz, dd_node_order, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
@@ -885,7 +882,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
     if (!PAR(cr) &&
-        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || npme > 0))
+        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || cr->npmenodes > 0))
     {
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
@@ -915,22 +912,22 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
     {
-        if (npme > 0)
+        if (cr->npmenodes > 0)
         {
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "PME-only ranks are requested, but the system does not use PME for electrostatics or LJ");
         }
 
-        npme = 0;
+        cr->npmenodes = 0;
     }
 
-    if (bUseGPU && npme < 0)
+    if (bUseGPU && cr->npmenodes < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
          * scaling is bad, but it's difficult to automate the setup.
          */
-        npme = 0;
+        cr->npmenodes = 0;
     }
 
 #ifdef GMX_FAHCORE
@@ -986,7 +983,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bool bReadEkin;
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                        cr, ddxyz, &npme,
+                        cr, ddxyz,
                         inputrec, state, &bReadEkin,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET));
@@ -1026,14 +1023,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
-                                           dd_rank_order,
-                                           rdd, rconstr,
+        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, rdd, rconstr,
                                            dddlb_opt, dlb_scale,
                                            ddcsx, ddcsy, ddcsz,
                                            mtop, inputrec,
                                            box, state->x,
                                            &ddbox, &npme_major, &npme_minor);
+
+        make_dd_communicators(fplog, cr, dd_node_order);
+
+        /* Set overallocation to avoid frequent reallocation of arrays */
+        set_over_alloc_dd(TRUE);
     }
     else
     {
@@ -1310,11 +1310,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
-            /* This call is not included in init_domain_decomposition mainly
-             * because fr->cginfo_mb is set later.
-             */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
+
+            set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, &ddbox);
+
+            setup_dd_grid(fplog, cr->dd);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
