@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -62,10 +62,5 @@ def do_build(context):
     cpack_config_path = os.path.join(context.workspace.build_dir, 'CPackSourceConfig.cmake')
     cpack_config = context.read_cmake_variable_file(cpack_config_path)
     package_name = cpack_config['CPACK_PACKAGE_FILE_NAME'] + '.tar.gz'
-    package_info = {
-            'SOURCE_PACKAGE_FILE_NAME': package_name,
-            'SOURCE_PACKAGE_VERSION': cpack_config['CPACK_PACKAGE_VERSION'],
-            'SOURCE_MD5SUM': context.compute_md5(package_name)
-        }
-    log_path = context.workspace.get_path_for_logfile('package-info.log')
-    context.write_property_file(log_path, package_info)
+    version = cpack_config['CPACK_PACKAGE_VERSION']
+    context.write_package_info(Project.GROMACS, package_name, version)
