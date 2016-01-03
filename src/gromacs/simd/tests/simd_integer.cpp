@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -249,10 +249,10 @@ TEST_F(SimdIntegerTest, anyTrue)
      * since the SIMD width could be 1 as a special case.
      */
     eq = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
-    EXPECT_NE(false, anyTrue(eq));
+    EXPECT_TRUE(anyTrue(eq));
 
     eq = (iSimd_1_2_3 == iSimd_4_5_6);
-    EXPECT_EQ(false, anyTrue(eq));
+    EXPECT_FALSE(anyTrue(eq));
 }
 
 TEST_F(SimdIntegerTest, blend)
