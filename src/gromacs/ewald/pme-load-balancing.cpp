@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -504,6 +504,9 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
  * In this stage, only reasonably fast setups are run again. */
 static void switch_to_stage1(pme_load_balancing_t *pme_lb)
 {
+    /* Increase start until we find a setup that is not slower than
+     * maxRelativeSlowdownAccepted times the fastest setup.
+     */
     pme_lb->start = pme_lb->lower_limit;
     while (pme_lb->start + 1 < pme_lb->n &&
            (pme_lb->setup[pme_lb->start].count == 0 ||
@@ -512,11 +515,18 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
     {
         pme_lb->start++;
     }
-    while (pme_lb->start > 0 && pme_lb->setup[pme_lb->start - 1].cycles == 0)
+    /* While increasing start, we might have skipped setups that we did not
+     * time during stage 0. We want to extend the range for stage 1 to include
+     * any skipped setups that lie between setups that were measured to be
+     * acceptably fast and too slow.
+     */
+    while (pme_lb->start > pme_lb->lower_limit &&
+           pme_lb->setup[pme_lb->start - 1].count == 0)
     {
         pme_lb->start--;
     }
 
+    /* Decrease end only with setups that we timed and that are slow. */
     pme_lb->end = pme_lb->n;
     if (pme_lb->setup[pme_lb->end - 1].count > 0 &&
         pme_lb->setup[pme_lb->end - 1].cycles >
@@ -528,7 +538,7 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
     pme_lb->stage = 1;
 
     /* Next we want to choose setup pme_lb->end-1, but as we will decrease
-     * pme_ln->cur by one right after returning, we set cur to end.
+     * pme_lb->cur by one right after returning, we set cur to end.
      */
     pme_lb->cur = pme_lb->end;
 }
@@ -736,8 +746,11 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
          */
         do
         {
-            pme_lb->cur--;
-            if (pme_lb->cur == pme_lb->start)
+            if (pme_lb->cur > pme_lb->start)
+            {
+                pme_lb->cur--;
+            }
+            else
             {
                 pme_lb->stage++;
 
