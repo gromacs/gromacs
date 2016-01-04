@@ -87,6 +87,7 @@ set(ALEXANDRIA_SOURCES
         gentop.cpp
         merge_mp.cpp
         moldip.cpp
+        molprop_check.cpp
         molprop_sqlite3.cpp
         molprop_tables.cpp
         molprop_test.cpp

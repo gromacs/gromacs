@@ -57,6 +57,7 @@ int alex_gen_table(int argc, char *argv[]);
 int alex_merge_mp(int argc, char *argv[]);
 int alex_mp2csv(int argc, char *argv[]);
 int alex_molprop_test(int argc, char *argv[]);
+int alex_molprop_check(int argc, char *argv[]);
 /*
    extern "C" {
    int alex_mkice(int argc, char *argv[]);
@@ -100,6 +101,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Test the force field file I/O");
     registerModule(manager, &alex_molprop_test, "molprop_test",
                    "Test the molecular property file I/O");
+    registerModule(manager, &alex_molprop_check, "molprop_check",
+                   "Check the molecular property file for missing hydrogens");
     registerModule(manager, &alex_gauss2molprop, "gauss2molprop",
                    "Convert Gaussian output to molecular property file");
     registerModule(manager, &alex_mp2csv, "mp2csv",
