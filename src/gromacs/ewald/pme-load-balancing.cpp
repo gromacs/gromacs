@@ -512,7 +512,8 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
     {
         pme_lb->start++;
     }
-    while (pme_lb->start > 0 && pme_lb->setup[pme_lb->start - 1].cycles == 0)
+    while (pme_lb->start > pme_lb->lower_limit &&
+           pme_lb->setup[pme_lb->start - 1].count == 0)
     {
         pme_lb->start--;
     }
@@ -736,8 +737,11 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
          */
         do
         {
-            pme_lb->cur--;
-            if (pme_lb->cur == pme_lb->start)
+            if (pme_lb->cur > pme_lb->start)
+            {
+                pme_lb->cur--;
+            }
+            else
             {
                 pme_lb->stage++;
 
