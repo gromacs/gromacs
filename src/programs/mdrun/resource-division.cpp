@@ -622,7 +622,8 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
-                               const t_commrec *cr)
+                               const t_commrec *cr,
+                               int              nPmeRanks)
 {
     /* Currently hw_opt only contains default settings or settings supplied
      * by the user on the command line.
@@ -656,7 +657,7 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
 
         if (hw_opt->nthreads_omp_pme >= 1 &&
             hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
-            cr->npmenodes <= 0)
+            nPmeRanks <= 0)
         {
             /* This can result in a fatal error on many MPI ranks,
              * but since the thread count can differ per rank,
