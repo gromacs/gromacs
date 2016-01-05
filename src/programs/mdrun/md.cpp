@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -564,8 +564,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
-                    NULL, &bSumEkinhOld, cglo_flags
+                    &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags
                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+    checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
+                                    top_global, top, state,
+                                    &shouldCheckNumberOfBondedInteractions);
     if (ir->eI == eiVVAK)
     {
         /* a second call to get the half step temperature initialized as well */
@@ -973,8 +976,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
-                            NULL, &bSumEkinhOld,
-                            CGLO_GSTAT | CGLO_TEMPERATURE);
+                            &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                            CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
+            checkNumberOfBondedInteractions(fplog, cr, totalNumberOfBondedInteractions,
+                                            top_global, top, state,
+                                            &shouldCheckNumberOfBondedInteractions);
         }
         clear_mat(force_vir);
 
