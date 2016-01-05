@@ -800,7 +800,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(hw_opt, cr);
+    check_and_update_hw_opt_1(hw_opt, cr, npme);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(fplog, cr,
