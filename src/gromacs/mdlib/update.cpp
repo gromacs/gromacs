@@ -542,6 +542,18 @@ gmx_update_t init_update(const t_inputrec *ir)
     return upd;
 }
 
+void update_realloc(gmx_update_t upd, int state_nalloc)
+{
+    GMX_ASSERT(upd, "upd must be allocated before its fields can be reallocated");
+    if (state_nalloc > upd->xp_nalloc)
+    {
+        upd->xp_nalloc = state_nalloc;
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries. */
+        srenew(upd->xp, upd->xp_nalloc + 1);
+    }
+}
+
 static void do_update_sd1(gmx_stochd_t *sd,
                           int start, int nrend, double dt,
                           rvec accel[], ivec nFreeze[],
@@ -1258,20 +1270,6 @@ void update_pcouple(FILE             *fplog,
     }
 }
 
-static rvec *get_xprime(const t_state *state, gmx_update_t upd)
-{
-    if (state->nalloc > upd->xp_nalloc)
-    {
-        upd->xp_nalloc = state->nalloc;
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        srenew(upd->xp, upd->xp_nalloc + 1);
-    }
-
-    return upd->xp;
-}
-
 void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
@@ -1295,7 +1293,6 @@ void update_constraints(FILE             *fplog,
     double               dt;
     int                  start, homenr, nrend, i;
     tensor               vir_con;
-    rvec                *xprime = NULL;
     int                  nth, th;
 
     if (constr)
@@ -1332,12 +1329,10 @@ void update_constraints(FILE             *fplog,
         /* clear out constraints before applying */
         clear_mat(vir_part);
 
-        xprime = get_xprime(state, upd);
-
         bLastStep = (step == inputrec->init_step+inputrec->nsteps);
         bLog      = (do_per_step(step, inputrec->nstlog) || bLastStep || (step < 0));
         bEner     = (do_per_step(step, inputrec->nstenergy) || bLastStep);
-        /* Constrain the coordinates xprime */
+        /* Constrain the coordinates upd->xp */
         wallcycle_start(wcycle, ewcCONSTR);
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
@@ -1352,7 +1347,7 @@ void update_constraints(FILE             *fplog,
         {
             constrain(NULL, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
-                      state->x, xprime, NULL,
+                      state->x, upd->xp, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
@@ -1362,7 +1357,7 @@ void update_constraints(FILE             *fplog,
         where();
 
         dump_it_all(fplog, "After Shake",
-                    state->natoms, state->x, xprime, state->v, force);
+                    state->natoms, state->x, upd->xp, state->v, force);
 
         if (bCalcVir)
         {
@@ -1379,7 +1374,6 @@ void update_constraints(FILE             *fplog,
     if (inputrec->eI == eiSD1 && bDoConstr && !bFirstHalf)
     {
         wallcycle_start(wcycle, ewcUPDATE);
-        xprime = get_xprime(state, upd);
 
         nth = gmx_omp_nthreads_get(emntUpdate);
 
@@ -1399,7 +1393,7 @@ void update_constraints(FILE             *fplog,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force,
+                              state->x, upd->xp, state->v, force,
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
                               DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -1411,12 +1405,12 @@ void update_constraints(FILE             *fplog,
 
         if (bDoConstr)
         {
-            /* Constrain the coordinates xprime for half a time step */
+            /* Constrain the coordinates upd->xp for half a time step */
             wallcycle_start(wcycle, ewcCONSTR);
 
             constrain(NULL, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 0.5, md,
-                      state->x, xprime, NULL,
+                      state->x, upd->xp, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       state->v, NULL, nrnb, econqCoord);
@@ -1582,7 +1576,6 @@ void update_coords(FILE             *fplog,
     gmx_bool          bNH, bPR, bDoConstr = FALSE;
     double            dt, alpha;
     int               start, homenr, nrend;
-    rvec             *xprime;
     int               nth, th;
 
     bDoConstr = (NULL != constr);
@@ -1597,8 +1590,6 @@ void update_coords(FILE             *fplog,
     start  = 0;
     homenr = md->homenr;
     nrend  = start+homenr;
-
-    xprime = get_xprime(state, upd);
 
     dt   = inputrec->delta_t;
 
@@ -1619,7 +1610,7 @@ void update_coords(FILE             *fplog,
     /* ############# START The update of velocities and positions ######### */
     where();
     dump_it_all(fplog, "Before update",
-                state->natoms, state->x, xprime, state->v, f);
+                state->natoms, state->x, upd->xp, state->v, f);
 
     nth = gmx_omp_nthreads_get(emntUpdate);
 
@@ -1644,7 +1635,7 @@ void update_coords(FILE             *fplog,
                                      inputrec->opts.nFreeze,
                                      md->invmass, md->ptype,
                                      md->cFREEZE, md->cACC, md->cTC,
-                                     state->x, xprime, state->v, f, M,
+                                     state->x, upd->xp, state->v, f, M,
                                      bNH, bPR);
                     }
                     else
@@ -1652,7 +1643,7 @@ void update_coords(FILE             *fplog,
                         do_update_visc(start_th, end_th, dt,
                                        ekind->tcstat, state->nosehoover_vxi,
                                        md->invmass, md->ptype,
-                                       md->cTC, state->x, xprime, state->v, f, M,
+                                       md->cTC, state->x, upd->xp, state->v, f, M,
                                        state->box,
                                        ekind->cosacc.cos_accel,
                                        ekind->cosacc.vcos,
@@ -1666,7 +1657,7 @@ void update_coords(FILE             *fplog,
                                   inputrec->opts.acc, inputrec->opts.nFreeze,
                                   md->invmass, md->ptype,
                                   md->cFREEZE, md->cACC, md->cTC,
-                                  state->x, xprime, state->v, f,
+                                  state->x, upd->xp, state->v, f,
                                   bDoConstr, TRUE,
                                   step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                     break;
@@ -1674,7 +1665,7 @@ void update_coords(FILE             *fplog,
                     do_update_bd(start_th, end_th, dt,
                                  inputrec->opts.nFreeze, md->invmass, md->ptype,
                                  md->cFREEZE, md->cTC,
-                                 state->x, xprime, state->v, f,
+                                 state->x, upd->xp, state->v, f,
                                  inputrec->bd_fric,
                                  upd->sd->bd_rf,
                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -1697,7 +1688,7 @@ void update_coords(FILE             *fplog,
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
                                              md->ptype, md->cFREEZE,
-                                             state->x, xprime, state->v,
+                                             state->x, upd->xp, state->v,
                                              (bNH || bPR), state->veta);
                             break;
                     }
