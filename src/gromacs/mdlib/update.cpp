@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -470,60 +470,83 @@ static void do_update_visc(int start, int nrend, double dt,
 static gmx_stochd_t *init_stochd(t_inputrec *ir)
 {
     gmx_stochd_t   *sd;
-    gmx_sd_const_t *sdc;
-    int             ngtc, n;
-    real            y;
 
     snew(sd, 1);
 
-    ngtc = ir->opts.ngtc;
+    int ngtc = ir->opts.ngtc;
 
     if (ir->eI == eiBD)
     {
         snew(sd->bd_rf, ngtc);
+
+        if (ir->bd_fric != 0)
+        {
+            for (int gt = 0; gt < ngtc; gt++)
+            {
+                sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
+            }
+        }
+        else
+        {
+            for (int gt = 0; gt < ngtc; gt++)
+            {
+                sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
+            }
+        }
     }
     else if (EI_SD(ir->eI))
     {
         snew(sd->sdc, ngtc);
         snew(sd->sdsig, ngtc);
 
-        sdc = sd->sdc;
-        for (n = 0; n < ngtc; n++)
+        gmx_sd_const_t *sdc = sd->sdc;
+
+        for (int gt = 0; gt < ngtc; gt++)
         {
-            if (ir->opts.tau_t[n] > 0)
+            if (ir->opts.tau_t[gt] > 0)
             {
-                sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
-                sdc[n].eph = exp(sdc[n].gdt/2);
-                sdc[n].emh = exp(-sdc[n].gdt/2);
-                sdc[n].em  = exp(-sdc[n].gdt);
+                sdc[gt].gdt = ir->delta_t/ir->opts.tau_t[gt];
+                sdc[gt].eph = exp(sdc[gt].gdt/2);
+                sdc[gt].emh = exp(-sdc[gt].gdt/2);
+                sdc[gt].em  = exp(-sdc[gt].gdt);
             }
             else
             {
                 /* No friction and noise on this group */
-                sdc[n].gdt = 0;
-                sdc[n].eph = 1;
-                sdc[n].emh = 1;
-                sdc[n].em  = 1;
+                sdc[gt].gdt = 0;
+                sdc[gt].eph = 1;
+                sdc[gt].emh = 1;
+                sdc[gt].em  = 1;
             }
-            if (sdc[n].gdt >= 0.05)
+            if (sdc[gt].gdt >= 0.05)
             {
-                sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1)
-                    - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
-                sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
-                sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
+                sdc[gt].b = sdc[gt].gdt*(sdc[gt].eph*sdc[gt].eph - 1)
+                    - 4*(sdc[gt].eph - 1)*(sdc[gt].eph - 1);
+                sdc[gt].c = sdc[gt].gdt - 3 + 4*sdc[gt].emh - sdc[gt].em;
+                sdc[gt].d = 2 - sdc[gt].eph - sdc[gt].emh;
             }
             else
             {
-                y = sdc[n].gdt/2;
+                real y = sdc[gt].gdt/2;
                 /* Seventh order expansions for small y */
-                sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
-                sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
-                sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
+                sdc[gt].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
+                sdc[gt].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
+                sdc[gt].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
             }
             if (debug)
             {
                 fprintf(debug, "SD const tc-grp %d: b %g  c %g  d %g\n",
-                        n, sdc[n].b, sdc[n].c, sdc[n].d);
+                        gt, sdc[gt].b, sdc[gt].c, sdc[gt].d);
+            }
+            if (ir->eI == eiSD2)
+            {
+                gmx_sd_sigma_t *sig            = sd->sdsig;
+                real            kT             = BOLTZ*ir->opts.ref_t[gt];
+                /* The mass is accounted for later, since this differs per atom */
+                sig[gt].V  = std::sqrt(kT*(1-sdc[gt].em));
+                sig[gt].X  = std::sqrt(kT*gmx::square(ir->opts.tau_t[gt])*sdc[gt].c);
+                sig[gt].Yv = std::sqrt(kT*sdc[gt].b/sdc[gt].c);
+                sig[gt].Yx = std::sqrt(kT*gmx::square(ir->opts.tau_t[gt])*sdc[gt].b/(1-sdc[gt].em));
             }
         }
     }
@@ -542,17 +565,17 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
         /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
         /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
 
-        for (n = 0; n < ngtc; n++)
+        for (int gt = 0; gt < ngtc; gt++)
         {
-            reft = std::max<real>(0, opts->ref_t[n]);
-            if ((opts->tau_t[n] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+            reft = std::max<real>(0, opts->ref_t[gt]);
+            if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
             {
-                sd->randomize_group[n] = TRUE;
-                sd->boltzfac[n]        = BOLTZ*opts->ref_t[n];
+                sd->randomize_group[gt] = TRUE;
+                sd->boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
             }
             else
             {
-                sd->randomize_group[n] = FALSE;
+                sd->randomize_group[gt] = FALSE;
             }
         }
     }
@@ -598,10 +621,11 @@ static void do_update_sd1(gmx_stochd_t *sd,
     sdc = sd->sdc;
     sig = sd->sdsig;
 
+    // TODO sdc is constant after initialization, so this should move to init_stochd, but sd1 is going to die soon anyway
     for (n = 0; n < ngtc; n++)
     {
         kT = BOLTZ*ref_t[n];
-        /* The mass is encounted for later, since this differs per atom */
+        /* The mass is accounted for later, since this differs per atom */
         sig[n].V  = std::sqrt(kT*(1 - sdc[n].em*sdc[n].em));
     }
 
@@ -733,31 +757,6 @@ static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
     }
 }
 
-static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
-                                  int           ngtc,
-                                  const real    tau_t[],
-                                  const real    ref_t[])
-{
-    /* This is separated from the update below, because it is single threaded */
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sig;
-    int             gt;
-    real            kT;
-
-    sdc = sd->sdc;
-    sig = sd->sdsig;
-
-    for (gt = 0; gt < ngtc; gt++)
-    {
-        kT = BOLTZ*ref_t[gt];
-        /* The mass is encounted for later, since this differs per atom */
-        sig[gt].V  = std::sqrt(kT*(1-sdc[gt].em));
-        sig[gt].X  = std::sqrt(kT*gmx::square(tau_t[gt])*sdc[gt].c);
-        sig[gt].Yv = std::sqrt(kT*sdc[gt].b/sdc[gt].c);
-        sig[gt].Yx = std::sqrt(kT*gmx::square(tau_t[gt])*sdc[gt].b/(1-sdc[gt].em));
-    }
-}
-
 static void do_update_sd2(gmx_stochd_t *sd,
                           gmx_bool bInitStep,
                           int start, int nrend,
@@ -858,29 +857,6 @@ static void do_update_sd2(gmx_stochd_t *sd,
                     xprime[n][d]   = x[n][d];
                 }
             }
-        }
-    }
-}
-
-static void do_update_bd_Tconsts(double dt, real friction_coefficient,
-                                 int ngtc, const real ref_t[],
-                                 real *rf)
-{
-    /* This is separated from the update below, because it is single threaded */
-    int gt;
-
-    if (friction_coefficient != 0)
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]/(friction_coefficient*dt));
-        }
-    }
-    else
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]);
         }
     }
 }
@@ -1865,17 +1841,6 @@ void update_coords(FILE             *fplog,
     if (inputrec->eI == eiSD2)
     {
         check_sd2_work_data_allocation(upd->sd, nrend);
-
-        do_update_sd2_Tconsts(upd->sd,
-                              inputrec->opts.ngtc,
-                              inputrec->opts.tau_t,
-                              inputrec->opts.ref_t);
-    }
-    if (inputrec->eI == eiBD)
-    {
-        do_update_bd_Tconsts(dt, inputrec->bd_fric,
-                             inputrec->opts.ngtc, inputrec->opts.ref_t,
-                             upd->sd->bd_rf);
     }
 
     nth = gmx_omp_nthreads_get(emntUpdate);
