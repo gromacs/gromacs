@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -86,14 +86,14 @@ if (SPHINX_FOUND)
     set(SPHINX_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/conf.py)
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_TARBALL)
-        # The real build of the webpage happens from the tarball, and
-        # this should be set to the matching MD5 sum.
-        set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
-    else()
+    if (SOURCE_MD5SUM STREQUAL "unknown")
         # But for testing the webpage build (e.g. from the repo) we
         # need a default value.
         set(REGRESSIONTEST_MD5SUM_STRING "unknown")
+    else()
+        # The real build of the webpage happens from the tarball, and
+        # this should be set to the matching MD5 sum.
+        set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
     endif()
     set(SPHINX_SOURCE_FILES
         index.rst
