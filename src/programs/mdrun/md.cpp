@@ -424,6 +424,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         setup_bonded_threading(fr, &top->idef);
+
+        update_realloc(upd, state->nalloc, ir->eI == eiSD2);
     }
 
     /* Set up interactive MD (IMD) */
@@ -439,6 +441,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             vsite, constr,
                             nrnb, NULL, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
+        update_realloc(upd, state->nalloc, ir->eI == eiSD2);
     }
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
@@ -954,6 +957,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
+                update_realloc(upd, state->nalloc, ir->eI == eiSD2);
             }
         }
 
@@ -1651,6 +1655,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
+            update_realloc(upd, state->nalloc, ir->eI == eiSD2);
         }
 
         bFirstStep             = FALSE;

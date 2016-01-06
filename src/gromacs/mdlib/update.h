@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,10 @@ typedef struct gmx_update *gmx_update_t;
 
 /* Initialize the stochastic dynamics struct */
 gmx_update_t init_update(t_inputrec *ir);
+
+/* Update the size of per-atom arrays (e.g. after DD re-partitioning,
+   which might increase the number of home atoms). */
+void update_realloc(gmx_update_t upd, int state_nalloc, bool isSD2);
 
 /* Store the random state from sd in state */
 void get_stochd_state(gmx_update_t sd, t_state *state);
