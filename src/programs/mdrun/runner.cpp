@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,7 @@
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/inputrec.h"

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdrun_signalling.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -272,7 +274,7 @@ real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass 
 
 /* TODO Specialize this routine into init-time and loop-time versions?
    e.g. bReadEkin is only true when restoring from checkpoint */
-void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
+void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,

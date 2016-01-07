@@ -247,7 +247,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     gmx_global_stat_t gstat;
-    gmx_update_t      upd   = NULL;
+    gmx_update_t     *upd   = NULL;
     t_graph          *graph = NULL;
     gmx_signalling_t  gs;
     gmx_groups_t     *groups;

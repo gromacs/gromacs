@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,22 +56,16 @@ struct t_mdatoms;
 struct t_nrnb;
 struct t_state;
 
-/* Abstract type for stochastic dynamics */
-typedef struct gmx_update *gmx_update_t;
+/* Abstract type for update */
+struct gmx_update_t;
 
 /* Initialize the stochastic dynamics struct */
-gmx_update_t init_update(t_inputrec *ir);
-
-/* Store the random state from sd in state */
-void get_stochd_state(gmx_update_t sd, t_state *state);
-
-/* Set the random in sd from state */
-void set_stochd_state(gmx_update_t sd, t_state *state);
+gmx_update_t *init_update(t_inputrec *ir);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
  */
-void set_deform_reference_box(gmx_update_t upd,
+void set_deform_reference_box(gmx_update_t *upd,
                               gmx_int64_t step, matrix box);
 
 void update_tcouple(gmx_int64_t       step,
@@ -99,14 +93,14 @@ void update_coords(FILE              *fplog,
                    t_fcdata          *fcd,
                    gmx_ekindata_t    *ekind,
                    matrix             M,
-                   gmx_update_t       upd,
+                   gmx_update_t      *upd,
                    int                bUpdatePart,
                    t_commrec         *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr        *constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr *constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
 
 void update_constraints(FILE              *fplog,
                         gmx_int64_t        step,
@@ -122,7 +116,7 @@ void update_constraints(FILE              *fplog,
                         t_commrec         *cr,
                         t_nrnb            *nrnb,
                         gmx_wallcycle_t    wcycle,
-                        gmx_update_t       upd,
+                        gmx_update_t      *upd,
                         gmx_constr        *constr,
                         gmx_bool           bFirstHalf,
                         gmx_bool           bCalcVir);
@@ -137,7 +131,7 @@ void update_box(FILE             *fplog,
                 rvec              force[], /* forces on home particles */
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
-                gmx_update_t      upd);
+                gmx_update_t     *upd);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,

@@ -99,7 +99,7 @@ typedef struct {
     real           *boltzfac;
 } gmx_stochd_t;
 
-typedef struct gmx_update
+struct gmx_update_t
 {
     gmx_stochd_t *sd;
     /* xprime for constraint algorithms */
@@ -109,7 +109,7 @@ typedef struct gmx_update
     /* Variables for the deform algorithm */
     gmx_int64_t     deformref_step;
     matrix          deformref_box;
-} t_gmx_update;
+};
 
 
 static void do_update_md(int start, int nrend, double dt,
@@ -521,9 +521,9 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
     return sd;
 }
 
-gmx_update_t init_update(t_inputrec *ir)
+gmx_update_t *init_update(t_inputrec *ir)
 {
-    t_gmx_update *upd;
+    gmx_update_t *upd;
 
     snew(upd, 1);
 
@@ -1072,13 +1072,13 @@ void restore_ekinstate_from_state(t_commrec *cr,
     }
 }
 
-void set_deform_reference_box(gmx_update_t upd, gmx_int64_t step, matrix box)
+void set_deform_reference_box(gmx_update_t *upd, gmx_int64_t step, matrix box)
 {
     upd->deformref_step = step;
     copy_mat(box, upd->deformref_box);
 }
 
-static void deform(gmx_update_t upd,
+static void deform(gmx_update_t *upd,
                    int start, int homenr, rvec x[], matrix box,
                    const t_inputrec *ir, gmx_int64_t step)
 {
@@ -1256,7 +1256,7 @@ void update_pcouple(FILE             *fplog,
     }
 }
 
-static rvec *get_xprime(const t_state *state, gmx_update_t upd)
+static rvec *get_xprime(const t_state *state, gmx_update_t *upd)
 {
     if (state->nalloc > upd->xp_nalloc)
     {
@@ -1284,7 +1284,7 @@ void update_constraints(FILE             *fplog,
                         t_commrec        *cr,
                         t_nrnb           *nrnb,
                         gmx_wallcycle_t   wcycle,
-                        gmx_update_t      upd,
+                        gmx_update_t     *upd,
                         gmx_constr_t      constr,
                         gmx_bool          bFirstHalf,
                         gmx_bool          bCalcVir)
@@ -1477,7 +1477,7 @@ void update_box(FILE             *fplog,
                 rvec              force[],   /* forces on home particles */
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
-                gmx_update_t      upd)
+                gmx_update_t     *upd)
 {
     double               dt;
     int                  start, homenr, i, n, m;
@@ -1573,7 +1573,7 @@ void update_coords(FILE             *fplog,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
-                   gmx_update_t      upd,
+                   gmx_update_t     *upd,
                    int               UpdatePart,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr_t      constr)
@@ -1775,7 +1775,7 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
 }
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr,
-                                            t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr)
+                                            t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr_t constr)
 {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
