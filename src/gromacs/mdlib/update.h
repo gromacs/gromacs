@@ -60,7 +60,19 @@ struct t_state;
 struct gmx_update_t;
 
 /* Initialize the stochastic dynamics struct */
-gmx_update_t *init_update(t_inputrec *ir);
+gmx_update_t *init_update(const t_inputrec *ir);
+
+/* Update pre-computed constants that depend on the reference
+ * temperature for coupling.
+ *
+ * This could change e.g. in simulated annealing. */
+void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
+
+/* Store the random state from sd in state */
+void get_stochd_state(gmx_update_t sd, t_state *state);
+
+/* Set the random in sd from state */
+void set_stochd_state(gmx_update_t sd, t_state *state);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
@@ -201,7 +213,7 @@ void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);
 /* Rescale the velocities with the scaling factor in ekind */
 
-void update_annealing_target_temp(t_grpopts *opts, real t);
+void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t *upd);
 /* Set reference temp for simulated annealing at time t*/
 
 real calc_temp(real ekin, real nrdf);

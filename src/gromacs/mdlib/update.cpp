@@ -456,15 +456,14 @@ static void do_update_visc(int start, int nrend, double dt,
     }
 }
 
-static gmx_stochd_t *init_stochd(t_inputrec *ir)
+static gmx_stochd_t *init_stochd(const t_inputrec *ir)
 {
     gmx_stochd_t   *sd;
-    gmx_sd_const_t *sdc;
-    int             ngtc, n;
 
     snew(sd, 1);
 
-    ngtc = ir->opts.ngtc;
+    const t_grpopts *opts = &ir->opts;
+    int              ngtc = opts->ngtc;
 
     if (ir->eI == eiBD)
     {
@@ -475,53 +474,78 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
         snew(sd->sdc, ngtc);
         snew(sd->sdsig, ngtc);
 
-        sdc = sd->sdc;
-        for (n = 0; n < ngtc; n++)
+        gmx_sd_const_t *sdc = sd->sdc;
+
+        for (int gt = 0; gt < ngtc; gt++)
         {
-            if (ir->opts.tau_t[n] > 0)
+            if (opts->tau_t[gt] > 0)
             {
-                sdc[n].em  = exp(-ir->delta_t/ir->opts.tau_t[n]);
+                sdc[gt].em  = exp(-ir->delta_t/opts->tau_t[gt]);
             }
             else
             {
                 /* No friction and noise on this group */
-                sdc[n].em  = 1;
+                sdc[gt].em  = 1;
             }
         }
     }
     else if (ETC_ANDERSEN(ir->etc))
     {
-        int        ngtc;
-        t_grpopts *opts;
-        real       reft;
-
-        opts = &ir->opts;
-        ngtc = opts->ngtc;
-
         snew(sd->randomize_group, ngtc);
         snew(sd->boltzfac, ngtc);
 
         /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
         /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
 
-        for (n = 0; n < ngtc; n++)
+        for (int gt = 0; gt < ngtc; gt++)
         {
-            reft = std::max<real>(0, opts->ref_t[n]);
-            if ((opts->tau_t[n] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+            real reft = std::max<real>(0, opts->ref_t[gt]);
+            if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
             {
-                sd->randomize_group[n] = TRUE;
-                sd->boltzfac[n]        = BOLTZ*opts->ref_t[n];
+                sd->randomize_group[gt] = TRUE;
+                sd->boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
             }
             else
             {
-                sd->randomize_group[n] = FALSE;
+                sd->randomize_group[gt] = FALSE;
             }
         }
     }
+
     return sd;
 }
 
-gmx_update_t *init_update(t_inputrec *ir)
+void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
+{
+    if (ir->eI == eiBD)
+    {
+        if (ir->bd_fric != 0)
+        {
+            for (int gt = 0; gt < ir->opts.ngtc; gt++)
+            {
+                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
+            }
+        }
+        else
+        {
+            for (int gt = 0; gt < ir->opts.ngtc; gt++)
+            {
+                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
+            }
+        }
+    }
+    if (ir->eI == eiSD1)
+    {
+        for (int gt = 0; gt < ir->opts.ngtc; gt++)
+        {
+            real kT = BOLTZ*ir->opts.ref_t[gt];
+            /* The mass is accounted for later, since this differs per atom */
+            upd->sd->sdsig[gt].V  = std::sqrt(kT*(1 - upd->sd->sdc[gt].em*upd->sd->sdc[gt].em));
+        }
+    }
+}
+
+gmx_update_t *init_update(const t_inputrec *ir)
 {
     gmx_update_t *upd;
 
@@ -531,6 +555,8 @@ gmx_update_t *init_update(t_inputrec *ir)
     {
         upd->sd    = init_stochd(ir);
     }
+
+    update_temperature_constants(upd, ir);
 
     upd->xp        = NULL;
     upd->xp_nalloc = 0;
@@ -545,27 +571,18 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          int ngtc, real ref_t[],
                           gmx_bool bDoConstr,
                           gmx_bool bFirstHalfConstr,
                           gmx_int64_t step, int seed, int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
-    real            kT;
     int             gf = 0, ga = 0, gt = 0;
     real            ism;
     int             n, d;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
-
-    for (n = 0; n < ngtc; n++)
-    {
-        kT = BOLTZ*ref_t[n];
-        /* The mass is encounted for later, since this differs per atom */
-        sig[n].V  = std::sqrt(kT*(1 - sdc[n].em*sdc[n].em));
-    }
 
     if (!bDoConstr)
     {
@@ -682,29 +699,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
                     }
                 }
             }
-        }
-    }
-}
-
-static void do_update_bd_Tconsts(double dt, real friction_coefficient,
-                                 int ngtc, const real ref_t[],
-                                 real *rf)
-{
-    /* This is separated from the update below, because it is single threaded */
-    int gt;
-
-    if (friction_coefficient != 0)
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]/(friction_coefficient*dt));
-        }
-    }
-    else
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]);
         }
     }
 }
@@ -1398,7 +1392,6 @@ void update_constraints(FILE             *fplog,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.ref_t,
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
                               DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -1620,13 +1613,6 @@ void update_coords(FILE             *fplog,
     dump_it_all(fplog, "Before update",
                 state->natoms, state->x, xprime, state->v, f);
 
-    if (inputrec->eI == eiBD)
-    {
-        do_update_bd_Tconsts(dt, inputrec->bd_fric,
-                             inputrec->opts.ngtc, inputrec->opts.ref_t,
-                             upd->sd->bd_rf);
-    }
-
     nth = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
@@ -1673,7 +1659,6 @@ void update_coords(FILE             *fplog,
                                   md->invmass, md->ptype,
                                   md->cFREEZE, md->cACC, md->cTC,
                                   state->x, xprime, state->v, f,
-                                  inputrec->opts.ngtc, inputrec->opts.ref_t,
                                   bDoConstr, TRUE,
                                   step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                     break;
