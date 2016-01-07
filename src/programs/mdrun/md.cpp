@@ -808,7 +808,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (bSimAnn)
         {
-            update_annealing_target_temp(&(ir->opts), t);
+            update_annealing_target_temp(ir, t, upd);
         }
 
         if (bRerunMD)

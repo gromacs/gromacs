@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2703,10 +2703,6 @@ void init_md(FILE *fplog,
             *bSimAnn = TRUE;
         }
     }
-    if (*bSimAnn)
-    {
-        update_annealing_target_temp(&(ir->opts), ir->init_t);
-    }
 
     /* Initialize lambda variables */
     initialize_lambdas(fplog, ir, fep_state, lambda, lam0);
@@ -2715,7 +2711,10 @@ void init_md(FILE *fplog,
     {
         *upd = init_update(ir);
     }
-
+    if (*bSimAnn)
+    {
+        update_annealing_target_temp(ir, ir->init_t, *upd);
+    }
 
     if (vcm != NULL)
     {
