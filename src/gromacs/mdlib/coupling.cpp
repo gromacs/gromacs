@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1640,21 +1640,21 @@ void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
 
 
 /* set target temperatures if we are annealing */
-void update_annealing_target_temp(t_grpopts *opts, real t)
+void update_annealing_target_temp(t_inputrec *ir, real t, gmx_update_t upd)
 {
     int  i, j, n, npoints;
     real pert, thist = 0, x;
 
-    for (i = 0; i < opts->ngtc; i++)
+    for (i = 0; i < ir->opts.ngtc; i++)
     {
-        npoints = opts->anneal_npoints[i];
-        switch (opts->annealing[i])
+        npoints = ir->opts.anneal_npoints[i];
+        switch (ir->opts.annealing[i])
         {
             case eannNO:
                 continue;
             case  eannPERIODIC:
                 /* calculate time modulo the period */
-                pert  = opts->anneal_time[i][npoints-1];
+                pert  = ir->opts.anneal_time[i][npoints-1];
                 n     = static_cast<int>(t / pert);
                 thist = t - n*pert; /* modulo time */
                 /* Make sure rounding didn't get us outside the interval */
@@ -1667,13 +1667,13 @@ void update_annealing_target_temp(t_grpopts *opts, real t)
                 thist = t;
                 break;
             default:
-                gmx_fatal(FARGS, "Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)", i, opts->ngtc, npoints);
+                gmx_fatal(FARGS, "Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)", i, ir->opts.ngtc, npoints);
         }
         /* We are doing annealing for this group if we got here,
          * and we have the (relative) time as thist.
          * calculate target temp */
         j = 0;
-        while ((j < npoints-1) && (thist > (opts->anneal_time[i][j+1])))
+        while ((j < npoints-1) && (thist > (ir->opts.anneal_time[i][j+1])))
         {
             j++;
         }
@@ -1683,20 +1683,22 @@ void update_annealing_target_temp(t_grpopts *opts, real t)
              * Interpolate: x is the amount from j+1, (1-x) from point j
              * First treat possible jumps in temperature as a special case.
              */
-            if ((opts->anneal_time[i][j+1]-opts->anneal_time[i][j]) < GMX_REAL_EPS*100)
+            if ((ir->opts.anneal_time[i][j+1]-ir->opts.anneal_time[i][j]) < GMX_REAL_EPS*100)
             {
-                opts->ref_t[i] = opts->anneal_temp[i][j+1];
+                ir->opts.ref_t[i] = ir->opts.anneal_temp[i][j+1];
             }
             else
             {
-                x = ((thist-opts->anneal_time[i][j])/
-                     (opts->anneal_time[i][j+1]-opts->anneal_time[i][j]));
-                opts->ref_t[i] = x*opts->anneal_temp[i][j+1]+(1-x)*opts->anneal_temp[i][j];
+                x = ((thist-ir->opts.anneal_time[i][j])/
+                     (ir->opts.anneal_time[i][j+1]-ir->opts.anneal_time[i][j]));
+                ir->opts.ref_t[i] = x*ir->opts.anneal_temp[i][j+1]+(1-x)*ir->opts.anneal_temp[i][j];
             }
         }
         else
         {
-            opts->ref_t[i] = opts->anneal_temp[i][npoints-1];
+            ir->opts.ref_t[i] = ir->opts.anneal_temp[i][npoints-1];
         }
     }
+
+    update_temperature_constants(upd, ir);
 }
