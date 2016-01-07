@@ -2703,19 +2703,19 @@ void init_md(FILE *fplog,
             *bSimAnn = TRUE;
         }
     }
-    if (*bSimAnn)
-    {
-        update_annealing_target_temp(&(ir->opts), ir->init_t);
-    }
 
     /* Initialize lambda variables */
     initialize_lambdas(fplog, ir, fep_state, lambda, lam0);
 
+    // TODO upd is never NULL in practice, but the analysers don't know that
     if (upd)
     {
         *upd = init_update(ir);
     }
-
+    if (*bSimAnn)
+    {
+        update_annealing_target_temp(ir, ir->init_t, upd ? *upd : NULL);
+    }
 
     if (vcm != NULL)
     {
