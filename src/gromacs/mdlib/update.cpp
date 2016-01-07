@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,20 +81,11 @@
 /*#define STARTFROMDT2*/
 
 typedef struct {
-    double gdt;
-    double eph;
-    double emh;
     double em;
-    double b;
-    double c;
-    double d;
 } gmx_sd_const_t;
 
 typedef struct {
     real V;
-    real X;
-    real Yv;
-    real Yx;
 } gmx_sd_sigma_t;
 
 typedef struct {
@@ -472,7 +463,6 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
     gmx_stochd_t   *sd;
     gmx_sd_const_t *sdc;
     int             ngtc, n;
-    real            y;
 
     snew(sd, 1);
 
@@ -492,38 +482,12 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
         {
             if (ir->opts.tau_t[n] > 0)
             {
-                sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
-                sdc[n].eph = exp(sdc[n].gdt/2);
-                sdc[n].emh = exp(-sdc[n].gdt/2);
-                sdc[n].em  = exp(-sdc[n].gdt);
+                sdc[n].em  = exp(-ir->delta_t/ir->opts.tau_t[n]);
             }
             else
             {
                 /* No friction and noise on this group */
-                sdc[n].gdt = 0;
-                sdc[n].eph = 1;
-                sdc[n].emh = 1;
                 sdc[n].em  = 1;
-            }
-            if (sdc[n].gdt >= 0.05)
-            {
-                sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1)
-                    - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
-                sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
-                sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
-            }
-            else
-            {
-                y = sdc[n].gdt/2;
-                /* Seventh order expansions for small y */
-                sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
-                sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
-                sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
-            }
-            if (debug)
-            {
-                fprintf(debug, "SD const tc-grp %d: b %g  c %g  d %g\n",
-                        n, sdc[n].b, sdc[n].c, sdc[n].d);
             }
         }
     }
