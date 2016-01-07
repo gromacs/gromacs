@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,8 +107,7 @@ extern const char *gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR+1];
 extern const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR+1];
 extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 
-#define UNDEFINED       "UNDEFINED"
-#define ENUM_NAME(e, max, names)  ((((e) < 0) || ((e) >= (max))) ? UNDEFINED : (names)[e])
+#define ENUM_NAME(e, max, names)  ((((e) < 0) || ((e) >= (max))) ? "no name defined" : (names)[e])
 
 #define EBOOL(e)       ENUM_NAME(e, BOOL_NR, bool_names)
 #define ECUTSCHEME(e)  ENUM_NAME(e, ecutsNR, ecutscheme_names)
