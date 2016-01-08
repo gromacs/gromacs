@@ -241,7 +241,6 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         {
             GMX_THROW(InvalidInputError("Forces cannot be read from a topology"));
         }
-        fr->flags  = frflags;
         fr->natoms = topInfo_.topology()->atoms.nr;
         fr->bX     = TRUE;
         snew(fr->x, fr->natoms);

@@ -51,7 +51,6 @@ struct t_atoms;
 
 typedef struct t_trxframe
 {
-    int             flags;     /* flags for read_first/next_frame  */
     int             not_ok;    /* integrity flags                  */
     gmx_bool        bDouble;   /* Double precision?                */
     int             natoms;    /* number of atoms (atoms, x, v, f, index) */
