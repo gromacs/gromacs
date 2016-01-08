@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -314,6 +314,42 @@ std::string Path::normalize(const std::string &path)
         std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
     }
     return result;
+}
+
+const char *Path::stripSourcePrefix(const char *path)
+{
+    const char *fallback           = path;
+    const char *sep                = path + std::strlen(path);
+    bool        gromacsSubdirFound = false;
+    while (sep > path)
+    {
+        const char *prevSep = sep - 1;
+        while (prevSep >= path && !isDirSeparator(*prevSep))
+        {
+            --prevSep;
+        }
+        const ptrdiff_t length = sep - prevSep - 1;
+        if (gromacsSubdirFound)
+        {
+            if (std::strncmp(prevSep + 1, "src", length) == 0)
+            {
+                return prevSep + 1;
+            }
+            return fallback;
+        }
+        if (std::strncmp(prevSep + 1, "gromacs", length) == 0
+            || std::strncmp(prevSep + 1, "programs", length) == 0
+            || std::strncmp(prevSep + 1, "testutils", length) == 0)
+        {
+            gromacsSubdirFound = true;
+        }
+        if (fallback == path)
+        {
+            fallback = prevSep + 1;
+        }
+        sep = prevSep;
+    }
+    return fallback;
 }
 
 bool Path::exists(const char *path)
