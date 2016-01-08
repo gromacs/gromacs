@@ -83,6 +83,9 @@
 struct t_trxstatus
 {
     int                     __frame;
+    real                    t0;               /* time of the first frame, needed  *
+                                               * for skipping frames with -dt     */
+    real                    tf;               /* internal frame time              */
     t_trxframe             *xframe;
     int                     nxframe;
     t_fileio               *fio;
@@ -169,6 +172,8 @@ static void status_init(t_trxstatus *status)
     status->xframe          = NULL;
     status->fio             = NULL;
     status->__frame         = -1;
+    status->t0              = 0;
+    status->tf              = 0;
     status->persistent_line = NULL;
     status->tng             = NULL;
 }
@@ -291,10 +296,6 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->flags     = 0;
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
-        fr->t0        = 0;
-        fr->tf        = 0;
-        fr->tpf       = 0;
-        fr->tppf      = 0;
         fr->title     = NULL;
         fr->step      = 0;
         fr->time      = 0;
@@ -805,13 +806,11 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
     int      ftp;
 
     bRet = FALSE;
-    pt   = fr->tf;
+    pt   = status->tf;
 
     do
     {
         clear_trxframe(fr, FALSE);
-        fr->tppf = fr->tpf;
-        fr->tpf  = fr->tf;
 
         if (status->tng)
         {
@@ -842,14 +841,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 break;
             }
             case efXTC:
-                /* B. Hess 2005-4-20
-                 * Sometimes is off by one frame
-                 * and sometimes reports frame not present/file not seekable
-                 */
-                /* DvdS 2005-05-31: this has been fixed along with the increased
-                 * accuracy of the control over -b and -e options.
-                 */
-                if (bTimeSet(TBEGIN) && (fr->tf < rTimeValue(TBEGIN)))
+                if (bTimeSet(TBEGIN) && (status->tf < rTimeValue(TBEGIN)))
                 {
                     if (xtc_seek_time(status->fio, rTimeValue(TBEGIN), fr->natoms, TRUE))
                     {
@@ -890,7 +882,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                           gmx_fio_getname(status->fio));
 #endif
         }
-        fr->tf = fr->time;
+        status->tf = fr->time;
 
         if (bRet)
         {
@@ -900,7 +892,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
             bSkip = FALSE;
             if (!bMissingData)
             {
-                ct = check_times2(fr->time, fr->t0, fr->bDouble);
+                ct = check_times2(fr->time, status->t0, fr->bDouble);
                 if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct < 0))
                 {
                     printcount(status, oenv, fr->time, FALSE);
@@ -1063,12 +1055,12 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
 #endif
             break;
     }
-    fr->tf = fr->time;
+    (*status)->tf = fr->time;
 
     /* Return FALSE if we read a frame that's past the set ending time. */
     if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
     {
-        fr->t0 = fr->time;
+        (*status)->t0 = fr->time;
         return FALSE;
     }
 
@@ -1081,7 +1073,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             return FALSE;
         }
     }
-    fr->t0 = fr->time;
+    (*status)->t0 = fr->time;
 
     /* We need the number of atoms for random-access XTC searching, even when
      * we don't have access to the actual frame data.

@@ -996,7 +996,6 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     cmp_int(fp, "flags", -1, fr1->flags, fr2->flags);
     cmp_int(fp, "not_ok", -1, fr1->not_ok, fr2->not_ok);
     cmp_int(fp, "natoms", -1, fr1->natoms, fr2->natoms);
-    cmp_real(fp, "t0", -1, fr1->t0, fr2->t0, ftol, abstol);
     if (cmp_bool(fp, "bTitle", -1, fr1->bTitle, fr2->bTitle))
     {
         cmp_str(fp, "title", -1, fr1->title, fr2->title);

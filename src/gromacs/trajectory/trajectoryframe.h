@@ -51,18 +51,10 @@ struct t_atoms;
 
 typedef struct t_trxframe
 {
-    int      flags;            /* flags for read_first/next_frame  */
-    int      not_ok;           /* integrity flags                  */
-    gmx_bool bDouble;          /* Double precision?                */
-    int      natoms;           /* number of atoms (atoms, x, v, f) */
-    real     t0;               /* time of the first frame, needed  *
-                                * for skipping frames with -dt     */
-    real     tf;               /* internal frame time - DO NOT CHANGE */
-    real     tpf;              /* time of the previous frame, not  */
-                               /* the read, but real file frames   */
-    real     tppf;             /* time of two frames ago           */
-                               /* tpf and tppf are needed to       */
-                               /* correct rounding errors for -e   */
+    int             flags;     /* flags for read_first/next_frame  */
+    int             not_ok;    /* integrity flags                  */
+    gmx_bool        bDouble;   /* Double precision?                */
+    int             natoms;    /* number of atoms (atoms, x, v, f) */
     gmx_bool        bTitle;
     const char     *title;     /* title of the frame            */
     gmx_bool        bStep;
