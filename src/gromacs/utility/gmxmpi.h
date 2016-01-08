@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,8 @@
 /* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
 #define MPICH_SKIP_MPICXX 1
 #define OMPI_SKIP_MPICXX 1
+/* disable bindings for SGI MPT also */
+#define MPI_NO_CPPBIND 1
 #include <mpi.h>
 /* Starting with 2.2 MPI_INT64_T is required. Earlier version still might have it.
    In theory MPI_Datatype doesn't have to be a #define, but current available MPI

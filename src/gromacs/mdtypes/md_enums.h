@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,12 @@
 /*! \brief Return a string from a list of strings
  *
  * If index if within 0 .. max_index-1 returns the corresponding string
- * or UNDEFINED otherwise, in other words this is a range-check that does
+ * or "no name defined" otherwise, in other words this is a range-check that does
  * not crash.
  * \param[in] index     The index in the array
  * \param[in] max_index The length of the array
  * \param[in] names     The array
- * \return the correct string or UNDEFINED
+ * \return the correct string or "no name defined"
  */
 const char *enum_name(int index, int max_index, const char *names[]);
 
