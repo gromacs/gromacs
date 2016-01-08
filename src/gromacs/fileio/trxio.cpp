@@ -82,6 +82,7 @@
 
 struct t_trxstatus
 {
+    int                     flags;            /* flags for read_first/next_frame  */
     int                     __frame;
     real                    t0;               /* time of the first frame, needed  *
                                                * for skipping frames with -dt     */
@@ -168,6 +169,7 @@ static void initcount(t_trxstatus *status)
 
 static void status_init(t_trxstatus *status)
 {
+    status->flags           = 0;
     status->nxframe         = 0;
     status->xframe          = NULL;
     status->fio             = NULL;
@@ -293,7 +295,6 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
     fr->bBox      = FALSE;
     if (bFirst)
     {
-        fr->flags     = 0;
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
         fr->title     = NULL;
@@ -662,7 +663,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
         fr->bFepState = TRUE;
         fr->lambda    = sh.lambda;
         fr->bBox      = sh.box_size > 0;
-        if (fr->flags & (TRX_READ_X | TRX_NEED_X))
+        if (status->flags & (TRX_READ_X | TRX_NEED_X))
         {
             if (fr->x == NULL)
             {
@@ -670,7 +671,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             }
             fr->bX = sh.x_size > 0;
         }
-        if (fr->flags & (TRX_READ_V | TRX_NEED_V))
+        if (status->flags & (TRX_READ_V | TRX_NEED_V))
         {
             if (fr->v == NULL)
             {
@@ -678,7 +679,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             }
             fr->bV = sh.v_size > 0;
         }
-        if (fr->flags & (TRX_READ_F | TRX_NEED_F))
+        if (status->flags & (TRX_READ_F | TRX_NEED_F))
         {
             if (fr->f == NULL)
             {
@@ -886,14 +887,14 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
 
         if (bRet)
         {
-            bMissingData = (((fr->flags & TRX_NEED_X) && !fr->bX) ||
-                            ((fr->flags & TRX_NEED_V) && !fr->bV) ||
-                            ((fr->flags & TRX_NEED_F) && !fr->bF));
+            bMissingData = (((status->flags & TRX_NEED_X) && !fr->bX) ||
+                            ((status->flags & TRX_NEED_V) && !fr->bV) ||
+                            ((status->flags & TRX_NEED_F) && !fr->bF));
             bSkip = FALSE;
             if (!bMissingData)
             {
                 ct = check_times2(fr->time, status->t0, fr->bDouble);
-                if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct < 0))
+                if (ct == 0 || ((status->flags & TRX_DONT_SKIP) && ct < 0))
                 {
                     printcount(status, oenv, fr->time, FALSE);
                 }
@@ -932,7 +933,6 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     int            ftp   = fn2ftp(fn);
 
     clear_trxframe(fr, TRUE);
-    fr->flags = flags;
 
     bFirst = TRUE;
 
@@ -941,6 +941,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     status_init( *status );
     (*status)->nxframe = 1;
     initcount(*status);
+    (*status)->flags = flags;
 
     if (efTNG == ftp)
     {
@@ -1058,14 +1059,14 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     (*status)->tf = fr->time;
 
     /* Return FALSE if we read a frame that's past the set ending time. */
-    if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
+    if (!bFirst && (!(flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
     {
         (*status)->t0 = fr->time;
         return FALSE;
     }
 
     if (bFirst ||
-        (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
+        (!(flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
     {
         /* Read a frame when no frame was read or the first was skipped */
         if (!read_next_frame(oenv, *status, fr))
