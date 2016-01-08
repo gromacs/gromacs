@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,8 +124,8 @@ typedef int (*finifunc)(void);
 
 static int register_cb(void *v, vmdplugin_t *p)
 {
-    const char     *key       = p->name;
-    t_gmxvmdplugin *vmdplugin = (t_gmxvmdplugin*)v;
+    const char      *key       = p->name;
+    gmx_vmdplugin_t *vmdplugin = static_cast<gmx_vmdplugin_t *>(v);
 
     if (strcmp(key, vmdplugin->filetype) == 0)
     {
@@ -134,7 +134,7 @@ static int register_cb(void *v, vmdplugin_t *p)
     return VMDPLUGIN_SUCCESS;
 }
 
-static int load_sharedlibrary_plugins(const char *fullpath, t_gmxvmdplugin* vmdplugin)
+static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmdplugin)
 {
     /* Open the dll; try to execute the init function. */
     void *handle, *ifunc, *registerfunc;
@@ -179,14 +179,14 @@ static int load_sharedlibrary_plugins(const char *fullpath, t_gmxvmdplugin* vmdp
 }
 
 /*return: 1: success, 0: last frame, -1: error*/
-gmx_bool read_next_vmd_frame(t_trxframe *fr)
+gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
 {
     int                rc, i;
     rvec               vec, angle;
     molfile_timestep_t ts;
 
 
-    fr->bV = fr->vmdplugin->bV;
+    fr->bV = vmdplugin->bV;
 
 #if GMX_DOUBLE
     snew(ts.coords, fr->natoms*3);
@@ -202,7 +202,7 @@ gmx_bool read_next_vmd_frame(t_trxframe *fr)
     }
 #endif
 
-    rc = fr->vmdplugin->api->read_next_timestep(fr->vmdplugin->handle, fr->natoms, &ts);
+    rc = vmdplugin->api->read_next_timestep(vmdplugin->handle, fr->natoms, &ts);
 
     if (rc < -1)
     {
@@ -210,7 +210,7 @@ gmx_bool read_next_vmd_frame(t_trxframe *fr)
     }
     if (rc < 0)
     {
-        fr->vmdplugin->api->close_file_read(fr->vmdplugin->handle);
+        vmdplugin->api->close_file_read(vmdplugin->handle);
         return 0;
     }
 
@@ -248,7 +248,7 @@ gmx_bool read_next_vmd_frame(t_trxframe *fr)
     vec[0]   = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma;
     matrix_convert(fr->box, vec, angle);
-    if (fr->vmdplugin->api->abiversion > 10)
+    if (vmdplugin->api->abiversion > 10)
     {
         fr->bTime = TRUE;
         fr->time  = ts.physical_time;
@@ -262,7 +262,7 @@ gmx_bool read_next_vmd_frame(t_trxframe *fr)
     return 1;
 }
 
-static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
+static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 {
     char            pathname[GMX_PATH_MAX];
     const char     *pathenv;
@@ -390,19 +390,21 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 
 }
 
-int read_first_vmd_frame(const char *fn, t_trxframe *fr)
+int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr)
 {
     molfile_timestep_metadata_t *metadata = NULL;
+    gmx_vmdplugin_t             *vmdplugin;
 
-    snew(fr->vmdplugin, 1);
-    if (!load_vmd_library(fn, fr->vmdplugin))
+    snew(vmdplugin, 1);
+    *vmdpluginp = vmdplugin;
+    if (!load_vmd_library(fn, vmdplugin))
     {
         return 0;
     }
 
-    fr->vmdplugin->handle = fr->vmdplugin->api->open_file_read(fn, fr->vmdplugin->filetype, &fr->natoms);
+    vmdplugin->handle = vmdplugin->api->open_file_read(fn, vmdplugin->filetype, &fr->natoms);
 
-    if (!fr->vmdplugin->handle)
+    if (!vmdplugin->handle)
     {
         fprintf(stderr, "\nError: could not open file '%s' for reading.\n",
                 fn);
@@ -428,13 +430,13 @@ int read_first_vmd_frame(const char *fn, t_trxframe *fr)
 
     snew(fr->x, fr->natoms);
 
-    fr->vmdplugin->bV = 0;
-    if (fr->vmdplugin->api->abiversion > 10 && fr->vmdplugin->api->read_timestep_metadata)
+    vmdplugin->bV = 0;
+    if (vmdplugin->api->abiversion > 10 && vmdplugin->api->read_timestep_metadata)
     {
-        fr->vmdplugin->api->read_timestep_metadata(fr->vmdplugin->handle, metadata);
+        vmdplugin->api->read_timestep_metadata(vmdplugin->handle, metadata);
         assert(metadata);
-        fr->vmdplugin->bV = metadata->has_velocities;
-        if (fr->vmdplugin->bV)
+        vmdplugin->bV = metadata->has_velocities;
+        if (vmdplugin->bV)
         {
             snew(fr->v, fr->natoms);
         }

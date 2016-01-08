@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,6 +91,9 @@ struct t_trxstatus
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
     char                   *persistent_line; /* Persistent line for reading g96 trajectories */
+#ifdef GMX_USE_PLUGINS
+    gmx_vmdplugin_t        *vmdplugin;
+#endif
 };
 
 /* utility functions */
@@ -880,7 +883,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 break;
             default:
 #ifdef GMX_USE_PLUGINS
-                bRet = read_next_vmd_frame(fr);
+                bRet = read_next_vmd_frame(status->vmdplugin, fr);
 #else
                 gmx_fatal(FARGS, "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
@@ -1049,7 +1052,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
                     "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
             gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
-            if (!read_first_vmd_frame(fn, fr))
+            if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
             {
                 gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
             }
