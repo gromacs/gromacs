@@ -47,6 +47,7 @@
 
 #include <cctype>
 #include <cerrno>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -314,6 +315,42 @@ std::string Path::normalize(const std::string &path)
         std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
     }
     return result;
+}
+
+const char *Path::stripSourcePrefix(const char *path)
+{
+    const char *fallback           = path;
+    const char *sep                = path + std::strlen(path);
+    bool        gromacsSubdirFound = false;
+    while (sep > path)
+    {
+        const char *prevSep = sep - 1;
+        while (prevSep >= path && !isDirSeparator(*prevSep))
+        {
+            --prevSep;
+        }
+        const std::ptrdiff_t length = sep - prevSep - 1;
+        if (gromacsSubdirFound)
+        {
+            if (std::strncmp(prevSep + 1, "src", length) == 0)
+            {
+                return prevSep + 1;
+            }
+            return fallback;
+        }
+        if (std::strncmp(prevSep + 1, "gromacs", length) == 0
+            || std::strncmp(prevSep + 1, "programs", length) == 0
+            || std::strncmp(prevSep + 1, "testutils", length) == 0)
+        {
+            gromacsSubdirFound = true;
+        }
+        if (fallback == path)
+        {
+            fallback = prevSep + 1;
+        }
+        sep = prevSep;
+    }
+    return fallback;
 }
 
 bool Path::exists(const char *path)
