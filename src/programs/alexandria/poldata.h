@@ -1172,7 +1172,6 @@ class Poldata
             return _gtAngleUnit;
         }
 
-
         void  setDihedralFunction(  int egd, std::string fn);
 
         std::string getDihedralFunction( int egd)
@@ -1209,12 +1208,12 @@ class Poldata
                                         const std::string &atom2,
                                         const std::string &atom3, 
                                         const std::string &atom4);
+
         int searchDihedral(int egd, 
                            std::string atom1, std::string atom2,
                            std::string atom3, std::string atom4,
                            double *dihedral, double *sigma,
                            int *ntrain, std::string *params);
-
 
         void  setDihedralUnit(  int         egd,
                                 std::string dihedralUnit);
@@ -1288,8 +1287,7 @@ class Poldata
 
         void  setEpref(  ChargeDistributionModel eqdModel, std::string epref);
 
-        std::string  getEpref(ChargeDistributionModel eqdModel);
-
+        std::string getEpref(ChargeDistributionModel eqdModel);
 
         EprefIterator getEprefBegin()
         {
@@ -1301,21 +1299,15 @@ class Poldata
             return _epr.end();
         }
 
-        int listEpref(  ChargeDistributionModel *eqdModel, std::string *epref);
-
         void  commEemprops(  t_commrec *cr);
 
         void  commForceParameters( t_commrec *cr);
 
-
     private:
         std::string                           _filename;
-        unsigned int                          _nptypeC;
         std::vector<Ptype>                    _ptype;
-        unsigned int                          _nalexandriaC;
         std::vector<Ffatype>                  _alexandria;
         std::vector<std::string>              _btype;
-        unsigned int                          _nbruleC;
         std::vector<Brule>                    _brule;
         std::string                           _alexandriaPolarUnit;
         std::string                           _alexandriaPolarRef;
@@ -1325,27 +1317,22 @@ class Poldata
         std::string                           _gtVdwFunction, _gtCombinationRule;
         int                                   _gtVdwFtype, _gtCombRule;
         std::string                           _gtBondFunction;
-        unsigned int                          _ngtBondC, _gtBondFtype;
+        unsigned int                          _gtBondFtype;
         std::string                           _gtLengthUnit;
         std::vector<GtBond>                   _gtBond;
         std::string                           _gtAngleFunction;
-        unsigned int                          _ngtAngleC, _gtAngleFtype;
+        unsigned int                          _gtAngleFtype;
         std::string                           _gtAngleUnit;
         std::vector<GtAngle>                  _gtAngle;
         std::vector<std::string>              _gtDihedralFunction;
-        std::vector<unsigned int>             _ngtDihedralC, _gtDihedralFtype;
+        std::vector<unsigned int>             _gtDihedralFtype;
         std::vector<std::vector<GtDihedral> > _gtDihedral;
-        unsigned int                          _nmillerC;
         std::vector<Miller>                   _miller;
         std::string                           _millerTauUnit, _millerAhpUnit;
-        unsigned int                          _nbosqueC;
         std::vector<Bosque>                   _bosque;
         std::string                           _bosquePolarUnit;
-        unsigned int                          _nsymchargesC;
         std::vector<Symcharges>               _symcharges;
-        unsigned int                          _nepC;
         std::vector<Eemprops>                 _eep;
-        unsigned int                          _nerC;
         std::vector<Epref>                    _epr;
 
         void addBtype(const std::string &btype);

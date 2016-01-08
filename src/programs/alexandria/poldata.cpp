@@ -39,29 +39,12 @@ namespace alexandria
 Poldata::Poldata()
     :
       _gtDihedralFunction(egdNR),
-      _ngtDihedralC(egdNR),
       _gtDihedralFtype(egdNR),
       _gtDihedral(egdNR)
 {
-
-
-    _nptypeC      = 0;
-    _nalexandriaC = 0;
-    _nbruleC      = 0;
     _nexcl        = 0;
     _gtBondFtype  = 0;
     _gtAngleFtype = 0;
-    _nmillerC     = 0;
-    _nbosqueC     = 0;
-    _nsymchargesC = 0;
-    _nepC         = 0;
-    _nerC         = 0;
-
-    for (int x = 0; x < egdNR; x++)
-    {
-        _ngtDihedralC[x] = 0;
-        // _gtDihedral[x]=NULL;
-    }
 
     /* Initiate some crucial variables */
     _nexcl          = NOTSET;
@@ -1159,7 +1142,7 @@ int Poldata::searchAngle( std::string atom1, std::string atom2,
     {
         return 0;
     }
-    for (i = 0; (i < _ngtAngleC); i++)
+    for (i = 0; (i < _gtAngle.size()); i++)
     {
         gtB = &(_gtAngle[i]);
         if ((gtB->getAtom2().compare(atom2) == 0) &&
@@ -1307,26 +1290,6 @@ void Poldata::addSymcharges( std::string central,
 
         _symcharges.push_back(symcharges);
     }
-}
-
-int Poldata::getSymcharges( std::string *central,
-                            std::string *attached, int *numattach)
-{
-    Symcharges *sc;
-
-    if (_nsymchargesC < _symcharges.size())
-    {
-        sc = &(_symcharges[_nsymchargesC]);
-        assignStr(central, sc->getCentral());
-        assignStr(attached, sc->getAttached());
-        assignScal(numattach, sc->getNumattach());
-        _nsymchargesC++;
-
-        return 1;
-    }
-    _nsymchargesC = 0;
-
-    return 0;
 }
 
 int Poldata::searchSymcharges( std::string central,
@@ -1603,20 +1566,6 @@ std::string Poldata::getEpref( ChargeDistributionModel eqdModel)
         }
     }
     return "";
-}
-
-int Poldata::listEpref( ChargeDistributionModel *eqdModel, std::string *epref)
-{
-    if (_nerC < _epr.size())
-    {
-        assignScal(eqdModel, _epr[_nerC].getEqdModel());
-        assignStr(epref, _epr[_nerC].getEpref());
-        _nerC++;
-        return 1;
-    }
-    _nerC = 0;
-
-    return 0;
 }
 
 void Poldata::commEemprops( t_commrec *cr)

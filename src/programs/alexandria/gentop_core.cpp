@@ -318,7 +318,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         std::vector<int> &sym_charges)
 {
     std::string  central, attached;
-    int          nattached, nh, ai, aj, anri, anrj;
+    int          nh, ai, aj, anri, anrj;
     int          anr_central, anr_attached, nrq;
     int          hs[8];
     double       qaver, qsum;
@@ -351,11 +351,11 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         }
         else
         {
-            while (pd->getSymcharges(&central,
-                                     &attached, &nattached) == 1)
+            for (SymchargesIterator symcharges = pd->getSymchargesBegin();
+                 symcharges != pd->getSymchargesEnd(); symcharges++)
             {
-                anr_central  = gmx_atomprop_atomnumber(aps, central.c_str());
-                anr_attached = gmx_atomprop_atomnumber(aps, attached.c_str());
+                anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
+                anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());
                 hsmin        = -1;
                 for (int i = 0; (i < atoms->nr); i++)
                 {
@@ -383,9 +383,9 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                                 hsmin = hs[nh-1];
                             }
                         }
-                        if ((nh == nattached) && (hsmin != -1))
+                        if ((nh == symcharges->getNumattach()) && (hsmin != -1))
                         {
-                            for (int j = 0; (j < nattached); j++)
+                            for (int j = 0; (j < symcharges->getNumattach()); j++)
                             {
                                 sym_charges[hs[j]] = hsmin;
                             }

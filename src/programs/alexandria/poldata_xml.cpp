@@ -723,12 +723,12 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr().c_str());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr().c_str());
     }
-    ChargeDistributionModel model;
-    while (pd->listEpref( &model, &epref) == 1)
+    for (EempropsIterator eep = pd->getEempropsBegin();
+         eep != pd->getEempropsEnd(); eep++)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);
-        add_xml_char(grandchild, exml_names[exmlMODEL], pd->getEemtypeName(model).c_str());
-        add_xml_char(grandchild, exml_names[exmlEPREF], epref.c_str());
+        add_xml_char(grandchild, exml_names[exmlMODEL], eep->getName().c_str());
+        add_xml_char(grandchild, exml_names[exmlEPREF], pd->getEpref(eep->getEqdModel()).c_str());
     }
 }
 
