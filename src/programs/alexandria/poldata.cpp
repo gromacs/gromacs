@@ -1159,7 +1159,7 @@ int Poldata::searchAngle( std::string atom1, std::string atom2,
     {
         return 0;
     }
-    for (i = 0; (i < _ngtAngleC); i++)
+    for (i = 0; (i < _gtAngle.size()); i++)
     {
         gtB = &(_gtAngle[i]);
         if ((gtB->getAtom2().compare(atom2) == 0) &&

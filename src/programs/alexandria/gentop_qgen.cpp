@@ -81,7 +81,7 @@ GentopQgen::GentopQgen(Poldata * pd, t_atoms *atoms, gmx_atomprop_t aps,
     _j00.resize(_natom);
     _q.resize(_natom+1);
 
-    _nZeta.resize(_natom);
+    _nZeta.resize(_natom+1);
 
     snew(_x, _natom);
 

@@ -1329,7 +1329,7 @@ class Poldata
         std::string                           _gtLengthUnit;
         std::vector<GtBond>                   _gtBond;
         std::string                           _gtAngleFunction;
-        unsigned int                          _ngtAngleC, _gtAngleFtype;
+        unsigned int                          _gtAngleFtype;
         std::string                           _gtAngleUnit;
         std::vector<GtAngle>                  _gtAngle;
         std::vector<std::string>              _gtDihedralFunction;
