@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,7 @@ gmx_cycles_calibrate(double sampletime)
     return 1.0/static_cast<double>(i.QuadPart);
     /* end of MS Windows implementation */
 
-#elif (defined HAVE_GETTIMEOFDAY)
+#elif HAVE_GETTIMEOFDAY
 
     /*  generic implementation with gettimeofday() */
     struct timeval t1, t2;

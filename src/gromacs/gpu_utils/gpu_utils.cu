@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef HAVE_NVML
+#if HAVE_NVML
 #include <nvml.h>
 #define HAVE_NVML_APPLICATION_CLOCKS (NVML_API_VERSION >= 6)
 #else  /* HAVE_NVML */
@@ -202,7 +202,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     return 0;
 }
 
-#ifdef HAVE_NVML
+#if HAVE_NVML
 /* TODO: We should actually be using md_print_warn in md_logging.c,
  * but we can't include mpi.h in CUDA code.
  */
@@ -324,7 +324,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     {
         return true;
     }
-#ifndef HAVE_NVML
+#if !HAVE_NVML
     int cuda_driver  = 0;
     int cuda_runtime = 0;
     cudaDriverGetVersion(&cuda_driver);

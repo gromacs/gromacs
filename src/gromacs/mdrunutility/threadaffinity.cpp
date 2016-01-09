@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
 #include <cstdio>
 #include <cstring>
 
-#ifdef HAVE_SCHED_AFFINITY
+#if HAVE_SCHED_AFFINITY
 #  include <sched.h>
 #  include <sys/syscall.h>
 #endif
@@ -438,7 +438,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
 #endif
     }
 
-#ifdef HAVE_SCHED_AFFINITY
+#if HAVE_SCHED_AFFINITY
     int       ret;
     cpu_set_t mask_current;
 

@@ -53,7 +53,7 @@
 #include <string>
 #include <vector>
 
-#ifdef HAVE_DIRENT_H
+#if HAVE_DIRENT_H
 #include <dirent.h>
 #endif
 #if GMX_NATIVE_WINDOWS
@@ -155,7 +155,7 @@ class DirectoryEnumerator::Impl
         _finddata_t  finddata;
         bool         bFirst_;
 };
-#elif defined HAVE_DIRENT_H
+#elif HAVE_DIRENT_H
 class DirectoryEnumerator::Impl
 {
     public:

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -316,7 +316,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     MPI_Comm_create(MPI_COMM_WORLD, ms->mpi_group_masters,
                     &ms->mpi_comm_masters);
 
-#if !defined(MPI_IN_PLACE_EXISTS)
+#if !MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(ms->mpb, 1);
     ms->mpb->ibuf        = NULL;

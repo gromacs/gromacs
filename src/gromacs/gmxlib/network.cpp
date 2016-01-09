@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,7 +95,7 @@ t_commrec *init_commrec()
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
 
-#if defined GMX_MPI && !defined MPI_IN_PLACE_EXISTS
+#if defined GMX_MPI && !MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(cr->mpb, 1);
     cr->mpb->ibuf        = NULL;
@@ -342,7 +342,7 @@ void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unus
 #ifndef GMX_MPI
     gmx_call("gmx_sumd");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         if (cr->nc.rank_intra == 0)
@@ -405,7 +405,7 @@ void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unuse
 #ifndef GMX_MPI
     gmx_call("gmx_sumf");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         /* Use two step summing.  */
@@ -467,7 +467,7 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
 #ifndef GMX_MPI
     gmx_call("gmx_sumi");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         /* Use two step summing */
@@ -525,7 +525,7 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
 #ifndef GMX_MPI
     gmx_call("gmx_sumli");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         /* Use two step summing */
@@ -588,7 +588,7 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
 #ifdef GMX_MPI
 static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -611,7 +611,7 @@ static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 #ifdef GMX_MPI
 static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -654,7 +654,7 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 #ifndef GMX_MPI
     gmx_call("gmx_sumi_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
 #else
     /* this is thread-unsafe, but it will do for now: */
@@ -679,7 +679,7 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 #ifndef GMX_MPI
     gmx_call("gmx_sumli_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM,
                   ms->mpi_comm_masters);
 #else
