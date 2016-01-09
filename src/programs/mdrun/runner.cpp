@@ -784,7 +784,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
 
-#ifdef GMX_TARGET_BGQ
+#if GMX_TARGET_BGQ
             md_print_warn(cr, fplog,
                           "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
                           "      BlueGene/Q. You will observe better performance from using the\n"

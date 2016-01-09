@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
 #include <errno.h>
 #include <string.h>
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -532,7 +532,7 @@ static void imd_prepare_master_socket(t_gmx_IMD_setup *IMDsetup)
     int ret;
 
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     /* Winsock requires separate initialization */
     fprintf(stderr, "%s Initializing winsock.\n", IMDstr);
 #ifdef GMX_HAVE_WINSOCK
@@ -660,7 +660,7 @@ static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
     while ((!IMDsetup->clientsocket) && ((int) gmx_get_stop_condition() == gmx_stop_cond_none))
     {
         imd_tryconnect(IMDsetup);
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
         /* for whatever reason, it is called Sleep on windows */
         Sleep(IMDLOOPWAIT);
 #else
@@ -1368,7 +1368,7 @@ void init_IMD(t_inputrec             *ir,
     } /* end master only */
 
     /* Disable IMD if not all the needed functionality is there! */
-#if defined(GMX_NATIVE_WINDOWS) && !defined(GMX_HAVE_WINSOCK)
+#if GMX_NATIVE_WINDOWS && !defined(GMX_HAVE_WINSOCK)
     bIMD = FALSE;
     fprintf(stderr, "Disabling IMD because the winsock library was not found at compile time.\n");
 #endif

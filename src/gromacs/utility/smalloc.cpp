@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -162,7 +162,7 @@ void *save_calloc(const char *name, const char *file, int line,
                    nelem*elsize/1048576.0, name, file, line, rank);
         }
 #endif
-#ifdef GMX_BROKEN_CALLOC
+#if GMX_BROKEN_CALLOC
         /* emulate calloc(3) with malloc/memset on machines with
            a broken calloc, e.g. in -lgmalloc on cray xt3. */
         if ((p = malloc((size_t)nelem*(size_t)elsize)) == NULL)
