@@ -162,7 +162,7 @@
 #endif
 
 /* MPI_IN_PLACE exists for collective operations */
-#cmakedefine MPI_IN_PLACE_EXISTS
+#cmakedefine01 MPI_IN_PLACE_EXISTS
 
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
@@ -228,7 +228,7 @@
 #cmakedefine01 GMX_X11
 
 /* Enable x86 gcc inline assembly */
-#cmakedefine GMX_X86_GCC_INLINE_ASM
+#cmakedefine01 GMX_X86_GCC_INLINE_ASM
 
 /* Define constants useful for handling GPU support */
 #define GMX_GPU_NONE   0
@@ -244,19 +244,19 @@
 #cmakedefine GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
 /* Use NVML */
-#cmakedefine HAVE_NVML
+#cmakedefine01 HAVE_NVML
 
 /* Define relative path to OpenCL kernels */
 #define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
-#cmakedefine HAVE_FSEEKO
+#cmakedefine01 HAVE_FSEEKO
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
-#cmakedefine HAVE__FSEEKI64
+#cmakedefine01 HAVE__FSEEKI64
 
 /* Have io.h (windows)*/
-#cmakedefine HAVE_IO_H
+#cmakedefine01 HAVE_IO_H
 
 /* Define to 1 if you have the posix_memalign() function. */
 #cmakedefine01 HAVE_POSIX_MEMALIGN
@@ -268,28 +268,28 @@
 #cmakedefine01 HAVE__ALIGNED_MALLOC
 
 /* Define to 1 if you have the clock_gettime() function. */
-#cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine01 HAVE_CLOCK_GETTIME
 
 /* Define to 1 if you have the gettimeofday() function. */
-#cmakedefine HAVE_GETTIMEOFDAY
+#cmakedefine01 HAVE_GETTIMEOFDAY
 
 /* Define to 1 if you have the rdtscp instruction. */
 #cmakedefine HAVE_RDTSCP
 
 /* Define to 1 if you have the fsync() function. */
-#cmakedefine HAVE_FSYNC
+#cmakedefine01 HAVE_FSYNC
 
 /* Define to 1 if you have the Windows _commit() function. */
-#cmakedefine HAVE__COMMIT
+#cmakedefine01 HAVE__COMMIT
 
 /* Define to 1 if you have the fileno() function. */
-#cmakedefine HAVE_FILENO
+#cmakedefine01 HAVE_FILENO
 
 /* Define to 1 if you have the _fileno() function. */
-#cmakedefine HAVE__FILENO
+#cmakedefine01 HAVE__FILENO
 
 /* Define to 1 if you have the sigaction() function. */
-#cmakedefine HAVE_SIGACTION
+#cmakedefine01 HAVE_SIGACTION
 
 /* Define for the GNU __builtin_clz() function. */
 #cmakedefine01 HAVE_BUILTIN_CLZ
@@ -313,19 +313,13 @@
 #cmakedefine HAVE_UNISTD_H
 
 /* Define to 1 if yo have the <pwd.h> header file. */
-#cmakedefine HAVE_PWD_H
+#cmakedefine01 HAVE_PWD_H
 
 /* Define to 1 if yo have the <dirent.h> header file. */
-#cmakedefine HAVE_DIRENT_H
+#cmakedefine01 HAVE_DIRENT_H
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-
-/* Define to 1 if you have the <x86intrin.h> header file */
-#cmakedefine HAVE_X86INTRIN_H
-
-/* Define to 1 if you have the <intrin.h> header file */
-#cmakedefine HAVE_INTRIN_H
 
 /* Define to 1 if you have the <sched.h> header */
 #cmakedefine HAVE_SCHED_H
@@ -349,7 +343,7 @@
 #cmakedefine HAVE_SYSCONF
 
 /* Define to 1 if you have the all the affinity functions in sched.h */
-#cmakedefine HAVE_SCHED_AFFINITY
+#cmakedefine01 HAVE_SCHED_AFFINITY
 
 /* Define to 1 if _mm_malloc() is present in either mm_malloc.h,
  * malloc.h or xmmintrin.h, and 0 otherwise. Note that you need to

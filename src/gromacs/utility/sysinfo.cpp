@@ -56,7 +56,7 @@
 #include <Windows.h>
 #include <process.h>
 #endif
-#ifdef HAVE_PWD_H
+#if HAVE_PWD_H
 #include <pwd.h>
 #endif
 #ifdef HAVE_UNISTD_H

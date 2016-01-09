@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -193,7 +193,7 @@ walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_account
 double
 gmx_gettime()
 {
-#if defined HAVE_CLOCK_GETTIME && _POSIX_TIMERS >= 0 && !(defined __bgq__ && defined __clang__)
+#if HAVE_CLOCK_GETTIME && _POSIX_TIMERS >= 0 && !(defined __bgq__ && defined __clang__)
     /* Mac and Windows do not support this. For added fun, Windows
      * defines _POSIX_TIMERS without actually providing the
      * implementation. The BlueGene/Q CNK only supports gettimeofday,
@@ -206,7 +206,7 @@ gmx_gettime()
     seconds = static_cast<double>(t.tv_sec) + 1e-9*t.tv_nsec;
 
     return seconds;
-#elif defined HAVE_GETTIMEOFDAY
+#elif HAVE_GETTIMEOFDAY
     // Note that gettimeofday() is deprecated by POSIX, but since Mac
     // and Windows do not yet support POSIX, we are still stuck.
     // Also, this is the only supported API call on Bluegene/Q.
@@ -229,7 +229,7 @@ gmx_gettime()
 static double
 gmx_gettime_per_thread()
 {
-#if defined HAVE_CLOCK_GETTIME && _POSIX_THREAD_CPUTIME >= 0
+#if HAVE_CLOCK_GETTIME && _POSIX_THREAD_CPUTIME >= 0
     struct timespec t;
     double          seconds;
 

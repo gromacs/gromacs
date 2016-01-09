@@ -262,10 +262,10 @@ void frewind(FILE *fp)
 
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
 {
-#ifdef HAVE_FSEEKO
+#if HAVE_FSEEKO
     return fseeko(stream, offset, whence);
 #else
-#ifdef HAVE__FSEEKI64
+#if HAVE__FSEEKI64
     return _fseeki64(stream, offset, whence);
 #else
     return fseek(stream, offset, whence);
@@ -275,10 +275,10 @@ int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
 
 gmx_off_t gmx_ftell(FILE *stream)
 {
-#ifdef HAVE_FSEEKO
+#if HAVE_FSEEKO
     return ftello(stream);
 #else
-#ifdef HAVE__FSEEKI64
+#if HAVE__FSEEKI64
 #ifndef __MINGW32__
     return _ftelli64(stream);
 #else
@@ -757,9 +757,9 @@ int gmx_fsync(FILE *fp)
         int fn;
 
         /* get the file number */
-#if defined(HAVE_FILENO)
+#if HAVE_FILENO
         fn = fileno(fp);
-#elif defined(HAVE__FILENO)
+#elif HAVE__FILENO
         fn = _fileno(fp);
 #else
         fn = -1;
@@ -768,9 +768,9 @@ int gmx_fsync(FILE *fp)
         /* do the actual fsync */
         if (fn >= 0)
         {
-#if (defined(HAVE_FSYNC))
+#if HAVE_FSYNC
             rc = fsync(fn);
-#elif (defined(HAVE__COMMIT))
+#elif HAVE__COMMIT
             rc = _commit(fn);
 #endif
         }
