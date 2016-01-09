@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,13 +64,15 @@
 
 #ifndef GMX_CPUINFO_STANDALONE
 #    include "config.h"
+#else
+#    define GMX_NATIVE_WINDOWS 0
 #endif
 
 #if defined _MSC_VER
 #    include <intrin.h> // __cpuid()
 #endif
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #    include <windows.h>    // sysinfo(), necessary for topology stuff
 #endif
 
@@ -434,7 +436,7 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
         CPU_CLR(i, &cpuSet);
     }
     sched_setaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
-#elif defined GMX_NATIVE_WINDOWS
+#elif GMX_NATIVE_WINDOWS
     unsigned int   eax, ebx, ecx, edx;
     SYSTEM_INFO    sysinfo;
     GetSystemInfo( &sysinfo );

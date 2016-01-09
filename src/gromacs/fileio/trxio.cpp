@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_USE_PLUGINS
+#if GMX_USE_PLUGINS
 #include "gromacs/fileio/vmdio.h"
 #endif
 
@@ -879,7 +879,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr);
                 break;
             default:
-#ifdef GMX_USE_PLUGINS
+#if GMX_USE_PLUGINS
                 bRet = read_next_vmd_frame(fr);
 #else
                 gmx_fatal(FARGS, "DEATH HORROR in read_next_frame ftp=%s,status=%s",
@@ -1043,7 +1043,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         default:
-#ifdef GMX_USE_PLUGINS
+#if GMX_USE_PLUGINS
             fprintf(stderr, "The file format of %s is not a known trajectory format to GROMACS.\n"
                     "Please make sure that the file is a trajectory!\n"
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"

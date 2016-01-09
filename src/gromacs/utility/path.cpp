@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
 
 #include <sys/stat.h>
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <Windows.h>
 #include <direct.h>
 #else
@@ -84,7 +84,7 @@ const char cDirSeparators[] = "/\\";
  * When reading the PATH environment variable, Unix separates entries
  * with colon, while windows uses semicolon.
  */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 const char cPathSeparator = ';';
 #else
 const char cPathSeparator = ':';
@@ -120,7 +120,7 @@ bool Path::isAbsolute(const char *path)
     {
         return true;
     }
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     return path[0] != '\0' && path[1] == ':' && isDirSeparator(path[2]);
 #else
     return false;
@@ -132,7 +132,7 @@ bool Path::isAbsolute(const std::string &path)
     return isAbsolute(path.c_str());
 }
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 namespace
 {
 struct handle_wrapper
@@ -154,7 +154,7 @@ struct handle_wrapper
 bool Path::isEquivalent(const std::string &path1, const std::string &path2)
 {
     //based on boost_1_56_0/libs/filesystem/src/operations.cpp under BSL
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     // Note well: Physical location on external media is part of the
     // equivalence criteria. If there are no open handles, physical location
     // can change due to defragmentation or other relocations. Thus handles
@@ -351,7 +351,7 @@ void Path::splitPathEnvironment(const std::string        &pathEnv,
 std::vector<std::string> Path::getExecutablePaths()
 {
     std::vector<std::string> result;
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     // Add the local dir since it is not in the path on Windows.
     result.push_back("");
 #endif
@@ -369,7 +369,7 @@ std::string Path::resolveSymlinks(const std::string &path)
      * It doesn't resolve path elements (including "." or ".."), but only
      * resolves the entire path (it does that recursively). */
     std::string result(path);
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
     char        buf[GMX_PATH_MAX];
     int         length;
     while ((length = readlink(result.c_str(), buf, sizeof(buf)-1)) > 0)
@@ -437,7 +437,7 @@ bool File::exists(const char *filename, NotFoundHandler onNotFound)
         std::fclose(test);
         // Windows doesn't allow fopen of directory, so we don't need to check
         // this separately.
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
         struct stat st_buf;
         int         status = stat(filename, &st_buf);
         if (status != 0)
@@ -475,7 +475,7 @@ int Directory::create(const char *path)
     {
         return 0;
     }
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     if (_mkdir(path))
 #else
     if (mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) != 0)
@@ -505,7 +505,7 @@ bool Directory::exists(const char *path)
         }
         return false;
     }
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     return ((_S_IFDIR & info.st_mode) != 0);
 #else
     return S_ISDIR(info.st_mode);

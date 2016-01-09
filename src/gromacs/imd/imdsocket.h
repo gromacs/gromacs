@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
 #include "config.h"
 
 /* Check if we can/should use winsock or standard UNIX sockets. */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
   #ifdef GMX_HAVE_WINSOCK
   #include <Winsock.h>
   #define GMX_IMD
@@ -81,7 +81,7 @@ typedef struct
 
 
 
-#if defined(GMX_NATIVE_WINDOWS) && defined(GMX_HAVE_WINSOCK)
+#if GMX_NATIVE_WINDOWS && defined(GMX_HAVE_WINSOCK)
 /*! \internal
  *
  * \brief Function to initialize winsock

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@
  */
 #include "external/vmd_molfile/molfile_plugin.h"
 #include "external/vmd_molfile/vmddlopen.h"
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
 #include <glob.h>
 #else
 #ifndef _WIN32_IE
@@ -269,7 +269,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     const char     *err;
     int             ret = 0;
     char            pathenv_buffer[GMX_PATH_MAX];
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
     glob_t          globbuf;
     const char     *defpath_suffix = "/plugins/*/molfile";
     const char     *defpathenv     = GMX_VMD_PLUGIN_PATH;
@@ -318,7 +318,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
         }
     }
     strncpy(pathname, pathenv, sizeof(pathname));
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
     strcat(pathname, "/*.so");
     glob(pathname, 0, NULL, &globbuf);
     if (globbuf.gl_pathc == 0)

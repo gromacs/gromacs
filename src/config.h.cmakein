@@ -48,7 +48,7 @@
 /*! \cond */
 
 /* Work around broken calloc() */
-#cmakedefine GMX_BROKEN_CALLOC
+#cmakedefine01 GMX_BROKEN_CALLOC
 
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
 #cmakedefine01 GMX_DISABLE_FFTW_MEASURE
@@ -63,16 +63,16 @@
 #cmakedefine01 GMX_FFT_FFTPACK
 
 /* Target platform is x86 or x86_64 */
-#cmakedefine GMX_TARGET_X86
+#cmakedefine01 GMX_TARGET_X86
 
 /* Target platform is BlueGene/Q */
-#cmakedefine GMX_TARGET_BGQ
+#cmakedefine01 GMX_TARGET_BGQ
 
 /** Define if we are building natively on Windows */
-#cmakedefine GMX_NATIVE_WINDOWS
+#cmakedefine01 GMX_NATIVE_WINDOWS
 
 /** Define if we are building for Cygwin */
-#cmakedefine GMX_CYGWIN
+#cmakedefine01 GMX_CYGWIN
 
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine01 GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
@@ -144,7 +144,7 @@
 #cmakedefine01 GMX_INTERNAL_XDR
 
 /* Compile to use TNG library */
-#cmakedefine GMX_USE_TNG
+#cmakedefine01 GMX_USE_TNG
 
 /* Add support for tracing using Extrae */
 #cmakedefine01 HAVE_EXTRAE
@@ -168,7 +168,7 @@
 #cmakedefine GMX_OPENMP
 
 /* Can and should use nice(3) to set priority */
-#cmakedefine GMX_USE_NICE
+#cmakedefine01 GMX_USE_NICE
 
 /* Maximum number of OpenMP threads supported */
 #define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
@@ -192,7 +192,7 @@
 #cmakedefine01 GMX_CYCLE_SUBCOUNTERS
 
 /* Compile with plugin support */
-#cmakedefine GMX_USE_PLUGINS
+#cmakedefine01 GMX_USE_PLUGINS
 
 /* Fallback path for VMD plug-ins */
 #define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
@@ -245,9 +245,6 @@
 
 /* Use NVML */
 #cmakedefine HAVE_NVML
-
-/* Use OpenCL acceleators */
-#cmakedefine GMX_USE_OPENCL
 
 /* Define relative path to OpenCL kernels */
 #define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"

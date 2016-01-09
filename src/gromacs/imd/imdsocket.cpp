@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
 /*! \brief Define socklen type on Windows. */
 typedef int socklen_t;
@@ -84,7 +84,7 @@ extern int imdsock_winsockinit()
 
 
 /*! \brief Simple error handling. */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #define ERR_ARGS __FILE__, __LINE__, NULL
 #else
 #define ERR_ARGS __FILE__, __LINE__, strerror(errno)
@@ -264,7 +264,7 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
 extern int imdsock_write(IMDSocket *sock, const char *buffer, int length)
 {
     /* No read and write on windows, we have to use send and recv instead... */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
     return send(sock->sockfd, (const char *) buffer, length, NOFLAGS);
 #else
@@ -279,7 +279,7 @@ extern int imdsock_write(IMDSocket *sock, const char *buffer, int length)
 extern int imdsock_read(IMDSocket *sock, char *buffer, int length)
 {
     /* See above... */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
     return recv(sock->sockfd, (char *) buffer, length, NOFLAGS);
 #else
@@ -325,7 +325,7 @@ extern int imdsock_destroy(IMDSocket *sock)
         return 1;
     }
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     /* On Windows, this function is called closesocket */
 #ifdef GMX_HAVE_WINSOCK
     ret = closesocket(sock->sockfd);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <io.h>
 #endif
 
@@ -76,7 +76,7 @@ namespace gmx
 
 // TODO: Consider whether checking the return value of closing would be useful,
 // and what could we do if it fails?
-#if defined GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 // TODO: Consider if Windows provides more error details through other APIs.
 class DirectoryEnumerator::Impl
 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <cstring>
 
 #include <fcntl.h>
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <io.h>
 #include <sys/locking.h>
 #endif
@@ -1854,7 +1854,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
-#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
 #endif
@@ -1863,7 +1863,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         "WARNING: The checkpoint file was generated with integrator %s,\n"
         "         while the simulation uses integrator %s\n\n";
 
-#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start  = 0;
@@ -2128,7 +2128,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                 errno = ENOSYS;
                 if (1)
 
-#elif defined GMX_NATIVE_WINDOWS
+#elif GMX_NATIVE_WINDOWS
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
 #else
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
@@ -2213,7 +2213,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
             if (i != 0) /*log file is already seeked to correct position */
             {
-#if !defined(GMX_NATIVE_WINDOWS) || !defined(GMX_FAHCORE)
+#if !GMX_NATIVE_WINDOWS || !defined(GMX_FAHCORE)
                 /* For FAHCORE, we do this elsewhere*/
                 rc = gmx_truncate(outputfiles[i].filename, outputfiles[i].offset);
                 if (rc != 0)
