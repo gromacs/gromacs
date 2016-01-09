@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 #include "tng/tng_io.h"
 #endif
 
@@ -81,7 +81,7 @@ void gmx_tng_open(const char       *filename,
                   char              mode,
                   tng_trajectory_t *tng)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     /* First check whether we have to make a backup,
      * only for writing, not for read or append.
      */
@@ -161,7 +161,7 @@ void gmx_tng_close(tng_trajectory_t *tng)
     /* We have to check that tng is set because
      * tng_util_trajectory_close wants to return a NULL in it, and
      * gives a fatal error if it is NULL. */
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     if (tng)
     {
         tng_util_trajectory_close(tng);
@@ -171,7 +171,7 @@ void gmx_tng_close(tng_trajectory_t *tng)
 #endif
 }
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
                                        const char          *moleculeName,
                                        const t_atoms       *atoms,
@@ -469,7 +469,7 @@ void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
                                 const gmx_mtop_t *mtop,
                                 const t_inputrec *ir)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_tng_add_mtop(tng, mtop);
     set_writing_intervals(tng, FALSE, ir);
     tng_time_per_frame_set(tng, ir->delta_t * PICO);
@@ -480,7 +480,7 @@ void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
 #endif
 }
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 /* Check if all atoms in the molecule system are selected
  * by a selection group of type specified by gtype. */
 static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
@@ -684,7 +684,7 @@ static void add_selection_groups(tng_trajectory_t  tng,
 void gmx_tng_set_compression_precision(tng_trajectory_t tng,
                                        real             prec)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     tng_compression_precision_set(tng, prec);
 #else
     GMX_UNUSED_VALUE(tng);
@@ -696,7 +696,7 @@ void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
                                       const gmx_mtop_t *mtop,
                                       const t_inputrec *ir)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_tng_add_mtop(tng, mtop);
     add_selection_groups(tng, mtop);
     set_writing_intervals(tng, TRUE, ir);
@@ -720,7 +720,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                     const rvec      *v,
                     const rvec      *f)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     typedef tng_function_status (*write_data_func_pointer)(tng_trajectory_t,
                                                            const gmx_int64_t,
                                                            const double,
@@ -840,7 +840,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
 
 void fflush_tng(tng_trajectory_t tng)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     if (!tng)
     {
         return;
@@ -853,7 +853,7 @@ void fflush_tng(tng_trajectory_t tng)
 
 float gmx_tng_get_time_of_final_frame(tng_trajectory_t tng)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_int64_t nFrames;
     double      time;
     float       fTime;

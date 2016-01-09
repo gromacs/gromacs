@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <direct.h>   // For _chdir() and _getcwd()
 #include <io.h>
 #include <windows.h>
@@ -292,7 +292,7 @@ gmx_off_t gmx_ftell(FILE *stream)
 
 int gmx_truncate(const char *filename, gmx_off_t length)
 {
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     FILE *fp = fopen(filename, "rb+");
     if (fp == NULL)
     {
@@ -354,7 +354,7 @@ gmx_bool gmx_fexist(const char *fname)
     if (test == NULL)
     {
         /*Windows doesn't allow fopen of directory - so we need to check this seperately */
-        #ifdef GMX_NATIVE_WINDOWS
+        #if GMX_NATIVE_WINDOWS
         DWORD attr = GetFileAttributes(fname);
         return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
         #else
@@ -583,7 +583,7 @@ void gmx_tmpnam(char *buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     _mktemp(buf);
     if (buf == NULL)
     {
@@ -624,7 +624,7 @@ FILE *gmx_fopen_temporary(char *buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     _mktemp(buf);
     if (buf == NULL)
     {
@@ -654,7 +654,7 @@ FILE *gmx_fopen_temporary(char *buf)
 
 int gmx_file_rename(const char *oldname, const char *newname)
 {
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
     /* under unix, rename() is atomic (at least, it should be). */
     return rename(oldname, newname);
 #else
@@ -800,7 +800,7 @@ int gmx_fsync(FILE *fp)
 
 void gmx_chdir(const char *directory)
 {
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     int rc = _chdir(directory);
 #else
     int rc = chdir(directory);
@@ -814,7 +814,7 @@ void gmx_chdir(const char *directory)
 
 void gmx_getcwd(char *buffer, size_t size)
 {
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     char *pdum = _getcwd(buffer, size);
 #else
     char *pdum = getcwd(buffer, size);
