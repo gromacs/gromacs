@@ -1254,7 +1254,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         /* Check whether everything is still allright */
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
             && MASTER(cr)
 #endif
             )

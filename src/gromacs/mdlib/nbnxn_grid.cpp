@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1616,7 +1616,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#if (defined GMX_OPENMP) && !(defined __clang_analyzer__)
+#if GMX_OPENMP && !(defined __clang_analyzer__)
     // cppcheck-suppress unreadVariable
     int nthreads = gmx_omp_nthreads_get(emntPairsearch);
 #endif

@@ -122,7 +122,7 @@ void print_time(FILE                     *out,
     double dt, elapsed_seconds, time_per_step;
     char   buf[48];
 
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
     if (!PAR(cr))
 #endif
     {
@@ -157,7 +157,7 @@ void print_time(FILE                     *out,
                     ir->delta_t/1000*24*60*60/time_per_step);
         }
     }
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
     if (PAR(cr))
     {
         fprintf(out, "\n");

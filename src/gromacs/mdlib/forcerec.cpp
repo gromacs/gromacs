@@ -2218,7 +2218,7 @@ static void init_nb_verlet(FILE                *fp,
          * texture objects are used), but as this is initialization code, there
          * is no point in complicating things.
          */
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
         if (PAR(cr))
         {
             gmx_barrier(cr);
@@ -3259,7 +3259,7 @@ void free_gpu_resources(const t_forcerec     *fr,
          * Note: as only PP ranks need to free GPU resources, so it is safe to
          * not call the barrier on PME ranks.
          */
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
         if (PAR(cr))
         {
             gmx_barrier(cr);

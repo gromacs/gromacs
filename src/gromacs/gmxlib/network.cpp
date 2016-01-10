@@ -82,7 +82,7 @@ t_commrec *init_commrec()
 
     snew(cr, 1);
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
 #else
     cr->mpi_comm_mysim   = NULL;
@@ -113,7 +113,7 @@ t_commrec *init_commrec()
 
 t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 {
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     t_commrec *cr;
 
     /* make a thread-specific commrec */
@@ -152,7 +152,7 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc = &cr->nc;
 
     nc->bUse = FALSE;
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
 #ifdef GMX_MPI
     int n, rank;
 
@@ -228,7 +228,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
     int nrank_intranode, rank_intranode;
     int nrank_pp_intranode, rank_pp_intranode;
     /* thread-MPI is not initialized when not running in parallel */
-#if defined GMX_MPI && !defined GMX_THREAD_MPI
+#if defined GMX_MPI && !GMX_THREAD_MPI
     int nrank_world, rank_world;
     int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
 
