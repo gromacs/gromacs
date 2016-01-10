@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 
 #include "gromacs/utility/gmxmpi.h"
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 
 #include <memory>
 #include <sstream>
@@ -184,7 +184,7 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)
 //! \cond internal
 void gmx::test::initMPIOutput()
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     int size, rank;
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);

@@ -100,7 +100,7 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #undef FUNCTION_DECLARATION_ONLY
 
 /* Now generate the function definitions if we are using a single compilation unit. */
-#ifdef GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+#if GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_noprune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_prune.cu"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_noprune.cu"

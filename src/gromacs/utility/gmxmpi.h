@@ -52,7 +52,7 @@
 #include "config.h"
 
 /*! \cond */
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 /* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
 #define MPICH_SKIP_MPICXX 1
 #define OMPI_SKIP_MPICXX 1
@@ -74,7 +74,7 @@
 #endif
 #endif /*MPI_INT64_T*/
 #else
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
 #include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
 #include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
 #else

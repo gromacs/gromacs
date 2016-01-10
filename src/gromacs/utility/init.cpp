@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"
 #endif
 
@@ -57,7 +57,7 @@ namespace gmx
 
 namespace
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 //! Maintains global counter of attempts to initialize MPI
 int g_initializationCounter = 0;
 #endif
@@ -65,7 +65,7 @@ int g_initializationCounter = 0;
 
 void init(int *argc, char ***argv)
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     int isInitialized = 0, isFinalized = 0;
     MPI_Finalized(&isFinalized);
     GMX_RELEASE_ASSERT(!isFinalized, "Invalid attempt to initialize MPI after finalization");
@@ -84,7 +84,7 @@ void init(int *argc, char ***argv)
 #ifdef GMX_FAHCORE
         fah_MPI_Init(argc, argv);
 #else
-#    ifdef GMX_OPENMP
+#    if GMX_OPENMP
         /* Formally we need to use MPI_Init_thread and ask for MPI_THREAD_FUNNELED
          * level of thread support when using OpenMP. However, in practice we
          * have never seen any problems with just using MPI_Init(), and some MPI
@@ -127,7 +127,7 @@ void init(int *argc, char ***argv)
 
 void finalize()
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(0 < g_initializationCounter, "Excess attempt to finalize MPI");
     // Bump the counter to record this finalization event
     g_initializationCounter--;

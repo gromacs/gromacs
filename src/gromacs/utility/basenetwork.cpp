@@ -66,7 +66,7 @@ int gmx_node_num()
 #ifndef GMX_MPI
     return 1;
 #else
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     if (!gmx_mpi_initialized())
     {
         return 1;
@@ -83,7 +83,7 @@ int gmx_node_rank()
 #ifndef GMX_MPI
     return 0;
 #else
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     if (!gmx_mpi_initialized())
     {
         return 0;
@@ -95,7 +95,7 @@ int gmx_node_rank()
 #endif
 }
 
-#if defined GMX_LIB_MPI && GMX_TARGET_BGQ
+#if GMX_LIB_MPI && GMX_TARGET_BGQ
 #ifdef __clang__
 /* IBM's declaration of this function in
  * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
@@ -163,7 +163,7 @@ static int mpi_hostname_hash()
 
 #if GMX_TARGET_BGQ
     hash_int = bgq_nodenum();
-#elif defined GMX_LIB_MPI
+#elif GMX_LIB_MPI
     int  resultlen;
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
@@ -224,7 +224,7 @@ void gmx_broadcast_world(int size, void *buffer)
 #endif
 }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 void gmx_abort(int errorno)
 {
     MPI_Abort(MPI_COMM_WORLD, errorno);

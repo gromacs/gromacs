@@ -150,12 +150,12 @@
 #cmakedefine01 HAVE_EXTRAE
 
 /* Use MPI (with mpicc) for parallelization */
-#cmakedefine GMX_LIB_MPI
+#cmakedefine01 GMX_LIB_MPI
 
 /* Use threads_mpi for parallelization */
-#cmakedefine GMX_THREAD_MPI
+#cmakedefine01 GMX_THREAD_MPI
 
-#if defined GMX_LIB_MPI || defined GMX_THREAD_MPI
+#if GMX_LIB_MPI || GMX_THREAD_MPI
 /* Make a parallel version of GROMACS using message passing
    (MPI or thread_mpi) */
 #define GMX_MPI
@@ -165,7 +165,7 @@
 #cmakedefine01 MPI_IN_PLACE_EXISTS
 
 /* Use OpenMP multithreading */
-#cmakedefine GMX_OPENMP
+#cmakedefine01 GMX_OPENMP
 
 /* Can and should use nice(3) to set priority */
 #cmakedefine01 GMX_USE_NICE
@@ -241,7 +241,7 @@
 #cmakedefine GMX_CUDA_VERSION @GMX_CUDA_VERSION@
 
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
-#cmakedefine GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+#cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
 /* Use NVML */
 #cmakedefine01 HAVE_NVML

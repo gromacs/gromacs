@@ -368,7 +368,7 @@ gmx_set_thread_affinity(FILE                *fplog,
             if (cr->nnodes > 1)
             {
 #ifdef GMX_MPI
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
                 sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
 #else           /* GMX_LIB_MPI */
                 sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
@@ -433,7 +433,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
         {
             return;
         }
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
         return;
 #endif
     }
@@ -480,7 +480,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     gmx_bool  bAllSet_All;
 
     MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);

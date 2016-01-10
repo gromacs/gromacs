@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,16 +112,11 @@ static void pick_module_nthreads(FILE *fplog, int m,
                                  gmx_bool bFullOmpSupport,
                                  gmx_bool bSepPME)
 {
-    char    *env;
-    int      nth;
-    char     sbuf[STRLEN];
-    gmx_bool bOMP;
+    char      *env;
+    int        nth;
+    char       sbuf[STRLEN];
 
-#ifdef GMX_OPENMP
-    bOMP = TRUE;
-#else
-    bOMP = FALSE;
-#endif /* GMX_OPENMP */
+    const bool bOMP = GMX_OPENMP;
 
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
@@ -242,7 +237,7 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
     do about it. */
 static void manage_number_of_openmp_threads(FILE               *fplog,
                                             const t_commrec    *cr,
-                                            gmx_bool            bOMP,
+                                            bool                bOMP,
                                             int                 nthreads_hw_avail,
                                             int                 omp_nthreads_req,
                                             int                 omp_nthreads_pme_req,
@@ -254,7 +249,7 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
     int      nth;
     char    *env;
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety, the
      * detection is done on the master only. It is not thread-safe
      * with multiple simulations, but that's anyway not supported by
@@ -370,7 +365,7 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
     /* set the number of threads globally */
     if (bOMP)
     {
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
         if (bThisNodePMEOnly)
         {
             gmx_omp_set_num_threads(modth.gnth_pme);
@@ -400,7 +395,7 @@ reportOpenmpSettings(FILE            *fplog,
                      gmx_bool         bFullOmpSupport,
                      gmx_bool         bSepPME)
 {
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     const char *mpi_str = "per tMPI thread";
 #else
     const char *mpi_str = "per MPI process";
@@ -500,7 +495,7 @@ issueOversubscriptionWarning(FILE            *fplog,
 #ifdef GMX_MPI
         if (modth.gnth == 1)
         {
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
             sprintf(sbuf, "thread-MPI threads");
 #else
             sprintf(sbuf, "MPI processes");
@@ -523,14 +518,10 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int      nppn;
-    gmx_bool bSepPME, bOMP;
+    int        nppn;
+    gmx_bool   bSepPME;
 
-#ifdef GMX_OPENMP
-    bOMP = TRUE;
-#else
-    bOMP = FALSE;
-#endif /* GMX_OPENMP */
+    const bool bOMP = GMX_OPENMP;
 
     /* number of MPI processes/threads per physical node */
     nppn = cr->nrank_intranode;
@@ -543,7 +534,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                                     omp_nthreads_req, omp_nthreads_pme_req,
                                     bThisNodePMEOnly, bFullOmpSupport,
                                     nppn, bSepPME);
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     /* Non-master threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain
      * the setup is complete. */

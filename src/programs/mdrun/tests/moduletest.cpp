@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,11 +73,11 @@ namespace test
 namespace
 {
 
-#if defined(GMX_THREAD_MPI) || defined(DOXYGEN)
+#if GMX_THREAD_MPI || defined(DOXYGEN)
 //! Number of tMPI threads for child mdrun call.
 int g_numThreads = 1;
 #endif
-#if defined(GMX_OPENMP) || defined(DOXYGEN)
+#if GMX_OPENMP || defined(DOXYGEN)
 //! Number of OpenMP threads for child mdrun call.
 int g_numOpenMPThreads = 1;
 #endif
@@ -85,11 +85,11 @@ int g_numOpenMPThreads = 1;
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     options->addOption(IntegerOption("nt").store(&g_numThreads)
                            .description("Number of thread-MPI threads/ranks for child mdrun calls"));
 #endif
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun calls"));
 #endif
@@ -111,7 +111,7 @@ SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
     edrFileName_(fixture_->fileManager_.getTemporaryFilePath(".edr")),
     nsteps_(-2)
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
 #endif
 }
@@ -179,7 +179,7 @@ int
 SimulationRunner::callGrompp()
 {
     int returnValue = 0;
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     // When compiled with external MPI, we're trying to run mdrun with
     // MPI, but we need to make sure that we only do grompp on one
     // rank
@@ -188,7 +188,7 @@ SimulationRunner::callGrompp()
     {
         returnValue = callGromppOnThisRank();
     }
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     // Make sure rank zero has written the .tpr file before other
     // ranks try to read it. Thread-MPI and serial do this just fine
     // on their own.
@@ -222,7 +222,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 
 #ifdef GMX_MPI
 #  if GMX_GPU != GMX_GPU_NONE
-#    ifdef GMX_THREAD_MPI
+#    if GMX_THREAD_MPI
     int         numGpusNeeded = g_numThreads;
 #    else   /* Must be real MPI */
     int         numGpusNeeded = gmx_node_num();
@@ -232,25 +232,25 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 #  endif
 #endif
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     caller.addOption("-ntmpi", g_numThreads);
 #endif
 
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-#if defined GMX_GPU
+#if GMX_GPU != GMX_GPU_NONE
     /* TODO Ideally, with real MPI, we could call
      * gmx_collect_hardware_mpi() here and find out how many nodes
      * mdrun will run on. For now, we assume that we're running on one
      * node regardless of the number of ranks, because that's true in
      * Jenkins and for most developers running the tests. */
     int numberOfNodes = 1;
-#if defined GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     /* Can't use gmx_node_num() because it is only valid after spawn of thread-MPI threads */
     int numberOfRanks = g_numThreads;
-#elif defined GMX_LIB_MPI
+#elif GMX_LIB_MPI
     int numberOfRanks = gmx_node_num();
 #else
     int numberOfRanks = 1;
@@ -279,7 +279,7 @@ SimulationRunner::callMdrun()
 
 MdrunTestFixtureBase::MdrunTestFixtureBase()
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
 #endif
 }
