@@ -230,14 +230,14 @@ void gmx_print_version_info(FILE *fp)
 #endif
     fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
 #elif defined(GMX_MPI)
     fprintf(fp, "MPI library:        MPI\n");
 #else
     fprintf(fp, "MPI library:        none\n");
 #endif
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     fprintf(fp, "OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)\n", GMX_OPENMP_MAX_THREADS);
 #else
     fprintf(fp, "OpenMP support:     disabled\n");

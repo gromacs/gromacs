@@ -73,7 +73,7 @@
 
 /* With multiple compilation units this ensures that texture refs are available
    in the the kernels' compilation units. */
-#ifndef GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+#if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 /*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
 extern texture<float, 1, cudaReadModeElementType> nbfp_texref;
 

@@ -62,7 +62,7 @@
 #endif
 #endif
 
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
 /* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */
 #define FFT5D_THREADS
 /* requires fftw compiled with openmp */

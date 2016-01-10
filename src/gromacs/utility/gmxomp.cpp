@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
 #include <omp.h>
 #endif
 
@@ -60,7 +60,7 @@
 
 int gmx_omp_get_max_threads(void)
 {
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     return omp_get_max_threads();
 #else
     return 1;
@@ -69,7 +69,7 @@ int gmx_omp_get_max_threads(void)
 
 int gmx_omp_get_num_procs(void)
 {
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     return omp_get_num_procs();
 #else
     return 1;
@@ -78,7 +78,7 @@ int gmx_omp_get_num_procs(void)
 
 int gmx_omp_get_thread_num(void)
 {
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     return omp_get_thread_num();
 #else
     return 0;
@@ -87,7 +87,7 @@ int gmx_omp_get_thread_num(void)
 
 void gmx_omp_set_num_threads(int num_threads)
 {
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     omp_set_num_threads(num_threads);
 #else
     GMX_UNUSED_VALUE(num_threads);
@@ -99,7 +99,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
     bool shouldSetAffinity = true;
 
     *message = NULL;
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     /* We assume that the affinity setting is available on all platforms
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
      * will only get a warning. */
