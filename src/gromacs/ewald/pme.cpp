@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -216,7 +216,7 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     atc->nslab     = 1;
     atc->nodeid    = 0;
     atc->pd_nalloc = 0;
-#ifdef GMX_MPI
+#if GMX_MPI
     if (pme->nnodes > 1)
     {
         atc->mpi_comm = pme->mpi_comm_d[dimind];
@@ -270,7 +270,7 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
 static void
 init_overlap_comm(pme_overlap_t *  ol,
                   int              norder,
-#ifdef GMX_MPI
+#if GMX_MPI
                   MPI_Comm         comm,
 #endif
                   int              nnodes,
@@ -282,7 +282,7 @@ init_overlap_comm(pme_overlap_t *  ol,
     pme_grid_comm_t *pgc;
     gmx_bool         bCont;
     int              fft_start, fft_end, send_index1, recv_index1;
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Status       stat;
 
     ol->mpi_comm = comm;
@@ -384,7 +384,7 @@ init_overlap_comm(pme_overlap_t *  ol,
         pgc->recv_nindex = std::max(0, recv_index1 - pgc->recv_index0);
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     /* Communicate the buffer sizes to receive */
     for (b = 0; b < ol->noverlap_nodes; b++)
     {
@@ -492,7 +492,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->nnodes_major        = nnodes_major;
     pme->nnodes_minor        = nnodes_minor;
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (nnodes_major*nnodes_minor > 1)
     {
         pme->mpi_comm = cr->mpi_comm_mygroup;
@@ -512,14 +512,14 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
 
     if (pme->nnodes == 1)
     {
-#ifdef GMX_MPI
+#if GMX_MPI
         pme->mpi_comm_d[0] = MPI_COMM_NULL;
         pme->mpi_comm_d[1] = MPI_COMM_NULL;
 #endif
         pme->ndecompdim   = 0;
         pme->nodeid_major = 0;
         pme->nodeid_minor = 0;
-#ifdef GMX_MPI
+#if GMX_MPI
         pme->mpi_comm_d[0] = pme->mpi_comm_d[1] = MPI_COMM_NULL;
 #endif
     }
@@ -527,7 +527,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     {
         if (nnodes_minor == 1)
         {
-#ifdef GMX_MPI
+#if GMX_MPI
             pme->mpi_comm_d[0] = pme->mpi_comm;
             pme->mpi_comm_d[1] = MPI_COMM_NULL;
 #endif
@@ -538,7 +538,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
         }
         else if (nnodes_major == 1)
         {
-#ifdef GMX_MPI
+#if GMX_MPI
             pme->mpi_comm_d[0] = MPI_COMM_NULL;
             pme->mpi_comm_d[1] = pme->mpi_comm;
 #endif
@@ -554,7 +554,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
             }
             pme->ndecompdim = 2;
 
-#ifdef GMX_MPI
+#if GMX_MPI
             MPI_Comm_split(pme->mpi_comm, pme->nodeid % nnodes_minor,
                            pme->nodeid, &pme->mpi_comm_d[0]);  /* My communicator along major dimension */
             MPI_Comm_split(pme->mpi_comm, pme->nodeid/nnodes_minor,
@@ -573,7 +573,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
 
     /* Check if any of the PME MPI ranks uses threads */
     use_threads = (pme->nthread > 1 ? 1 : 0);
-#ifdef GMX_MPI
+#if GMX_MPI
     if (pme->nnodes > 1)
     {
         MPI_Allreduce(&use_threads, &sum_use_threads, 1, MPI_INT,
@@ -619,7 +619,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     {
         double imbal;
 
-#ifdef GMX_MPI
+#if GMX_MPI
         MPI_Type_contiguous(DIM, GMX_MPI_REAL, &(pme->rvec_mpi));
         MPI_Type_commit(&(pme->rvec_mpi));
 #endif
@@ -652,7 +652,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
      * but we do need the overlap in x because of the communication order.
      */
     init_overlap_comm(&pme->overlap[0], pme->pme_order,
-#ifdef GMX_MPI
+#if GMX_MPI
                       pme->mpi_comm_d[0],
 #endif
                       pme->nnodes_major, pme->nodeid_major,
@@ -664,7 +664,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
      * extra for the offset. That's what the (+1)*pme->nkz is for.
      */
     init_overlap_comm(&pme->overlap[1], pme->pme_order,
-#ifdef GMX_MPI
+#if GMX_MPI
                       pme->mpi_comm_d[1],
 #endif
                       pme->nnodes_minor, pme->nodeid_minor,
@@ -1063,7 +1063,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 wrap_periodic_pmegrid(pme, grid);
 
                 /* sum contributions to local grid from other nodes */
-#ifdef GMX_MPI
+#if GMX_MPI
                 if (pme->nnodes > 1)
                 {
                     gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_FORWARD);
@@ -1180,7 +1180,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         if (bCalcF)
         {
             /* distribute local grid to all nodes */
-#ifdef GMX_MPI
+#if GMX_MPI
             if (pme->nnodes > 1)
             {
                 gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_BACKWARD);
@@ -1341,7 +1341,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     {
                         wrap_periodic_pmegrid(pme, grid);
                         /* sum contributions to local grid from other nodes */
-#ifdef GMX_MPI
+#if GMX_MPI
                         if (pme->nnodes > 1)
                         {
                             gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_FORWARD);
@@ -1465,7 +1465,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     } /*#pragma omp parallel*/
 
                     /* distribute local grid to all nodes */
-#ifdef GMX_MPI
+#if GMX_MPI
                     if (pme->nnodes > 1)
                     {
                         gmx_sum_qgrid_dd(pme, grid, GMX_SUM_GRID_BACKWARD);

@@ -220,7 +220,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
         caller.addOption("-nsteps", nsteps_);
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
 #  if GMX_GPU != GMX_GPU_NONE
 #    if GMX_THREAD_MPI
     int         numGpusNeeded = g_numThreads;

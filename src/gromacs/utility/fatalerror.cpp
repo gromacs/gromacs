@@ -56,7 +56,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 
-#ifdef GMX_MPI
+#if GMX_MPI
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #endif
@@ -218,7 +218,7 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
     std::fflush(stdout);
     std::fflush(stderr);
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (gmx_mpi_initialized())
     {
         switch (exitType)

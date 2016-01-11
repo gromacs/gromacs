@@ -232,7 +232,7 @@ void gmx_print_version_info(FILE *fp)
 
 #if GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
-#elif defined(GMX_MPI)
+#elif GMX_MPI
     fprintf(fp, "MPI library:        MPI\n");
 #else
     fprintf(fp, "MPI library:        none\n");

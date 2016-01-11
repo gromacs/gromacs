@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -471,7 +471,7 @@ void calc_listed(const struct gmx_multisim_t *ms,
                             idef->il[F_DISRES].iatoms,
                             idef->iparams, x, pbc_null,
                             fcd, hist);
-#ifdef GMX_MPI
+#if GMX_MPI
             if (fcd->disres.nsystems > 1)
             {
                 gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);

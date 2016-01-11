@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -656,7 +656,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     const char filename[]     = "benchtest.log";
 
     /* This string should always be identical to the one in copyrite.c,
-     * gmx_print_version_info() in the defined(GMX_MPI) section */
+     * gmx_print_version_info() in the GMX_MPI section */
     const char match_mpi[]     = "MPI library:        MPI";
     const char match_mdrun[]   = "Executable: ";
     const char match_gpu[]     = "GPU support:        enabled";

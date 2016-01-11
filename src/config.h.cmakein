@@ -115,7 +115,7 @@
 
 /* IBM VSX was selected as SIMD instructions (Power 7 and later) */
 #cmakedefine01 GMX_SIMD_IBM_VSX
- 
+
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
 #cmakedefine01 GMX_SIMD_SPARC64_HPC_ACE
 
@@ -155,11 +155,9 @@
 /* Use threads_mpi for parallelization */
 #cmakedefine01 GMX_THREAD_MPI
 
-#if GMX_LIB_MPI || GMX_THREAD_MPI
 /* Make a parallel version of GROMACS using message passing
    (MPI or thread_mpi) */
-#define GMX_MPI
-#endif
+#define GMX_MPI (GMX_LIB_MPI || GMX_THREAD_MPI)
 
 /* MPI_IN_PLACE exists for collective operations */
 #cmakedefine01 MPI_IN_PLACE_EXISTS
@@ -350,7 +348,7 @@
  * conditionally include the three headers too before using _mm_malloc().
  */
 #cmakedefine01 HAVE__MM_MALLOC
- 
+
 /* Define if SIGUSR1 is present */
 #cmakedefine01 HAVE_SIGUSR1
 

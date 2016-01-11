@@ -114,7 +114,7 @@ const int nthreads_omp_faster_gpu_fac   =  2;
  * we first try 6 OpenMP threads and then less until the number of MPI ranks
  * is divisible by the number of GPUs.
  */
-#if GMX_OPENMP && defined GMX_MPI
+#if GMX_OPENMP && GMX_MPI
 const int nthreads_omp_mpi_ok_max              =  8;
 const int nthreads_omp_mpi_ok_min_cpu          =  1;
 #endif
@@ -159,7 +159,7 @@ static int nthreads_omp_efficient_max(int gmx_unused       nrank,
                                       const gmx::CpuInfo  &cpuInfo,
                                       gmx_bool             bUseGPU)
 {
-#if GMX_OPENMP && defined GMX_MPI
+#if GMX_OPENMP && GMX_MPI
     if (nrank > 1)
     {
         return nthreads_omp_mpi_ok_max;
@@ -464,7 +464,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         t_commrec           *cr,
                                         FILE                *fplog)
 {
-#if GMX_OPENMP && defined GMX_MPI
+#if GMX_OPENMP && GMX_MPI
     int         nth_omp_min, nth_omp_max, ngpu;
     char        buf[1000];
 #if GMX_THREAD_MPI
@@ -594,7 +594,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     /* Check if we have more than 1 physical core, if detected,
      * or more than 1 hardware thread if physical cores were not detected.
      */
-#if !GMX_OPENMP && !(defined GMX_MPI)
+#if !GMX_OPENMP && !GMX_MPI
     if ((hwinfo->ncore > 1) ||
         (hwinfo->ncore == 0 && hwinfo->nthreads_hw_avail > 1))
     {

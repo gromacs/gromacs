@@ -1293,7 +1293,7 @@ static void init_imd_prepare_for_x_assembly(t_commrec *cr, rvec x[], t_gmx_IMD_s
     }
 
     /* Communicate initial coordinates xa_old to all processes */
-#ifdef GMX_MPI
+#if GMX_MPI
     if (PAR(cr))
     {
         gmx_bcast(IMDsetup->nat * sizeof(IMDsetup->xa_old[0]), IMDsetup->xa_old, cr);

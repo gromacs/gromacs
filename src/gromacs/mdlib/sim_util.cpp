@@ -833,7 +833,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                  fr->shift_vec, nbv->grp[0].nbat);
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
         gmx_bool bBS;
@@ -1588,7 +1588,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         pr_rvecs(debug, 0, "cgcm", fr->cg_cm, top->cgs.nr);
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
         gmx_bool bBS;
@@ -2520,7 +2520,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
     if (cr->nnodes > 1)
     {
         snew(nrnb_tot, 1);
-#ifdef GMX_MPI
+#if GMX_MPI
         MPI_Allreduce(nrnb->n, nrnb_tot->n, eNRNB, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
 #endif
@@ -2534,7 +2534,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
     elapsed_time_over_all_ranks                  = elapsed_time;
     elapsed_time_over_all_threads                = walltime_accounting_get_elapsed_time_over_all_threads(walltime_accounting);
     elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
-#ifdef GMX_MPI
+#if GMX_MPI
     if (cr->nnodes > 1)
     {
         /* reduce elapsed_time over all MPI ranks in the current simulation */
