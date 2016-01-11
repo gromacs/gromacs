@@ -883,7 +883,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
-#ifndef GMX_MPI
+#if !GMX_MPI
                   "but %s was compiled without threads or MPI enabled"
 #else
 #if GMX_THREAD_MPI
@@ -1055,7 +1055,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
-#ifdef GMX_MPI
+#if GMX_MPI
     if (MULTISIM(cr))
     {
         md_print_info(cr, fplog,

@@ -73,7 +73,7 @@ static void pull_reduce_real(t_commrec   *cr,
         }
         else
         {
-#ifdef GMX_MPI
+#if GMX_MPI
 #if MPI_IN_PLACE_EXISTS
             MPI_Allreduce(MPI_IN_PLACE, data, n, GMX_MPI_REAL, MPI_SUM,
                           comm->mpi_comm_com);
@@ -113,7 +113,7 @@ static void pull_reduce_double(t_commrec   *cr,
         }
         else
         {
-#ifdef GMX_MPI
+#if GMX_MPI
 #if MPI_IN_PLACE_EXISTS
             MPI_Allreduce(MPI_IN_PLACE, data, n, MPI_DOUBLE, MPI_SUM,
                           comm->mpi_comm_com);

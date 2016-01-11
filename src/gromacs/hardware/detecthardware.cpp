@@ -170,7 +170,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 
     ngpu = gpu_info->n_dev;
 
-#if defined GMX_MPI && !GMX_THREAD_MPI
+#if GMX_LIB_MPI
     /* We only print the detection on one, of possibly multiple, nodes */
     std::strncpy(onhost, " on host ", 10);
     gmx_gethostname(onhost + 9, HOSTNAMELEN);
@@ -526,7 +526,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         }
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (PAR(cr))
     {
         /* Avoid other ranks to continue after
@@ -1297,7 +1297,7 @@ static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
                           nrank, gpu_opt->n_dev_compatible);
             }
 
-#ifdef GMX_MPI
+#if GMX_MPI
             /* We use a global barrier to prevent ranks from continuing with
              * an invalid setup.
              */

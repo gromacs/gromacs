@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,7 @@ typedef struct gmx_wallcycle
     int               ewc_prev;
     gmx_cycles_t      cycle_prev;
     gmx_int64_t       reset_counters;
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Comm          mpi_comm_mygroup;
 #endif
     wallcc_t         *wcsc;
@@ -150,7 +150,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     wc->ewc_prev            = -1;
     wc->reset_counters      = resetstep;
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
     {
         if (fplog)
@@ -260,7 +260,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
         return;
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (wc->wc_barrier)
     {
         MPI_Barrier(wc->mpi_comm_mygroup);
@@ -307,7 +307,7 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
         return 0;
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (wc->wc_barrier)
     {
         MPI_Barrier(wc->mpi_comm_mygroup);
@@ -481,7 +481,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     WallcycleCounts cycles_sum;
     wallcc_t       *wcc;
     double          cycles[ewcNR+ewcsNR];
-#ifdef GMX_MPI
+#if GMX_MPI
     double          cycles_n[ewcNR+ewcsNR+1];
 #endif
     int             i;
@@ -522,7 +522,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     /* Store the cycles in a double buffer for summing */
     for (i = 0; i < ewcNR; i++)
     {
-#ifdef GMX_MPI
+#if GMX_MPI
         cycles_n[i] = static_cast<double>(wcc[i].n);
 #endif
         cycles[i]   = static_cast<double>(wcc[i].c);
@@ -532,7 +532,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     {
         for (i = 0; i < ewcsNR; i++)
         {
-#ifdef GMX_MPI
+#if GMX_MPI
             cycles_n[ewcNR+i] = static_cast<double>(wc->wcsc[i].n);
 #endif
             cycles[ewcNR+i]   = static_cast<double>(wc->wcsc[i].c);
@@ -540,7 +540,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         nsum += ewcsNR;
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (cr->nnodes > 1)
     {
         double buf[ewcNR+ewcsNR+1];

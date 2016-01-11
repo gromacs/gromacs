@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -436,7 +436,7 @@ static void exchange_reals(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
     if (v)
     {
         snew(buf, n);
-#ifdef GMX_MPI
+#if GMX_MPI
         /*
            MPI_Sendrecv(v,  n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
@@ -469,7 +469,7 @@ static void exchange_doubles(const gmx_multisim_t gmx_unused *ms, int gmx_unused
     if (v)
     {
         snew(buf, n);
-#ifdef GMX_MPI
+#if GMX_MPI
         /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
@@ -501,7 +501,7 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
     if (v)
     {
         snew(buf, n);
-#ifdef GMX_MPI
+#if GMX_MPI
         /*
            MPI_Sendrecv(v[0],  n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
            buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
@@ -1286,7 +1286,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
      * the next thing to do. */
     if (DOMAINDECOMP(cr))
     {
-#ifdef GMX_MPI
+#if GMX_MPI
         MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MASTERRANK(cr),
                   cr->mpi_comm_mygroup);
 #endif
