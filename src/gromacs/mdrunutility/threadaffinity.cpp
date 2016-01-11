@@ -247,7 +247,7 @@ gmx_set_thread_affinity(FILE                *fplog,
     /* map the current process to cores */
     thread0_id_node = 0;
     nthread_node    = nthread_local;
-#ifdef GMX_MPI
+#if GMX_MPI
     if (PAR(cr) || MULTISIM(cr))
     {
         /* We need to determine a scan of the thread counts in this
@@ -367,7 +367,7 @@ gmx_set_thread_affinity(FILE                *fplog,
             /* Only add rank info if we have more than one rank. */
             if (cr->nnodes > 1)
             {
-#ifdef GMX_MPI
+#if GMX_MPI
 #if GMX_THREAD_MPI
                 sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
 #else           /* GMX_LIB_MPI */

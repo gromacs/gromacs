@@ -408,7 +408,7 @@ reportOpenmpSettings(FILE            *fplog,
         return;
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (cr->nnodes + cr->npmenodes > 1)
     {
         /* Get the min and max thread counts over the MPI ranks */
@@ -492,7 +492,7 @@ issueOversubscriptionWarning(FILE            *fplog,
         sprintf(sbuf, "threads");
         sbuf1[0] = '\0';
         sprintf(sbuf2, "O");
-#ifdef GMX_MPI
+#if GMX_MPI
         if (modth.gnth == 1)
         {
 #if GMX_THREAD_MPI

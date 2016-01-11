@@ -2983,7 +2983,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
             if (!bIsMaster)
             {
-#ifdef GMX_MPI
+#if GMX_MPI
 #define mpi_type GMX_MPI_REAL
                 MPI_Send(dfdx[0], atom_index.size()*DIM, mpi_type, MASTER(cr),
                          cr->nodeid, cr->mpi_comm_mygroup);
@@ -2995,7 +2995,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
                 {
                     if (node > 0)
                     {
-#ifdef GMX_MPI
+#if GMX_MPI
                         MPI_Status stat;
                         MPI_Recv(dfdx[0], atom_index.size()*DIM, mpi_type, node, node,
                                  cr->mpi_comm_mygroup, &stat);

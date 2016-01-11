@@ -273,12 +273,12 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     gmx_multisim_t *ms;
     int             nnodes, nnodpersim, sim, i, ftp;
     char            buf[256];
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Group       mpi_group_world;
     int            *rank;
 #endif
 
-#ifndef GMX_MPI
+#if !GMX_MPI
     if (nsim > 1)
     {
         gmx_fatal(FARGS, "This binary is compiled without MPI support, can not do multiple simulations.");
@@ -303,7 +303,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     cr->ms   = ms;
     ms->nsim = nsim;
     ms->sim  = sim;
-#ifdef GMX_MPI
+#if GMX_MPI
     /* Create a communicator for the master nodes */
     snew(rank, ms->nsim);
     for (i = 0; i < ms->nsim; i++)
@@ -334,7 +334,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     /* Reduce the intra-simulation communication */
     cr->sim_nodeid = cr->nodeid % nnodpersim;
     cr->nnodes     = nnodpersim;
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Comm_split(MPI_COMM_WORLD, sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
     cr->nodeid           = cr->sim_nodeid;

@@ -51,7 +51,7 @@
 
 bool gmx_mpi_initialized()
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     return 0;
 #else
     int n;
@@ -63,7 +63,7 @@ bool gmx_mpi_initialized()
 
 int gmx_node_num()
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     return 1;
 #else
 #if GMX_THREAD_MPI
@@ -80,7 +80,7 @@ int gmx_node_num()
 
 int gmx_node_rank()
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     return 0;
 #else
 #if GMX_THREAD_MPI
@@ -200,7 +200,7 @@ int gmx_physicalnode_id_hash(void)
 {
     int hash;
 
-#ifdef GMX_MPI
+#if GMX_MPI
     hash = mpi_hostname_hash();
 #else
     hash = 0;
@@ -216,7 +216,7 @@ int gmx_physicalnode_id_hash(void)
 
 void gmx_broadcast_world(int size, void *buffer)
 {
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Bcast(buffer, size, MPI_BYTE, 0, MPI_COMM_WORLD);
 #else
     GMX_UNUSED_VALUE(size);
