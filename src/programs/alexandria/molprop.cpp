@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -368,12 +402,12 @@ void Calculation::Dump(FILE *fp)
     }
 }
 
-void Experiment::Merge(Experiment &src)
+int Experiment::Merge(Experiment &src)
 {
-    MergeLow(&src);
+    return MergeLow(&src);
 }
 
-void Experiment::MergeLow(Experiment *src)
+int Experiment::MergeLow(Experiment *src)
 {
     for (alexandria::MolecularEnergyIterator mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
     {
@@ -415,11 +449,12 @@ void Experiment::MergeLow(Experiment *src)
                                            mqi->getXY(), mqi->getXZ(), mqi->getYZ());
         AddQuadrupole(mq);
     }
+    return 0;
 }
 
-void Calculation::Merge(Calculation &src)
+int Calculation::Merge(Calculation &src)
 {
-    Experiment::MergeLow(&src);
+    int nwarn = Experiment::MergeLow(&src);
 
     for (CalcAtomIterator cai = src.BeginAtom(); (cai < src.EndAtom()); cai++)
     {
@@ -446,6 +481,7 @@ void Calculation::Merge(Calculation &src)
                                               mep->getX(), mep->getY(), mep->getZ(), mep->getV());
         AddPotential(ep);
     }
+    return nwarn;
 }
 
 void CalcAtom::AddCharge(AtomicCharge q)
@@ -528,10 +564,11 @@ bool MolProp::BondExists(Bond b)
     return false;
 }
 
-void MolProp::Merge(MolProp &src)
+int MolProp::Merge(MolProp &src)
 {
     double      q, sq;
     std::string stmp, dtmp;
+    int         nwarn = 0;
 
     for (std::vector<std::string>::iterator si = src.BeginCategory(); (si < src.EndCategory()); si++)
     {
@@ -611,6 +648,7 @@ void MolProp::Merge(MolProp &src)
             {
                 fprintf(stderr, "WARNING bond %d-%d not present in %s\n",
                         bi->getAi(), bi->getAj(), getMolname().c_str());
+                nwarn++;
             }
         }
     }
@@ -619,7 +657,7 @@ void MolProp::Merge(MolProp &src)
     {
         Experiment ex(ei->getReference(), ei->getConformation());
 
-        ex.Merge(*ei);
+        nwarn += ex.Merge(*ei);
         AddExperiment(ex);
     }
 
@@ -628,7 +666,7 @@ void MolProp::Merge(MolProp &src)
         Calculation ca(ci->getProgram(), ci->getMethod(),
                        ci->getBasisset(), ci->getReference(),
                        ci->getConformation(), ci->getDatafile());
-        ca.Merge(*ci);
+        nwarn += ca.Merge(*ci);
 
         AddCalculation(ca);
     }
@@ -645,6 +683,7 @@ void MolProp::Merge(MolProp &src)
         }
         AddComposition(mc);
     }
+    return nwarn;
 }
 
 MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str)

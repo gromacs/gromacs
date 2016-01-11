@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -145,7 +179,7 @@ static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
 
 static void dump_csv(Poldata     *                     pd,
                      std::vector<alexandria::MolProp> &mp,
-                     gmx_molselect *                  gms,
+                     gmx_molselect  *                  gms,
                      std::vector<pType>               &ptypes,
                      int                               nusemol,
                      double                            x[],
@@ -625,6 +659,7 @@ int alex_tune_pol(int argc, char *argv[])
     static gmx_bool                        bQM         = FALSE;
     static int                             mindata     = 1;
     static int                             nBootStrap  = 1;
+    static int                             maxwarn     = 0;
     static int                             seed;
     static real                            fractionBootStrap = 1;
     static char                           *lot               = (char *)"B3LYP/aug-cc-pVTZ";
@@ -634,6 +669,8 @@ int alex_tune_pol(int argc, char *argv[])
     {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
+        { "-maxwarn", FALSE, etINT, {&maxwarn},
+          "Will only write output if number of warnings is at most this." },
         { "-qm",     FALSE, etBOOL, {&bQM},
           "Use QM data for optimizing the empirical polarizabilities as well." },
         { "-lot",    FALSE, etSTR,  {&lot},
@@ -669,7 +706,7 @@ int alex_tune_pol(int argc, char *argv[])
     gmx_atomprop_t                         ap;
     Poldata           *                    pd;
     gmx_output_env_t *                     oenv;
-    gmx_molselect *                       gms;
+    gmx_molselect  *                       gms;
     int                                    npa = sizeof(pa)/sizeof(pa[0]);
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
@@ -692,7 +729,12 @@ int alex_tune_pol(int argc, char *argv[])
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
-    merge_xml(nfiles, fns, mp, NULL, NULL, (char *)"double_dip.dat", ap, pd, TRUE);
+    int nwarn = merge_xml(nfiles, fns, mp, NULL, NULL, (char *)"double_dip.dat", ap, pd, TRUE);
+    if (nwarn > maxwarn)
+    {
+        printf("Too many warnings (%d). Terminating.\n", nwarn);
+        return 0;
+    }
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         mpi->CheckConsistency();

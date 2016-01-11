@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -476,6 +510,7 @@ int alex_bastat(int argc, char *argv[])
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int                       compress       = 0;
+    static int                       maxwarn        = 0;
     static gmx_bool                  bHisto         = FALSE, bBondOrder = TRUE, bDih = FALSE;
     static real                      Dm             = 400, kt = 400, kp = 5, beta = 20, klin = 20;
     static char                     *lot            = (char *)"B3LYP/aug-cc-pVTZ";
@@ -485,6 +520,8 @@ int alex_bastat(int argc, char *argv[])
     t_pargs                          pa[]     = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
+        { "-maxwarn", FALSE, etINT, {&maxwarn},
+          "Will only write output if number of warnings is at most this." },
         { "-Dm",    FALSE, etREAL, {&Dm},
           "Dissociation energy (kJ/mol)" },
         { "-beta",    FALSE, etREAL, {&beta},
@@ -509,7 +546,7 @@ int alex_bastat(int argc, char *argv[])
     //alexandria::MolDip    md;
     FILE                            *fp;
     ChargeDistributionModel          iDistributionModel;
-    gmx_molselect *                 gms;
+    gmx_molselect  *                 gms;
     time_t                           my_t;
     t_bonds                         *b;
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
@@ -558,7 +595,12 @@ int alex_bastat(int argc, char *argv[])
     /* read Molprops */
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
     std::vector<alexandria::MolProp> mp;
-    merge_xml(nfiles, fns, mp, NULL, NULL, NULL, aps, pd, TRUE);
+    int nwarn = merge_xml(nfiles, fns, mp, NULL, NULL, NULL, aps, pd, TRUE);
+    if (nwarn > maxwarn)
+    {
+        printf("Too many warnings (%d). Terminating.\n", nwarn);
+        return 0;
+    }
     ftb = F_BONDS;
     fta = F_ANGLES;
     ftd = F_PDIHS;
