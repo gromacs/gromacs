@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1271,8 +1271,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
 
-        /* kludge -- virial is lost with restart for NPT control. Must restart */
-        if (bStartingFromCpt && bVV)
+        /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
+        if (bStartingFromCpt && bTrotter)
         {
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
@@ -1347,26 +1347,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             gs.sig[eglsCHKPT] = 1;
         }
 
-        /* at the start of step, randomize or scale the velocities (trotter done elsewhere) */
-        if (EI_VV(ir->eI))
+        /* at the start of step, randomize or scale the velocities ((if vv. Restriction of Andersen controlled
+           in preprocessing */
+
+        if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
-            if (!bInitStep)
+            gmx_bool bIfRandomize;
+            bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
+            /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
+            if (constr && bIfRandomize)
             {
-                update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
-            }
-            if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
-            {
-                gmx_bool bIfRandomize;
-                bIfRandomize = update_randomize_velocities(ir, step, cr, mdatoms, state, upd, constr);
-                /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
-                if (constr && bIfRandomize)
-                {
-                    update_constraints(fplog, step, NULL, ir, mdatoms,
-                                       state, fr->bMolPBC, graph, f,
-                                       &top->idef, tmp_vir,
-                                       cr, nrnb, wcycle, upd, constr,
-                                       TRUE, bCalcVir);
-                }
+                update_constraints(fplog, step, NULL, ir, mdatoms,
+                                   state, fr->bMolPBC, graph, f,
+                                   &top->idef, tmp_vir,
+                                   cr, nrnb, wcycle, upd, constr,
+                                   TRUE, bCalcVir);
             }
         }
         /* #########   START SECOND UPDATE STEP ################# */
