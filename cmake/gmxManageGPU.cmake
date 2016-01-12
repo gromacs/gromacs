@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -166,11 +166,17 @@ if (GMX_GPU)
         set(NVML_FIND_QUIETLY TRUE)
     endif()
     find_package(NVML)
-    if(NVML_FOUND)
-        include_directories(SYSTEM ${NVML_INCLUDE_DIR})
-        set(HAVE_NVML 1)
-        list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
-    endif(NVML_FOUND)
+    option(GMX_USE_NVML "Use NVML support for better CUDA performance" ${HAVE_NVML})
+    mark_as_advanced(GMX_USE_NVML)
+    if(GMX_USE_NVML)
+        if(NVML_FOUND)
+            include_directories(SYSTEM ${NVML_INCLUDE_DIR})
+            set(HAVE_NVML 1)
+            list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
+        else()
+            message(FATAL_ERROR "NVML support was required, but was not detected. Please consult the install guide.")
+        endif()
+    endif()
 endif()
 
 # Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
