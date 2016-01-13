@@ -399,6 +399,14 @@ void Calculation::Dump(FILE *fp)
         fprintf(fp, "method     = %s\n", _method.c_str());
         fprintf(fp, "basisset   = %s\n", _basisset.c_str());
         fprintf(fp, "datafile   = %s\n", _datafile.c_str());
+        for (CalcAtomIterator cai = BeginAtom(); (cai < EndAtom()); ++cai)
+        {
+            double   x, y, z;
+            cai->getCoords(&x, &y, &z);
+            fprintf(fp, "%-3s  %-3s  %3d  %10.3f  %10.3f  %10.3f\n",
+                    cai->getName().c_str(), cai->getObtype().c_str(),
+                    cai->getAtomid(), x, y, z);
+        }
     }
 }
 
@@ -456,7 +464,7 @@ int Calculation::Merge(Calculation &src)
 {
     int nwarn = Experiment::MergeLow(&src);
 
-    for (CalcAtomIterator cai = src.BeginAtom(); (cai < src.EndAtom()); cai++)
+    for (CalcAtomIterator cai = src.BeginAtom(); (cai < src.EndAtom()); ++cai)
     {
         double   x, y, z;
         CalcAtom caa(cai->getName(), cai->getObtype(), cai->getAtomid());
@@ -465,7 +473,7 @@ int Calculation::Merge(Calculation &src)
         caa.SetCoords(x, y, z);
         caa.SetUnit(cai->getUnit());
 
-        for (AtomicChargeIterator aci = cai->BeginQ(); (aci < cai->EndQ()); aci++)
+        for (AtomicChargeIterator aci = cai->BeginQ(); (aci < cai->EndQ()); ++aci)
         {
             AtomicCharge aq(aci->getType(), aci->getUnit(),
                             aci->getTemperature(), aci->getQ());
@@ -517,7 +525,7 @@ bool CalcAtom::Equal(CalcAtom ca)
 CalcAtomIterator Calculation::SearchAtom(CalcAtom ca)
 {
     CalcAtomIterator cai;
-    for (cai = BeginAtom(); (cai < EndAtom()); cai++)
+    for (cai = BeginAtom(); (cai < EndAtom()); ++cai)
     {
         if (cai->Equal(ca))
         {

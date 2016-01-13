@@ -212,6 +212,7 @@ static void gmx_molprop_read_babel(const char *g98,
 
     // get bondorders.
     mol.PerceiveBondOrders();
+    mol.ConnectTheDots();
 
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
     if ((NULL != basisset) && (strlen(basisset) > 0))
