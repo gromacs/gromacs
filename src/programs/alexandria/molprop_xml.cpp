@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -65,7 +99,7 @@ enum {
     exmlMETHOD, exmlREFERENCE, exmlTYPE, exmlSOURCE,
     exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
-    exmlCALCULATION, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION, exmlDATAFILE,
+    exmlDATASOURCE, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION, exmlDATAFILE,
     exmlUNIT, exmlATOM, exmlATOMID, exmlOBTYPE, exmlX_UNIT, exmlV_UNIT, exmlESPID,
     exmlX, exmlY, exmlZ, exmlV, exmlXX, exmlYY, exmlZZ,
     exmlXY, exmlXZ, exmlYZ, exmlQ,
@@ -82,7 +116,7 @@ static const char *exml_names[exmlNR] = {
     "method", "reference", "type", "source",
     "bond", "ai", "aj", "bondorder",
     "composition", "compname", "catom", "cname", "cnumber",
-    "calculation", "program", "basisset", "conformation", "datafile",
+    "datasource", "program", "basisset", "conformation", "datafile",
     "unit", "atom", "atomid", "obtype", "coord_unit", "potential_unit", "espid",
     "x", "y", "z", "V", "xx", "yy", "zz", "xy", "xz", "yz", "q"
 };
@@ -307,14 +341,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                         NN(xbuf[exmlXZ]) ? my_atof(xbuf[exmlXZ]) : 0,
                                                                         NN(xbuf[exmlYZ]) ? my_atof(xbuf[exmlYZ]) : 0,
                                                                         my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
-                                if (*bExperiment)
-                                {
-                                    mpt->LastExperiment()->AddPolar(mdp);
-                                }
-                                else
-                                {
-                                    mpt->LastCalculation()->AddPolar(mdp);
-                                }
+                                mpt->LastExperiment()->AddPolar(mdp);
                             }
                             break;
                         case exmlPOTENTIAL:
@@ -328,7 +355,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                       atoi(xbuf[exmlESPID]),
                                                                       my_atof(xbuf[exmlX]), my_atof(xbuf[exmlY]),
                                                                       my_atof(xbuf[exmlZ]), my_atof(xbuf[exmlV]));
-                                mpt->LastCalculation()->AddPotential(ep);
+                                mpt->LastExperiment()->AddPotential(ep);
                             }
                             break;
                         case exmlDIPOLE:
@@ -344,14 +371,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                 NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
                                                                 my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
 
-                                if (*bExperiment)
-                                {
-                                    mpt->LastExperiment()->AddDipole(mdp);
-                                }
-                                else
-                                {
-                                    mpt->LastCalculation()->AddDipole(mdp);
-                                }
+                                mpt->LastExperiment()->AddDipole(mdp);
                             }
                             break;
                         case exmlQUADRUPOLE:
@@ -366,14 +386,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                    my_atof(xbuf[exmlXX]), my_atof(xbuf[exmlYY]),
                                                                    my_atof(xbuf[exmlZZ]), my_atof(xbuf[exmlXY]),
                                                                    my_atof(xbuf[exmlXZ]), my_atof(xbuf[exmlYZ]));
-                                if (*bExperiment)
-                                {
-                                    mpt->LastExperiment()->AddQuadrupole(mq);
-                                }
-                                else
-                                {
-                                    mpt->LastCalculation()->AddQuadrupole(mq);
-                                }
+                                mpt->LastExperiment()->AddQuadrupole(mq);
                             }
                             break;
                         case exmlBOND:
@@ -398,14 +411,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                string2phase(xbuf[exmlPHASE]),
                                                                my_atof(xbuf[exmlENERGY]),
                                                                xbuf[exmlERROR] ? my_atof(xbuf[exmlERROR]) : 0.0);
-                                if (*bExperiment)
-                                {
-                                    mpt->LastExperiment()->AddEnergy(me);
-                                }
-                                else
-                                {
-                                    mpt->LastCalculation()->AddEnergy(me);
-                                }
+                                mpt->LastExperiment()->AddEnergy(me);
                             }
                             break;
 
@@ -422,25 +428,6 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             {
                                 alexandria::AtomNum an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER]));
                                 mpt->LastMolecularComposition()->AddAtom(an);
-                            }
-                            break;
-                        case exmlCALCULATION:
-                            if (NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) &&
-                                NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
-                                NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
-                            {
-                                alexandria::Calculation mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
-                                                               xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
-                                                               xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE]);
-                                mpt->AddCalculation(mycalc);
-                                *bExperiment = FALSE;
-                            }
-                            else
-                            {
-                                gmx_fatal(FARGS, "Trying to add calculation with program %s, method %s, basisset %s and reference %s conformation %s datafile %s",
-                                          xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
-                                          xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
-                                          xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE]);
                             }
                             break;
                         case exmlATOM:
@@ -484,22 +471,37 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     }
                                 }
                                 /* Now finally add the atom */
-                                mpt->LastCalculation()->AddAtom(ca);
+                                mpt->LastExperiment()->AddAtom(ca);
                             }
                             break;
 
                         case exmlEXPERIMENT:
-                            if (NN(xbuf[exmlREFERENCE]) && NN(xbuf[exmlCONFORMATION]))
+                            if (NN(xbuf[exmlDATASOURCE]))
                             {
-                                alexandria::Experiment myexp(xbuf[exmlREFERENCE], xbuf[exmlCONFORMATION]);
-                                mpt->AddExperiment(myexp);
-                                *bExperiment = TRUE;
+                                alexandria::DataSource ds = alexandria::dataSourceFromName(xbuf[exmlDATASOURCE]);
+
+                                if (ds == alexandria::dsTheory &&
+                                    NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) &&
+                                    NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
+                                    NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
+                                {
+                                    alexandria::Experiment mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
+                                                                  xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
+                                                                  xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE]);
+                                    mpt->AddExperiment(mycalc);
+                                }
+                                else if (ds == alexandria::dsExperiment &&
+                                         NN(xbuf[exmlREFERENCE]) && NN(xbuf[exmlCONFORMATION]))
+                                {
+                                    alexandria::Experiment myexp(xbuf[exmlREFERENCE], xbuf[exmlCONFORMATION]);
+                                    mpt->AddExperiment(myexp);
+                                }
+                                else
+                                {
+                                    gmx_fatal(FARGS, "Experimental data without reference");
+                                }
+                                break;
                             }
-                            else
-                            {
-                                gmx_fatal(FARGS, "Experimental data without reference");
-                            }
-                            break;
                         default:
                             break;
                     }
@@ -656,8 +658,8 @@ static void add_exper_properties(xmlNodePtr              exp,
     }
 }
 
-static void add_calc_properties(xmlNodePtr               exp,
-                                alexandria::Calculation &calc)
+static void add_calc_properties(xmlNodePtr              exp,
+                                alexandria::Experiment &calc)
 {
     for (alexandria::ElectrostaticPotentialIterator ep_it = calc.BeginPotential();
          (ep_it < calc.EndPotential()); ep_it++)
@@ -716,29 +718,24 @@ static void add_xml_molprop(xmlNodePtr                                 parent,
     for (alexandria::ExperimentIterator e_it = mp_it->BeginExperiment();
          (e_it < mp_it->EndExperiment()); e_it++)
     {
-        xmlNodePtr child = add_xml_child(ptr, exml_names[exmlEXPERIMENT]);
+        xmlNodePtr             child = add_xml_child(ptr, exml_names[exmlEXPERIMENT]);
+        alexandria::DataSource ds    = e_it->dataSource();
+        add_xml_string(child, exml_names[exmlDATASOURCE], dataSourceName(ds));
         add_xml_string(child, exml_names[exmlREFERENCE], e_it->getReference());
         add_xml_string(child, exml_names[exmlCONFORMATION], e_it->getConformation());
+        if (alexandria::dsTheory == ds)
+        {
+            add_xml_string(child, exml_names[exmlPROGRAM], e_it->getProgram());
+            add_xml_string(child, exml_names[exmlMETHOD], e_it->getMethod());
+            add_xml_string(child, exml_names[exmlBASISSET], e_it->getBasisset());
+            add_xml_string(child, exml_names[exmlDATAFILE], e_it->getDatafile());
+        }
 
         add_exper_properties(child, *e_it);
-    }
+        add_calc_properties(child, *e_it);
 
-    for (alexandria::CalculationIterator c_it = mp_it->BeginCalculation();
-         (c_it < mp_it->EndCalculation()); c_it++)
-    {
-        xmlNodePtr child = add_xml_child(ptr, exml_names[exmlCALCULATION]);
-        add_xml_string(child, exml_names[exmlPROGRAM], c_it->getProgram());
-        add_xml_string(child, exml_names[exmlMETHOD], c_it->getMethod());
-        add_xml_string(child, exml_names[exmlBASISSET], c_it->getBasisset());
-        add_xml_string(child, exml_names[exmlREFERENCE], c_it->getReference());
-        add_xml_string(child, exml_names[exmlCONFORMATION], c_it->getConformation());
-        add_xml_string(child, exml_names[exmlDATAFILE], c_it->getDatafile());
-
-        add_exper_properties(child, *c_it);
-        add_calc_properties(child, *c_it);
-
-        for (alexandria::CalcAtomIterator ca_it = c_it->BeginAtom();
-             (ca_it < c_it->EndAtom()); ca_it++)
+        for (alexandria::CalcAtomIterator ca_it = e_it->BeginAtom();
+             (ca_it < e_it->EndAtom()); ca_it++)
         {
             xmlNodePtr grandchild = add_xml_child(child, exml_names[exmlATOM]);
             add_xml_string(grandchild, exml_names[exmlNAME], ca_it->getName());

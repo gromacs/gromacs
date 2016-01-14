@@ -57,6 +57,8 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
 #include "phase.h"
@@ -940,6 +942,14 @@ class CalcAtom
 //! Iterates over CalcAtom items
 typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
 
+enum DataSource {
+    dsExperiment, dsTheory
+};
+
+const char *dataSourceName(DataSource ds);
+
+DataSource dataSourceFromName(const char *name);
+
 /*! \brief
  * Contains molecular data based on experiments
  *
@@ -954,7 +964,11 @@ typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
 class Experiment
 {
     private:
+        DataSource                           dataSource_;
         std::string                          reference_, conformation_;
+        std::string                          _program, _method, _basisset, _datafile;
+        std::vector<CalcAtom>                _catom;
+        std::vector<ElectrostaticPotential>  _potential;
         std::vector<MolecularDipole>         dipole_;
         std::vector<MolecularEnergy>         energy_;
         std::vector<MolecularQuadrupole>     quadrupole_;
@@ -965,19 +979,26 @@ class Experiment
         Experiment() { }
 
         //! Constructor initiating an Experiment with reference and conformation
-        Experiment(std::string reference, std::string conformation)
-        {
-            reference_ = reference; conformation_ = conformation;
-        };
+        Experiment(std::string reference, std::string conformation) :
+            dataSource_(dsExperiment), reference_(reference),
+            conformation_(conformation)
+        {}
 
-        //! Constructor initiating an Experiment with reference and conformation
-        Experiment(const char *reference, const char *conformation)
-        {
-            reference_.assign(reference); conformation_.assign(conformation);
-        };
+        //! Constructor initiating a Calculation
+        Experiment(std::string program, std::string method,
+                   std::string basisset, std::string reference,
+                   std::string conformation, std::string datafile) :
+            dataSource_(dsTheory),
+            reference_(reference), conformation_(conformation),
+            _program(program), _method(method), _basisset(basisset),
+            _datafile(datafile)
+        {}
 
         //! Default destructor
         ~Experiment() {};
+
+        //! Return the type of data
+        DataSource dataSource() const { return dataSource_; }
 
         //! Dump the contents of this object to a file
         void Dump(FILE *fp);
@@ -1033,95 +1054,6 @@ class Experiment
         //! Return the literature reference
         std::string getReference() { return reference_; }
 
-        /*! \brief
-         * Convenience function that fetches a value from this experiment
-         *
-         * \param[in]  type   The type of the data (dependent on whether it is dipole, energy etc.)
-         * \param[in]  mpo    Enum selecting the type of data to fetch
-         * \param[out] value  The value of e.g. the energy
-         * \param[out] error  The error in the value of e.g. the energy
-         * \param[out] T      Temperature
-         * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
-         * \param[out] quadrupole The quadrupole tensor
-         * \return true on success
-         */
-        bool getVal(const char *type, MolPropObservable mpo,
-                    double *value, double *error, double *T,
-                    double vec[3], tensor quadrupole);
-
-        //! Merge in another object - Low level function. Return number of warings.
-        int MergeLow(Experiment *src);
-
-        //! Merge in another object. Return number of warnings.
-        int Merge(Experiment &src);
-
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] dest      Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(t_commrec *cr, int dest);
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] commrec   GROMACS data structure for MPI communication
-         * \param[in] src       Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(t_commrec *cr, int src);
-};
-//! Iterates over Experiment items
-typedef std::vector<Experiment>::iterator ExperimentIterator;
-
-/*! \brief
- * Contains data on a molecule based on a calculation.
- *
- * This is a composite class holding the results from a calculation, either
- * the dipole, polarizability, energy, the quadrupole, or the electrostatic
- * potential. The type of method used and basisset where appropriate are stored,
- * along with the program used and the datafile where the data came from.
- * The conformation of the molecule (if known) is stored.
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-class Calculation : public Experiment
-{
-    private:
-        std::string                         _program, _method, _basisset, _datafile;
-        std::vector<CalcAtom>               _catom;
-        std::vector<ElectrostaticPotential> _potential;
-    public:
-        //! Empty constructor
-        Calculation() { }
-
-        //! Constructor for calculations with program, method, basisset, reference, conformation and datafile
-        Calculation(std::string program, std::string method,
-                    std::string basisset, std::string reference,
-                    std::string conformation, std::string datafile) : Experiment(reference, conformation)
-        {
-            _program  = program; _method = method;
-            _basisset = basisset; _datafile = datafile;
-        };
-
-        //! Constructor for calculations with program, method, basisset, reference, conformation and datafile
-        Calculation(const char *program, const char *method,
-                    const char *basisset, const char *reference,
-                    const char *conformation, const char *datafile) : Experiment(reference, conformation)
-        {
-            _program.assign(program); _method.assign(method);
-            _basisset.assign(basisset); _datafile.assign(datafile);
-        };
-
-        //! Destructor
-        ~Calculation() {};
-
-        //! Dump the contents of this object to a file
-        void Dump(FILE *fp);
-
         //! Add a CalcAtom object to the list of atoms
         void AddAtom(CalcAtom ca);
 
@@ -1161,8 +1093,24 @@ class Calculation : public Experiment
         //! Return the datafile from which the calculation output was extracted
         std::string getDatafile() { return _datafile; }
 
-        //! Merge in another object. Return the number of warnings.
-        int Merge(Calculation &src);
+        /*! \brief
+         * Convenience function that fetches a value from this experiment
+         *
+         * \param[in]  type   The type of the data (dependent on whether it is dipole, energy etc.)
+         * \param[in]  mpo    Enum selecting the type of data to fetch
+         * \param[out] value  The value of e.g. the energy
+         * \param[out] error  The error in the value of e.g. the energy
+         * \param[out] T      Temperature
+         * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
+         * \param[out] quadrupole The quadrupole tensor
+         * \return true on success
+         */
+        bool getVal(const char *type, MolPropObservable mpo,
+                    double *value, double *error, double *T,
+                    double vec[3], tensor quadrupole);
+
+        //! Merge in another object. Return number of warnings.
+        int Merge(std::vector<Experiment>::iterator src);
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -1181,11 +1129,9 @@ class Calculation : public Experiment
          * \return the CommunicationStatus of the operation
          */
         CommunicationStatus Receive(t_commrec *cr, int src);
-
 };
-//! Iterates over Calculation items
-typedef std::vector<Calculation>::iterator CalculationIterator;
-//typedef ExperimentIterator CalculationIterator;
+//! Iterates over Experiment items
+typedef std::vector<Experiment>::iterator ExperimentIterator;
 
 /*! \brief
  * Contains molecular properties from a range of sources.
@@ -1202,7 +1148,6 @@ class MolProp
         std::string                       _formula, _texform, _molname, _iupac, _cas, _cid, _inchi;
         std::vector<std::string>          _category;
         std::vector<MolecularComposition> _mol_comp;
-        std::vector<Calculation>          _calc;
         std::vector<Experiment>           _exper;
         std::vector<Bond>                 _bond;
     public:
@@ -1250,7 +1195,7 @@ class MolProp
          * \return Number of warnings
          * \todo Check and double check
          */
-        int Merge(MolProp &mpi);
+        int Merge(std::vector<MolProp>::iterator mpi);
 
         //! Dump the contents of this object to a file
         void Dump(FILE *fp);
@@ -1420,9 +1365,9 @@ class MolProp
 
         void Stats()
         {
-            printf("%s - %s - %d experiments - %d calculations\n",
+            printf("%s - %s - %d experiments\n",
                    _molname.c_str(), _formula.c_str(),
-                   (int)_exper.size(), (int)_calc.size());
+                   (int)_exper.size());
         }
         //! Return the number of experiments
         int NExperiment() { return _exper.size(); }
@@ -1439,32 +1384,14 @@ class MolProp
             if (NExperiment() > 0) { return &(_exper.back()); } else{ return NULL; }
         }
 
-        //! Add a calculation
-        void AddCalculation(Calculation calc) { _calc.push_back(calc); }
-
-        //! Return the number of calculations
-        int NCalculation() { return _calc.size(); }
-
-        //! Iterator Begin over calculations
-        CalculationIterator BeginCalculation() { return _calc.begin(); }
-
-        //! Iterator End over calculations
-        CalculationIterator EndCalculation() { return _calc.end(); }
-
-        //! Return pointer to the last inserted calculation or NULL if the number of calculations is zero
-        Calculation *LastCalculation()
-        {
-            if (NCalculation() > 0) { return &(_calc.back()); } else{ return NULL; }
-        }
-
-        //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
-        CalculationIterator getLot(const char *lot);
+        //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndExperiment in case it is not found
+        ExperimentIterator getLot(const char *lot);
 
         //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
         //! The operator should hold the requested observable of the type (can be NULL)
-        CalculationIterator getLotPropType(const char       *lot,
-                                           MolPropObservable mpo,
-                                           const char       *type);
+        ExperimentIterator getLotPropType(const char       *lot,
+                                          MolPropObservable mpo,
+                                          const char       *type);
 /*! \brief
  * Sends this object over an MPI connection
  *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -818,8 +818,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
     int                 natom;
     immStatus           imm   = immOK;
 
-    CalculationIterator ci = molProp()->getLot(lot);
-    if (ci < molProp()->EndCalculation())
+    ExperimentIterator  ci = molProp()->getLot(lot);
+    if (ci < molProp()->EndExperiment())
     {
         t_param nb;
 
@@ -1072,10 +1072,10 @@ immStatus MyMol::GenerateCharges(Poldata * pd,
                     /* Even if we get the right LoT it may still not have
                      * the ESP
                      */
-                    CalculationIterator ci = molProp()->getLotPropType(lot,
-                                                                       MPO_POTENTIAL,
-                                                                       NULL);
-                    if (ci != molProp()->EndCalculation())
+                    ExperimentIterator ci = molProp()->getLotPropType(lot,
+                                                                      MPO_POTENTIAL,
+                                                                      NULL);
+                    if (ci != molProp()->EndExperiment())
                     {
                         //printf("There are %d potential points\n",ci->NPotential());
                         for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)

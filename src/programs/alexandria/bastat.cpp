@@ -66,8 +66,6 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-#define STRLEN 256
-
 typedef struct {
     char       *a1, *a2;
     int         order;
@@ -612,7 +610,7 @@ int alex_bastat(int argc, char *argv[])
         {
             alexandria::MyMol mmi;
             int               i;
-            mmi.molProp()->Merge(*mpi);
+            mmi.molProp()->Merge(mpi);
             if (mmi.molProp()->getMolname().size() == 0)
             {
                 printf("Empty molname for molecule with formula %s\n", mmi.molProp()->formula().c_str());

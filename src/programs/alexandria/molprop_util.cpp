@@ -137,7 +137,7 @@ static bool molprop_2_atoms(alexandria::MolProp mp, gmx_atomprop_t ap,
                             t_atoms *atoms, const char *q_algorithm,
                             rvec **x)
 {
-    alexandria::CalculationIterator  ci;
+    alexandria::ExperimentIterator   ci;
     alexandria::CalcAtomIterator     cai;
     alexandria::AtomicChargeIterator qi;
     std::string molnm;
@@ -151,7 +151,7 @@ static bool molprop_2_atoms(alexandria::MolProp mp, gmx_atomprop_t ap,
     molnm = mp.getMolname();
 
     ci = mp.getLot(lot);
-    if (ci < mp.EndCalculation())
+    if (ci < mp.EndExperiment())
     {
         natom = 0;
         init_t_atoms(atoms, mp.NAtom(), false);
@@ -311,7 +311,7 @@ int merge_doubles(std::vector<alexandria::MolProp> &mp, char *doubles,
                     {
                         fprintf(fp, "%5d  %s\n", ndouble+1, molname[prev].c_str());
                     }
-                    nwarn += mmm[prev]->Merge(*(mmm[cur]));
+                    nwarn += mmm[prev]->Merge(mmm[cur]);
                     mpi    = mp.erase(mmm[cur]);
 
                     bDouble = true;
@@ -639,8 +639,6 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
                              const char                      *fc_str)
 {
     alexandria::MolPropIterator        mpi;
-    alexandria::ExperimentIterator     ei;
-    alexandria::CalculationIterator    ci;
 
     const char                        *method, *basis;
     int                                i, n;
@@ -653,13 +651,9 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
     snew(qmc, 1);
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        for (ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
+        for (alexandria::ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
         {
             add_qmc_conf(qmc, ei->getConformation().c_str());
-        }
-        for (ci = mpi->BeginCalculation(); (ci < mpi->EndCalculation()); ci++)
-        {
-            add_qmc_conf(qmc, ci->getConformation().c_str());
         }
     }
     if (NULL != fc_str)
@@ -693,8 +687,12 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
 
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        for (ci = mpi->BeginCalculation(); (ci < mpi->EndCalculation()); ci++)
+        for (alexandria::ExperimentIterator ci = mpi->BeginExperiment(); (ci < mpi->EndExperiment()); ci++)
         {
+            if (dsExperiment ==  ci->dataSource())
+            {
+                continue;
+            }
             method = ci->getMethod().c_str();
             basis  = ci->getBasisset().c_str();
             for (ti = types.begin(); (ti < types.end()); ti++)

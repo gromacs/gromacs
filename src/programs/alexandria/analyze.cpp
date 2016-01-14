@@ -141,26 +141,26 @@ static void calc_frag_miller(Poldata     *                     pd,
 
                         if (ic == alexandria::iCmiller)
                         {
-                            alexandria::Calculation calc1(program, type, (char *)"ahc",
-                                                          ref, minimum, nofile);
+                            alexandria::Experiment calc1(program, type, (char *)"ahc",
+                                                         ref, minimum, nofile);
                             ahc = 4*sqr(ahc)/Nelec;
                             alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
-                            mpi->AddCalculation(calc1);
+                            mpi->AddExperiment(calc1);
 
-                            alexandria::Calculation             calc2(program, type, (char *)"ahp",
+                            alexandria::Experiment              calc2(program, type, (char *)"ahp",
                                                                       ref, minimum, nofile);
                             alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahp, 0);
                             calc2.AddPolar(md2);
-                            mpi->AddCalculation(calc2);
+                            mpi->AddExperiment(calc2);
                         }
                         else
                         {
-                            alexandria::Calculation             calc(program, type, minus,
+                            alexandria::Experiment              calc(program, type, minus,
                                                                      ref, minimum, nofile);
                             alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
-                            mpi->AddCalculation(calc);
+                            mpi->AddExperiment(calc);
                             if (NULL != debug)
                             {
                                 fprintf(debug, "Added polarizability %g for %s\n", p, iupac);

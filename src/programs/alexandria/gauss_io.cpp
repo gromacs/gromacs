@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -19,6 +53,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "molprop.h"
 #include "molprop_util.h"
@@ -58,7 +93,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
     {
         if ((i < natom) || (((i-natom) % maxpot) == 0))
         {
-            mpt.LastCalculation()->AddPotential(*esi);
+            mpt.LastExperiment()->AddPotential(*esi);
         }
     }
 }
@@ -143,7 +178,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                    const char *forcefield)
 {
     /* Read a gaussian log file */
-    OpenBabel::OBMol           mol, mol2;
+    OpenBabel::OBMol           mol;
     OpenBabel::OBAtomIterator  OBai;
     OpenBabel::OBBondIterator  OBbi;
     OpenBabel::OBConversion   *conv;
@@ -174,38 +209,35 @@ static void gmx_molprop_read_babel(const char *g98,
     // Now extract classification info.
     if (conv->SetOutFormat("fpt"))
     {
-        std::vector<std::string> vs;
-        std::string              ss;
+
         const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
-        char          *dup, *ptr;
-        unsigned int   i, j;
 
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
-        mol2 = mol;
-        ss   = conv->WriteString(&mol2, false);
-        if (OpenBabel::tokenize(vs, ss))
+        //        OpenBabel::OBMol         mol2 = mol;
+        std::string              ss = conv->WriteString(&mol, false);
+        std::vector<std::string> vs = gmx::splitString(ss);
+        for (size_t i = 0; (i < vs.size()); i++)
         {
-            for (i = 0; (i < vs.size()); i++)
+            size_t j;
+            for (j = 0; (j < nexclude); j++)
             {
-                for (j = 0; (j < nexclude); j++)
+                if (strcasecmp(exclude[j], vs[i].c_str()) == 0)
                 {
-                    if (strcasecmp(exclude[j], vs[i].c_str()) == 0)
-                    {
-                        break;
-                    }
+                    break;
                 }
-                if (j == nexclude)
+            }
+            if (j == nexclude)
+            {
+                char *ptr;
+                char *dup = strdup(vs[i].c_str());
+                while (NULL != (ptr = strchr(dup, '_')))
                 {
-                    dup = strdup(vs[i].c_str());
-                    while (NULL != (ptr = strchr(dup, '_')))
-                    {
-                        *ptr = ' ';
-                    }
-                    mpt.AddCategory(dup);
+                    *ptr = ' ';
                 }
+                mpt.AddCategory(dup);
             }
         }
     }
@@ -264,9 +296,9 @@ static void gmx_molprop_read_babel(const char *g98,
             g98ptr = (char *)g98;
         }
     }
-    alexandria::Calculation ca(program, method, basis, reference,
-                               conformation, g98ptr);
-    mpt.AddCalculation(ca);
+    alexandria::Experiment ca(program, method, basis, reference,
+                              conformation, g98ptr);
+    mpt.AddExperiment(ca);
 
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
@@ -312,42 +344,42 @@ static void gmx_molprop_read_babel(const char *g98,
                                             epGAS,
                                             convert2gmx(DeltaHf0, eg2cKcal_Mole),
                                             0);
-            mpt.LastCalculation()->AddEnergy(me1);
+            mpt.LastExperiment()->AddEnergy(me1);
             alexandria::MolecularEnergy me2("DeltaHform",
                                             mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaHfT, eg2cKcal_Mole),
                                             0);
-            mpt.LastCalculation()->AddEnergy(me2);
+            mpt.LastExperiment()->AddEnergy(me2);
             alexandria::MolecularEnergy me3("DeltaGform",
                                             mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaGfT, eg2cKcal_Mole),
                                             0);
-            mpt.LastCalculation()->AddEnergy(me3);
+            mpt.LastExperiment()->AddEnergy(me3);
             alexandria::MolecularEnergy me4("DeltaSform",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaSfT, eg2cCal_MolK),
                                             0);
-            mpt.LastCalculation()->AddEnergy(me4);
+            mpt.LastExperiment()->AddEnergy(me4);
             alexandria::MolecularEnergy me5("S0",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(S0T, eg2cCal_MolK),
                                             0);
-            mpt.LastCalculation()->AddEnergy(me5);
+            mpt.LastExperiment()->AddEnergy(me5);
             alexandria::MolecularEnergy me6("cp",
                                             mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(CPT, eg2cCal_MolK),
                                             0);
-            mpt.LastCalculation()->AddEnergy(me6);
+            mpt.LastExperiment()->AddEnergy(me6);
             const char *scomp[3] = { "Strans", "Srot", "Svib" };
             for (int i = 0; (i < 3); i++)
             {
@@ -357,7 +389,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                                 epGAS,
                                                 convert2gmx(Scomponents[i], eg2cCal_MolK),
                                                 0);
-                mpt.LastCalculation()->AddEnergy(mes);
+                mpt.LastExperiment()->AddEnergy(mes);
             }
         }
     }
@@ -399,7 +431,7 @@ static void gmx_molprop_read_babel(const char *g98,
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(100*atom->x(), 100*atom->y(), 100*atom->z());
             ca.AddCharge(aq);
-            mpt.LastCalculation()->AddAtom(ca);
+            mpt.LastExperiment()->AddAtom(ca);
         }
         // Not necessary to delete?
         //delete ff;
@@ -431,7 +463,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                          0.0,
                                          v3.GetX(), v3.GetY(), v3.GetZ(),
                                          v3.length(), 0.0);
-        mpt.LastCalculation()->AddDipole(dp);
+        mpt.LastExperiment()->AddDipole(dp);
     }
 
     // Quadrupole
@@ -446,7 +478,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                            0.0,
                                            mm[0], mm[4], mm[8],
                                            mm[1], mm[2], mm[5]);
-        mpt.LastCalculation()->AddQuadrupole(mq);
+        mpt.LastExperiment()->AddQuadrupole(mq);
     }
 
     // Polarizability
@@ -469,7 +501,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                                 unit2string(eg2cAngstrom3),
                                                 0.0,
                                                 mm[0], mm[4], mm[8], mm[1], mm[2], mm[5], alpha, 0);
-        mpt.LastCalculation()->AddPolar(mdp);
+        mpt.LastExperiment()->AddPolar(mdp);
     }
 
     // Electrostatic potential
