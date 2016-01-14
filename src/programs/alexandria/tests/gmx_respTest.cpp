@@ -93,7 +93,9 @@ class RespTest : public ::testing::Test
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd_->getForceField().c_str());
-            mp_.molProp()->Merge(molprop);
+            std::vector<MolProp> vmp;
+            vmp.push_back(molprop);
+            mp_.molProp()->Merge(vmp.begin());
         }
 
         // Static initiation, only run once every test.

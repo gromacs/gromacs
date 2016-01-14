@@ -81,7 +81,8 @@ class MolpropTest : public gmx::test::CommandLineTestBase
         void testMolProp ()
         {
             int mol = 1;
-            gmx::test::TestReferenceChecker myCheck(this->rootChecker());             for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
+            gmx::test::TestReferenceChecker myCheck(this->rootChecker());  
+            for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
             {
                 char mbuf[256];
                 snprintf(mbuf, sizeof(mbuf), "molecule %d name", mol);
@@ -108,7 +109,8 @@ class MolpropTest : public gmx::test::CommandLineTestBase
         void testExperiments ()
         {
             int mol = 1;
-            gmx::test::TestReferenceChecker myCheck(this->rootChecker());             for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
+            gmx::test::TestReferenceChecker myCheck(this->rootChecker());  
+            for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
             {
                 char mbuf[256];
                 int  exp = 1;
@@ -136,13 +138,14 @@ class MolpropTest : public gmx::test::CommandLineTestBase
         void testCalculations ()
         {
             int mol = 1;
-            gmx::test::TestReferenceChecker myCheck(this->rootChecker());             for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
+            gmx::test::TestReferenceChecker myCheck(this->rootChecker());  
+            for (alexandria::MolPropIterator mpi = mp_.begin(); (mpi < mp_.end()); ++mpi, ++mol)
             {
                 char mbuf[256];
                 int  calc = 1;
                 snprintf(mbuf, sizeof(mbuf), "molecule %d number of calcs", mol);
-                myCheck.checkInteger(mpi->NCalculation(), mbuf);
-                for (alexandria::CalculationIterator ci = mpi->BeginCalculation(); (ci < mpi->EndCalculation()); ++ci, ++calc)
+                myCheck.checkInteger(mpi->NExperiment(), mbuf);
+                for (alexandria::ExperimentIterator ci = mpi->BeginExperiment(); (ci < mpi->EndExperiment()); ++ci, ++calc)
                 {
                     char cbuf[256];
                     snprintf(cbuf, sizeof(cbuf), "molecule %d cakc %d", mol, calc);
@@ -219,10 +222,6 @@ class MolpropTest : public gmx::test::CommandLineTestBase
 
 TEST_F (MolpropTest, NameFormulaBonds){
     testMolProp();
-}
-
-TEST_F (MolpropTest, Calculations){
-    testCalculations();
 }
 
 TEST_F (MolpropTest, Experiments){

@@ -249,7 +249,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
         }
         else
         {
-            mpt = NULL;
+            mpt = nullptr;
         }
         switch (tree->type)
         {
@@ -269,6 +269,11 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                     }
                     get_attributes(fp, TRUE, indent, tree->properties, xbuf);
 
+                    alexandria::Experiment *last = nullptr;
+                    if (nullptr != mpt)
+                    {
+                        last = mpt->LastExperiment();
+                    }
                     switch (elem)
                     {
                         case exmlMOLECULES:
@@ -327,7 +332,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             break;
                         case exmlPOLARIZABILITY:
                             process_children(tree->children, xbuf);
-                            if (NN(xbuf[exmlTYPE])  && NN(xbuf[exmlUNIT]) &&
+                            if ((nullptr != last) &&
+                                NN(xbuf[exmlTYPE])  && NN(xbuf[exmlUNIT]) &&
                                 NN(xbuf[exmlTEMPERATURE]) &&
                                 ((NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR])) ||
                                  (NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))))
@@ -341,12 +347,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                         NN(xbuf[exmlXZ]) ? my_atof(xbuf[exmlXZ]) : 0,
                                                                         NN(xbuf[exmlYZ]) ? my_atof(xbuf[exmlYZ]) : 0,
                                                                         my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
-                                mpt->LastExperiment()->AddPolar(mdp);
+                                last->AddPolar(mdp);
                             }
                             break;
                         case exmlPOTENTIAL:
                             process_children(tree->children, xbuf);
-                            if (NN(xbuf[exmlX_UNIT]) && NN(xbuf[exmlV_UNIT]) &&
+                            if ((nullptr != last) &&
+                                NN(xbuf[exmlX_UNIT]) && NN(xbuf[exmlV_UNIT]) &&
                                 NN(xbuf[exmlESPID]) &&
                                 NN(xbuf[exmlX]) && NN(xbuf[exmlY]) &&
                                 NN(xbuf[exmlZ]) && NN(xbuf[exmlV]))
@@ -355,12 +362,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                       atoi(xbuf[exmlESPID]),
                                                                       my_atof(xbuf[exmlX]), my_atof(xbuf[exmlY]),
                                                                       my_atof(xbuf[exmlZ]), my_atof(xbuf[exmlV]));
-                                mpt->LastExperiment()->AddPotential(ep);
+                                last->AddPotential(ep);
                             }
                             break;
                         case exmlDIPOLE:
                             process_children(tree->children, xbuf);
-                            if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
+                            if ((nullptr != last) &&
+                                NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
                                 NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]),
                                 NN(xbuf[exmlTEMPERATURE]))
                             {
@@ -371,12 +379,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                 NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
                                                                 my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
 
-                                mpt->LastExperiment()->AddDipole(mdp);
+                                last->AddDipole(mdp);
                             }
                             break;
                         case exmlQUADRUPOLE:
                             process_children(tree->children, xbuf);
-                            if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
+                            if ((nullptr != last) &&
+                                NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
                                 NN(xbuf[exmlTEMPERATURE]) &&
                                 NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]) &&
                                 NN(xbuf[exmlXY]) && NN(xbuf[exmlXZ]) && NN(xbuf[exmlYZ]))
@@ -386,7 +395,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                    my_atof(xbuf[exmlXX]), my_atof(xbuf[exmlYY]),
                                                                    my_atof(xbuf[exmlZZ]), my_atof(xbuf[exmlXY]),
                                                                    my_atof(xbuf[exmlXZ]), my_atof(xbuf[exmlYZ]));
-                                mpt->LastExperiment()->AddQuadrupole(mq);
+                                last->AddQuadrupole(mq);
                             }
                             break;
                         case exmlBOND:
@@ -401,7 +410,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             break;
                         case exmlENERGY:
                             process_children(tree, xbuf);
-                            if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
+                            if ((nullptr != last) &&
+                                NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
                                 NN(xbuf[exmlENERGY]) && NN(xbuf[exmlTEMPERATURE]) &&
                                 NN(xbuf[exmlPHASE]))
                             {
@@ -411,7 +421,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                string2phase(xbuf[exmlPHASE]),
                                                                my_atof(xbuf[exmlENERGY]),
                                                                xbuf[exmlERROR] ? my_atof(xbuf[exmlERROR]) : 0.0);
-                                mpt->LastExperiment()->AddEnergy(me);
+                                last->AddEnergy(me);
                             }
                             break;
 
@@ -427,11 +437,16 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             if (NN(xbuf[exmlC_NAME]) && NN(xbuf[exmlC_NUMBER]) && bCompIt)
                             {
                                 alexandria::AtomNum an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER]));
-                                mpt->LastMolecularComposition()->AddAtom(an);
+                                alexandria::MolecularComposition *l = mpt->LastMolecularComposition();
+                                if (nullptr != l)
+                                {
+                                    l->AddAtom(an);
+                                }
                             }
                             break;
                         case exmlATOM:
-                            if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
+                            if ((nullptr != last) &&
+                                NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
                             {
                                 alexandria::CalcAtom ca(xbuf[exmlNAME], xbuf[exmlOBTYPE], atoi(xbuf[exmlATOMID]));
                                 sfree(xbuf[exmlNAME]);   xbuf[exmlNAME]   = NULL;
@@ -471,7 +486,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     }
                                 }
                                 /* Now finally add the atom */
-                                mpt->LastExperiment()->AddAtom(ca);
+                                last->AddAtom(ca);
                             }
                             break;
 

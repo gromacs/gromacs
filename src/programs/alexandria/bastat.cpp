@@ -348,8 +348,8 @@ static void lo_dump_histo(char *fn, char *xaxis, const gmx_output_env_t *oenv, i
     }
     if (sum > 0)
     {
-        char buf[STRLEN];
-        sprintf(buf, "%s N = %d", fn, Nsample);
+        char buf[256];
+        snprintf(buf, sizeof(buf), "%s N = %d", fn, Nsample);
         fp = xvgropen(fn, buf, xaxis, "P (a.u.)", oenv);
         for (j = j0; (j <= j1); j++)
         {

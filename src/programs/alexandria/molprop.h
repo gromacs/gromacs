@@ -57,8 +57,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
 #include "phase.h"
@@ -1381,7 +1379,7 @@ class MolProp
         //! Return pointer to the last inserted experiment or NULL if the number of experiments is zero
         Experiment *LastExperiment()
         {
-            if (NExperiment() > 0) { return &(_exper.back()); } else{ return NULL; }
+            if (NExperiment() > 0) { return &(_exper.back()); } else{ return nullptr; }
         }
 
         //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndExperiment in case it is not found
