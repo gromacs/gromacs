@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,7 +157,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     t_bin     *rb;
     int       *itc0, *itc1;
     int        ie    = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
-    int        idedl = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
+    int        idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
     int        isig  = -1;
     int        icj   = -1, ici = -1, icx = -1;
     int        inn[egNR];
@@ -224,6 +224,10 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             /* these probably need to be put into one of these categories */
             where();
             idedl = add_binr(rb, 1, &(ekind->dekindl));
+            if (bSumEkinhOld)
+            {
+                idedlo = add_binr(rb, 1, &(ekind->dekindl_old));
+            }
             where();
             ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
             where();
@@ -342,6 +346,10 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
                 }
             }
             extract_binr(rb, idedl, 1, &(ekind->dekindl));
+            if (bSumEkinhOld)
+            {
+                extract_binr(rb, idedlo, 1, &(ekind->dekindl_old));
+            }
             extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
             where();
         }
