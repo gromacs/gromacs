@@ -49,14 +49,26 @@
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_parallel_3dfft  {
-    fft5d_plan p1, p2;
+    fft5d_plan p1, p2, 
+	p1_virx, 
+	p1_viry, 
+	p1_virz, 
+	p2_virx,
+	p2_viry,
+	p2_virz;
 };
 
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
                            ivec                          ndata,
                            real     **                   real_data,
+                           real     **                   real_data_virx,
+                           real     **                   real_data_viry,
+                           real     **                   real_data_virz,
                            t_complex     **              complex_data,
+                           t_complex     **              complex_data_virx,
+                           t_complex     **              complex_data_viry,
+                           t_complex     **              complex_data_virz,
                            MPI_Comm                      comm[2],
                            gmx_bool                      bReproducible,
                            int                           nthreads)
@@ -81,11 +93,19 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
     {
         Nb = K; Mb = rN; Kb = M;  /* currently always true because ORDER_YZ always set */
     }
-
     (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data, complex_data, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p1_virx = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data_virx, complex_data_virx, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p1_viry = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data_viry, complex_data_viry, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p1_virz = fft5d_plan_3d(rN, M, K, rcomm, flags, (t_complex**)real_data_virz, complex_data_virz, &buf1, &buf2, nthreads);
 
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
                                       (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p2_virx = fft5d_plan_3d(Nb, Mb, Kb, rcomm, 
+		(flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data_virx, (t_complex**)real_data_virx, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p2_viry = fft5d_plan_3d(Nb, Mb, Kb, rcomm, 
+		(flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data_viry, (t_complex**)real_data_viry, &buf1, &buf2, nthreads);
+    (*pfft_setup)->p2_virz = fft5d_plan_3d(Nb, Mb, Kb, rcomm, 
+		(flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data_virz, (t_complex**)real_data_virz, &buf1, &buf2, nthreads);
 
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 != 0;
 }
@@ -175,10 +195,16 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
     if (dir == GMX_FFT_FORWARD || dir == GMX_FFT_REAL_TO_COMPLEX)
     {
         fft5d_execute(pfft_setup->p1, thread, wcycle);
+        fft5d_execute(pfft_setup->p1_virx, thread, wcycle);
+        fft5d_execute(pfft_setup->p1_viry, thread, wcycle);
+        fft5d_execute(pfft_setup->p1_virz, thread, wcycle);
     }
     else
     {
         fft5d_execute(pfft_setup->p2, thread, wcycle);
+        fft5d_execute(pfft_setup->p2_virx, thread, wcycle);
+        fft5d_execute(pfft_setup->p2_viry, thread, wcycle);
+        fft5d_execute(pfft_setup->p2_virz, thread, wcycle);
     }
     return 0;
 }
@@ -190,6 +216,12 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup)
     {
         fft5d_destroy(pfft_setup->p2);
         fft5d_destroy(pfft_setup->p1);
+        fft5d_destroy(pfft_setup->p2_virx);
+        fft5d_destroy(pfft_setup->p2_viry);
+        fft5d_destroy(pfft_setup->p2_virz);
+        fft5d_destroy(pfft_setup->p1_virx);
+        fft5d_destroy(pfft_setup->p1_viry);
+        fft5d_destroy(pfft_setup->p1_virz);
         sfree(pfft_setup);
     }
     return 0;

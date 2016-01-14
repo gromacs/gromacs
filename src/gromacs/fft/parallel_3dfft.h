@@ -81,7 +81,13 @@ int
     gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                                ivec                      ndata,
                                real **real_data,
+                               real **real_data_virx,
+                               real **real_data_viry,
+                               real **real_data_virz,
                                t_complex **complex_data,
+                               t_complex **complex_data_virx,
+                               t_complex **complex_data_viry,
+                               t_complex **complex_data_virz,
                                MPI_Comm                  comm[2],
                                gmx_bool                  bReproducible,
                                int                       nthreads);
