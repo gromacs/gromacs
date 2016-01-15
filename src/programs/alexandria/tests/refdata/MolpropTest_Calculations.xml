@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
-<ReferenceData>
-  <Int Name="molecule 1 number of calcs">37</Int>
-  <Int Name="molecule 2 number of calcs">44</Int>
-  <Int Name="molecule 3 number of calcs">44</Int>
-</ReferenceData>
