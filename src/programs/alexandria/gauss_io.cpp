@@ -98,10 +98,10 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 }
 
 // Include Open Babel classes for OBMol and OBConversion
-#ifdef HAVE_LIBOPENBABEL2
+#if HAVE_LIBOPENBABEL2
 // Hack to make this compile!
 #undef ANGSTROM
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
 #define KOKO HAVE_SYS_TIME_H
 #undef HAVE_SYS_TIME_H
 #endif
@@ -628,10 +628,10 @@ void ReadGauss(const char *g98,
                char *basis, int maxpot, int nsymm,
                const char *forcefield)
 {
-#ifdef HAVE_LIBOPENBABEL2
+#if HAVE_LIBOPENBABEL2
     gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,
                            maxpot, nsymm, forcefield);
 #else
-    fprintf(stderr, "For reading Gaussian input you need to link to OpenBabel\n");
+    gmx_fatal(FARGS, "For reading Gaussian input you need to link to OpenBabel");
 #endif
 }

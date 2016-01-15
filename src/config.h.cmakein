@@ -257,16 +257,16 @@
 #cmakedefine HAVE_LIBGSL
 
 /* Define to 1 if you have the CLN library (-lcln). */
-#cmakedefine HAVE_LIBCLN
+#cmakedefine01 HAVE_LIBCLN
 
 /* Define to 1 if you have the SQLITE3 library (-lsqlite3). */
-#cmakedefine HAVE_LIBSQLITE3
+#cmakedefine01 HAVE_LIBSQLITE3
 
 /* Define to 1 if you have the xml2 library (-lxml2). */
-#cmakedefine HAVE_LIBXML2
+#cmakedefine01 HAVE_LIBXML2
 
 /* Define to 1 if you have the openbabel2 library (-lopenbabel2). */
-#cmakedefine HAVE_LIBOPENBABEL2
+#cmakedefine01 HAVE_LIBOPENBABEL2
 
 /* Define to 1 if you have the dl library (-ldl). */
 #cmakedefine HAVE_LIBDL
