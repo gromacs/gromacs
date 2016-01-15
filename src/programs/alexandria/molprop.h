@@ -946,7 +946,7 @@ enum DataSource {
 
 const char *dataSourceName(DataSource ds);
 
-DataSource dataSourceFromName(const char *name);
+DataSource dataSourceFromName(const std::string &name);
 
 /*! \brief
  * Contains molecular data based on experiments
@@ -1379,7 +1379,14 @@ class MolProp
         //! Return pointer to the last inserted experiment or NULL if the number of experiments is zero
         Experiment *LastExperiment()
         {
-            if (NExperiment() > 0) { return &(_exper.back()); } else{ return nullptr; }
+            if (NExperiment() > 0) 
+            { 
+                return &(_exper.back()); 
+            }
+            else
+            {
+                return nullptr;
+            }
         }
 
         //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndExperiment in case it is not found

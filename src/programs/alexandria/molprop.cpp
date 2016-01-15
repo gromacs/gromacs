@@ -133,17 +133,17 @@ const char *dataSourceName(DataSource ds)
     return nullptr;
 }
 
-DataSource dataSourceFromName(const char *name)
+DataSource dataSourceFromName(const std::string &name)
 {
-    if (strcasecmp(dataSourceName(dsExperiment), name) == 0)
+    if (strcasecmp(dataSourceName(dsExperiment), name.c_str()) == 0)
     {
         return dsExperiment;
     }
-    else if (strcasecmp(dataSourceName(dsTheory), name) == 0)
+    else if (strcasecmp(dataSourceName(dsTheory), name.c_str()) == 0)
     {
         return dsTheory;
     }
-    gmx_fatal(FARGS, "No data source corresponding to %s", name);
+    gmx_fatal(FARGS, "No data source corresponding to %s", name.c_str());
 }
 
 /*********************** GenericProperty routines **********************/

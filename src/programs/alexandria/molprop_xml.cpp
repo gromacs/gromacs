@@ -58,10 +58,9 @@
 
 //int xmlDoValidityCheckingDefaultValue;
 
-static gmx_bool NN(char *x)
+static bool NN(const std::string &s)
 {
-    return (NULL != x);
-//    return ((NULL != (x)) && (strlen(x) > 0));
+    return s.size() > 0;
 }
 
 static const char *xmltypes[] = {
@@ -147,11 +146,11 @@ static char *sp(int n, char buf[], int maxindent)
     return buf;
 }
 
-double my_atof(char *ptr)
+static double my_atof(const std::string &ptr)
 {
-    if (NULL != ptr)
+    if (ptr.size() > 0)
     {
-        return atof(ptr);
+        return atof(ptr.c_str());
     }
     else
     {
@@ -159,44 +158,43 @@ double my_atof(char *ptr)
     }
 }
 
-static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr, char *xbuf[])
+static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr, 
+                           std::vector<std::string> &xbuf)
 {
-    char  buf[100];
-    char *attrname, *attrval;
-    int   i, kkk;
-
     if (bZero)
     {
-        for (i = 0; (i < exmlNR); i++)
+        for (auto &x : xbuf)
         {
-            xbuf[i] = NULL;
+            x.clear();
         }
     }
 
     while (attr != NULL)
     {
-        attrname = (char *)attr->name;
-        attrval  = (char *)attr->children->content;
+        char *attrname = (char *)attr->name;
+        char *attrval  = (char *)attr->children->content;
 
-#define atest(s) ((strcasecmp(attrname, s) == 0) && (attrval != NULL))
+        int kkk;
         if ((kkk = find_elem(attrname, exmlNR, exml_names)) != -1)
         {
             if (attrval != NULL)
             {
-                xbuf[kkk] = strdup(attrval);
+                xbuf[kkk].assign(attrval);
             }
         }
         if (fp)
         {
-            fprintf(fp, "%sProperty: '%s' Value: '%s'\n", sp(indent, buf, 99),
+            char  buf[100];
+
+            fprintf(fp, "%sProperty: '%s' Value: '%s'\n", 
+                    sp(indent, buf, sizeof(buf)-1),
                     attrname, attrval);
         }
         attr = attr->next;
-#undef atest
     }
 }
 
-static void process_children(xmlNodePtr tree, char *xbuf[])
+static void process_children(xmlNodePtr tree, std::vector<std::string> xbuf)
 {
     int node;
 
@@ -206,9 +204,9 @@ static void process_children(xmlNodePtr tree, char *xbuf[])
             (NULL != tree->children) &&
             (NULL != tree->children->content))
         {
-            if (NULL == xbuf[node])
+            if (xbuf[node].size() == 0)
             {
-                xbuf[node] = strdup((char *)tree->children->content);
+                xbuf[node].assign(reinterpret_cast<char *>(tree->children->content));
             }
         }
         tree = tree->next;
@@ -225,10 +223,12 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
     alexandria::MolProp         *mpt;
     alexandria::CalcAtomIterator atom_it;
     gmx_bool                     bCompIt = FALSE;
-    int                          i;
-    char                        *xbuf[exmlNR];
+    std::vector<std::string>     xbuf;
     int                          node, elem = -1;
-
+    std::string                  xxx;
+    
+    xxx.clear();
+    xbuf.resize(exmlNR, xxx);
     while (tree != NULL)
     {
         if (fp)
@@ -291,15 +291,15 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             }
                             if (NN(xbuf[exmlMASS]))
                             {
-                                mp.SetMass(atof(xbuf[exmlMASS]));
+                                mp.SetMass(my_atof(xbuf[exmlMASS]));
                             }
                             if (NN(xbuf[exmlCHARGE]))
                             {
-                                mp.SetCharge(atoi(xbuf[exmlCHARGE]));
+                                mp.SetCharge(atoi(xbuf[exmlCHARGE].c_str()));
                             }
                             if (NN(xbuf[exmlMULTIPLICITY]))
                             {
-                                mp.SetMultiplicity(atoi(xbuf[exmlMULTIPLICITY]));
+                                mp.SetMultiplicity(atoi(xbuf[exmlMULTIPLICITY].c_str()));
                             }
                             molprops.push_back(mp);
                             mpt = &(molprops.back());
@@ -340,13 +340,14 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             {
                                 alexandria::MolecularPolarizability mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
                                                                         my_atof(xbuf[exmlTEMPERATURE]),
-                                                                        NN(xbuf[exmlXX]) ? my_atof(xbuf[exmlXX]) : 0,
-                                                                        NN(xbuf[exmlYY]) ? my_atof(xbuf[exmlYY]) : 0,
-                                                                        NN(xbuf[exmlZZ]) ? my_atof(xbuf[exmlZZ]) : 0,
-                                                                        NN(xbuf[exmlXY]) ? my_atof(xbuf[exmlXY]) : 0,
-                                                                        NN(xbuf[exmlXZ]) ? my_atof(xbuf[exmlXZ]) : 0,
-                                                                        NN(xbuf[exmlYZ]) ? my_atof(xbuf[exmlYZ]) : 0,
-                                                                        my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
+                                                                        my_atof(xbuf[exmlXX]),
+                                                                        my_atof(xbuf[exmlYY]),
+                                                                        my_atof(xbuf[exmlZZ]),
+                                                                        my_atof(xbuf[exmlXY]),
+                                                                        my_atof(xbuf[exmlXZ]),
+                                                                        my_atof(xbuf[exmlYZ]),
+                                                                        my_atof(xbuf[exmlAVERAGE]),
+                                                                        my_atof(xbuf[exmlERROR]));
                                 last->AddPolar(mdp);
                             }
                             break;
@@ -359,7 +360,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 NN(xbuf[exmlZ]) && NN(xbuf[exmlV]))
                             {
                                 alexandria::ElectrostaticPotential ep(xbuf[exmlX_UNIT], xbuf[exmlV_UNIT],
-                                                                      atoi(xbuf[exmlESPID]),
+                                                                      atoi(xbuf[exmlESPID].c_str()),
                                                                       my_atof(xbuf[exmlX]), my_atof(xbuf[exmlY]),
                                                                       my_atof(xbuf[exmlZ]), my_atof(xbuf[exmlV]));
                                 last->AddPotential(ep);
@@ -369,15 +370,16 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             process_children(tree->children, xbuf);
                             if ((nullptr != last) &&
                                 NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]),
+                                NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]) &&
                                 NN(xbuf[exmlTEMPERATURE]))
                             {
                                 alexandria::MolecularDipole mdp(xbuf[exmlTYPE], xbuf[exmlUNIT],
                                                                 my_atof(xbuf[exmlTEMPERATURE]),
-                                                                NN(xbuf[exmlX]) ? my_atof(xbuf[exmlX]) : 0,
-                                                                NN(xbuf[exmlY]) ? my_atof(xbuf[exmlY]) : 0,
-                                                                NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
-                                                                my_atof(xbuf[exmlAVERAGE]), my_atof(xbuf[exmlERROR]));
+                                                                my_atof(xbuf[exmlX]),
+                                                                my_atof(xbuf[exmlY]),
+                                                                my_atof(xbuf[exmlZ]),
+                                                                my_atof(xbuf[exmlAVERAGE]),
+                                                                my_atof(xbuf[exmlERROR]));
 
                                 last->AddDipole(mdp);
                             }
@@ -403,8 +405,8 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             if (NN(xbuf[exmlAI]) && NN(xbuf[exmlAJ]) &&
                                 NN(xbuf[exmlBONDORDER]))
                             {
-                                alexandria::Bond b(atoi(xbuf[exmlAI]), atoi(xbuf[exmlAJ]),
-                                                   atoi(xbuf[exmlBONDORDER]));
+                                alexandria::Bond b(atoi(xbuf[exmlAI].c_str()), atoi(xbuf[exmlAJ].c_str()),
+                                                   atoi(xbuf[exmlBONDORDER].c_str()));
                                 mpt->AddBond(b);
                             }
                             break;
@@ -420,7 +422,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                my_atof(xbuf[exmlTEMPERATURE]),
                                                                string2phase(xbuf[exmlPHASE]),
                                                                my_atof(xbuf[exmlENERGY]),
-                                                               xbuf[exmlERROR] ? my_atof(xbuf[exmlERROR]) : 0.0);
+                                                               my_atof(xbuf[exmlERROR]));
                                 last->AddEnergy(me);
                             }
                             break;
@@ -436,7 +438,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                         case exmlCATOM:
                             if (NN(xbuf[exmlC_NAME]) && NN(xbuf[exmlC_NUMBER]) && bCompIt)
                             {
-                                alexandria::AtomNum an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER]));
+                                alexandria::AtomNum an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER].c_str()));
                                 alexandria::MolecularComposition *l = mpt->LastMolecularComposition();
                                 if (nullptr != l)
                                 {
@@ -448,10 +450,11 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             if ((nullptr != last) &&
                                 NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
                             {
-                                alexandria::CalcAtom ca(xbuf[exmlNAME], xbuf[exmlOBTYPE], atoi(xbuf[exmlATOMID]));
-                                sfree(xbuf[exmlNAME]);   xbuf[exmlNAME]   = NULL;
-                                sfree(xbuf[exmlOBTYPE]); xbuf[exmlOBTYPE] = NULL;
-                                sfree(xbuf[exmlATOMID]); xbuf[exmlATOMID] = NULL;
+                                alexandria::CalcAtom ca(xbuf[exmlNAME], xbuf[exmlOBTYPE],
+                                                        atoi(xbuf[exmlATOMID].c_str()));
+                                xbuf[exmlNAME].clear();
+                                xbuf[exmlOBTYPE].clear();
+                                xbuf[exmlATOMID].clear();
                                 for (tc = tree->children; (NULL != tc); tc = tc->next)
                                 {
                                     get_attributes(fp, FALSE, indent, tc->properties, xbuf);
@@ -467,10 +470,10 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     {
                                         ca.SetUnit(xbuf[exmlUNIT]);
                                         ca.SetCoords(my_atof(xbuf[exmlX]), my_atof(xbuf[exmlY]), my_atof(xbuf[exmlZ]));
-                                        sfree(xbuf[exmlX]); xbuf[exmlX]       = NULL;
-                                        sfree(xbuf[exmlY]); xbuf[exmlY]       = NULL;
-                                        sfree(xbuf[exmlZ]); xbuf[exmlZ]       = NULL;
-                                        sfree(xbuf[exmlUNIT]); xbuf[exmlUNIT] = NULL;
+                                        xbuf[exmlX].clear();
+                                        xbuf[exmlY].clear();
+                                        xbuf[exmlZ].clear();
+                                        xbuf[exmlUNIT].clear();
                                     }
                                     if (NN(xbuf[exmlQ]) && NN(xbuf[exmlTYPE]) &&
                                         NN(xbuf[exmlTEMPERATURE]) &&
@@ -480,9 +483,9 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                     my_atof(xbuf[exmlTEMPERATURE]),
                                                                     my_atof(xbuf[exmlQ]));
                                         ca.AddCharge(aq);
-                                        sfree(xbuf[exmlQ]);    xbuf[exmlQ]    = NULL;
-                                        sfree(xbuf[exmlUNIT]); xbuf[exmlUNIT] = NULL;
-                                        sfree(xbuf[exmlTYPE]); xbuf[exmlTYPE] = NULL;
+                                        xbuf[exmlQ].clear();
+                                        xbuf[exmlUNIT].clear();
+                                        xbuf[exmlTYPE].clear();
                                     }
                                 }
                                 /* Now finally add the atom */
@@ -521,11 +524,11 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                             break;
                     }
                 }
-                for (i = 0; (i < exmlNR); i++)
+                for (auto &i : xbuf)
                 {
-                    if (NN(xbuf[i]))
+                    if (NN(i))
                     {
-                        sfree(xbuf[i]);
+                        i.clear();
                     }
                 }
                 if (tree->children)
