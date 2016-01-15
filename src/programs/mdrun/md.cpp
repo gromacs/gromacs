@@ -174,7 +174,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_int64_t     step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
-    gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
+    gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
                     bFirstStep, bStateFromCP, bStateFromTPX, bInitStep, bLastStep,
                     bBornRadii, bStartingFromCpt;
@@ -997,21 +997,18 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                but the virial needs to be calculated on both the current step and the 'next' step. Future
                reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
 
-            bCalcEner = do_per_step(step-1, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
+            bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
+            bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
         }
         else
         {
-            bCalcEner = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
+            bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && do_per_step(step, ir->nstpcouple));
         }
-
-        /* Do we need global communication ? */
-        bGStat = (bCalcVir || bCalcEner || bStopCM ||
-                  do_per_step(step, nstglobalcomm) ||
-                  (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)));
+        bCalcEner = bCalcEnerStep;
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
@@ -1019,8 +1016,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             bCalcVir  = TRUE;
             bCalcEner = TRUE;
-            bGStat    = TRUE;
         }
+
+        /* Do we need global communication ? */
+        bGStat = (bCalcVir || bCalcEner || bStopCM ||
+                  do_per_step(step, nstglobalcomm) ||
+                  (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)));
 
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
@@ -1603,7 +1604,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 if (bCalcEner)
                 {
-                    upd_mdebin(mdebin, bDoDHDL, TRUE,
+                    upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
                                t, mdatoms->tmass, enerd, state,
                                ir->fepvals, ir->expandedvals, lastbox,
                                shake_vir, force_vir, total_vir, pres,
