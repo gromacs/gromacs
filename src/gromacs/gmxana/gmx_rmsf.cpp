@@ -49,6 +49,8 @@
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -381,7 +383,7 @@ int gmx_rmsf(int argc, char *argv[])
                 aid = index[i];
                 for (d = 0; (d < DIM); d++)
                 {
-                    rmsd_x[i][d] += sqr(x[aid][d]-xref[aid][d]);
+                    rmsd_x[i][d] += gmx::square(x[aid][d]-xref[aid][d]);
                 }
             }
         }

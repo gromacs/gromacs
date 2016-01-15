@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,11 +48,11 @@
 #endif
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
@@ -488,7 +488,7 @@ static gmx_bool analyze_data(
                     s = 0.0;
                     for (j = 0; j < nrepeats; j++)
                     {
-                        s += std::pow( pd->Gcycles[j] - pd->Gcycles_Av, 2 );
+                        s += gmx::square( pd->Gcycles[j] - pd->Gcycles_Av );
                     }
                     s /= (nrepeats - 1);
                     s  = std::sqrt(s);
@@ -656,7 +656,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     const char filename[]     = "benchtest.log";
 
     /* This string should always be identical to the one in copyrite.c,
-     * gmx_print_version_info() in the defined(GMX_MPI) section */
+     * gmx_print_version_info() in the GMX_MPI section */
     const char match_mpi[]     = "MPI library:        MPI";
     const char match_mdrun[]   = "Executable: ";
     const char match_gpu[]     = "GPU support:        enabled";
@@ -1326,7 +1326,7 @@ static void make_npme_list(
             case eNpmeSubset:
                 /* For 2d PME we want a common largest factor of at least the cube
                  * root of the number of PP nodes */
-                min_factor = static_cast<int>(std::pow(npp, 1.0/3.0));
+                min_factor = static_cast<int>(std::cbrt(npp));
                 break;
             default:
                 gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
@@ -2256,7 +2256,6 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efXVG, "-swap",   "swapions", ffOPTWR },
         /* Output files that are deleted after each benchmark run */
         { efTRN, "-bo",     "bench",    ffWRITE },
@@ -2288,7 +2287,7 @@ int gmx_tune_pme(int argc, char *argv[])
     int             nthreads = 1;
 
     const char     *procstring[] =
-    { NULL, "-np", "-n", "none", NULL };
+    { NULL, "np", "n", "none", NULL };
     const char     *npmevalues_opt[] =
     { NULL, "auto", "all", "subset", NULL };
 
@@ -2309,7 +2308,7 @@ int gmx_tune_pme(int argc, char *argv[])
         { "-np",       FALSE, etINT,  {&nnodes},
           "Number of ranks to run the tests on (must be > 2 for separate PME ranks)" },
         { "-npstring", FALSE, etENUM, {procstring},
-          "Specify the number of ranks to [TT]$MPIRUN[tt] using this string"},
+          "Name of the [TT]$MPIRUN[tt] option that specifies the number of ranks to use ('np', or 'n'; use 'none' if there is no such option)" },
         { "-ntmpi",    FALSE, etINT,  {&nthreads},
           "Number of MPI-threads to run the tests on (turns MPI & mpirun off)"},
         { "-r",        FALSE, etINT,  {&repeats},
@@ -2416,7 +2415,7 @@ int gmx_tune_pme(int argc, char *argv[])
          * mpirun command. */
         if (std::strcmp(procstring[0], "none") != 0)
         {
-            sprintf(bbuf, " %s %d ", procstring[0], nnodes);
+            sprintf(bbuf, " -%s %d ", procstring[0], nnodes);
         }
         else
         {
@@ -2455,7 +2454,7 @@ int gmx_tune_pme(int argc, char *argv[])
                 asize(pa), pa);
     /* Check any GPU IDs passed make sense, and fill the data structure for them */
     snew(gpu_ids, 1);
-    parse_digits_from_plain_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
+    parse_digits_from_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
 
     /* Determine the maximum and minimum number of PME nodes to test,
      * the actual list of settings is build in do_the_tests(). */
@@ -2517,7 +2516,7 @@ int gmx_tune_pme(int argc, char *argv[])
         fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
         if (std::strcmp(procstring[0], "none") != 0)
         {
-            fprintf(fp, "Passing # of ranks via  : %s\n", procstring[0]);
+            fprintf(fp, "Passing # of ranks via  : -%s\n", procstring[0]);
         }
         else
         {

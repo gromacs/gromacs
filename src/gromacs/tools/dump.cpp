@@ -52,21 +52,23 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)
@@ -80,7 +82,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     gmx_groups_t *groups;
     t_topology    top;
 
-    read_tpxheader(fn, &tpx, TRUE, NULL, NULL);
+    read_tpxheader(fn, &tpx, TRUE);
 
     read_tpx_state(fn,
                    tpx.bIr  ? &ir : NULL,
@@ -107,7 +109,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
             pr_title(stdout, indent, fn);
             pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &(ir) : NULL, FALSE);
 
-            pr_header(stdout, indent, "header", &(tpx));
+            pr_tpxheader(stdout, indent, "header", &(tpx));
 
             if (!bSysTop)
             {

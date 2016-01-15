@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,15 +47,14 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
-#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
@@ -128,14 +127,14 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
             na_c = std::max(grid->na_c, grid->na_cj);
 
             /* Approximately cubic cells */
-            tlen   = std::pow(static_cast<real>(na_c/atom_density), static_cast<real>(1.0/3.0));
+            tlen   = std::cbrt(na_c/atom_density);
             tlen_x = tlen;
             tlen_y = tlen;
         }
         else
         {
             /* Approximately cubic sub cells */
-            tlen   = std::pow(static_cast<real>(grid->na_c/atom_density), static_cast<real>(1.0/3.0));
+            tlen   = std::cbrt(grid->na_c/atom_density);
             tlen_x = tlen*GPU_NSUBCELL_X;
             tlen_y = tlen*GPU_NSUBCELL_Y;
         }
@@ -406,7 +405,7 @@ static void sort_atoms(int dim, gmx_bool Backwards,
     }
 }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define R2F_D(x) ((float)((x) >= 0 ? ((1-GMX_FLOAT_EPS)*(x)) : ((1+GMX_FLOAT_EPS)*(x))))
 #define R2F_U(x) ((float)((x) >= 0 ? ((1+GMX_FLOAT_EPS)*(x)) : ((1-GMX_FLOAT_EPS)*(x))))
 #else
@@ -509,6 +508,9 @@ static void calc_bounding_box_x_x8(int na, const real *x, nbnxn_bb_t *bb)
 static void calc_bounding_box_x_x4_halves(int na, const real *x,
                                           nbnxn_bb_t *bb, nbnxn_bb_t *bbj)
 {
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
+
     calc_bounding_box_x_x4(std::min(na, 2), x, bbj);
 
     if (na > 2)
@@ -521,20 +523,16 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
          * so we don't need to treat special cases in the rest of the code.
          */
 #ifdef NBNXN_SEARCH_BB_SIMD4
-        gmx_simd4_store_f(&bbj[1].lower[0], gmx_simd4_load_f(&bbj[0].lower[0]));
-        gmx_simd4_store_f(&bbj[1].upper[0], gmx_simd4_load_f(&bbj[0].upper[0]));
+        store4(&bbj[1].lower[0], load4(&bbj[0].lower[0]));
+        store4(&bbj[1].upper[0], load4(&bbj[0].upper[0]));
 #else
         bbj[1] = bbj[0];
 #endif
     }
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
-    gmx_simd4_store_f(&bb->lower[0],
-                      gmx_simd4_min_f(gmx_simd4_load_f(&bbj[0].lower[0]),
-                                      gmx_simd4_load_f(&bbj[1].lower[0])));
-    gmx_simd4_store_f(&bb->upper[0],
-                      gmx_simd4_max_f(gmx_simd4_load_f(&bbj[0].upper[0]),
-                                      gmx_simd4_load_f(&bbj[1].upper[0])));
+    store4(&bb->lower[0], min(load4(&bbj[0].lower[0]), load4(&bbj[1].lower[0])));
+    store4(&bb->upper[0], max(load4(&bbj[0].upper[0]), load4(&bbj[1].upper[0])));
 #else
     {
         int i;
@@ -590,21 +588,24 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
 /* Coordinate order xyz?, bb order xyz0 */
 static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
 {
-    gmx_simd4_float_t bb_0_S, bb_1_S;
-    gmx_simd4_float_t x_S;
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
 
-    bb_0_S = gmx_simd4_load_f(x);
+    Simd4Float bb_0_S, bb_1_S;
+    Simd4Float x_S;
+
+    bb_0_S = load4(x);
     bb_1_S = bb_0_S;
 
     for (int i = 1; i < na; i++)
     {
-        x_S    = gmx_simd4_load_f(x+i*NNBSBB_C);
-        bb_0_S = gmx_simd4_min_f(bb_0_S, x_S);
-        bb_1_S = gmx_simd4_max_f(bb_1_S, x_S);
+        x_S    = load4(x+i*NNBSBB_C);
+        bb_0_S = min(bb_0_S, x_S);
+        bb_1_S = max(bb_1_S, x_S);
     }
 
-    gmx_simd4_store_f(&bb->lower[0], bb_0_S);
-    gmx_simd4_store_f(&bb->upper[0], bb_1_S);
+    store4(&bb->lower[0], bb_0_S);
+    store4(&bb->upper[0], bb_1_S);
 }
 
 /* Coordinate order xyz?, bb order xxxxyyyyzzzz */
@@ -628,6 +629,9 @@ static void calc_bounding_box_xxxx_simd4(int na, const float *x,
 /* Combines pairs of consecutive bounding boxes */
 static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
 {
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
+
     for (int i = 0; i < grid->ncx*grid->ncy; i++)
     {
         /* Starting bb in a column is expected to be 2-aligned */
@@ -638,14 +642,14 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
         for (c2 = sc2; c2 < sc2+nc2; c2++)
         {
 #ifdef NBNXN_SEARCH_BB_SIMD4
-            gmx_simd4_float_t min_S, max_S;
+            Simd4Float min_S, max_S;
 
-            min_S = gmx_simd4_min_f(gmx_simd4_load_f(&bb[c2*2+0].lower[0]),
-                                    gmx_simd4_load_f(&bb[c2*2+1].lower[0]));
-            max_S = gmx_simd4_max_f(gmx_simd4_load_f(&bb[c2*2+0].upper[0]),
-                                    gmx_simd4_load_f(&bb[c2*2+1].upper[0]));
-            gmx_simd4_store_f(&grid->bbj[c2].lower[0], min_S);
-            gmx_simd4_store_f(&grid->bbj[c2].upper[0], max_S);
+            min_S = min(load4(&bb[c2*2+0].lower[0]),
+                        load4(&bb[c2*2+1].lower[0]));
+            max_S = max(load4(&bb[c2*2+0].upper[0]),
+                        load4(&bb[c2*2+1].upper[0]));
+            store4(&grid->bbj[c2].lower[0], min_S);
+            store4(&grid->bbj[c2].upper[0], max_S);
 #else
             for (int j = 0; j < NNBSBB_C; j++)
             {
@@ -883,7 +887,7 @@ static void fill_cell(const nbnxn_search_t nbs,
         offset = (a0 - grid->cell0*grid->na_sc) >> grid->na_c_2log;
         bb_ptr = grid->bb + offset;
 
-#if defined GMX_NBNXN_SIMD && GMX_SIMD_REAL_WIDTH == 2
+#if GMX_SIMD && GMX_SIMD_REAL_WIDTH == 2
         if (2*grid->na_cj == grid->na_c)
         {
             calc_bounding_box_x_x4_halves(na, nbat->x+X4_IND_A(a0), bb_ptr,
@@ -1612,7 +1616,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#if (defined GMX_OPENMP) && !(defined __clang_analyzer__)
+#if GMX_OPENMP && !(defined __clang_analyzer__)
     // cppcheck-suppress unreadVariable
     int nthreads = gmx_omp_nthreads_get(emntPairsearch);
 #endif

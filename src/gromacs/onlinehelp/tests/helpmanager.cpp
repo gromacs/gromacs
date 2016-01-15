@@ -52,6 +52,7 @@
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/stringtest.h"
@@ -69,13 +70,15 @@ class HelpTestBase : public gmx::test::StringTestBase
 
         MockHelpTopic              rootTopic_;
         gmx::StringOutputStream    helpFile_;
+        gmx::TextWriter            writer_;
         gmx::HelpWriterContext     context_;
         gmx::HelpManager           manager_;
 };
 
 HelpTestBase::HelpTestBase()
     : rootTopic_("", NULL, "Root topic text"),
-      context_(&helpFile_, gmx::eHelpOutputFormat_Console),
+      writer_(&helpFile_),
+      context_(&writer_, gmx::eHelpOutputFormat_Console),
       manager_(rootTopic_, context_)
 {
 }

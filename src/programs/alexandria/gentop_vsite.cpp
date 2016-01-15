@@ -183,7 +183,8 @@ static void calc_vsite2parm(t_atoms *atoms,
      * We put the first atom I at coordinate 0.
      */
     com   = (mJ*rB+mK*rC+mL*rD)/(mT);
-    I     = mI*sqr(com) + mJ*sqr(rB-com) + mK*sqr(rC-com) + mL*sqr(rD-com);
+    I     = (mI*gmx::square(com) + mJ*gmx::square(rB-com) + 
+             mK*gmx::square(rC-com) + mL*gmx::square(rD-com));
     rVV   = com+I/(com*mT);
     mV    = com*mT/rVV;
     if (NULL != debug)

@@ -39,11 +39,14 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
 #include "pme-simd.h"
 #include "pme-spline-work.h"
+
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 #define DO_FSPLINE(order)                      \
     for (ithx = 0; (ithx < order); ithx++)              \
@@ -94,11 +97,8 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
     // cppcheck-suppress unreadVariable cppcheck seems not to analyze code from pme-simd4.h
     struct pme_spline_work *work = pme->spline_work;
 #ifndef PME_SIMD4_UNALIGNED
-    real                    thz_buffer[GMX_SIMD4_WIDTH*3],  *thz_aligned;
-    real                    dthz_buffer[GMX_SIMD4_WIDTH*3], *dthz_aligned;
-
-    thz_aligned  = gmx_simd4_align_r(thz_buffer);
-    dthz_aligned = gmx_simd4_align_r(dthz_buffer);
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH*2];
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  dthz_aligned[GMX_SIMD4_WIDTH*2];
 #endif
 #endif
 

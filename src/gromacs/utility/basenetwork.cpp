@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 
 bool gmx_mpi_initialized()
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     return 0;
 #else
     int n;
@@ -63,10 +63,10 @@ bool gmx_mpi_initialized()
 
 int gmx_node_num()
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     return 1;
 #else
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     if (!gmx_mpi_initialized())
     {
         return 1;
@@ -80,10 +80,10 @@ int gmx_node_num()
 
 int gmx_node_rank()
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     return 0;
 #else
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     if (!gmx_mpi_initialized())
     {
         return 0;
@@ -95,7 +95,7 @@ int gmx_node_rank()
 #endif
 }
 
-#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
+#if GMX_LIB_MPI && GMX_TARGET_BGQ
 #ifdef __clang__
 /* IBM's declaration of this function in
  * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
@@ -161,9 +161,9 @@ static int mpi_hostname_hash()
 {
     int hash_int;
 
-#ifdef GMX_TARGET_BGQ
+#if GMX_TARGET_BGQ
     hash_int = bgq_nodenum();
-#elif defined GMX_LIB_MPI
+#elif GMX_LIB_MPI
     int  resultlen;
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
@@ -200,7 +200,7 @@ int gmx_physicalnode_id_hash(void)
 {
     int hash;
 
-#ifdef GMX_MPI
+#if GMX_MPI
     hash = mpi_hostname_hash();
 #else
     hash = 0;
@@ -216,7 +216,7 @@ int gmx_physicalnode_id_hash(void)
 
 void gmx_broadcast_world(int size, void *buffer)
 {
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Bcast(buffer, size, MPI_BYTE, 0, MPI_COMM_WORLD);
 #else
     GMX_UNUSED_VALUE(size);
@@ -224,7 +224,7 @@ void gmx_broadcast_world(int size, void *buffer)
 #endif
 }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 void gmx_abort(int errorno)
 {
     MPI_Abort(MPI_COMM_WORLD, errorno);

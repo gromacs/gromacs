@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,7 +123,7 @@ typedef struct {
 
 /*! \brief Data structure for grid overlap communication */
 typedef struct {
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Comm         mpi_comm;
 #endif
     int              nnodes, nodeid;
@@ -163,7 +163,7 @@ typedef struct {
     int      dimind;        /* The index of the dimension, 0=x, 1=y */
     int      nslab;
     int      nodeid;
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Comm mpi_comm;
 #endif
 
@@ -236,7 +236,7 @@ typedef struct gmx_pme_t {
 
     MPI_Comm      mpi_comm;
     MPI_Comm      mpi_comm_d[2]; /* Indexed on dimension, 0=x, 1=y */
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Datatype  rvec_mpi;      /* the pme vector's MPI type */
 #endif
 
@@ -275,7 +275,7 @@ typedef struct gmx_pme_t {
     int     pmegrid_start_ix, pmegrid_start_iy, pmegrid_start_iz;
 
     /* Work data for spreading and gathering */
-    struct pme_spline_work   *spline_work;
+    pme_spline_work          *spline_work;
 
     real                    **fftgrid; /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
     /* inside the interpolation grid, but separate for 2D PME decomp. */

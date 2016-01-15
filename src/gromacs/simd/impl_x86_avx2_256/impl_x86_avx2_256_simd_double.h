@@ -40,76 +40,88 @@
 
 #include <immintrin.h>
 
-#include "impl_x86_avx2_256_common.h"
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd_double.h"
 
-/****************************************************
- *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#undef  gmx_simd_fmadd_d
-#define gmx_simd_fmadd_d           _mm256_fmadd_pd
-#undef  gmx_simd_fmsub_d
-#define gmx_simd_fmsub_d           _mm256_fmsub_pd
-#undef  gmx_simd_fnmadd_d
-#define gmx_simd_fnmadd_d          _mm256_fnmadd_pd
-#undef  gmx_simd_fnmsub_d
-#define gmx_simd_fnmsub_d          _mm256_fnmsub_pd
-#undef  gmx_simd_get_exponent_d
-#define gmx_simd_get_exponent_d    gmx_simd_get_exponent_d_avx2_256
-#undef  gmx_simd_set_exponent_d
-#define gmx_simd_set_exponent_d    gmx_simd_set_exponent_d_avx2_256
-#undef  gmx_simd_cvt_db2dib
-#define gmx_simd_cvt_db2dib        gmx_simd_cvt_db2dib_avx2_256
-#undef  gmx_simd_cvt_dib2db
-#define gmx_simd_cvt_dib2db        gmx_simd_cvt_dib2db_avx2_256
-
-/*********************************************************
- * SIMD DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- *********************************************************/
-static gmx_inline gmx_simd_double_t gmx_simdcall
-gmx_simd_get_exponent_d_avx2_256(gmx_simd_double_t x)
+namespace gmx
 {
-    const __m256d  expmask      = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FF0000000000000LL));
-    const __m256i  expbias      = _mm256_set1_epi64x(1023LL);
-    __m256i        iexp;
-    __m128i        iexp128;
 
-    iexp = _mm256_castpd_si256(_mm256_and_pd(x, expmask));
-    iexp = _mm256_sub_epi64(_mm256_srli_epi64(iexp, 52), expbias);
-    iexp = _mm256_shuffle_epi32(iexp, _MM_SHUFFLE(3, 1, 2, 0));
-
-    iexp128 = _mm256_extractf128_si256(iexp, 1);
-    iexp128 = _mm_unpacklo_epi64(_mm256_castsi256_si128(iexp), iexp128);
-    return _mm256_cvtepi32_pd(iexp128);
+static inline SimdDouble gmx_simdcall
+fma(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
 }
 
-static gmx_inline gmx_simd_double_t gmx_simdcall
-gmx_simd_set_exponent_d_avx2_256(gmx_simd_double_t x)
+static inline SimdDouble gmx_simdcall
+fms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    const __m256i  expbias      = _mm256_set1_epi64x(1023LL);
-    __m256i        iexp         = _mm256_cvtepi32_epi64(_mm256_cvtpd_epi32(x));
-
-    iexp = _mm256_slli_epi64(_mm256_add_epi64(iexp, expbias), 52);
-    return _mm256_castsi256_pd(iexp);
+    return {
+               _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
 }
 
-static gmx_inline gmx_simd_dibool_t gmx_simdcall
-gmx_simd_cvt_db2dib_avx2_256(gmx_simd_dbool_t a)
+static inline SimdDouble gmx_simdcall
+fnma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    __m128i ia = _mm256_castsi256_si128(_mm256_castpd_si256(a));
-    __m128i ib = _mm256_extractf128_si256(_mm256_castpd_si256(a), 0x1);
-
-    ia = _mm_packs_epi32(ia, ib);
-
-    return ia;
+    return {
+               _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
 }
 
-static gmx_inline gmx_simd_dbool_t gmx_simdcall
-gmx_simd_cvt_dib2db_avx2_256(gmx_simd_dibool_t ia)
+static inline SimdDouble gmx_simdcall
+fnms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    __m128d lo = _mm_castsi128_pd(_mm_unpacklo_epi32(ia, ia));
-    __m128d hi = _mm_castsi128_pd(_mm_unpackhi_epi32(ia, ia));
-
-    return _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), hi, 0x1);
+    return {
+               _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD_DOUBLE_H */
+static inline SimdDBool gmx_simdcall
+testBits(SimdDouble a)
+{
+    __m256i ia  = _mm256_castpd_si256(a.simdInternal_);
+    __m256i res = _mm256_andnot_si256( _mm256_cmpeq_epi64(ia, _mm256_setzero_si256()), _mm256_cmpeq_epi64(ia, ia));
+
+    return {
+               _mm256_castsi256_pd(res)
+    };
+}
+
+static inline SimdDouble
+frexp(SimdDouble value, SimdDInt32 * exponent)
+{
+    const __m256d  exponentMask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FF0000000000000LL));
+    const __m256d  mantissaMask = _mm256_castsi256_pd( _mm256_set1_epi64x(0x800FFFFFFFFFFFFFLL));
+    const __m256i  exponentBias = _mm256_set1_epi64x(1022LL); // add 1 to make our definition identical to frexp()
+    const __m256d  half         = _mm256_set1_pd(0.5);
+    __m256i        iExponent;
+    __m128i        iExponent128;
+
+    iExponent = _mm256_castpd_si256(_mm256_and_pd(value.simdInternal_, exponentMask));
+    iExponent = _mm256_sub_epi64(_mm256_srli_epi64(iExponent, 52), exponentBias);
+    iExponent = _mm256_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
+
+    iExponent128             = _mm256_extractf128_si256(iExponent, 1);
+    exponent->simdInternal_  = _mm_unpacklo_epi64(_mm256_castsi256_si128(iExponent), iExponent128);
+
+    return {
+               _mm256_or_pd(_mm256_and_pd(value.simdInternal_, mantissaMask), half)
+    };
+}
+
+static inline SimdDouble
+ldexp(SimdDouble value, SimdDInt32 exponent)
+{
+    const __m256i  exponentBias = _mm256_set1_epi64x(1023LL);
+    __m256i        iExponent    = _mm256_cvtepi32_epi64(exponent.simdInternal_);
+
+    iExponent = _mm256_slli_epi64(_mm256_add_epi64(iExponent, exponentBias), 52);
+    return {
+               _mm256_mul_pd(value.simdInternal_, _mm256_castsi256_pd(iExponent))
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD_DOUBLE_H

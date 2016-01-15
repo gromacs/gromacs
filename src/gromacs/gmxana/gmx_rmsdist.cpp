@@ -45,10 +45,10 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -59,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
 static void calc_dist(int nind, int index[], rvec x[], int ePBC, matrix box,
@@ -126,8 +127,8 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
     {
         for (j = i+1; (j < nind); j++)
         {
-            temp1_3 = std::pow(dtot1_3[i][j]/nframes, static_cast<real>(-1.0/3.0));
-            temp1_6 = std::pow(dtot1_6[i][j]/nframes, static_cast<real>(-1.0/6.0));
+            temp1_3 = gmx::invcbrt(dtot1_3[i][j]/nframes);
+            temp1_6 = gmx::invsixthroot(dtot1_6[i][j]/nframes);
             if (temp1_3 > *max1_3)
             {
                 *max1_3 = temp1_3;
@@ -478,8 +479,8 @@ static void calc_noe(int isize, int *noe_index,
         {
             gj = noe_index[j];
             noe[gi][gj].nr++;
-            noe[gi][gj].i_3 += std::pow(dtot1_3[i][j], static_cast<real>(-3.0));
-            noe[gi][gj].i_6 += std::pow(dtot1_6[i][j], static_cast<real>(-6.0));
+            noe[gi][gj].i_3 += 1.0/gmx::power3(dtot1_3[i][j]);
+            noe[gi][gj].i_6 += 1.0/gmx::power6(dtot1_6[i][j]);
         }
     }
 
@@ -488,8 +489,8 @@ static void calc_noe(int isize, int *noe_index,
     {
         for (j = i+1; j < gnr; j++)
         {
-            noe[i][j].r_3 = std::pow(noe[i][j].i_3/noe[i][j].nr, static_cast<real>(-1.0/3.0));
-            noe[i][j].r_6 = std::pow(noe[i][j].i_6/noe[i][j].nr, static_cast<real>(-1.0/6.0));
+            noe[i][j].r_3 = gmx::invcbrt(noe[i][j].i_3/noe[i][j].nr);
+            noe[i][j].r_6 = gmx::invsixthroot(noe[i][j].i_6/noe[i][j].nr);
             noe[j][i]     = noe[i][j];
         }
     }

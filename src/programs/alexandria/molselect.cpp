@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/strdb.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -46,7 +46,7 @@ gmx_molselect *gmx_molselect_init(const char *fn)
     int            i, j;
 
     snew(gms, 1);
-    gms->nmol = get_file(fn, &strings);
+    gms->nmol = get_lines(fn, &strings);
     snew(gms->ims, gms->nmol);
     for (i = 0; (i < gms->nmol); i++)
     {

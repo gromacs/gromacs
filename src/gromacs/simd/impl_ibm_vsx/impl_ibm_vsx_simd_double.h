@@ -36,318 +36,803 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD_DOUBLE_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD_DOUBLE_H
 
-#include <math.h>
+#include "config.h"
 
-#include <altivec.h>
+#include "gromacs/utility/basedefinitions.h"
 
-#include "impl_ibm_vsx_common.h"
+#include "impl_ibm_vsx_definitions.h"
 
-/* IBM VSX SIMD instruction wrappers. Power7 and later.
- *
- * While this instruction set is similar to VMX, there are quite a few differences
- * that make it easier to understand if we start from scratch rather than by
- * including the VMX implementation and changing lots of things.
- */
-
-
-/* Make sure we do not screw up c++ - undefine vector/bool, and rely on __vector,
- * which is present both on gcc and xlc.
- */
-#undef vector
-
-/* g++ is also unhappy with the clash of vector bool and the C++ reserved 'bool',
- * which is solved by undefining bool and reyling on __bool. However, that does
- * not work with xlc, which requires us to use bool. Solve the conflict by
- * defining a new vsx_bool.
- */
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-#    define vsx_bool __bool
-#    undef  bool
-#else
-#    define vsx_bool bool
-#endif
-
-
-/****************************************************
- *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#define gmx_simd_double_t          __vector double
-#define gmx_simd_load_d(m)         (*(const gmx_simd_double_t *)(m))
-#define gmx_simd_store_d(m, x)      { *(gmx_simd_double_t *)(m) = (x); }
-#define gmx_simd_load1_d(m)        vec_splats((double)(*m))
-#define gmx_simd_set1_d(x)         vec_splats((double)(x))
-#if defined(__ibmxl__) || defined(__xlC__)
-#    define gmx_simd_loadu_d(m)    vec_xld2(0, (double *)(m))
-#    define gmx_simd_storeu_d(m, x) vec_xstd2(x, 0, (m))
-#else
-/* GCC can handle unaligned load/store as pointer dereference */
-#    define gmx_simd_loadu_d       gmx_simd_load_d
-#    define gmx_simd_storeu_d      gmx_simd_store_d
-#endif
-#define gmx_simd_setzero_d()       vec_splats(0.0)
-#define gmx_simd_add_d(a, b)       vec_add(a, b)
-#define gmx_simd_sub_d(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_d(a, b)       vec_mul(a, b)
-#define gmx_simd_fmadd_d(a, b, c)  vec_madd(a, b, c)
-#define gmx_simd_fmsub_d(a, b, c)  vec_msub(a, b, c)
-/* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
-#define gmx_simd_fnmadd_d(a, b, c) vec_nmsub(a, b, c)
-/* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
-#define gmx_simd_fnmsub_d(a, b, c) vec_nmadd(a, b, c)
-#define gmx_simd_and_d(a, b)       vec_and(a, b)
-#define gmx_simd_andnot_d(a, b)    vec_andc(b, a)
-#define gmx_simd_or_d(a, b)        vec_or(a, b)
-#define gmx_simd_xor_d(a, b)       vec_xor(a, b)
-#define gmx_simd_rsqrt_d(a)        vec_rsqrte(a)
-#define gmx_simd_rcp_d(a)          vec_re(a)
-#define gmx_simd_fabs_d(a)         vec_abs(a)
-#define gmx_simd_fneg_d(a)         (-(a))
-#define gmx_simd_max_d(a, b)       vec_max(a, b)
-#define gmx_simd_min_d(a, b)       vec_min(a, b)
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-/* gcc up to at least version 4.9 does not support vec_round() in double precision. */
-#    define gmx_simd_round_d(a)    ({ __vector double res; __asm__ ("xvrdpi %0,%1" : "=ww" (res) : "ww" ((__vector double) (a))); res; })
-#else
-/* IBM xlC */
-#    define gmx_simd_round_d(a)    vec_round(a)
-#endif
-#define gmx_simd_trunc_d(a)        vec_trunc(a)
-#define gmx_simd_fraction_d(x)     vec_sub(x, vec_trunc(x))
-#define gmx_simd_get_exponent_d(a) gmx_simd_get_exponent_d_ibm_vsx(a)
-#define gmx_simd_get_mantissa_d(a) gmx_simd_get_mantissa_d_ibm_vsx(a)
-#define gmx_simd_set_exponent_d(a) gmx_simd_set_exponent_d_ibm_vsx(a)
-/* integer datatype corresponding to double: gmx_simd_dint32_t */
-#define gmx_simd_dint32_t          __vector signed int
-#define gmx_simd_load_di(m)        gmx_simd_load_di_ibm_vsx(m)
-#define gmx_simd_store_di(m, x)    gmx_simd_store_di_ibm_vsx(m, x)
-#define gmx_simd_set1_di(i)        vec_splats((int)(i))
-#define gmx_simd_loadu_di          gmx_simd_load_di
-#define gmx_simd_storeu_di         gmx_simd_store_di
-#define gmx_simd_setzero_di()      vec_splats((int)0)
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-/* gcc up to at least version 4.9 is missing intrinsics for double precision
- * to integer conversion, use inline asm instead.
- */
-#    define gmx_simd_cvtt_d2i(a)   gmx_simd_cvtt_d2i_ibm_vsx(a)
-#    define gmx_simd_cvt_i2d(a)    gmx_simd_cvt_i2d_ibm_vsx(a)
-#else
-/* IBM xlC */
-#    define gmx_simd_cvtt_d2i(a)       vec_cts(a, 0)
-#    define gmx_simd_cvt_i2d(a)        vec_ctd(a, 0)
-#endif
-#define gmx_simd_cvt_d2i(a)         gmx_simd_cvtt_d2i(gmx_simd_round_d(a))
-#define gmx_simd_extract_di(a, i)   gmx_simd_extract_fi_ibm_vsx(a, (i)*2)
-/* Integer logical ops on gmx_simd_dint32_t */
-#define gmx_simd_slli_di(a, i)      vec_sl(a, vec_splats((unsigned int)(i)))
-#define gmx_simd_srli_di(a, i)      vec_sr(a, vec_splats((unsigned int)(i)))
-#define gmx_simd_and_di(a, b)       vec_and(a, b)
-#define gmx_simd_andnot_di(a, b)    vec_andc(b, a)
-#define gmx_simd_or_di(a, b)        vec_or(a, b)
-#define gmx_simd_xor_di(a, b)       vec_xor(a, b)
-/* Integer arithmetic ops on gmx_simd_dint32_t */
-#define gmx_simd_add_di(a, b)       vec_add(a, b)
-#define gmx_simd_sub_di(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_di(a, b)       ((a)*(b))
-/* Boolean & comparison operations on gmx_simd_double_t */
-#define gmx_simd_dbool_t           __vector vsx_bool long long
-#define gmx_simd_cmpeq_d(a, b)     vec_cmpeq(a, b)
-#define gmx_simd_cmplt_d(a, b)     vec_cmplt(a, b)
-#define gmx_simd_cmple_d(a, b)     vec_cmple(a, b)
-#define gmx_simd_and_db(a, b)      (__vector vsx_bool long long)vec_and((__vector signed int)a, (__vector signed int)b)
-#define gmx_simd_or_db(a, b)       (__vector vsx_bool long long)vec_or((__vector signed int)a, (__vector signed int)b)
-#define gmx_simd_anytrue_db(a)     vec_any_ne((__vector vsx_bool int)a, (__vector vsx_bool int)vec_splats(0))
-#define gmx_simd_blendzero_d(a, sel)    vec_and(a, (__vector double)sel)
-#define gmx_simd_blendnotzero_d(a, sel) vec_andc(a, (__vector double)sel)
-#define gmx_simd_blendv_d(a, b, sel)    vec_sel(a, b, sel)
-#define gmx_simd_reduce_d(a)       gmx_simd_reduce_d_ibm_vsx(a)
-/* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_dibool_t          __vector vsx_bool int
-#define gmx_simd_cmpeq_di(a, b)    vec_cmpeq(a, b)
-#define gmx_simd_cmplt_di(a, b)    vec_cmplt(a, b)
-#define gmx_simd_and_dib(a, b)     vec_and(a, b)
-#define gmx_simd_or_dib(a, b)      vec_or(a, b)
-/* Since we have applied all operations to pairs of elements we can work on all elements here */
-#define gmx_simd_anytrue_dib(a)          vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
-#define gmx_simd_blendzero_di(a, sel)    vec_and(a, (__vector signed int)sel)
-#define gmx_simd_blendnotzero_di(a, sel) vec_andc(a, (__vector signed int)sel)
-#define gmx_simd_blendv_di(a, b, sel)    vec_sel(a, b, sel)
-/* Conversions between different booleans */
-#define gmx_simd_cvt_db2dib(x)     (__vector vsx_bool int)(x)
-#define gmx_simd_cvt_dib2db(x)     (__vector vsx_bool long long)(x)
-/* Float/double conversion */
-#define gmx_simd_cvt_f2dd(f, d0, d1)  gmx_simd_cvt_f2dd_ibm_vsx(f, d0, d1)
-#define gmx_simd_cvt_dd2f(d0, d1)     gmx_simd_cvt_dd2f_ibm_vsx(d0, d1)
-
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-/* gcc-4.9 is missing double-to-float/float-to-double conversions. */
-#    define gmx_vsx_f2d(x) ({ __vector double res; __asm__ ("xvcvspdp %0,%1" : "=ww" (res) : "ww" ((__vector float) (x))); res; })
-#    define gmx_vsx_d2f(x) ({ __vector float res; __asm__ ("xvcvdpsp %0,%1" : "=ww" (res) : "ww" ((__vector double) (x))); res; })
-#else
-/* f2d and d2f are indeed identical on xlC; it is selected by the argument and result type. */
-#    define gmx_vsx_f2d(x)       vec_cvf(x)
-#    define gmx_vsx_d2f(x)       vec_cvf(x)
-#endif
-
-
-
-/****************************************************
- * DOUBLE PREC. IMPLEMENTATION HELPER FUNCTIONS     *
- ****************************************************/
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_load_di_ibm_vsx(const int *m)
+namespace gmx
 {
-#ifdef __xlC__
-    /* old xlc version 12 does not understand long long VSX instructions */
+
+class SimdDouble
+{
+    public:
+        SimdDouble() {}
+
+        // gcc-4.9 does not recognize that we use the parameter
+        SimdDouble(double gmx_unused d) : simdInternal_(vec_splats(d)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdDouble(__vector double simd) : simdInternal_(simd) {}
+
+        __vector double  simdInternal_;
+};
+
+class SimdDInt32
+{
+    public:
+        SimdDInt32() {}
+
+        // gcc-4.9 does not recognize that we use the parameter
+        SimdDInt32(std::int32_t gmx_unused i) : simdInternal_(vec_splats(i)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdDInt32(__vector signed int simd) : simdInternal_(simd) {}
+
+        __vector signed int  simdInternal_;
+};
+
+class SimdDBool
+{
+    public:
+        SimdDBool() {}
+
+        SimdDBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool long long>(vec_splats( b ? 0xFFFFFFFFFFFFFFFFULL : 0))) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdDBool(__vector vsxBool long long simd) : simdInternal_(simd) {}
+
+        __vector vsxBool long long simdInternal_;
+};
+
+class SimdDIBool
+{
+    public:
+        SimdDIBool() {}
+
+        SimdDIBool(bool b) : simdInternal_(reinterpret_cast<__vector vsxBool int>(vec_splats( b ? 0xFFFFFFFF : 0))) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdDIBool(__vector vsxBool int simd) : simdInternal_(simd) {}
+
+        __vector vsxBool int  simdInternal_;
+};
+
+// The VSX load & store operations are a bit of a mess. The interface is different
+// for xlc version 12, xlc version 13, and gcc. Long-term IBM recommends
+// simply using pointer dereferencing both for aligned and unaligned loads.
+// That's nice, but unfortunately xlc still bugs out when the pointer is
+// not aligned. Sticking to vec_xl/vec_xst isn't a solution either, since
+// that appears to be buggy for some _aligned_ loads :-)
+//
+// For now, we use pointer dereferencing for all aligned load/stores, and
+// for unaligned ones with gcc. On xlc we use vec_xlw4/vec_xstw4 for
+// unaligned memory operations. The latest docs recommend using the overloaded
+// vec_xl/vec_xst, but that is not supported on xlc version 12. We'll
+// revisit things once xlc is a bit more stable - for now you probably want
+// to stick to gcc...
+
+static inline SimdDouble gmx_simdcall
+load(const double *m)
+{
+    return {
+               *reinterpret_cast<const __vector double *>(m)
+    };
+}
+
+static inline void gmx_simdcall
+store(double *m, SimdDouble a)
+{
+    *reinterpret_cast<__vector double *>(m) = a.simdInternal_;
+}
+
+static inline SimdDouble gmx_simdcall
+loadU(const double *m)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    return {
+               vec_xlw4(0, const_cast<double *>(m))
+    }
+#else
+    return {
+               *reinterpret_cast<const __vector double *>(m)
+    };
+#endif
+}
+
+static inline void gmx_simdcall
+storeU(double *m, SimdDouble a)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    vec_xstw4(a.simdInternal_, 0, m);
+#else
+    *reinterpret_cast<__vector double *>(m) = a.simdInternal_;
+#endif
+}
+
+static inline SimdDouble gmx_simdcall
+setZeroD()
+{
+    return {
+               vec_splats(0.0)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+loadDI(const std::int32_t * m)
+{
     __vector signed int          t0, t1;
     const __vector unsigned char perm = { 0, 1, 2, 3, 0, 1, 2, 3, 16, 17, 18, 19, 16, 17, 18, 19 };
     t0 = vec_splats(m[0]);
     t1 = vec_splats(m[1]);
-    return vec_perm(t0, t1, perm);
-#else
-    __vector long long int t0;
-    t0 = vec_splats(*(long long int *)m);
-    return vec_mergeh((__vector signed int)t0, (__vector signed int)t0);
-#endif
+    return {
+               vec_perm(t0, t1, perm)
+    };
 }
 
-static gmx_inline void
-gmx_simd_store_di_ibm_vsx(int *m, gmx_simd_dint32_t x)
+// gcc-4.9 does not understand that arguments to vec_extract() are used
+static inline void gmx_simdcall
+store(std::int32_t * m, SimdDInt32 gmx_unused x)
 {
-#ifdef __xlC__
-    /* old xlc version 12 does not understand long long VSX instructions */
-    m[0] = vec_extract(x, 0);
-    m[1] = vec_extract(x, 2);
-#else
-    __vector unsigned char perm = { 0, 1, 2, 3, 8, 9, 10, 11, 0, 1, 2, 3, 8, 9, 10, 11 };
-    x                   = vec_perm(x, x, perm);
-    *(long long int *)m = vec_extract((__vector long long int)x, 0);
-#endif
+    m[0] = vec_extract(x.simdInternal_, 0);
+    m[1] = vec_extract(x.simdInternal_, 2);
 }
 
+static inline SimdDInt32 gmx_simdcall
+loadUDI(const std::int32_t *m)
+{
+    return loadDI(m);
+}
+
+static inline void gmx_simdcall
+storeU(std::int32_t * m, SimdDInt32 a)
+{
+    return store(m, a);
+}
+
+static inline SimdDInt32 gmx_simdcall
+setZeroDI()
+{
+    return {
+               vec_splats(static_cast<int>(0))
+    };
+}
+
+// gcc-4.9 does not detect that vec_extract() uses its argument
+template<int index>
+static inline std::int32_t gmx_simdcall
+extract(SimdDInt32 gmx_unused a)
+{
+    return vec_extract(a.simdInternal_, 2*index);
+}
+
+static inline SimdDouble gmx_simdcall
+operator&(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+andNot(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_andc(b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+operator|(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+operator^(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_xor(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+operator+(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+operator-(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+operator-(SimdDouble x)
+{
+    return {
+               -x.simdInternal_
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+operator*(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_mul(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+fma(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+fms(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               vec_msub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+fnma(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+fnms(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               vec_nmadd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+rsqrt(SimdDouble x)
+{
+    return {
+               vec_rsqrte(x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+rcp(SimdDouble x)
+{
+    return {
+               vec_re(x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskAdd(SimdDouble a, SimdDouble b, SimdDBool m)
+{
+    return {
+               vec_add(a.simdInternal_, vec_and(b.simdInternal_, reinterpret_cast<__vector double>(m.simdInternal_)))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzMul(SimdDouble a, SimdDouble b, SimdDBool m)
+{
+    SimdDouble prod = a * b;
+
+    return {
+               vec_and(prod.simdInternal_, reinterpret_cast<__vector double>(m.simdInternal_))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzFma(SimdDouble a, SimdDouble b, SimdDouble c, SimdDBool m)
+{
+    SimdDouble prod = fma(a, b, c);
+
+    return {
+               vec_and(prod.simdInternal_, reinterpret_cast<__vector double>(m.simdInternal_))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzRsqrt(SimdDouble x, SimdDBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = vec_sel(vec_splats(1.0f), x.simdInternal_, m.simdInternal_);
+#endif
+    return {
+               vec_and(vec_rsqrte(x.simdInternal_), reinterpret_cast<__vector double>(m.simdInternal_))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzRcp(SimdDouble x, SimdDBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = vec_sel(vec_splats(1.0f), x.simdInternal_, m.simdInternal_);
+#endif
+    return {
+               vec_and(vec_re(x.simdInternal_), reinterpret_cast<__vector double>(m.simdInternal_))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+abs(SimdDouble x)
+{
+    return {
+               vec_abs( x.simdInternal_ )
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+max(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_max(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+min(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_min(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+round(SimdDouble x)
+{
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-static gmx_inline gmx_simd_dint32_t
-gmx_simd_cvtt_d2i_ibm_vsx(gmx_simd_double_t x)
-{
-    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
-    gmx_simd_dint32_t            ix;
-
-    __asm__ ("xvcvdpsxws %0,%1" : "=ww" (ix) : "ww" ((__vector double) (x)));
-
-    return vec_perm(ix, ix, perm);
-}
-
-static gmx_inline gmx_simd_double_t
-gmx_simd_cvt_i2d_ibm_vsx(gmx_simd_dint32_t ix)
-{
-    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
-    gmx_simd_double_t            x;
-    ix = vec_perm(ix, ix, perm);
-    __asm__ ("xvcvsxwdp %0,%1" : "=ww" (x) : "ww" ((__vector signed int) (ix)));
-    return x;
-}
+// gcc up to at least version 4.9 does not have vec_round() in double precision - use inline asm
+    __vector double res;
+    __asm__ ("xvrdpi %x0,%x1" : "=wd" (res) : "wd" (x.simdInternal_));
+    return {
+               res
+    };
+#else
+    return {
+               vec_round( x.simdInternal_ )
+    };
 #endif
+}
 
-
-static gmx_inline gmx_simd_double_t
-gmx_simd_get_exponent_d_ibm_vsx(gmx_simd_double_t x)
+static inline SimdDouble gmx_simdcall
+trunc(SimdDouble x)
 {
+    return {
+               vec_trunc( x.simdInternal_ )
+    };
+}
+
+static inline SimdDouble
+frexp(SimdDouble value, SimdDInt32 * exponent)
+{
+    // Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds
+    const __vector double     exponentMask = reinterpret_cast<__vector double>(vec_splats(0x7FF0000000000000ULL));
+    const __vector signed int exponentBias = vec_splats(1022);
+    const __vector double     half         = vec_splats(0.5);
+    __vector signed int       iExponent;
+
+    iExponent               = reinterpret_cast<__vector signed int>(vec_and(value.simdInternal_, exponentMask));
+    // The data is in the upper half of each double (corresponding to elements 1 and 3).
+    // First shift 52-32=20bits, and then permute to swap element 0 with 1 and element 2 with 3
+    // For big endian they are in opposite order, so then we simply skip the swap.
+    iExponent               = vec_sr(iExponent, vec_splats(20U));
 #ifndef __BIG_ENDIAN__
     const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+    iExponent               = vec_perm(iExponent, iExponent, perm);
 #endif
-    gmx_simd_double_t            expmask = (__vector double)vec_splats(0x7FF0000000000000ULL);
-    gmx_simd_dint32_t            i1023   = vec_splats(1023);
-    gmx_simd_dint32_t            iexp;
+    iExponent               = vec_sub(iExponent, exponentBias);
+    exponent->simdInternal_ = iExponent;
 
-    iexp = (__vector signed int)gmx_simd_and_d(x, expmask);
-    /* The data is in the upper half of each double (corresponding to elements 1/3).
-     * First shift 52-32=20bits, and then permute to swap 0 with 1 and 2 with 3
-     * For big endian they are in opposite order, so we avoid the swap.
-     */
-    iexp = gmx_simd_srli_fi(iexp, 20);
-#ifndef __BIG_ENDIAN__
-    iexp = vec_perm(iexp, iexp, perm);
-#endif
-    iexp = vec_sub(iexp, i1023);
-    /* Now we have the correct integer in elements 0 & 2. Never mind about elements 1,3 */
-    return gmx_simd_cvt_i2d(iexp);
+    return {
+               vec_or(vec_andc(value.simdInternal_, exponentMask), half)
+    };
 }
 
-static gmx_inline gmx_simd_double_t
-gmx_simd_get_mantissa_d_ibm_vsx(gmx_simd_double_t x)
+static inline SimdDouble
+ldexp(SimdDouble value, SimdDInt32 exponent)
 {
-    gmx_simd_double_t  expmask = (__vector double)vec_splats(0x7FF0000000000000ULL);
-
-    x = gmx_simd_andnot_d(expmask, vec_abs(x));
-    /* Reset zero (but correctly biased) exponent */
-    return gmx_simd_or_d(x, vec_splats(1.0));
-}
-
-static gmx_inline gmx_simd_double_t
-gmx_simd_set_exponent_d_ibm_vsx(gmx_simd_double_t x)
-{
-    gmx_simd_dint32_t            iexp  = gmx_simd_cvt_d2i(x);
-    gmx_simd_dint32_t            i1023 = vec_splats(1023);
+    const __vector signed int    exponentBias = vec_splats(1023);
+    __vector signed int          iExponent;
 #ifdef __BIG_ENDIAN__
     const __vector unsigned char perm = {0, 1, 2, 3, 16, 17, 18, 19, 8, 9, 10, 11, 16, 17, 18, 19};
 #else
     const __vector unsigned char perm = {16, 17, 18, 19, 0, 1, 2, 3, 16, 17, 18, 19, 8, 9, 10, 11};
 #endif
 
-    iexp = vec_add(iexp, i1023);
-    /* exponent is now present in pairs of integers; 0011.
-     * Elements 0/2 already correspond to the upper half of each double,
-     * so we only need to shift by another 52-32=20 bits.
-     * The remaining elements are set to zero.
-     */
-    iexp = vec_sl(iexp, (__vector unsigned int)vec_splats((int)20));
-    iexp = vec_perm(iexp, vec_splats(0), perm);
-    return (__vector double)iexp;
+    iExponent = vec_add(exponent.simdInternal_, exponentBias);
+    // exponent is now present in pairs of integers; 0011.
+    // Elements 0/2 already correspond to the upper half of each double,
+    // so we only need to shift by another 52-32=20 bits.
+    // The remaining elements are set to zero.
+    iExponent = vec_sl(iExponent, vec_splats(20U));
+    iExponent = vec_perm(iExponent, vec_splats(0), perm);
+
+    return {
+               vec_mul(value.simdInternal_, reinterpret_cast<__vector double>(iExponent))
+    };
 }
 
-static gmx_inline double
-gmx_simd_reduce_d_ibm_vsx(gmx_simd_double_t x)
+static inline double gmx_simdcall
+reduce(SimdDouble x)
 {
     const __vector unsigned char perm = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
 #ifdef __xlC__
     /* old xlc version 12 does not understand vec_perm() with double arguments */
-    x = vec_add(x, (__vector double)vec_perm((__vector signed int)x, (__vector signed int)x, (__vector unsigned char)perm));
+    x.simdInternal_ = vec_add(x.simdInternal_,
+                              reinterpret_cast<__vector double>(vec_perm(reinterpret_cast<__vector signed int>(x.simdInternal_),
+                                                                         reinterpret_cast<__vector signed int>(x.simdInternal_), perm)));
 #else
-    x = vec_add(x, vec_perm(x, x, (__vector unsigned char)perm));
+    x.simdInternal_ = vec_add(x.simdInternal_, vec_perm(x.simdInternal_, x.simdInternal_, perm));
 #endif
-    return vec_extract(x, 0);
+    return vec_extract(x.simdInternal_, 0);
 }
 
+static inline SimdDBool gmx_simdcall
+operator==(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
 
-/****************************************************
- * CONVERSION IMPLEMENTATION HELPER FUNCTIONS       *
- ****************************************************/
-static gmx_inline void
-gmx_simd_cvt_f2dd_ibm_vsx(gmx_simd_float_t f0,
-                          gmx_simd_double_t * d0, gmx_simd_double_t * d1)
+static inline SimdDBool gmx_simdcall
+operator!=(SimdDouble a, SimdDouble b)
+{
+    return {
+               reinterpret_cast<__vector vsxBool long long>(vec_or(reinterpret_cast<__vector signed int>(vec_cmpgt(a.simdInternal_, b.simdInternal_)),
+                                                                   reinterpret_cast<__vector signed int>(vec_cmplt(a.simdInternal_, b.simdInternal_))))
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+operator<(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+operator<=(SimdDouble a, SimdDouble b)
+{
+    return {
+               vec_cmple(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+testBits(SimdDouble a)
+{
+#ifdef __POWER8_VECTOR__
+    return {
+               vec_cmpgt(reinterpret_cast<__vector unsigned long long>(a.simdInternal_), vec_splats(0ULL))
+    };
+#else
+    return {
+               reinterpret_cast<__vector vsxBool long long>(vec_nor(reinterpret_cast<__vector signed int>(vec_cmpeq(a.simdInternal_, vec_splats(0.0))), vec_splats(0)))
+    };
+#endif
+}
+
+static inline SimdDBool gmx_simdcall
+operator&&(SimdDBool a, SimdDBool b)
+{
+    return {
+               reinterpret_cast<__vector vsxBool long long>(vec_and(reinterpret_cast<__vector signed int>(a.simdInternal_), reinterpret_cast<__vector signed int>(b.simdInternal_)))
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+operator||(SimdDBool a, SimdDBool b)
+{
+    return {
+               reinterpret_cast<__vector vsxBool long long>(vec_or(reinterpret_cast<__vector signed int>(a.simdInternal_), reinterpret_cast<__vector signed int>(b.simdInternal_)))
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdDBool a)
+{
+    return vec_any_ne(reinterpret_cast<__vector vsxBool int>(a.simdInternal_), reinterpret_cast<__vector vsxBool int>(vec_splats(0)));
+}
+
+static inline SimdDouble gmx_simdcall
+selectByMask(SimdDouble a, SimdDBool m)
+{
+    return {
+               vec_and(a.simdInternal_, reinterpret_cast<__vector double>(m.simdInternal_))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+selectByNotMask(SimdDouble a, SimdDBool m)
+{
+    return {
+               vec_andc(a.simdInternal_, reinterpret_cast<__vector double>(m.simdInternal_))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+blend(SimdDouble a, SimdDouble b, SimdDBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator<<(SimdDInt32 a, int n)
+{
+    return {
+               vec_sl(a.simdInternal_, vec_splats(static_cast<unsigned int>(n)))
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator>>(SimdDInt32 a, int n)
+{
+    return {
+               vec_sr(a.simdInternal_, vec_splats(static_cast<unsigned int>(n)))
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator&(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+andNot(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_andc(b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator|(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator^(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_xor(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator+(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator-(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+operator*(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               a.simdInternal_ * b.simdInternal_
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+operator==(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+testBits(SimdDInt32 a)
+{
+    return {
+               vec_cmpgt( reinterpret_cast<__vector unsigned int>(a.simdInternal_), vec_splats(0U))
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+operator<(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+operator&&(SimdDIBool a, SimdDIBool b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+operator||(SimdDIBool a, SimdDIBool b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdDIBool a)
+{
+    return vec_any_ne(a.simdInternal_, reinterpret_cast<__vector vsxBool int>(vec_splats(0)));
+}
+
+static inline SimdDInt32 gmx_simdcall
+selectByMask(SimdDInt32 a, SimdDIBool m)
+{
+    return {
+               vec_and(a.simdInternal_, reinterpret_cast<__vector signed int>(m.simdInternal_))
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+selectByNotMask(SimdDInt32 a, SimdDIBool m)
+{
+    return {
+               vec_andc(a.simdInternal_, reinterpret_cast<__vector signed int>(m.simdInternal_))
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+cvttR2I(SimdDouble a)
+{
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+// gcc up to at least version 4.9 is missing intrinsics for converting double to/from int - use inline asm
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+    __vector double              ix;
+
+    __asm__ ("xvcvdpsxws %x0,%x1" : "=wa" (ix) : "wd" (a.simdInternal_));
+
+    return {
+               reinterpret_cast<__vector signed int>(vec_perm(ix, ix, perm))
+    };
+#else
+    return {
+               vec_cts(a.simdInternal_, 0)
+    };
+#endif
+}
+
+static inline SimdDInt32 gmx_simdcall
+cvtR2I(SimdDouble a)
+{
+    return cvttR2I(round(a));
+}
+
+static inline SimdDouble gmx_simdcall
+cvtI2R(SimdDInt32 a)
+{
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+// gcc up to at least version 4.9 is missing intrinsics for converting double to/from int - use inline asm
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+    __vector double              x;
+
+    a.simdInternal_ = vec_perm(a.simdInternal_, a.simdInternal_, perm);
+    __asm__ ("xvcvsxwdp %x0,%x1" : "=wd" (x) : "wa" (a.simdInternal_));
+
+    return {
+               x
+    };
+#else
+    return {
+               vec_ctd(a.simdInternal_, 0)
+    };
+#endif
+}
+
+static inline SimdDIBool gmx_simdcall
+cvtB2IB(SimdDBool a)
+{
+    return {
+               reinterpret_cast<__vector vsxBool int>(a.simdInternal_)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+cvtIB2B(SimdDIBool a)
+{
+    return {
+               reinterpret_cast<__vector vsxBool long long>(a.simdInternal_)
+    };
+}
+
+static inline void gmx_simdcall
+cvtF2DD(SimdFloat f, SimdDouble *d0, SimdDouble *d1)
 {
     __vector float fA, fB;
-    fA  = vec_mergel(f0, f0); /* 0011 */
-    fB  = vec_mergeh(f0, f0); /* 2233 */
-    *d0 = gmx_vsx_f2d(fA);    /* 01 */
-    *d1 = gmx_vsx_f2d(fB);    /* 23 */
+    fA  = vec_mergeh(f.simdInternal_, f.simdInternal_); /* 0011 */
+    fB  = vec_mergel(f.simdInternal_, f.simdInternal_); /* 2233 */
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+    // gcc-4.9 is missing double-to-float/float-to-double conversions.
+    __asm__ ("xvcvspdp %x0,%x1" : "=wd" (d0->simdInternal_) : "wf" (fA));
+    __asm__ ("xvcvspdp %x0,%x1" : "=wd" (d1->simdInternal_) : "wf" (fB));
+#else
+    d0->simdInternal_ = vec_cvf(fA);    /* 01 */
+    d1->simdInternal_ = vec_cvf(fB);    /* 23 */
+#endif
 }
 
-
-static gmx_inline gmx_simd_float_t
-gmx_simd_cvt_dd2f_ibm_vsx(gmx_simd_double_t d0, gmx_simd_double_t d1)
+static inline SimdFloat gmx_simdcall
+cvtDD2F(SimdDouble d0, SimdDouble d1)
 {
     __vector float fA, fB, fC, fD, fE;
-    fA = gmx_vsx_d2f(d0);    /* 0x1x */
-    fB = gmx_vsx_d2f(d1);    /* 2x3x */
-    fC = vec_mergel(fA, fB); /* 02xx */
-    fD = vec_mergeh(fA, fB); /* 13xx */
-    fE = vec_mergel(fD, fC); /* 0123 */
-    return fE;
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+    // gcc-4.9 is missing double-to-float/float-to-double conversions.
+    __asm__ ("xvcvdpsp %x0,%x1" : "=wf" (fA) : "wd" (d0.simdInternal_));
+    __asm__ ("xvcvdpsp %x0,%x1" : "=wf" (fB) : "wd" (d1.simdInternal_));
+#else
+    fA = vec_cvf(d0.simdInternal_); /* 0x1x */
+    fB = vec_cvf(d1.simdInternal_); /* 2x3x */
+#endif
+    fC = vec_mergeh(fA, fB);        /* 02xx */
+    fD = vec_mergel(fA, fB);        /* 13xx */
+    fE = vec_mergeh(fC, fD);        /* 0123 */
+    return {
+               fE
+    };
 }
 
+static inline SimdDouble gmx_simdcall
+copysign(SimdDouble x, SimdDouble y)
+{
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+    __vector double res;
+    __asm__ ("xvcpsgndp %x0,%x1,%x2" : "=wd" (res) : "wd" (y.simdInternal_), "wd" (x.simdInternal_));
+    return {
+               res
+    };
+#else
+    return {
+               vec_cpsgn(y.simdInternal_, x.simdInternal_)
+    };
+#endif
+}
 
-/* Undefine our temporary work-arounds so they are not used by mistake */
-#undef gmx_vsx_f2d
-#undef gmx_vsx_d2f
+}      // namespace gmx
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD_DOUBLE_H */
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD_DOUBLE_H

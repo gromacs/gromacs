@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,11 +66,13 @@
 #include <string.h>
 
 #include <algorithm>
+#include <vector>
 
-#include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -119,6 +121,31 @@ class PositionCalculationCollection::Impl
         gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
 
         /*! \brief
+         * Maps given topology indices into frame indices.
+         *
+         * Only one position calculation at a time needs to access this (and
+         * there are also other thread-unsafe constructs here), so a temporary
+         * array is used to avoid repeated memory allocation.
+         */
+        ConstArrayRef<int> getFrameIndices(int size, int index[])
+        {
+            if (mapToFrameAtoms_.empty())
+            {
+                return constArrayRefFromArray(index, size);
+            }
+            tmpFrameAtoms_.resize(size);
+            for (int i = 0; i < size; ++i)
+            {
+                const int ii = index[i];
+                GMX_ASSERT(ii >= 0 && ii <= static_cast<int>(mapToFrameAtoms_.size())
+                           && mapToFrameAtoms_[ii] != -1,
+                           "Invalid input atom index");
+                tmpFrameAtoms_[i] = mapToFrameAtoms_[ii];
+            }
+            return tmpFrameAtoms_;
+        }
+
+        /*! \brief
          * Topology data.
          *
          * Can be NULL if none of the calculations require topology data or if
@@ -131,6 +158,10 @@ class PositionCalculationCollection::Impl
         gmx_ana_poscalc_t        *last_;
         //! Whether the collection has been initialized for evaluation.
         bool                      bInit_;
+        //! Mapping from topology atoms to frame atoms (one index for each topology atom).
+        std::vector<int>          mapToFrameAtoms_;
+        //! Working array for updating positions.
+        std::vector<int>          tmpFrameAtoms_;
 };
 
 } // namespace gmx
@@ -563,9 +594,8 @@ PositionCalculationCollection::createCalculationFromEnum(const char *post, int f
     return impl_->createCalculation(type, cflags);
 }
 
-int PositionCalculationCollection::getHighestRequiredAtomIndex() const
+void PositionCalculationCollection::getRequiredAtoms(gmx_ana_index_t *out) const
 {
-    int                result = 0;
     gmx_ana_poscalc_t *pc     = impl_->first_;
     while (pc)
     {
@@ -575,11 +605,10 @@ int PositionCalculationCollection::getHighestRequiredAtomIndex() const
         {
             gmx_ana_index_t g;
             gmx_ana_index_set(&g, pc->b.nra, pc->b.a, 0);
-            result = std::max(result, gmx_ana_index_get_max_index(&g));
+            gmx_ana_index_union_unsorted(out, out, &g);
         }
         pc = pc->next;
     }
-    return result;
 }
 
 void PositionCalculationCollection::initEvaluation()
@@ -630,7 +659,7 @@ void PositionCalculationCollection::initEvaluation()
     impl_->bInit_ = true;
 }
 
-void PositionCalculationCollection::initFrame()
+void PositionCalculationCollection::initFrame(const t_trxframe *fr)
 {
     if (!impl_->bInit_)
     {
@@ -642,6 +671,20 @@ void PositionCalculationCollection::initFrame()
     {
         pc->bEval = false;
         pc        = pc->next;
+    }
+    if (fr->bIndex && fr->natoms > 0)
+    {
+        const int highestAtom = *std::max_element(fr->index, fr->index + fr->natoms);
+        impl_->mapToFrameAtoms_.resize(highestAtom + 1);
+        std::fill(impl_->mapToFrameAtoms_.begin(), impl_->mapToFrameAtoms_.end(), -1);
+        for (int i = 0; i < fr->natoms; ++i)
+        {
+            impl_->mapToFrameAtoms_[fr->index[i]] = i;
+        }
+    }
+    else
+    {
+        impl_->mapToFrameAtoms_.clear();
     }
 }
 
@@ -1263,63 +1306,66 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                 clear_rvec(p->f[i]);
             }
         }
-        /* Here, we assume that the topology has been properly initialized,
-         * and do not check the return values of gmx_calc_comg*(). */
-        t_topology *top   = pc->coll->top_;
-        bool        bMass = pc->flags & POS_MASS;
+        gmx::ConstArrayRef<int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
+        const t_topology       *top   = pc->coll->top_;
+        const bool              bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {
             case POS_ATOM:
                 for (i = 0; i < pc->b.nra; ++i)
                 {
-                    copy_rvec(fr->x[pc->b.a[i]], p->x[i]);
+                    copy_rvec(fr->x[index[i]], p->x[i]);
                 }
                 if (p->v && fr->bV)
                 {
                     for (i = 0; i < pc->b.nra; ++i)
                     {
-                        copy_rvec(fr->v[pc->b.a[i]], p->v[i]);
+                        copy_rvec(fr->v[index[i]], p->v[i]);
                     }
                 }
                 if (p->f && fr->bF)
                 {
                     for (i = 0; i < pc->b.nra; ++i)
                     {
-                        copy_rvec(fr->f[pc->b.a[i]], p->f[i]);
+                        copy_rvec(fr->f[index[i]], p->f[i]);
                     }
                 }
                 break;
             case POS_ALL:
-                gmx_calc_comg(top, fr->x, pc->b.nra, pc->b.a, bMass, p->x[0]);
+                gmx_calc_comg(top, fr->x, index.size(), index.data(), bMass, p->x[0]);
                 if (p->v && fr->bV)
                 {
-                    gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
+                    gmx_calc_comg(top, fr->v, index.size(), index.data(), bMass, p->v[0]);
                 }
                 if (p->f && fr->bF)
                 {
-                    gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
+                    gmx_calc_comg_f(top, fr->f, index.size(), index.data(), bMass, p->f[0]);
                 }
                 break;
             case POS_ALL_PBC:
-                gmx_calc_comg_pbc(top, fr->x, pbc, pc->b.nra, pc->b.a, bMass, p->x[0]);
+                gmx_calc_comg_pbc(top, fr->x, pbc, index.size(), index.data(), bMass, p->x[0]);
                 if (p->v && fr->bV)
                 {
-                    gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
+                    gmx_calc_comg(top, fr->v, index.size(), index.data(), bMass, p->v[0]);
                 }
                 if (p->f && fr->bF)
                 {
-                    gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
+                    gmx_calc_comg_f(top, fr->f, index.size(), index.data(), bMass, p->f[0]);
                 }
                 break;
             default:
-                gmx_calc_comg_blocka(top, fr->x, &pc->b, bMass, p->x);
+                // TODO: It would probably be better to do this without the type casts.
+                gmx_calc_comg_block(top, fr->x, reinterpret_cast<t_block *>(&pc->b),
+                                    index.data(), bMass, p->x);
                 if (p->v && fr->bV)
                 {
-                    gmx_calc_comg_blocka(top, fr->v, &pc->b, bMass, p->v);
+                    gmx_calc_comg_block(top, fr->v, reinterpret_cast<t_block *>(&pc->b),
+                                        index.data(), bMass, p->v);
                 }
                 if (p->f && fr->bF)
                 {
-                    gmx_calc_comg_f_blocka(top, fr->f, &pc->b, bMass, p->f);
+                    gmx_calc_comg_f_block(top, fr->f, reinterpret_cast<t_block *>(&pc->b),
+                                          index.data(), bMass, p->f);
                 }
                 break;
         }

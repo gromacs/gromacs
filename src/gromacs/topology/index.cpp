@@ -45,9 +45,6 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
@@ -55,7 +52,9 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 static gmx_bool gmx_ask_yesno(gmx_bool bASK)
 {
@@ -82,7 +81,7 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     FILE *out;
     int   i, j, k;
 
-    out = gmx_fio_fopen(outf, "w");
+    out = gmx_ffopen(outf, "w");
     /* fprintf(out,"%5d  %5d\n",b->nr,b->nra); */
     for (i = 0; (i < b->nr); i++)
     {
@@ -117,7 +116,7 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
         }
     }
 
-    gmx_fio_fclose(out);
+    gmx_ffclose(out);
 }
 
 void add_grp(t_blocka *b, char ***gnames, int nra, int a[], const char *name)
@@ -757,7 +756,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
     int        i, j;
     char       line[STRLEN], *pt, str[STRLEN];
 
-    in = gmx_fio_fopen(gfile, "r");
+    in = gmx_ffopen(gfile, "r");
     snew(b, 1);
     b->nr      = 0;
     b->index   = NULL;
@@ -802,7 +801,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
             }
         }
     }
-    gmx_fio_fclose(in);
+    gmx_ffclose(in);
 
     for (i = 0; (i < b->nr); i++)
     {

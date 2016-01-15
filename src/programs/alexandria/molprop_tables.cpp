@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/utilities.h"
@@ -701,7 +700,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
             if (1 == pd->getMillerPol(pType->getMiller(),
                                       &atomnumber, &ahc, &ahp))
             {
-                ahc = (4.0/atomnumber)*sqr(ahc);
+                ahc = (4.0/atomnumber)*gmx::square(ahc);
             }
             if (0 == pd->getBosquePol(pType->getBosque(), &bos_pol))
             {

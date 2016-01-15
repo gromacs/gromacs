@@ -46,6 +46,8 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/nbsearch.h"
@@ -75,7 +77,7 @@ static real safe_asin(real f)
 /* routines for dot distributions on the surface of the unit sphere */
 static real icosaeder_vertices(real *xus)
 {
-    const real rh = sqrt(1.-2.*cos(TORAD(72.)))/(1.-cos(TORAD(72.)));
+    const real rh = std::sqrt(1.-2.*cos(TORAD(72.)))/(1.-cos(TORAD(72.)));
     const real rg = cos(TORAD(72.))/(1.-cos(TORAD(72.)));
     /* icosaeder vertices */
     xus[ 0] = 0.;                  xus[ 1] = 0.;                  xus[ 2] = 1.;
@@ -105,7 +107,7 @@ static void divarc(real x1, real y1, real z1,
     xd = y1*z2-y2*z1;
     yd = z1*x2-z2*x1;
     zd = x1*y2-x2*y1;
-    dd = sqrt(xd*xd+yd*yd+zd*zd);
+    dd = std::sqrt(xd*xd+yd*yd+zd*zd);
     GMX_ASSERT(dd >= DP_TOL, "Rotation axis vector too short");
 
     d1 = x1*x1+y1*y1+z1*z1;
@@ -113,7 +115,7 @@ static void divarc(real x1, real y1, real z1,
     GMX_ASSERT(d1 >= 0.5, "Vector 1 too short");
     GMX_ASSERT(d2 >= 0.5, "Vector 2 too short");
 
-    phi  = safe_asin(dd/sqrt(d1*d2));
+    phi  = safe_asin(dd/std::sqrt(d1*d2));
     phi  = phi*((real)div1)/((real)div2);
     sphi = sin(phi); cphi = cos(phi);
     s    = (x1*xd+y1*yd+z1*zd)/dd;
@@ -121,7 +123,7 @@ static void divarc(real x1, real y1, real z1,
     x   = xd*s*(1.-cphi)/dd + x1 * cphi + (yd*z1-y1*zd)*sphi/dd;
     y   = yd*s*(1.-cphi)/dd + y1 * cphi + (zd*x1-z1*xd)*sphi/dd;
     z   = zd*s*(1.-cphi)/dd + z1 * cphi + (xd*y1-x1*yd)*sphi/dd;
-    dd  = sqrt(x*x+y*y+z*z);
+    dd  = std::sqrt(x*x+y*y+z*z);
     *xr = x/dd; *yr = y/dd; *zr = z/dd;
 }
 
@@ -137,7 +139,7 @@ static std::vector<real> ico_dot_arc(int densit)
           xjk, yjk, zjk, xkj, ykj, zkj;
 
     /* calculate tessalation level */
-    a = sqrt((((real) densit)-2.)/10.);
+    a = std::sqrt((((real) densit)-2.)/10.);
     const int  tess = (int) ceil(a);
     const int  ndot = 10*tess*tess+2;
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
@@ -232,7 +234,7 @@ static std::vector<real> ico_dot_arc(int densit)
                             GMX_ASSERT(tn < ndot,
                                        "Inconsistent precomputed surface dot count");
                             x           = x+x2+x3; y = y+y2+y3; z = z+z2+z3;
-                            d           = sqrt(x*x+y*y+z*z);
+                            d           = std::sqrt(x*x+y*y+z*z);
                             xus[3*tn]   = x/d;
                             xus[1+3*tn] = y/d;
                             xus[2+3*tn] = z/d;
@@ -260,7 +262,7 @@ static std::vector<real> ico_dot_dod(int densit)
           xjk, yjk, zjk, xkj, ykj, zkj;
 
     /* calculate tesselation level */
-    a     = sqrt((((real) densit)-2.)/30.);
+    a     = std::sqrt((((real) densit)-2.)/30.);
     tess  = std::max((int) ceil(a), 1);
     const int ndot = 30*tess*tess+2;
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
@@ -302,7 +304,7 @@ static std::vector<real> ico_dot_dod(int densit)
                 x         = xus[  3*i]+xus[  3*j]+xus[  3*k];
                 y         = xus[1+3*i]+xus[1+3*j]+xus[1+3*k];
                 z         = xus[2+3*i]+xus[2+3*j]+xus[2+3*k];
-                d         = sqrt(x*x+y*y+z*z);
+                d         = std::sqrt(x*x+y*y+z*z);
                 xus[3*tn] = x/d; xus[1+3*tn] = y/d; xus[2+3*tn] = z/d;
                 tn++;
             }
@@ -315,7 +317,7 @@ static std::vector<real> ico_dot_dod(int densit)
         /* square of the edge of an dodecaeder */
         adod = 4.*(cos(TORAD(108.))-cos(TORAD(120.)))/(1.-cos(TORAD(120.)));
         /* square of the distance of two adjacent vertices of ico- and dodecaeder */
-        ai_d = 2.*(1.-sqrt(1.-a/3.));
+        ai_d = 2.*(1.-std::sqrt(1.-a/3.));
 
         /* calculate tessalation of mixed edges */
         for (i = 0; i < 31; i++)
@@ -406,7 +408,7 @@ static std::vector<real> ico_dot_dod(int densit)
                             GMX_ASSERT(tn < ndot,
                                        "Inconsistent precomputed surface dot count");
                             x           = x+x2+x3; y = y+y2+y3; z = z+z2+z3;
-                            d           = sqrt(x*x+y*y+z*z);
+                            d           = std::sqrt(x*x+y*y+z*z);
                             xus[3*tn]   = x/d;
                             xus[1+3*tn] = y/d;
                             xus[2+3*tn] = z/d;
@@ -629,7 +631,7 @@ nsc_dclm_pbc(const rvec *coords, const ConstArrayRef<real> &radius, int nat,
             const int  jat = index[pair.refIndex()];
             const real aj  = radius[jat];
             const real d2  = pair.distance2();
-            if (iat == jat || d2 > sqr(ai+aj))
+            if (iat == jat || d2 > gmx::square(ai+aj))
             {
                 continue;
             }

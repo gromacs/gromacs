@@ -39,7 +39,6 @@
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/topology/atomprop.h"
 

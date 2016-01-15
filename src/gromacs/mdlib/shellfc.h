@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,35 +54,37 @@ struct t_inputrec;
 struct t_state;
 
 /* Initialization function, also predicts the initial shell postions.
- * If x!=NULL, the shells are predict for the global coordinates x.
  */
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   gmx_mtop_t *mtop, int nflexcon,
-                                  rvec *x);
+                                  int nstcalcenergy,
+                                  bool usingDomainDecomposition);
 
 /* Get the local shell with domain decomposition */
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
                        gmx_shellfc_t *shfc);
 
 /* Optimize shell positions */
-int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_int64_t mdstep, t_inputrec *inputrec,
-                        gmx_bool bDoNS, int force_flags,
-                        gmx_localtop_t *top,
-                        gmx_constr *constr,
-                        gmx_enerdata_t *enerd, t_fcdata *fcd,
-                        t_state *state, rvec f[],
-                        tensor force_vir,
-                        t_mdatoms *md,
-                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        t_graph *graph,
-                        gmx_groups_t *groups,
-                        gmx_shellfc_t *shfc,
-                        t_forcerec *fr,
-                        gmx_bool bBornRadii,
-                        double t, rvec mu_tot,
-                        gmx_bool *bConverged,
-                        gmx_vsite_t *vsite,
-                        FILE *fp_field);
+void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
+                         gmx_int64_t mdstep, t_inputrec *inputrec,
+                         gmx_bool bDoNS, int force_flags,
+                         gmx_localtop_t *top,
+                         gmx_constr *constr,
+                         gmx_enerdata_t *enerd, t_fcdata *fcd,
+                         t_state *state, rvec f[],
+                         tensor force_vir,
+                         t_mdatoms *md,
+                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         t_graph *graph,
+                         gmx_groups_t *groups,
+                         gmx_shellfc_t *shfc,
+                         t_forcerec *fr,
+                         gmx_bool bBornRadii,
+                         double t, rvec mu_tot,
+                         gmx_vsite_t *vsite,
+                         FILE *fp_field);
+
+/* Print some final output */
+void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, gmx_int64_t numSteps);
 
 #endif

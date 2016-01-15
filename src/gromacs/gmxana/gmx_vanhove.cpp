@@ -48,6 +48,8 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
@@ -252,7 +254,7 @@ int gmx_vanhove(int argc, char *argv[])
         {
             snew(mat[f], nbin);
         }
-        rmax2 = sqr(nbin*rbin);
+        rmax2 = gmx::square(nbin*rbin);
         /* Initialize time zero */
         mat[0][0]  = nfr*isize;
         mcount[0] += nfr;
@@ -295,7 +297,7 @@ int gmx_vanhove(int argc, char *argv[])
             fprintf(stderr, "\rProcessing frame %d", f);
         }
         /* Scale all the configuration to the average box */
-        m_inv_ur0(sbox[f], corr);
+        gmx::invertBoxMatrix(sbox[f], corr);
         mmul_ur0(avbox, corr, corr);
         for (i = 0; i < isize; i++)
         {

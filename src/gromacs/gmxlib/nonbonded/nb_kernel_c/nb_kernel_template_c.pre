@@ -43,7 +43,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 /* #endif */
 
@@ -414,7 +413,7 @@ void
 
             /* #for I,J in PAIRS_IJ */
             /*     #if 'rinv' in INTERACTION_FLAGS[I][J] */
-            rinv{I}{J}           = gmx_invsqrt(rsq{I}{J});
+            rinv{I}{J}           = 1.0/sqrt(rsq{I}{J});
             /*         #define INNERFLOPS INNERFLOPS+5 */
             /*     #endif */
             /* #endfor */

@@ -44,17 +44,19 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/cmat.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -607,15 +609,15 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
                  */
                 if (use_unitvector)
                 {
-                    cossum[XX] = sqr(iprod(Sx, direction)); /* this is allowed, since Sa is normalized */
-                    cossum[YY] = sqr(iprod(Sy, direction));
-                    cossum[ZZ] = sqr(iprod(Sz, direction));
+                    cossum[XX] = gmx::square(iprod(Sx, direction)); /* this is allowed, since Sa is normalized */
+                    cossum[YY] = gmx::square(iprod(Sy, direction));
+                    cossum[ZZ] = gmx::square(iprod(Sz, direction));
                 }
                 else
                 {
-                    cossum[XX] = sqr(Sx[axis]); /* this is allowed, since Sa is normalized */
-                    cossum[YY] = sqr(Sy[axis]);
-                    cossum[ZZ] = sqr(Sz[axis]);
+                    cossum[XX] = gmx::square(Sx[axis]); /* this is allowed, since Sa is normalized */
+                    cossum[YY] = gmx::square(Sy[axis]);
+                    cossum[ZZ] = gmx::square(Sz[axis]);
                 }
 
                 for (m = 0; m < DIM; m++)

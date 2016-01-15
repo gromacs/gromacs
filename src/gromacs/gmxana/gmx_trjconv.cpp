@@ -45,7 +45,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/groio.h"
@@ -53,18 +52,19 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -143,7 +143,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     /* Double check whether all atoms in all molecules that are marked are part
      * of the cluster. Simultaneously compute the center of geometry.
      */
-    min_dist2   = 10*sqr(trace(box));
+    min_dist2   = 10*gmx::square(trace(box));
     imol_center = -1;
     ncluster    = 0;
     for (i = 0; i < nmol; i++)
@@ -210,7 +210,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     while (nadded < ncluster)
     {
         /* Find min distance between cluster molecules and those remaining to be added */
-        min_dist2   = 10*sqr(trace(box));
+        min_dist2   = 10*gmx::square(trace(box));
         imin        = -1;
         jmin        = -1;
         /* Loop over added mols */

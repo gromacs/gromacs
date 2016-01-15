@@ -36,21 +36,47 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
 #define GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
 
+#include "config.h"
+
 #include <immintrin.h>
 
-#include "impl_x86_avx2_256_common.h"
-#include "impl_x86_avx2_256_simd_double.h"
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd4_double.h"
 
-/****************************************************
- *      SIMD4 DOUBLE PRECISION IMPLEMENTATION       *
- ****************************************************/
-#undef  gmx_simd4_fmadd_d
-#define gmx_simd4_fmadd_d          _mm256_fmadd_pd
-#undef  gmx_simd4_fmsub_d
-#define gmx_simd4_fmsub_d          _mm256_fmsub_pd
-#undef  gmx_simd4_fnmadd_d
-#define gmx_simd4_fnmadd_d         _mm256_fnmadd_pd
-#undef  gmx_simd4_fnmsub_d
-#define gmx_simd4_fnmsub_d         _mm256_fnmsub_pd
+namespace gmx
+{
 
-#endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H */
+static inline Simd4Double gmx_simdcall
+fma(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fms(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fnma(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fnms(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H

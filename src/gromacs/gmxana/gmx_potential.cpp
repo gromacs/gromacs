@@ -46,6 +46,8 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -253,7 +255,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
                 /* charge per volume is now the summed charge, divided by the nr
                    of frames and by the volume of the slice it's in, 4pi r^2 dr
                  */
-                slVolume = 4*M_PI * sqr(i) * sqr(*slWidth) * *slWidth;
+                slVolume = 4*M_PI * gmx::square(i) * gmx::square(*slWidth) * *slWidth;
                 if (slVolume == 0)
                 {
                     (*slCharge)[n][i] = 0;

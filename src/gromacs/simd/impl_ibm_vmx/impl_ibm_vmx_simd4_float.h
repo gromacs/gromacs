@@ -36,80 +36,339 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H
 
-#include <math.h>
+#include "config.h"
 
-#include <altivec.h>
+#include "gromacs/utility/basedefinitions.h"
 
-#include "impl_ibm_vmx_common.h"
-#include "impl_ibm_vmx_simd_float.h"
+#include "impl_ibm_vmx_definitions.h"
 
-/* Make sure we do not screw up c++ - undefine vector/bool, and rely on __vector and __bool */
-#undef vector
-#undef bool
-
-#define gmx_simd4_float_t                gmx_simd_float_t
-#define gmx_simd4_load_f                 gmx_simd_load_f
-#define gmx_simd4_load1_f                gmx_simd_load1_f
-#define gmx_simd4_set1_f                 gmx_simd_set1_f
-#define gmx_simd4_store_f                gmx_simd_store_f
-#define gmx_simd4_loadu_f                gmx_simd_loadu_f
-#define gmx_simd4_storeu_f               gmx_simd_storeu_f
-#define gmx_simd4_setzero_f              gmx_simd_setzero_f
-#define gmx_simd4_add_f                  gmx_simd_add_f
-#define gmx_simd4_sub_f                  gmx_simd_sub_f
-#define gmx_simd4_mul_f                  gmx_simd_mul_f
-#define gmx_simd4_fmadd_f                gmx_simd_fmadd_f
-#define gmx_simd4_fmsub_f                gmx_simd_fmsub_f
-#define gmx_simd4_fnmadd_f               gmx_simd_fnmadd_f
-#define gmx_simd4_fnmsub_f               gmx_simd_fnmsub_f
-#define gmx_simd4_and_f                  gmx_simd_and_f
-#define gmx_simd4_andnot_f               gmx_simd_andnot_f
-#define gmx_simd4_or_f                   gmx_simd_or_f
-#define gmx_simd4_xor_f                  gmx_simd_xor_f
-#define gmx_simd4_rsqrt_f                gmx_simd_rsqrt_f
-#define gmx_simd4_rcp_f                  gmx_simd_rcp_f
-#define gmx_simd4_fabs_f                 gmx_simd_fabs_f
-#define gmx_simd4_fneg_f                 gmx_simd_fneg_f
-#define gmx_simd4_max_f                  gmx_simd_max_f
-#define gmx_simd4_min_f                  gmx_simd_min_f
-#define gmx_simd4_round_f                gmx_simd_round_f
-#define gmx_simd4_trunc_f                gmx_simd_trunc_f
-#define gmx_simd4_fraction_f             gmx_simd_fraction_f
-#define gmx_simd4_get_exponent_f         gmx_simd_get_exponent_f
-#define gmx_simd4_get_mantissa_f         gmx_simd_get_mantissa_f
-#define gmx_simd4_set_exponent_f         gmx_simd_set_exponent_f
-#define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_ibm_vmx
-#define gmx_simd4_fint32_t               gmx_simd_fint32_t
-#define gmx_simd4_load_fi                gmx_simd_load_fi
-#define gmx_simd4_load1_fi               gmx_simd_load1_fi
-#define gmx_simd4_set1_fi                gmx_simd_set1_fi
-#define gmx_simd4_store_fi               gmx_simd_store_fi
-#define gmx_simd4_loadu_fi               gmx_simd_loadu_fi
-#define gmx_simd4_storeu_fi              gmx_simd_storeu_fi
-#define gmx_simd4_setzero_fi             gmx_simd_setzero_fi
-#define gmx_simd4_cvt_f2i                gmx_simd_cvt_f2i
-#define gmx_simd4_cvtt_f2i               gmx_simd_cvtt_f2i
-#define gmx_simd4_cvt_i2f                gmx_simd_cvt_i2f
-#define gmx_simd4_fbool_t                gmx_simd_fbool_t
-#define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
-#define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
-#define gmx_simd4_cmple_f                gmx_simd_cmple_f
-#define gmx_simd4_and_fb                 gmx_simd_and_fb
-#define gmx_simd4_or_fb                  gmx_simd_or_fb
-#define gmx_simd4_anytrue_fb             gmx_simd_anytrue_fb
-#define gmx_simd4_blendzero_f            gmx_simd_blendzero_f
-#define gmx_simd4_blendnotzero_f         gmx_simd_blendnotzero_f
-#define gmx_simd4_blendv_f               gmx_simd_blendv_f
-#define gmx_simd4_reduce_f               gmx_simd_reduce_f
-
-static gmx_inline float
-gmx_simd4_dotproduct3_f_ibm_vmx(gmx_simd4_float_t a, gmx_simd4_float_t b)
+namespace gmx
 {
-    gmx_simd4_float_t c = vec_mul(a, b);
-    /* Keep only elements 0,1,2 by shifting in zero from right */
-    c = vec_sld(c, gmx_simd_setzero_f(), 4);
-    /* calculate sum */
-    return gmx_simd_reduce_f_ibm_vmx(c);
+
+class Simd4Float
+{
+    public:
+        Simd4Float() {}
+
+        Simd4Float(float f)
+        {
+            __vector unsigned char perm;
+
+            simdInternal_ = vec_lde(0, const_cast<float *>(&f));
+            perm          = vec_lvsl(0, const_cast<float *>(&f));
+            simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
+            simdInternal_ = vec_splat(simdInternal_, 0);
+        }
+
+        // Internal utility constructor to simplify return statements
+        Simd4Float(__vector float simd) : simdInternal_(simd) {}
+
+        __vector float  simdInternal_;
+};
+
+class Simd4FBool
+{
+    public:
+        Simd4FBool() {}
+
+        Simd4FBool(bool b)
+        {
+            simdInternal_ = reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0));
+        }
+
+        // Internal utility constructor to simplify return statements
+        Simd4FBool(__vector vmxBool int simd) : simdInternal_(simd) {}
+
+        __vector vmxBool int  simdInternal_;
+};
+
+static inline Simd4Float gmx_simdcall
+load4(const float *m)
+{
+    return {
+               vec_ld(0, const_cast<float *>(m))
+    };
 }
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H */
+static inline void gmx_simdcall
+store4(float *m, Simd4Float a)
+{
+    vec_st(a.simdInternal_, 0, const_cast<float *>(m));
+}
+
+static inline Simd4Float gmx_simdcall
+simd4SetZeroF()
+{
+    return {
+               reinterpret_cast<__vector float>(vec_splat_u32(0))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator&(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+andNot(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_andc(b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator|(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator^(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_xor(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator+(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator-(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator-(Simd4Float x)
+{
+    return {
+               vec_xor(x.simdInternal_, reinterpret_cast<__vector float>(vec_sl(vec_splat_u32(-1), vec_splat_u32(-1))))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator*(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0)) )
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, -c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               -vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+rsqrt(Simd4Float x)
+{
+    return {
+               vec_rsqrte(x.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+abs(Simd4Float x)
+{
+    return {
+               vec_abs( x.simdInternal_ )
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+max(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_max(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+min(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_min(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+round(Simd4Float x)
+{
+    return {
+               vec_round( x.simdInternal_ )
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+trunc(Simd4Float x)
+{
+    return {
+               vec_trunc( x.simdInternal_ )
+    };
+}
+
+static inline float gmx_simdcall
+dotProduct(Simd4Float a, Simd4Float b)
+{
+    float          res;
+
+    __vector float c = vec_madd(a.simdInternal_, b.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0)));
+    // Keep only elements 0,1,2 by shifting in zero from right (xor of a vector with itself is 0)
+    c = vec_sld(c, vec_xor(a.simdInternal_, a.simdInternal_), 4);
+    // calculate sum
+    c = vec_add(c, vec_sld(c, c, 8));
+    c = vec_add(c, vec_sld(c, c, 4));
+    vec_ste(c, 0, &res);
+    return res;
+}
+
+static inline void gmx_simdcall
+transpose(Simd4Float * v0, Simd4Float * v1,
+          Simd4Float * v2, Simd4Float * v3)
+{
+    __vector float t0 = vec_mergeh(v0->simdInternal_, v2->simdInternal_);
+    __vector float t1 = vec_mergel(v0->simdInternal_, v2->simdInternal_);
+    __vector float t2 = vec_mergeh(v1->simdInternal_, v3->simdInternal_);
+    __vector float t3 = vec_mergel(v1->simdInternal_, v3->simdInternal_);
+    v0->simdInternal_ = vec_mergeh(t0, t2);
+    v1->simdInternal_ = vec_mergel(t0, t2);
+    v2->simdInternal_ = vec_mergeh(t1, t3);
+    v3->simdInternal_ = vec_mergel(t1, t3);
+}
+
+static inline Simd4FBool gmx_simdcall
+operator==(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator!=(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_or(vec_cmpgt(a.simdInternal_, b.simdInternal_),
+                      vec_cmplt(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator<(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator<=(Simd4Float a, Simd4Float b)
+{
+    return {
+               vec_cmple(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator&&(Simd4FBool a, Simd4FBool b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator||(Simd4FBool a, Simd4FBool b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(Simd4FBool a)
+{
+    return vec_any_ne(a.simdInternal_, reinterpret_cast<__vector vmxBool int>(vec_splat_u32(0)));
+}
+
+static inline Simd4Float gmx_simdcall
+selectByMask(Simd4Float a, Simd4FBool m)
+{
+    return {
+               vec_and(a.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+selectByNotMask(Simd4Float a, Simd4FBool m)
+{
+    return {
+               vec_andc(a.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline float gmx_simdcall
+reduce(Simd4Float a)
+{
+    __vector float c = a.simdInternal_;
+    float          res;
+
+    // calculate sum
+    c = vec_add(c, vec_sld(c, c, 8));
+    c = vec_add(c, vec_sld(c, c, 4));
+    vec_ste(c, 0, &res);
+    return res;
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H

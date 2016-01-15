@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -280,11 +280,14 @@ class PositionCalculationCollection
         gmx_ana_poscalc_t *createCalculationFromEnum(const char *post, int flags);
 
         /*! \brief
-         * Computes the highest atom index required to evaluate this collection.
+         * Computes the atoms required to evaluate this collection.
+         *
+         * \param[out] out  Maximal group of atoms required to evaluate the
+         *     positions.
          *
          * Does not throw.
          */
-        int getHighestRequiredAtomIndex() const;
+        void getRequiredAtoms(gmx_ana_index_t *out) const;
 
         /*! \brief
          * Initializes evaluation for a position calculation collection.
@@ -303,17 +306,18 @@ class PositionCalculationCollection
         /*! \brief
          * Initializes a position calculation collection for a new frame.
          *
-         * Clears the evaluation flag for all calculations.
+         * \param[in] fr  Frame to initialize evaluation for.
+         *
          * Should be called for each frame before calling
          * gmx_ana_poscalc_update().
          *
          * This function calls initEvaluation() automatically if it has not
          * been called earlier.
          *
-         * Does not throw, but may throw if initEvaluation() is changed to
-         * throw.
+         * Does not currently throw, but may throw std::bad_alloc in the
+         * future.
          */
-        void initFrame();
+        void initFrame(const t_trxframe *fr);
 
     private:
         class Impl;

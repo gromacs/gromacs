@@ -46,6 +46,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -590,7 +591,7 @@ void printmol(t_corr *curr, const char *fn,
             D   = 0;
         }
         Dav  += D;
-        D2av += sqr(D);
+        D2av += gmx::square(D);
         fprintf(out, "%10d  %10g\n", i, D);
         if (pdbinfo)
         {
@@ -611,7 +612,7 @@ void printmol(t_corr *curr, const char *fn,
     /* Compute variance, stddev and error */
     Dav  /= curr->nmol;
     D2av /= curr->nmol;
-    VarD  = D2av - sqr(Dav);
+    VarD  = D2av - gmx::square(Dav);
     printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n",
            Dav, std::sqrt(VarD), std::sqrt(VarD/curr->nmol));
 

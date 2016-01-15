@@ -2173,13 +2173,10 @@ When $1/\gamma_i$ is small compared to the time scales present in the system,
 the dynamics will be completely different from MD, but the sampling is
 still correct.
 
-In {\gromacs} there are two algorithms to integrate equation (\ref{SDeq}):
-a simple and efficient one
-and a more complex leap-frog algorithm~\cite{Gunsteren88}, which is now deprecated.
-The accuracy of both integrators is equivalent to the normal MD leap-frog and
-Velocity Verlet integrator, except with constraints where the complex
-SD integrator samples at a temperature that is slightly too high (although that error is smaller than the one from the Velocity Verlet integrator that uses the kinetic energy from the full-step velocity). The simple integrator is nearly identical to the common way of discretizing the Langevin equation, but the friction and velocity term are applied in an impulse fashion~\cite{Goga2012}.
-The simple integrator is:
+In {\gromacs} there is one simple and efficient implementation. Its
+accuracy is equivalent to the normal MD leap-frog and
+Velocity Verlet integrator. It is nearly identical to the common way of discretizing the Langevin equation, but the friction and velocity term are applied in an impulse fashion~\cite{Goga2012}.
+It can be described as:
 \bea
 \label{eqn:sd_int1}
 \ve{v}'  &~=~&   \ve{v}(t-\hDt) + \frac{1}{m}\ve{F}(t)\Dt \\
@@ -2190,14 +2187,6 @@ The simple integrator is:
 \eea
 where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
 The velocity is first updated a full time step without friction and noise to get $\ve{v}'$, identical to the normal update in leap-frog. The friction and noise are then applied as an impulse at step $t+\Dt$. The advantage of this scheme is that the velocity-dependent terms act at the full time step, which makes the correct integration of forces that depend on both coordinates and velocities, such as constraints and dissipative particle dynamics (DPD, not implented yet), straightforward. With constraints, the coordinate update \eqnref{sd1_x_upd} is split into a normal leap-frog update and a $\Delta \ve{v}$. After both of these updates the constraints are applied to coordinates and velocities.
-
-In the deprecated complex algorithm, four Gaussian random numbers are required
-per integration step per degree of freedom, and with constraints the
-coordinates need to be constrained twice per integration step.
-Depending on the computational cost of the force calculation,
-this can take a significant part of the simulation time.
-Exact continuation of a stochastic dynamics simulation is not possible,
-because the state of the random number generator is not stored.
 
 When using SD as a thermostat, an appropriate value for $\gamma$ is e.g. 0.5 ps$^{-1}$,
 since this results in a friction that is lower than the internal friction

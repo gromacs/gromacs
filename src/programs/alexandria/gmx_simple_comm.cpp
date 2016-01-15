@@ -7,13 +7,11 @@
 #endif
 
 #include <string.h>
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
 
 #include "gmx_simple_comm.h"
 
 #include "gromacs/utility/fatalerror.h"
+#include <gromacs/utility/gmxmpi.h>
 #include "gromacs/utility/smalloc.h"
 
 void gmx_send(const t_commrec *cr, int dest, void *buf, int bufsize)

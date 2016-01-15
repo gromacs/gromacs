@@ -56,9 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
@@ -78,12 +76,14 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -131,7 +131,7 @@ namespace gmx
     \copydoc integrator_t (FILE *fplog, t_commrec *cr,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                           gmx_bool bCompact, int nstglobalcomm,
+                           int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
                            t_inputrec *inputrec,
@@ -150,7 +150,7 @@ namespace gmx
  */
 double do_tpi(FILE *fplog, t_commrec *cr,
               int nfile, const t_filenm fnm[],
-              const gmx_output_env_t *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+              const gmx_output_env_t *oenv, gmx_bool bVerbose,
               int gmx_unused nstglobalcomm,
               gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
               int gmx_unused stepout,
@@ -687,7 +687,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             bNS           = FALSE;
 
             /* Calculate long range corrections to pressure and energy */
-            calc_dispcorr(inputrec, fr, top_global->natoms, state_global->box,
+            calc_dispcorr(inputrec, fr, state_global->box,
                           lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
             /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
             enerd->term[F_DISPCORR]  = enercorr;

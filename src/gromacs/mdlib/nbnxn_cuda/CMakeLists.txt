@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,19 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_GPU AND NOT GMX_USE_OPENCL)
-    file(GLOB CUDA_NB_SOURCES *.cu)
-    set(MDLIB_SOURCES ${MDLIB_SOURCES} ${CUDA_NB_SOURCES} PARENT_SCOPE)
+if(GMX_USE_CUDA)
+    if(NOT GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
+        set(NBNXN_CUDA_KERNEL_SOURCES
+                nbnxn_cuda_kernel_F_noprune.cu
+                nbnxn_cuda_kernel_F_prune.cu
+                nbnxn_cuda_kernel_VF_noprune.cu
+                nbnxn_cuda_kernel_VF_prune.cu)
+    endif()
+
+    file(GLOB NBNXN_CUDA_SOURCES
+         nbnxn_cuda.cu
+         nbnxn_cuda_data_mgmt.cu
+         nbnxn_cuda_jit_support.cu
+         ${NBNXN_CUDA_KERNEL_SOURCES})
+    set(MDLIB_SOURCES ${MDLIB_SOURCES} ${NBNXN_CUDA_SOURCES} PARENT_SCOPE)
 endif()

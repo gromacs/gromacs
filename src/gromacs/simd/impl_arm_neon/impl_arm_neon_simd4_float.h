@@ -32,66 +32,392 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H
 
-#include <math.h>
+#include "config.h"
+
+#include <cassert>
+#include <cstddef>
 
 #include <arm_neon.h>
 
-#include "impl_arm_neon_common.h"
-#include "impl_arm_neon_simd_float.h"
-
-/* ARM 32-bit Neon is already 4-wide in single, so just reuse float type for SIMD4 */
-#define gmx_simd4_float_t                gmx_simd_float_t
-#define gmx_simd4_load_f                 gmx_simd_load_f
-#define gmx_simd4_load1_f                gmx_simd_load1_f
-#define gmx_simd4_set1_f                 gmx_simd_set1_f
-#define gmx_simd4_store_f                gmx_simd_store_f
-#define gmx_simd4_loadu_f                gmx_simd_loadu_f
-#define gmx_simd4_storeu_f               gmx_simd_storeu_f
-#define gmx_simd4_setzero_f              gmx_simd_setzero_f
-#define gmx_simd4_add_f                  gmx_simd_add_f
-#define gmx_simd4_sub_f                  gmx_simd_sub_f
-#define gmx_simd4_mul_f                  gmx_simd_mul_f
-#define gmx_simd4_fmadd_f                gmx_simd_fmadd_f
-#define gmx_simd4_fmsub_f                gmx_simd_fmsub_f
-#define gmx_simd4_fnmadd_f               gmx_simd_fnmadd_f
-#define gmx_simd4_fnmsub_f               gmx_simd_fnmsub_f
-#define gmx_simd4_and_f                  gmx_simd_and_f
-#define gmx_simd4_andnot_f               gmx_simd_andnot_f
-#define gmx_simd4_or_f                   gmx_simd_or_f
-#define gmx_simd4_xor_f                  gmx_simd_xor_f
-#define gmx_simd4_rsqrt_f                gmx_simd_rsqrt_f
-#define gmx_simd4_fabs_f                 gmx_simd_fabs_f
-#define gmx_simd4_fneg_f                 gmx_simd_fneg_f
-#define gmx_simd4_max_f                  gmx_simd_max_f
-#define gmx_simd4_min_f                  gmx_simd_min_f
-#define gmx_simd4_round_f                gmx_simd_round_f
-#define gmx_simd4_trunc_f                gmx_simd_trunc_f
-#define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_arm_neon
-#define gmx_simd4_fbool_t                gmx_simd_fbool_t
-#define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
-#define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
-#define gmx_simd4_cmple_f                gmx_simd_cmple_f
-#define gmx_simd4_and_fb                 gmx_simd_and_fb
-#define gmx_simd4_or_fb                  gmx_simd_or_fb
-#define gmx_simd4_anytrue_fb             gmx_simd_anytrue_fb
-#define gmx_simd4_blendzero_f            gmx_simd_blendzero_f
-#define gmx_simd4_blendnotzero_f         gmx_simd_blendnotzero_f
-#define gmx_simd4_blendv_f               gmx_simd_blendv_f
-#define gmx_simd4_reduce_f               gmx_simd_reduce_f
-
-/* SIMD4 Dotproduct helper function */
-static gmx_inline float
-gmx_simd4_dotproduct3_f_arm_neon(gmx_simd_float_t a, gmx_simd_float_t b)
+namespace gmx
 {
-    gmx_simd_float_t  c;
-    c = gmx_simd_mul_f(a, b);
-    /* set 4th element to 0, then add all of them */
-    c = vsetq_lane_f32(0.0f, c, 3);
-    return gmx_simd_reduce_f_arm_neon(c);
+
+class Simd4Float
+{
+    public:
+        Simd4Float() {}
+
+        Simd4Float(float f) : simdInternal_(vdupq_n_f32(f)) {}
+
+        // Internal utility constructor to simplify return statements
+        Simd4Float(float32x4_t simd) : simdInternal_(simd) {}
+
+        float32x4_t  simdInternal_;
+};
+
+class Simd4FBool
+{
+    public:
+        Simd4FBool() {}
+
+        //! \brief Construct from scalar bool
+        Simd4FBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
+
+        // Internal utility constructor to simplify return statements
+        Simd4FBool(uint32x4_t simd) : simdInternal_(simd) {}
+
+        uint32x4_t  simdInternal_;
+};
+
+static inline Simd4Float gmx_simdcall
+load4(const float *m)
+{
+    assert(size_t(m) % 16 == 0);
+    return {
+               vld1q_f32(m)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H */
+static inline void gmx_simdcall
+store4(float *m, Simd4Float a)
+{
+    assert(size_t(m) % 16 == 0);
+    vst1q_f32(m, a.simdInternal_);
+}
+
+static inline Simd4Float gmx_simdcall
+load4U(const float *m)
+{
+    return {
+               vld1q_f32(m)
+    };
+}
+
+static inline void gmx_simdcall
+store4U(float *m, Simd4Float a)
+{
+    vst1q_f32(m, a.simdInternal_);
+}
+
+static inline Simd4Float gmx_simdcall
+simd4SetZeroF()
+{
+    return {
+               vdupq_n_f32(0.0f)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator&(Simd4Float a, Simd4Float b)
+{
+    return {
+               vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a.simdInternal_),
+                                               vreinterpretq_s32_f32(b.simdInternal_)))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+andNot(Simd4Float a, Simd4Float b)
+{
+    return {
+               vreinterpretq_f32_s32(vbicq_s32(vreinterpretq_s32_f32(b.simdInternal_),
+                                               vreinterpretq_s32_f32(a.simdInternal_)))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator|(Simd4Float a, Simd4Float b)
+{
+    return {
+               vreinterpretq_f32_s32(vorrq_s32(vreinterpretq_s32_f32(a.simdInternal_),
+                                               vreinterpretq_s32_f32(b.simdInternal_)))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator^(Simd4Float a, Simd4Float b)
+{
+    return {
+               vreinterpretq_f32_s32(veorq_s32(vreinterpretq_s32_f32(a.simdInternal_),
+                                               vreinterpretq_s32_f32(b.simdInternal_)))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator+(Simd4Float a, Simd4Float b)
+{
+    return {
+               vaddq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator-(Simd4Float a, Simd4Float b)
+{
+    return {
+               vsubq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator-(Simd4Float x)
+{
+    return {
+               vnegq_f32(x.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+operator*(Simd4Float a, Simd4Float b)
+{
+    return {
+               vmulq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline Simd4Float gmx_simdcall
+fma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+#else
+               vmlaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+#endif
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#else
+               vnegq_f32(vmlsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#endif
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+#else
+               vmlsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+#endif
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#else
+               vnegq_f32(vmlaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#endif
+    };
+}
+#endif
+
+static inline Simd4Float gmx_simdcall
+rsqrt(Simd4Float x)
+{
+    return {
+               vrsqrteq_f32(x.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+abs(Simd4Float x)
+{
+    return {
+               vabsq_f32( x.simdInternal_ )
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+max(Simd4Float a, Simd4Float b)
+{
+    return {
+               vmaxq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+min(Simd4Float a, Simd4Float b)
+{
+    return {
+               vminq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline Simd4Float gmx_simdcall
+round(Simd4Float x)
+{
+    // Convert x to nearest integer
+    float32x4_t signBitOfX = vreinterpretq_f32_u32(vandq_u32(vdupq_n_u32(0x80000000), vreinterpretq_u32_f32(x.simdInternal_)));
+    float32x4_t half       = vdupq_n_f32(0.5f);
+    float32x4_t corr       = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(half), vreinterpretq_u32_f32(signBitOfX)));
+
+    int32x4_t   integerX   = vcvtq_s32_f32(vaddq_f32(x.simdInternal_, corr));
+
+    // Convert back to float
+
+    return {
+               vcvtq_f32_s32(integerX)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+trunc(Simd4Float x)
+{
+    return {
+               vcvtq_f32_s32( vcvtq_s32_f32(x.simdInternal_) )
+    };
+}
+#endif
+
+static inline void gmx_simdcall
+transpose(Simd4Float * v0, Simd4Float * v1,
+          Simd4Float * v2, Simd4Float * v3)
+{
+    float32x4x2_t  t0 = vuzpq_f32(v0->simdInternal_, v2->simdInternal_);
+    float32x4x2_t  t1 = vuzpq_f32(v1->simdInternal_, v3->simdInternal_);
+    float32x4x2_t  t2 = vtrnq_f32(t0.val[0], t1.val[0]);
+    float32x4x2_t  t3 = vtrnq_f32(t0.val[1], t1.val[1]);
+    v0->simdInternal_ = t2.val[0];
+    v1->simdInternal_ = t3.val[0];
+    v2->simdInternal_ = t2.val[1];
+    v3->simdInternal_ = t3.val[1];
+}
+
+static inline Simd4FBool gmx_simdcall
+operator==(Simd4Float a, Simd4Float b)
+{
+    return {
+               vceqq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator!=(Simd4Float a, Simd4Float b)
+{
+    return {
+               vmvnq_u32(vceqq_f32(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator<(Simd4Float a, Simd4Float b)
+{
+    return {
+               vcltq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator<=(Simd4Float a, Simd4Float b)
+{
+    return {
+               vcleq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator&&(Simd4FBool a, Simd4FBool b)
+{
+    return {
+               vandq_u32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+operator||(Simd4FBool a, Simd4FBool b)
+{
+    return {
+               vorrq_u32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline bool gmx_simdcall
+anyTrue(Simd4FBool a)
+{
+    uint32x4_t x = a.simdInternal_;
+    uint32x4_t y = vextq_u32(x, x, 2);
+
+    x = vorrq_u32(x, y);
+    y = vextq_u32(x, x, 1);
+    x = vorrq_u32(x, y);
+    return (vgetq_lane_u32(x, 0) != 0);
+}
+#endif
+
+static inline Simd4Float gmx_simdcall
+selectByMask(Simd4Float a, Simd4FBool m)
+{
+    return {
+               vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a.simdInternal_),
+                                               m.simdInternal_))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+selectByNotMask(Simd4Float a, Simd4FBool m)
+{
+    return {
+               vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a.simdInternal_),
+                                               m.simdInternal_))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+{
+    return {
+               vbslq_f32(sel.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline float gmx_simdcall
+reduce(Simd4Float a)
+{
+    float32x4_t x = a.simdInternal_;
+    float32x4_t y = vextq_f32(x, x, 2);
+
+    x = vaddq_f32(x, y);
+    y = vextq_f32(x, x, 1);
+    x = vaddq_f32(x, y);
+    return vgetq_lane_f32(x, 0);
+}
+
+static inline float gmx_simdcall
+dotProduct(Simd4Float a, Simd4Float b)
+{
+    Simd4Float c;
+
+    c = a * b;
+    /* set 4th element to 0, then add all of them */
+    c.simdInternal_ = vsetq_lane_f32(0.0f, c.simdInternal_, 3);
+    return reduce(c);
+}
+#endif
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H

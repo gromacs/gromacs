@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,12 @@
 
 #include "block.h"
 
+#include <cstdio>
+
 #include <algorithm>
 
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 void init_block(t_block *block)
 {
@@ -152,5 +155,140 @@ void copy_blocka(const t_blocka *src, t_blocka *dest)
     for (int i = 0; i < dest->nra; ++i)
     {
         dest->a[i] = src->a[i];
+    }
+}
+
+static int pr_block_title(FILE *fp, int indent, const char *title, const t_block *block)
+{
+    if (available(fp, block, indent, title))
+    {
+        indent = pr_title(fp, indent, title);
+        pr_indent(fp, indent);
+        fprintf(fp, "nr=%d\n", block->nr);
+    }
+    return indent;
+}
+
+static int pr_blocka_title(FILE *fp, int indent, const char *title, const t_blocka *block)
+{
+    if (available(fp, block, indent, title))
+    {
+        indent = pr_title(fp, indent, title);
+        pr_indent(fp, indent);
+        fprintf(fp, "nr=%d\n", block->nr);
+        pr_indent(fp, indent);
+        fprintf(fp, "nra=%d\n", block->nra);
+    }
+    return indent;
+}
+
+static void low_pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers)
+{
+    int i;
+
+    if (available(fp, block, indent, title))
+    {
+        indent = pr_blocka_title(fp, indent, title, block);
+        for (i = 0; i <= block->nr; i++)
+        {
+            pr_indent(fp, indent+INDENT);
+            fprintf(fp, "%s->index[%d]=%d\n",
+                    title, bShowNumbers ? i : -1, block->index[i]);
+        }
+        for (i = 0; i < block->nra; i++)
+        {
+            pr_indent(fp, indent+INDENT);
+            fprintf(fp, "%s->a[%d]=%d\n",
+                    title, bShowNumbers ? i : -1, block->a[i]);
+        }
+    }
+}
+
+void pr_block(FILE *fp, int indent, const char *title, const t_block *block, gmx_bool bShowNumbers)
+{
+    int i, start;
+
+    if (available(fp, block, indent, title))
+    {
+        indent = pr_block_title(fp, indent, title, block);
+        start  = 0;
+        if (block->index[start] != 0)
+        {
+            fprintf(fp, "block->index[%d] should be 0\n", start);
+        }
+        else
+        {
+            for (i = 0; i < block->nr; i++)
+            {
+                int end  = block->index[i+1];
+                pr_indent(fp, indent);
+                if (end <= start)
+                {
+                    fprintf(fp, "%s[%d]={}\n", title, i);
+                }
+                else
+                {
+                    fprintf(fp, "%s[%d]={%d..%d}\n",
+                            title, bShowNumbers ? i : -1,
+                            bShowNumbers ? start : -1, bShowNumbers ? end-1 : -1);
+                }
+                start = end;
+            }
+        }
+    }
+}
+
+void pr_blocka(FILE *fp, int indent, const char *title, const t_blocka *block, gmx_bool bShowNumbers)
+{
+    int i, j, ok, size, start, end;
+
+    if (available(fp, block, indent, title))
+    {
+        indent = pr_blocka_title(fp, indent, title, block);
+        start  = 0;
+        end    = start;
+        if ((ok = (block->index[start] == 0)) == 0)
+        {
+            fprintf(fp, "block->index[%d] should be 0\n", start);
+        }
+        else
+        {
+            for (i = 0; i < block->nr; i++)
+            {
+                end  = block->index[i+1];
+                size = pr_indent(fp, indent);
+                if (end <= start)
+                {
+                    size += fprintf(fp, "%s[%d]={", title, i);
+                }
+                else
+                {
+                    size += fprintf(fp, "%s[%d][%d..%d]={",
+                                    title, bShowNumbers ? i : -1,
+                                    bShowNumbers ? start : -1, bShowNumbers ? end-1 : -1);
+                }
+                for (j = start; j < end; j++)
+                {
+                    if (j > start)
+                    {
+                        size += fprintf(fp, ", ");
+                    }
+                    if ((size) > (USE_WIDTH))
+                    {
+                        fprintf(fp, "\n");
+                        size = pr_indent(fp, indent+INDENT);
+                    }
+                    size += fprintf(fp, "%d", block->a[j]);
+                }
+                fprintf(fp, "}\n");
+                start = end;
+            }
+        }
+        if ((end != block->nra) || (!ok))
+        {
+            pr_indent(fp, indent);
+            fprintf(fp, "tables inconsistent, dumping complete tables:\n");
+            low_pr_blocka(fp, indent, title, block, bShowNumbers);
+        }
     }
 }

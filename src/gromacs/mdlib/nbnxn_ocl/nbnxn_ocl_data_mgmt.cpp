@@ -48,9 +48,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/gmxlib/gmx_detect_hardware.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
-#include "gromacs/gmxlib/ocl_tools/oclutils.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -641,6 +641,22 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
     nb->kernel_zero_e_fshift = nbnxn_gpu_create_kernel(nb, "zero_e_fshift");
 }
 
+/*! \brief Initializes simulation constant data.
+ *
+ *  Initializes members of the atomdata and nbparam structs and
+ *  clears e/fshift output buffers.
+ */
+static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
+                                 const interaction_const_t      *ic,
+                                 const nonbonded_verlet_group_t *nbv_group)
+{
+    init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype, nb->dev_info);
+    init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_info);
+
+    /* clear energy and shift force outputs */
+    nbnxn_ocl_clear_e_fshift(nb);
+}
+
 //! This function is documented in the header file
 void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                     const gmx_gpu_info_t      *gpu_info,
@@ -653,13 +669,6 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
 {
     gmx_nbnxn_ocl_t            *nb;
     cl_int                      cl_error;
-    /*
-       bool gmx_unused             bStreamSync;
-       bool gmx_unused             bNoStreamSync;
-       bool gmx_unused             bTMPIAtomics;
-       bool gmx_unused             bX86;
-       bool gmx_unused             bOldDriver;
-     */
     cl_command_queue_properties queue_properties;
 
     assert(gpu_info);
@@ -745,17 +754,14 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
         init_timings(nb->timings);
     }
 
-    // TODO: check if it's worth implementing for NVIDIA GPUs
-    ///////////* set the kernel type for the current GPU */
-    ///////////* pick L1 cache configuration */
-    //////////nbnxn_gpu_set_cacheconfig(nb->dev_info);
+    nbnxn_ocl_init_const(nb, ic, nbv_grp);
 
-    init_atomdata_first(nb->atdat, nbv_grp[0].nbat->ntype, nb->dev_info);
-    init_nbparam(nb->nbparam, ic, nbv_grp[0].nbat, nb->dev_info);
+    /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
+     * but sadly this is not supported in OpenCL (yet?). Consider adding it if
+     * it becomes supported.
+     */
     nbnxn_gpu_compile_kernels(nb);
     nbnxn_gpu_init_kernels(nb);
-    // TODO put this elsewhere? also mirror it in cuda
-    nbnxn_ocl_clear_e_fshift(nb);
 
     *p_nb = nb;
 

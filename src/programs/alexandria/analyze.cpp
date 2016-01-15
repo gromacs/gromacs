@@ -44,7 +44,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
@@ -129,7 +129,7 @@ static void calc_frag_miller(Poldata     *                     pd,
                         if (bSupport && (ic != alexandria::iCmiller))
                         {
                             p         += polar*natom;
-                            sp        += sqr(sig_pol)*natom;
+                            sp        += gmx::square(sig_pol)*natom;
                             natom_tot += natom;
                         }
                     }
@@ -143,7 +143,7 @@ static void calc_frag_miller(Poldata     *                     pd,
                         {
                             alexandria::Experiment calc1(program, type, (char *)"ahc",
                                                          ref, minimum, nofile);
-                            ahc = 4*sqr(ahc)/Nelec;
+                            ahc = 4*gmx::square(ahc)/Nelec;
                             alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
                             mpi->AddExperiment(calc1);

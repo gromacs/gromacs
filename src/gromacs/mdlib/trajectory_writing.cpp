@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,8 +42,10 @@
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
@@ -65,7 +67,6 @@ do_md_trajectory_writing(FILE           *fplog,
                          t_mdebin       *mdebin,
                          gmx_ekindata_t *ekind,
                          rvec           *f,
-                         rvec           *f_global,
                          int            *nchkpt,
                          gmx_bool        bCPT,
                          gmx_bool        bRerunMD,
@@ -142,7 +143,7 @@ do_md_trajectory_writing(FILE           *fplog,
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, f, f_global);
+                                         step, t, state, state_global, f);
         if (bCPT)
         {
             (*nchkpt)++;

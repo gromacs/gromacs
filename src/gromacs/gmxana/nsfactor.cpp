@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,6 @@
 #include <cmath>
 #include <cstring>
 
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/topology.h"
@@ -51,6 +50,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 void check_binwidth(real binwidth)
 {
@@ -204,7 +204,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     rvec              dist;
     double            rmax;
     int               i, j;
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     double          **tgr;
     int               tid;
     int               nthreads;
@@ -243,7 +243,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             mc_max = static_cast<gmx_int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
         }
         rng = gmx_rng_init(seed);
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();
         snew(tgr, nthreads);
         snew(trng, nthreads);
@@ -302,7 +302,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     }
     else
     {
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();
         /* Allocating memory for tgr arrays */
         snew(tgr, nthreads);

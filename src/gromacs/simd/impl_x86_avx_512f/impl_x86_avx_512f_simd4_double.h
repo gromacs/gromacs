@@ -52,53 +52,53 @@
  * we cast to the full register width when those operations are cheaper. We
  * also save some register space by using mask registers for the booleans.
  */
-#define gmx_simd4_double_t          __m256d
-#define gmx_simd4_load_d            _mm256_load_pd
-#define gmx_simd4_load1_d           _mm256_broadcast_sd
-#define gmx_simd4_set1_d            _mm256_set1_pd
-#define gmx_simd4_store_d           _mm256_store_pd
-#define gmx_simd4_loadu_d           _mm256_loadu_pd
-#define gmx_simd4_storeu_d          _mm256_storeu_pd
-#define gmx_simd4_setzero_d         _mm256_setzero_pd
-#define gmx_simd4_add_d             _mm256_add_pd
-#define gmx_simd4_sub_d             _mm256_sub_pd
-#define gmx_simd4_mul_d             _mm256_mul_pd
-#define gmx_simd4_fmadd_d           _mm256_fmadd_pd
-#define gmx_simd4_fmsub_d           _mm256_fmsub_pd
-#define gmx_simd4_fnmadd_d          _mm256_fnmadd_pd
-#define gmx_simd4_fnmsub_d          _mm256_fnmsub_pd
-#define gmx_simd4_and_d             _mm256_and_pd
-#define gmx_simd4_andnot_d          _mm256_andnot_pd
-#define gmx_simd4_or_d              _mm256_or_pd
-#define gmx_simd4_xor_d             _mm256_xor_pd
+#define Simd4Double          __m256d
+#define simd4LoadD            _mm256_load_pd
+#define simd4Load1D           _mm256_broadcast_sd
+#define simd4Set1D            _mm256_set1_pd
+#define simd4StoreD           _mm256_store_pd
+#define simd4LoadUD           _mm256_loadu_pd
+#define simd4StoreUD          _mm256_storeu_pd
+#define simd4SetZeroD         _mm256_setzero_pd
+#define simd4AddD             _mm256_add_pd
+#define simd4SubD             _mm256_sub_pd
+#define simd4MulD             _mm256_mul_pd
+#define simd4FmaddD           _mm256_fmadd_pd
+#define simd4FmsubD           _mm256_fmsub_pd
+#define simd4FnmaddD          _mm256_fnmadd_pd
+#define simd4FnmsubD          _mm256_fnmsub_pd
+#define simd4AndD             _mm256_and_pd
+#define simd4AndNotD          _mm256_andnot_pd
+#define simd4OrD              _mm256_or_pd
+#define simd4XorD             _mm256_xor_pd
 /* We need to use the new table lookup instructions since we have specified
  * 14 bits of accuracy for AVX-512F.
  */
-#define gmx_simd4_rsqrt_d(x)        _mm512_castpd512_pd256(_mm512_rsqrt14_pd(_mm512_castpd256_pd512(x)))
+#define simd4RsqrtD(x)        _mm512_castpd512_pd256(_mm512_rsqrt14_pd(_mm512_castpd256_pd512(x)))
 /* abs/neg cannot cause FP exceptions, so we can operate on entire register */
-#define gmx_simd4_fabs_d(x)         _mm512_castpd512_pd256(_mm512_abs_pd(_mm512_castpd256_pd512(x)))
-#define gmx_simd4_fneg_d(x)         _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
-#define gmx_simd4_max_d(a, b)       _mm256_max_pd(a, b)
-#define gmx_simd4_min_d(a, b)       _mm256_min_pd(a, b)
-#define gmx_simd4_round_d(a)        _mm256_round_pd(a, _MM_FROUND_NINT)
-#define gmx_simd4_trunc_d(a)        _mm256_round_pd(a, _MM_FROUND_TRUNC)
-#define gmx_simd4_dotproduct3_d(a, b) gmx_simd4_dotproduct3_d_x86_avx_512f(a, b)
-#define gmx_simd4_dbool_t           __mmask16
-#define gmx_simd4_cmpeq_d(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_EQ_OQ)
-#define gmx_simd4_cmplt_d(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_LT_OS)
-#define gmx_simd4_cmple_d(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_LE_OS)
-#define gmx_simd4_and_db            _mm512_kand
-#define gmx_simd4_or_db             _mm512_kor
-#define gmx_simd4_anytrue_db(x)     (_mm512_mask2int(x)&0xF)
-#define gmx_simd4_blendzero_d(a, sel)    _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_setzero_pd(), sel, _mm512_castpd256_pd512(a)))
-#define gmx_simd4_blendnotzero_d(a, sel) _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_setzero_pd(), _mm512_knot(sel), _mm512_castpd256_pd512(a)))
-#define gmx_simd4_blendv_d(a, b, sel)    _mm512_castpd512_pd256(_mm512_mask_blend_pd(sel, _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b)))
-#define gmx_simd4_reduce_d(x)       gmx_simd4_reduce_d_x86_avx_512f(x)
+#define simd4AbsD(x)         _mm512_castpd512_pd256(_mm512_abs_pd(_mm512_castpd256_pd512(x)))
+#define simd4NegD(x)         _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
+#define simd4MaxD(a, b)       _mm256_max_pd(a, b)
+#define simd4MinD(a, b)       _mm256_min_pd(a, b)
+#define simd4RoundD(a)        _mm256_round_pd(a, _MM_FROUND_NINT)
+#define simd4TruncD(a)        _mm256_round_pd(a, _MM_FROUND_TRUNC)
+#define simd4DotProductD(a, b) simd4DotProductD_x86_avx_512f(a, b)
+#define Simd4DBool           __mmask16
+#define simd4CmpEqD(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_EQ_OQ)
+#define simd4CmpLtD(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_LT_OS)
+#define simd4CmpLeD(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_LE_OS)
+#define simd4AndDB            _mm512_kand
+#define simd4OrDB             _mm512_kor
+#define simd4AnyTrueDB(x)     (_mm512_mask2int(x)&0xF)
+#define simd4MaskD(a, sel)    _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_setzero_pd(), sel, _mm512_castpd256_pd512(a)))
+#define simd4MaskNotD(a, sel) _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_setzero_pd(), _mm512_knot(sel), _mm512_castpd256_pd512(a)))
+#define simd4BlendD(a, b, sel)    _mm512_castpd512_pd256(_mm512_mask_blend_pd(sel, _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b)))
+#define simd4ReduceD(x)       simd4ReduceD_x86_avx_512f(x)
 
 /* Implementation helpers */
 
-static gmx_inline double
-gmx_simd4_reduce_d_x86_avx_512f(__m256d a)
+static inline double
+simd4ReduceD_x86_avx_512f(__m256d a)
 {
     double  f;
     __m128d a0, a1;
@@ -110,8 +110,8 @@ gmx_simd4_reduce_d_x86_avx_512f(__m256d a)
     return f;
 }
 
-static gmx_inline double
-gmx_simd4_dotproduct3_d_x86_avx_512f(__m256d a, __m256d b)
+static inline double
+simd4DotProductD_x86_avx_512f(__m256d a, __m256d b)
 {
     double  d;
     __m128d tmp1, tmp2;

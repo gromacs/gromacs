@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,9 +53,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -67,10 +65,12 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -954,6 +954,10 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     if (bConnolly)
     {
+        if (fr.natoms != top_->atoms.nr)
+        {
+            GMX_THROW(InconsistentInputError("Connolly plot (-q) is only supported for trajectories that contain all the atoms"));
+        }
         // This is somewhat nasty, as it modifies the atoms and symtab
         // structures.  But since it is only used in the first frame, and no
         // one else uses the topology after initialization, it may just work

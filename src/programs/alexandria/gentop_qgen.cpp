@@ -9,10 +9,9 @@
 #include <ctype.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/strdb.h"
+#include "gromacs/utility/txtdump.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -483,7 +482,7 @@ real GentopQgen::calcSij(int i, int j)
                     dism = 0.0;
                     for (m = 0; (m < DIM); m++)
                     {
-                        dism = dism+sqr(_x[tag][m]-_x[l][m]);
+                        dism = dism+gmx::square(_x[tag][m]-_x[l][m]);
                     }
 
                     printf("dist: %8.3f\n", sqrt(dism));
@@ -520,7 +519,7 @@ real GentopQgen::calcSij(int i, int j)
                 dism = 0.0;
                 for (m = 0; (m < DIM); m++)
                 {
-                    dism = dism+sqr(_x[tag][m]-_x[l][m]);
+                    dism = dism+gmx::square(_x[tag][m]-_x[l][m]);
                 }
                 if (sqrt(dism) < 0.130)
                 {
@@ -831,7 +830,7 @@ int GentopQgen::generateChargesSm(FILE *fp,
             {
                 if (atoms->atom[i].ptype != eptShell)
                 {
-                    rms  += sqr(qq[j] - _q[j][_nZeta[j]-1]);
+                    rms  += gmx::square(qq[j] - _q[j][_nZeta[j]-1]);
                     qq[j] = _q[j][_nZeta[j]-1];
                     j++;
                 }

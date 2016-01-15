@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
@@ -923,7 +923,6 @@ void MolDip::CalcDeviation()
     tensor                  force_vir = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     t_nrnb                  my_nrnb;
     gmx_wallcycle_t         wcycle;
-    gmx_bool                bConverged;
     int                     eQ;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
@@ -1011,7 +1010,7 @@ void MolDip::CalcDeviation()
                                     &my_nrnb, wcycle, NULL,
                                     &(mymol->mtop_->groups),
                                     mymol->shellfc_, mymol->fr_, FALSE, t, mu_tot,
-                                    &bConverged, NULL, NULL);
+                                    NULL, NULL);
             }
             /* Compute the molecular dipole */
             mymol->CalcMultipoles();
@@ -1040,7 +1039,7 @@ void MolDip::CalcDeviation()
                 }
                 if (_bQM)
                 {
-                    _ener[ermsCHARGE] += sqr(qq-mymol->qESP[j]);
+                    _ener[ermsCHARGE] += gmx::square(qq-mymol->qESP[j]);
                 }
             }
             if (0 && (fabs(qtot-mymol->molProp()->getCharge()) > 1e-2))
@@ -1063,12 +1062,12 @@ void MolDip::CalcDeviation()
                     {
                         for (nn = 0; (nn < DIM); nn++)
                         {
-                            _ener[ermsQUAD] += sqr(mymol->Q_exp[mm][nn] - mymol->Q_calc[mm][nn]);
+                            _ener[ermsQUAD] += gmx::square(mymol->Q_exp[mm][nn] - mymol->Q_calc[mm][nn]);
                         }
                     }
                     else
                     {
-                        _ener[ermsQUAD] += sqr(mymol->Q_exp[mm][mm] - mymol->Q_calc[mm][mm]);
+                        _ener[ermsQUAD] += gmx::square(mymol->Q_exp[mm][mm] - mymol->Q_calc[mm][mm]);
                     }
                 }
                 if (NULL != mymol->gr_)
@@ -1083,7 +1082,7 @@ void MolDip::CalcDeviation()
             }
             else
             {
-                _ener[ermsMU]     = sqr(mymol->dip_calc - mymol->dip_exp);
+                _ener[ermsMU]     = gmx::square(mymol->dip_calc - mymol->dip_exp);
             }
             for (j = 0; (j < ermsNR); j++)
             {
@@ -1109,7 +1108,7 @@ void MolDip::CalcDeviation()
     /* Global sum energies */
     if (PAR(_cr))
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         gmx_sumd(ermsNR, _ener, _cr);
 #else
         gmx_sumf(ermsNR, _ener, _cr);

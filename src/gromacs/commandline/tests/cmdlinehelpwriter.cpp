@@ -58,6 +58,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/stringtest.h"
 
@@ -77,7 +78,8 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
     gmx::StringOutputStream     stream;
-    gmx::CommandLineHelpContext context(&stream, gmx::eHelpOutputFormat_Console,
+    gmx::TextWriter             streamWriter(&stream);
+    gmx::CommandLineHelpContext context(&streamWriter, gmx::eHelpOutputFormat_Console,
                                         NULL, "test");
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);

@@ -107,6 +107,9 @@ void spread_vsite_f(gmx_vsite_t *vsite,
  * as for instance for the PME mesh contribution.
  */
 
+int count_intercg_vsites(const gmx_mtop_t *mtop);
+/* Returns the number of virtual sites that cross charge groups */
+
 gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
                         gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,

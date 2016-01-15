@@ -38,9 +38,8 @@
 # This script provides the following basic version variables that need to be
 # maintained manually:
 #   GMX_VERSION_MAJOR      Major version number.
-#   GMX_VERSION_MINOR      Minor version number.
 #   GMX_VERSION_PATCH      Patch version number.
-#       Should always be defined: zero for, e.g., 5.0.
+#       Should always be defined: zero for, e.g., 2016.
 #   GMX_VERSION_SUFFIX     String suffix to add to numeric version string.
 #       "-dev" is automatically added when not building from a source package,
 #       and does not need to be kept here. This mechanism is not quite enough
@@ -77,10 +76,10 @@
 # They are collected into a single section below.
 # The following variables are set based on these:
 #   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
-#       above. Example: 4.6.1, 5.0
+#       above. Example: 4.6.1, 5.0, 2016
 #   GMX_VERSION_STRING     String with GMX_VERSION suffixed with the given
 #       suffix and possibly "-dev" for builds not from a source package.
-#   GMX_VERSION_NUMERIC    Numeric version number (e.g., 40601 for 4.6.1).
+#   GMX_VERSION_NUMERIC    Numeric version number (e.g., 40601 for 4.6.1, 20160001 for 2016.1).
 #   GMX_API_VERSION        Numeric API version.
 #       This is currently set automatically to GMX_VERSION_NUMERIC, but may
 #       become manually maintained in the future if there will be releases
@@ -213,8 +212,7 @@ endif()
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 5)
-set(GMX_VERSION_MINOR 2)
+set(GMX_VERSION_MAJOR 2016)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
@@ -239,9 +237,9 @@ set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 # General version management based on manually set numbers
 
 if (GMX_VERSION_PATCH)
-    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_MINOR}.${GMX_VERSION_PATCH}")
+    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_PATCH}")
 else()
-    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_MINOR}")
+    set(GMX_VERSION "${GMX_VERSION_MAJOR}")
 endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
@@ -259,7 +257,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/master")
 set(REGRESSIONTEST_MD5SUM "614a74e9b143bda5476f87f4ce08eec0" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
-     "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_MINOR}*100 + ${GMX_VERSION_PATCH}")
+     "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
 set(GMX_API_VERSION ${GMX_VERSION_NUMERIC})
 
 #####################################################################

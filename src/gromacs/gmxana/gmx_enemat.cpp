@@ -42,11 +42,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -56,6 +56,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
 static int search_str2(int nstr, char **str, char *key)
@@ -216,7 +217,7 @@ int gmx_enemat(int argc, char *argv[])
     fprintf(stderr, "Will read groupnames from inputfile\n");
     ngroups = get_lines(opt2fn("-groups", NFILE, fnm), &groups);
     fprintf(stderr, "Read %d groups\n", ngroups);
-    snew(set, static_cast<size_t>(sqr(ngroups)*egNR/2));
+    snew(set, static_cast<size_t>(gmx::square(ngroups)*egNR/2));
     n     = 0;
     prevk = 0;
     for (i = 0; (i < ngroups); i++)

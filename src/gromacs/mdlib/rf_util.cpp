@@ -38,10 +38,11 @@
 
 #include <cmath>
 
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -49,6 +50,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 
 real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                         const t_mdatoms *mdatoms, const t_blocka *excl,
@@ -241,13 +243,13 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
         else
         {
             k1   = 1 + *kappa*Rc;
-            k2   = eps_rf*sqr((real)(*kappa*Rc));
+            k2   = eps_rf*gmx::square((real)(*kappa*Rc));
 
             *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
         }
         *crf   = 1/Rc + *krf*Rc*Rc;
         // Make sure we don't lose resolution in pow() by casting real arg to double
-        rmin   = std::pow(static_cast<double>(*krf*2.0), -1.0/3.0);
+        rmin   = gmx::invcbrt(static_cast<double>(*krf*2.0));
 
         if (fplog)
         {

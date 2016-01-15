@@ -42,6 +42,7 @@
 #include <stdio.h>
 
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
@@ -71,21 +72,21 @@ real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
         for (d = 0; d < DIM; d++)
         {
             xd  = x[i][d] - xp[i][d];
-            rd += m * sqr(xd);
+            rd += m * gmx::square(xd);
             if (bRho)
             {
                 xs  = x[i][d] + xp[i][d];
-                rs += m * sqr(xs);
+                rs += m * gmx::square(xs);
             }
         }
     }
     if (bRho)
     {
-        return 2*sqrt(rd/rs);
+        return 2*std::sqrt(rd/rs);
     }
     else
     {
-        return sqrt(rd/tm);
+        return std::sqrt(rd/tm);
     }
 }
 

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="InvcbrtInteger">
+    <Int Name="Length">9</Int>
+    <Real>-0.58480354764257314</Real>
+    <Real>-0.62996052494743648</Real>
+    <Real>-0.69336127435063477</Real>
+    <Real>-0.79370052598409968</Real>
+    <Real>-1</Real>
+    <Real>1</Real>
+    <Real>0.79370052598409968</Real>
+    <Real>0.69336127435063477</Real>
+    <Real>0.62996052494743648</Real>
+  </Sequence>
+</ReferenceData>

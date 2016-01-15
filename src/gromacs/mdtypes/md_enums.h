@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,12 @@
 /*! \brief Return a string from a list of strings
  *
  * If index if within 0 .. max_index-1 returns the corresponding string
- * or UNDEFINED otherwise, in other words this is a range-check that does
+ * or "no name defined" otherwise, in other words this is a range-check that does
  * not crash.
  * \param[in] index     The index in the array
  * \param[in] max_index The length of the array
  * \param[in] names     The array
- * \return the correct string or UNDEFINED
+ * \return the correct string or "no name defined"
  */
 const char *enum_name(int index, int max_index, const char *names[]);
 
@@ -227,12 +227,14 @@ extern const char *ens_names[ensNR+1];
 
 /*! \brief Integrator algorithm
  *
+ * eiSD2 has been removed, but we keep a renamed enum entry,
+ * so we can refuse to do MD with such .tpr files.
  * eiVV is normal velocity verlet
  * eiVVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy,
  * and the half step kinetic energy for temperature control
  */
 enum {
-    eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
 };
 //! Name of the integrator algorithm
 extern const char *ei_names[eiNR+1];
@@ -243,7 +245,7 @@ extern const char *ei_names[eiNR+1];
 //! Do we use molecular dynamics
 #define EI_MD(e) ((e) == eiMD || EI_VV(e))
 //! Do we use stochastic dynamics
-#define EI_SD(e) ((e) == eiSD1 || (e) == eiSD2)
+#define EI_SD(e) ((e) == eiSD1)
 //! Do we use any stochastic integrator
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/

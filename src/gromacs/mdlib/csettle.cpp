@@ -39,6 +39,8 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -82,7 +84,7 @@ static void init_proj_matrix(settleparam_t *p,
     p->imH = invmH;
     /* We normalize the inverse masses with imO for the matrix inversion.
      * so we can keep using masses of almost zero for frozen particles,
-     * without running out of the float range in m_inv.
+     * without running out of the float range in invertMatrix.
      */
     imOn = 1;
     imHn = p->imH/p->imO;
@@ -98,7 +100,7 @@ static void init_proj_matrix(settleparam_t *p,
     mat[2][0] = mat[0][2];
     mat[2][1] = mat[1][2];
 
-    m_inv(mat, p->invmat);
+    gmx::invertMatrix(mat, p->invmat);
 
     msmul(p->invmat, 1/p->imO, p->invmat);
 
@@ -430,9 +432,9 @@ void csettle(gmx_settledata_t settled,
         zaksyd = xakszd * yaksxd - yakszd * xaksxd;
         /* 27 flops */
 
-        axlng = gmx_invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
-        aylng = gmx_invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
-        azlng = gmx_invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
+        axlng = gmx::invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
+        aylng = gmx::invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
+        azlng = gmx::invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
 
         trns11 = xaksxd * axlng;
         trns21 = yaksxd * axlng;
@@ -462,7 +464,7 @@ void csettle(gmx_settledata_t settled,
         zc1d = trns13 * xc1 + trns23 * yc1 + trns33 * zc1;
         /* 65 flops */
 
-        sinphi = za1d * gmx_invsqrt(ra*ra);
+        sinphi = za1d * gmx::invsqrt(ra*ra);
         tmp    = 1.0 - sinphi * sinphi;
         if (tmp <= 0)
         {
@@ -470,7 +472,7 @@ void csettle(gmx_settledata_t settled,
         }
         else
         {
-            tmp2   = gmx_invsqrt(tmp);
+            tmp2   = gmx::invsqrt(tmp);
             cosphi = tmp*tmp2;
             sinpsi = (zb1d - zc1d) * irc2 * tmp2;
             tmp2   = 1.0 - sinpsi * sinpsi;
@@ -480,7 +482,7 @@ void csettle(gmx_settledata_t settled,
             }
             else
             {
-                cospsi = tmp2*gmx_invsqrt(tmp2);
+                cospsi = tmp2*gmx::invsqrt(tmp2);
             }
         }
         /* 46 flops */
@@ -501,12 +503,12 @@ void csettle(gmx_settledata_t settled,
             gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
             al2be2 = alpa * alpa + beta * beta;
             tmp2   = (al2be2 - gama * gama);
-            sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) * gmx_invsqrt(al2be2*al2be2);
+            sinthe = (alpa * gama - beta * tmp2*gmx::invsqrt(tmp2)) * gmx::invsqrt(al2be2*al2be2);
             /* 47 flops */
 
             /*  --- Step4  A3' --- */
             tmp2   = 1.0 - sinthe * sinthe;
-            costhe = tmp2*gmx_invsqrt(tmp2);
+            costhe = tmp2*gmx::invsqrt(tmp2);
             xa3d   = -ya2d * sinthe;
             ya3d   = ya2d * costhe;
             za3d   = za1d;

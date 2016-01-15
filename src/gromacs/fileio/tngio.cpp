@@ -38,13 +38,14 @@
 
 #include "config.h"
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 #include "tng/tng_io.h"
 #endif
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
@@ -80,7 +81,7 @@ void gmx_tng_open(const char       *filename,
                   char              mode,
                   tng_trajectory_t *tng)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     /* First check whether we have to make a backup,
      * only for writing, not for read or append.
      */
@@ -118,10 +119,10 @@ void gmx_tng_open(const char       *filename,
 
         char        programInfo[256];
         const char *precisionString = "";
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         precisionString = " (double precision)";
 #endif
-        sprintf(programInfo, "%.100s, %.128s%.24s",
+        sprintf(programInfo, "%.100s %.128s%.24s",
                 gmx::getProgramContext().displayName(),
                 gmx_version(), precisionString);
         if (mode == 'w')
@@ -160,7 +161,7 @@ void gmx_tng_close(tng_trajectory_t *tng)
     /* We have to check that tng is set because
      * tng_util_trajectory_close wants to return a NULL in it, and
      * gives a fatal error if it is NULL. */
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     if (tng)
     {
         tng_util_trajectory_close(tng);
@@ -170,7 +171,7 @@ void gmx_tng_close(tng_trajectory_t *tng)
 #endif
 }
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
                                        const char          *moleculeName,
                                        const t_atoms       *atoms,
@@ -366,13 +367,13 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                                                                      const char*,
                                                                      const char,
                                                                      const char);
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
 #else
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
 #endif
     int  xout, vout, fout;
-//     int  gcd = -1, lowest = -1;
+    int  gcd = -1, lowest = -1;
     char compression;
 
     tng_set_frames_per_frame_set(tng, bUseLossyCompression, ir);
@@ -380,8 +381,19 @@ static void set_writing_intervals(tng_trajectory_t  tng,
     if (bUseLossyCompression)
     {
         xout        = ir->nstxout_compressed;
-        vout        = 0;
-        fout        = 0;
+
+        /* If there is no uncompressed coordinate output write forces
+           and velocities to the compressed tng file. */
+        if (ir->nstxout)
+        {
+            vout        = 0;
+            fout        = 0;
+        }
+        else
+        {
+            vout        = ir->nstvout;
+            fout        = ir->nstfout;
+        }
         compression = TNG_TNG_COMPRESSION;
     }
     else
@@ -396,34 +408,17 @@ static void set_writing_intervals(tng_trajectory_t  tng,
         set_writing_interval(tng, xout, 3, TNG_TRAJ_POSITIONS,
                              "POSITIONS", TNG_PARTICLE_BLOCK_DATA,
                              compression);
-        /* The design of TNG makes it awkward to try to write a box
-         * with multiple periodicities, which might be co-prime. Since
-         * the use cases for the box with a frame consisting only of
-         * velocities seem low, for now we associate box writing with
-         * position writing. */
-        set_writing_interval(tng, xout, 9, TNG_TRAJ_BOX_SHAPE,
-                             "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
-                             TNG_GZIP_COMPRESSION);
         /* TODO: if/when we write energies to TNG also, reconsider how
          * and when box information is written, because GROMACS
          * behaviour pre-5.0 was to write the box with every
          * trajectory frame and every energy frame, and probably
          * people depend on this. */
 
-        /* TODO: If we need to write lambda values at steps when
-         * positions (or other data) are not also being written, then
-         * code in mdoutf.c will need to match however that is
-         * organized here. */
-        set_writing_interval(tng, xout, 1, TNG_GMX_LAMBDA,
-                             "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
-                             TNG_GZIP_COMPRESSION);
-
-        /* FIXME: gcd and lowest currently not used. */
-//         gcd = greatest_common_divisor_if_positive(gcd, xout);
-//         if (lowest < 0 || xout < lowest)
-//         {
-//             lowest = xout;
-//         }
+        gcd = greatest_common_divisor_if_positive(gcd, xout);
+        if (lowest < 0 || xout < lowest)
+        {
+            lowest = xout;
+        }
     }
     if (vout)
     {
@@ -431,12 +426,11 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                              "VELOCITIES", TNG_PARTICLE_BLOCK_DATA,
                              compression);
 
-        /* FIXME: gcd and lowest currently not used. */
-//         gcd = greatest_common_divisor_if_positive(gcd, vout);
-//         if (lowest < 0 || vout < lowest)
-//         {
-//             lowest = vout;
-//         }
+        gcd = greatest_common_divisor_if_positive(gcd, vout);
+        if (lowest < 0 || vout < lowest)
+        {
+            lowest = vout;
+        }
     }
     if (fout)
     {
@@ -444,29 +438,30 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                              "FORCES", TNG_PARTICLE_BLOCK_DATA,
                              TNG_GZIP_COMPRESSION);
 
-        /* FIXME: gcd and lowest currently not used. */
-//         gcd = greatest_common_divisor_if_positive(gcd, fout);
-//         if (lowest < 0 || fout < lowest)
-//         {
-//             lowest = fout;
-//         }
+        gcd = greatest_common_divisor_if_positive(gcd, fout);
+        if (lowest < 0 || fout < lowest)
+        {
+            lowest = fout;
+        }
     }
-    /* FIXME: See above. gcd interval for lambdas is disabled. */
-//     if (gcd > 0)
-//     {
-//         /* Lambdas written at an interval of the lowest common denominator
-//          * of other output */
-//         set_writing_interval(tng, gcd, 1, TNG_GMX_LAMBDA,
-//                                  "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
-//                                  TNG_GZIP_COMPRESSION);
-//
-//         if (gcd < lowest / 10)
-//         {
-//             gmx_warning("The lowest common denominator of trajectory output is "
-//                         "every %d step(s), whereas the shortest output interval "
-//                         "is every %d steps.", gcd, lowest);
-//         }
-//     }
+    if (gcd > 0)
+    {
+        /* Lambdas and box shape written at an interval of the lowest common
+           denominator of other output */
+        set_writing_interval(tng, gcd, 1, TNG_GMX_LAMBDA,
+                             "LAMBDAS", TNG_NON_PARTICLE_BLOCK_DATA,
+                             TNG_GZIP_COMPRESSION);
+
+        set_writing_interval(tng, gcd, 9, TNG_TRAJ_BOX_SHAPE,
+                             "BOX SHAPE", TNG_NON_PARTICLE_BLOCK_DATA,
+                             TNG_GZIP_COMPRESSION);
+        if (gcd < lowest / 10)
+        {
+            gmx_warning("The lowest common denominator of trajectory output is "
+                        "every %d step(s), whereas the shortest output interval "
+                        "is every %d steps.", gcd, lowest);
+        }
+    }
 }
 #endif
 
@@ -474,7 +469,7 @@ void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
                                 const gmx_mtop_t *mtop,
                                 const t_inputrec *ir)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_tng_add_mtop(tng, mtop);
     set_writing_intervals(tng, FALSE, ir);
     tng_time_per_frame_set(tng, ir->delta_t * PICO);
@@ -485,7 +480,7 @@ void gmx_tng_prepare_md_writing(tng_trajectory_t  tng,
 #endif
 }
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 /* Check if all atoms in the molecule system are selected
  * by a selection group of type specified by gtype. */
 static gmx_bool all_atoms_selected(const gmx_mtop_t *mtop,
@@ -689,7 +684,7 @@ static void add_selection_groups(tng_trajectory_t  tng,
 void gmx_tng_set_compression_precision(tng_trajectory_t tng,
                                        real             prec)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     tng_compression_precision_set(tng, prec);
 #else
     GMX_UNUSED_VALUE(tng);
@@ -701,7 +696,7 @@ void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
                                       const gmx_mtop_t *mtop,
                                       const t_inputrec *ir)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_tng_add_mtop(tng, mtop);
     add_selection_groups(tng, mtop);
     set_writing_intervals(tng, TRUE, ir);
@@ -725,7 +720,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                     const rvec      *v,
                     const rvec      *f)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     typedef tng_function_status (*write_data_func_pointer)(tng_trajectory_t,
                                                            const gmx_int64_t,
                                                            const double,
@@ -735,7 +730,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                                                            const char*,
                                                            const char,
                                                            const char);
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     static write_data_func_pointer           write_data           = tng_util_generic_with_time_double_write;
 #else
     static write_data_func_pointer           write_data           = tng_util_generic_with_time_write;
@@ -782,16 +777,6 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
         {
             gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
         }
-        /* TNG-MF1 compression only compresses positions and velocities. Use lossless
-         * compression for box shape regardless of output mode */
-        if (write_data(tng, step, elapsedSeconds,
-                       reinterpret_cast<const real *>(box),
-                       9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
-                       TNG_NON_PARTICLE_BLOCK_DATA,
-                       TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
-        {
-            gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
-        }
     }
 
     if (v)
@@ -821,7 +806,16 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     }
 
     /* TNG-MF1 compression only compresses positions and velocities. Use lossless
-     * compression for lambdas regardless of output mode */
+     * compression for lambdas and box shape regardless of output mode */
+    if (write_data(tng, step, elapsedSeconds,
+                   reinterpret_cast<const real *>(box),
+                   9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
+                   TNG_NON_PARTICLE_BLOCK_DATA,
+                   TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+    {
+        gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+    }
+
     if (write_data(tng, step, elapsedSeconds,
                    reinterpret_cast<const real *>(&lambda),
                    1, TNG_GMX_LAMBDA, "LAMBDAS",
@@ -846,7 +840,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
 
 void fflush_tng(tng_trajectory_t tng)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     if (!tng)
     {
         return;
@@ -859,7 +853,7 @@ void fflush_tng(tng_trajectory_t tng)
 
 float gmx_tng_get_time_of_final_frame(tng_trajectory_t tng)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_int64_t nFrames;
     double      time;
     float       fTime;

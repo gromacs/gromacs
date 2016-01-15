@@ -155,22 +155,6 @@ typedef uint64_t gmx_uint64_t;
  */
 #define gmx_restrict __restrict
 
-/*! \def gmx_cxx_const
- * \brief
- * Keyword to work around C/C++ differences in possible const keyword usage.
- *
- * Some functions that do not modify their input parameters cannot declare
- * those parameters as `const` and compile warning/error-free on both C and C++
- * compilers because of differences in `const` semantics.  This macro can be
- * used in cases where C++ allows `const`, but C does not like it, to make the
- * same declaration work for both.
- */
-#ifdef __cplusplus
-#define gmx_cxx_const const
-#else
-#define gmx_cxx_const
-#endif
-
 /*! \def GMX_CXX11_COMPILATION
  * \brief
  * Defined to 1 when compiling as C++11.
@@ -244,10 +228,6 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
-/*! \def GMX_ALIGNMENT
- * \brief
- * Supports aligned variables */
-
 /*! \def GMX_ALIGNED(type, alignment)
  * \brief
  * Declare variable with data alignment
@@ -260,19 +240,22 @@ typedef uint64_t gmx_uint64_t;
    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf[...];
    \endcode
  */
-/* alignas(x) is not used even with GMX-CXX11 because it isn't in the list of
-   tested features and thus might not be supported.
-   MSVC before 2015 has align but doesn't support sizeof inside. */
-#if defined(_MSC_VER) && (_MSC_VER > 1800 || defined(__ICL))
-#  define GMX_ALIGNMENT 1
-#  define GMX_ALIGNED(type, alignment) __declspec(align(alignment*sizeof(type))) type
-#elif defined(__GNUC__) || defined(__clang__)
-#  define GMX_ALIGNMENT 1
-#  define GMX_ALIGNED(type, alignment) __attribute__ ((__aligned__(alignment*sizeof(type)))) type
+
+#if defined(_MSC_VER) && (_MSC_VER <= 1800) && !defined(__ICL)
+// For MSVC2013 and eariler we use a hack and assume an alignment of 128 bytes is sufficient in all cases
+#    define GMX_ALIGNED(type, alignment) __declspec(align(128)) type
+#elif defined(__GNUC__) || defined(__clang__) || defined(__ibmxl__) || defined(__xlC__) || defined(__PATHCC__)
+// Gcc-4.6.4 does not support alignas, but both gcc, clang, pathscale and xlc
+// support the standard GNU alignment attributes. PGI also sets __GNUC__ now,
+// and mostly supports it.
+#    define GMX_ALIGNED(type, alignment) __attribute__ ((aligned(alignment*sizeof(type)))) type
 #else
-#  define GMX_ALIGNMENT 0
-#  define GMX_ALIGNED(type, alignment)
+// If nothing else works we rely on C++11. This will for instance work for MSVC2015 and later.
+// If you get an error here, find out what attribute to use to get your compiler to align
+// data properly and add it as a case.
+#    define GMX_ALIGNED(type, alignment) alignas(alignment*alignof(type)) type
 #endif
+
 
 /*! \brief
  * Macro to explicitly ignore an unused value.

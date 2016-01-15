@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,17 +39,20 @@
 
 #include "md_support.h"
 
+#include <climits>
+
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdrun_signalling.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -61,6 +64,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -193,8 +197,11 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
     if (statea->nalloc > stateb->nalloc)
     {
         stateb->nalloc = statea->nalloc;
-        srenew(stateb->x, stateb->nalloc);
-        srenew(stateb->v, stateb->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        srenew(stateb->x, stateb->nalloc + 1);
+        srenew(stateb->v, stateb->nalloc + 1);
     }
 
     stateb->natoms     = statea->natoms;
@@ -267,14 +274,14 @@ real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass 
 
 /* TODO Specialize this routine into init-time and loop-time versions?
    e.g. bReadEkin is only true when restoring from checkpoint */
-void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
+void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global,
+                     matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
     tensor   corr_vir, corr_pres;
@@ -342,10 +349,10 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
-                global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
+                global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : NULL,
                             signalBuffer.size(), signalBuffer.data(),
-                            top_global, state,
+                            totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
@@ -397,7 +404,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bEner || bPres || bConstrain)
     {
-        calc_dispcorr(ir, fr, top_global->natoms, box, state->lambda[efptVDW],
+        calc_dispcorr(ir, fr, box, state->lambda[efptVDW],
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
     }
 
@@ -678,23 +685,17 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
     if (state->x == NULL)
     {
-        snew(state->x, state->nalloc);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        snew(state->x, state->nalloc + 1);
     }
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
         if (state->v == NULL)
         {
-            snew(state->v, state->nalloc);
-        }
-    }
-    if (ir->eI == eiSD2)
-    {
-        state->flags |= (1<<estSDX);
-        if (state->sd_X == NULL)
-        {
-            /* sd_X is not stored in the tpx file, so we need to allocate it */
-            snew(state->sd_X, state->nalloc);
+            snew(state->v, state->nalloc + 1);
         }
     }
     if (ir->eI == eiCG)
@@ -703,7 +704,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if (state->cg_p == NULL)
         {
             /* cg_p is not stored in the tpx file, so we need to allocate it */
-            snew(state->cg_p, state->nalloc);
+            snew(state->cg_p, state->nalloc + 1);
         }
     }
 

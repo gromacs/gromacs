@@ -21,24 +21,27 @@ test help
 
 test module
 ===========
+
 Synopsis
 --------
+
 .. parsed-literal::
 
     test module [:strong:`-int` :emphasis:`<int>`]
 
 Description
 -----------
+
 Sample description
 for testing ``test module``.
 
 Options
 -------
+
 Other options:
 
 ``-int`` <int>
-
-
+    Integer option
 
 .. only:: man
 
@@ -54,12 +57,13 @@ Other options:
 
 test other
 ==========
+
 Synopsis
 --------
+
 .. parsed-literal::
 
     test other
-
 
 .. only:: man
 
@@ -94,7 +98,6 @@ Group 2
 ^^^^^^^
 :doc:`test other </onlinehelp/test-other>`
   Second module
-
 ]]></String>
   <String Name="fragments/bytopic-man.rst"><![CDATA[
 Group 1
@@ -106,35 +109,41 @@ Group 2
 ^^^^^^^
 :manpage:`test-other(1)`
   Second module
-
 ]]></String>
   <String Name="onlinehelp/topic1.rst"><![CDATA[
 Test topic
 ==========
+
 Help text
 
 Subtopic 1
 ----------
+
 Sub text
 
 Subtopic 2
 ----------
+
 Sub text
 
 Out-of-order subtopic
 ---------------------
+
 Sub text
 ]]></String>
   <String Name="onlinehelp/topic2.rst"><![CDATA[
 Another topic
 =============
+
 Help text
 ]]></String>
   <String Name="onlinehelp/test.rst"><![CDATA[
 molecular dynamics simulation suite
 ===================================
+
 Synopsis
 --------
+
 .. parsed-literal::
 
     test [:strong:`-[no]h`] [:strong:`-[no]quiet`] [:strong:`-[no]version`] [:strong:`-[no]copyright`] [:strong:`-nice` :emphasis:`<int>`]
@@ -142,6 +151,7 @@ Synopsis
 
 Description
 -----------
+
 |Gromacs| is a full-featured suite of programs to perform molecular
 dynamics simulations, i.e., to simulate the behavior of systems with
 hundreds to millions of particles using Newtonian equations of motion.
@@ -151,6 +161,7 @@ questions.
 
 Options
 -------
+
 Other options:
 
 ``-[no]h``  (no)
@@ -168,6 +179,7 @@ Other options:
 
 test commands
 -------------
+
 The following commands are available. Please refer to their individual man pages or ``test help <command>`` for further details.
 
 .. include:: /fragments/bytopic-man.rst

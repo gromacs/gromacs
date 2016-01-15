@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,10 +47,11 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
@@ -69,8 +70,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 
 /* The functions below are macros as they are performance sensitive */
 
@@ -126,7 +128,7 @@
 #endif
 #endif
 
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
 
 
 /* We shift the i-particles backward for PBC.
@@ -325,13 +327,13 @@ static void get_cell_range(real b0, real b1,
 {
     *cf = std::max(static_cast<int>((b0 - c0)*invs), 0);
 
-    while (*cf > 0 && d2 + sqr((b0 - c0) - (*cf-1+1)*s) < r2)
+    while (*cf > 0 && d2 + gmx::square((b0 - c0) - (*cf-1+1)*s) < r2)
     {
         (*cf)--;
     }
 
     *cl = std::min(static_cast<int>((b1 - c0)*invs), nc-1);
-    while (*cl < nc-1 && d2 + sqr((*cl+1)*s - (b1 - c0)) < r2)
+    while (*cl < nc-1 && d2 + gmx::square((*cl+1)*s - (b1 - c0)) < r2)
     {
         (*cl)++;
     }
@@ -408,25 +410,28 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
 static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
                                  int csj, const nbnxn_bb_t *bb_j_all)
 {
-    gmx_simd4_float_t bb_i_S0, bb_i_S1;
-    gmx_simd4_float_t bb_j_S0, bb_j_S1;
-    gmx_simd4_float_t dl_S;
-    gmx_simd4_float_t dh_S;
-    gmx_simd4_float_t dm_S;
-    gmx_simd4_float_t dm0_S;
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
 
-    bb_i_S0 = gmx_simd4_load_f(&bb_i_ci[si].lower[0]);
-    bb_i_S1 = gmx_simd4_load_f(&bb_i_ci[si].upper[0]);
-    bb_j_S0 = gmx_simd4_load_f(&bb_j_all[csj].lower[0]);
-    bb_j_S1 = gmx_simd4_load_f(&bb_j_all[csj].upper[0]);
+    Simd4Float bb_i_S0, bb_i_S1;
+    Simd4Float bb_j_S0, bb_j_S1;
+    Simd4Float dl_S;
+    Simd4Float dh_S;
+    Simd4Float dm_S;
+    Simd4Float dm0_S;
 
-    dl_S    = gmx_simd4_sub_f(bb_i_S0, bb_j_S1);
-    dh_S    = gmx_simd4_sub_f(bb_j_S0, bb_i_S1);
+    bb_i_S0 = load4(&bb_i_ci[si].lower[0]);
+    bb_i_S1 = load4(&bb_i_ci[si].upper[0]);
+    bb_j_S0 = load4(&bb_j_all[csj].lower[0]);
+    bb_j_S1 = load4(&bb_j_all[csj].upper[0]);
 
-    dm_S    = gmx_simd4_max_f(dl_S, dh_S);
-    dm0_S   = gmx_simd4_max_f(dm_S, gmx_simd4_setzero_f());
+    dl_S    = bb_i_S0 - bb_j_S1;
+    dh_S    = bb_j_S0 - bb_i_S1;
 
-    return gmx_simd4_dotproduct3_f(dm0_S, dm0_S);
+    dm_S    = max(dl_S, dh_S);
+    dm0_S   = max(dm_S, simd4SetZeroF());
+
+    return dotProduct(dm0_S, dm0_S);
 }
 
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
@@ -434,48 +439,48 @@ static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
     {                                                \
         int               shi;                                  \
                                                  \
-        gmx_simd4_float_t dx_0, dy_0, dz_0;                    \
-        gmx_simd4_float_t dx_1, dy_1, dz_1;                    \
+        Simd4Float        dx_0, dy_0, dz_0;                    \
+        Simd4Float        dx_1, dy_1, dz_1;                    \
                                                  \
-        gmx_simd4_float_t mx, my, mz;                          \
-        gmx_simd4_float_t m0x, m0y, m0z;                       \
+        Simd4Float        mx, my, mz;                          \
+        Simd4Float        m0x, m0y, m0z;                       \
                                                  \
-        gmx_simd4_float_t d2x, d2y, d2z;                       \
-        gmx_simd4_float_t d2s, d2t;                            \
+        Simd4Float        d2x, d2y, d2z;                       \
+        Simd4Float        d2s, d2t;                            \
                                                  \
         shi = si*NNBSBB_D*DIM;                       \
                                                  \
-        xi_l = gmx_simd4_load_f(bb_i+shi+0*STRIDE_PBB);   \
-        yi_l = gmx_simd4_load_f(bb_i+shi+1*STRIDE_PBB);   \
-        zi_l = gmx_simd4_load_f(bb_i+shi+2*STRIDE_PBB);   \
-        xi_h = gmx_simd4_load_f(bb_i+shi+3*STRIDE_PBB);   \
-        yi_h = gmx_simd4_load_f(bb_i+shi+4*STRIDE_PBB);   \
-        zi_h = gmx_simd4_load_f(bb_i+shi+5*STRIDE_PBB);   \
+        xi_l = load4(bb_i+shi+0*STRIDE_PBB);   \
+        yi_l = load4(bb_i+shi+1*STRIDE_PBB);   \
+        zi_l = load4(bb_i+shi+2*STRIDE_PBB);   \
+        xi_h = load4(bb_i+shi+3*STRIDE_PBB);   \
+        yi_h = load4(bb_i+shi+4*STRIDE_PBB);   \
+        zi_h = load4(bb_i+shi+5*STRIDE_PBB);   \
                                                  \
-        dx_0 = gmx_simd4_sub_f(xi_l, xj_h);                 \
-        dy_0 = gmx_simd4_sub_f(yi_l, yj_h);                 \
-        dz_0 = gmx_simd4_sub_f(zi_l, zj_h);                 \
+        dx_0 = xi_l - xj_h;                 \
+        dy_0 = yi_l - yj_h;                 \
+        dz_0 = zi_l - zj_h;                 \
                                                  \
-        dx_1 = gmx_simd4_sub_f(xj_l, xi_h);                 \
-        dy_1 = gmx_simd4_sub_f(yj_l, yi_h);                 \
-        dz_1 = gmx_simd4_sub_f(zj_l, zi_h);                 \
+        dx_1 = xj_l - xi_h;                 \
+        dy_1 = yj_l - yi_h;                 \
+        dz_1 = zj_l - zi_h;                 \
                                                  \
-        mx   = gmx_simd4_max_f(dx_0, dx_1);                 \
-        my   = gmx_simd4_max_f(dy_0, dy_1);                 \
-        mz   = gmx_simd4_max_f(dz_0, dz_1);                 \
+        mx   = max(dx_0, dx_1);                 \
+        my   = max(dy_0, dy_1);                 \
+        mz   = max(dz_0, dz_1);                 \
                                                  \
-        m0x  = gmx_simd4_max_f(mx, zero);                   \
-        m0y  = gmx_simd4_max_f(my, zero);                   \
-        m0z  = gmx_simd4_max_f(mz, zero);                   \
+        m0x  = max(mx, zero);                   \
+        m0y  = max(my, zero);                   \
+        m0z  = max(mz, zero);                   \
                                                  \
-        d2x  = gmx_simd4_mul_f(m0x, m0x);                   \
-        d2y  = gmx_simd4_mul_f(m0y, m0y);                   \
-        d2z  = gmx_simd4_mul_f(m0z, m0z);                   \
+        d2x  = m0x * m0x;                   \
+        d2y  = m0y * m0y;                   \
+        d2z  = m0z * m0z;                   \
                                                  \
-        d2s  = gmx_simd4_add_f(d2x, d2y);                   \
-        d2t  = gmx_simd4_add_f(d2s, d2z);                   \
+        d2s  = d2x + d2y;                   \
+        d2t  = d2s + d2z;                   \
                                                  \
-        gmx_simd4_store_f(d2+si, d2t);                      \
+        store4(d2+si, d2t);                      \
     }
 
 /* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */
@@ -483,21 +488,24 @@ static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
                                      int nsi, const float *bb_i,
                                      float *d2)
 {
-    gmx_simd4_float_t xj_l, yj_l, zj_l;
-    gmx_simd4_float_t xj_h, yj_h, zj_h;
-    gmx_simd4_float_t xi_l, yi_l, zi_l;
-    gmx_simd4_float_t xi_h, yi_h, zi_h;
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
 
-    gmx_simd4_float_t zero;
+    Simd4Float xj_l, yj_l, zj_l;
+    Simd4Float xj_h, yj_h, zj_h;
+    Simd4Float xi_l, yi_l, zi_l;
+    Simd4Float xi_h, yi_h, zi_h;
 
-    zero = gmx_simd4_setzero_f();
+    Simd4Float zero;
 
-    xj_l = gmx_simd4_set1_f(bb_j[0*STRIDE_PBB]);
-    yj_l = gmx_simd4_set1_f(bb_j[1*STRIDE_PBB]);
-    zj_l = gmx_simd4_set1_f(bb_j[2*STRIDE_PBB]);
-    xj_h = gmx_simd4_set1_f(bb_j[3*STRIDE_PBB]);
-    yj_h = gmx_simd4_set1_f(bb_j[4*STRIDE_PBB]);
-    zj_h = gmx_simd4_set1_f(bb_j[5*STRIDE_PBB]);
+    zero = setZero();
+
+    xj_l = Simd4Float(bb_j[0*STRIDE_PBB]);
+    yj_l = Simd4Float(bb_j[1*STRIDE_PBB]);
+    zj_l = Simd4Float(bb_j[2*STRIDE_PBB]);
+    xj_h = Simd4Float(bb_j[3*STRIDE_PBB]);
+    yj_h = Simd4Float(bb_j[4*STRIDE_PBB]);
+    zj_h = Simd4Float(bb_j[5*STRIDE_PBB]);
 
     /* Here we "loop" over si (0,STRIDE_PBB) from 0 to nsi with step STRIDE_PBB.
      * But as we know the number of iterations is 1 or 2, we unroll manually.
@@ -526,7 +534,7 @@ static gmx_bool subc_in_range_x(int na_c,
         {
             int  j0 = (csj*na_c + j)*stride;
 
-            real d2 = sqr(x_i[i0  ] - x_j[j0  ]) + sqr(x_i[i0+1] - x_j[j0+1]) + sqr(x_i[i0+2] - x_j[j0+2]);
+            real d2 = gmx::square(x_i[i0  ] - x_j[j0  ]) + gmx::square(x_i[i0+1] - x_j[j0+1]) + gmx::square(x_i[i0+2] - x_j[j0+2]);
 
             if (d2 < rl2)
             {
@@ -549,23 +557,23 @@ static gmx_bool subc_in_range_simd4(int na_c,
                                     int csj, int stride, const real *x_j,
                                     real rl2)
 {
-    gmx_simd4_real_t ix_S0, iy_S0, iz_S0;
-    gmx_simd4_real_t ix_S1, iy_S1, iz_S1;
+    Simd4Real        ix_S0, iy_S0, iz_S0;
+    Simd4Real        ix_S1, iy_S1, iz_S1;
 
-    gmx_simd4_real_t rc2_S;
+    Simd4Real        rc2_S;
 
     int              dim_stride;
     int              j0, j1;
 
-    rc2_S   = gmx_simd4_set1_r(rl2);
+    rc2_S   = Simd4Real(rl2);
 
     dim_stride = NBNXN_GPU_CLUSTER_SIZE/STRIDE_PBB*DIM;
-    ix_S0      = gmx_simd4_load_r(x_i+(si*dim_stride+0)*STRIDE_PBB);
-    iy_S0      = gmx_simd4_load_r(x_i+(si*dim_stride+1)*STRIDE_PBB);
-    iz_S0      = gmx_simd4_load_r(x_i+(si*dim_stride+2)*STRIDE_PBB);
-    ix_S1      = gmx_simd4_load_r(x_i+(si*dim_stride+3)*STRIDE_PBB);
-    iy_S1      = gmx_simd4_load_r(x_i+(si*dim_stride+4)*STRIDE_PBB);
-    iz_S1      = gmx_simd4_load_r(x_i+(si*dim_stride+5)*STRIDE_PBB);
+    ix_S0      = load4(x_i+(si*dim_stride+0)*STRIDE_PBB);
+    iy_S0      = load4(x_i+(si*dim_stride+1)*STRIDE_PBB);
+    iz_S0      = load4(x_i+(si*dim_stride+2)*STRIDE_PBB);
+    ix_S1      = load4(x_i+(si*dim_stride+3)*STRIDE_PBB);
+    iy_S1      = load4(x_i+(si*dim_stride+4)*STRIDE_PBB);
+    iz_S1      = load4(x_i+(si*dim_stride+5)*STRIDE_PBB);
 
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
@@ -574,63 +582,63 @@ static gmx_bool subc_in_range_simd4(int na_c,
     j1 = j0 + na_c - 1;
     while (j0 < j1)
     {
-        gmx_simd4_real_t jx0_S, jy0_S, jz0_S;
-        gmx_simd4_real_t jx1_S, jy1_S, jz1_S;
+        Simd4Real jx0_S, jy0_S, jz0_S;
+        Simd4Real jx1_S, jy1_S, jz1_S;
 
-        gmx_simd4_real_t dx_S0, dy_S0, dz_S0;
-        gmx_simd4_real_t dx_S1, dy_S1, dz_S1;
-        gmx_simd4_real_t dx_S2, dy_S2, dz_S2;
-        gmx_simd4_real_t dx_S3, dy_S3, dz_S3;
+        Simd4Real dx_S0, dy_S0, dz_S0;
+        Simd4Real dx_S1, dy_S1, dz_S1;
+        Simd4Real dx_S2, dy_S2, dz_S2;
+        Simd4Real dx_S3, dy_S3, dz_S3;
 
-        gmx_simd4_real_t rsq_S0;
-        gmx_simd4_real_t rsq_S1;
-        gmx_simd4_real_t rsq_S2;
-        gmx_simd4_real_t rsq_S3;
+        Simd4Real rsq_S0;
+        Simd4Real rsq_S1;
+        Simd4Real rsq_S2;
+        Simd4Real rsq_S3;
 
-        gmx_simd4_bool_t wco_S0;
-        gmx_simd4_bool_t wco_S1;
-        gmx_simd4_bool_t wco_S2;
-        gmx_simd4_bool_t wco_S3;
-        gmx_simd4_bool_t wco_any_S01, wco_any_S23, wco_any_S;
+        Simd4Bool wco_S0;
+        Simd4Bool wco_S1;
+        Simd4Bool wco_S2;
+        Simd4Bool wco_S3;
+        Simd4Bool wco_any_S01, wco_any_S23, wco_any_S;
 
-        jx0_S = gmx_simd4_set1_r(x_j[j0*stride+0]);
-        jy0_S = gmx_simd4_set1_r(x_j[j0*stride+1]);
-        jz0_S = gmx_simd4_set1_r(x_j[j0*stride+2]);
+        jx0_S = Simd4Real(x_j[j0*stride+0]);
+        jy0_S = Simd4Real(x_j[j0*stride+1]);
+        jz0_S = Simd4Real(x_j[j0*stride+2]);
 
-        jx1_S = gmx_simd4_set1_r(x_j[j1*stride+0]);
-        jy1_S = gmx_simd4_set1_r(x_j[j1*stride+1]);
-        jz1_S = gmx_simd4_set1_r(x_j[j1*stride+2]);
+        jx1_S = Simd4Real(x_j[j1*stride+0]);
+        jy1_S = Simd4Real(x_j[j1*stride+1]);
+        jz1_S = Simd4Real(x_j[j1*stride+2]);
 
         /* Calculate distance */
-        dx_S0            = gmx_simd4_sub_r(ix_S0, jx0_S);
-        dy_S0            = gmx_simd4_sub_r(iy_S0, jy0_S);
-        dz_S0            = gmx_simd4_sub_r(iz_S0, jz0_S);
-        dx_S1            = gmx_simd4_sub_r(ix_S1, jx0_S);
-        dy_S1            = gmx_simd4_sub_r(iy_S1, jy0_S);
-        dz_S1            = gmx_simd4_sub_r(iz_S1, jz0_S);
-        dx_S2            = gmx_simd4_sub_r(ix_S0, jx1_S);
-        dy_S2            = gmx_simd4_sub_r(iy_S0, jy1_S);
-        dz_S2            = gmx_simd4_sub_r(iz_S0, jz1_S);
-        dx_S3            = gmx_simd4_sub_r(ix_S1, jx1_S);
-        dy_S3            = gmx_simd4_sub_r(iy_S1, jy1_S);
-        dz_S3            = gmx_simd4_sub_r(iz_S1, jz1_S);
+        dx_S0            = ix_S0 - jx0_S;
+        dy_S0            = iy_S0 - jy0_S;
+        dz_S0            = iz_S0 - jz0_S;
+        dx_S1            = ix_S1 - jx0_S;
+        dy_S1            = iy_S1 - jy0_S;
+        dz_S1            = iz_S1 - jz0_S;
+        dx_S2            = ix_S0 - jx1_S;
+        dy_S2            = iy_S0 - jy1_S;
+        dz_S2            = iz_S0 - jz1_S;
+        dx_S3            = ix_S1 - jx1_S;
+        dy_S3            = iy_S1 - jy1_S;
+        dz_S3            = iz_S1 - jz1_S;
 
         /* rsq = dx*dx+dy*dy+dz*dz */
-        rsq_S0           = gmx_simd4_calc_rsq_r(dx_S0, dy_S0, dz_S0);
-        rsq_S1           = gmx_simd4_calc_rsq_r(dx_S1, dy_S1, dz_S1);
-        rsq_S2           = gmx_simd4_calc_rsq_r(dx_S2, dy_S2, dz_S2);
-        rsq_S3           = gmx_simd4_calc_rsq_r(dx_S3, dy_S3, dz_S3);
+        rsq_S0           = norm2(dx_S0, dy_S0, dz_S0);
+        rsq_S1           = norm2(dx_S1, dy_S1, dz_S1);
+        rsq_S2           = norm2(dx_S2, dy_S2, dz_S2);
+        rsq_S3           = norm2(dx_S3, dy_S3, dz_S3);
 
-        wco_S0           = gmx_simd4_cmplt_r(rsq_S0, rc2_S);
-        wco_S1           = gmx_simd4_cmplt_r(rsq_S1, rc2_S);
-        wco_S2           = gmx_simd4_cmplt_r(rsq_S2, rc2_S);
-        wco_S3           = gmx_simd4_cmplt_r(rsq_S3, rc2_S);
+        wco_S0           = (rsq_S0 < rc2_S);
+        wco_S1           = (rsq_S1 < rc2_S);
+        wco_S2           = (rsq_S2 < rc2_S);
+        wco_S3           = (rsq_S3 < rc2_S);
 
-        wco_any_S01      = gmx_simd4_or_b(wco_S0, wco_S1);
-        wco_any_S23      = gmx_simd4_or_b(wco_S2, wco_S3);
-        wco_any_S        = gmx_simd4_or_b(wco_any_S01, wco_any_S23);
+        wco_any_S01      = wco_S0 || wco_S1;
+        wco_any_S23      = wco_S2 || wco_S3;
+        wco_any_S        = wco_any_S01 || wco_any_S23;
 
-        if (gmx_simd4_anytrue_b(wco_any_S))
+        if (anyTrue(wco_any_S))
         {
             return TRUE;
         }
@@ -800,9 +808,8 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 #endif
     }
     snew_aligned(nbl->work->x_ci, NBNXN_NA_SC_MAX*DIM, NBNXN_SEARCH_BB_MEM_ALIGN);
-#ifdef GMX_NBNXN_SIMD
-    snew_aligned(nbl->work->x_ci_simd_4xn, 1, NBNXN_MEM_ALIGN);
-    snew_aligned(nbl->work->x_ci_simd_2xnn, 1, NBNXN_MEM_ALIGN);
+#if GMX_SIMD
+    snew_aligned(nbl->work->x_ci_simd, 4*DIM*GMX_SIMD_REAL_WIDTH, GMX_SIMD_REAL_WIDTH);
 #endif
     snew_aligned(nbl->work->d2, GPU_NSUBCELL, NBNXN_SEARCH_BB_MEM_ALIGN);
 
@@ -1078,7 +1085,7 @@ static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
              NBNXN_INTERACTION_MASK_ALL));
 }
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 #if GMX_SIMD_REAL_WIDTH == 2
 #define get_imask_simd_4xn  get_imask_simd_j2
 #endif
@@ -1138,9 +1145,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -1178,9 +1185,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -2522,7 +2529,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
     vol_inc_i = (cluster_size_i - 1)/atom_density;
     vol_inc_j = (cluster_size_j - 1)/atom_density;
 
-    return nbnxn_rlist_inc_outside_fac*std::pow(static_cast<real>(vol_inc_i + vol_inc_j), static_cast<real>(1.0/3.0));
+    return nbnxn_rlist_inc_outside_fac*std::cbrt(vol_inc_i + vol_inc_j);
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
@@ -2607,7 +2614,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*sqr((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
@@ -2616,7 +2623,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     else
     {
         nsp_est_nl =
-            sqr(grid->atom_density/grid->na_c)*
+            gmx::square(grid->atom_density/grid->na_c)*
             nonlocal_vol2(nbs->zones, ls, r_eff_sup);
     }
 
@@ -2627,9 +2634,9 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         /* 6/2 rectangular volume on the faces */
         vol_est += (ls[XX]*ls[YY] + ls[XX]*ls[ZZ] + ls[YY]*ls[ZZ])*r_eff_sup;
         /* 12/2 quarter pie slices on the edges */
-        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*sqr(r_eff_sup);
+        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*gmx::square(r_eff_sup);
         /* 4 octants of a sphere */
-        vol_est += 0.5*4.0/3.0*M_PI*std::pow(r_eff_sup, static_cast<real>(3));
+        vol_est += 0.5*4.0/3.0*M_PI*gmx::power3(r_eff_sup);
 
         /* Estimate the number of cluster pairs as the local number of
          * clusters times the volume they interact with times the density.
@@ -2772,7 +2779,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#if (defined GMX_OPENMP) && !(defined __clang_analyzer__)
+#if GMX_OPENMP && !(defined __clang_analyzer__)
     // cppcheck-suppress unreadVariable
     int nthreads = gmx_omp_nthreads_get(emntPairsearch);
 #endif
@@ -3020,7 +3027,7 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
     rbb2 = std::max(0.0, rlist - 0.5*std::sqrt(bbx*bbx + bby*bby));
     rbb2 = rbb2 * rbb2;
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     return rbb2;
 #else
     return (float)((1+GMX_FLOAT_EPS)*rbb2);
@@ -3282,7 +3289,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
             if (bx1 < gridj->c0[XX])
             {
-                d2cx = sqr(gridj->c0[XX] - bx1);
+                d2cx = gmx::square(gridj->c0[XX] - bx1);
 
                 if (d2cx >= rl2)
                 {
@@ -3307,11 +3314,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
             else if (tz < 0)
             {
-                d2z = sqr(bz1);
+                d2z = gmx::square(bz1);
             }
             else
             {
-                d2z = sqr(bz0 - box[ZZ][ZZ]);
+                d2z = gmx::square(bz0 - box[ZZ][ZZ]);
             }
 
             d2z_cx = d2z + d2cx;
@@ -3356,11 +3363,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 d2z_cy = d2z;
                 if (by1 < gridj->c0[YY])
                 {
-                    d2z_cy += sqr(gridj->c0[YY] - by1);
+                    d2z_cy += gmx::square(gridj->c0[YY] - by1);
                 }
                 else if (by0 > gridj->c1[YY])
                 {
-                    d2z_cy += sqr(by0 - gridj->c1[YY]);
+                    d2z_cy += gmx::square(by0 - gridj->c1[YY]);
                 }
 
                 for (int tx = -shp[XX]; tx <= shp[XX]; tx++)
@@ -3444,11 +3451,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         d2zx = d2z;
                         if (gridj->c0[XX] + cx*gridj->sx > bx1)
                         {
-                            d2zx += sqr(gridj->c0[XX] + cx*gridj->sx - bx1);
+                            d2zx += gmx::square(gridj->c0[XX] + cx*gridj->sx - bx1);
                         }
                         else if (gridj->c0[XX] + (cx+1)*gridj->sx < bx0)
                         {
-                            d2zx += sqr(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
+                            d2zx += gmx::square(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
                         }
 
 #ifndef NBNXN_SHIFT_BACKWARD
@@ -3484,11 +3491,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             d2zxy = d2zx;
                             if (gridj->c0[YY] + cy*gridj->sy > by1)
                             {
-                                d2zxy += sqr(gridj->c0[YY] + cy*gridj->sy - by1);
+                                d2zxy += gmx::square(gridj->c0[YY] + cy*gridj->sy - by1);
                             }
                             else if (gridj->c0[YY] + (cy+1)*gridj->sy < by0)
                             {
-                                d2zxy += sqr(gridj->c0[YY] + (cy+1)*gridj->sy - by0);
+                                d2zxy += gmx::square(gridj->c0[YY] + (cy+1)*gridj->sy - by0);
                             }
                             if (c1 > c0 && d2zxy < rl2)
                             {
@@ -3506,7 +3513,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 cf = cs;
                                 while (cf > c0 &&
                                        (bbcz_j[cf*NNBSBB_D+1] >= bz0 ||
-                                        d2xy + sqr(bbcz_j[cf*NNBSBB_D+1] - bz0) < rl2))
+                                        d2xy + gmx::square(bbcz_j[cf*NNBSBB_D+1] - bz0) < rl2))
                                 {
                                     cf--;
                                 }
@@ -3517,7 +3524,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 cl = cs;
                                 while (cl < c1-1 &&
                                        (bbcz_j[cl*NNBSBB_D] <= bz1 ||
-                                        d2xy + sqr(bbcz_j[cl*NNBSBB_D] - bz1) < rl2))
+                                        d2xy + gmx::square(bbcz_j[cl*NNBSBB_D] - bz1) < rl2))
                                 {
                                     cl++;
                                 }
@@ -3897,7 +3904,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 
     if (nbl_list->bSimple)
     {
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
         switch (nb_kernel_type)
         {
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -3914,10 +3921,10 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 nbs->icell_set_x = icell_set_x_simple;
                 break;
         }
-#else   /* GMX_NBNXN_SIMD */
+#else   // GMX_SIMD
         /* MSVC 2013 complains about switch statements without case */
         nbs->icell_set_x = icell_set_x_simple;
-#endif  /* GMX_NBNXN_SIMD */
+#endif  // GMX_SIMD
     }
     else
     {

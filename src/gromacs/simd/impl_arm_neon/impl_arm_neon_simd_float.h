@@ -32,165 +32,755 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_SIMD_IMPL_ARM_NEON_SIMD_FLOAT_H
 #define GMX_SIMD_IMPL_ARM_NEON_SIMD_FLOAT_H
 
-#include <math.h>
+#include "config.h"
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #include <arm_neon.h>
 
-#include "impl_arm_neon_common.h"
+namespace gmx
+{
 
-/****************************************************
- *      SINGLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#define gmx_simd_float_t           float32x4_t
-#define gmx_simd_load_f            vld1q_f32
-#define gmx_simd_load1_f           vld1q_dup_f32
-#define gmx_simd_set1_f            vdupq_n_f32
-#define gmx_simd_store_f           vst1q_f32
-#define gmx_simd_loadu_f           vld1q_f32
-#define gmx_simd_storeu_f          vst1q_f32
-#define gmx_simd_setzero_f()       vdupq_n_f32(0.0f)
-#define gmx_simd_add_f             vaddq_f32
-#define gmx_simd_sub_f             vsubq_f32
-#define gmx_simd_mul_f             vmulq_f32
+class SimdFloat
+{
+    public:
+        SimdFloat() {}
+
+        SimdFloat(float f) : simdInternal_(vdupq_n_f32(f)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFloat(float32x4_t simd) : simdInternal_(simd) {}
+
+        float32x4_t  simdInternal_;
+};
+
+class SimdFInt32
+{
+    public:
+        SimdFInt32() {}
+
+        SimdFInt32(std::int32_t i) : simdInternal_(vdupq_n_s32(i)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFInt32(int32x4_t simd) : simdInternal_(simd) {}
+
+        int32x4_t  simdInternal_;
+};
+
+class SimdFBool
+{
+    public:
+        SimdFBool() {}
+
+        SimdFBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFBool(uint32x4_t simd) : simdInternal_(simd) {}
+
+        uint32x4_t  simdInternal_;
+};
+
+class SimdFIBool
+{
+    public:
+        SimdFIBool() {}
+
+        SimdFIBool(bool b) : simdInternal_(vdupq_n_u32( b ? 0xFFFFFFFF : 0)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFIBool(uint32x4_t simd) : simdInternal_(simd) {}
+
+        uint32x4_t  simdInternal_;
+};
+
+static inline SimdFloat gmx_simdcall
+load(const float *m)
+{
+    assert(std::size_t(m) % 16 == 0);
+    return {
+               vld1q_f32(m)
+    };
+}
+
+static inline void gmx_simdcall
+store(float *m, SimdFloat a)
+{
+    assert(std::size_t(m) % 16 == 0);
+    vst1q_f32(m, a.simdInternal_);
+}
+
+static inline SimdFloat gmx_simdcall
+loadU(const float *m)
+{
+    return {
+               vld1q_f32(m)
+    };
+}
+
+static inline void gmx_simdcall
+storeU(float *m, SimdFloat a)
+{
+    vst1q_f32(m, a.simdInternal_);
+}
+
+static inline SimdFloat gmx_simdcall
+setZeroF()
+{
+    return {
+               vdupq_n_f32(0.0f)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+loadFI(const std::int32_t * m)
+{
+    assert(std::size_t(m) % 16 == 0);
+    return {
+               vld1q_s32(m)
+    };
+}
+
+static inline void gmx_simdcall
+store(std::int32_t * m, SimdFInt32 a)
+{
+    assert(std::size_t(m) % 16 == 0);
+    vst1q_s32(m, a.simdInternal_);
+}
+
+static inline SimdFInt32 gmx_simdcall
+loadUFI(const std::int32_t *m)
+{
+    return {
+               vld1q_s32(m)
+    };
+}
+
+static inline void gmx_simdcall
+storeU(std::int32_t * m, SimdFInt32 a)
+{
+    vst1q_s32(m, a.simdInternal_);
+}
+
+static inline SimdFInt32 gmx_simdcall
+setZeroFI()
+{
+    return {
+               vdupq_n_s32(0)
+    };
+}
+
+template<int index> gmx_simdcall
+static inline std::int32_t
+extract(SimdFInt32 a)
+{
+    return vgetq_lane_s32(a.simdInternal_, index);
+}
+
+static inline SimdFloat gmx_simdcall
+operator&(SimdFloat a, SimdFloat b)
+{
+    return {
+               vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a.simdInternal_),
+                                               vreinterpretq_s32_f32(b.simdInternal_)))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+andNot(SimdFloat a, SimdFloat b)
+{
+    return {
+               vreinterpretq_f32_s32(vbicq_s32(vreinterpretq_s32_f32(b.simdInternal_),
+                                               vreinterpretq_s32_f32(a.simdInternal_)))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator|(SimdFloat a, SimdFloat b)
+{
+    return {
+               vreinterpretq_f32_s32(vorrq_s32(vreinterpretq_s32_f32(a.simdInternal_),
+                                               vreinterpretq_s32_f32(b.simdInternal_)))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator^(SimdFloat a, SimdFloat b)
+{
+    return {
+               vreinterpretq_f32_s32(veorq_s32(vreinterpretq_s32_f32(a.simdInternal_),
+                                               vreinterpretq_s32_f32(b.simdInternal_)))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator+(SimdFloat a, SimdFloat b)
+{
+    return {
+               vaddq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator-(SimdFloat a, SimdFloat b)
+{
+    return {
+               vsubq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator-(SimdFloat x)
+{
+    return {
+               vnegq_f32(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator*(SimdFloat a, SimdFloat b)
+{
+    return {
+               vmulq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline SimdFloat gmx_simdcall
+fma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
 #ifdef __ARM_FEATURE_FMA
-#    define gmx_simd_fmadd_f(a, b, c)  vfmaq_f32(c, b, a)
-#    define gmx_simd_fmsub_f(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
-#    define gmx_simd_fnmadd_f(a, b, c) vfmaq_f32(c, b, a)
-#    define gmx_simd_fnmsub_f(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
+               vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
 #else
-#    define gmx_simd_fmadd_f(a, b, c)  vmlaq_f32(c, b, a)
-#    define gmx_simd_fmsub_f(a, b, c)  vnegq_f32(vmlsq_f32(c, b, a))
-#    define gmx_simd_fnmadd_f(a, b, c) vmlsq_f32(c, b, a)
-#    define gmx_simd_fnmsub_f(a, b, c) vnegq_f32(vmlaq_f32(c, b, a))
+               vmlaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
 #endif
-#define gmx_simd_and_f(a, b)        vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
-#define gmx_simd_andnot_f(a, b)     vreinterpretq_f32_s32(vbicq_s32(vreinterpretq_s32_f32(b), vreinterpretq_s32_f32(a)))
-#define gmx_simd_or_f(a, b)         vreinterpretq_f32_s32(vorrq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
-#define gmx_simd_xor_f(a, b)        vreinterpretq_f32_s32(veorq_s32(vreinterpretq_s32_f32(a), vreinterpretq_s32_f32(b)))
-#define gmx_simd_rsqrt_f            vrsqrteq_f32
-#define gmx_simd_rsqrt_iter_f(lu, x) vmulq_f32(lu, vrsqrtsq_f32(vmulq_f32(lu, lu), x))
-#define gmx_simd_rcp_f              vrecpeq_f32
-#define gmx_simd_rcp_iter_f(lu, x)   vmulq_f32(lu, vrecpsq_f32(lu, x))
-#define gmx_simd_fabs_f(x)         vabsq_f32(x)
-#define gmx_simd_fneg_f(x)         vnegq_f32(x)
-#define gmx_simd_max_f             vmaxq_f32
-#define gmx_simd_min_f             vminq_f32
-#define gmx_simd_round_f(x)        gmx_simd_cvt_i2f(gmx_simd_cvt_f2i(x))
-#define gmx_simd_trunc_f(x)        gmx_simd_cvt_i2f(gmx_simd_cvtt_f2i(x))
-#define gmx_simd_fraction_f(x)     vsubq_f32(x, gmx_simd_trunc_f(x))
-#define gmx_simd_get_exponent_f    gmx_simd_get_exponent_f_arm_neon
-#define gmx_simd_get_mantissa_f    gmx_simd_get_mantissa_f_arm_neon
-#define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_arm_neon
-/* integer datatype corresponding to float: gmx_simd_fint32_t */
-#define gmx_simd_fint32_t         int32x4_t
-#define gmx_simd_load_fi(m)        vld1q_s32(m)
-#define gmx_simd_set1_fi           vdupq_n_s32
-#define gmx_simd_store_fi(m, x)    vst1q_s32(m, x)
-#define gmx_simd_loadu_fi(m)       vld1q_s32(m)
-#define gmx_simd_storeu_fi(m, x)   vst1q_s32(m, x)
-#define gmx_simd_setzero_fi()      vdupq_n_s32(0)
-#define gmx_simd_cvtt_f2i          vcvtq_s32_f32
-#define gmx_simd_cvt_f2i(x)        vcvtq_s32_f32(gmx_simd_add_f(gmx_simd_or_f(gmx_simd_and_f(vdupq_n_f32(-0.0f), x), vdupq_n_f32(0.5f)), x))
-#define gmx_simd_cvt_i2f           vcvtq_f32_s32
-#define gmx_simd_extract_fi(x, i)  vgetq_lane_s32(x, i)
-/* Integer logical ops on gmx_simd_fint32_t */
-#define gmx_simd_slli_fi           vshlq_n_s32
-#define gmx_simd_srli_fi           vshrq_n_s32
-#define gmx_simd_and_fi            vandq_s32
-#define gmx_simd_andnot_fi(a, b)   vbicq_s32(b, a)
-#define gmx_simd_or_fi             vorrq_s32
-#define gmx_simd_xor_fi            veorq_s32
-/* Integer arithmetic ops on gmx_simd_fint32_t */
-#define gmx_simd_add_fi            vaddq_s32
-#define gmx_simd_sub_fi            vsubq_s32
-#define gmx_simd_mul_fi            vmulq_s32
-/* Boolean & comparison operations on gmx_simd_float_t */
-#define gmx_simd_fbool_t           uint32x4_t
-#define gmx_simd_cmpeq_f           vceqq_f32
-#define gmx_simd_cmplt_f           vcltq_f32
-#define gmx_simd_cmple_f           vcleq_f32
-#define gmx_simd_and_fb            vandq_u32
-#define gmx_simd_or_fb             vorrq_u32
-#define gmx_simd_anytrue_fb        gmx_simd_anytrue_fb_arm_neon
-#define gmx_simd_blendzero_f(a, sel)     vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), sel))
-#define gmx_simd_blendnotzero_f(a, sel)  vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a), sel))
-#define gmx_simd_blendv_f(a, b, sel)     vbslq_f32(sel, b, a)
-#define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_arm_neon(a)
-/* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_fibool_t          uint32x4_t
-#define gmx_simd_cmpeq_fi          vceqq_s32
-#define gmx_simd_cmplt_fi          vcltq_s32
-#define gmx_simd_and_fib           vandq_u32
-#define gmx_simd_or_fib            vorrq_u32
-#define gmx_simd_anytrue_fib       gmx_simd_anytrue_fb
-#define gmx_simd_blendzero_fi(a, sel)     vandq_s32(a, vreinterpretq_s32_u32(sel))
-#define gmx_simd_blendnotzero_fi(a, sel)  vbicq_s32(a, vreinterpretq_s32_u32(sel))
-#define gmx_simd_blendv_fi(a, b, sel)     vbslq_s32(sel, b, a)
-/* Conversions between different booleans */
-#define gmx_simd_cvt_fb2fib(x)     (x)
-#define gmx_simd_cvt_fib2fb(x)     (x)
-
-/****************************************************
- * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- ****************************************************/
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_exponent_f_arm_neon(gmx_simd_float_t x)
-{
-    const float32x4_t expmask    = vreinterpretq_f32_s32( vdupq_n_s32(0x7F800000) );
-    int32x4_t         iexp;
-
-    iexp = vreinterpretq_s32_f32(gmx_simd_and_f(x, expmask));
-    iexp = vsubq_s32(vshrq_n_s32(iexp, 23), vdupq_n_s32(127));
-    return vcvtq_f32_s32(iexp);
+    };
 }
 
-
-static gmx_inline gmx_simd_float_t
-gmx_simd_get_mantissa_f_arm_neon(gmx_simd_float_t x)
+static inline SimdFloat gmx_simdcall
+fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    const float32x4_t mantmask   = vreinterpretq_f32_s32( vdupq_n_s32(0x007FFFFF) );
-    const float32x4_t one        = vdupq_n_f32(1.0f);
-
-    /* Get mantissa */
-    x = gmx_simd_and_f(mantmask, x);
-    /* Reset zero (but correctly biased) exponent */
-    return gmx_simd_or_f(x, one);
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#else
+               vnegq_f32(vmlsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#endif
+    };
 }
 
-
-static gmx_inline gmx_simd_float_t
-gmx_simd_set_exponent_f_arm_neon(gmx_simd_float_t x)
+static inline SimdFloat gmx_simdcall
+fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    int32x4_t  iexp = gmx_simd_cvt_f2i(x);
-
-    iexp = vshlq_n_s32(vaddq_s32(iexp, vdupq_n_s32(127)), 23);
-    return vreinterpretq_f32_s32(iexp);
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+#else
+               vmlsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+#endif
+    };
 }
 
-static gmx_inline float
-gmx_simd_reduce_f_arm_neon(gmx_simd_float_t a)
+static inline SimdFloat gmx_simdcall
+fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    float32x4_t b = vextq_f32(a, a, 2);
+    return {
+#ifdef __ARM_FEATURE_FMA
+               vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#else
+               vnegq_f32(vmlaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+#endif
+    };
+}
+#endif
 
-    a = vaddq_f32(a, b);
-    b = vextq_f32(a, a, 1);
-    a = vaddq_f32(a, b);
-    return vgetq_lane_f32(a, 0);
+static inline SimdFloat gmx_simdcall
+rsqrt(SimdFloat x)
+{
+    return {
+               vrsqrteq_f32(x.simdInternal_)
+    };
 }
 
-static gmx_inline int
-gmx_simd_anytrue_fb_arm_neon(gmx_simd_fbool_t a)
+static inline SimdFloat gmx_simdcall
+rsqrtIter(SimdFloat lu, SimdFloat x)
 {
-    uint32x4_t b = vextq_u32(a, a, 2);
-
-    a = gmx_simd_or_fb(a, b);
-    b = vextq_u32(a, a, 1);
-    a = gmx_simd_or_fb(a, b);
-    return (vgetq_lane_u32(a, 0) != 0);
+    return {
+               vmulq_f32(lu.simdInternal_, vrsqrtsq_f32(vmulq_f32(lu.simdInternal_, lu.simdInternal_), x.simdInternal_))
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_SIMD_FLOAT_H */
+static inline SimdFloat gmx_simdcall
+rcp(SimdFloat x)
+{
+    return {
+               vrecpeq_f32(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+rcpIter(SimdFloat lu, SimdFloat x)
+{
+    return {
+               vmulq_f32(lu.simdInternal_, vrecpsq_f32(lu.simdInternal_, x.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    b.simdInternal_ = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(b.simdInternal_),
+                                                      m.simdInternal_));
+
+    return {
+               vaddq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    SimdFloat tmp = a * b;
+
+    return {
+               vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(tmp.simdInternal_),
+                                               m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
+{
+#ifdef __ARM_FEATURE_FMA
+    float32x4_t tmp = vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_);
+#else
+    float32x4_t tmp = vmlaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_);
+#endif
+
+    return {
+               vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(tmp),
+                                               m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzRsqrt(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = vbslq_f32(m, vdupq_n_f32(1.0f), x.simdInternal_);
+#endif
+    return {
+               vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrsqrteq_f32(x.simdInternal_)),
+                                               m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzRcp(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = vbslq_f32(m, vdupq_n_f32(1.0f), x.simdInternal_);
+#endif
+    return {
+               vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(vrecpeq_f32(x.simdInternal_)),
+                                               m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+abs(SimdFloat x)
+{
+    return {
+               vabsq_f32( x.simdInternal_ )
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+max(SimdFloat a, SimdFloat b)
+{
+    return {
+               vmaxq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+min(SimdFloat a, SimdFloat b)
+{
+    return {
+               vminq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Round and trunc operations are defined at the end of this file, since they
+// need to use float-to-integer and integer-to-float conversions.
+
+static inline SimdFloat gmx_simdcall
+frexp(SimdFloat value, SimdFInt32 * exponent)
+{
+    const int32x4_t    exponentMask   = vdupq_n_s32(0x7F800000);
+    const int32x4_t    mantissaMask   = vdupq_n_s32(0x807FFFFF);
+    const int32x4_t    exponentBias   = vdupq_n_s32(126); // add 1 to make our definition identical to frexp()
+    const float32x4_t  half           = vdupq_n_f32(0.5f);
+    int32x4_t          iExponent;
+
+    iExponent               = vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), exponentMask);
+    iExponent               = vsubq_s32(vshrq_n_s32(iExponent, 23), exponentBias);
+    exponent->simdInternal_ = iExponent;
+
+    return {
+               vreinterpretq_f32_s32(vorrq_s32(vandq_s32(vreinterpretq_s32_f32(value.simdInternal_),
+                                                         mantissaMask),
+                                               vreinterpretq_s32_f32(half)))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+ldexp(SimdFloat value, SimdFInt32 exponent)
+{
+    const int32x4_t exponentBias = vdupq_n_s32(127);
+    int32x4_t       iExponent;
+
+    iExponent = vshlq_n_s32( vaddq_s32(exponent.simdInternal_, exponentBias), 23);
+
+    return {
+               vmulq_f32(value.simdInternal_, vreinterpretq_f32_s32(iExponent))
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline float gmx_simdcall
+reduce(SimdFloat a)
+{
+    float32x4_t x = a.simdInternal_;
+    float32x4_t y = vextq_f32(x, x, 2);
+
+    x = vaddq_f32(x, y);
+    y = vextq_f32(x, x, 1);
+    x = vaddq_f32(x, y);
+    return vgetq_lane_f32(x, 0);
+}
+#endif
+
+static inline SimdFBool gmx_simdcall
+operator==(SimdFloat a, SimdFloat b)
+{
+    return {
+               vceqq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator!=(SimdFloat a, SimdFloat b)
+{
+    return {
+               vmvnq_u32(vceqq_f32(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator<(SimdFloat a, SimdFloat b)
+{
+    return {
+               vcltq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator<=(SimdFloat a, SimdFloat b)
+{
+    return {
+               vcleq_f32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+testBits(SimdFloat a)
+{
+    uint32x4_t tmp = vreinterpretq_u32_f32(a.simdInternal_);
+
+    return {
+               vtstq_u32(tmp, tmp)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator&&(SimdFBool a, SimdFBool b)
+{
+
+    return {
+               vandq_u32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator||(SimdFBool a, SimdFBool b)
+{
+    return {
+               vorrq_u32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline bool gmx_simdcall
+anyTrue(SimdFBool a)
+{
+    uint32x4_t x = a.simdInternal_;
+    uint32x4_t y = vextq_u32(x, x, 2);
+
+    x = vorrq_u32(x, y);
+    y = vextq_u32(x, x, 1);
+    x = vorrq_u32(x, y);
+    return (vgetq_lane_u32(x, 0) != 0);
+}
+#endif
+
+static inline SimdFloat gmx_simdcall
+selectByMask(SimdFloat a, SimdFBool m)
+{
+    return {
+               vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a.simdInternal_),
+                                               m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+selectByNotMask(SimdFloat a, SimdFBool m)
+{
+    return {
+               vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a.simdInternal_),
+                                               m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+{
+    return {
+               vbslq_f32(sel.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator<<(SimdFInt32 a, int n)
+{
+    return {
+               vshlq_n_s32(a.simdInternal_, n)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator>>(SimdFInt32 a, int n)
+{
+    return {
+               vshrq_n_s32(a.simdInternal_, n)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator&(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vandq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+andNot(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vbicq_s32(b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator|(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vorrq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator^(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               veorq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator+(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vaddq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator-(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vsubq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator*(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vmulq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator==(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vceqq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+testBits(SimdFInt32 a)
+{
+    return {
+               vtstq_s32(a.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator<(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vcltq_s32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator&&(SimdFIBool a, SimdFIBool b)
+{
+    return {
+               vandq_u32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator||(SimdFIBool a, SimdFIBool b)
+{
+    return {
+               vorrq_u32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline bool gmx_simdcall
+anyTrue(SimdFIBool a)
+{
+    uint32x4_t x = a.simdInternal_;
+    uint32x4_t y = vextq_u32(x, x, 2);
+
+    x = vorrq_u32(x, y);
+    y = vextq_u32(x, x, 1);
+    x = vorrq_u32(x, y);
+    return (vgetq_lane_u32(x, 0) != 0);
+}
+#endif
+
+static inline SimdFInt32 gmx_simdcall
+selectByMask(SimdFInt32 a, SimdFIBool m)
+{
+    return {
+               vandq_s32(a.simdInternal_, vreinterpretq_s32_u32(m.simdInternal_))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+selectByNotMask(SimdFInt32 a, SimdFIBool m)
+{
+    return {
+               vbicq_s32(a.simdInternal_, vreinterpretq_s32_u32(m.simdInternal_))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+{
+    return {
+               vbslq_s32(sel.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline SimdFInt32 gmx_simdcall
+cvtR2I(SimdFloat a)
+{
+    float32x4_t signBitOfA = vreinterpretq_f32_u32(vandq_u32(vdupq_n_u32(0x80000000), vreinterpretq_u32_f32(a.simdInternal_)));
+    float32x4_t half       = vdupq_n_f32(0.5f);
+    float32x4_t corr       = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(half), vreinterpretq_u32_f32(signBitOfA)));
+
+    return {
+               vcvtq_s32_f32(vaddq_f32(a.simdInternal_, corr))
+    };
+}
+#endif
+
+static inline SimdFInt32 gmx_simdcall
+cvttR2I(SimdFloat a)
+{
+    return {
+               vcvtq_s32_f32(a.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+cvtI2R(SimdFInt32 a)
+{
+    return {
+               vcvtq_f32_s32(a.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+cvtB2IB(SimdFBool a)
+{
+    return {
+               a.simdInternal_
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+cvtIB2B(SimdFIBool a)
+{
+    return {
+               a.simdInternal_
+    };
+}
+
+// Override for Neon-Asimd
+#if GMX_SIMD_ARM_NEON
+static inline SimdFloat gmx_simdcall
+round(SimdFloat x)
+{
+    return cvtI2R(cvtR2I(x));
+}
+
+static inline SimdFloat gmx_simdcall
+trunc(SimdFloat x)
+{
+    return cvtI2R(cvttR2I(x));
+}
+#endif
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_ARM_NEON_SIMD_FLOAT_H

@@ -43,6 +43,8 @@
 #ifndef GMX_MDTYPES_INPUTREC_H
 #define GMX_MDTYPES_INPUTREC_H
 
+#include <stdio.h>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -100,29 +102,6 @@ typedef struct t_grpopts {
     gmx_bool    *bOPT;
     gmx_bool    *bTS;
 } t_grpopts;
-
-typedef struct {
-    int         nat;        /* Number of atoms in the pull group */
-    int        *ind;        /* The global atoms numbers */
-    int         nweight;    /* The number of weights (0 or nat) */
-    real       *weight;     /* Weights (use all 1 when weight==NULL) */
-    int         pbcatom;    /* The reference atom for pbc (global number) */
-} t_pull_group;
-
-typedef struct {
-    int         eType;      /* The pull type: umbrella, constraint, ... */
-    int         eGeom;      /* The pull geometry */
-    int         ngroup;     /* The number of groups, depends on eGeom */
-    int         group[4];   /* The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
-    ivec        dim;        /* Used to select components for constraint */
-    rvec        origin;     /* The origin for the absolute reference */
-    rvec        vec;        /* The pull vector, direction or position */
-    gmx_bool    bStart;     /* Set init based on the initial structure */
-    real        init;       /* Initial reference displacement */
-    real        rate;       /* Rate of motion (nm/ps) */
-    real        k;          /* force constant */
-    real        kB;         /* force constant for state B */
-} t_pull_coord;
 
 typedef struct t_simtemp {
     int   eSimTempScale; /* simulated temperature scaling; linear or exponential */
@@ -192,25 +171,6 @@ typedef struct t_expanded {
     real     mc_temp;             /* To override the main temperature, or define it if it's not defined */
     real    *init_lambda_weights; /* user-specified initial weights to start with  */
 } t_expanded;
-
-typedef struct pull_params_t {
-    int            ngroup;         /* number of pull groups */
-    int            ncoord;         /* number of pull coordinates */
-    real           cylinder_r;     /* radius of cylinder for dynamic COM */
-    real           constr_tol;     /* absolute tolerance for constraints in (nm) */
-    gmx_bool       bPrintCOM1;     /* Print coordinates of COM 1 for each coord */
-    gmx_bool       bPrintCOM2;     /* Print coordinates of COM 2 for each coord */
-    gmx_bool       bPrintRefValue; /* Print the reference value for each coord */
-    gmx_bool       bPrintComp;     /* Print cartesian components for each coord with geometry=distance */
-    int            nstxout;        /* Output frequency for pull x */
-    int            nstfout;        /* Output frequency for pull f */
-
-    t_pull_group  *group;          /* groups to pull/restrain/etc/ */
-    t_pull_coord  *coord;          /* the pull coordinates */
-} pull_params_t;
-
-/* Abstract type for COM pull caclulations only defined in the pull module */
-struct pull_t;
 
 
 /* Abstract types for enforced rotation only defined in pull_rotation.c       */
@@ -401,16 +361,22 @@ typedef struct t_inputrec {
     int             wall_atomtype[2];        /* The atom type for walls                      */
     real            wall_density[2];         /* Number density for walls                     */
     real            wall_ewald_zfac;         /* Scaling factor for the box for Ewald         */
-    gmx_bool        bPull;                   /* Do we do COM pulling?                        */
-    pull_params_t  *pull;                    /* The data for center of mass pulling          */
-    struct pull_t  *pull_work;               /* The COM pull force calculation data structure; TODO this pointer should live somewhere else */
 
+    /* COM pulling data */
+    gmx_bool              bPull;             /* Do we do COM pulling?                        */
+    struct pull_params_t *pull;              /* The data for center of mass pulling          */
+    struct pull_t        *pull_work;         /* The COM pull force calculation data structure; TODO this pointer should live somewhere else */
+
+    /* Enforced rotation data */
     gmx_bool        bRot;                    /* Calculate enforced rotation potential(s)?    */
     t_rot          *rot;                     /* The data for enforced rotation potentials    */
+
     int             eSwapCoords;             /* Do ion/water position exchanges (CompEL)?    */
     t_swapcoords   *swap;
+
     gmx_bool        bIMD;                    /* Allow interactive MD sessions for this .tpr? */
     t_IMD          *imd;                     /* Interactive molecular dynamics               */
+
     real            cos_accel;               /* Acceleration for viscosity calculation       */
     tensor          deform;                  /* Triclinic deformation velocities (nm/ps)     */
     int             userint1;                /* User determined parameters                   */
@@ -485,6 +451,9 @@ void init_inputrec(t_inputrec *ir);
  * \param[in] ir The data structure
  */
 void done_inputrec(t_inputrec *ir);
+
+void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
+                 gmx_bool bMDPformat);
 
 gmx_bool inputrecDeform(const t_inputrec *ir);
 

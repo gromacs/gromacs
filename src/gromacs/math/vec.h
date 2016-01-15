@@ -40,11 +40,6 @@
 /*
    collection of in-line ready operations:
 
-   lookup-table optimized scalar operations:
-   real gmx_invsqrt(real x)
-   real sqr(real x)
-   double dsqr(double x)
-
    vector operations:
    void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
    void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
@@ -76,10 +71,8 @@
    void dprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
    void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
    real cos_angle(rvec a,rvec b)
-   real cos_angle_no_table(rvec a,rvec b)
    real distance2(rvec v1, rvec v2)                 = | v2 - v1 |^2
    void unitv(rvec src,rvec dest)                   dest = src / |src|
-   void unitv_no_table(rvec src,rvec dest)          dest = src / |src|
 
    matrix (3x3) operations:
     ! indicates that dest should not be the same as a, b or src
@@ -98,133 +91,19 @@
    void m_add(matrix a,matrix b,matrix dest)        dest = a + b
    void m_sub(matrix a,matrix b,matrix dest)        dest = a - b
    void msmul(matrix m1,real r1,matrix dest)        dest = r1 * m1
-   void m_inv_ur0(matrix src,matrix dest)           dest = src^-1
-   void m_inv(matrix src,matrix dest)            !  dest = src^-1
    void mvmul(matrix a,rvec src,rvec dest)       !  dest = a . src
    void mvmul_ur0(matrix a,rvec src,rvec dest)      dest = a . src
    void tmvmul_ur0(matrix a,rvec src,rvec dest)     dest = a* . src
    real trace(matrix m)                             = trace(m)
  */
 
-/* The file only depends on config.h for GMX_SOFTWARE_INVSQRT and
-   HAVE_*SQRT*. This is no problem with public headers because
-   it is OK if user code uses a different rsqrt implementation */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <cmath>
 
-#include <math.h>
-
-#include "gromacs/math/units.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#elif 0
-} /* avoid screwing up indentation */
-#endif
-
-#ifdef GMX_SOFTWARE_INVSQRT
-#define EXP_LSB         0x00800000
-#define EXP_MASK        0x7f800000
-#define EXP_SHIFT       23
-#define FRACT_MASK      0x007fffff
-#define FRACT_SIZE      11              /* significant part of fraction */
-#define FRACT_SHIFT     (EXP_SHIFT-FRACT_SIZE)
-#define EXP_ADDR(val)   (((val)&EXP_MASK)>>EXP_SHIFT)
-#define FRACT_ADDR(val) (((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
-
-extern const unsigned int gmx_invsqrt_exptab[];
-extern const unsigned int gmx_invsqrt_fracttab[];
-
-typedef union
-{
-    unsigned int bval;
-    float        fval;
-} t_convert;
-
-static gmx_inline real gmx_software_invsqrt(real x)
-{
-    const real   half  = 0.5;
-    const real   three = 3.0;
-    t_convert    result, bit_pattern;
-    unsigned int exp, fract;
-    real         lu;
-    real         y;
-#ifdef GMX_DOUBLE
-    real         y2;
-#endif
-
-    bit_pattern.fval = x;
-    exp              = EXP_ADDR(bit_pattern.bval);
-    fract            = FRACT_ADDR(bit_pattern.bval);
-    result.bval      = gmx_invsqrt_exptab[exp] | gmx_invsqrt_fracttab[fract];
-    lu               = result.fval;
-
-    y = (half*lu*(three-((x*lu)*lu)));
-#ifdef GMX_DOUBLE
-    y2 = (half*y*(three-((x*y)*y)));
-
-    return y2;                  /* 10 Flops */
-#else
-    return y;                   /* 5  Flops */
-#endif
-}
-
-#define gmx_invsqrt_impl(x) gmx_software_invsqrt(x)
-#define INVSQRT_DONE
-#endif /* gmx_invsqrt */
-
-#ifndef INVSQRT_DONE
-#    ifdef GMX_DOUBLE
-#        ifdef HAVE_RSQRT
-#            define gmx_invsqrt_impl(x)     rsqrt(x)
-#        else
-#            define gmx_invsqrt_impl(x)     (1.0/sqrt(x))
-#        endif
-#    else /* single */
-#        ifdef HAVE_RSQRTF
-#            define gmx_invsqrt_impl(x)     rsqrtf(x)
-#        elif defined HAVE_RSQRT
-#            define gmx_invsqrt_impl(x)     rsqrt(x)
-#        elif defined HAVE_SQRTF
-#            define gmx_invsqrt_impl(x)     (1.0/sqrtf(x))
-#        else
-#            define gmx_invsqrt_impl(x)     (1.0/sqrt(x))
-#        endif
-#    endif
-#endif
-
-#ifdef NDEBUG
-#    define gmx_invsqrt(x) gmx_invsqrt_impl(x)
-#else
-#    define gmx_invsqrt(x) ( (x > 0) ? gmx_invsqrt_impl(x) : 0.0 )
-#endif
-
-static gmx_inline real sqr(real x)
-{
-    return (x*x);
-}
-
-static gmx_inline double dsqr(double x)
-{
-    return (x*x);
-}
-
-/* Maclaurin series for sinh(x)/x, useful for NH chains and MTTK pressure control
-   Here, we compute it to 10th order, which might be overkill, 8th is probably enough,
-   but it's not very much more expensive. */
-
-static gmx_inline real series_sinhx(real x)
-{
-    real x2 = x*x;
-    return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
-}
-
-static gmx_inline void rvec_add(const rvec a, const rvec b, rvec c)
+static inline void rvec_add(const rvec a, const rvec b, rvec c)
 {
     real x, y, z;
 
@@ -237,7 +116,7 @@ static gmx_inline void rvec_add(const rvec a, const rvec b, rvec c)
     c[ZZ] = z;
 }
 
-static gmx_inline void dvec_add(const dvec a, const dvec b, dvec c)
+static inline void dvec_add(const dvec a, const dvec b, dvec c)
 {
     double x, y, z;
 
@@ -250,7 +129,7 @@ static gmx_inline void dvec_add(const dvec a, const dvec b, dvec c)
     c[ZZ] = z;
 }
 
-static gmx_inline void ivec_add(const ivec a, const ivec b, ivec c)
+static inline void ivec_add(const ivec a, const ivec b, ivec c)
 {
     int x, y, z;
 
@@ -263,7 +142,7 @@ static gmx_inline void ivec_add(const ivec a, const ivec b, ivec c)
     c[ZZ] = z;
 }
 
-static gmx_inline void rvec_inc(rvec a, const rvec b)
+static inline void rvec_inc(rvec a, const rvec b)
 {
     real x, y, z;
 
@@ -276,7 +155,7 @@ static gmx_inline void rvec_inc(rvec a, const rvec b)
     a[ZZ] = z;
 }
 
-static gmx_inline void dvec_inc(dvec a, const dvec b)
+static inline void dvec_inc(dvec a, const dvec b)
 {
     double x, y, z;
 
@@ -289,7 +168,7 @@ static gmx_inline void dvec_inc(dvec a, const dvec b)
     a[ZZ] = z;
 }
 
-static gmx_inline void rvec_sub(const rvec a, const rvec b, rvec c)
+static inline void rvec_sub(const rvec a, const rvec b, rvec c)
 {
     real x, y, z;
 
@@ -302,7 +181,7 @@ static gmx_inline void rvec_sub(const rvec a, const rvec b, rvec c)
     c[ZZ] = z;
 }
 
-static gmx_inline void dvec_sub(const dvec a, const dvec b, dvec c)
+static inline void dvec_sub(const dvec a, const dvec b, dvec c)
 {
     double x, y, z;
 
@@ -315,7 +194,7 @@ static gmx_inline void dvec_sub(const dvec a, const dvec b, dvec c)
     c[ZZ] = z;
 }
 
-static gmx_inline void rvec_dec(rvec a, const rvec b)
+static inline void rvec_dec(rvec a, const rvec b)
 {
     real x, y, z;
 
@@ -328,14 +207,14 @@ static gmx_inline void rvec_dec(rvec a, const rvec b)
     a[ZZ] = z;
 }
 
-static gmx_inline void copy_rvec(const rvec a, rvec b)
+static inline void copy_rvec(const rvec a, rvec b)
 {
     b[XX] = a[XX];
     b[YY] = a[YY];
     b[ZZ] = a[ZZ];
 }
 
-static gmx_inline void copy_rvecn(gmx_cxx_const rvec *a, rvec *b, int startn, int endn)
+static inline void copy_rvecn(const rvec *a, rvec *b, int startn, int endn)
 {
     int i;
     for (i = startn; i < endn; i++)
@@ -346,21 +225,21 @@ static gmx_inline void copy_rvecn(gmx_cxx_const rvec *a, rvec *b, int startn, in
     }
 }
 
-static gmx_inline void copy_dvec(const dvec a, dvec b)
+static inline void copy_dvec(const dvec a, dvec b)
 {
     b[XX] = a[XX];
     b[YY] = a[YY];
     b[ZZ] = a[ZZ];
 }
 
-static gmx_inline void copy_ivec(const ivec a, ivec b)
+static inline void copy_ivec(const ivec a, ivec b)
 {
     b[XX] = a[XX];
     b[YY] = a[YY];
     b[ZZ] = a[ZZ];
 }
 
-static gmx_inline void ivec_sub(const ivec a, const ivec b, ivec c)
+static inline void ivec_sub(const ivec a, const ivec b, ivec c)
 {
     int x, y, z;
 
@@ -373,33 +252,33 @@ static gmx_inline void ivec_sub(const ivec a, const ivec b, ivec c)
     c[ZZ] = z;
 }
 
-static gmx_inline void copy_mat(gmx_cxx_const matrix a, matrix b)
+static inline void copy_mat(const matrix a, matrix b)
 {
     copy_rvec(a[XX], b[XX]);
     copy_rvec(a[YY], b[YY]);
     copy_rvec(a[ZZ], b[ZZ]);
 }
 
-static gmx_inline void svmul(real a, const rvec v1, rvec v2)
+static inline void svmul(real a, const rvec v1, rvec v2)
 {
     v2[XX] = a*v1[XX];
     v2[YY] = a*v1[YY];
     v2[ZZ] = a*v1[ZZ];
 }
 
-static gmx_inline void dsvmul(double a, const dvec v1, dvec v2)
+static inline void dsvmul(double a, const dvec v1, dvec v2)
 {
     v2[XX] = a*v1[XX];
     v2[YY] = a*v1[YY];
     v2[ZZ] = a*v1[ZZ];
 }
 
-static gmx_inline real distance2(const rvec v1, const rvec v2)
+static inline real distance2(const rvec v1, const rvec v2)
 {
-    return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
+    return gmx::square(v2[XX]-v1[XX]) + gmx::square(v2[YY]-v1[YY]) + gmx::square(v2[ZZ]-v1[ZZ]);
 }
 
-static gmx_inline void clear_rvec(rvec a)
+static inline void clear_rvec(rvec a)
 {
     /* The ibm compiler has problems with inlining this
      * when we use a const real variable
@@ -409,7 +288,7 @@ static gmx_inline void clear_rvec(rvec a)
     a[ZZ] = 0.0;
 }
 
-static gmx_inline void clear_dvec(dvec a)
+static inline void clear_dvec(dvec a)
 {
     /* The ibm compiler has problems with inlining this
      * when we use a const real variable
@@ -419,14 +298,14 @@ static gmx_inline void clear_dvec(dvec a)
     a[ZZ] = 0.0;
 }
 
-static gmx_inline void clear_ivec(ivec a)
+static inline void clear_ivec(ivec a)
 {
     a[XX] = 0;
     a[YY] = 0;
     a[ZZ] = 0;
 }
 
-static gmx_inline void clear_rvecs(int n, rvec v[])
+static inline void clear_rvecs(int n, rvec v[])
 {
     int i;
 
@@ -436,7 +315,7 @@ static gmx_inline void clear_rvecs(int n, rvec v[])
     }
 }
 
-static gmx_inline void clear_mat(matrix a)
+static inline void clear_mat(matrix a)
 {
     const real nul = 0.0;
 
@@ -445,27 +324,27 @@ static gmx_inline void clear_mat(matrix a)
     a[ZZ][XX] = a[ZZ][YY] = a[ZZ][ZZ] = nul;
 }
 
-static gmx_inline real iprod(const rvec a, const rvec b)
+static inline real iprod(const rvec a, const rvec b)
 {
     return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static gmx_inline double diprod(const dvec a, const dvec b)
+static inline double diprod(const dvec a, const dvec b)
 {
     return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static gmx_inline int iiprod(const ivec a, const ivec b)
+static inline int iiprod(const ivec a, const ivec b)
 {
     return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static gmx_inline real norm2(const rvec a)
+static inline real norm2(const rvec a)
 {
     return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
-static gmx_inline double dnorm2(const dvec a)
+static inline double dnorm2(const dvec a)
 {
     return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
@@ -473,35 +352,27 @@ static gmx_inline double dnorm2(const dvec a)
 /* WARNING:
  * As dnorm() uses sqrt() (which is slow) _only_ use it if you are sure you
  * don't need 1/dnorm(), otherwise use dnorm2()*dinvnorm(). */
-static gmx_inline double dnorm(const dvec a)
+static inline double dnorm(const dvec a)
 {
-    return sqrt(diprod(a, a));
+    return std::sqrt(diprod(a, a));
 }
 
 /* WARNING:
- * As norm() uses sqrtf() (which is slow) _only_ use it if you are sure you
+ * As norm() uses sqrt() (which is slow) _only_ use it if you are sure you
  * don't need 1/norm(), otherwise use norm2()*invnorm(). */
-static gmx_inline real norm(const rvec a)
+static inline real norm(const rvec a)
 {
-    /* This is ugly, but we deliberately do not define gmx_sqrt() and handle the
-     * float/double case here instead to avoid gmx_sqrt() being accidentally used. */
-#ifdef GMX_DOUBLE
-    return dnorm(a);
-#elif defined HAVE_SQRTF
-    return sqrtf(iprod(a, a));
-#else
-    return sqrt(iprod(a, a));
-#endif
+    return std::sqrt(iprod(a, a));
 }
 
-static gmx_inline real invnorm(const rvec a)
+static inline real invnorm(const rvec a)
 {
-    return gmx_invsqrt(norm2(a));
+    return gmx::invsqrt(norm2(a));
 }
 
-static gmx_inline real dinvnorm(const dvec a)
+static inline real dinvnorm(const dvec a)
 {
-    return gmx_invsqrt(dnorm2(a));
+    return gmx::invsqrt(dnorm2(a));
 }
 
 /* WARNING:
@@ -510,8 +381,7 @@ static gmx_inline real dinvnorm(const dvec a)
  * is very flat close to -1 and 1, which will lead to accuracy-loss.
  * Instead, use the new gmx_angle() function directly.
  */
-static gmx_inline real
-cos_angle(const rvec a, const rvec b)
+static inline real cos_angle(const rvec a, const rvec b)
 {
     /*
      *                  ax*bx + ay*by + az*bz
@@ -534,7 +404,7 @@ cos_angle(const rvec a, const rvec b)
     ipab = ipa*ipb;
     if (ipab > 0)
     {
-        cosval = ip*gmx_invsqrt(ipab);  /*  7 */
+        cosval = ip*gmx::invsqrt(ipab);  /*  7 */
     }
     else
     {
@@ -553,52 +423,14 @@ cos_angle(const rvec a, const rvec b)
     return cosval;
 }
 
-/* WARNING:
- * Do _not_ use these routines to calculate the angle between two vectors
- * as acos(cos_angle(u,v)). While it might seem obvious, the acos function
- * is very flat close to -1 and 1, which will lead to accuracy-loss.
- * Instead, use the new gmx_angle() function directly.
- */
-static gmx_inline real
-cos_angle_no_table(const rvec a, const rvec b)
-{
-    /* This version does not need the invsqrt lookup table */
-    real   cosval;
-    int    m;
-    double aa, bb, ip, ipa, ipb; /* For accuracy these must be double! */
-
-    ip = ipa = ipb = 0.0;
-    for (m = 0; (m < DIM); m++) /* 18 */
-    {
-        aa   = a[m];
-        bb   = b[m];
-        ip  += aa*bb;
-        ipa += aa*aa;
-        ipb += bb*bb;
-    }
-    cosval = ip/sqrt(ipa*ipb);  /* 12 */
-    /* 30 TOTAL */
-    if (cosval > 1.0)
-    {
-        return 1.0;
-    }
-    if (cosval < -1.0)
-    {
-        return -1.0;
-    }
-
-    return cosval;
-}
-
-
-static gmx_inline void cprod(const rvec a, const rvec b, rvec c)
+static inline void cprod(const rvec a, const rvec b, rvec c)
 {
     c[XX] = a[YY]*b[ZZ]-a[ZZ]*b[YY];
     c[YY] = a[ZZ]*b[XX]-a[XX]*b[ZZ];
     c[ZZ] = a[XX]*b[YY]-a[YY]*b[XX];
 }
 
-static gmx_inline void dcprod(const dvec a, const dvec b, dvec c)
+static inline void dcprod(const dvec a, const dvec b, dvec c)
 {
     c[XX] = a[YY]*b[ZZ]-a[ZZ]*b[YY];
     c[YY] = a[ZZ]*b[XX]-a[XX]*b[ZZ];
@@ -609,8 +441,7 @@ static gmx_inline void dcprod(const dvec a, const dvec b, dvec c)
  * If you only need cos(theta), use the cos_angle() routines to save a few cycles.
  * This routine is faster than it might appear, since atan2 is accelerated on many CPUs (e.g. x86).
  */
-static gmx_inline real
-gmx_angle(const rvec a, const rvec b)
+static inline real gmx_angle(const rvec a, const rvec b)
 {
     rvec w;
     real wlen, s;
@@ -623,20 +454,20 @@ gmx_angle(const rvec a, const rvec b)
     return atan2(wlen, s);
 }
 
-static gmx_inline void mmul_ur0(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
+static inline void mmul_ur0(const matrix a, const matrix b, matrix dest)
 {
     dest[XX][XX] = a[XX][XX]*b[XX][XX];
     dest[XX][YY] = 0.0;
     dest[XX][ZZ] = 0.0;
     dest[YY][XX] = a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX];
-    dest[YY][YY] =                    a[YY][YY]*b[YY][YY];
+    dest[YY][YY] =                     a[YY][YY]*b[YY][YY];
     dest[YY][ZZ] = 0.0;
     dest[ZZ][XX] = a[ZZ][XX]*b[XX][XX]+a[ZZ][YY]*b[YY][XX]+a[ZZ][ZZ]*b[ZZ][XX];
-    dest[ZZ][YY] =                    a[ZZ][YY]*b[YY][YY]+a[ZZ][ZZ]*b[ZZ][YY];
-    dest[ZZ][ZZ] =                                        a[ZZ][ZZ]*b[ZZ][ZZ];
+    dest[ZZ][YY] =                     a[ZZ][YY]*b[YY][YY]+a[ZZ][ZZ]*b[ZZ][YY];
+    dest[ZZ][ZZ] =                                         a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline void mmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
+static inline void mmul(const matrix a, const matrix b, matrix dest)
 {
     dest[XX][XX] = a[XX][XX]*b[XX][XX]+a[XX][YY]*b[YY][XX]+a[XX][ZZ]*b[ZZ][XX];
     dest[YY][XX] = a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX]+a[YY][ZZ]*b[ZZ][XX];
@@ -649,7 +480,7 @@ static gmx_inline void mmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matr
     dest[ZZ][ZZ] = a[ZZ][XX]*b[XX][ZZ]+a[ZZ][YY]*b[YY][ZZ]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline void transpose(gmx_cxx_const matrix src, matrix dest)
+static inline void transpose(const matrix src, matrix dest)
 {
     dest[XX][XX] = src[XX][XX];
     dest[YY][XX] = src[XX][YY];
@@ -662,7 +493,7 @@ static gmx_inline void transpose(gmx_cxx_const matrix src, matrix dest)
     dest[ZZ][ZZ] = src[ZZ][ZZ];
 }
 
-static gmx_inline void tmmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
+static inline void tmmul(const matrix a, const matrix b, matrix dest)
 {
     /* Computes dest=mmul(transpose(a),b,dest) - used in do_pr_pcoupl */
     dest[XX][XX] = a[XX][XX]*b[XX][XX]+a[YY][XX]*b[YY][XX]+a[ZZ][XX]*b[ZZ][XX];
@@ -676,7 +507,7 @@ static gmx_inline void tmmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, mat
     dest[ZZ][ZZ] = a[XX][ZZ]*b[XX][ZZ]+a[YY][ZZ]*b[YY][ZZ]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline void mtmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
+static inline void mtmul(const matrix a, const matrix b, matrix dest)
 {
     /* Computes dest=mmul(a,transpose(b),dest) - used in do_pr_pcoupl */
     dest[XX][XX] = a[XX][XX]*b[XX][XX]+a[XX][YY]*b[XX][YY]+a[XX][ZZ]*b[XX][ZZ];
@@ -690,7 +521,7 @@ static gmx_inline void mtmul(gmx_cxx_const matrix a, gmx_cxx_const matrix b, mat
     dest[ZZ][ZZ] = a[ZZ][XX]*b[ZZ][XX]+a[ZZ][YY]*b[ZZ][YY]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline real det(gmx_cxx_const matrix a)
+static inline real det(const matrix a)
 {
     return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
              -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
@@ -698,7 +529,7 @@ static gmx_inline real det(gmx_cxx_const matrix a)
 }
 
 
-static gmx_inline void m_add(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
+static inline void m_add(const matrix a, const matrix b, matrix dest)
 {
     dest[XX][XX] = a[XX][XX]+b[XX][XX];
     dest[XX][YY] = a[XX][YY]+b[XX][YY];
@@ -711,7 +542,7 @@ static gmx_inline void m_add(gmx_cxx_const matrix a, gmx_cxx_const matrix b, mat
     dest[ZZ][ZZ] = a[ZZ][ZZ]+b[ZZ][ZZ];
 }
 
-static gmx_inline void m_sub(gmx_cxx_const matrix a, gmx_cxx_const matrix b, matrix dest)
+static inline void m_sub(const matrix a, const matrix b, matrix dest)
 {
     dest[XX][XX] = a[XX][XX]-b[XX][XX];
     dest[XX][YY] = a[XX][YY]-b[XX][YY];
@@ -724,7 +555,7 @@ static gmx_inline void m_sub(gmx_cxx_const matrix a, gmx_cxx_const matrix b, mat
     dest[ZZ][ZZ] = a[ZZ][ZZ]-b[ZZ][ZZ];
 }
 
-static gmx_inline void msmul(gmx_cxx_const matrix m1, real r1, matrix dest)
+static inline void msmul(const matrix m1, real r1, matrix dest)
 {
     dest[XX][XX] = r1*m1[XX][XX];
     dest[XX][YY] = r1*m1[XX][YY];
@@ -737,11 +568,7 @@ static gmx_inline void msmul(gmx_cxx_const matrix m1, real r1, matrix dest)
     dest[ZZ][ZZ] = r1*m1[ZZ][ZZ];
 }
 
-/* Routines defined in invertmatrix.cpp */
-void m_inv_ur0(gmx_cxx_const matrix src, matrix dest);
-void m_inv(gmx_cxx_const matrix src, matrix dest);
-
-static gmx_inline void mvmul(gmx_cxx_const matrix a, const rvec src, rvec dest)
+static inline void mvmul(const matrix a, const rvec src, rvec dest)
 {
     dest[XX] = a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
     dest[YY] = a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
@@ -749,80 +576,33 @@ static gmx_inline void mvmul(gmx_cxx_const matrix a, const rvec src, rvec dest)
 }
 
 
-static gmx_inline void mvmul_ur0(gmx_cxx_const matrix a, const rvec src, rvec dest)
+static inline void mvmul_ur0(const matrix a, const rvec src, rvec dest)
 {
     dest[ZZ] = a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
     dest[YY] = a[YY][XX]*src[XX]+a[YY][YY]*src[YY];
     dest[XX] = a[XX][XX]*src[XX];
 }
 
-static gmx_inline void tmvmul_ur0(gmx_cxx_const matrix a, const rvec src, rvec dest)
+static inline void tmvmul_ur0(const matrix a, const rvec src, rvec dest)
 {
     dest[XX] = a[XX][XX]*src[XX]+a[YY][XX]*src[YY]+a[ZZ][XX]*src[ZZ];
     dest[YY] =                   a[YY][YY]*src[YY]+a[ZZ][YY]*src[ZZ];
     dest[ZZ] =                                     a[ZZ][ZZ]*src[ZZ];
 }
 
-static gmx_inline void unitv(const rvec src, rvec dest)
+static inline void unitv(const rvec src, rvec dest)
 {
     real linv;
 
-    linv     = gmx_invsqrt(norm2(src));
+    linv     = gmx::invsqrt(norm2(src));
     dest[XX] = linv*src[XX];
     dest[YY] = linv*src[YY];
     dest[ZZ] = linv*src[ZZ];
 }
 
-static gmx_inline void unitv_no_table(const rvec src, rvec dest)
-{
-    real linv;
-
-    linv     = 1.0/sqrt(norm2(src));
-    dest[XX] = linv*src[XX];
-    dest[YY] = linv*src[YY];
-    dest[ZZ] = linv*src[ZZ];
-}
-
-static void calc_lll(const rvec box, rvec lll)
-{
-    lll[XX] = 2.0*M_PI/box[XX];
-    lll[YY] = 2.0*M_PI/box[YY];
-    lll[ZZ] = 2.0*M_PI/box[ZZ];
-}
-
-static gmx_inline real trace(gmx_cxx_const matrix m)
+static inline real trace(const matrix m)
 {
     return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
-
-/* Operations on multidimensional rvecs, used e.g. in edsam.c */
-static gmx_inline void m_rveccopy(int dim, gmx_cxx_const rvec *a, rvec *b)
-{
-    /* b = a */
-    int i;
-
-    for (i = 0; i < dim; i++)
-    {
-        copy_rvec(a[i], b[i]);
-    }
-}
-
-/*computer matrix vectors from base vectors and angles */
-static gmx_inline void matrix_convert(matrix box, const rvec vec, rvec angle)
-{
-    svmul(DEG2RAD, angle, angle);
-    box[XX][XX] = vec[XX];
-    box[YY][XX] = vec[YY]*cos(angle[ZZ]);
-    box[YY][YY] = vec[YY]*sin(angle[ZZ]);
-    box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
-    box[ZZ][YY] = vec[ZZ]
-        *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
-    box[ZZ][ZZ] = sqrt(sqr(vec[ZZ])
-                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
-}
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -47,7 +47,6 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
@@ -60,6 +59,7 @@ struct gmx_membed_t;
 struct gmx_output_env_t;
 struct t_commrec;
 struct t_filenm;
+struct t_inputrec;
 
 namespace gmx
 {
@@ -71,7 +71,6 @@ namespace gmx
  * \param[in] fnm                 Filename structure array
  * \param[in] oenv                Output information
  * \param[in] bVerbose            Verbose output or not
- * \param[in] bCompact            Compact output or not
  * \param[in] nstglobalcomm       How often global communication is done
  * \param[in] vsite               Virtual site information
  * \param[in] constr              Constraint information
@@ -95,14 +94,14 @@ namespace gmx
  * \param[in] Flags               Flags to control mdrun
  * \param[in] walltime_accounting More timing information
  */
-typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
+typedef double integrator_t (FILE *fplog, t_commrec *cr,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                             gmx_bool bCompact, int nstglobalcomm,
+                             int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              int stepout,
                              t_inputrec *inputrec,
-                             struct gmx_mtop_t *top_global, t_fcdata *fcd,
+                             gmx_mtop_t *top_global, t_fcdata *fcd,
                              t_state *state_global,
                              t_mdatoms *mdatoms,
                              t_nrnb *nrnb, gmx_wallcycle_t wcycle,

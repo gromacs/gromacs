@@ -46,19 +46,21 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/readinp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/readinp.h"
-#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
@@ -3219,7 +3221,7 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 warning_error(wi, "Invalid value for mdp option tau-t. tau-t should only consist of real numbers separated by spaces.");
             }
-            if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
+            if ((ir->eI == eiBD) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
                 warning_error(wi, warn_buf);
@@ -3246,14 +3248,21 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 gmx_fatal(FARGS, "Cannot do Nose-Hoover temperature with Berendsen pressure control with md-vv; use either vrescale temperature with berendsen pressure or Nose-Hoover temperature with MTTK pressure");
             }
-            if ((ir->epc == epcMTTK) && (ir->etc > etcNO))
+            if (ir->epc == epcMTTK)
             {
-                if (ir->nstpcouple != ir->nsttcouple)
+                if (ir->etc != etcNOSEHOOVER)
                 {
-                    int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
-                    ir->nstpcouple = ir->nsttcouple = mincouple;
-                    sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
-                    warning_note(wi, warn_buf);
+                    gmx_fatal(FARGS, "Cannot do MTTK pressure coupling without Nose-Hoover temperature control");
+                }
+                else
+                {
+                    if (ir->nstpcouple != ir->nsttcouple)
+                    {
+                        int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
+                        ir->nstpcouple = ir->nsttcouple = mincouple;
+                        sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
+                        warning_note(wi, warn_buf);
+                    }
                 }
             }
         }
@@ -3911,11 +3920,11 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
             {
                 if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
                 {
-                    sigmai   = std::pow(c12i / c6i, 1.0/6.0);
-                    sigmaj   = std::pow(c12j / c6j, 1.0/6.0);
+                    sigmai   = gmx::sixthroot(c12i / c6i);
+                    sigmaj   = gmx::sixthroot(c12j / c6j);
                     epsi     = c6i * c6i /(4.0 * c12i);
                     epsj     = c6j * c6j /(4.0 * c12j);
-                    c6_LB    = 4.0 * std::pow(epsi * epsj, 1.0/2.0) * std::pow(0.5 * (sigmai + sigmaj), 6);
+                    c6_LB    = 4.0 * std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
                 }
                 else
                 {
@@ -4145,15 +4154,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
     }
 
-    if (ir->eI == eiSD2)
-    {
-        sprintf(warn_buf, "The stochastic dynamics integrator %s is deprecated, since\n"
-                "it is slower than integrator %s and is slightly less accurate\n"
-                "with constraints. Use the %s integrator.",
-                ei_names[ir->eI], ei_names[eiSD1], ei_names[eiSD1]);
-        warning_note(wi, warn_buf);
-    }
-
     bAcc = FALSE;
     for (i = 0; (i < sys->groups.grps[egcACC].nr); i++)
     {
@@ -4322,7 +4322,7 @@ void double_check(t_inputrec *ir, matrix box,
         }
         if (ir->ns_type == ensGRID)
         {
-            if (sqr(ir->rlist) >= max_cutoff2(ir->ePBC, box))
+            if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
             {
                 sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease rlist.\n");
                 warning_error(wi, warn_buf);

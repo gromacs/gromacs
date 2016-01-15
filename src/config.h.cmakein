@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 /*! \cond */
 
 /* Work around broken calloc() */
-#cmakedefine GMX_BROKEN_CALLOC
+#cmakedefine01 GMX_BROKEN_CALLOC
 
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
 #cmakedefine01 GMX_DISABLE_FFTW_MEASURE
@@ -63,16 +63,16 @@
 #cmakedefine01 GMX_FFT_FFTPACK
 
 /* Target platform is x86 or x86_64 */
-#cmakedefine GMX_TARGET_X86
+#cmakedefine01 GMX_TARGET_X86
 
 /* Target platform is BlueGene/Q */
-#cmakedefine GMX_TARGET_BGQ
+#cmakedefine01 GMX_TARGET_BGQ
 
 /** Define if we are building natively on Windows */
-#cmakedefine GMX_NATIVE_WINDOWS
+#cmakedefine01 GMX_NATIVE_WINDOWS
 
 /** Define if we are building for Cygwin */
-#cmakedefine GMX_CYGWIN
+#cmakedefine01 GMX_CYGWIN
 
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine01 GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
@@ -115,7 +115,7 @@
 
 /* IBM VSX was selected as SIMD instructions (Power 7 and later) */
 #cmakedefine01 GMX_SIMD_IBM_VSX
- 
+
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
 #cmakedefine01 GMX_SIMD_SPARC64_HPC_ACE
 
@@ -134,6 +134,9 @@
 /* Target mantissa accuracy for SIMD double precision math */
 #define GMX_SIMD_ACCURACY_BITS_DOUBLE @GMX_SIMD_ACCURACY_BITS_DOUBLE@
 
+/* Whether a double-precision configuration may target accuracy equivalent to single precision */
+#cmakedefine01 GMX_RELAXED_DOUBLE_PRECISION
+
 /* Integer byte order is big endian. */
 #cmakedefine01 GMX_INTEGER_BIG_ENDIAN
 
@@ -141,31 +144,29 @@
 #cmakedefine01 GMX_INTERNAL_XDR
 
 /* Compile to use TNG library */
-#cmakedefine GMX_USE_TNG
+#cmakedefine01 GMX_USE_TNG
 
 /* Add support for tracing using Extrae */
 #cmakedefine01 HAVE_EXTRAE
 
 /* Use MPI (with mpicc) for parallelization */
-#cmakedefine GMX_LIB_MPI
+#cmakedefine01 GMX_LIB_MPI
 
 /* Use threads_mpi for parallelization */
-#cmakedefine GMX_THREAD_MPI
+#cmakedefine01 GMX_THREAD_MPI
 
-#if defined GMX_LIB_MPI || defined GMX_THREAD_MPI
 /* Make a parallel version of GROMACS using message passing
    (MPI or thread_mpi) */
-#define GMX_MPI
-#endif
+#define GMX_MPI (GMX_LIB_MPI || GMX_THREAD_MPI)
 
 /* MPI_IN_PLACE exists for collective operations */
-#cmakedefine MPI_IN_PLACE_EXISTS
+#cmakedefine01 MPI_IN_PLACE_EXISTS
 
 /* Use OpenMP multithreading */
-#cmakedefine GMX_OPENMP
+#cmakedefine01 GMX_OPENMP
 
 /* Can and should use nice(3) to set priority */
-#cmakedefine GMX_USE_NICE
+#cmakedefine01 GMX_USE_NICE
 
 /* Maximum number of OpenMP threads supported */
 #define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
@@ -185,14 +186,11 @@
 /* Use ORCA for QM-MM calculations */
 #cmakedefine01 GMX_QMMM_ORCA
 
-/* Use the GROMACS software 1/sqrt(x) */
-#cmakedefine GMX_SOFTWARE_INVSQRT
-
 /* Use sub-counters */
 #cmakedefine01 GMX_CYCLE_SUBCOUNTERS
 
 /* Compile with plugin support */
-#cmakedefine GMX_USE_PLUGINS
+#cmakedefine01 GMX_USE_PLUGINS
 
 /* Fallback path for VMD plug-ins */
 #define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
@@ -228,28 +226,32 @@
 #cmakedefine01 GMX_X11
 
 /* Enable x86 gcc inline assembly */
-#cmakedefine GMX_X86_GCC_INLINE_ASM
+#cmakedefine01 GMX_X86_GCC_INLINE_ASM
 
-/* Use GPU native acceleration */
-#cmakedefine GMX_GPU
+/* Define constants useful for handling GPU support */
+#define GMX_GPU_NONE   0
+#define GMX_GPU_CUDA   1
+#define GMX_GPU_OPENCL 2
+/* Which kind of GPU support is configured */
+#define GMX_GPU @GMX_GPU_ACCELERATION_FRAMEWORK@
 
 /* CUDA runtime API version (identical to CUDART_VERSION from cuda_runtime_api.h) */
 #cmakedefine GMX_CUDA_VERSION @GMX_CUDA_VERSION@
 
-/* Use NVML */
-#cmakedefine HAVE_NVML
+/* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
+#cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
-/* Use OpenCL acceleators */
-#cmakedefine GMX_USE_OPENCL
+/* Use NVML */
+#cmakedefine01 HAVE_NVML
 
 /* Define relative path to OpenCL kernels */
 #define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
-#cmakedefine HAVE_FSEEKO
+#cmakedefine01 HAVE_FSEEKO
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
-#cmakedefine HAVE__FSEEKI64
+#cmakedefine01 HAVE__FSEEKI64
 
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
@@ -270,7 +272,7 @@
 #cmakedefine HAVE_LIBDL
 
 /* Have io.h (windows)*/
-#cmakedefine HAVE_IO_H
+#cmakedefine01 HAVE_IO_H
 
 /* Define to 1 if you have the posix_memalign() function. */
 #cmakedefine01 HAVE_POSIX_MEMALIGN
@@ -282,64 +284,58 @@
 #cmakedefine01 HAVE__ALIGNED_MALLOC
 
 /* Define to 1 if you have the clock_gettime() function. */
-#cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine01 HAVE_CLOCK_GETTIME
 
 /* Define to 1 if you have the gettimeofday() function. */
-#cmakedefine HAVE_GETTIMEOFDAY
+#cmakedefine01 HAVE_GETTIMEOFDAY
 
 /* Define to 1 if you have the rdtscp instruction. */
 #cmakedefine HAVE_RDTSCP
 
-/* Define to 1 if you have the isfinite() function. */
-#cmakedefine HAVE_ISFINITE
-
-/* Define to 1 if you have the _isfinite() function. */
-#cmakedefine HAVE__ISFINITE
-
-/* Define to 1 if you have the _finite() function. */
-#cmakedefine HAVE__FINITE
-
 /* Define to 1 if you have the fsync() function. */
-#cmakedefine HAVE_FSYNC
+#cmakedefine01 HAVE_FSYNC
 
 /* Define to 1 if you have the Windows _commit() function. */
-#cmakedefine HAVE__COMMIT
+#cmakedefine01 HAVE__COMMIT
 
 /* Define to 1 if you have the fileno() function. */
-#cmakedefine HAVE_FILENO
+#cmakedefine01 HAVE_FILENO
 
 /* Define to 1 if you have the _fileno() function. */
-#cmakedefine HAVE__FILENO
+#cmakedefine01 HAVE__FILENO
 
 /* Define to 1 if you have the sigaction() function. */
-#cmakedefine HAVE_SIGACTION
+#cmakedefine01 HAVE_SIGACTION
 
-/* Define to 1 if you have the rsqrt() function. */
-#cmakedefine HAVE_RSQRT
+/* Define for the GNU __builtin_clz() function. */
+#cmakedefine01 HAVE_BUILTIN_CLZ
 
-/* Define to 1 if you have the rsqrtf() function. */
-#cmakedefine HAVE_RSQRTF
+/* Define for the GNU __builtin_clzll() function. */
+#cmakedefine01 HAVE_BUILTIN_CLZLL
 
-/* Define to 1 if you have the sqrtf() function. */
-#cmakedefine HAVE_SQRTF
+/* Define for the MSVC _BitScanReverse() function. */
+#cmakedefine01 HAVE_BITSCANREVERSE
+
+/* Define for the MSVC _BitScanReverse64() function. */
+#cmakedefine01 HAVE_BITSCANREVERSE64
+
+/* Define for the IBM xlc++ __cntlz4() function. */
+#cmakedefine01 HAVE_CNTLZ4
+
+/* Define for the IBM xlc++ __cntlz8() function. */
+#cmakedefine01 HAVE_CNTLZ8
 
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
 /* Define to 1 if yo have the <pwd.h> header file. */
-#cmakedefine HAVE_PWD_H
+#cmakedefine01 HAVE_PWD_H
 
 /* Define to 1 if yo have the <dirent.h> header file. */
-#cmakedefine HAVE_DIRENT_H
+#cmakedefine01 HAVE_DIRENT_H
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-
-/* Define to 1 if you have the <x86intrin.h> header file */
-#cmakedefine HAVE_X86INTRIN_H
-
-/* Define to 1 if you have the <intrin.h> header file */
-#cmakedefine HAVE_INTRIN_H
 
 /* Define to 1 if you have the <sched.h> header */
 #cmakedefine HAVE_SCHED_H
@@ -363,14 +359,14 @@
 #cmakedefine HAVE_SYSCONF
 
 /* Define to 1 if you have the all the affinity functions in sched.h */
-#cmakedefine HAVE_SCHED_AFFINITY
+#cmakedefine01 HAVE_SCHED_AFFINITY
 
 /* Define to 1 if _mm_malloc() is present in either mm_malloc.h,
  * malloc.h or xmmintrin.h, and 0 otherwise. Note that you need to
  * conditionally include the three headers too before using _mm_malloc().
  */
 #cmakedefine01 HAVE__MM_MALLOC
- 
+
 /* Define if SIGUSR1 is present */
 #cmakedefine01 HAVE_SIGUSR1
 

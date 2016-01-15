@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,18 +50,18 @@
 #include "gromacs/correlationfunctions/crosscorr.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/correlationfunctions/integrate.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -70,6 +70,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -82,12 +83,6 @@ const char *hxtypenames[NRHXTYPES] =
 #define MAXHH 4
 
 static const int NOTSET = -49297;
-
-#ifdef GMX_OPENMP
-#define MASTER_THREAD_ONLY(threadNr) ((threadNr) == 0)
-#else
-#define MASTER_THREAD_ONLY(threadNr) ((threadNr) == (threadNr))
-#endif
 
 /* -----------------------------------------*/
 
@@ -937,7 +932,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
     int         dum = -1;
 
     bDoRshell = (rshell > 0);
-    rshell2   = sqr(rshell);
+    rshell2   = gmx::square(rshell);
     bInShell  = TRUE;
 
 #define DBB(x) if (debug && bDebug) fprintf(debug, "build_grid, line %d, %s = %d\n", __LINE__,#x, x)
@@ -1754,12 +1749,12 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
     {
         kkk += tl.kkk[0];
         kkp += tl.kkk[1];
-        kk2 += sqr(tl.kkk[0]);
-        kp2 += sqr(tl.kkk[1]);
+        kk2 += gmx::square(tl.kkk[0]);
+        kp2 += gmx::square(tl.kkk[1]);
         tl.n0++;
     }
-    *sigma_k  = std::sqrt(kk2/NK - sqr(kkk/NK));
-    *sigma_kp = std::sqrt(kp2/NK - sqr(kkp/NK));
+    *sigma_k  = std::sqrt(kk2/NK - gmx::square(kkk/NK));
+    *sigma_kp = std::sqrt(kp2/NK - gmx::square(kkp/NK));
 
     return chi2;
 }
@@ -1782,15 +1777,15 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     {
         for (i = i0; (i < n); i++)
         {
-            sc2 += sqr(ct[i]);
-            sn2 += sqr(nt[i]);
-            sk2 += sqr(kt[i]);
+            sc2 += gmx::square(ct[i]);
+            sn2 += gmx::square(nt[i]);
+            sk2 += gmx::square(kt[i]);
             sck += ct[i]*kt[i];
             snk += nt[i]*kt[i];
             scn += ct[i]*nt[i];
         }
         printf("Hydrogen bond thermodynamics at T = %g K\n", temp);
-        tmp = (sn2*sc2-sqr(scn));
+        tmp = (sn2*sc2-gmx::square(scn));
         if ((tmp > 0) && (sn2 > 0))
         {
             k    = (sn2*sck-scn*snk)/tmp;
@@ -1800,7 +1795,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi2 = 0;
                 for (i = i0; (i < n); i++)
                 {
-                    chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+                    chi2 += gmx::square(k*ct[i]-kp*nt[i]-kt[i]);
                 }
                 compute_weighted_rates(n, t, ct, nt, kt, sigma_ct, sigma_nt,
                                        sigma_kt, &k, &kp,
@@ -1823,7 +1818,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi2 = 0;
                 for (i = i0; (i < n); i++)
                 {
-                    chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+                    chi2 += gmx::square(k*ct[i]-kp*nt[i]-kt[i]);
                 }
                 printf("Fitting parameters chi^2 = %10g\nQ = %10g\n",
                        chi2, Q);
@@ -1926,7 +1921,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
         "Cc\\scontact,hb\\v{}\\z{}(t)",
         "-dAc\\sfs\\v{}\\z{}/dt"
     };
-    gmx_bool       bNorm = FALSE, bOMP = FALSE;
+    gmx_bool       bNorm = FALSE;
     double         nhb   = 0;
     real          *rhbex = NULL, *ht, *gt, *ght, *dght, *kt;
     real          *ct, tail, tail2, dtail, *cct;
@@ -1942,11 +1937,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
         AC_NONE, AC_NN, AC_GEM, AC_LUZAR
     };
 
-#ifdef GMX_OPENMP
-    bOMP = TRUE;
-#else
-    bOMP = FALSE;
-#endif
+    const bool bOMP = GMX_OPENMP;
 
     printf("Doing autocorrelation ");
 
@@ -2481,7 +2472,7 @@ int gmx_hbond(int argc, char *argv[])
           "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" },
         { "-merge", FALSE, etBOOL, {&bMerge},
           "H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF." },
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of cores (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
@@ -2544,16 +2535,12 @@ int gmx_hbond(int argc, char *argv[])
     int                   ii, hh, actual_nThreads;
     int                   threadNr = 0;
     gmx_bool              bParallel;
-    gmx_bool              bEdge_yjj, bEdge_xjj, bOMP;
+    gmx_bool              bEdge_yjj, bEdge_xjj;
 
     t_hbdata            **p_hb    = NULL;                   /* one per thread, then merge after the frame loop */
     int                 **p_adist = NULL, **p_rdist = NULL; /* a histogram for each thread. */
 
-#ifdef GMX_OPENMP
-    bOMP = TRUE;
-#else
-    bOMP = FALSE;
-#endif
+    const bool            bOMP = GMX_OPENMP;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
@@ -2789,7 +2776,7 @@ int gmx_hbond(int argc, char *argv[])
     snew(adist, nabin+1);
     snew(rdist, nrbin+1);
 
-#ifndef GMX_OPENMP
+#if !GMX_OPENMP
 #define __ADIST adist
 #define __RDIST rdist
 #define __HBDATA hb
@@ -2864,8 +2851,10 @@ int gmx_hbond(int argc, char *argv[])
     k, bTric, \
     bEdge_xjj, bEdge_yjj) \
     default(shared)
-    {    /* Start of parallel region */
+    {                           /* Start of parallel region */
+#if !defined __clang_analyzer__ // clang complains about unused value.
         threadNr = gmx_omp_get_thread_num();
+#endif
 
         do
         {

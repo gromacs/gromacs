@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,14 +51,15 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -69,6 +70,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -840,16 +842,16 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
                         c_a = diprod(r_ij[c], r_ij[c]);
                         c_b = diprod(unc_ij, r_ij[c])*2;
-                        c_c = diprod(unc_ij, unc_ij) - dsqr(pcrd->value_ref);
+                        c_c = diprod(unc_ij, unc_ij) - gmx::square(pcrd->value_ref);
 
                         if (c_b < 0)
                         {
-                            q      = -0.5*(c_b - sqrt(c_b*c_b - 4*c_a*c_c));
+                            q      = -0.5*(c_b - std::sqrt(c_b*c_b - 4*c_a*c_c));
                             lambda = -q/c_a;
                         }
                         else
                         {
-                            q      = -0.5*(c_b + sqrt(c_b*c_b - 4*c_a*c_c));
+                            q      = -0.5*(c_b + std::sqrt(c_b*c_b - 4*c_a*c_c));
                             lambda = -c_c/q;
                         }
 
@@ -1118,8 +1120,8 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             }
 
             pcrd->f_scal  =       -k*dev;
-            *V           += 0.5*   k*dsqr(dev);
-            *dVdl        += 0.5*dkdl*dsqr(dev);
+            *V           += 0.5*   k*gmx::square(dev);
+            *dVdl        += 0.5*dkdl*gmx::square(dev);
             break;
         case epullCONST_F:
             pcrd->f_scal  =   -k;
@@ -1435,7 +1437,7 @@ void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md
                         count[0]);
             }
 
-#ifdef GMX_MPI
+#if GMX_MPI
             if (comm->mpi_comm_com != MPI_COMM_NULL)
             {
                 MPI_Comm_free(&comm->mpi_comm_com);
@@ -1683,7 +1685,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
         if (pgrp->params.nweight > 0)
         {
-            snew(pgrp->params.ind, pgrp->params.nweight);
+            snew(pgrp->params.weight, pgrp->params.nweight);
             for (i = 0; i < pgrp->params.nweight; i++)
             {
                 pgrp->params.weight[i] = pull_params->group[g].weight[i];
@@ -1953,7 +1955,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
     comm = &pull->comm;
 
-#ifdef GMX_MPI
+#if GMX_MPI
     /* Use a sub-communicator when we have more than 32 ranks */
     comm->bParticipateAll = (cr == NULL || !DOMAINDECOMP(cr) ||
                              cr->dd->nnodes <= 32 ||
@@ -2077,7 +2079,7 @@ static void destroy_pull(struct pull_t *pull)
     sfree(pull->dyna);
     sfree(pull->coord);
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (pull->comm.mpi_comm_com != MPI_COMM_NULL)
     {
         MPI_Comm_free(&pull->comm.mpi_comm_com);

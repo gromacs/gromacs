@@ -37,6 +37,8 @@
 #ifndef GMX_TOPOLOGY_ATOMS_H
 #define GMX_TOPOLOGY_ATOMS_H
 
+#include <stdio.h>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -145,6 +147,11 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */
+
+void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
+              gmx_bool bShownumbers);
+void pr_atomtypes(FILE *fp, int indent, const char *title,
+                  const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
 
 #ifdef __cplusplus
 }

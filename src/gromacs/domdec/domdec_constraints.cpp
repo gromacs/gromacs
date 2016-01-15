@@ -53,9 +53,9 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/mtop_util.h"
@@ -663,11 +663,11 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     return at_end;
 }
 
-void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop)
+void init_domdec_constraints(gmx_domdec_t     *dd,
+                             const gmx_mtop_t *mtop)
 {
     gmx_domdec_constraints_t *dc;
-    gmx_molblock_t           *molb;
+    const gmx_molblock_t     *molb;
     int mb, ncon, c;
 
     if (debug)

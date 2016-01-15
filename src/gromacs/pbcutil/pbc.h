@@ -40,11 +40,11 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -155,6 +155,9 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
  */
 const char *check_box(int ePBC, const matrix box);
+
+/*! \brief Creates box matrix from edge lengths and angles. */
+void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees);
 
 /*! \brief Compute the maximum cutoff for the box
 
@@ -354,19 +357,6 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box,
  * The index does not change, so it needs to be retrieved only once.
  */
 int *compact_unitcell_edges(void);
-
-/*! \brief Parallellizes put_atoms_box
- *
- * This wrapper function around put_atoms_in_box() with the ugly manual
- * workload splitting is needed to avoid silently introducing multithreading
- * in tools.
- * \param[in]    ePBC   The pbc type
- * \param[in]    box    The simulation box
- * \param[in]    natoms The number of atoms
- * \param[inout] x      The coordinates of the atoms
- */
-void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[]);
-
 
 /*! \brief Put atoms inside the simulations box
  *

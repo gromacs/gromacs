@@ -45,21 +45,21 @@
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 enum {
@@ -111,7 +111,7 @@ static double FD(double Delta, double f)
 
 static double YYY(double f, double y)
 {
-    return (2*std::pow(y*f, 3.0) - sqr(f)*y*(1+6*y) +
+    return (2*gmx::power3(y*f) - gmx::square(f)*y*(1+6*y) +
             (2+6*y)*f - 2);
 }
 
@@ -121,7 +121,7 @@ static double calc_compress(double y)
     {
         return 0;
     }
-    return ((1+y+sqr(y)-std::pow(y, 3.0))/(std::pow(1-y, 3.0)));
+    return ((1+y+gmx::square(y)-gmx::power3(y))/(gmx::power3(1-y)));
 }
 
 static double bisector(double Delta, double tol,
@@ -185,7 +185,7 @@ static double calc_Shs(double f, double y)
 {
     double fy  = f*y;
 
-    return BOLTZ*(std::log(calc_compress(fy)) + fy*(3*fy-4)/sqr(1-fy));
+    return BOLTZ*(std::log(calc_compress(fy)) + fy*(3*fy-4)/gmx::square(1-fy));
 }
 
 static real wCsolid(real nu, real beta)
@@ -200,8 +200,8 @@ static real wCsolid(real nu, real beta)
     else
     {
         ebn  = std::exp(bhn);
-        koko = sqr(1-ebn);
-        return sqr(bhn)*ebn/koko;
+        koko = gmx::square(1-ebn);
+        return gmx::square(bhn)*ebn/koko;
     }
 }
 
@@ -489,10 +489,10 @@ int gmx_dos(int argc, char *argv[])
     for (j = 0; (j < nframes/4); j++)
     {
         nu[j] = 2*j/(t1-t0);
-        dos2 += sqr(dos[DOS][2*j]) + sqr(dos[DOS][2*j+1]);
+        dos2 += gmx::square(dos[DOS][2*j]) + gmx::square(dos[DOS][2*j+1]);
         if (bAbsolute)
         {
-            dos[DOS][j] = bfac*std::sqrt(sqr(dos[DOS][2*j]) + sqr(dos[DOS][2*j+1]));
+            dos[DOS][j] = bfac*std::hypot(dos[DOS][2*j], dos[DOS][2*j+1]);
         }
         else
         {
@@ -518,10 +518,10 @@ int gmx_dos(int argc, char *argv[])
     f     = calc_fluidicity(Delta, toler);
     y     = calc_y(f, Delta, toler);
     z     = calc_compress(y);
-    Sig   = BOLTZ*(5.0/2.0+std::log(2*M_PI*BOLTZ*Temp/(sqr(PLANCK))*V/(f*Natom)));
+    Sig   = BOLTZ*(5.0/2.0+std::log(2*M_PI*BOLTZ*Temp/(gmx::square(PLANCK))*V/(f*Natom)));
     Shs   = Sig+calc_Shs(f, y);
     rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
-    sigHS = std::pow(6*y*V/(M_PI*Natom), 1.0/3.0);
+    sigHS = std::cbrt(6*y*V/(M_PI*Natom));
 
     fprintf(fplog, "System = \"%s\"\n", *top.name);
     fprintf(fplog, "Nmol = %d\n", Nmol);
@@ -553,7 +553,7 @@ int gmx_dos(int argc, char *argv[])
     recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
     for (j = 0; (j < nframes/4); j++)
     {
-        dos[DOS_DIFF][j]  = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
+        dos[DOS_DIFF][j]  = DoS0/(1+gmx::square(DoS0*M_PI*nu[j]/(6*f*Natom)));
         dos[DOS_SOLID][j] = dos[DOS][j]-dos[DOS_DIFF][j];
         fprintf(fp, "%10g  %10g  %10g  %10g\n",
                 recip_fac*nu[j],

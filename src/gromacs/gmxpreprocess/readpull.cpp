@@ -39,11 +39,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/topology.h"

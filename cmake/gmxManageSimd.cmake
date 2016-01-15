@@ -328,45 +328,39 @@ elseif(GMX_SIMD STREQUAL "AVX_512ER")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
-    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler ARM NEON flag"
                               "#include<arm_neon.h>
                               int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                               SIMD_C_FLAGS
-                              "-mfpu=neon" "")
-    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler 32-bit ARM NEON flag"
+                              "-mfpu=neon-vfpv4" "-mfpu=neon" "")
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler ARM NEON flag"
                                 "#include<arm_neon.h>
                                 int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                                 SIMD_CXX_FLAGS
-                                "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
+                                "-mfpu=neon-vfpv4" "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
 
     if(NOT CFLAGS_ARM_NEON OR NOT CXXFLAGS_ARM_NEON)
-        message(FATAL_ERROR "Cannot find ARM 32-bit NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
+        message(FATAL_ERROR "Cannot find ARM NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
     endif()
 
     set(GMX_SIMD_ARM_NEON 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON_ASIMD")
-    # Gcc-4.8.1 appears to have a bug where the c++ compiler requires
-    # -D__STDC_CONSTANT_MACROS if we include arm_neon.h
 
     gmx_find_cflag_for_source(CFLAGS_ARM_NEON_ASIMD "C compiler ARM NEON Advanced SIMD flag"
                               "#include<arm_neon.h>
-                              int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                               int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                               SIMD_C_FLAGS
                               "")
     gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON_ASIMD "C++ compiler ARM NEON Advanced SIMD flag"
                                 "#include<arm_neon.h>
-                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                                 SIMD_CXX_FLAGS
-                                "-D__STDC_CONSTANT_MACROS" "")
+                                "")
 
     if(NOT CFLAGS_ARM_NEON_ASIMD OR NOT CXXFLAGS_ARM_NEON_ASIMD)
-        message(FATAL_ERROR "Cannot find ARM (AArch64) NEON Advanced SIMD compiler flag. Use a newer compiler, or disable SIMD.")
-    endif()
-
-    if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9")
-        message(WARNING "At least gcc-4.8.1 has many bugs for ARM (AArch64) NEON Advanced SIMD compilation. You might need gcc version 4.9 or later.")
+        message(FATAL_ERROR "Compiler does not fully support ARM (AArch64) NEON Advanced SIMD. Use a newer compiler (gcc version 4.9 or later), or disable SIMD.")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.4")
@@ -412,10 +406,23 @@ elseif(GMX_SIMD STREQUAL "IBM_VMX")
 
 elseif(GMX_SIMD STREQUAL "IBM_VSX")
 
-    # Altivec was originally single-only, and it took a while for compilers
-    # to support the double-precision features in VSX. 
-    if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+        # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
+        # By putting these flags here rather than in the general compiler flags file we can safely assume
+        # that we are at least on Power7 since that is when VSX appeared.
+        if(BUILD_CPU_BRAND MATCHES "POWER7")
+            gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" SIMD_CXX_FLAGS)
+        else()
+            # Enable power8 vector extensions on all platforms except old Power7.
+            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" SIMD_CXX_FLAGS)
+        endif()
+        # Altivec was originally single-only, and it took a while for compilers
+        # to support the double-precision features in VSX.
+        if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+        endif()
     endif()
 
     gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
@@ -486,7 +493,9 @@ endif()
 # when using the reference build.
 # 
 if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
+    if(GMX_TARGET_BGQ)
+        set(CALLCONV_LIST " ")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
         set(CALLCONV_LIST __regcall " ")
     else()
         set(CALLCONV_LIST __vectorcall __regcall " ")

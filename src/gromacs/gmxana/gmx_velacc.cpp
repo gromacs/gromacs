@@ -45,17 +45,17 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -169,7 +169,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
         /* Computing the square magnitude of a complex number, since this is a power
          * spectrum.
          */
-        fprintf(fp, "%10g  %10g\n", omega, sqr(data[i])+sqr(data[i+1]));
+        fprintf(fp, "%10g  %10g\n", omega, gmx::square(data[i])+gmx::square(data[i+1]));
     }
     xvgrclose(fp);
     gmx_fft_destroy(fft);

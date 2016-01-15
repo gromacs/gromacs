@@ -105,6 +105,7 @@ add_subdirectory(commandline)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
 add_subdirectory(fft)
+add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
@@ -117,6 +118,7 @@ add_subdirectory(pbcutil)
 add_subdirectory(tables)
 add_subdirectory(timing)
 add_subdirectory(topology)
+add_subdirectory(trajectory)
 add_subdirectory(utility)
 add_subdirectory(fileio)
 add_subdirectory(swap)
@@ -170,7 +172,7 @@ gmx_configure_version_file(
     REMOTE_HASH SOURCE_FILE)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
-if (GMX_GPU AND NOT GMX_USE_OPENCL)
+if (GMX_USE_CUDA)
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
@@ -226,8 +228,11 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     include(InstallLibInfo.cmake)
 endif()
 
+# Technically, the user could want to do this for an OpenCL build
+# using the CUDA runtime, but currently there's no reason to want to
+# do that.
 if (INSTALL_CUDART_LIB) #can be set manual by user
-    if (GMX_GPU AND NOT GMX_USE_OPENCL)
+    if (GMX_USE_CUDA)
         foreach(CUDA_LIB ${CUDA_LIBRARIES})
             string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
             if(IS_CUDART) #libcuda should not be installed
@@ -238,11 +243,11 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
             endif()
         endforeach()
     else()
-        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
+        message(WARNING "INSTALL_CUDART_LIB only makes sense when configuring for CUDA support")
     endif()
 endif()
 
-if(GMX_GPU AND GMX_USE_OPENCL)
+if(GMX_USE_OPENCL)
     set(OPENCL_KERNELS ${MDLIB_OPENCL_KERNELS})
 
     install(FILES ${OPENCL_KERNELS} DESTINATION

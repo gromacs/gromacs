@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -280,16 +279,16 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomW4W4_VF_c
             rsq32            = dx32*dx32+dy32*dy32+dz32*dz32;
             rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv11           = gmx_invsqrt(rsq11);
-            rinv12           = gmx_invsqrt(rsq12);
-            rinv13           = gmx_invsqrt(rsq13);
-            rinv21           = gmx_invsqrt(rsq21);
-            rinv22           = gmx_invsqrt(rsq22);
-            rinv23           = gmx_invsqrt(rsq23);
-            rinv31           = gmx_invsqrt(rsq31);
-            rinv32           = gmx_invsqrt(rsq32);
-            rinv33           = gmx_invsqrt(rsq33);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv12           = 1.0/sqrt(rsq12);
+            rinv13           = 1.0/sqrt(rsq13);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv22           = 1.0/sqrt(rsq22);
+            rinv23           = 1.0/sqrt(rsq23);
+            rinv31           = 1.0/sqrt(rsq31);
+            rinv32           = 1.0/sqrt(rsq32);
+            rinv33           = 1.0/sqrt(rsq33);
 
             rinvsq00         = rinv00*rinv00;
             rinvsq11         = rinv11*rinv11;
@@ -1101,16 +1100,16 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomW4W4_F_c
             rsq32            = dx32*dx32+dy32*dy32+dz32*dz32;
             rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv11           = gmx_invsqrt(rsq11);
-            rinv12           = gmx_invsqrt(rsq12);
-            rinv13           = gmx_invsqrt(rsq13);
-            rinv21           = gmx_invsqrt(rsq21);
-            rinv22           = gmx_invsqrt(rsq22);
-            rinv23           = gmx_invsqrt(rsq23);
-            rinv31           = gmx_invsqrt(rsq31);
-            rinv32           = gmx_invsqrt(rsq32);
-            rinv33           = gmx_invsqrt(rsq33);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv12           = 1.0/sqrt(rsq12);
+            rinv13           = 1.0/sqrt(rsq13);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv22           = 1.0/sqrt(rsq22);
+            rinv23           = 1.0/sqrt(rsq23);
+            rinv31           = 1.0/sqrt(rsq31);
+            rinv32           = 1.0/sqrt(rsq32);
+            rinv33           = 1.0/sqrt(rsq33);
 
             rinvsq00         = rinv00*rinv00;
             rinvsq11         = rinv11*rinv11;

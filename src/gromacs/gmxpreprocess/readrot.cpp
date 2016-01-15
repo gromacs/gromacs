@@ -37,9 +37,9 @@
 #include "gmxpre.h"
 
 #include "gromacs/fileio/trrio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"

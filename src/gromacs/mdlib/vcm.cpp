@@ -39,9 +39,12 @@
 
 #include "vcm.h"
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -277,7 +280,7 @@ static void get_minv(tensor A, tensor B)
             tmp[m][n] *= fac;
         }
     }
-    m_inv(tmp, B);
+    gmx::invertMatrix(tmp, B);
     for (m = 0; (m < DIM); m++)
     {
         for (n = 0; (n < DIM); n++)
@@ -358,7 +361,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
         {
             for (m = 0; m < vcm->ndim; m++)
             {
-                ekcm += sqr(vcm->group_v[g][m]);
+                ekcm += gmx::square(vcm->group_v[g][m]);
             }
             ekcm   *= 0.5*vcm->group_mass[g];
             Temp_cm = 2*ekcm/vcm->group_ndf[g];

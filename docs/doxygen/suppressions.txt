@@ -4,7 +4,6 @@ share/template/template.cpp: error: source file documentation appears outside fu
 src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
 
 # These are OK
-src/gromacs/math/vec.h: warning: installed header includes non-installed "config.h"
 src/gromacs/linearalgebra/eigensolver.cpp: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_arpack.cpp: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first
@@ -16,9 +15,11 @@ src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" firs
 # Exclude header files that are used for inlining code; the responsibility for
 # making the right #includes should be on the source file that uses these.
 # TODO: # Stop using the preprocessor for meta-programming!
-src/gromacs/ewald/pme-simd4.h: warning: should include "simd.h"
 src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
-src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_*.h: warning: should include "simd.h"
+src/gromacs/ewald/pme-gather.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/ewald/pme-spline-work.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/ewald/pme-spline-work.h: warning: includes "simd.h" unnecessarily
+src/gromacs/ewald/pme-spread.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: includes "simd.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd.h"
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h: warning: should include "simd.h"
@@ -34,13 +35,20 @@ src/gromacs/mdlib/nbnxn_search_simd_4xn.h: warning: should include "simd.h"
 # This module name doesn't really fall into any currently used pattern; needs some thought
 : error: no matching directory for module: module_mdrun_integration_tests
 
-# These would be nice to fix, but can wait for later
+# These would be nice to fix, but can wait for later / deletion / rewrites
 src/gromacs/gmxlib/nonbonded/nb_kernel_*/*: warning: includes "config.h" unnecessarily
+src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: should include "config.h"
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "config.h"
+src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "nbnxn_simd.h"
 src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.cpp: warning: includes "config.h" unnecessarily
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning: should include "nbnxn_simd.h"
+
+# Temporary while we change the SIMD implementation
+src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
+src/gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_common.h: warning: should include "simd.h"
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"

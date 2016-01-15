@@ -47,7 +47,7 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/math/gmxcomplex.h"
 
-#ifdef GMX_MPI
+#if GMX_MPI
 #include "gromacs/fft/parallel_3dfft.h"
 #endif
 

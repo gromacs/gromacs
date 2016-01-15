@@ -43,7 +43,6 @@
 #include <math.h>
 
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -340,7 +339,7 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
                 rsq               = dx*dx+dy*dy+dz*dz;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv              = gmx_invsqrt(rsq);
+                rinv              = 1.0/sqrt(rsq);
                 rinvsq            = rinv*rinv;
 
                 /* Load parameters for j atom */
@@ -394,7 +393,7 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
             rsq               = dx*dx+dy*dy+dz*dz;
 
             /* Calculate 1/r and 1/r2 */
-            rinv              = gmx_invsqrt(rsq);
+            rinv              = 1.0/sqrt(rsq);
             rinvsq            = rinv*rinv;
 
             /* Load parameters for j atom */

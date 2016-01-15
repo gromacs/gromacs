@@ -46,7 +46,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/fatalerror.h"

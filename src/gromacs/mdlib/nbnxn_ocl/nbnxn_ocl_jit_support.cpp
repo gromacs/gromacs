@@ -47,8 +47,8 @@
 
 #include <string>
 
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
-#include "gromacs/gmxlib/gpu_utils/ocl_compiler.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/ocl_compiler.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu.h"
 #include "gromacs/mdlib/nbnxn_gpu_jit_support.h"

@@ -213,9 +213,9 @@ ShellCompletionWriter::~ShellCompletionWriter()
 {
 }
 
-TextOutputStream &ShellCompletionWriter::outputStream()
+TextWriter &ShellCompletionWriter::outputWriter()
 {
-    return impl_->file_->stream();
+    return *impl_->file_;
 }
 
 void ShellCompletionWriter::startCompletions()

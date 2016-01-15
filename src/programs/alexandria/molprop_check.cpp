@@ -43,7 +43,6 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"

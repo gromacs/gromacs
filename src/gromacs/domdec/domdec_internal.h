@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,9 +225,8 @@ struct gmx_domdec_comm_t
     /* The DLB state, used for reloading old states, during e.g. EM */
     t_block cgs_gl;               /**< The global charge groups, this defined the DD state (except for the DLB state) */
 
-    /* Charge group sorting */
-    int                nstSortCG; /**< Step interval for sorting cg's, can be 0 = never */
-    gmx_domdec_sort_t *sort;      /**< Data structure for cg sorting */
+    /* Charge group / atom sorting */
+    gmx_domdec_sort_t *sort;      /**< Data structure for cg/atom sorting */
 
     /* Are there charge groups? */
     gmx_bool bCGs;                /**< True when there are charge groups */
@@ -337,7 +336,7 @@ struct gmx_domdec_comm_t
     gmx_bool        bRecordLoad;         /**< Should we record the load */
     domdec_load_t  *load;                /**< The recorded load data */
     int             nrank_gpu_shared;    /**< The number of MPI ranks sharing the GPU our rank is using */
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Comm       *mpi_comm_load;       /**< The MPI load communicator */
     MPI_Comm        mpi_comm_gpu_shared; /**< The MPI load communicator for ranks sharing a GPU */
 #endif

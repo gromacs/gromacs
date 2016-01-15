@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="InvsqrtDouble">
+    <Int Name="Length">9</Int>
+    <Real>1</Real>
+    <Real>0.70710678118654746</Real>
+    <Real>0.57735026918962584</Real>
+    <Real>0.5</Real>
+    <Real>0.44721359549995793</Real>
+    <Real>0.40824829046386307</Real>
+    <Real>0.3779644730092272</Real>
+    <Real>0.35355339059327373</Real>
+    <Real>0.33333333333333331</Real>
+  </Sequence>
+</ReferenceData>

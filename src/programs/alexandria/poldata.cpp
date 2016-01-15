@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/idef.h"

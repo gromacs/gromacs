@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,23 +51,21 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/gmx_detect_hardware.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec-threading.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
@@ -77,6 +75,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -87,8 +86,10 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -175,7 +176,6 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
     int        i, j, k, atnr;
     real       c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real      *grid;
-    const real oneOverSix = 1.0 / 6.0;
 
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
@@ -192,15 +192,15 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
             c12i = idef->iparams[i*(atnr+1)].lj.c12;
             c6j  = idef->iparams[j*(atnr+1)].lj.c6;
             c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = sqrt(c6i * c6j);
+            c6   = std::sqrt(c6i * c6j);
             if (fr->ljpme_combination_rule == eljpmeLB
                 && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
             {
-                sigmai = pow(c12i / c6i, oneOverSix);
-                sigmaj = pow(c12j / c6j, oneOverSix);
+                sigmai = gmx::sixthroot(c12i / c6i);
+                sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
             }
             /* Store the elements at the same relative positions as C6 in nbfp in order
              * to simplify access in the kernels
@@ -217,7 +217,6 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
     int        i, j, atnr;
     real       c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real       c6, c12;
-    const real oneOverSix = 1.0 / 6.0;
 
     atnr = idef->atnr;
     snew(nbfp, 2*atnr*atnr);
@@ -229,17 +228,17 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
             c12i = idef->iparams[i*(atnr+1)].lj.c12;
             c6j  = idef->iparams[j*(atnr+1)].lj.c6;
             c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = sqrt(c6i  * c6j);
-            c12  = sqrt(c12i * c12j);
+            c6   = std::sqrt(c6i  * c6j);
+            c12  = std::sqrt(c12i * c12j);
             if (comb_rule == eCOMB_ARITHMETIC
                 && !gmx_numzero(c6) && !gmx_numzero(c12))
             {
-                sigmai = pow(c12i / c6i, oneOverSix);
-                sigmaj = pow(c12j / c6j, oneOverSix);
+                sigmai = gmx::sixthroot(c12i / c6i);
+                sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
-                c12    = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 12);
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
+                c12    = std::sqrt(epsi * epsj) * gmx::power12(0.5*(sigmai+sigmaj));
             }
             C6(nbfp, atnr, i, j)   = c6*6.0;
             C12(nbfp, atnr, i, j)  = c12*12.0;
@@ -1572,7 +1571,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
     {
 #ifdef GMX_NBNXN_SIMD_4XN
         *kernel_type = nbnxnk4xN_SIMD_4xN;
@@ -1639,7 +1638,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * In single precision, this is faster on Bulldozer.
          */
 #if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || GMX_SIMD_IBM_QPX
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1652,7 +1651,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         }
 
     }
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
 }
 
 
@@ -1669,23 +1668,11 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
             break;
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
-#ifdef GMX_NBNXN_SIMD
-#if GMX_SIMD_X86_SSE2
-            returnvalue = "SSE2";
-#elif GMX_SIMD_X86_SSE4_1
-            returnvalue = "SSE4.1";
-#elif GMX_SIMD_X86_AVX_128_FMA
-            returnvalue = "AVX_128_FMA";
-#elif GMX_SIMD_X86_AVX_256
-            returnvalue = "AVX_256";
-#elif GMX_SIMD_X86_AVX2_256
-            returnvalue = "AVX2_256";
-#else
+#if GMX_SIMD
             returnvalue = "SIMD";
-#endif
-#else  /* GMX_NBNXN_SIMD */
+#else  // GMX_SIMD
             returnvalue = "not available";
-#endif /* GMX_NBNXN_SIMD */
+#endif // GMX_SIMD
             break;
         case nbnxnk8x8x8_GPU: returnvalue    = "GPU"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
@@ -1920,9 +1907,9 @@ static void force_switch_constants(real p,
      * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
      * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
      */
-    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 2));
-    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 3));
-    sc->cpot = -pow(rc, -p) + p*sc->c2/3*pow(rc - rsw, 3) + p*sc->c3/4*pow(rc - rsw, 4);
+    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*gmx::square(rc - rsw));
+    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*gmx::power3(rc - rsw));
+    sc->cpot = -pow(rc, -p) + p*sc->c2/3*gmx::power3(rc - rsw) + p*sc->c3/4*gmx::power4(rc - rsw);
 }
 
 static void potential_switch_constants(real rsw, real rc,
@@ -1936,9 +1923,9 @@ static void potential_switch_constants(real rsw, real rc,
      * force      = force*dsw - potential*sw
      * potential *= sw
      */
-    sc->c3 = -10*pow(rc - rsw, -3);
-    sc->c4 =  15*pow(rc - rsw, -4);
-    sc->c5 =  -6*pow(rc - rsw, -5);
+    sc->c3 = -10/gmx::power3(rc - rsw);
+    sc->c4 =  15/gmx::power4(rc - rsw);
+    sc->c5 =  -6/gmx::power5(rc - rsw);
 }
 
 /*! \brief Construct interaction constants
@@ -1953,8 +1940,6 @@ init_interaction_const(FILE                       *fp,
                        const t_forcerec           *fr)
 {
     interaction_const_t *ic;
-    const real           minusSix          = -6.0;
-    const real           minusTwelve       = -12.0;
 
     snew(ic, 1);
 
@@ -1982,14 +1967,14 @@ init_interaction_const(FILE                       *fp,
     {
         case eintmodPOTSHIFT:
             /* Only shift the potential, don't touch the force */
-            ic->dispersion_shift.cpot = -pow(ic->rvdw, minusSix);
-            ic->repulsion_shift.cpot  = -pow(ic->rvdw, minusTwelve);
+            ic->dispersion_shift.cpot = -1.0/gmx::power6(ic->rvdw);
+            ic->repulsion_shift.cpot  = -1.0/gmx::power12(ic->rvdw);
             if (EVDW_PME(ic->vdwtype))
             {
                 real crc2;
 
-                crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, minusSix);
+                crc2            = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+                ic->sh_lj_ewald = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
             }
             break;
         case eintmodFORCESWITCH:
@@ -2233,7 +2218,7 @@ static void init_nb_verlet(FILE                *fp,
          * texture objects are used), but as this is initialization code, there
          * is no point in complicating things.
          */
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
         if (PAR(cr))
         {
             gmx_barrier(cr);
@@ -2371,7 +2356,7 @@ void init_forcerec(FILE              *fp,
     if (ir->fepvals->bScCoul)
     {
         fr->sc_alphacoul  = ir->fepvals->sc_alpha;
-        fr->sc_sigma6_min = pow(ir->fepvals->sc_sigma_min, 6);
+        fr->sc_sigma6_min = gmx::power6(ir->fepvals->sc_sigma_min);
     }
     else
     {
@@ -2380,14 +2365,14 @@ void init_forcerec(FILE              *fp,
     }
     fr->sc_power      = ir->fepvals->sc_power;
     fr->sc_r_power    = ir->fepvals->sc_r_power;
-    fr->sc_sigma6_def = pow(ir->fepvals->sc_sigma, 6);
+    fr->sc_sigma6_def = gmx::power6(ir->fepvals->sc_sigma);
 
     env = getenv("GMX_SCSIGMA_MIN");
     if (env != NULL)
     {
         dbl = 0;
         sscanf(env, "%20lf", &dbl);
-        fr->sc_sigma6_min = pow(dbl, 6);
+        fr->sc_sigma6_min = gmx::power6(dbl);
         if (fp)
         {
             fprintf(fp, "Setting the minimum soft core sigma to %g nm\n", dbl);
@@ -2581,6 +2566,7 @@ void init_forcerec(FILE              *fp,
             break;
 
         case eelPME:
+        case eelP3M_AD:
         case eelEWALD:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD;
             break;
@@ -2855,6 +2841,7 @@ void init_forcerec(FILE              *fp,
     }
 
     fr->eDispCorr = ir->eDispCorr;
+    fr->numAtomsForDispersionCorrection = mtop->natoms;
     if (ir->eDispCorr != edispcNO)
     {
         set_avcsixtwelve(fp, fr, mtop);
@@ -2903,7 +2890,7 @@ void init_forcerec(FILE              *fp,
     /* Generate the GB table if needed */
     if (fr->bGB)
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         fr->gbtabscale = 2000;
 #else
         fr->gbtabscale = 500;
@@ -3272,7 +3259,7 @@ void free_gpu_resources(const t_forcerec     *fr,
          * Note: as only PP ranks need to free GPU resources, so it is safe to
          * not call the barrier on PME ranks.
          */
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
         if (PAR(cr))
         {
             gmx_barrier(cr);

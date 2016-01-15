@@ -37,13 +37,15 @@
 #ifndef GMX_TOPOLOGY_IDEF_H
 #define GMX_TOPOLOGY_IDEF_H
 
+#include <stdio.h>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST 6
@@ -401,6 +403,13 @@ typedef struct t_idef
  *      The allocated size of il_thread_division,
  *      should be at least F_NRE*(nthreads+1).
  */
+
+void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
+void pr_ilist(FILE *fp, int indent, const char *title,
+              const t_functype *functype, const t_ilist *ilist, gmx_bool bShowNumbers);
+void pr_ffparams(FILE *fp, int indent, const char *title,
+                 const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
+void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef, gmx_bool bShowNumbers);
 
 #ifdef __cplusplus
 }

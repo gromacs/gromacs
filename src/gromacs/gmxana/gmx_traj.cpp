@@ -45,11 +45,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -57,6 +57,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -478,7 +479,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             {
                 if (bDim[m] || bDim[DIM])
                 {
-                    len2 += sqr(sum[index[i]][m]);
+                    len2 += gmx::square(sum[index[i]][m]);
                 }
             }
             if (len2 > max)
@@ -521,7 +522,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                 {
                     if (bDim[m] || bDim[DIM])
                     {
-                        len2 += sqr(sum[index[i]][m]);
+                        len2 += gmx::square(sum[index[i]][m]);
                     }
                 }
                 atoms->pdbinfo[index[i]].bfac = std::sqrt(len2)*scale;

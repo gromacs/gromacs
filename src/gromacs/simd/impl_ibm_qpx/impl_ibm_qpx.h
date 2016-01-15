@@ -36,9 +36,13 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_QPX_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_QPX_H
 
+#include "impl_ibm_qpx_definitions.h"
+#include "impl_ibm_qpx_general.h"
 #include "impl_ibm_qpx_simd4_double.h"
 #include "impl_ibm_qpx_simd4_float.h"
 #include "impl_ibm_qpx_simd_double.h"
 #include "impl_ibm_qpx_simd_float.h"
+#include "impl_ibm_qpx_util_double.h"
+#include "impl_ibm_qpx_util_float.h"
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_H */
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_QPX_H

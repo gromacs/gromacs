@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,20 +41,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cstdint>
+
 #include <algorithm>
+#include <array>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -77,25 +83,27 @@ typedef struct {
 } t_shell;
 
 struct gmx_shellfc_t {
-    int         nshell_gl;      /* The number of shells in the system       */
-    t_shell    *shell_gl;       /* All the shells (for DD only)             */
-    int        *shell_index_gl; /* Global shell index (for DD only)         */
-    gmx_bool    bInterCG;       /* Are there inter charge-group shells?     */
-    int         nshell;         /* The number of local shells               */
-    t_shell    *shell;          /* The local shells                         */
-    int         shell_nalloc;   /* The allocation size of shell             */
-    gmx_bool    bPredict;       /* Predict shell positions                  */
-    gmx_bool    bRequireInit;   /* Require initialization of shell positions  */
-    int         nflexcon;       /* The number of flexible constraints       */
-    rvec       *x[2];           /* Array for iterative minimization         */
-    rvec       *f[2];           /* Array for iterative minimization         */
-    int         x_nalloc;       /* The allocation size of x and f           */
-    rvec       *acc_dir;        /* Acceleration direction for flexcon       */
-    rvec       *x_old;          /* Old coordinates for flexcon              */
-    int         flex_nalloc;    /* The allocation size of acc_dir and x_old */
-    rvec       *adir_xnold;     /* Work space for init_adir                 */
-    rvec       *adir_xnew;      /* Work space for init_adir                 */
-    int         adir_nalloc;    /* Work space for init_adir                 */
+    int          nshell_gl;              /* The number of shells in the system        */
+    t_shell     *shell_gl;               /* All the shells (for DD only)              */
+    int         *shell_index_gl;         /* Global shell index (for DD only)          */
+    gmx_bool     bInterCG;               /* Are there inter charge-group shells?      */
+    int          nshell;                 /* The number of local shells                */
+    t_shell     *shell;                  /* The local shells                          */
+    int          shell_nalloc;           /* The allocation size of shell              */
+    gmx_bool     bPredict;               /* Predict shell positions                   */
+    gmx_bool     bRequireInit;           /* Require initialization of shell positions */
+    int          nflexcon;               /* The number of flexible constraints        */
+    rvec        *x[2];                   /* Array for iterative minimization          */
+    rvec        *f[2];                   /* Array for iterative minimization          */
+    int          x_nalloc;               /* The allocation size of x and f            */
+    rvec        *acc_dir;                /* Acceleration direction for flexcon        */
+    rvec        *x_old;                  /* Old coordinates for flexcon               */
+    int          flex_nalloc;            /* The allocation size of acc_dir and x_old  */
+    rvec        *adir_xnold;             /* Work space for init_adir                  */
+    rvec        *adir_xnew;              /* Work space for init_adir                  */
+    int          adir_nalloc;            /* Work space for init_adir                  */
+    std::int64_t numForceEvaluations;    /* Total number of force evaluations         */
+    int          numConvergedIterations; /* Total number of iterations that converged */
 };
 
 
@@ -124,6 +132,13 @@ static void pr_shell(FILE *fplog, int ns, t_shell s[])
     }
 }
 
+/* TODO The remain call of this function passes non-NULL mass and NULL
+ * mtop, so this routine can be simplified.
+ *
+ * The other code path supported doing prediction before the MD loop
+ * started, but even when called, the prediction was always
+ * over-written by a subsequent call in the MD loop, so has been
+ * removed. */
 static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                            int ns, t_shell s[],
                            real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
@@ -235,52 +250,81 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
+/*! \brief Count the different particle types in a system
+ *
+ * Routine prints a warning to stderr in case an unknown particle type
+ * is encountered.
+ * \param[in]  fplog Print what we have found if not NULL
+ * \param[in]  mtop  Molecular topology.
+ * \returns Array holding the number of particles of a type
+ */
+static std::array<int, eptNR> countPtypes(FILE       *fplog,
+                                          gmx_mtop_t *mtop)
+{
+    std::array<int, eptNR> nptype = { { 0 } };
+    /* Count number of shells, and find their indices */
+    for (int i = 0; (i < eptNR); i++)
+    {
+        nptype[i] = 0;
+    }
+
+    gmx_mtop_atomloop_block_t  aloopb = gmx_mtop_atomloop_block_init(mtop);
+    int                        nmol;
+    t_atom                    *atom;
+    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    {
+        switch (atom->ptype)
+        {
+            case eptAtom:
+            case eptVSite:
+            case eptShell:
+                nptype[atom->ptype] += nmol;
+                break;
+            default:
+                fprintf(stderr, "Warning unsupported particle type %d in countPtypes",
+                        static_cast<int>(atom->ptype));
+        }
+    }
+    if (fplog)
+    {
+        /* Print the number of each particle type */
+        int n = 0;
+        for (const auto &i : nptype)
+        {
+            if (i != 0)
+            {
+                fprintf(fplog, "There are: %d %ss\n", i, ptype_str[n]);
+            }
+            n++;
+        }
+    }
+    return nptype;
+}
+
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   gmx_mtop_t *mtop, int nflexcon,
-                                  rvec *x)
+                                  int nstcalcenergy,
+                                  bool usingDomainDecomposition)
 {
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
-    int                       n[eptNR], ns, nshell, nsi;
-    int                       i, j, nmol, type, mb, a_offset, cg, mol, ftype, nra;
+
+    int                       ns, nshell, nsi;
+    int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
-    gmx_mtop_atomloop_block_t aloopb;
     gmx_mtop_atomloop_all_t   aloop;
     gmx_ffparams_t           *ffparams;
     gmx_molblock_t           *molb;
     gmx_moltype_t            *molt;
     t_block                  *cgs;
 
-    /* Count number of shells, and find their indices */
-    for (i = 0; (i < eptNR); i++)
-    {
-        n[i] = 0;
-    }
-
-    aloopb = gmx_mtop_atomloop_block_init(mtop);
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
-    {
-        n[atom->ptype] += nmol;
-    }
-
-    if (fplog)
-    {
-        /* Print the number of each particle type */
-        for (i = 0; (i < eptNR); i++)
-        {
-            if (n[i] != 0)
-            {
-                fprintf(fplog, "There are: %d %ss\n", n[i], ptype_str[i]);
-            }
-        }
-    }
-
+    std::array<int, eptNR>    n = countPtypes(fplog, mtop);
     nshell = n[eptShell];
 
     if (nshell == 0 && nflexcon == 0)
@@ -291,6 +335,15 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 
     snew(shfc, 1);
     shfc->nflexcon = nflexcon;
+
+    if (nstcalcenergy != 1)
+    {
+        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combination with shell particles.\nPlease make a new tpr file.", nstcalcenergy);
+    }
+    if (usingDomainDecomposition)
+    {
+        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
+    }
 
     if (nshell == 0)
     {
@@ -451,7 +504,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
                                 }
-                                shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
+                                shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/
                                     ffparams->iparams[type].polarize.alpha;
                                 break;
                             case F_WATER_POL:
@@ -462,7 +515,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                 alpha          = (ffparams->iparams[type].wpol.al_x+
                                                   ffparams->iparams[type].wpol.al_y+
                                                   ffparams->iparams[type].wpol.al_z)/3.0;
-                                shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
+                                shell[nsi].k  += gmx::square(qS)*ONE_4PI_EPS0/alpha;
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
@@ -520,12 +573,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 
     if (shfc->bPredict)
     {
-        if (x)
-        {
-            predict_shells(fplog, x, NULL, 0, shfc->nshell_gl, shfc->shell_gl,
-                           NULL, mtop, TRUE);
-        }
-
         if (shfc->bInterCG)
         {
             if (fplog)
@@ -767,7 +814,7 @@ static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real 
             gmx_step_str(mdstep, buf), count, epot, df);
     if (ndir)
     {
-        fprintf(fp, ", dir. rmsF: %6.2e\n", sqrt(sf_dir/ndir));
+        fprintf(fp, ", dir. rmsF: %6.2e\n", std::sqrt(sf_dir/ndir));
     }
     else
     {
@@ -802,7 +849,7 @@ static real rms_force(t_commrec *cr, rvec f[], int ns, t_shell s[],
     }
     ntot += ndir;
 
-    return (ntot ? sqrt(buf[0]/ntot) : 0);
+    return (ntot ? std::sqrt(buf[0]/ntot) : 0);
 }
 
 static void check_pbc(FILE *fp, rvec x[], int shell)
@@ -825,7 +872,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
     int  i, shell;
     real ft2, ff2;
 
-    ft2 = sqr(ftol);
+    ft2 = gmx::square(ftol);
 
     for (i = 0; (i < ns); i++)
     {
@@ -834,7 +881,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
         if (ff2 > ft2)
         {
             fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
-                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], sqrt(ff2));
+                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
         }
         check_pbc(fp, x, shell);
     }
@@ -908,7 +955,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
         for (d = 0; d < DIM; d++)
         {
             xnew[n-start][d] =
-                -(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/sqr(dt)
+                -(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/gmx::square(dt)
                 - f[n][d]*md->invmass[n];
         }
         clear_rvec(acc_dir[n]);
@@ -921,25 +968,24 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
               NULL, NULL, nrnb, econqDeriv_FlexCon);
 }
 
-int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_int64_t mdstep, t_inputrec *inputrec,
-                        gmx_bool bDoNS, int force_flags,
-                        gmx_localtop_t *top,
-                        gmx_constr_t constr,
-                        gmx_enerdata_t *enerd, t_fcdata *fcd,
-                        t_state *state, rvec f[],
-                        tensor force_vir,
-                        t_mdatoms *md,
-                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        t_graph *graph,
-                        gmx_groups_t *groups,
-                        gmx_shellfc_t *shfc,
-                        t_forcerec *fr,
-                        gmx_bool bBornRadii,
-                        double t, rvec mu_tot,
-                        gmx_bool *bConverged,
-                        gmx_vsite_t *vsite,
-                        FILE *fp_field)
+void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
+                         gmx_int64_t mdstep, t_inputrec *inputrec,
+                         gmx_bool bDoNS, int force_flags,
+                         gmx_localtop_t *top,
+                         gmx_constr_t constr,
+                         gmx_enerdata_t *enerd, t_fcdata *fcd,
+                         t_state *state, rvec f[],
+                         tensor force_vir,
+                         t_mdatoms *md,
+                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                         t_graph *graph,
+                         gmx_groups_t *groups,
+                         gmx_shellfc_t *shfc,
+                         t_forcerec *fr,
+                         gmx_bool bBornRadii,
+                         double t, rvec mu_tot,
+                         gmx_vsite_t *vsite,
+                         FILE *fp_field)
 {
     int        nshell;
     t_shell   *shell;
@@ -949,7 +995,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     real       sf_dir, invdt;
     real       ftol, dum = 0;
     char       sbuf[22];
-    gmx_bool   bCont, bInit;
+    gmx_bool   bCont, bInit, bConverged;
     int        nat, dd_ac0, dd_ac1 = 0, i;
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
     int        nflexcon, number_steps, d, Min = 0, count = 0;
@@ -1128,9 +1174,9 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     /* First check whether we should do shells, or whether the force is
      * low enough even without minimization.
      */
-    *bConverged = (df[Min] < ftol);
+    bConverged = (df[Min] < ftol);
 
-    for (count = 1; (!(*bConverged) && (count < number_steps)); count++)
+    for (count = 1; (!(bConverged) && (count < number_steps)); count++)
     {
         if (vsite)
         {
@@ -1218,7 +1264,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
         }
 
-        *bConverged = (df[Try] < ftol);
+        bConverged = (df[Try] < ftol);
 
         if ((df[Try] < df[Min]))
         {
@@ -1245,7 +1291,12 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             decrease_step_size(nshell, shell);
         }
     }
-    if (MASTER(cr) && !(*bConverged))
+    shfc->numForceEvaluations += count;
+    if (bConverged)
+    {
+        shfc->numConvergedIterations++;
+    }
+    if (MASTER(cr) && !(bConverged))
     {
         /* Note that the energies and virial are incorrect when not converged */
         if (fplog)
@@ -1262,6 +1313,18 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     /* Copy back the coordinates and the forces */
     memcpy(state->x, pos[Min], nat*sizeof(state->x[0]));
     memcpy(f, force[Min], nat*sizeof(f[0]));
+}
 
-    return count;
+void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, gmx_int64_t numSteps)
+{
+    if (shfc && fplog && numSteps > 0)
+    {
+        double numStepsAsDouble = static_cast<double>(numSteps);
+        fprintf(fplog, "Fraction of iterations that converged:           %.2f %%\n",
+                (shfc->numConvergedIterations*100.0)/numStepsAsDouble);
+        fprintf(fplog, "Average number of force evaluations per MD step: %.2f\n\n",
+                shfc->numForceEvaluations/numStepsAsDouble);
+    }
+
+    // TODO Deallocate memory in shfc
 }

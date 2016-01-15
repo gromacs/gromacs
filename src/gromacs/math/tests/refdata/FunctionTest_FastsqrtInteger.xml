@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FastsqrtInteger">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0.99999999999999467</Real>
+    <Real>1.4142135623730945</Real>
+    <Real>1.7320508075688765</Real>
+    <Real>1.9999999999999893</Real>
+    <Real>2.2360679774997889</Real>
+    <Real>2.449489742783173</Real>
+    <Real>2.6457513110645898</Real>
+    <Real>2.828427124746189</Real>
+    <Real>2.999999999999996</Real>
+  </Sequence>
+</ReferenceData>

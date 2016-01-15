@@ -45,13 +45,12 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -65,6 +64,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
 real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
@@ -857,7 +857,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         sig6 = c12/c6;
                     }
-                    vdw   = 0.5*std::pow(sig6, static_cast<real>(1.0/6.0));
+                    vdw   = 0.5*gmx::sixthroot(sig6);
                 }
                 else
                 {
@@ -937,11 +937,11 @@ int gmx_editconf(int argc, char *argv[])
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ])),
+               RAD2DEG*gmx_angle(box[YY], box[ZZ]),
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ])),
+               RAD2DEG*gmx_angle(box[XX], box[ZZ]),
                norm2(box[YY]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY])));
+               RAD2DEG*gmx_angle(box[XX], box[YY]));
         printf("    box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -984,7 +984,7 @@ int gmx_editconf(int argc, char *argv[])
                           "zero mass (%g) or volume (%g)\n", mass, vol);
             }
 
-            scale[XX] = scale[YY] = scale[ZZ] = std::pow(dens/rho, static_cast<real>(1.0/3.0));
+            scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens/rho);
             fprintf(stderr, "Scaling all box vectors by %g\n", scale[XX]);
         }
         scale_conf(atoms.nr, x, box, scale);
@@ -1191,11 +1191,11 @@ int gmx_editconf(int argc, char *argv[])
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ])),
+               RAD2DEG*gmx_angle(box[YY], box[ZZ]),
                norm2(box[ZZ]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ])),
+               RAD2DEG*gmx_angle(box[XX], box[ZZ]),
                norm2(box[YY]) == 0 ? 0 :
-               RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY])));
+               RAD2DEG*gmx_angle(box[XX], box[YY]));
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }
 

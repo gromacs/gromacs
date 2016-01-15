@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,11 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/orires.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
@@ -260,13 +260,7 @@ calc_one_bond(int thread,
               int *global_atom_index)
 {
 #if GMX_SIMD_HAVE_REAL
-    gmx_bool bUseSIMD;
-    /* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
-#    if defined _MSC_VER && _MSC_VER < 1700 && !defined(__ICL)
-    bUseSIMD = FALSE;
-#    else
-    bUseSIMD = fr->use_simd_kernels;
-#    endif
+    bool bUseSIMD = fr->use_simd_kernels;
 #endif
 
     int      nat1, nbonds, efptFTYPE;
@@ -477,7 +471,7 @@ void calc_listed(const struct gmx_multisim_t *ms,
                             idef->il[F_DISRES].iatoms,
                             idef->iparams, x, pbc_null,
                             fcd, hist);
-#ifdef GMX_MPI
+#if GMX_MPI
             if (fcd->disres.nsystems > 1)
             {
                 gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);

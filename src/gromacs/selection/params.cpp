@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <string>
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/cstringutil.h"

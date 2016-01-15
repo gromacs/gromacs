@@ -40,8 +40,8 @@
  * \brief Provides an architecture-independent way of doing SIMD coding.
  *
  * Overview of the SIMD implementation is provided in \ref page_simd.
- * The details are documented in simd.h and the reference implementation
- * impl_reference.h.
+ * The details are documented in gromacs/simd/simd.h and the reference
+ * implementation impl_reference.h.
  *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  */
@@ -60,7 +60,7 @@
  *
  * The defines in this top-level file will set default Gromacs real precision
  * operations to either single or double precision based on whether
- * GMX_DOUBLE is defined. The actual implementation - including e.g.
+ * GMX_DOUBLE is 1. The actual implementation - including e.g.
  * conversion operations specifically between single and double - is documented
  * in impl_reference.h.
  *
@@ -72,21 +72,19 @@
 
 #include "config.h"
 
-#include <stddef.h>
+#include <cstddef>
+#include <cstdint>
 
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/real.h"
 
-/* Forward declarations so memory allocation can be used in implementations */
-static gmx_inline float *  gmx_simd_align_f(float *p);
-static gmx_inline double * gmx_simd_align_d(double *p);
-static gmx_inline int *    gmx_simd_align_fi(int *p);
-static gmx_inline int *    gmx_simd_align_di(int *p);
-static gmx_inline float *  gmx_simd4_align_f(float *p);
-static gmx_inline double * gmx_simd4_align_d(double *p);
+//! \cond libapi
 
-/*! \cond libapi */
-/*! \addtogroup module_simd */
-/*! \{ */
+
+/*! \addtogroup module_simd
+ * \{
+ */
+
 
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
@@ -97,27 +95,18 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
  *  \{
  */
 
-/* Intel MIC is a bit special since it is a co-processor. This means the rest
- * of GROMACS (which runs on the CPU) can use a default SIMD set like AVX.
- * All functions in this SIMD module are static, so it will work perfectly fine
- * to include this file with different SIMD definitions for different files.
- */
-#if GMX_SIMD_X86_AVX_512ER
-#    include "impl_x86_avx_512er/impl_x86_avx_512er.h"
-#elif GMX_SIMD_X86_AVX_512F
-#    include "impl_x86_avx_512f/impl_x86_avx_512f.h"
-#elif GMX_SIMD_X86_MIC
-#    include "impl_intel_mic/impl_intel_mic.h"
-#elif GMX_SIMD_X86_AVX2_256
-#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
-#elif GMX_SIMD_X86_AVX_256
-#    include "impl_x86_avx_256/impl_x86_avx_256.h"
-#elif GMX_SIMD_X86_AVX_128_FMA
-#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#if GMX_SIMD_X86_SSE2
+#    include "impl_x86_sse2/impl_x86_sse2.h"
 #elif GMX_SIMD_X86_SSE4_1
 #    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
-#elif GMX_SIMD_X86_SSE2
-#    include "impl_x86_sse2/impl_x86_sse2.h"
+#elif GMX_SIMD_X86_AVX_128_FMA
+#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#elif GMX_SIMD_X86_AVX_256
+#    include "impl_x86_avx_256/impl_x86_avx_256.h"
+#elif GMX_SIMD_X86_AVX2_256
+#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
+#elif GMX_SIMD_X86_MIC
+#    include "impl_x86_mic/impl_x86_mic.h"
 #elif GMX_SIMD_ARM_NEON
 #    include "impl_arm_neon/impl_arm_neon.h"
 #elif GMX_SIMD_ARM_NEON_ASIMD
@@ -128,335 +117,84 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 #    include "impl_ibm_vmx/impl_ibm_vmx.h"
 #elif GMX_SIMD_IBM_VSX
 #    include "impl_ibm_vsx/impl_ibm_vsx.h"
-#elif GMX_SIMD_SPARC64_HPC_ACE
-#    include "impl_sparc64_hpc_ace/impl_sparc64_hpc_ace.h"
 #elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
-/* Plain C SIMD reference implementation, also serves as documentation. */
-#    include "impl_reference/impl_reference.h"
+#    include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
 #    include "impl_none/impl_none.h"
 #endif
 
-/* These convenience macros are ugly hacks where some source files still make
- * assumptions about the SIMD architecture. They will be removed as we implement
- * the new verlet kernels, but for now we need them, and to make sure they
- * always have values 0 or 1 we define them here rather than in the implementations.
- */
-#define GMX_SIMD_X86_AVX2_256_OR_HIGHER      (GMX_SIMD_X86_AVX2_256)
-#define GMX_SIMD_X86_AVX_256_OR_HIGHER       (GMX_SIMD_X86_AVX2_256_OR_HIGHER || GMX_SIMD_X86_AVX_256)
-#define GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER   (GMX_SIMD_X86_AVX_128_FMA)
-#define GMX_SIMD_X86_SSE4_1_OR_HIGHER        (GMX_SIMD_X86_AVX_256_OR_HIGHER || GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER || GMX_SIMD_X86_SSE4_1)
-#define GMX_SIMD_X86_SSE2_OR_HIGHER          (GMX_SIMD_X86_SSE4_1_OR_HIGHER || GMX_SIMD_X86_SSE2)
+#if GMX_DOUBLE
+#    define GMX_SIMD_HAVE_REAL                                     GMX_SIMD_HAVE_DOUBLE
+#    define GMX_SIMD_REAL_WIDTH                                    GMX_SIMD_DOUBLE_WIDTH
+#    define GMX_SIMD_HAVE_INT32_EXTRACT                            GMX_SIMD_HAVE_DINT32_EXTRACT
+#    define GMX_SIMD_HAVE_INT32_LOGICAL                            GMX_SIMD_HAVE_DINT32_LOGICAL
+#    define GMX_SIMD_HAVE_INT32_ARITHMETICS                        GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL                          GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
+#    define GMX_SIMD4_HAVE_REAL                                    GMX_SIMD4_HAVE_DOUBLE
+#else // GMX_DOUBLE
 
-/*! \} */
-
-/*! \name SIMD memory alignment operations
- *  \{
+/*! \brief 1 if SimdReal is available, otherwise 0.
+ *
+ *  \ref GMX_SIMD_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_HAVE_FLOAT.
  */
+#    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_FLOAT
 
-/*! \brief
- * Align a float pointer for usage with SIMD instructions.
+/*! \brief Width of SimdReal.
  *
- * You should typically \a not call this function directly (unless you explicitly
- * want single precision even when GMX_DOUBLE is set), but use the
- * \ref gmx_simd_align_r macro to align memory in default Gromacs real precision.
- *
- * \param  p Pointer to memory, allocate at least \ref GMX_SIMD_FLOAT_WIDTH extra elements.
- *
- * \return Aligned pointer (>=p) suitable for loading/storing float fp SIMD.
- *         If \ref GMX_SIMD_HAVE_FLOAT is not set, p will be returned unchanged.
- *
- * Start by allocating an extra \ref GMX_SIMD_FLOAT_WIDTH float elements of memory,
- * and then call this function. The returned pointer will be greater or equal
- * to the one you provided, and point to an address inside your provided memory
- * that is aligned to the SIMD width.
+ *  \ref GMX_SIMD_DOUBLE_WIDTH if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_FLOAT_WIDTH.
  */
-static gmx_inline float *
-gmx_simd_align_f(float *p)
+#    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_FLOAT_WIDTH
+
+/*! \brief 1 if support is available for extracting elements from SimdInt32, otherwise 0
+ *
+ *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT if GMX_DOUBLE is 1, otherwise
+ *  \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
+ */
+#    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_FINT32_EXTRACT
+
+/*! \brief 1 if logical ops are supported on SimdInt32, otherwise 0.
+ *
+ *  \ref GMX_SIMD_HAVE_DINT32_LOGICAL if GMX_DOUBLE is 1, otherwise
+ *  \ref GMX_SIMD_HAVE_FINT32_LOGICAL.
+ */
+#    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_FINT32_LOGICAL
+
+/*! \brief 1 if arithmetic ops are supported on SimdInt32, otherwise 0.
+ *
+ *  \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS if GMX_DOUBLE is 1, otherwise
+ *  \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS.
+ */
+#    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_FINT32_ARITHMETICS
+
+/*! \brief 1 if gmx::simdGatherLoadUBySimdIntTranspose is present, otherwise 0
+ *
+ *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE if GMX_DOUBLE is 1, otherwise
+ *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT.
+ */
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+
+/*! \brief 1 if real half-register load/store/reduce utils present, otherwise 0
+ *
+ *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE if GMX_DOUBLE is 1, otherwise
+ *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT.
+ */
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL    GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
+
+/*! \brief 1 if Simd4Real is available, otherwise 0.
+ *
+ *  \ref GMX_SIMD4_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD4_HAVE_FLOAT.
+ */
+#    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_FLOAT
+
+#endif // GMX_DOUBLE
+
+//! \}  end of name-group describing high-level capabilities
+
+namespace gmx
 {
-#if GMX_SIMD_HAVE_FLOAT
-    return (float *)(((size_t)((p)+GMX_SIMD_FLOAT_WIDTH-1)) & (~((size_t)(GMX_SIMD_FLOAT_WIDTH*sizeof(float)-1))));
-#else
-    return p;
-#endif
-}
 
-/*!  \brief
- * Align a double pointer for usage with SIMD instructions.
- *
- * You should typically \a not call this function directly (unless you explicitly
- * want double precision even when GMX_DOUBLE is not set), but use the
- * \ref gmx_simd_align_r macro to align memory in default Gromacs real precision.
- *
- * \param  p Pointer to memory, allocate at least \ref GMX_SIMD_DOUBLE_WIDTH extra elements.
- *
- * \return Aligned pointer (>=p) suitable for loading/storing double fp SIMD.
- *         If \ref GMX_SIMD_HAVE_DOUBLE is not set, p will be returned unchanged.
- *
- * Start by allocating an extra \ref GMX_SIMD_DOUBLE_WIDTH double elements of memory,
- * and then call this function. The returned pointer will be greater or equal
- * to the one you provided, and point to an address inside your provided memory
- * that is aligned to the SIMD width.
- */
-static gmx_inline double *
-gmx_simd_align_d(double *p)
-{
-#if GMX_SIMD_HAVE_DOUBLE
-    return (double *)(((size_t)((p)+GMX_SIMD_DOUBLE_WIDTH-1)) & (~((size_t)(GMX_SIMD_DOUBLE_WIDTH*sizeof(double)-1))));
-#else
-    return p;
-#endif
-}
-
-/*! \brief
- * Align a (float) integer pointer for usage with SIMD instructions.
- *
- * You should typically \a not call this function directly (unless you explicitly
- * want integers corresponding to single precision even when GMX_DOUBLE is
- * set), but use the \ref gmx_simd_align_i macro to align integer memory
- * corresponding to Gromacs default floating-point precision.
- *
- * \param  p Pointer to memory, allocate at least \ref GMX_SIMD_FINT32_WIDTH extra elements.
- *
- * \return Aligned pointer (>=p) suitable for loading/storing float-integer SIMD.
- *         If \ref GMX_SIMD_HAVE_FINT32 is not set, p will be returned unchanged.
- *
- * This routine provides aligned memory for usage with \ref gmx_simd_fint32_t. You
- * should have allocated an extra \ref GMX_SIMD_FINT32_WIDTH * sizeof(int) bytes. The
- * reason why we need to separate float-integer vs. double-integer is that the
- * width of registers after conversions from the floating-point types might not
- * be identical, or even supported, in both cases.
- */
-static gmx_inline int *
-gmx_simd_align_fi(int *p)
-{
-#if GMX_SIMD_HAVE_FINT32
-    return (int *)(((size_t)((p)+GMX_SIMD_FINT32_WIDTH-1)) & (~((size_t)(GMX_SIMD_FINT32_WIDTH*sizeof(int)-1))));
-#else
-    return p;
-#endif
-}
-
-/*! \brief
- * Align a (double) integer pointer for usage with SIMD instructions.
- *
- * You should typically \a not call this function directly (unless you explicitly
- * want integers corresponding to doublele precision even when GMX_DOUBLE is
- * not set), but use the \ref gmx_simd_align_i macro to align integer memory
- * corresponding to Gromacs default floating-point precision.
- *
- * \param  p Pointer to memory, allocate at least \ref GMX_SIMD_DINT32_WIDTH extra elements.
- *
- * \return Aligned pointer (>=p) suitable for loading/storing double-integer SIMD.
- *         If \ref GMX_SIMD_HAVE_DINT32 is not set, p will be returned unchanged.
- *
- * This routine provides aligned memory for usage with \ref gmx_simd_dint32_t. You
- * should have allocated an extra \ref GMX_SIMD_DINT32_WIDTH*sizeof(int) bytes. The
- * reason why we need to separate float-integer vs. double-integer is that the
- * width of registers after conversions from the floating-point types might not
- * be identical, or even supported, in both cases.
- */
-static gmx_inline int *
-gmx_simd_align_di(int *p)
-{
-#if GMX_SIMD_HAVE_DINT32
-    return (int *)(((size_t)((p)+GMX_SIMD_DINT32_WIDTH-1)) & (~((size_t)(GMX_SIMD_DINT32_WIDTH*sizeof(int)-1))));
-#else
-    return p;
-#endif
-}
-
-/*! \brief
- * Align a float pointer for usage with SIMD4 instructions.
- *
- * You should typically \a not call this function directly (unless you explicitly
- * want single precision even when GMX_DOUBLE is set), but use the
- * \ref gmx_simd4_align_r macro to align memory in default Gromacs real precision.
- *
- * \param  p Pointer to memory, allocate at least \ref GMX_SIMD4_WIDTH extra elements.
- *
- * \return Aligned pointer (>=p) suitable for loading/storing float SIMD.
- *         If \ref GMX_SIMD4_HAVE_FLOAT is not set, p will be returned unchanged.
- *
- * This routine provides aligned memory for usage with \ref gmx_simd4_float_t.
- * should have allocated an extra \ref GMX_SIMD4_WIDTH * sizeof(float) bytes.
- */
-static gmx_inline float *
-gmx_simd4_align_f(float *p)
-{
-#if GMX_SIMD4_HAVE_FLOAT
-    return (float *)(((size_t)((p)+GMX_SIMD4_WIDTH-1)) & (~((size_t)(GMX_SIMD4_WIDTH*sizeof(float)-1))));
-#else
-    return p;
-#endif
-}
-
-/*! \brief
- * Align a double pointer for usage with SIMD4 instructions.
- *
- * You should typically \a not call this function directly (unless you explicitly
- * want double precision even when GMX_DOUBLE is not set), but use the
- * \ref gmx_simd4_align_r macro to align memory in default Gromacs real precision.
- *
- * \param  p Pointer to memory, allocate at least \ref GMX_SIMD4_WIDTH extra elements.
- *
- * \return Aligned pointer (>=p) suitable for loading/storing float SIMD.
- *         If \ref GMX_SIMD4_HAVE_DOUBLE is not set, p will be returned unchanged.
- *
- * This routine provides aligned memory for usage with \ref gmx_simd4_double_t.
- * should have allocated an extra \ref GMX_SIMD4_WIDTH * sizeof(double) bytes.
- */
-static gmx_inline double *
-gmx_simd4_align_d(double *p)
-{
-#if GMX_SIMD4_HAVE_DOUBLE
-    return (double *)(((size_t)((p)+GMX_SIMD4_WIDTH-1)) & (~((size_t)(GMX_SIMD4_WIDTH*sizeof(double)-1))));
-#else
-    return p;
-#endif
-}
-
-/*! \} */
-
-
-/* Define Gromacs "real" precision macros depending on Gromacs config. Note
- * that conversions float-to-double and v.v. are not included here since they
- * are not precision-dependent - find them in the implementation files.
- */
-#ifdef GMX_DOUBLE
-/* Double floating-point. The documentation is in the float part below */
-#    define gmx_simd_real_t                  gmx_simd_double_t
-#    define gmx_simd_load_r                  gmx_simd_load_d
-#    define gmx_simd_load1_r                 gmx_simd_load1_d
-#    define gmx_simd_set1_r                  gmx_simd_set1_d
-#    define gmx_simd_store_r                 gmx_simd_store_d
-#    define gmx_simd_loadu_r                 gmx_simd_loadu_d
-#    define gmx_simd_storeu_r                gmx_simd_storeu_d
-#    define gmx_simd_setzero_r               gmx_simd_setzero_d
-#    define gmx_simd_add_r                   gmx_simd_add_d
-#    define gmx_simd_sub_r                   gmx_simd_sub_d
-#    define gmx_simd_mul_r                   gmx_simd_mul_d
-#    define gmx_simd_fmadd_r                 gmx_simd_fmadd_d
-#    define gmx_simd_fmsub_r                 gmx_simd_fmsub_d
-#    define gmx_simd_fnmadd_r                gmx_simd_fnmadd_d
-#    define gmx_simd_fnmsub_r                gmx_simd_fnmsub_d
-#    define gmx_simd_and_r                   gmx_simd_and_d
-#    define gmx_simd_andnot_r                gmx_simd_andnot_d
-#    define gmx_simd_or_r                    gmx_simd_or_d
-#    define gmx_simd_xor_r                   gmx_simd_xor_d
-#    define gmx_simd_rsqrt_r                 gmx_simd_rsqrt_d
-#    define gmx_simd_rcp_r                   gmx_simd_rcp_d
-#    define gmx_simd_fabs_r                  gmx_simd_fabs_d
-#    define gmx_simd_fneg_r                  gmx_simd_fneg_d
-#    define gmx_simd_max_r                   gmx_simd_max_d
-#    define gmx_simd_min_r                   gmx_simd_min_d
-#    define gmx_simd_round_r                 gmx_simd_round_d
-#    define gmx_simd_trunc_r                 gmx_simd_trunc_d
-#    define gmx_simd_fraction_r              gmx_simd_fraction_d
-#    define gmx_simd_get_exponent_r          gmx_simd_get_exponent_d
-#    define gmx_simd_get_mantissa_r          gmx_simd_get_mantissa_d
-#    define gmx_simd_set_exponent_r          gmx_simd_set_exponent_d
-/* Double integer and conversions */
-#    define gmx_simd_int32_t                 gmx_simd_dint32_t
-#    define gmx_simd_load_i                  gmx_simd_load_di
-#    define gmx_simd_set1_i                  gmx_simd_set1_di
-#    define gmx_simd_store_i                 gmx_simd_store_di
-#    define gmx_simd_loadu_i                 gmx_simd_loadu_di
-#    define gmx_simd_storeu_i                gmx_simd_storeu_di
-#    define gmx_simd_setzero_i               gmx_simd_setzero_di
-#    define gmx_simd_cvt_r2i                 gmx_simd_cvt_d2i
-#    define gmx_simd_cvtt_r2i                gmx_simd_cvtt_d2i
-#    define gmx_simd_cvt_i2r                 gmx_simd_cvt_i2d
-#    define gmx_simd_extract_i               gmx_simd_extract_di
-#    define gmx_simd_slli_i                  gmx_simd_slli_di
-#    define gmx_simd_srli_i                  gmx_simd_srli_di
-#    define gmx_simd_and_i                   gmx_simd_and_di
-#    define gmx_simd_andnot_i                gmx_simd_andnot_di
-#    define gmx_simd_or_i                    gmx_simd_or_di
-#    define gmx_simd_xor_i                   gmx_simd_xor_di
-#    define gmx_simd_add_i                   gmx_simd_add_di
-#    define gmx_simd_sub_i                   gmx_simd_sub_di
-#    define gmx_simd_mul_i                   gmx_simd_mul_di
-/* Double booleans and selection */
-#    define gmx_simd_bool_t                  gmx_simd_dbool_t
-#    define gmx_simd_cmpeq_r                 gmx_simd_cmpeq_d
-#    define gmx_simd_cmplt_r                 gmx_simd_cmplt_d
-#    define gmx_simd_cmple_r                 gmx_simd_cmple_d
-#    define gmx_simd_and_b                   gmx_simd_and_db
-#    define gmx_simd_or_b                    gmx_simd_or_db
-#    define gmx_simd_anytrue_b               gmx_simd_anytrue_db
-#    define gmx_simd_blendzero_r             gmx_simd_blendzero_d
-#    define gmx_simd_blendnotzero_r          gmx_simd_blendnotzero_d
-#    define gmx_simd_blendv_r                gmx_simd_blendv_d
-#    define gmx_simd_reduce_r                gmx_simd_reduce_d
-#    define gmx_simd_ibool_t                 gmx_simd_dibool_t
-#    define gmx_simd_cmpeq_i                 gmx_simd_cmpeq_di
-#    define gmx_simd_cmplt_i                 gmx_simd_cmplt_di
-#    define gmx_simd_and_ib                  gmx_simd_and_dib
-#    define gmx_simd_or_ib                   gmx_simd_or_dib
-#    define gmx_simd_anytrue_ib              gmx_simd_anytrue_dib
-#    define gmx_simd_blendzero_i             gmx_simd_blendzero_di
-#    define gmx_simd_blendnotzero_i          gmx_simd_blendnotzero_di
-#    define gmx_simd_blendv_i                gmx_simd_blendv_di
-/* Conversions between integer and double floating-point booleans */
-#    define gmx_simd_cvt_b2ib                gmx_simd_cvt_db2dib
-#    define gmx_simd_cvt_ib2b                gmx_simd_cvt_dib2db
-
-/* SIMD4 double fp - we only support a subset of SIMD instructions for SIMD4 */
-#    define gmx_simd4_real_t                 gmx_simd4_double_t
-#    define gmx_simd4_load_r                 gmx_simd4_load_d
-#    define gmx_simd4_load1_r                gmx_simd4_load1_d
-#    define gmx_simd4_set1_r                 gmx_simd4_set1_d
-#    define gmx_simd4_store_r                gmx_simd4_store_d
-#    define gmx_simd4_loadu_r                gmx_simd4_loadu_d
-#    define gmx_simd4_storeu_r               gmx_simd4_storeu_d
-#    define gmx_simd4_setzero_r              gmx_simd4_setzero_d
-#    define gmx_simd4_add_r                  gmx_simd4_add_d
-#    define gmx_simd4_sub_r                  gmx_simd4_sub_d
-#    define gmx_simd4_mul_r                  gmx_simd4_mul_d
-#    define gmx_simd4_fmadd_r                gmx_simd4_fmadd_d
-#    define gmx_simd4_fmsub_r                gmx_simd4_fmsub_d
-#    define gmx_simd4_fnmadd_r               gmx_simd4_fnmadd_d
-#    define gmx_simd4_fnmsub_r               gmx_simd4_fnmsub_d
-#    define gmx_simd4_and_r                  gmx_simd4_and_d
-#    define gmx_simd4_andnot_r               gmx_simd4_andnot_d
-#    define gmx_simd4_or_r                   gmx_simd4_or_d
-#    define gmx_simd4_xor_r                  gmx_simd4_xor_d
-#    define gmx_simd4_rsqrt_r                gmx_simd4_rsqrt_d
-#    define gmx_simd4_fabs_r                 gmx_simd4_fabs_d
-#    define gmx_simd4_fneg_r                 gmx_simd4_fneg_d
-#    define gmx_simd4_max_r                  gmx_simd4_max_d
-#    define gmx_simd4_min_r                  gmx_simd4_min_d
-#    define gmx_simd4_round_r                gmx_simd4_round_d
-#    define gmx_simd4_trunc_r                gmx_simd4_trunc_d
-#    define gmx_simd4_dotproduct3_r          gmx_simd4_dotproduct3_d
-#    define gmx_simd4_bool_t                 gmx_simd4_dbool_t
-#    define gmx_simd4_cmpeq_r                gmx_simd4_cmpeq_d
-#    define gmx_simd4_cmplt_r                gmx_simd4_cmplt_d
-#    define gmx_simd4_cmple_r                gmx_simd4_cmple_d
-#    define gmx_simd4_and_b                  gmx_simd4_and_db
-#    define gmx_simd4_or_b                   gmx_simd4_or_db
-#    define gmx_simd4_anytrue_b              gmx_simd4_anytrue_db
-#    define gmx_simd4_blendzero_r            gmx_simd4_blendzero_d
-#    define gmx_simd4_blendnotzero_r         gmx_simd4_blendnotzero_d
-#    define gmx_simd4_blendv_r               gmx_simd4_blendv_d
-#    define gmx_simd4_reduce_r               gmx_simd4_reduce_d
-
-/* Memory allocation */
-#    define gmx_simd_align_r                 gmx_simd_align_d
-#    define gmx_simd_align_i                 gmx_simd_align_di
-#    define gmx_simd4_align_r                gmx_simd4_align_d
-
-#    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_DOUBLE
-#    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_DOUBLE_WIDTH
-#    define GMX_SIMD_HAVE_INT32              GMX_SIMD_HAVE_DINT32
-#    define GMX_SIMD_INT32_WIDTH             GMX_SIMD_DINT32_WIDTH
-#    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_DINT32_EXTRACT
-#    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_DINT32_LOGICAL
-#    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_DOUBLE
-
-#else /* GMX_DOUBLE */
+#if GMX_SIMD_HAVE_REAL
 
 /*! \name SIMD data types
  *
@@ -465,1111 +203,331 @@ gmx_simd4_align_d(double *p)
  *  normal usage this will likely not be what you are using.
  * \{
  */
+
 /*! \brief Real precision floating-point SIMD datatype.
  *
  * This type is only available if \ref GMX_SIMD_HAVE_REAL is 1.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref gmx_simd_double_t
- * internally, otherwise \ref gmx_simd_float_t.
- */
-#    define gmx_simd_real_t                  gmx_simd_float_t
-
-/*! \brief 32-bit integer SIMD type.
+ * \ref SimdDouble if GMX_DOUBLE is 1, otherwise \ref SimdFloat.
  *
- * This type is only available if \ref GMX_SIMD_HAVE_INT32 is 1.
- *
- * If GMX_DOUBLE is defined, this will be set to \ref gmx_simd_dint32_t
- * internally, otherwise \ref gmx_simd_fint32_t. This might seem a strange
- * implementation detail, but it is because some SIMD implementations use
- * different types/widths of integers registers when converting from
- * double vs. single precision floating point. As long as you just use
- * this type you will not have to worry about precision.
+ * \note This variable cannot be placed inside other structures or classes, since
+ *       some compilers (including at least clang-3.7) appear to lose the
+ *       alignment. This is likely particularly severe when allocating such
+ *       memory on the heap, but it occurs for stack structures too.
  */
-#    define gmx_simd_int32_t                 gmx_simd_fint32_t
+#    if GMX_DOUBLE
+typedef SimdDouble               SimdReal;
+#    else
+typedef SimdFloat                SimdReal;
+#    endif
 
-/*! \brief Boolean SIMD type for usage with \ref gmx_simd_real_t.
+
+/*! \brief Boolean SIMD type for usage with \ref SimdReal.
  *
  * This type is only available if \ref GMX_SIMD_HAVE_REAL is 1.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref gmx_simd_dbool_t
- * internally, otherwise \ref gmx_simd_fbool_t. This is necessary since some
+ * If GMX_DOUBLE is 1, this will be set to \ref SimdDBool
+ * internally, otherwise \ref SimdFBool. This is necessary since some
  * SIMD implementations use bitpatterns for marking truth, so single-
  * vs. double precision booleans are not necessarily exchangable.
  * As long as you just use this type you will not have to worry about precision.
  *
- * See \ref gmx_simd_ibool_t for an explanation of real vs. integer booleans.
+ * See \ref SimdIBool for an explanation of real vs. integer booleans.
+ *
+ * \note This variable cannot be placed inside other structures or classes, since
+ *       some compilers (including at least clang-3.7) appear to lose the
+ *       alignment. This is likely particularly severe when allocating such
+ *       memory on the heap, but it occurs for stack structures too.
  */
-#    define gmx_simd_bool_t                  gmx_simd_fbool_t
+#    if GMX_DOUBLE
+typedef SimdDBool                SimdBool;
+#    else
+typedef SimdFBool                SimdBool;
+#    endif
 
-/*! \brief Boolean SIMD type for usage with \ref gmx_simd_int32_t.
+
+/*! \brief 32-bit integer SIMD type.
  *
- * This type is only available if \ref GMX_SIMD_HAVE_INT32 is 1.
+ * If GMX_DOUBLE is 1, this will be set to \ref SimdDInt32
+ * internally, otherwise \ref SimdFInt32. This might seem a strange
+ * implementation detail, but it is because some SIMD implementations use
+ * different types/widths of integers registers when converting from
+ * double vs. single precision floating point. As long as you just use
+ * this type you will not have to worry about precision.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref gmx_simd_dibool_t
- * internally, otherwise \ref gmx_simd_fibool_t. This is necessary since some
+ * \note This variable cannot be placed inside other structures or classes, since
+ *       some compilers (including at least clang-3.7) appear to lose the
+ *       alignment. This is likely particularly severe when allocating such
+ *       memory on the heap, but it occurs for stack structures too.
+ */
+#    if GMX_DOUBLE
+typedef SimdDInt32               SimdInt32;
+#    else
+typedef SimdFInt32               SimdInt32;
+#    endif
+
+#if GMX_SIMD_HAVE_INT32_ARITHMETICS
+/*! \brief Boolean SIMD type for usage with \ref SimdInt32.
+ *
+ * This type is only available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
+ *
+ * If GMX_DOUBLE is 1, this will be set to \ref SimdDIBool
+ * internally, otherwise \ref SimdFIBool. This is necessary since some
  * SIMD implementations use bitpatterns for marking truth, so single-
  * vs. double precision booleans are not necessarily exchangable, and while
  * a double-precision boolean might be represented with a 64-bit mask, the
  * corresponding integer might only use a 32-bit mask.
  *
  * We provide conversion routines for these cases, so the only thing you need to
- * keep in mind is to use \ref gmx_simd_bool_t when working with
- * \ref gmx_simd_real_t while you pick \ref gmx_simd_ibool_t when working with
- * \ref gmx_simd_int32_t.
+ * keep in mind is to use \ref SimdBool when working with
+ * \ref SimdReal while you pick \ref SimdIBool when working with
+ * \ref SimdInt32 .
  *
- * To convert between them, use \ref gmx_simd_cvt_b2ib and \ref gmx_simd_cvt_ib2b.
+ * To convert between them, use \ref cvtB2IB and \ref cvtIB2B.
+ *
+ * \note This variable cannot be placed inside other structures or classes, since
+ *       some compilers (including at least clang-3.7) appear to lose the
+ *       alignment. This is likely particularly severe when allocating such
+ *       memory on the heap, but it occurs for stack structures too.
  */
-#    define gmx_simd_ibool_t                 gmx_simd_fibool_t
+#    if GMX_DOUBLE
+typedef SimdDIBool               SimdIBool;
+#    else
+typedef SimdFIBool               SimdIBool;
+#    endif
+#endif  // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 
-/*! \}
- *  \name SIMD load/store operations on gmx_simd_real_t
- *
- *  \note Unaligned load/stores are only available when
- *  \ref GMX_SIMD_HAVE_LOADU and \ref GMX_SIMD_HAVE_STOREU are set, respectively.
- *  \{
- */
-
-/*! \brief Load \ref GMX_SIMD_REAL_WIDTH values from aligned memory to \ref gmx_simd_real_t
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_load_d,
- * otherwise \ref gmx_simd_load_f.
- *
- * \copydetails gmx_simd_load_f
- */
-#    define gmx_simd_load_r                  gmx_simd_load_f
-
-/*! \brief Set all elements in \ref gmx_simd_real_t from single value in memory.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_load1_d,
- * otherwise \ref gmx_simd_load1_f.
- *
- * \copydetails gmx_simd_load1_f
- */
-#    define gmx_simd_load1_r                 gmx_simd_load1_f
-
-/*! \brief Set all elements in \ref gmx_simd_real_t from a scalar.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_set1_d,
- * otherwise \ref gmx_simd_set1_f.
- *
- * \copydetails gmx_simd_set1_f
- */
-#    define gmx_simd_set1_r                  gmx_simd_set1_f
-
-/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from \ref gmx_simd_real_t to aligned memory.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_store_d,
- * otherwise \ref gmx_simd_store_f.
- *
- * \copydetails gmx_simd_store_f
- */
-#    define gmx_simd_store_r                 gmx_simd_store_f
-
-/*! \brief Load \ref GMX_SIMD_REAL_WIDTH values from unaligned memory to \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_loadu_d,
- * otherwise \ref gmx_simd_loadu_f.
- *
- * \copydetails gmx_simd_loadu_f
- */
-#    define gmx_simd_loadu_r                 gmx_simd_loadu_f
-
-/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from \ref gmx_simd_real_t to unaligned memory.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_storeu_d,
- * otherwise \ref gmx_simd_storeu_f.
- *
- * \copydetails gmx_simd_storeu_f
- */
-#    define gmx_simd_storeu_r                gmx_simd_storeu_f
-
-/*! \brief Set all elements in \ref gmx_simd_real_t to 0.0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_setzero_d,
- * otherwise \ref gmx_simd_setzero_f.
- *
- * \copydetails gmx_simd_setzero_f
- */
-#    define gmx_simd_setzero_r               gmx_simd_setzero_f
-
-/*! \}
- *  \name SIMD load/store operations on gmx_simd_int32_t
- *
- *  \note Unaligned load/stores are only available when
- *  \ref GMX_SIMD_HAVE_LOADU and \ref GMX_SIMD_HAVE_STOREU are set, respectively.
- *  \{
- */
-
-/*! \brief Load \ref GMX_SIMD_INT32_WIDTH values from aligned memory to \ref gmx_simd_int32_t .
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_load_di ,
- * otherwise \ref gmx_simd_load_fi .
- *
- * \copydetails gmx_simd_load_fi
- */
-#    define gmx_simd_load_i                  gmx_simd_load_fi
-
-/*! \brief Set all elements in \ref gmx_simd_int32_t from a single integer.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_set1_di ,
- * otherwise \ref gmx_simd_set1_fi .
- *
- * \copydetails gmx_simd_set1_fi
- */
-#    define gmx_simd_set1_i                  gmx_simd_set1_fi
-
-/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from \ref gmx_simd_int32_t to aligned memory.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_store_di ,
- * otherwise \ref gmx_simd_store_fi .
- *
- * \copydetails gmx_simd_store_fi
- */
-#    define gmx_simd_store_i                 gmx_simd_store_fi
-
-/*! \brief Load \ref GMX_SIMD_REAL_WIDTH values from unaligned memory to \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_loadu_di ,
- * otherwise \ref gmx_simd_loadu_fi .
- *
- * \copydetails gmx_simd_loadu_fi
- */
-#    define gmx_simd_loadu_i                 gmx_simd_loadu_fi
-
-/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from \ref gmx_simd_int32_t to unaligned memory.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_storeu_di ,
- * otherwise \ref gmx_simd_storeu_fi .
- *
- * \copydetails gmx_simd_storeu_fi
- */
-#    define gmx_simd_storeu_i                gmx_simd_storeu_fi
-
-/*! \brief Extract single integer from \ref gmx_simd_int32_t element.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_extract_di ,
- * otherwise \ref gmx_simd_extract_fi .
- *
- * \copydetails gmx_simd_extract_fi
- */
-#    define gmx_simd_extract_i               gmx_simd_extract_fi
-
-/*! \brief Set all elements in \ref gmx_simd_int32_t to 0.
- *
- * If GMX_DOUBLE is defined, it will be aliased to \ref gmx_simd_setzero_di ,
- * otherwise \ref gmx_simd_setzero_fi .
- *
- * \copydetails gmx_simd_setzero_fi
- */
-#    define gmx_simd_setzero_i               gmx_simd_setzero_fi
-
-
-/*! \}
- *  \name SIMD floating-point logical operations on gmx_simd_real_t
- *
- *  These instructions are available if \ref GMX_SIMD_HAVE_LOGICAL is 1.
- *  \{
- */
-
-/*! \brief Bitwise \a and on two \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_and_d,
- * otherwise \ref gmx_simd_and_f.
- *
- * \copydetails gmx_simd_and_f
- */
-#    define gmx_simd_and_r                   gmx_simd_and_f
-
-/*! \brief Bitwise \a and-not on two \ref gmx_simd_real_t; 1st arg is complemented.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_andnot_d,
- * otherwise \ref gmx_simd_andnot_f.
- *
- * \copydetails gmx_simd_andnot_f
- */
-#    define gmx_simd_andnot_r                gmx_simd_andnot_f
-
-/*! \brief Bitwise \a or on two \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_or_d,
- * otherwise \ref gmx_simd_or_f.
- *
- * \copydetails gmx_simd_or_f
- */
-#    define gmx_simd_or_r                    gmx_simd_or_f
-
-/*! \brief Bitwise \a exclusive-or on two \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_xor_d,
- * otherwise \ref gmx_simd_xor_f.
- *
- * \copydetails gmx_simd_xor_f
- */
-#    define gmx_simd_xor_r                   gmx_simd_xor_f
-
-/*! \}
- *  \name SIMD floating-point arithmetic operations on gmx_simd_real_t
- *  \{
- */
-
-/*! \brief SIMD a+b for two \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_add_d,
- * otherwise \ref gmx_simd_add_f.
- *
- * \copydetails gmx_simd_add_f
- */
-#    define gmx_simd_add_r                   gmx_simd_add_f
-
-/*! \brief SIMD a-b for two \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_sub_d,
- * otherwise \ref gmx_simd_sub_f.
- *
- * \copydetails gmx_simd_sub_f
- */
-#    define gmx_simd_sub_r                   gmx_simd_sub_f
-
-/*! \brief SIMD a*b for two \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_mul_d,
- * otherwise \ref gmx_simd_mul_f.
- *
- * \copydetails gmx_simd_mul_f
- */
-#    define gmx_simd_mul_r                   gmx_simd_mul_f
-
-/*! \brief SIMD a*b+c for three \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fmadd_d,
- * otherwise \ref gmx_simd_fmadd_f.
- *
- * \copydetails gmx_simd_fmadd_f
- */
-#    define gmx_simd_fmadd_r                 gmx_simd_fmadd_f
-
-/*! \brief SIMD a*b-c for three \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fmsub_d,
- * otherwise \ref gmx_simd_fmsub_f.
- *
- * \copydetails gmx_simd_fmsub_f
- */
-#    define gmx_simd_fmsub_r                 gmx_simd_fmsub_f
-
-/*! \brief SIMD -a*b+c for three \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fnmadd_d,
- * otherwise \ref gmx_simd_fnmadd_f.
- *
- * \copydetails gmx_simd_fnmadd_f
- */
-#    define gmx_simd_fnmadd_r                gmx_simd_fnmadd_f
-
-/*! \brief SIMD -a*b-c for three \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fnmsub_d,
- * otherwise \ref gmx_simd_fnmsub_f.
- *
- * \copydetails gmx_simd_fnmsub_f
- */
-#    define gmx_simd_fnmsub_r                gmx_simd_fnmsub_f
-
-/*! \brief SIMD table lookup for 1/sqrt(x) approximation.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_rsqrt_d,
- * otherwise \ref gmx_simd_rsqrt_f.
- *
- * \copydetails gmx_simd_rsqrt_f
- */
-#    define gmx_simd_rsqrt_r                 gmx_simd_rsqrt_f
-
-/*! \brief SIMD table lookup for 1/x approximation.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_rcp_d,
- * otherwise \ref gmx_simd_rcp_f.
- *
- * \copydetails gmx_simd_rcp_f
- */
-#    define gmx_simd_rcp_r                   gmx_simd_rcp_f
-
-/*! \brief SIMD fabs(x) for \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fabs_d,
- * otherwise \ref gmx_simd_fabs_f.
- *
- * \copydetails gmx_simd_fabs_f
- */
-#    define gmx_simd_fabs_r                  gmx_simd_fabs_f
-
-/*! \brief SIMD -x for \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fneg_d,
- * otherwise \ref gmx_simd_fneg_f.
- *
- * \copydetails gmx_simd_fneg_f
- */
-#    define gmx_simd_fneg_r                  gmx_simd_fneg_f
-
-/*! \brief SIMD max(a,b) for each element in \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_max_d,
- * otherwise \ref gmx_simd_max_f.
- *
- * \copydetails gmx_simd_max_f
- */
-#    define gmx_simd_max_r                   gmx_simd_max_f
-
-/*! \brief SIMD min(a,b) for each element in \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_min_d,
- * otherwise \ref gmx_simd_min_f.
- *
- * \copydetails gmx_simd_min_f
- */
-#    define gmx_simd_min_r                   gmx_simd_min_f
-
-/*! \brief Round \ref gmx_simd_real_t to nearest int, return \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_round_d,
- * otherwise \ref gmx_simd_round_f.
- *
- * \copydetails gmx_simd_round_f
- */
-#    define gmx_simd_round_r                 gmx_simd_round_f
-
-/*! \brief Truncate \ref gmx_simd_real_t towards 0, return \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_trunc_d,
- * otherwise \ref gmx_simd_trunc_f.
- *
- * \copydetails gmx_simd_trunc_f
- */
-#    define gmx_simd_trunc_r                 gmx_simd_trunc_f
-
-/*! \brief SIMD Fraction, i.e. x-trunc(x) for \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_fraction_d,
- * otherwise \ref gmx_simd_fraction_f.
- *
- * \copydetails gmx_simd_fraction_f
- */
-#    define gmx_simd_fraction_r              gmx_simd_fraction_f
-
-/*! \brief Return the FP exponent of a SIMD \ref gmx_simd_real_t as a \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_get_exponent_d,
- * otherwise \ref gmx_simd_get_exponent_f.
- *
- * \copydetails gmx_simd_get_exponent_f
- */
-#    define gmx_simd_get_exponent_r          gmx_simd_get_exponent_f
-
-/*! \brief Return the FP mantissa of a SIMD \ref gmx_simd_real_t as a \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_get_mantissa_d,
- * otherwise \ref gmx_simd_get_mantissa_f.
- *
- * \copydetails gmx_simd_get_mantissa_f
- */
-#    define gmx_simd_get_mantissa_r          gmx_simd_get_mantissa_f
-
-/*! \brief Set the exponent of a SIMD \ref gmx_simd_real_t from a \ref gmx_simd_real_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_set_exponent_d,
- * otherwise \ref gmx_simd_set_exponent_f.
- *
- * \copydetails gmx_simd_set_exponent_f
- */
-#    define gmx_simd_set_exponent_r          gmx_simd_set_exponent_f
-
-/*! \}
- *  \name SIMD comparison, boolean, and select operations for gmx_simd_real_t
- *  \{
- */
-
-/*! \brief SIMD a==b for \ref gmx_simd_real_t. Returns a \ref gmx_simd_bool_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cmpeq_d,
- * otherwise \ref gmx_simd_cmpeq_f.
- *
- * \copydetails gmx_simd_cmpeq_f
- */
-#    define gmx_simd_cmpeq_r                 gmx_simd_cmpeq_f
-
-/*! \brief SIMD a<b for \ref gmx_simd_real_t. Returns a \ref gmx_simd_bool_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cmplt_d,
- * otherwise \ref gmx_simd_cmplt_f.
- *
- * \copydetails gmx_simd_cmplt_f
- */
-#    define gmx_simd_cmplt_r                 gmx_simd_cmplt_f
-
-/*! \brief SIMD a<=b for \ref gmx_simd_real_t. Returns a \ref gmx_simd_bool_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cmple_d,
- * otherwise \ref gmx_simd_cmple_f.
- *
- * \copydetails gmx_simd_cmple_f
- */
-#    define gmx_simd_cmple_r                 gmx_simd_cmple_f
-
-/*! \brief For each element, the result boolean is true if both arguments are true
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_and_db,
- * otherwise \ref gmx_simd_and_fb.
- *
- * \copydetails gmx_simd_and_fb
- */
-#    define gmx_simd_and_b                   gmx_simd_and_fb
-
-/*! \brief For each element, the result boolean is true if either argument is true
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_or_db,
- * otherwise \ref gmx_simd_or_fb.
- *
- * \copydetails gmx_simd_or_fb
- */
-#    define gmx_simd_or_b                    gmx_simd_or_fb
-
-/*! \brief Return nonzero if any element in gmx_simd_bool_t is true, otherwise 0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_anytrue_db,
- * otherwise \ref gmx_simd_anytrue_fb.
- *
- * \copydetails gmx_simd_anytrue_fb
- */
-#    define gmx_simd_anytrue_b               gmx_simd_anytrue_fb
-
-/*! \brief Selects elements from \ref gmx_simd_real_t where boolean is true, otherwise 0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_blendzero_d,
- * otherwise \ref gmx_simd_blendzero_f.
- *
- * \copydetails gmx_simd_blendzero_f
- *
- * \sa gmx_simd_blendzero_i
- */
-#    define gmx_simd_blendzero_r             gmx_simd_blendzero_f
-
-/*! \brief Selects elements from \ref gmx_simd_real_t where boolean is false, otherwise 0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_blendnotzero_d,
- * otherwise \ref gmx_simd_blendnotzero_f.
- *
- * \copydetails gmx_simd_blendnotzero_f
- */
-#    define gmx_simd_blendnotzero_r          gmx_simd_blendnotzero_f
-
-/*! \brief Selects from 2nd real SIMD arg where boolean is true, otherwise 1st arg.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_blendv_d,
- * otherwise \ref gmx_simd_blendv_f.
- *
- * \copydetails gmx_simd_blendv_f
- */
-#    define gmx_simd_blendv_r                gmx_simd_blendv_f
-
-/*! \brief Return sum of all elements in SIMD floating-point variable.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_reduce_d,
- * otherwise \ref gmx_simd_reduce_f.
- *
- * \copydetails gmx_simd_reduce_f
- */
-#    define gmx_simd_reduce_r                gmx_simd_reduce_f
-
-/*! \}
- *  \name SIMD integer logical operations on gmx_simd_int32_t
- *
- *  These instructions are available if \ref GMX_SIMD_HAVE_INT32_LOGICAL is 1.
- *  \{
- */
-
-/*! \brief Shift each element in \ref gmx_simd_int32_t left by immediate
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_slli_di,
- * otherwise \ref gmx_simd_slli_fi.
- *
- * \copydetails gmx_simd_slli_fi
- */
-#    define gmx_simd_slli_i                  gmx_simd_slli_fi
-
-/*! \brief Shift each element in \ref gmx_simd_int32_t right by immediate
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_srli_di,
- * otherwise \ref gmx_simd_srli_fi.
- *
- * \copydetails gmx_simd_srli_fi
- */
-#    define gmx_simd_srli_i                  gmx_simd_srli_fi
-
-/*! \brief Bitwise \a and on two \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_and_di,
- * otherwise \ref gmx_simd_and_fi.
- *
- * \copydetails gmx_simd_and_fi
- */
-#    define gmx_simd_and_i                   gmx_simd_and_fi
-
-/*! \brief Bitwise \a and-not on two \ref gmx_simd_int32_t; 1st arg is complemented.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_andnot_di,
- * otherwise \ref gmx_simd_andnot_fi.
- *
- * \copydetails gmx_simd_andnot_fi
- */
-#    define gmx_simd_andnot_i                gmx_simd_andnot_fi
-
-/*! \brief Bitwise \a or on two \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_or_di,
- * otherwise \ref gmx_simd_or_fi.
- *
- * \copydetails gmx_simd_or_fi
- */
-#    define gmx_simd_or_i                    gmx_simd_or_fi
-
-/*! \brief Bitwise \a xor on two \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_xor_di,
- * otherwise \ref gmx_simd_xor_fi.
- *
- * \copydetails gmx_simd_xor_fi
- */
-#    define gmx_simd_xor_i                   gmx_simd_xor_fi
-
-/*! \}
- *  \name SIMD integer arithmetic operations on gmx_simd_int32_t
- *
- *  These instructions are available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
- *  \{
- */
-
-/*! \brief SIMD a+b for two \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_add_di,
- * otherwise \ref gmx_simd_add_fi.
- *
- * \copydetails gmx_simd_add_fi
- */
-#    define gmx_simd_add_i                   gmx_simd_add_fi
-
-/*! \brief SIMD a-b for two \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_sub_di,
- * otherwise \ref gmx_simd_sub_fi.
- *
- * \copydetails gmx_simd_sub_fi
- */
-#    define gmx_simd_sub_i                   gmx_simd_sub_fi
-
-/*! \brief SIMD a*b for two \ref gmx_simd_int32_t.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_mul_di,
- * otherwise \ref gmx_simd_mul_fi.
- *
- * \copydetails gmx_simd_mul_fi
- */
-#    define gmx_simd_mul_i                   gmx_simd_mul_fi
-
-/*! \}
- *  \name SIMD integer comparison, booleans, and selection on gmx_simd_int32_t
- *
- *  These instructions are available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
- *  \{
- */
-
-/*! \brief Returns boolean describing whether a==b, for \ref gmx_simd_int32_t
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cmpeq_di,
- * otherwise \ref gmx_simd_cmpeq_fi.
- *
- * \copydetails gmx_simd_cmpeq_fi
- */
-#    define gmx_simd_cmpeq_i                 gmx_simd_cmpeq_fi
-
-/*! \brief Returns boolean describing whether a<b, for \ref gmx_simd_int32_t
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cmplt_di,
- * otherwise \ref gmx_simd_cmplt_fi.
- *
- * \copydetails gmx_simd_cmplt_fi
- */
-#    define gmx_simd_cmplt_i                 gmx_simd_cmplt_fi
-
-/*! \brief For each element, the result boolean is true if both arguments are true
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_and_dib,
- * otherwise \ref gmx_simd_and_fib.
- *
- * \copydetails gmx_simd_and_fib
- */
-#    define gmx_simd_and_ib                  gmx_simd_and_fib
-
-/*! \brief For each element, the result boolean is true if either argument is true.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_or_dib,
- * otherwise \ref gmx_simd_or_fib.
- *
- * \copydetails gmx_simd_or_fib
- */
-#    define gmx_simd_or_ib                   gmx_simd_or_fib
-
-/*! \brief Return nonzero if any element in gmx_simd_ibool_t is true, otherwise 0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_anytrue_dib,
- * otherwise \ref gmx_simd_anytrue_fib.
- *
- * \copydetails gmx_simd_anytrue_fib
- */
-#    define gmx_simd_anytrue_ib              gmx_simd_anytrue_fib
-
-/*! \brief Selects elements from \ref gmx_simd_int32_t where boolean is true, otherwise 0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_blendzero_di,
- * otherwise \ref gmx_simd_blendzero_fi.
- *
- * \copydetails gmx_simd_blendzero_fi
- */
-#    define gmx_simd_blendzero_i             gmx_simd_blendzero_fi
-
-/*! \brief Selects elements from \ref gmx_simd_int32_t where boolean is false, otherwise 0.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_blendnotzero_di,
- * otherwise \ref gmx_simd_blendnotzero_fi.
- *
- * \copydetails gmx_simd_blendnotzero_fi
- */
-#    define gmx_simd_blendnotzero_i          gmx_simd_blendnotzero_fi
-
-/*! \brief Selects from 2nd int SIMD arg where boolean is true, otherwise 1st arg.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_blendv_di,
- * otherwise \ref gmx_simd_blendv_fi.
- *
- * \copydetails gmx_simd_blendv_fi
- */
-#    define gmx_simd_blendv_i                gmx_simd_blendv_fi
-
-/*! \}
- *  \name SIMD conversion operations
- *
- *  These instructions are available when both types involved in the conversion
- *  are defined, e.g. if \ref GMX_SIMD_HAVE_REAL and \ref GMX_SIMD_HAVE_INT32
- *  are 1 for real-to-integer conversion.
- *  \{
- */
-
-/*! \brief Convert gmx_simd_real_t to gmx_simd_int32_t, round to nearest integer.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cvt_d2i,
- * otherwise \ref gmx_simd_cvt_f2i.
- *
- * \copydetails gmx_simd_cvt_f2i
- */
-#    define gmx_simd_cvt_r2i                 gmx_simd_cvt_f2i
-
-/*! \brief Convert gmx_simd_real_t to gmx_simd_int32_t, truncate towards zero
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cvtt_d2i,
- * otherwise \ref gmx_simd_cvtt_f2i.
- *
- * \copydetails gmx_simd_cvtt_f2i
- */
-#    define gmx_simd_cvtt_r2i                gmx_simd_cvtt_f2i
-
-/*! \brief Convert gmx_simd_int32_t to gmx_simd_real_t
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cvt_i2d,
- * otherwise \ref gmx_simd_cvt_i2f.
- *
- * \copydetails gmx_simd_cvt_i2f
- */
-#    define gmx_simd_cvt_i2r                 gmx_simd_cvt_i2f
-
-/*! \brief Convert from gmx_simd_bool_t to gmx_simd_ibool_t
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cvt_db2dib,
- * otherwise \ref gmx_simd_cvt_fb2fib.
- *
- * \copydetails gmx_simd_cvt_fb2fib
- */
-#    define gmx_simd_cvt_b2ib                gmx_simd_cvt_fb2fib
-
-/*! \brief Convert from gmx_simd_ibool_t to gmx_simd_bool_t
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_cvt_dib2db,
- * otherwise \ref gmx_simd_cvt_fib2fb.
- *
- * \copydetails gmx_simd_cvt_fib2fb
- */
-#    define gmx_simd_cvt_ib2b                gmx_simd_cvt_fib2fb
-
-
-/*! \}
- *  \name SIMD memory alignment operations
- *  \{
- */
-
-/*! \brief Align real memory for SIMD usage.
- *
- * This routine will only align memory if \ref GMX_SIMD_HAVE_REAL is 1.
- * Otherwise the original pointer will be returned.
- *
- * Start by allocating an extra \ref GMX_SIMD_REAL_WIDTH float elements of memory,
- * and then call this function. The returned pointer will be greater or equal
- * to the one you provided, and point to an address inside your provided memory
- * that is aligned to the SIMD width.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_align_d,
- * otherwise \ref gmx_simd_align_f. For detailed documentation, see the
- * precision-specific implementation routines.
- */
-#    define gmx_simd_align_r                 gmx_simd_align_f
-
-/*! \brief Align integer memory for SIMD usage.
- *
- * This routine will only align memory if \ref GMX_SIMD_HAVE_INT32 is 1.
- * Otherwise the original pointer will be returned.
- *
- * Start by allocating an extra \ref GMX_SIMD_INT32_WIDTH elements of memory,
- * and then call this function. The returned pointer will be greater or equal
- * to the one you provided, and point to an address inside your provided memory
- * that is aligned to the SIMD width.
- *
- * If GMX_DOUBLE is defined, this will be aliased to \ref gmx_simd_align_di,
- * otherwise \ref gmx_simd_align_fi. For detailed documentation, see the
- * precision-specific implementation routines.
- */
-#    define gmx_simd_align_i                 gmx_simd_align_fi
-
-/*! \} */
-
-/*! \name SIMD4 - constant width-four SIMD datatypes
- *
- * These operations are only meant to be used for a few coordinate
- * manipulation and grid interpolation routines, so we only support a subset
- * of operations for SIMD4. To avoid repeating all the documentation from
- * the generic width SIMD routines, we only provide brief documentation for
- * these operations. Follow the link to the implementation documentation or the
- * reference to the corresponding generic SIMD routine. The format will be
- * exactly the same, but they have SIMD replaced with SIMD4.
- *  \{
- */
-
-/*! \brief SIMD real datatype guaranteed to be 4 elements wide, if available.
- *
- * All the SIMD4 datatypes and operations behave like their counterparts for
- * the generic SIMD implementation, but they might be implemented with different
- * registers, or not supported at all. It is important that you check the
- * define \ref GMX_SIMD4_HAVE_REAL before using it.
- *
- * Just as the normal SIMD operations, all SIMD4 types and routines will
- * be aliased to either single or double precision ones based on whether
- * GMX_DOUBLE is defined.
- *
- * \note There is no support for integer or math operations in SIMD4.
- */
-#    define gmx_simd4_real_t                 gmx_simd4_float_t
-
-/*! \brief Boolean for \ref gmx_simd4_real_t comparision/selection */
-#    define gmx_simd4_bool_t                 gmx_simd4_fbool_t
-
-/*! \brief Load aligned data to gmx_simd4_real_t.
- *
- * \copydetails gmx_simd4_load_f
- */
-#    define gmx_simd4_load_r                 gmx_simd4_load_f
-
-/*! \brief Load single element to gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_load1_f
- */
-#    define gmx_simd4_load1_r                gmx_simd4_load1_f
-
-/*! \brief Set gmx_simd4_real_t from scalar value
- *
- * \copydetails gmx_simd4_set1_f
- */
-#    define gmx_simd4_set1_r                 gmx_simd4_set1_f
-
-/*! \brief store aligned data from gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_store_f
- */
-#    define gmx_simd4_store_r                gmx_simd4_store_f
-
-/*! \brief Load unaligned data to gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_loadu_f
- */
-#    define gmx_simd4_loadu_r                gmx_simd4_loadu_f
-
-/*! \brief Store unaligned data from gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_storeu_f
- */
-#    define gmx_simd4_storeu_r               gmx_simd4_storeu_f
-
-/*! \brief Set all elements in gmx_simd4_real_t to 0.0
- *
- * \copydetails gmx_simd4_setzero_f
- */
-#    define gmx_simd4_setzero_r              gmx_simd4_setzero_f
-
-/*! \brief Bitwise and for two gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_and_f
- */
-#    define gmx_simd4_and_r                  gmx_simd4_and_f
-
-/*! \brief Bitwise and-not for two gmx_simd4_real_t. 1st arg is complemented.
- *
- * \copydetails gmx_simd4_andnot_f
- */
-#    define gmx_simd4_andnot_r               gmx_simd4_andnot_f
-
-/*! \brief Bitwise or for two gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_or_f
- */
-#    define gmx_simd4_or_r                   gmx_simd4_or_f
-
-/*! \brief Bitwise xor for two gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_xor_f
- */
-#    define gmx_simd4_xor_r                  gmx_simd4_xor_f
-
-/*! \brief a+b for \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_add_f
- */
-#    define gmx_simd4_add_r                  gmx_simd4_add_f
-
-/*! \brief a-b for \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_sub_f
- */
-#    define gmx_simd4_sub_r                  gmx_simd4_sub_f
-
-/*! \brief a*b for \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_mul_f
- */
-#    define gmx_simd4_mul_r                  gmx_simd4_mul_f
-
-/*! \brief a*b+c for \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_fmadd_f
- */
-#    define gmx_simd4_fmadd_r                gmx_simd4_fmadd_f
+#if GMX_DOUBLE
+const int c_simdBestPairAlignment = c_simdBestPairAlignmentDouble;
+#else
+const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
+#endif
 
-/*! \brief a*b-c for \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_fmsub_f
- */
-#    define gmx_simd4_fmsub_r                gmx_simd4_fmsub_f
+#endif  // GMX_SIMD_HAVE_REAL
 
-/*! \brief -a*b+c for \ref gmx_simd4_real_t
+#if GMX_SIMD4_HAVE_REAL
+/*! \brief Real precision floating-point SIMD4 datatype.
  *
- * \copydetails gmx_simd4_fnmadd_f
- */
-#    define gmx_simd4_fnmadd_r               gmx_simd4_fnmadd_f
-
-/*! \brief -a*b-c for \ref gmx_simd4_real_t
+ * This type is only available if \ref GMX_SIMD4_HAVE_REAL is 1.
  *
- * \copydetails gmx_simd4_fnmsub_f
- */
-#    define gmx_simd4_fnmsub_r               gmx_simd4_fnmsub_f
-
-/*! \brief 1/sqrt(x) approximate lookup for \ref gmx_simd4_real_t
+ * \ref Simd4Double if GMX_DOUBLE is 1, otherwise \ref Simd4Float.
  *
- * \copydetails gmx_simd4_rsqrt_f
+ * \note This variable cannot be placed inside other structures or classes, since
+ *       some compilers (including at least clang-3.7) appear to lose the
+ *       alignment. This is likely particularly severe when allocating such
+ *       memory on the heap, but it occurs for stack structures too.
  */
-#    define gmx_simd4_rsqrt_r                gmx_simd4_rsqrt_f
+#    if GMX_DOUBLE
+typedef Simd4Double               Simd4Real;
+#    else
+typedef Simd4Float                Simd4Real;
+#    endif
 
-/*! \brief fabs(x) for \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_fabs_f
- */
-#    define gmx_simd4_fabs_r                 gmx_simd4_fabs_f
 
-/*! \brief Change sign (-x) for \ref gmx_simd4_real_t
+/*! \brief Boolean SIMD4 type for usage with \ref SimdReal.
  *
- * \copydetails gmx_simd4_fneg_f
- */
-#    define gmx_simd4_fneg_r                 gmx_simd4_fneg_f
-
-/*! \brief Select maximum of each pair of elements from args for \ref gmx_simd4_real_t
+ * This type is only available if \ref GMX_SIMD4_HAVE_REAL is 1.
  *
- * \copydetails gmx_simd4_max_f
- */
-#    define gmx_simd4_max_r                  gmx_simd4_max_f
-
-/*! \brief Select minimum of each pair of elements from args for \ref gmx_simd4_real_t
+ * If GMX_DOUBLE is 1, this will be set to \ref Simd4DBool
+ * internally, otherwise \ref Simd4FBool. This is necessary since some
+ * SIMD implementations use bitpatterns for marking truth, so single-
+ * vs. double precision booleans are not necessarily exchangable.
+ * As long as you just use this type you will not have to worry about precision.
  *
- * \copydetails gmx_simd4_min_f
+ * \note This variable cannot be placed inside other structures or classes, since
+ *       some compilers (including at least clang-3.7) appear to lose the
+ *       alignment. This is likely particularly severe when allocating such
+ *       memory on the heap, but it occurs for stack structures too.
  */
-#    define gmx_simd4_min_r                  gmx_simd4_min_f
+#    if GMX_DOUBLE
+typedef Simd4DBool                Simd4Bool;
+#    else
+typedef Simd4FBool                Simd4Bool;
+#    endif
+#endif // GMX_SIMD4_HAVE_REAL
 
-/*! \brief Round \ref gmx_simd4_real_t to nearest integer, return \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_round_f
- */
-#    define gmx_simd4_round_r                gmx_simd4_round_f
+//! \}  end of name-group describing SIMD data types
 
-/*! \brief Truncate \ref gmx_simd4_real_t towards zero, return \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_trunc_f
+/*! \name High-level SIMD proxy objects to disambiguate load/set operations
+ * \{
  */
-#    define gmx_simd4_trunc_r                gmx_simd4_trunc_f
 
-/*! \brief Scalar product of first three elements of two \ref gmx_simd4_real_t *
- *
- * \copydetails gmx_simd4_dotproduct3_f
- */
-#    define gmx_simd4_dotproduct3_r          gmx_simd4_dotproduct3_f
+#if GMX_SIMD_HAVE_REAL
+class SimdLoadIProxyInternal;
 
-/*! \brief Return booleans whether a==b for each element two \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_cmpeq_f
- */
-#    define gmx_simd4_cmpeq_r                gmx_simd4_cmpeq_f
-/*! \brief Return booleans whether a<b for each element two \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_cmplt_f
- */
-#    define gmx_simd4_cmplt_r                gmx_simd4_cmplt_f
-/*! \brief Return booleans whether a<=b for each element two \ref gmx_simd4_real_t
- *
- * \copydetails gmx_simd4_cmple_f
- */
-#    define gmx_simd4_cmple_r                gmx_simd4_cmple_f
+static inline const SimdLoadIProxyInternal gmx_simdcall
+load(const std::int32_t *m);
 
-/*! \brief Logical and for two \ref gmx_simd4_bool_t
- *
- * \copydetails gmx_simd4_and_fb
- */
-#    define gmx_simd4_and_b                  gmx_simd4_and_fb
-/*! \brief Logical or for two \ref gmx_simd4_bool_t
+/*! \libinternal \brief Proxy object to enable load() for SimdFInt32 & SImdDInt32
  *
- * \copydetails gmx_simd4_or_fb
- */
-#    define gmx_simd4_or_b                   gmx_simd4_or_fb
-
-/*! \brief Return nonzero if any element in \ref gmx_simd4_bool_t is true, otherwise 0
+ * This object is returned by the load() function that takes a single pointer
+ * to an integer. When the result is assigned to either SimdFInt32 or SimdDInt32
+ * the appropriate conversion method will be executed, which in turn calls
+ * the correct low-level load function.
+ * In pratice this simply means you can use load() regardless of the type.
  *
- * \copydetails gmx_simd4_anytrue_fb
+ * This is an internal class you should never touch or create objects of. The
+ * only reason the constructor isn't private is that the load() function must
+ * be static to enable aggressive inlining.
  */
-#    define gmx_simd4_anytrue_b              gmx_simd4_anytrue_fb
+class SimdLoadIProxyInternal
+{
+    public:
+#if GMX_SIMD_HAVE_FLOAT
+        //! \brief Conversion method that will execute load of SimdFInt32
+        operator SimdFInt32() const { return loadFI(m_); };
+#endif
+#if GMX_SIMD_HAVE_DOUBLE
+        //! \brief Conversion method that will execute load of SimdDInt32
+        operator SimdDInt32() const { return loadDI(m_); };
+#endif
+    private:
+        //! \brief Private constructor can only be called from load()
+        SimdLoadIProxyInternal(const std::int32_t *m) : m_(m) {}
+
+        friend const SimdLoadIProxyInternal gmx_simdcall
+        load(const std::int32_t *m);
+
+        const std::int32_t * const m_; //!< The pointer used to load memory
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadIProxyInternal);
+};
+
+/*! \brief Integer load function that returns proxy object for SimdFInt32 & SImdDInt32
+ *
+ * \param m Pointer to load memory
+ * \return Proxy object that will call the actual load for either SimdFInt32
+ *         or SimdDInt32 when you assign it and the conversion method is called.
+ */
+static inline const SimdLoadIProxyInternal gmx_simdcall
+load(const std::int32_t *m)
+{
+    return {
+               m
+    };
+}
+
+#if GMX_SIMD_HAVE_LOADU
+
+class SimdLoadUIProxyInternal;
+
+static inline const SimdLoadUIProxyInternal gmx_simdcall
+loadU(const std::int32_t *m);
+
+/*! \libinternal \brief Proxy object to enable loadU() for SimdFInt32 & SImdDInt32
+ *
+ * \copydetails SimdLoadIProxyInternal
+ */
+class SimdLoadUIProxyInternal
+{
+    public:
+#if GMX_SIMD_HAVE_FLOAT
+        //!\brief Conversion method that will execute unaligned load of SimdFInt32
+        operator SimdFInt32() const { return loadUFI(m_); };
+#endif
+#if GMX_SIMD_HAVE_DOUBLE
+        //!\brief Conversion method that will execute unaligned load of SimdDInt32
+        operator SimdDInt32() const { return loadUDI(m_); };
+#endif
+    private:
+        //! \brief Private constructor can only be called from loadU()
+        SimdLoadUIProxyInternal(const std::int32_t *m) : m_(m) {}
 
-/*! \brief Selects from 2nd real SIMD4 arg where boolean is true, otherwise 1st arg
- *
- * \copydetails gmx_simd4_blendzero_f
- */
-#    define gmx_simd4_blendzero_r            gmx_simd4_blendzero_f
+        friend const SimdLoadUIProxyInternal gmx_simdcall
+        loadU(const std::int32_t *m);
 
-/*! \brief Selects from 2nd real SIMD4 arg where boolean is false, otherwise 1st arg
- *
- * \copydetails gmx_simd4_blendnotzero_f
- */
-#    define gmx_simd4_blendnotzero_r            gmx_simd4_blendnotzero_f
+        const std::int32_t * const m_; //!< The pointer used to load memory
 
-/*! \brief Selects from 2nd real SIMD4 arg where boolean is true, otherwise 1st arg
- *
- * \copydetails gmx_simd4_blendv_f
- */
-#    define gmx_simd4_blendv_r               gmx_simd4_blendv_f
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUIProxyInternal);
+};
 
-/*! \brief Return sum of all elements in SIMD4 floating-point variable.
+/*! \brief Integer loadU function that returns proxy object for SimdFInt32 & SImdDInt32
  *
- * \copydetails gmx_simd4_reduce_f
+ * \param m Pointer to load memory
+ * \return Proxy object that will call the actual load for either SimdFInt32
+ *         or SimdDInt32 when you assign it and the conversion method is called.
  */
-#    define gmx_simd4_reduce_r               gmx_simd4_reduce_f
+static inline const SimdLoadUIProxyInternal gmx_simdcall
+loadU(const std::int32_t *m)
+{
+    return {
+               m
+    };
+}
 
-/*! \brief Align real memory for SIMD4 usage.
- *
- * \copydetails gmx_simd4_align_f
- */
-#    define gmx_simd4_align_r                gmx_simd4_align_f
+#endif  // GMX_SIMD_HAVE_LOADU
 
-/*! \} */
 
-/*! \name SIMD predefined macros to describe high-level capabilities
- *  \{
- */
+class SimdSetZeroProxyInternal;
 
-/*! \brief 1 if gmx_simd_real_t is available, otherwise 0.
- *
- *  if GMX_DOUBLE is defined, this will be aliased to
- *  \ref GMX_SIMD_HAVE_DOUBLE, otherwise GMX_SIMD_HAVE_FLOAT.
- */
-#    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_FLOAT
+static inline const SimdSetZeroProxyInternal gmx_simdcall
+setZero();
 
-/*! \brief Width of gmx_simd_real_t.
+/*! \libinternal \brief Proxy object to enable setZero() for all SIMD types.
  *
- *  if GMX_DOUBLE is defined, this will be aliased to
- *  \ref GMX_SIMD_DOUBLE_WIDTH, otherwise GMX_SIMD_FLOAT_WIDTH.
+ * This object is returned by setZero(), and depending on what type you assign
+ * the result to the conversion method will call the right low-level function.
  */
-#    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_FLOAT_WIDTH
+class SimdSetZeroProxyInternal
+{
+    public:
+#if GMX_SIMD_HAVE_FLOAT
+        //!\brief Conversion method that will execute setZero() for SimdFloat
+        operator SimdFloat() const { return setZeroF(); };
+        //!\brief Conversion method that will execute setZero() for SimdFInt32
+        operator SimdFInt32() const { return setZeroFI(); };
+#endif
+#if GMX_SIMD4_HAVE_FLOAT
+        //!\brief Conversion method that will execute setZero() for Simd4Float
+        operator Simd4Float() const { return simd4SetZeroF(); };
+#endif
+#if GMX_SIMD_HAVE_DOUBLE
+        //!\brief Conversion method that will execute setZero() for SimdDouble
+        operator SimdDouble() const { return setZeroD(); };
+        //!\brief Conversion method that will execute setZero() for SimdDInt32
+        operator SimdDInt32() const { return setZeroDI(); };
+#endif
+#if GMX_SIMD4_HAVE_DOUBLE
+        //!\brief Conversion method that will execute setZero() for Simd4Double
+        operator Simd4Double() const { return simd4SetZeroD(); };
+#endif
 
-/*! \brief 1 if gmx_simd_int32_t is available, otherwise 0.
- *
- *  if GMX_DOUBLE is defined, this will be aliased to
- *  \ref GMX_SIMD_HAVE_DINT32, otherwise GMX_SIMD_HAVE_FINT32.
- */
-#    define GMX_SIMD_HAVE_INT32              GMX_SIMD_HAVE_FINT32
+    private:
+        //! \brief Private constructor can only be called from setZero()
+        SimdSetZeroProxyInternal() {}
 
-/*! \brief Width of gmx_simd_int32_t.
- *
- *  if GMX_DOUBLE is defined, this will be aliased to
- *  \ref GMX_SIMD_DINT32_WIDTH, otherwise GMX_SIMD_FINT32_WIDTH.
- */
-#    define GMX_SIMD_INT32_WIDTH             GMX_SIMD_FINT32_WIDTH
+        friend const SimdSetZeroProxyInternal gmx_simdcall
+        setZero();
 
-/*! \brief 1 if gmx_simd_extract_i() is available, otherwise 0.
- *
- *  if GMX_DOUBLE is defined, this will correspond to
- *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT, otherwise GMX_SIMD_HAVE_FINT32_EXTRACT.
- */
-#    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_FINT32_EXTRACT
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdSetZeroProxyInternal);
+};
 
-/*! \brief 1 if logical ops are supported on gmx_simd_int32_t, otherwise 0.
+/*! \brief Proxy object to set any SIMD variable to zero
  *
- *  if GMX_DOUBLE is defined, this will correspond to
- *  \ref GMX_SIMD_HAVE_DINT32_LOGICAL, otherwise GMX_SIMD_HAVE_FINT32_LOGICAL.
+ * \return Proxy object that will call the actual function to set a SIMD
+ *         variable to zero based on the conversion function called when you
+ *         assign the result.
  */
-#    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_FINT32_LOGICAL
+static inline const SimdSetZeroProxyInternal gmx_simdcall
+setZero()
+{
+    return {};
+}
+//! \}  end of name-group proxy objects
 
-/*! \brief 1 if arithmetic ops are supported on gmx_simd_int32_t, otherwise 0.
- *
- *  if GMX_DOUBLE is defined, this will be aliased to
- *  \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS, otherwise GMX_SIMD_HAVE_FINT32_ARITHMETICS.
- */
-#    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_FINT32_ARITHMETICS
 
-/*! \brief 1 if gmx_simd4_real_t is available, otherwise 0.
- *
- *  if GMX_DOUBLE is defined, this will be aliased to
- *  \ref GMX_SIMD4_HAVE_DOUBLE, otherwise GMX_SIMD4_HAVE_FLOAT.
- */
-#    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_FLOAT
+#endif // GMX_SIMD_HAVE_REAL
 
+}      // namespace gmx
 
-/*! \} */
+// \}          end of module_simd
 
-#endif /* GMX_DOUBLE */
+//! \endcond   end of condition libapi
 
-/*! \} */
-/*! \endcond */
 
 #if 0
-/* Finally, a hack to cover a possible corner case of using an
+/* This is a hack to cover the corner case of using an
    explicit GMX_SIMD_HAVE_FLOAT or GMX_SIMD_HAVE_DOUBLE, rather than
    GMX_SIMD_HAVE_REAL.
 
@@ -1589,6 +547,6 @@ gmx_simd4_align_d(double *p)
 #    define GMX_SIMD_HAVE_FLOAT         1
 #    define GMX_SIMD_HAVE_DOUBLE        1
 
-#endif /* 0 */
+#endif // end of hack
 
-#endif /* GMX_SIMD_SIMD_H */
+#endif // GMX_SIMD_SIMD_H

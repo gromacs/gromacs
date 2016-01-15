@@ -40,7 +40,7 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/mdtypes/energy.h"
+#include "gromacs/trajectory/energy.h"
 #include "gromacs/utility/basedefinitions.h"
 
 /* This is a running averaging structure ('energy bin') for use during mdrun. */

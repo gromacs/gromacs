@@ -34,27 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_FILEIO_TPXIO_H
 #define GMX_FILEIO_TPXIO_H
 
+#include <cstdio>
 
-/**************************************************************
- *
- * The routines in the corresponding c-file tpxio.c
- * are based on the lower level routines in gmxfio.c
- *
- **************************************************************/
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_block;
+struct t_inputrec;
 struct t_topology;
 
 struct t_tpxheader
@@ -88,29 +78,25 @@ struct t_tpxheader
  * but double and single precision can be read by either.
  */
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
-                    int *version, int *generation);
+void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
 /* Read the header from a tpx file and then close it again.
  * By setting TopOnlyOK to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent
  * changed the topology description. If it is possible to read
  * the inputrec it will still be done even if TopOnlyOK is TRUE.
- *
- * The version and generation if the topology (see top of tpxio.c)
- * are returned in the two last arguments.
  */
 
 void write_tpx_state(const char *fn,
-                     t_inputrec *ir, t_state *state, struct gmx_mtop_t *mtop);
+                     t_inputrec *ir, t_state *state, gmx_mtop_t *mtop);
 /* Write a file, and close it again.
  */
 
 void read_tpx_state(const char *fn,
                     t_inputrec *ir, t_state *state,
-                    struct gmx_mtop_t *mtop);
+                    gmx_mtop_t *mtop);
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
-             rvec *x, rvec *v, struct gmx_mtop_t *mtop);
+             rvec *x, rvec *v, gmx_mtop_t *mtop);
 /* Read a file, and close it again.
  * When step, t or lambda are NULL they will not be stored.
  * Returns ir->ePBC, if it could be read from the file.
@@ -118,14 +104,12 @@ int read_tpx(const char *fn,
 
 int read_tpx_top(const char *fn,
                  t_inputrec *ir, matrix box, int *natoms,
-                 rvec *x, rvec *v, struct t_topology *top);
+                 rvec *x, rvec *v, t_topology *top);
 /* As read_tpx, but for the old t_topology struct */
 
 gmx_bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */
 
-#ifdef __cplusplus
-}
-#endif
+void pr_tpxheader(FILE *fp, int indent, const char *title, const t_tpxheader *sh);
 
 #endif

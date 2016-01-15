@@ -36,7 +36,8 @@
 
 #include "base.h"
 
-#include <math.h>
+#include <cmath>
+#include <cstdint>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
@@ -75,15 +76,15 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
                                    const std::vector<real> &ref, const std::vector<real> &tst)
 {
     std::vector<real>             absDiff(tst.size());
-    std::vector<gmx_int64_t>      ulpDiff(tst.size());
+    std::vector<std::int64_t>     ulpDiff(tst.size());
     bool                          allOk;
     size_t                        i;
 
     union {
-#ifdef GMX_DOUBLE
-        double r; gmx_int64_t i;
+#if GMX_DOUBLE
+        double r; std::int64_t i;
 #else
-        float  r; gmx_int32_t i;
+        float  r; std::int32_t i;
 #endif
     } conv0, conv1;
 

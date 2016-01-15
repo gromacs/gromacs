@@ -45,16 +45,17 @@
 #include <cmath>
 
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -687,9 +688,9 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
-#define cosrule(b, c, alpha) ( sqr(b) + sqr(c) - 2*b*c*cos(alpha) )
+#define cosrule(b, c, alpha) ( gmx::square(b) + gmx::square(c) - 2*b*c*std::cos(alpha) )
 /* get cos(alpha) when a, b and c are given: */
-#define acosrule(a, b, c) ( (sqr(b)+sqr(c)-sqr(a))/(2*b*c) )
+#define acosrule(a, b, c) ( (gmx::square(b)+gmx::square(c)-gmx::square(a))/(2*b*c) )
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
@@ -739,7 +740,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
      * The center-of-mass in the call is defined with x=0 at
      * the CE1-CE2 bond and y=0 at the line from CG to the middle of CE1-CE2 bond.
      */
-    xCG  = -bond_cc+bond_cc*cos(ANGLE_6RING);
+    xCG  = -bond_cc+bond_cc*std::cos(ANGLE_6RING);
 
     mG                             = at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = xcom*mtot/xCG;
     mrest                          = mtot-mG;
@@ -747,8 +748,8 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
             at->atom[ats[atCE2]].m = at->atom[ats[atCE2]].mB = mrest / 2;
 
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
-    tmp1  = dCGCE*sin(ANGLE_6RING*0.5);
-    tmp2  = bond_cc*cos(0.5*ANGLE_6RING) + tmp1;
+    tmp1  = dCGCE*std::sin(ANGLE_6RING*0.5);
+    tmp2  = bond_cc*std::cos(0.5*ANGLE_6RING) + tmp1;
     tmp1 *= 2;
     a     = b = -bond_ch / tmp1;
     /* HE1 and HE2: */
@@ -800,16 +801,16 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
     bond_cc = get_ddb_bond(vsitetop, nvsitetop, "PHE", "CD1", "CE1");
     bond_ch = get_ddb_bond(vsitetop, nvsitetop, "PHE", "CD1", "HD1");
 
-    x[atCG]  = -bond_cc+bond_cc*cos(ANGLE_6RING);
+    x[atCG]  = -bond_cc+bond_cc*std::cos(ANGLE_6RING);
     x[atCD1] = -bond_cc;
-    x[atHD1] = x[atCD1]+bond_ch*cos(ANGLE_6RING);
+    x[atHD1] = x[atCD1]+bond_ch*std::cos(ANGLE_6RING);
     x[atCE1] = 0;
-    x[atHE1] = x[atCE1]-bond_ch*cos(ANGLE_6RING);
+    x[atHE1] = x[atCE1]-bond_ch*std::cos(ANGLE_6RING);
     x[atCD2] = x[atCD1];
     x[atHD2] = x[atHD1];
     x[atCE2] = x[atCE1];
     x[atHE2] = x[atHE1];
-    x[atCZ]  = bond_cc*cos(0.5*ANGLE_6RING);
+    x[atCZ]  = bond_cc*std::cos(0.5*ANGLE_6RING);
     x[atHZ]  = x[atCZ]+bond_ch;
 
     xcom = mtot = 0;
@@ -929,58 +930,58 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     xi[atCE2] = 0;
     yi[atCE2] = 0.5*b_CD2_CE2;
 
-    xi[atNE1] = -b_NE1_CE2*sin(a_NE1_CE2_CD2);
-    yi[atNE1] = yi[atCE2]-b_NE1_CE2*cos(a_NE1_CE2_CD2);
+    xi[atNE1] = -b_NE1_CE2*std::sin(a_NE1_CE2_CD2);
+    yi[atNE1] = yi[atCE2]-b_NE1_CE2*std::cos(a_NE1_CE2_CD2);
 
-    xi[atCG] = -b_CG_CD2*sin(a_CE2_CD2_CG);
-    yi[atCG] = yi[atCD2]+b_CG_CD2*cos(a_CE2_CD2_CG);
+    xi[atCG] = -b_CG_CD2*std::sin(a_CE2_CD2_CG);
+    yi[atCG] = yi[atCD2]+b_CG_CD2*std::cos(a_CE2_CD2_CG);
 
     alpha    = a_CE2_CD2_CG + M_PI - a_CB_CG_CD2;
-    xi[atCB] = xi[atCG]-b_CB_CG*sin(alpha);
-    yi[atCB] = yi[atCG]+b_CB_CG*cos(alpha);
+    xi[atCB] = xi[atCG]-b_CB_CG*std::sin(alpha);
+    yi[atCB] = yi[atCG]+b_CB_CG*std::cos(alpha);
 
     alpha     = a_CE2_CD2_CG + a_CD2_CG_CD1 - M_PI;
-    xi[atCD1] = xi[atCG]-b_CG_CD1*sin(alpha);
-    yi[atCD1] = yi[atCG]+b_CG_CD1*cos(alpha);
+    xi[atCD1] = xi[atCG]-b_CG_CD1*std::sin(alpha);
+    yi[atCD1] = yi[atCG]+b_CG_CD1*std::cos(alpha);
 
-    xi[atCE3] = b_CD2_CE3*sin(a_CE2_CD2_CE3);
-    yi[atCE3] = yi[atCD2]+b_CD2_CE3*cos(a_CE2_CD2_CE3);
+    xi[atCE3] = b_CD2_CE3*std::sin(a_CE2_CD2_CE3);
+    yi[atCE3] = yi[atCD2]+b_CD2_CE3*std::cos(a_CE2_CD2_CE3);
 
-    xi[atCZ2] = b_CE2_CZ2*sin(a_CD2_CE2_CZ2);
-    yi[atCZ2] = yi[atCE2]-b_CE2_CZ2*cos(a_CD2_CE2_CZ2);
+    xi[atCZ2] = b_CE2_CZ2*std::sin(a_CD2_CE2_CZ2);
+    yi[atCZ2] = yi[atCE2]-b_CE2_CZ2*std::cos(a_CD2_CE2_CZ2);
 
     alpha     = a_CE2_CD2_CE3 + a_CD2_CE3_CZ3 - M_PI;
-    xi[atCZ3] = xi[atCE3]+b_CE3_CZ3*sin(alpha);
-    yi[atCZ3] = yi[atCE3]+b_CE3_CZ3*cos(alpha);
+    xi[atCZ3] = xi[atCE3]+b_CE3_CZ3*std::sin(alpha);
+    yi[atCZ3] = yi[atCE3]+b_CE3_CZ3*std::cos(alpha);
 
     alpha     = a_CD2_CE2_CZ2 + a_CE2_CZ2_CH2 - M_PI;
-    xi[atCH2] = xi[atCZ2]+b_CZ2_CH2*sin(alpha);
-    yi[atCH2] = yi[atCZ2]-b_CZ2_CH2*cos(alpha);
+    xi[atCH2] = xi[atCZ2]+b_CZ2_CH2*std::sin(alpha);
+    yi[atCH2] = yi[atCZ2]-b_CZ2_CH2*std::cos(alpha);
 
     /* hydrogens */
     alpha     = a_CE2_CD2_CG + a_CD2_CG_CD1 - a_CG_CD1_HD1;
-    xi[atHD1] = xi[atCD1]-b_CD1_HD1*sin(alpha);
-    yi[atHD1] = yi[atCD1]+b_CD1_HD1*cos(alpha);
+    xi[atHD1] = xi[atCD1]-b_CD1_HD1*std::sin(alpha);
+    yi[atHD1] = yi[atCD1]+b_CD1_HD1*std::cos(alpha);
 
     alpha     = a_NE1_CE2_CD2 + M_PI - a_HE1_NE1_CE2;
-    xi[atHE1] = xi[atNE1]-b_NE1_HE1*sin(alpha);
-    yi[atHE1] = yi[atNE1]-b_NE1_HE1*cos(alpha);
+    xi[atHE1] = xi[atNE1]-b_NE1_HE1*std::sin(alpha);
+    yi[atHE1] = yi[atNE1]-b_NE1_HE1*std::cos(alpha);
 
     alpha     = a_CE2_CD2_CE3 + M_PI - a_CD2_CE3_HE3;
-    xi[atHE3] = xi[atCE3]+b_CE3_HE3*sin(alpha);
-    yi[atHE3] = yi[atCE3]+b_CE3_HE3*cos(alpha);
+    xi[atHE3] = xi[atCE3]+b_CE3_HE3*std::sin(alpha);
+    yi[atHE3] = yi[atCE3]+b_CE3_HE3*std::cos(alpha);
 
     alpha     = a_CD2_CE2_CZ2 + M_PI - a_CE2_CZ2_HZ2;
-    xi[atHZ2] = xi[atCZ2]+b_CZ2_HZ2*sin(alpha);
-    yi[atHZ2] = yi[atCZ2]-b_CZ2_HZ2*cos(alpha);
+    xi[atHZ2] = xi[atCZ2]+b_CZ2_HZ2*std::sin(alpha);
+    yi[atHZ2] = yi[atCZ2]-b_CZ2_HZ2*std::cos(alpha);
 
     alpha     = a_CD2_CE2_CZ2 + a_CE2_CZ2_CH2 - a_CZ2_CH2_HH2;
-    xi[atHZ3] = xi[atCZ3]+b_CZ3_HZ3*sin(alpha);
-    yi[atHZ3] = yi[atCZ3]+b_CZ3_HZ3*cos(alpha);
+    xi[atHZ3] = xi[atCZ3]+b_CZ3_HZ3*std::sin(alpha);
+    yi[atHZ3] = yi[atCZ3]+b_CZ3_HZ3*std::cos(alpha);
 
     alpha     = a_CE2_CD2_CE3 + a_CD2_CE3_CZ3 - a_CE3_CZ3_HZ3;
-    xi[atHH2] = xi[atCH2]+b_CH2_HH2*sin(alpha);
-    yi[atHH2] = yi[atCH2]-b_CH2_HH2*cos(alpha);
+    xi[atHH2] = xi[atCH2]+b_CH2_HH2*std::sin(alpha);
+    yi[atHH2] = yi[atCH2]-b_CH2_HH2*std::cos(alpha);
 
     /* Calculate masses for each ring and put it on the dummy masses */
     for (j = 0; j < NMASS; j++)
@@ -1078,9 +1079,9 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
 
     /* constraints between CB, M1 and M2 */
     /* 'add_shift' says which atoms won't be renumbered afterwards */
-    dCBM1 = std::sqrt( sqr(xcom[0]-xi[atCB]) + sqr(ycom[0]-yi[atCB]) );
-    dM1M2 = std::sqrt( sqr(xcom[0]-xcom[1]) + sqr(ycom[0]-ycom[1]) );
-    dCBM2 = std::sqrt( sqr(xcom[1]-xi[atCB]) + sqr(ycom[1]-yi[atCB]) );
+    dCBM1 = std::hypot( xcom[0]-xi[atCB], ycom[0]-yi[atCB] );
+    dM1M2 = std::hypot( xcom[0]-xcom[1], ycom[0]-ycom[1] );
+    dCBM2 = std::hypot( xcom[1]-xi[atCB], ycom[1]-yi[atCB] );
     my_add_param(&(plist[F_CONSTRNC]), ats[atCB],       add_shift+atM[0], dCBM1);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCB],       add_shift+atM[1], dCBM2);
     my_add_param(&(plist[F_CONSTRNC]), add_shift+atM[0], add_shift+atM[1], dM1M2);
@@ -1152,16 +1153,16 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     bond_oh   = get_ddb_bond(vsitetop, nvsitetop, "TYR", "OH", "HH");
     angle_coh = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TYR", "CZ", "OH", "HH");
 
-    xi[atCG]  = -bond_cc+bond_cc*cos(ANGLE_6RING);
+    xi[atCG]  = -bond_cc+bond_cc*std::cos(ANGLE_6RING);
     xi[atCD1] = -bond_cc;
-    xi[atHD1] = xi[atCD1]+bond_ch*cos(ANGLE_6RING);
+    xi[atHD1] = xi[atCD1]+bond_ch*std::cos(ANGLE_6RING);
     xi[atCE1] = 0;
-    xi[atHE1] = xi[atCE1]-bond_ch*cos(ANGLE_6RING);
+    xi[atHE1] = xi[atCE1]-bond_ch*std::cos(ANGLE_6RING);
     xi[atCD2] = xi[atCD1];
     xi[atHD2] = xi[atHD1];
     xi[atCE2] = xi[atCE1];
     xi[atHE2] = xi[atHE1];
-    xi[atCZ]  = bond_cc*cos(0.5*ANGLE_6RING);
+    xi[atCZ]  = bond_cc*std::cos(0.5*ANGLE_6RING);
     xi[atOH]  = xi[atCZ]+bond_co;
 
     xcom = mtot = 0;
@@ -1178,7 +1179,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
 
     /* then construct CZ from the 2nd triangle */
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
-    a = b = 0.5 * bond_co / ( bond_co - bond_cc*cos(ANGLE_6RING) );
+    a = b = 0.5 * bond_co / ( bond_co - bond_cc*std::cos(ANGLE_6RING) );
     add_vsite3_param(&plist[F_VSITE3],
                      ats[atCZ], ats[atOH], ats[atCE1], ats[atCE2], a, b);
     at->atom[ats[atCZ]].m = at->atom[ats[atCZ]].mB = 0;
@@ -1251,7 +1252,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     (*vsite_type)[ats[atHH]] = F_VSITE2;
     nvsite++;
     /* assume we also want the COH angle constrained: */
-    tmp1 = bond_cc*cos(0.5*ANGLE_6RING) + dCGCE*sin(ANGLE_6RING*0.5) + bond_co;
+    tmp1 = bond_cc*std::cos(0.5*ANGLE_6RING) + dCGCE*std::sin(ANGLE_6RING*0.5) + bond_co;
     dCGM = std::sqrt( cosrule(tmp1, vdist, angle_coh) );
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], add_shift+atM, dCGM);
     my_add_param(&(plist[F_CONSTRNC]), ats[atOH], add_shift+atM, vdist);
@@ -1372,36 +1373,36 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
 
     /* calculate ND1 and CD2 positions from CE1 and NE2 */
 
-    x[atND1] = -b_ND1_CE1*sin(a_ND1_CE1_NE2);
-    y[atND1] = y[atCE1]-b_ND1_CE1*cos(a_ND1_CE1_NE2);
+    x[atND1] = -b_ND1_CE1*std::sin(a_ND1_CE1_NE2);
+    y[atND1] = y[atCE1]-b_ND1_CE1*std::cos(a_ND1_CE1_NE2);
 
-    x[atCD2] = -b_CD2_NE2*sin(a_CE1_NE2_CD2);
-    y[atCD2] = y[atNE2]+b_CD2_NE2*cos(a_CE1_NE2_CD2);
+    x[atCD2] = -b_CD2_NE2*std::sin(a_CE1_NE2_CD2);
+    y[atCD2] = y[atNE2]+b_CD2_NE2*std::cos(a_CE1_NE2_CD2);
 
     /* And finally the hydrogen positions */
     if (ats[atHE1] != NOTSET)
     {
-        x[atHE1] = x[atCE1] + b_CE1_HE1*sin(a_NE2_CE1_HE1);
-        y[atHE1] = y[atCE1] - b_CE1_HE1*cos(a_NE2_CE1_HE1);
+        x[atHE1] = x[atCE1] + b_CE1_HE1*std::sin(a_NE2_CE1_HE1);
+        y[atHE1] = y[atCE1] - b_CE1_HE1*std::cos(a_NE2_CE1_HE1);
     }
     /* HD2 - first get (ccw) angle from (positive) y-axis */
     if (ats[atHD2] != NOTSET)
     {
         alpha    = a_CE1_NE2_CD2 + M_PI - a_NE2_CD2_HD2;
-        x[atHD2] = x[atCD2] - b_CD2_HD2*sin(alpha);
-        y[atHD2] = y[atCD2] + b_CD2_HD2*cos(alpha);
+        x[atHD2] = x[atCD2] - b_CD2_HD2*std::sin(alpha);
+        y[atHD2] = y[atCD2] + b_CD2_HD2*std::cos(alpha);
     }
     if (ats[atHD1] != NOTSET)
     {
         /* HD1 - first get (cw) angle from (positive) y-axis */
         alpha    = a_ND1_CE1_NE2 + M_PI - a_CE1_ND1_HD1;
-        x[atHD1] = x[atND1] - b_ND1_HD1*sin(alpha);
-        y[atHD1] = y[atND1] - b_ND1_HD1*cos(alpha);
+        x[atHD1] = x[atND1] - b_ND1_HD1*std::sin(alpha);
+        y[atHD1] = y[atND1] - b_ND1_HD1*std::cos(alpha);
     }
     if (ats[atHE2] != NOTSET)
     {
-        x[atHE2] = x[atNE2] + b_NE2_HE2*sin(a_CE1_NE2_HE2);
-        y[atHE2] = y[atNE2] + b_NE2_HE2*cos(a_CE1_NE2_HE2);
+        x[atHE2] = x[atNE2] + b_NE2_HE2*std::sin(a_CE1_NE2_HE2);
+        y[atHE2] = y[atNE2] + b_NE2_HE2*std::cos(a_CE1_NE2_HE2);
     }
     /* Have all coordinates now */
 

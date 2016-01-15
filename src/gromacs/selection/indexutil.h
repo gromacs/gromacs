@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -270,6 +270,13 @@ gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms);
 /** Sorts the indices within an index group. */
 void
 gmx_ana_index_sort(gmx_ana_index_t *g);
+/*! \brief
+ * Removes duplicates from a sorted index group.
+ *
+ * \param[in,out] g  Index group to be processed.
+ */
+void
+gmx_ana_index_remove_duplicates(gmx_ana_index_t *g);
 /** Checks whether two index groups are equal. */
 bool
 gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b);
@@ -292,6 +299,19 @@ gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b);
 void
 gmx_ana_index_union(gmx_ana_index_t *dest,
                     gmx_ana_index_t *a, gmx_ana_index_t *b);
+/*! \brief
+ * Calculates the union of two index groups, where the second group may not be sorted.
+ *
+ * \param[out] dest Output index group (the union of \p a and \p b).
+ * \param[in]  a    First index group (must be sorted).
+ * \param[in]  b    Second index group.
+ *
+ * \p a and \p b can have common items.
+ * \p dest can equal \p a or \p b.
+ */
+void
+gmx_ana_index_union_unsorted(gmx_ana_index_t *dest,
+                             gmx_ana_index_t *a, gmx_ana_index_t *b);
 /** Merges two distinct sorted index groups. */
 void
 gmx_ana_index_merge(gmx_ana_index_t *dest,

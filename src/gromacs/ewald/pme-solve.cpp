@@ -42,6 +42,8 @@
 #include <cmath>
 
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
@@ -54,6 +56,8 @@
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #    define PME_SIMD_SOLVE
 #endif
+
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 struct pme_solve_work_t
 {
@@ -200,22 +204,21 @@ void get_pme_ener_vir_lj(struct pme_solve_work_t *work, int nthread,
 gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        gmx_simd_real_t       f_simd;
-        gmx_simd_real_t       tmp_d1, d_inv, tmp_r, tmp_e;
+        SimdReal              f_simd(f);
+        SimdReal              tmp_d1, tmp_r, tmp_e;
         int                   kx;
-        f_simd = gmx_simd_set1_r(f);
+
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
         for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
         {
-            tmp_d1   = gmx_simd_load_r(d_aligned+kx);
-            d_inv    = gmx_simd_inv_r(tmp_d1);
-            tmp_r    = gmx_simd_load_r(r_aligned+kx);
-            tmp_r    = gmx_simd_exp_r(tmp_r);
-            tmp_e    = gmx_simd_mul_r(f_simd, d_inv);
-            tmp_e    = gmx_simd_mul_r(tmp_e, tmp_r);
-            gmx_simd_store_r(e_aligned+kx, tmp_e);
+            tmp_d1   = load(d_aligned+kx);
+            tmp_r    = load(r_aligned+kx);
+            tmp_r    = exp(tmp_r);
+            tmp_e    = f_simd / tmp_d1;
+            tmp_e    = tmp_e * tmp_r;
+            store(e_aligned+kx, tmp_e);
         }
     }
 }
@@ -242,23 +245,23 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, 
 /* Calculate exponentials through SIMD */
 gmx_inline static void calc_exponentials_lj(int gmx_unused start, int end, real *r_aligned, real *factor_aligned, real *d_aligned)
 {
-    gmx_simd_real_t       tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
-    const gmx_simd_real_t sqr_PI = gmx_simd_sqrt_r(gmx_simd_set1_r(M_PI));
+    SimdReal              tmp_r, tmp_d, tmp_fac, d_inv, tmp_mk;
+    const SimdReal        sqr_PI = sqrt(SimdReal(M_PI));
     int                   kx;
     for (kx = 0; kx < end; kx += GMX_SIMD_REAL_WIDTH)
     {
         /* We only need to calculate from start. But since start is 0 or 1
          * and we want to use aligned loads/stores, we always start from 0.
          */
-        tmp_d = gmx_simd_load_r(d_aligned+kx);
-        d_inv = gmx_simd_inv_r(tmp_d);
-        gmx_simd_store_r(d_aligned+kx, d_inv);
-        tmp_r = gmx_simd_load_r(r_aligned+kx);
-        tmp_r = gmx_simd_exp_r(tmp_r);
-        gmx_simd_store_r(r_aligned+kx, tmp_r);
-        tmp_mk  = gmx_simd_load_r(factor_aligned+kx);
-        tmp_fac = gmx_simd_mul_r(sqr_PI, gmx_simd_mul_r(tmp_mk, gmx_simd_erfc_r(tmp_mk)));
-        gmx_simd_store_r(factor_aligned+kx, tmp_fac);
+        tmp_d = load(d_aligned+kx);
+        d_inv = SimdReal(1.0) / tmp_d;
+        store(d_aligned+kx, d_inv);
+        tmp_r = load(r_aligned+kx);
+        tmp_r = exp(tmp_r);
+        store(r_aligned+kx, tmp_r);
+        tmp_mk  = load(factor_aligned+kx);
+        tmp_fac = sqr_PI * tmp_mk * erfc(tmp_mk);
+        store(factor_aligned+kx, tmp_fac);
     }
 }
 #else

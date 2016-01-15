@@ -33,17 +33,32 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *  \brief
+ *  Utility constant and function declaration for the CUDA non-bonded kernels.
+ *  This header should be included once at the top level, just before the
+ *  kernels are included (has to be preceded by nbnxn_cuda_types.h).
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+#include "config.h"
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
-#include "gromacs/gmxlib/cuda_tools/vectype_ops.cuh"
+
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/vectype_ops.cuh"
+
+#include "nbnxn_cuda_types.h"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
-
-#if __CUDA_ARCH__ >= 300
+/* Use texture objects if supported by the target hardware. */
+#if GMX_PTX_ARCH >= 300
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define USE_TEXOBJ
 #endif
@@ -56,6 +71,18 @@
 #define ONE_SIXTH_F     0.16666667f
 #define ONE_TWELVETH_F  0.08333333f
 
+/* With multiple compilation units this ensures that texture refs are available
+   in the the kernels' compilation units. */
+#if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
+extern texture<float, 1, cudaReadModeElementType> nbfp_texref;
+
+/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
+extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
+
+/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
+extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
+#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 /*! Apply force switch,  force + energy version. */
 static inline __device__
@@ -393,7 +420,7 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 /*! Final j-force reduction; this implementation only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 static inline __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
@@ -517,7 +544,7 @@ void reduce_force_i(float *f_buf, float3 *f,
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 static inline __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
@@ -594,7 +621,7 @@ void reduce_energy_pow2(volatile float *buf,
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 static inline __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
@@ -618,7 +645,7 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
         atomicAdd(e_el, E_el);
     }
 }
-#endif /* __CUDA_ARCH__ */
+#endif /* GMX_PTX_ARCH */
 
 #undef USE_TEXOBJ
 

@@ -36,70 +36,92 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
 #define GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
 
-#include <math.h>
+#include "config.h"
 
 #include <arm_neon.h>
 
-#include "impl_arm_neon_asimd_common.h"
+#include "gromacs/simd/impl_arm_neon/impl_arm_neon_simd_float.h"
 
-/* NEON ASIMD always has FMA support, so make sure we use that for single too. */
-#undef  gmx_simd_fmadd_f
-#define gmx_simd_fmadd_f(a, b, c)  vfmaq_f32(c, b, a)
-#undef  gmx_simd_fmsub_f
-#define gmx_simd_fmsub_f(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
-#undef  gmx_simd_fnmadd_f
-#define gmx_simd_fnmadd_f(a, b, c) vfmsq_f32(c, b, a)
-#undef  gmx_simd_fnmsub_f
-#define gmx_simd_fnmsub_f(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
-
-/* The rounding instructions were actually added already in ARMv8, but most
- * compilers did not add intrinsics for them. Make sure we use them for single
- * precision too when enabling NEON Advanced SIMD.
- */
-#undef  gmx_simd_round_f
-#define gmx_simd_round_f(x)        vrndnq_f32(x)
-#undef  gmx_simd_trunc_f
-#define gmx_simd_trunc_f(x)        vrndq_f32(x)
-
-/* NEON Advanced SIMD has a real rounding conversion instruction */
-#undef  gmx_simd_cvt_f2i
-#define gmx_simd_cvt_f2i(x)        vcvtnq_s32_f32(x)
-
-/* Since we redefine rounding/conversion-with-rounding, make
- * sure we use the new operations by redefining the routine
- * to set the exponent too.
- */
-#undef  gmx_simd_set_exponent_f
-#define gmx_simd_set_exponent_f    gmx_simd_set_exponent_f_arm_neon_asimd
-
-/* We can do more efficient reduce with vector pairwise arithmetic */
-#undef  gmx_simd_reduce_f
-#define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_arm_neon_asimd(a)
-
-/* Pick the largest unsigned integer as a shortcut for any-true */
-#undef  gmx_simd_anytrue_fb
-#define gmx_simd_anytrue_fb(x)     (vmaxvq_u32(x) != 0)
-#undef  gmx_simd_anytrue_fib
-#define gmx_simd_anytrue_fib(x)    (vmaxvq_u32(x) != 0)
-
-/****************************************************
- * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- ****************************************************/
-static gmx_inline gmx_simd_float_t
-gmx_simd_set_exponent_f_arm_neon_asimd(gmx_simd_float_t x)
+namespace gmx
 {
-    int32x4_t  iexp = vcvtnq_s32_f32(x);
 
-    iexp = vshlq_n_s32(vaddq_s32(iexp, vdupq_n_s32(127)), 23);
-    return vreinterpretq_f32_s32(iexp);
+static inline SimdFloat gmx_simdcall
+fma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
 }
 
-static gmx_inline float
-gmx_simd_reduce_f_arm_neon_asimd(gmx_simd_float_t a)
+static inline SimdFloat gmx_simdcall
+fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    a = vpaddq_f32(a, a);
-    a = vpaddq_f32(a, a);
-    return vgetq_lane_f32(a, 0);
+    return {
+               vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H */
+static inline SimdFloat gmx_simdcall
+fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+round(SimdFloat x)
+{
+    return {
+               vrndnq_f32(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+trunc(SimdFloat x)
+{
+    return {
+               vrndq_f32(x.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+cvtR2I(SimdFloat a)
+{
+    return {
+               vcvtnq_s32_f32(a.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFBool a)
+{
+    return (vmaxvq_u32(a.simdInternal_) != 0);
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFIBool a)
+{
+    return (vmaxvq_u32(a.simdInternal_) != 0);
+}
+
+static inline float gmx_simdcall
+reduce(SimdFloat a)
+{
+    float32x4_t b = a.simdInternal_;
+    b = vpaddq_f32(b, b);
+    b = vpaddq_f32(b, b);
+    return vgetq_lane_f32(b, 0);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H

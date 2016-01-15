@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,13 +64,15 @@
 
 #ifndef GMX_CPUINFO_STANDALONE
 #    include "config.h"
+#else
+#    define GMX_NATIVE_WINDOWS 0
 #endif
 
 #if defined _MSC_VER
 #    include <intrin.h> // __cpuid()
 #endif
 
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #    include <windows.h>    // sysinfo(), necessary for topology stuff
 #endif
 
@@ -153,7 +155,7 @@ executeX86CpuID(unsigned int     gmx_unused level,
 #if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 || \
     defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
 
-#    if defined __GNUC__ || defined GMX_X86_GCC_INLINE_ASM
+#    if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
 
     // any compiler that understands gcc inline assembly
     *eax = level;
@@ -187,15 +189,25 @@ executeX86CpuID(unsigned int     gmx_unused level,
 
 #    else
 
-    // No compiler support for cpuid if we get here
+    // We are on x86, but without compiler support for cpuid if we get here
     *eax = 0;
     *ebx = 0;
     *ecx = 0;
     *edx = 0;
     return 1;
 
-#    endif // gcc inline asm, msvc, or no cpuid support
-#endif     // x86
+#    endif  // check for inline asm on x86
+
+#else
+
+    // We are not on x86
+    *eax = 0;
+    *ebx = 0;
+    *ecx = 0;
+    *edx = 0;
+    return 1;
+
+#endif      // x86
 }
 
 
@@ -400,7 +412,7 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
 
     // We cannot just ask for all APIC IDs, but must force execution on each
     // hardware thread and extract the APIC id there.
-#if defined HAVE_SCHED_AFFINITY && defined HAVE_SYSCONF
+#if HAVE_SCHED_AFFINITY && defined HAVE_SYSCONF
     unsigned int   eax, ebx, ecx, edx;
     unsigned int   nApic = sysconf(_SC_NPROCESSORS_ONLN);
     cpu_set_t      saveCpuSet;
@@ -424,7 +436,7 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
         CPU_CLR(i, &cpuSet);
     }
     sched_setaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
-#elif defined GMX_NATIVE_WINDOWS
+#elif GMX_NATIVE_WINDOWS
     unsigned int   eax, ebx, ecx, edx;
     SYSTEM_INFO    sysinfo;
     GetSystemInfo( &sysinfo );
@@ -789,7 +801,13 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
         }
         if (s.find("asimd") != std::string::npos)
         {
-            features->insert(CpuInfo::Feature::Arm_NeonAsimd);
+            // At least Jetson TX1 runs a 32-bit environment by default, although
+            // the kernel is 64-bits, and reports asimd feature flags. We cannot
+            // use Neon-asimd in this case, so make sure we are on a 64-bit platform.
+            if (sizeof(void *) == 8)
+            {
+                features->insert(CpuInfo::Feature::Arm_NeonAsimd);
+            }
         }
     }
 }

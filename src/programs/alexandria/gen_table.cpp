@@ -9,7 +9,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
+//#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
@@ -223,17 +223,17 @@ static void lo_do_guillot(double r, double xi, double xir,
        D[Erf[r],r]
 
      */
-    *vc   = (1 + sqr(f0)*erf(rxi1) + 2*f0*erf(rxi2))/r;
+    *vc   = (1 + gmx::square(f0)*erf(rxi1) + 2*f0*erf(rxi2))/r;
     *fc   =
         (1/r
          + (-f0 * (2 * sqrt(2) + exp(r2/4*xi*xi)*f0)/(exp(r2/(2*xi*xi))*sqrt(M_PI)*xi) + f0*f0*erf(r/(2*xi)) + 2 *f0 * erf(r/(sqrt(2 * xi)))  )/r2)
     ;
 
 
-    /*  *vc2  = ((2/sqr(r))*(*vc -
-        sqr(f0)*erf1(r1)/(2*xi) -
-        4*f0*erf1(r2)/sqrt(2)*xi) +
-        (1/r)*(sqr(f0/(2.0*xi))*erf2(r1) + (2*f0/sqr(xi)))*erf2(r2)); */
+    /*  *vc2  = ((2/gmx::square(r))*(*vc -
+        gmx::square(f0)*erf1(r1)/(2*xi) -
+        4*f0*erf1(r2)/gmx::squaret(2)*xi) +
+        (1/r)*(gmx::square(f0/(2.0*xi))*erf2(r1) + (2*f0/gmx::square(xi)))*erf2(r2)); */
 
     *vd  = -r_6;
     *fd  = -6.0*(*vd)/r;
@@ -241,7 +241,7 @@ static void lo_do_guillot(double r, double xi, double xir,
     z     = r/(2.0*xir);
     *vr   = erfc(z)/z;
     *fr   = 0.0;
-    /*  *vr2  = (sqpi*(*vr)/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*sqr(xir)); */
+    /*  *vr2  = (sqpi*(*vr)/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*gmx::square(xir)); */
 }
 
 void lo_do_guillot_maple(double r, double xi, double xir,
@@ -738,7 +738,7 @@ static void do_Slater(int pts_nm,
             if (r > 0)
             {
                 vc = 1/r;
-                fc = 1/sqr(r);
+                fc = 1/gmx::square(r);
             }
         }
         else if ((w1 == 0) && (w2 != 0))
@@ -972,7 +972,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                         switch (iDistributionModel)
                         {
                             case eqdAXg:
-                                rho += A[j]*exp(-sqr(rr*zeta[j]));
+                                rho += A[j]*exp(-gmx::square(rr*zeta[j]));
                                 break;
                             case eqdAXs:
                                 rho += A[j]*pow(rr, 2*row[j]-2)*exp(-2*zeta[j]*rr);
@@ -1104,7 +1104,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
                                 {
                                     case eqdAXp:
                                         dV  = 1/rr;
-                                        dVp = -1/sqr(rr);
+                                        dVp = -1/gmx::square(rr);
                                         break;
                                     case eqdAXg:
                                         dV  = Coulomb_GG(rr, zeta[i][j], zeta[k][l]);
@@ -1207,7 +1207,7 @@ static void do_maaren(FILE *fp, int pts_nm, int npow)
         {
             lo_do_guillot_maple(r, xi, xir, &vc, &vc2, &vd, &vd2, &vr, &vr2);
             vr  =  pow(r, -1.0*npow);
-            vr2 = (npow+1.0)*(npow)*vr/sqr(r);
+            vr2 = (npow+1.0)*(npow)*vr/gmx::square(r);
         }
         fprintf(fp, "%15.10e  %15.10e  %15.10e   %15.10e  %15.10e  %15.10e  %15.10e\n",
                 r, vc, vc2, vd, vd2, vr, vr2);

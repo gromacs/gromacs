@@ -52,7 +52,7 @@
 #include "txtdump.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/topology/symtab.h"
-#include "gromacs/fileio/strdb.h"
+#include "gromacs/utility/strdb.h"
 #include "gromacs/fileio/confio.h"
 
 #define TET   109.47

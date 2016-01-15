@@ -49,10 +49,11 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -163,6 +164,20 @@ const char *check_box(int ePBC, const matrix box)
     }
 
     return ptr;
+}
+
+void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees)
+{
+    rvec angle;
+    svmul(DEG2RAD, angleInDegrees, angle);
+    box[XX][XX] = vec[XX];
+    box[YY][XX] = vec[YY]*cos(angle[ZZ]);
+    box[YY][YY] = vec[YY]*sin(angle[ZZ]);
+    box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
+    box[ZZ][YY] = vec[ZZ]
+        *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
+    box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
+                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
 
 real max_cutoff2(int ePBC, const matrix box)
@@ -528,8 +543,8 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
                                         pos[d] = std::max(-pbc->hbox_diag[d], -trial[d]);
                                     }
                                 }
-                                d2old += sqr(pos[d]);
-                                d2new += sqr(pos[d] + trial[d]);
+                                d2old += gmx::square(pos[d]);
+                                d2new += gmx::square(pos[d] + trial[d]);
                             }
                             if (BOX_MARGIN*d2new < d2old)
                             {
@@ -543,7 +558,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
                                         real d2new_c = 0;
                                         for (int d = 0; d < DIM; d++)
                                         {
-                                            d2new_c += sqr(pos[d] + trial[d] - shift*box[dd][d]);
+                                            d2new_c += gmx::square(pos[d] + trial[d] - shift*box[dd][d]);
                                         }
                                         if (d2new_c <= BOX_MARGIN*d2new)
                                         {
@@ -1515,26 +1530,6 @@ int *compact_unitcell_edges()
     }
 
     return edge;
-}
-
-void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
-{
-    int t, nth;
-    nth = gmx_omp_nthreads_get(emntDefault);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (t = 0; t < nth; t++)
-    {
-        try
-        {
-            int offset, len;
-
-            offset = (natoms*t    )/nth;
-            len    = (natoms*(t + 1))/nth - offset;
-            put_atoms_in_box(ePBC, box, len, x + offset);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 }
 
 void put_atoms_in_box(int ePBC, const matrix box, int natoms, rvec x[])

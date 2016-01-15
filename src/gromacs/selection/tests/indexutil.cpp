@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/refdata.h"
 
@@ -56,6 +57,23 @@
 
 namespace
 {
+
+//! Helper for creating groups from an array.
+gmx_ana_index_t initGroup(gmx::ArrayRef<int> index)
+{
+    gmx_ana_index_t g = { static_cast<int>(index.size()), index.data(), 0 };
+    return g;
+}
+
+TEST(IndexGroupTest, RemovesDuplicates)
+{
+    int             index[]    = { 1, 1, 2, 3, 4, 4 };
+    int             expected[] = { 1, 2, 3, 4 };
+    gmx_ana_index_t g          = initGroup(index);
+    gmx_ana_index_t e          = initGroup(expected);
+    gmx_ana_index_remove_duplicates(&g);
+    EXPECT_TRUE(gmx_ana_index_equals(&g, &e));
+}
 
 /********************************************************************
  * IndexBlockTest

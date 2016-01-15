@@ -43,7 +43,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -55,6 +54,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -87,7 +87,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     t_block              *mols = NULL;
     gmx_mtop_atomlookup_t alook;
     t_atom               *atom;
-    int                   version, generation, ii, jj;
+    int                   ii, jj;
     real                  temp, tfac;
     /* Cluster size distribution (matrix) */
     real                **cs_dist = NULL;
@@ -116,7 +116,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     if (tpr)
     {
         snew(mtop, 1);
-        read_tpxheader(tpr, &tpxh, TRUE, &version, &generation);
+        read_tpxheader(tpr, &tpxh, TRUE);
         if (tpxh.natoms != natoms)
         {
             gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!",

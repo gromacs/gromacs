@@ -140,7 +140,7 @@
             npair++;
 #endif
 
-            rinv = gmx_invsqrt(rsq);
+            rinv = gmx::invsqrt(rsq);
             /* 5 flops for invsqrt */
 
             /* Partially enforce the cut-off (and perhaps
@@ -239,7 +239,7 @@
                     rinvsix_nm   = rinvsix;
 #endif
                     cr2          = lje_coeff2*rsq;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
                     expmcr2      = exp(-cr2);
 #else
                     expmcr2      = expf(-cr2);
@@ -312,7 +312,7 @@
             rs     = rsq*rinv*ic->tabq_scale;
             ri     = (int)rs;
             frac   = rs - ri;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
             /* fexcl = F_i + frac * (F_(i+1)-F_i) */
             fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
 #else
@@ -322,7 +322,7 @@
             fcoul  = interact*rinvsq - fexcl;
             /* 7 flops for float 1/r-table force */
 #ifdef CALC_ENERGIES
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
             vcoul  = qq*(interact*(rinv - ic->sh_ewald)
                          -(tab_coul_FDV0[ri*4+2]
                            -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));

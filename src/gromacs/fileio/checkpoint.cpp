@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <cstring>
 
 #include <fcntl.h>
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <io.h>
 #include <sys/locking.h>
 #endif
@@ -55,18 +55,18 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -75,6 +75,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/txtdump.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -83,12 +84,6 @@
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
-
-#ifdef GMX_DOUBLE
-#define GMX_CPT_BUILD_DP 1
-#else
-#define GMX_CPT_BUILD_DP 0
-#endif
 
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
@@ -104,7 +99,7 @@ const char *est_names[estNR] =
     "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "thermostat-integral",
-    "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
+    "x", "v", "sdx-unsupported", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
     "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng", "MC-rng-i"
@@ -285,7 +280,7 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 
 static void do_cpt_real_err(XDR *xd, real *f)
 {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     bool_t res = xdr_double(xd, f);
 #else
     bool_t res = xdr_float(xd, f);
@@ -320,7 +315,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
                              FILE *list, int erealtype)
 {
     bool_t  res = 0;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     int     dtc = xdr_datatype_float;
 #else
     int     dtc = xdr_datatype_double;
@@ -975,7 +970,6 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
                 case estVOL0:    ret      = do_cpte_real(xd, cptpEST, i, sflags, &state->vol0, list); break;
                 case estX:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->x, list); break;
                 case estV:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->v, list); break;
-                case estSDX:     ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->sd_X, list); break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
                  */
@@ -989,7 +983,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
                 case estORIRE_DTAV:   ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
-                              "You are probably reading a new checkpoint file with old code", i);
+                              "You are reading a checkpoint file written by different code, which is not supported", i);
             }
         }
     }
@@ -1588,7 +1582,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     buser   = gmx_strdup(BUILD_USER);
     bhost   = gmx_strdup(BUILD_HOST);
 
-    double_prec = GMX_CPT_BUILD_DP;
+    double_prec = GMX_DOUBLE;
     fprog       = gmx_strdup(gmx::getProgramContext().fullBinaryPath());
 
     ftime   = &(timebuf[0]);
@@ -1749,7 +1743,7 @@ static void check_match(FILE *fplog,
                         char *version,
                         char *btime, char *buser, char *bhost, int double_prec,
                         char *fprog,
-                        t_commrec *cr, int npp_f, int npme_f,
+                        const t_commrec *cr, int npp_f, int npme_f,
                         ivec dd_nc, ivec dd_nc_f)
 {
     int      npp;
@@ -1766,18 +1760,17 @@ static void check_match(FILE *fplog,
          * different patch level versions, but we do not guarantee
          * compatibility between different major/minor versions - check this.
          */
-        int   gmx_major, gmx_minor;
-        int   cpt_major, cpt_minor;
-        sscanf(gmx_version(), "VERSION %5d.%5d", &gmx_major, &gmx_minor);
-        int   ret = sscanf(version, "VERSION %5d.%5d", &cpt_major, &cpt_minor);
-        version_differs = (ret < 2 || gmx_major != cpt_major ||
-                           gmx_minor != cpt_minor);
+        int   gmx_major;
+        int   cpt_major;
+        sscanf(gmx_version(), "%5d", &gmx_major);
+        int   ret = sscanf(version, "%5d", &cpt_major);
+        version_differs = (ret < 1 || gmx_major != cpt_major);
     }
 
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
-    check_int   (fplog, "Double prec.", GMX_CPT_BUILD_DP, double_prec, &mm);
+    check_int   (fplog, "Double prec.", GMX_DOUBLE, double_prec, &mm);
     check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), fprog, &mm);
 
     check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
@@ -1801,13 +1794,13 @@ static void check_match(FILE *fplog,
     if (mm)
     {
         const char msg_version_difference[] =
-            "The current GROMACS major & minor version are not identical to those that\n"
+            "The current GROMACS major version is not identical to the one that\n"
             "generated the checkpoint file. In principle GROMACS does not support\n"
             "continuation from checkpoints between different versions, so we advise\n"
             "against this. If you still want to try your luck we recommend that you use\n"
             "the -noappend flag to keep your output files from the two versions separate.\n"
             "This might also work around errors where the output fields in the energy\n"
-            "file have changed between the different major & minor versions.\n";
+            "file have changed between the different versions.\n";
 
         const char msg_mismatch_notice[] =
             "GROMACS patchlevel, binary or parallel settings differ from previous run.\n"
@@ -1838,7 +1831,8 @@ static void check_match(FILE *fplog,
 }
 
 static void read_checkpoint(const char *fn, FILE **pfplog,
-                            t_commrec *cr, ivec dd_nc,
+                            const t_commrec *cr,
+                            ivec dd_nc, int *npme,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadEkin,
                             int *simulation_part,
@@ -1860,7 +1854,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
-#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
 #endif
@@ -1869,7 +1863,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         "WARNING: The checkpoint file was generated with integrator %s,\n"
         "         while the simulation uses integrator %s\n\n";
 
-#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start  = 0;
@@ -1887,7 +1881,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
 
     if (bAppendOutputFiles &&
-        file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
+        file_version >= 13 && double_prec != GMX_DOUBLE)
     {
         gmx_fatal(FARGS, "Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
     }
@@ -1957,15 +1951,15 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     if (!PAR(cr))
     {
-        cr->npmenodes = 0;
+        *npme = 0;
     }
     else if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
-        if (cr->npmenodes < 0)
+        if (*npme < 0)
         {
-            cr->npmenodes = npmenodes_f;
+            *npme = npmenodes_f;
         }
-        int nppnodes = cr->nnodes - cr->npmenodes;
+        int nppnodes = cr->nnodes - *npme;
         if (nppnodes == nppnodes_f)
         {
             for (d = 0; d < DIM; d++)
@@ -2134,7 +2128,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                 errno = ENOSYS;
                 if (1)
 
-#elif defined GMX_NATIVE_WINDOWS
+#elif GMX_NATIVE_WINDOWS
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
 #else
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
@@ -2219,7 +2213,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
             if (i != 0) /*log file is already seeked to correct position */
             {
-#if !defined(GMX_NATIVE_WINDOWS) || !defined(GMX_FAHCORE)
+#if !GMX_NATIVE_WINDOWS || !defined(GMX_FAHCORE)
                 /* For FAHCORE, we do this elsewhere*/
                 rc = gmx_truncate(outputfiles[i].filename, outputfiles[i].offset);
                 if (rc != 0)
@@ -2236,7 +2230,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
 
 void load_checkpoint(const char *fn, FILE **fplog,
-                     t_commrec *cr, ivec dd_nc,
+                     const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend)
@@ -2248,13 +2242,13 @@ void load_checkpoint(const char *fn, FILE **fplog,
     {
         /* Read the state from the checkpoint file */
         read_checkpoint(fn, fplog,
-                        cr, dd_nc,
+                        cr, dd_nc, npme,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t, state, bReadEkin,
                         &ir->simulation_part, bAppend, bForceAppend);
     }
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(cr->npmenodes), &cr->npmenodes, cr);
+        gmx_bcast(sizeof(*npme), npme, cr);
         gmx_bcast(DIM*sizeof(dd_nc[0]), dd_nc, cr);
         gmx_bcast(sizeof(step), &step, cr);
         gmx_bcast(sizeof(*bReadEkin), bReadEkin, cr);

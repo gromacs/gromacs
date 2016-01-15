@@ -44,20 +44,21 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 
 typedef struct gmx_structurefactors {
@@ -200,7 +201,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                 if (i != 0 || j != 0 || k != 0)
                 {
                     kz  = k * k_factor[ZZ];
-                    krr = std::sqrt (sqr (kx) + sqr (ky) + sqr (kz));
+                    krr = std::sqrt (gmx::square(kx) + gmx::square(ky) + gmx::square(kz));
                     if (krr >= start_q && krr <= end_q)
                     {
                         kr = static_cast<int>(krr/sf->ref_k + 0.5);
@@ -236,15 +237,15 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
         {
             ky = j * k_factor[YY]; for (k = 0; k < maxkz; k++)
             {
-                kz = k * k_factor[ZZ]; krr = std::sqrt (sqr (kx) + sqr (ky)
-                                                        + sqr (kz)); if (krr >= start_q && krr <= end_q)
+                kz = k * k_factor[ZZ]; krr = std::sqrt (gmx::square(kx) + gmx::square(ky)
+                                                        + gmx::square(kz)); if (krr >= start_q && krr <= end_q)
                 {
                     kr = static_cast<int>(krr / sf->ref_k + 0.5);
                     if (kr < sf->n_angles && counter[kr] != 0)
                     {
                         sf->F[group][kr] +=
-                            (sqr (tmpSF[i][j][k].re) +
-                             sqr (tmpSF[i][j][k].im))/ counter[kr];
+                            (gmx::square(tmpSF[i][j][k].re) +
+                             gmx::square(tmpSF[i][j][k].im))/ counter[kr];
                     }
                 }
             }
@@ -579,7 +580,7 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
  *          -> 0.5*(1+cos^2(2*theta)) = 1 - 2 A^2 (1-A^2)
  */
             A                   = static_cast<double>(i * sf->ref_k) / (2.0 * sf->momentum);
-            polarization_factor = 1 - 2.0 * sqr (A) * (1 - sqr (A));
+            polarization_factor = 1 - 2.0 * gmx::square(A) * (1 - gmx::square(A));
             sf->F[g][i]        *= polarization_factor;
         }
     }
@@ -634,7 +635,7 @@ extern double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda
     /* all atom case */
     else
     {
-        k2      = (sqr (sin_theta) / sqr (10.0 * lambda));
+        k2      = (gmx::square(sin_theta) / gmx::square(10.0 * lambda));
         gmx_structurefactors_get_sf(gsf, type, a, b, &c);
         tmp     = c;
         for (i = 0; (i < 4); i++)

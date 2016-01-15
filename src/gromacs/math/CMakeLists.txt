@@ -39,6 +39,7 @@ gmx_install_headers(
     3dtransforms.h
     calculate-ewald-splitting-coefficient.h
     do_fit.h
+    functions.h
     gmxcomplex.h
     units.h
     utilities.h

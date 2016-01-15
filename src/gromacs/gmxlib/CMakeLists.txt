@@ -32,22 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
-
 add_subdirectory(nonbonded)
 
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.cpp)
-
-# gpu utils + cuda tools module
-if(GMX_GPU)
-    if(NOT GMX_USE_OPENCL)
-        add_subdirectory(cuda_tools)
-    else()
-        add_subdirectory(ocl_tools)
-    endif()
-endif()
-add_subdirectory(gpu_utils)
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${NONBONDED_SOURCES} PARENT_SCOPE)

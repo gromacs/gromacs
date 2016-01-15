@@ -12,8 +12,8 @@ mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
 mdlib -> pulling
-topology -> fileio
-topology -> gmxlib
-pbcutil -> fileio
-pbcutil -> gmxlib
+simd -> hardware
+gpu_utils -> hardware
+topology -> listed-forces
+pbcutil -> mdtypes
 listed-forces -> mdlib

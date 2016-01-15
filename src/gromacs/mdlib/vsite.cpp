@@ -44,10 +44,11 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -147,7 +148,7 @@ static void constr_vsite3FD(rvec xi, rvec xj, rvec xk, rvec x, real a, real b,
     temp[ZZ] = xij[ZZ] + a*xjk[ZZ];
     /* 6 flops */
 
-    c = b*gmx_invsqrt(iprod(temp, temp));
+    c = b*gmx::invsqrt(iprod(temp, temp));
     /* 6 + 10 flops */
 
     x[XX] = xi[XX] + c*temp[XX];
@@ -167,13 +168,13 @@ static void constr_vsite3FAD(rvec xi, rvec xj, rvec xk, rvec x, real a, real b, 
     pbc_rvec_sub(pbc, xk, xj, xjk);
     /* 6 flops */
 
-    invdij = gmx_invsqrt(iprod(xij, xij));
+    invdij = gmx::invsqrt(iprod(xij, xij));
     c1     = invdij * invdij * iprod(xij, xjk);
     xp[XX] = xjk[XX] - c1*xij[XX];
     xp[YY] = xjk[YY] - c1*xij[YY];
     xp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
     a1     = a*invdij;
-    b1     = b*gmx_invsqrt(iprod(xp, xp));
+    b1     = b*gmx::invsqrt(iprod(xp, xp));
     /* 45 */
 
     x[XX] = xi[XX] + a1*xij[XX] + b1*xp[XX];
@@ -219,7 +220,7 @@ static void constr_vsite4FD(rvec xi, rvec xj, rvec xk, rvec xl, rvec x,
     temp[ZZ] = xij[ZZ] + a*xjk[ZZ] + b*xjl[ZZ];
     /* 12 flops */
 
-    d = c*gmx_invsqrt(iprod(temp, temp));
+    d = c*gmx::invsqrt(iprod(temp, temp));
     /* 6 + 10 flops */
 
     x[XX] = xi[XX] + d*temp[XX];
@@ -259,7 +260,7 @@ static void constr_vsite4FDN(rvec xi, rvec xj, rvec xk, rvec xl, rvec x,
     cprod(rja, rjb, rm);
     /* 9 flops */
 
-    d = c*gmx_invsqrt(norm2(rm));
+    d = c*gmx::invsqrt(norm2(rm));
     /* 5+5+1 flops */
 
     x[XX] = xi[XX] + d*rm[XX];
@@ -700,7 +701,7 @@ static void spread_vsite3FD(t_iatom ia[], real a, real b,
     xix[ZZ] = xij[ZZ]+a*xjk[ZZ];
     /* 6 flops */
 
-    invl = gmx_invsqrt(iprod(xix, xix));
+    invl = gmx::invsqrt(iprod(xix, xix));
     c    = b*invl;
     /* 4 + ?10? flops */
 
@@ -807,14 +808,14 @@ static void spread_vsite3FAD(t_iatom ia[], real a, real b,
     skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
     /* 6 flops */
 
-    invdij    = gmx_invsqrt(iprod(xij, xij));
+    invdij    = gmx::invsqrt(iprod(xij, xij));
     invdij2   = invdij * invdij;
     c1        = iprod(xij, xjk) * invdij2;
     xperp[XX] = xjk[XX] - c1*xij[XX];
     xperp[YY] = xjk[YY] - c1*xij[YY];
     xperp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
     /* xperp in plane ijk, perp. to ij */
-    invdp = gmx_invsqrt(iprod(xperp, xperp));
+    invdp = gmx::invsqrt(iprod(xperp, xperp));
     a1    = a*invdij;
     b1    = b*invdp;
     /* 45 flops */
@@ -1023,7 +1024,7 @@ static void spread_vsite4FD(t_iatom ia[], real a, real b, real c,
     }
     /* 12 flops */
 
-    invl = gmx_invsqrt(iprod(xix, xix));
+    invl = gmx::invsqrt(iprod(xix, xix));
     d    = c*invl;
     /* 4 + ?10? flops */
 
@@ -1148,7 +1149,7 @@ static void spread_vsite4FDN(t_iatom ia[], real a, real b, real c,
     cprod(rja, rjb, rm);
     /* 9 flops */
 
-    invrm = gmx_invsqrt(norm2(rm));
+    invrm = gmx::invsqrt(norm2(rm));
     denom = invrm*invrm;
     /* 5+5+2 flops */
 
@@ -1565,8 +1566,7 @@ static int *atom2cg(t_block *cgs)
     return a2cg;
 }
 
-static int count_intercg_vsite(const gmx_mtop_t *mtop,
-                               gmx_bool         *bHaveChargeGroups)
+int count_intercg_vsites(const gmx_mtop_t *mtop)
 {
     int             mb, ftype, nral, i, cg, a;
     gmx_molblock_t *molb;
@@ -1576,18 +1576,11 @@ static int count_intercg_vsite(const gmx_mtop_t *mtop,
     t_iatom        *ia;
     int             n_intercg_vsite;
 
-    *bHaveChargeGroups = FALSE;
-
     n_intercg_vsite = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
         molt = &mtop->moltype[molb->type];
-
-        if (molt->cgs.nr < molt->atoms.nr)
-        {
-            *bHaveChargeGroups = TRUE;
-        }
 
         a2cg = atom2cg(&molt->cgs);
         for (ftype = 0; ftype < F_NRE; ftype++)
@@ -1785,8 +1778,9 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
 
     snew(vsite, 1);
 
-    vsite->n_intercg_vsite = count_intercg_vsite(mtop,
-                                                 &vsite->bHaveChargeGroups);
+    vsite->n_intercg_vsite   = count_intercg_vsites(mtop);
+
+    vsite->bHaveChargeGroups = (ncg_mtop(mtop) < mtop->natoms);
 
     /* If we don't have charge groups, the vsite follows its own pbc */
     if (!bSerial_NoPBC &&

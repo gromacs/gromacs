@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -198,11 +198,14 @@ void CommandLine::addOption(const char *name, double value)
 
 void CommandLine::merge(const CommandLine &args)
 {
-    // Skip first argument if it is the module name.
-    const int firstArg = (args.arg(0)[0] == '-' ? 0 : 1);
-    for (int i = firstArg; i < args.argc(); ++i)
+    if (args.argc() > 0)
     {
-        append(args.arg(i));
+        // Skip first argument if it is the module name.
+        const int firstArg = (args.arg(0)[0] == '-' ? 0 : 1);
+        for (int i = firstArg; i < args.argc(); ++i)
+        {
+            append(args.arg(i));
+        }
     }
 }
 
@@ -250,6 +253,14 @@ class CommandLineTestHelper::Impl
                 : option(std::move(other.option)), path(std::move(other.path)),
                   matcher(std::move(other.matcher))
             {
+            }
+
+            OutputFileInfo &operator=(OutputFileInfo &&other)
+            {
+                option  = std::move(other.option);
+                path    = std::move(other.path);
+                matcher = std::move(other.matcher);
+                return *this;
             }
 
             std::string              option;
@@ -448,7 +459,8 @@ TestReferenceChecker CommandLineTestBase::rootChecker()
 void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)
 {
     StringOutputStream     stream;
-    CommandLineHelpContext context(&stream, eHelpOutputFormat_Console, nullptr, "test");
+    TextWriter             writer(&stream);
+    CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, nullptr, "test");
     context.setModuleDisplayName(formatString("%s %s", "test", module->name()));
     module->writeHelp(context);
     TestReferenceChecker   checker(rootChecker());

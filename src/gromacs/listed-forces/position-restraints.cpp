@@ -51,8 +51,10 @@
 #include <cmath>
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -146,14 +148,14 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
     real    dr, dr2, invdr, v, rfb2;
 
     dr2  = 0.0;
-    rfb2 = sqr(rfb);
+    rfb2 = gmx::square(rfb);
     v    = 0.0;
 
     for (d = 0; d < DIM; d++)
     {
         if (d != fbdim)
         {
-            dr2 += sqr(dx[d]);
+            dr2 += gmx::square(dx[d]);
         }
     }
 
@@ -161,9 +163,9 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
          ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
          )
     {
-        dr     = sqrt(dr2);
+        dr     = std::sqrt(dr2);
         invdr  = 1./dr;
-        v      = 0.5*kk*sqr(dr - rfb);
+        v      = 0.5*kk*gmx::square(dr - rfb);
         for (d = 0; d < DIM; d++)
         {
             if (d != fbdim)
@@ -228,7 +230,7 @@ real fbposres(int nbonds,
 
         kk   = pr->fbposres.k;
         rfb  = pr->fbposres.r;
-        rfb2 = sqr(rfb);
+        rfb2 = gmx::square(rfb);
 
         /* with rfb<0, push particle out of the sphere/cylinder/layer */
         bInvert = FALSE;
@@ -247,8 +249,8 @@ real fbposres(int nbonds,
                     ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
                     )
                 {
-                    dr   = sqrt(dr2);
-                    v    = 0.5*kk*sqr(dr - rfb);
+                    dr   = std::sqrt(dr2);
+                    v    = 0.5*kk*gmx::square(dr - rfb);
                     fact = -kk*(dr-rfb)/dr; /* Force pointing to the center pos0 */
                     svmul(fact, dx, fm);
                 }
@@ -278,12 +280,12 @@ real fbposres(int nbonds,
                 dr    = dx[fbdim];
                 if ( ( dr > rfb && bInvert == FALSE ) || ( 0 < dr && dr < rfb && bInvert == TRUE )  )
                 {
-                    v         = 0.5*kk*sqr(dr - rfb);
+                    v         = 0.5*kk*gmx::square(dr - rfb);
                     fm[fbdim] = -kk*(dr - rfb);
                 }
                 else if ( (dr < (-rfb) && bInvert == FALSE ) || ( (-rfb) < dr && dr < 0 && bInvert == TRUE ))
                 {
-                    v         = 0.5*kk*sqr(dr + rfb);
+                    v         = 0.5*kk*gmx::square(dr + rfb);
                     fm[fbdim] = -kk*(dr + rfb);
                 }
                 break;

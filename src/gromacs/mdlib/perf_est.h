@@ -38,14 +38,17 @@
 #define GMX_MDLIB_PERF_EST_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_mtop_t;
+struct t_inputrec;
 
-int n_bonded_dx(const gmx_mtop_t *mtop, gmx_bool bExcl);
-/* Returns the number of pbc_rvec_sub calls required for bonded interactions.
- * This number is also roughly proportional to the computational cost.
+void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
+                            double *ndistance_c, double *ndistance_simd);
+/* Count the number of distance calculations in bonded interactions,
+ * separately for plain-C and SIMD bonded functions.
+ * The computational cost is nearly proportional to the numbers.
+ * It is allowed to pass NULL for the last two arguments.
  */
 
 float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,

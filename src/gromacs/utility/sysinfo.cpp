@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,11 +52,11 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <Windows.h>
 #include <process.h>
 #endif
-#ifdef HAVE_PWD_H
+#if HAVE_PWD_H
 #include <pwd.h>
 #endif
 #ifdef HAVE_UNISTD_H
@@ -75,7 +75,7 @@ const char c_unknown[] = "unknown";
 int gmx_gethostname(char *buf, size_t len)
 {
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     DWORD  dlen = len;
     if (GetComputerName(buf, &dlen))
     {
@@ -94,7 +94,7 @@ int gmx_gethostname(char *buf, size_t len)
 
 int gmx_getpid()
 {
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     return _getpid();
 #else
     return getpid();
@@ -115,7 +115,7 @@ int gmx_getusername(char *buf, size_t len)
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
     // TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
     // here.  If not, get rid of HAVE_PWD_H completely.
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     DWORD  dlen = len;
     if (GetUserName(buf, &dlen))
     {
@@ -138,7 +138,7 @@ gmx_ctime_r(const time_t *clock, char *buf, size_t len)
 #ifdef _MSC_VER
     /* Windows */
     ctime_s(buf, len, clock);
-#elif defined(GMX_NATIVE_WINDOWS)
+#elif GMX_NATIVE_WINDOWS
     char *tmpbuf = ctime(clock);
     strncpy(buf, tmpbuf, len-1);
     buf[len-1] = '\0';
@@ -162,7 +162,7 @@ void gmx_format_current_time(char *buf, size_t len)
 
 int gmx_set_nice(int level)
 {
-#ifdef GMX_USE_NICE
+#if GMX_USE_NICE
     // TODO: This may not be reliable, but currently the return value is not
     // used.
     if (nice(level) != -1)

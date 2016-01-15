@@ -11,7 +11,7 @@
 
 #include <vector>
 
-#include "gromacs/gmxlib/ifunc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace alexandria

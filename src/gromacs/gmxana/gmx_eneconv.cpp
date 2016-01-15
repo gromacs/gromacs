@@ -46,7 +46,8 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/disre.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
@@ -386,8 +387,8 @@ static void update_ee_sum(int nre,
             for (i = 0; i < nre; i++)
             {
                 ee_sum[i].eav  +=
-                    dsqr(ee_sum[i].esum/nsum
-                         - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
+                    gmx::square(ee_sum[i].esum/nsum
+                                - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
         }
@@ -397,8 +398,8 @@ static void update_ee_sum(int nre,
             {
                 ee_sum[i].eav  +=
                     fr->ener[i].eav +
-                    dsqr(ee_sum[i].esum/nsum
-                         - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
+                    gmx::square(ee_sum[i].esum/nsum
+                                - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
                     nsum*(nsum + fr->nsum)/static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
             }

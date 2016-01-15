@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -121,11 +122,6 @@ typedef struct {
     double *x, *v, *f;
 } t_tabledata;
 
-#define pow2(x) ((x)*(x))
-#define pow3(x) ((x)*(x)*(x))
-#define pow4(x) ((x)*(x)*(x)*(x))
-#define pow5(x) ((x)*(x)*(x)*(x)*(x))
-
 double v_q_ewald_lr(double beta, double r)
 {
     if (r == 0)
@@ -143,15 +139,15 @@ double v_lj_ewald_lr(double beta, double r)
     double br, br2, br4, r6, factor;
     if (r == 0)
     {
-        return pow(beta, 6)/6;
+        return gmx::power6(beta)/6;
     }
     else
     {
         br     = beta*r;
         br2    = br*br;
         br4    = br2*br2;
-        r6     = pow(r, 6.0);
-        factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
+        r6     = gmx::power6(r);
+        factor = (1.0 - std::exp(-br2)*(1 + br2 + 0.5*br4))/r6;
         return factor;
     }
 }
@@ -321,7 +317,7 @@ static double spline3_table_scale(double third_deriv_max,
 
     /* Don't try to be more accurate on energy than the precision */
     func_tol  = std::max(func_tol, static_cast<double>(GMX_REAL_EPS));
-    sc_func   = pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
+    sc_func   = std::cbrt(third_deriv_max/(6*12*sqrt(3)*func_tol))*x_scale;
 
     return std::max(sc_deriv, sc_func);
 }
@@ -370,8 +366,8 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
         real   sc_lj;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        xrc2  = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-        etol  = 0.1*exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
+        xrc2  = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+        etol  = 0.1*std::exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
 
         sc_lj = spline3_table_scale(func_d3, ic->ewaldcoeff_lj, etol);
 
@@ -854,7 +850,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
     }
     if (bPotentialSwitch)
     {
-        ksw  = 1.0/(pow5(rc-r1));
+        ksw  = 1.0/(gmx::power5(rc-r1));
     }
     else
     {
@@ -875,9 +871,9 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
             p = reppow;
         }
 
-        A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc, p+2)*pow2(rc-r1));
-        B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc, p+2)*pow3(rc-r1));
-        C = 1.0/pow(rc, p)-A/3.0*pow3(rc-r1)-B/4.0*pow4(rc-r1);
+        A = p * ((p+1)*r1-(p+4)*rc)/(std::pow(rc, p+2)*gmx::square(rc-r1));
+        B = -p * ((p+1)*r1-(p+3)*rc)/(std::pow(rc, p+2)*gmx::power3(rc-r1));
+        C = 1.0/std::pow(rc, p)-A/3.0*gmx::power3(rc-r1)-B/4.0*gmx::power4(rc-r1);
         if (tp == etabLJ6Shift)
         {
             A = -A;
@@ -912,7 +908,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 Vcut = -rc6;
                 break;
             case etabLJ6Ewald:
-                Vcut  = -rc6*exp(-ewclj*ewclj*rc2)*(1 + ewclj*ewclj*rc2 + pow4(ewclj)*rc2*rc2/2);
+                Vcut  = -rc6*exp(-ewclj*ewclj*rc2)*(1 + ewclj*ewclj*rc2 + gmx::power4(ewclj)*rc2*rc2/2);
                 break;
             case etabLJ12:
                 /* Repulsion */
@@ -982,10 +978,10 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
             }
             else
             {
-                swi      = 1 - 10*pow3(r-r1)*ksw*pow2(rc-r1)
-                    + 15*pow4(r-r1)*ksw*(rc-r1) - 6*pow5(r-r1)*ksw;
-                swi1     = -30*pow2(r-r1)*ksw*pow2(rc-r1)
-                    + 60*pow3(r-r1)*ksw*(rc-r1) - 30*pow4(r-r1)*ksw;
+                swi      = 1 - 10*gmx::power3(r-r1)*ksw*gmx::square(rc-r1)
+                    + 15*gmx::power4(r-r1)*ksw*(rc-r1) - 6*gmx::power5(r-r1)*ksw;
+                swi1     = -30*gmx::square(r-r1)*ksw*gmx::square(rc-r1)
+                    + 60*gmx::power3(r-r1)*ksw*(rc-r1) - 30*gmx::power4(r-r1)*ksw;
             }
         }
         else /* not really needed, but avoids compiler warnings... */
@@ -1076,8 +1072,8 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 Ftab  = -std::erf(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
                 break;
             case etabLJ6Ewald:
-                Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
-                Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*pow5(ewclj)*ewclj*r2*r2*r;
+                Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + gmx::power4(ewclj)*r2*r2/2);
+                Ftab  = 6.0*Vtab/r - r6*exp(-ewclj*ewclj*r2)*gmx::power5(ewclj)*ewclj*r2*r2*r;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1409,7 +1405,7 @@ t_forcetable *make_tables(FILE *out,
     else
     {
         // No tables are read
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         table->scale = 2000.0;
 #else
         table->scale = 500.0;

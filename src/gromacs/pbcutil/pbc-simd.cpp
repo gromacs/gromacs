@@ -48,44 +48,37 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 void set_pbc_simd(const t_pbc gmx_unused *pbc,
-                  pbc_simd_t gmx_unused  *pbc_simd)
+                  real gmx_unused        *pbc_simd)
 {
 #if GMX_SIMD_HAVE_REAL
-    rvec inv_box_diag;
-    int  d;
-
-    /* Setting inv_bdiag to 0 effectively turns off PBC */
-    clear_rvec(inv_box_diag);
     if (pbc != NULL)
     {
-        for (d = 0; d < pbc->ndim_ePBC; d++)
+        rvec inv_box_diag = {0, 0, 0};
+
+        for (int d = 0; d < pbc->ndim_ePBC; d++)
         {
             inv_box_diag[d] = 1.0/pbc->box[d][d];
         }
-    }
 
-    pbc_simd->inv_bzz = gmx_simd_set1_r(inv_box_diag[ZZ]);
-    pbc_simd->inv_byy = gmx_simd_set1_r(inv_box_diag[YY]);
-    pbc_simd->inv_bxx = gmx_simd_set1_r(inv_box_diag[XX]);
-
-    if (pbc != NULL)
-    {
-        pbc_simd->bzx = gmx_simd_set1_r(pbc->box[ZZ][XX]);
-        pbc_simd->bzy = gmx_simd_set1_r(pbc->box[ZZ][YY]);
-        pbc_simd->bzz = gmx_simd_set1_r(pbc->box[ZZ][ZZ]);
-        pbc_simd->byx = gmx_simd_set1_r(pbc->box[YY][XX]);
-        pbc_simd->byy = gmx_simd_set1_r(pbc->box[YY][YY]);
-        pbc_simd->bxx = gmx_simd_set1_r(pbc->box[XX][XX]);
+        store(pbc_simd + 0*GMX_SIMD_REAL_WIDTH, SimdReal(inv_box_diag[ZZ]));
+        store(pbc_simd + 1*GMX_SIMD_REAL_WIDTH, SimdReal(pbc->box[ZZ][XX]));
+        store(pbc_simd + 2*GMX_SIMD_REAL_WIDTH, SimdReal(pbc->box[ZZ][YY]));
+        store(pbc_simd + 3*GMX_SIMD_REAL_WIDTH, SimdReal(pbc->box[ZZ][ZZ]));
+        store(pbc_simd + 4*GMX_SIMD_REAL_WIDTH, SimdReal(inv_box_diag[YY]));
+        store(pbc_simd + 5*GMX_SIMD_REAL_WIDTH, SimdReal(pbc->box[YY][XX]));
+        store(pbc_simd + 6*GMX_SIMD_REAL_WIDTH, SimdReal(pbc->box[YY][YY]));
+        store(pbc_simd + 7*GMX_SIMD_REAL_WIDTH, SimdReal(inv_box_diag[XX]));
+        store(pbc_simd + 8*GMX_SIMD_REAL_WIDTH, SimdReal(pbc->box[XX][XX]));
     }
     else
     {
-        pbc_simd->bzx = gmx_simd_setzero_r();
-        pbc_simd->bzy = gmx_simd_setzero_r();
-        pbc_simd->bzz = gmx_simd_setzero_r();
-        pbc_simd->byx = gmx_simd_setzero_r();
-        pbc_simd->byy = gmx_simd_setzero_r();
-        pbc_simd->bxx = gmx_simd_setzero_r();
+        for (int i = 0; i < (DIM + DIM*(DIM+1)/2); i++)
+        {
+            store(pbc_simd + i*GMX_SIMD_REAL_WIDTH, setZero());
+        }
     }
 #endif
 }

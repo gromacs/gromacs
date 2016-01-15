@@ -52,6 +52,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -150,7 +151,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
     sfree(div);
     sfree(mdiv);
 
-    npp_root3  = static_cast<int>(std::pow(ntot - npme, 1.0/3.0) + 0.5);
+    npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
     npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
 
     /* The check below gives a reasonable division:
@@ -178,7 +179,8 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 }
 
 /*! \brief Make a guess for the number of PME ranks to use. */
-static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
+static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
+                      matrix box,
                       int nrank_tot)
 {
     float      ratio;
@@ -271,7 +273,7 @@ static int div_up(int n, int f)
     return (n + f - 1)/f;
 }
 
-real comm_box_frac(ivec dd_nc, real cutoff, gmx_ddbox_t *ddbox)
+real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
 {
     int  i, j, k;
     rvec nw;
@@ -339,8 +341,8 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
 
 /*! \brief Estimate cost of communication for a possible domain decomposition. */
 static float comm_cost_est(real limit, real cutoff,
-                           matrix box, gmx_ddbox_t *ddbox,
-                           int natoms, t_inputrec *ir,
+                           matrix box, const gmx_ddbox_t *ddbox,
+                           int natoms, const t_inputrec *ir,
                            float pbcdxr,
                            int npme_tot, ivec nc)
 {
@@ -520,18 +522,18 @@ static float comm_cost_est(real limit, real cutoff,
         fprintf(debug,
                 "nc %2d %2d %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %9.3e tot %9.3e\n",
                 nc[XX], nc[YY], nc[ZZ], npme[XX], npme[YY],
-                comm_vol, cost_pbcdx, comm_pme,
-                3*natoms*(comm_vol + cost_pbcdx) + comm_pme);
+                comm_vol, cost_pbcdx, comm_pme/(3*natoms),
+                comm_vol + cost_pbcdx + comm_pme/(3*natoms));
     }
 
     return 3*natoms*(comm_vol + cost_pbcdx) + comm_pme;
 }
 
 /*! \brief Assign penalty factors to possible domain decompositions, based on the estimated communication costs. */
-static void assign_factors(gmx_domdec_t *dd,
+static void assign_factors(const gmx_domdec_t *dd,
                            real limit, real cutoff,
-                           matrix box, gmx_ddbox_t *ddbox,
-                           int natoms, t_inputrec *ir,
+                           matrix box, const gmx_ddbox_t *ddbox,
+                           int natoms, const t_inputrec *ir,
                            float pbcdxr, int npme,
                            int ndiv, int *div, int *mdiv, ivec ir_try, ivec opt)
 {
@@ -594,16 +596,16 @@ static void assign_factors(gmx_domdec_t *dd,
 static real optimize_ncells(FILE *fplog,
                             int nnodes_tot, int npme_only,
                             gmx_bool bDynLoadBal, real dlb_scale,
-                            gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
-                            t_inputrec *ir,
+                            const gmx_mtop_t *mtop,
+                            matrix box, const gmx_ddbox_t *ddbox,
+                            const t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit, real cutoff,
                             gmx_bool bInterCGBondeds,
                             ivec nc)
 {
     int      npp, npme, ndiv, *div, *mdiv, d, nmax;
-    gmx_bool bExcl_pbcdx;
-    float    pbcdxr;
+    double   pbcdxr;
     real     limit;
     ivec     itry;
 
@@ -625,10 +627,12 @@ static real optimize_ncells(FILE *fplog,
 
     if (bInterCGBondeds)
     {
-        /* For Ewald exclusions pbc_dx is not called */
-        bExcl_pbcdx =
-            (inputrecExclForces(ir) && !EEL_FULL(ir->coulombtype));
-        pbcdxr = (double)n_bonded_dx(mtop, bExcl_pbcdx)/(double)mtop->natoms;
+        /* If we can skip PBC for distance calculations in plain-C bondeds,
+         * we can save some time (e.g. 3D DD with pbc=xyz).
+         * Here we ignore SIMD bondeds as they always do (fast) PBC.
+         */
+        count_bonded_distances(mtop, ir, &pbcdxr, NULL);
+        pbcdxr /= (double)mtop->natoms;
     }
     else
     {
@@ -708,8 +712,11 @@ static real optimize_ncells(FILE *fplog,
 }
 
 real dd_choose_grid(FILE *fplog,
-                    t_commrec *cr, gmx_domdec_t *dd, t_inputrec *ir,
-                    gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
+                    t_commrec *cr, gmx_domdec_t *dd,
+                    const t_inputrec *ir,
+                    const gmx_mtop_t *mtop,
+                    matrix box, const gmx_ddbox_t *ddbox,
+                    int nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds)
@@ -722,19 +729,19 @@ real dd_choose_grid(FILE *fplog,
         nnodes_div = cr->nnodes;
         if (EEL_PME(ir->coulombtype))
         {
-            if (cr->npmenodes > 0)
+            if (nPmeRanks > 0)
             {
-                if (cr->npmenodes >= cr->nnodes)
+                if (nPmeRanks >= cr->nnodes)
                 {
                     gmx_fatal(FARGS,
                               "Cannot have %d separate PME ranks with just %d total ranks",
-                              cr->npmenodes, cr->nnodes);
+                              nPmeRanks, cr->nnodes);
                 }
 
                 /* If the user purposely selected the number of PME nodes,
                  * only check for large primes in the PP node count.
                  */
-                nnodes_div -= cr->npmenodes;
+                nnodes_div -= nPmeRanks;
             }
         }
         else
@@ -755,7 +762,7 @@ real dd_choose_grid(FILE *fplog,
 
         if (EEL_PME(ir->coulombtype))
         {
-            if (cr->npmenodes < 0)
+            if (nPmeRanks < 0)
             {
                 /* Use PME nodes when the number of nodes is more than 16 */
                 if (cr->nnodes <= 18)
@@ -777,6 +784,8 @@ real dd_choose_grid(FILE *fplog,
             }
             else
             {
+                /* We checked above that nPmeRanks is a valid number */
+                cr->npmenodes = nPmeRanks;
                 if (fplog)
                 {
                     fprintf(fplog, "Using %d separate PME ranks, per user request\n", cr->npmenodes);
@@ -799,8 +808,6 @@ real dd_choose_grid(FILE *fplog,
     gmx_bcast(sizeof(dd->nc), dd->nc, cr);
     if (EEL_PME(ir->coulombtype))
     {
-        gmx_bcast(sizeof(ir->nkx), &ir->nkx, cr);
-        gmx_bcast(sizeof(ir->nky), &ir->nky, cr);
         gmx_bcast(sizeof(cr->npmenodes), &cr->npmenodes, cr);
     }
     else

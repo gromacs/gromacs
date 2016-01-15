@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,15 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/basedefinitions.h"
 #ifdef CALC_COUL_EWALD
 #include "gromacs/math/utilities.h"
+#endif
+
+#include <cstdint>
+
+#if !GMX_SIMD_HAVE_HSIMD_UTIL_REAL
+#error "Half-simd utility operations are required for the 2xNN kernels"
 #endif
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE
@@ -51,19 +58,68 @@
 /* The stride of all the atom data arrays is equal to half the SIMD width */
 #define STRIDE     UNROLLJ
 
-#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
+// TODO: Remove when all kernels are in the gmx namespace
+using namespace gmx;
+
+#if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
+#error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
+#endif
+
+// We use the FDV0 tables for width==4 (when we can load it in one go), or if we don't have any unaligned loads
+#if GMX_SIMD_REAL_WIDTH == 4 || !GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
+#define TAB_FDV0
+#endif
+
+#if defined UNROLLJ
+/* As add_ener_grp, but for two groups of UNROLLJ/2 stored in
+ * a single SIMD register.
+ */
+static gmx_inline void
+add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, const int *offset_jj)
+{
+    for (int jj = 0; jj < (UNROLLJ/2); jj++)
+    {
+        incrDualHsimd(v0+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2,
+                      v1+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH/2, e_S);
+    }
+}
+#endif
+
+#if GMX_SIMD_HAVE_INT32_LOGICAL
+typedef SimdInt32    SimdBitMask;
+#else
+typedef SimdReal     SimdBitMask;
+#endif
+
 
 static gmx_inline void gmx_simdcall
 gmx_load_simd_2xnn_interactions(int                  excl,
-                                gmx_exclfilter       filter_S0,
-                                gmx_exclfilter       filter_S2,
-                                gmx_simd_bool_t     *interact_S0,
-                                gmx_simd_bool_t     *interact_S2)
+                                SimdBitMask          filter_S0,
+                                SimdBitMask          filter_S2,
+                                SimdBool            *interact_S0,
+                                SimdBool            *interact_S2)
 {
-    /* Load integer interaction mask */
-    gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
-    *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
-    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
+#if GMX_SIMD_HAVE_INT32_LOGICAL
+    SimdInt32 mask_pr_S(excl);
+    *interact_S0  = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );
+    *interact_S2  = cvtIB2B( testBits( mask_pr_S & filter_S2 ) );
+#elif GMX_SIMD_HAVE_LOGICAL
+    union
+    {
+#if GMX_DOUBLE
+        std::int64_t i;
+#else
+        std::int32_t i;
+#endif
+        real         r;
+    } conv;
+
+    conv.i = excl;
+    SimdReal      mask_pr_S(conv.r);
+
+    *interact_S0  = testBits( mask_pr_S & filter_S0 );
+    *interact_S2  = testBits( mask_pr_S & filter_S2 );
+#endif
 }
 
 /* All functionality defines are set here, except for:

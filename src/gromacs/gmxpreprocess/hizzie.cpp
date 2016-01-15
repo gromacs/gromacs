@@ -45,6 +45,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
@@ -151,7 +152,7 @@ static gmx_bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
     natom = pdba->nr;
     bHB   = FALSE;
     ri    = pdba->atom[i].resind;
-    dist2 = sqr(dist);
+    dist2 = gmx::square(dist);
     for (j = 0; (j < natom); j++)
     {
         /* Check whether the other atom is a donor/acceptor and not i */

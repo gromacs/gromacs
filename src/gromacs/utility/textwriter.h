@@ -135,9 +135,6 @@ class TextWriter
         explicit TextWriter(const TextOutputStreamPointer &stream);
         ~TextWriter();
 
-        //! Returns the underlying stream for this writer.
-        TextOutputStream &stream();
-
         /*! \brief
          * Allows adjusting wrapping settings for the writer.
          *
@@ -168,6 +165,25 @@ class TextWriter
         void writeLine(const std::string &line);
         //! Writes a newline to the stream.
         void writeLine();
+
+        /*! \brief
+         * Writes a newline if previous output did not end in one.
+         *
+         * If nothing has been written using the writer, this method does
+         * nothing.
+         */
+        void ensureLineBreak();
+        /*! \brief
+         * Ensures that the next string written starts after an empty line.
+         *
+         * Always terminates the current line (as with ensureLineBreak()), but
+         * the empty line is only written out when the next line is written,
+         * so that trailing newlines after final output can be avoided.
+         *
+         * If nothing has been written using the writer, this method does
+         * nothing.
+         */
+        void ensureEmptyLine();
 
         /*! \brief
          * Closes the underlying stream.

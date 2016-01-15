@@ -43,13 +43,13 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/orires.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calcmu.h"
@@ -464,7 +464,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         for (i = 0; i < nlim-1; i++)
         {   /* only through the second to last */
             lam_dg[i]       = dfhist->sum_dg[i+1] - dfhist->sum_dg[i];
-            lam_variance[i] = sqr(dfhist->sum_variance[i+1]) - sqr(dfhist->sum_variance[i]);
+            lam_variance[i] = gmx::square(dfhist->sum_variance[i+1]) - gmx::square(dfhist->sum_variance[i]);
         }
 
         /* accumulate running averages */
@@ -710,7 +710,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         for (i = 1; i < nlim; i++)
         {
             dfhist->sum_dg[i]       = lam_dg[i-1] + dfhist->sum_dg[i-1];
-            dfhist->sum_variance[i] = std::sqrt(lam_variance[i-1] + sqr(dfhist->sum_variance[i-1]));
+            dfhist->sum_variance[i] = std::sqrt(lam_variance[i-1] + gmx::square(dfhist->sum_variance[i-1]));
             dfhist->sum_weights[i]  = dfhist->sum_dg[i] + dfhist->sum_minvar[i];
         }
 
@@ -1073,7 +1073,7 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
             {
                 dw = dfhist->sum_weights[ifep+1] - dfhist->sum_weights[ifep];
                 dg = dfhist->sum_dg[ifep+1] - dfhist->sum_dg[ifep];
-                dv = std::sqrt(sqr(dfhist->sum_variance[ifep+1]) - sqr(dfhist->sum_variance[ifep]));
+                dv = std::sqrt(gmx::square(dfhist->sum_variance[ifep+1]) - gmx::square(dfhist->sum_variance[ifep]));
             }
             fprintf(outfile, "%3d", (ifep+1));
             for (i = 0; i < efptNR; i++)

@@ -44,11 +44,10 @@
 #include <stdlib.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/utility/strdb.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"

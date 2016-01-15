@@ -49,11 +49,11 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -490,7 +490,7 @@ static void overlap(const char *outfile, int natoms,
             {
                 inp += iprod(eigvec1[vec][i], eigvec2[x][i]);
             }
-            overlap += sqr(inp);
+            overlap += gmx::square(inp);
         }
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
@@ -1349,8 +1349,8 @@ int gmx_anaeig(int argc, char *argv[])
         {
             for (d = 0; (d < DIM); d++)
             {
-                t       += sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
-                totmass += sqr(sqrtm[i]);
+                t       += gmx::square((xav1[i][d]-xav2[i][d])*sqrtm[i]);
+                totmass += gmx::square(sqrtm[i]);
             }
         }
         fprintf(stdout, "RMSD (without fit) between the two average structures:"

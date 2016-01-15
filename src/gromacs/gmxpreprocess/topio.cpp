@@ -49,9 +49,7 @@
 #include <sys/types.h>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/ifunc.h"
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
@@ -67,6 +65,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
@@ -989,7 +988,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             bCouple = (opts->couple_moltype != NULL &&
                                        (gmx_strcasecmp("system", opts->couple_moltype) == 0 ||
-                                        gmx_strcasecmp(*(mi0->name), opts->couple_moltype) == 0));
+                                        strcmp(*(mi0->name), opts->couple_moltype) == 0));
                             if (bCouple)
                             {
                                 nmol_couple += nrcopies;

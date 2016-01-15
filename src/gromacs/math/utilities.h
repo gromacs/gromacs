@@ -119,13 +119,6 @@ gmx_within_tol(double   f1,
 int
 gmx_numzero(double a);
 
-/*! \brief Compute floor of logarithm to base 2
- *
- * \return log2(x)
- */
-unsigned int
-gmx_log2i(unsigned int x);
-
 /*! \brief Multiply two large ints
  *
  * \return False iff overflow occured

@@ -44,7 +44,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"

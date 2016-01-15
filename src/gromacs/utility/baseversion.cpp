@@ -36,6 +36,8 @@
 
 #include "baseversion.h"
 
+#include "config.h"
+
 #include "baseversion-gen.h"
 
 const char *gmx_version()
@@ -53,7 +55,7 @@ const char *gmx_version_git_central_base_hash()
     return _gmx_central_base_hash;
 }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 void gmx_is_double_precision()
 {
 }
@@ -62,3 +64,12 @@ void gmx_is_single_precision()
 {
 }
 #endif
+
+/* Note that this array (and some which follow) must match the "GPU
+ * support enumeration" in src/config.h.cmakein */
+static const char * const gpuImplementationStrings[] = { "disabled", "CUDA", "OpenCL" };
+
+const char *getGpuImplementationString()
+{
+    return gpuImplementationStrings[GMX_GPU];
+}

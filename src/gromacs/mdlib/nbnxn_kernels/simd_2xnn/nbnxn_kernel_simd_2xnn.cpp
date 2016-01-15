@@ -59,8 +59,8 @@
 #define GMX_SIMD_J_UNROLL_SIZE 2
 #include "nbnxn_kernel_simd_2xnn.h"
 
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"

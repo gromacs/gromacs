@@ -48,6 +48,8 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/nbsearch.h"
@@ -440,7 +442,7 @@ static void removeSolventBoxOverlap(t_atoms *atoms, std::vector<RVec> *x,
         {
             continue;
         }
-        if (pair.distance2() < sqr((*r)[i1] + (*r)[i2]))
+        if (pair.distance2() < gmx::square((*r)[i1] + (*r)[i2]))
         {
             rvec dx;
             rvec_sub((*x)[i2], (*x)[i1], dx);
@@ -542,7 +544,7 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
         }
         const real r1      = r_solute[pair.refIndex()];
         const real r2      = (*r)[pair.testIndex()];
-        const bool bRemove = (pair.distance2() < sqr(r1 + r2));
+        const bool bRemove = (pair.distance2() < gmx::square(r1 + r2));
         remover.markResidue(*atoms, pair.testIndex(), bRemove);
     }
 

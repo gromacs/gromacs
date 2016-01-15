@@ -41,9 +41,9 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -52,17 +52,17 @@
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {
-    return cn*pow(x, -npow)-c6*std::pow(x, -6)+qq*ONE_4PI_EPS0/x;
+    return cn*pow(x, -npow)-c6/gmx::power6(x)+qq*ONE_4PI_EPS0/x;
 }
 
 real bhpot(real x, real A, real B, real C)
 {
-    return A*std::exp(-B*x) - C*std::pow(x, -6);
+    return A*std::exp(-B*x) - C/gmx::power6(x);
 }
 
 real dpot(real x, real qq, real c6, real cn, int npow)
 {
-    return -(npow*cn*std::pow(x, -npow-1)-6*c6*std::pow(x, -7)+qq*ONE_4PI_EPS0/sqr(x));
+    return -(npow*cn*std::pow(x, -npow-1)-6*c6/(x*gmx::power6(x))+qq*ONE_4PI_EPS0/gmx::square(x));
 }
 
 int gmx_sigeps(int argc, char *argv[])
@@ -117,7 +117,7 @@ int gmx_sigeps(int argc, char *argv[])
     {
         c6  = Cbh;
         sig = std::pow((6.0/npow)*std::pow(npow/Bbh, npow-6), 1.0/(npow-6));
-        eps = c6/(4*std::pow(sig, 6));
+        eps = c6/(4*gmx::power6(sig));
         cn  = 4*eps*std::pow(sig, npow);
     }
     else
@@ -125,7 +125,7 @@ int gmx_sigeps(int argc, char *argv[])
         if (opt2parg_bSet("-sig", asize(pa), pa) ||
             opt2parg_bSet("-eps", asize(pa), pa))
         {
-            c6  = 4*eps*std::pow(sig, 6);
+            c6  = 4*eps*gmx::power6(sig);
             cn  = 4*eps*std::pow(sig, npow);
         }
         else if (opt2parg_bSet("-c6", asize(pa), pa) ||
@@ -133,7 +133,7 @@ int gmx_sigeps(int argc, char *argv[])
                  opt2parg_bSet("-pow", asize(pa), pa))
         {
             sig = std::pow(cn/c6, static_cast<real>(1.0/(npow-6)));
-            eps = 0.25*c6*std::pow(sig, -6);
+            eps = 0.25*c6/gmx::power6(sig);
         }
         else
         {

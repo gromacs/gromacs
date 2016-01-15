@@ -37,6 +37,7 @@
 #include "simd4.h"
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #if GMX_SIMD
 
@@ -51,53 +52,51 @@ namespace test
 
 #if GMX_SIMD4_HAVE_REAL
 
-const gmx_simd4_real_t rSimd4_1_2_3    = setSimd4RealFrom3R(1, 2, 3);
-const gmx_simd4_real_t rSimd4_4_5_6    = setSimd4RealFrom3R(4, 5, 6);
-const gmx_simd4_real_t rSimd4_7_8_9    = setSimd4RealFrom3R(7, 8, 9);
-const gmx_simd4_real_t rSimd4_5_7_9    = setSimd4RealFrom3R(5, 7, 9);
-const gmx_simd4_real_t rSimd4_m1_m2_m3 = setSimd4RealFrom3R(-1, -2, -3);
-const gmx_simd4_real_t rSimd4_3_1_4    = setSimd4RealFrom3R(3, 1, 4);
-const gmx_simd4_real_t rSimd4_m3_m1_m4 = setSimd4RealFrom3R(-3, -1, -4);
-const gmx_simd4_real_t rSimd4_2p25     = setSimd4RealFrom1R(2.25);
-const gmx_simd4_real_t rSimd4_3p75     = setSimd4RealFrom1R(3.75);
-const gmx_simd4_real_t rSimd4_m2p25    = setSimd4RealFrom1R(-2.25);
-const gmx_simd4_real_t rSimd4_m3p75    = setSimd4RealFrom1R(-3.75);
-const gmx_simd4_real_t rSimd4_Exp      = setSimd4RealFrom3R( 1.4055235171027452623914516e+18,
-                                                             5.3057102734253445623914516e-13,
-                                                             -2.1057102745623934534514516e+16);
-#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+const Simd4Real rSimd4_1_2_3    = setSimd4RealFrom3R(1, 2, 3);
+const Simd4Real rSimd4_4_5_6    = setSimd4RealFrom3R(4, 5, 6);
+const Simd4Real rSimd4_7_8_9    = setSimd4RealFrom3R(7, 8, 9);
+const Simd4Real rSimd4_5_7_9    = setSimd4RealFrom3R(5, 7, 9);
+const Simd4Real rSimd4_m1_m2_m3 = setSimd4RealFrom3R(-1, -2, -3);
+const Simd4Real rSimd4_3_1_4    = setSimd4RealFrom3R(3, 1, 4);
+const Simd4Real rSimd4_m3_m1_m4 = setSimd4RealFrom3R(-3, -1, -4);
+const Simd4Real rSimd4_2p25     = setSimd4RealFrom1R(2.25);
+const Simd4Real rSimd4_3p75     = setSimd4RealFrom1R(3.75);
+const Simd4Real rSimd4_m2p25    = setSimd4RealFrom1R(-2.25);
+const Simd4Real rSimd4_m3p75    = setSimd4RealFrom1R(-3.75);
+const Simd4Real rSimd4_Exp      = setSimd4RealFrom3R( 1.4055235171027452623914516e+18,
+                                                      5.3057102734253445623914516e-13,
+                                                      -2.1057102745623934534514516e+16);
+#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
-const gmx_simd4_real_t  rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
-                                                              8.794495252903116023030553e-140,
-                                                              -3.637060701570496477655022e+202);
+const Simd4Real  rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
+                                                       8.794495252903116023030553e-140,
+                                                       -3.637060701570496477655022e+202);
 #    endif
 
 ::std::vector<real>
-simd4Real2Vector(const gmx_simd4_real_t simd4)
+simd4Real2Vector(const Simd4Real simd4)
 {
-    real                mem[GMX_SIMD4_WIDTH*2];
-    real *              p = gmx_simd4_align_r(mem);
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
 
-    gmx_simd4_store_r(p, simd4);
-    std::vector<real>   v(p, p+GMX_SIMD4_WIDTH);
+    store4(mem, simd4);
+    std::vector<real>   v(mem, mem+GMX_SIMD4_WIDTH);
 
     return v;
 }
 
-gmx_simd4_real_t
+Simd4Real
 vector2Simd4Real(const std::vector<real> &v)
 {
-    real                mem[GMX_SIMD4_WIDTH*2];
-    real *              p = gmx_simd4_align_r(mem);
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
 
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
     {
-        p[i] = v[i % v.size()];  // repeat vector contents to fill simd width
+        mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
     }
-    return gmx_simd4_load_r(p);
+    return load4(mem);
 }
 
-gmx_simd4_real_t
+Simd4Real
 setSimd4RealFrom3R(real r0, real r1, real r2)
 {
     std::vector<real> v(3);
@@ -107,7 +106,7 @@ setSimd4RealFrom3R(real r0, real r1, real r2)
     return vector2Simd4Real(v);
 }
 
-gmx_simd4_real_t
+Simd4Real
 setSimd4RealFrom1R(real value)
 {
     std::vector<real> v(GMX_SIMD4_WIDTH);
@@ -120,14 +119,14 @@ setSimd4RealFrom1R(real value)
 
 testing::AssertionResult
 Simd4Test::compareSimd4RealUlp(const char *  refExpr,     const char *  tstExpr,
-                               const gmx_simd4_real_t ref, const gmx_simd4_real_t tst)
+                               const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorRealUlp(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
 }
 
 testing::AssertionResult
 Simd4Test::compareSimd4RealEq(const char * refExpr, const char * tstExpr,
-                              const gmx_simd4_real_t ref, const gmx_simd4_real_t tst)
+                              const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorEq(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
 }

@@ -41,15 +41,16 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -380,21 +381,21 @@ int gmx_bundle(int argc, char *argv[])
             fprintf(ftilt, " %6g", RAD2DEG*acos(bun.dir[i][ZZ]));
             comp = bun.mid[i][XX]*bun.dir[i][XX]+bun.mid[i][YY]*bun.dir[i][YY];
             fprintf(ftiltr, " %6g", RAD2DEG*
-                    std::asin(comp/std::sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
             comp = bun.mid[i][YY]*bun.dir[i][XX]-bun.mid[i][XX]*bun.dir[i][YY];
             fprintf(ftiltl, " %6g", RAD2DEG*
-                    std::asin(comp/std::sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
             if (bKink)
             {
                 rvec_sub(bun.end[0][i], bun.end[2][i], va);
                 rvec_sub(bun.end[2][i], bun.end[1][i], vb);
-                unitv_no_table(va, va);
-                unitv_no_table(vb, vb);
+                unitv(va, va);
+                unitv(vb, vb);
                 fprintf(fkink, " %6g", RAD2DEG*acos(iprod(va, vb)));
                 cprod(va, vb, vc);
                 copy_rvec(bun.mid[i], vr);
                 vr[ZZ] = 0;
-                unitv_no_table(vr, vr);
+                unitv(vr, vr);
                 fprintf(fkinkr, " %6g", RAD2DEG*std::asin(iprod(vc, vr)));
                 vl[XX] = vr[YY];
                 vl[YY] = -vr[XX];

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,13 +48,15 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -75,6 +77,30 @@ class MockModule : public gmx::TrajectoryAnalysisModule
 
 using gmx::test::CommandLine;
 
+class TrajectoryAnalysisCommandLineRunnerTest : public gmx::test::CommandLineTestBase
+{
+    public:
+        TrajectoryAnalysisCommandLineRunnerTest()
+            : mockModule_(new MockModule())
+        {
+        }
+
+        gmx::ICommandLineOptionsModulePointer createRunner()
+        {
+            return gmx::TrajectoryAnalysisCommandLineRunner::createModule(
+                    std::move(mockModule_));
+        }
+
+        void runTest(const CommandLine &args)
+        {
+            CommandLine &cmdline = commandLine();
+            cmdline.merge(args);
+            ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
+        }
+
+        std::unique_ptr<MockModule> mockModule_;
+};
+
 //! Initializes options for help testing.
 void initOptions(gmx::IOptionsContainer *options, gmx::TrajectoryAnalysisSettings *settings)
 {
@@ -87,22 +113,63 @@ void initOptions(gmx::IOptionsContainer *options, gmx::TrajectoryAnalysisSetting
     options->addOption(gmx::BooleanOption("test").description("Test option"));
 }
 
-//! Test fixture for TrajectoryAnalysisCommandLineRunner tests.
-typedef gmx::test::CommandLineTestBase TrajectoryAnalysisCommandLineRunnerTest;
-
 TEST_F(TrajectoryAnalysisCommandLineRunnerTest, WritesHelp)
 {
-    std::unique_ptr<MockModule>                    mockModule(new MockModule());
     using ::testing::_;
     using ::testing::Invoke;
-    EXPECT_CALL(*mockModule, initOptions(_, _)).WillOnce(Invoke(&initOptions));
+    EXPECT_CALL(*mockModule_, initOptions(_, _)).WillOnce(Invoke(&initOptions));
 
-    gmx::ICommandLineOptionsModulePointer          runner(
-            gmx::TrajectoryAnalysisCommandLineRunner::createModule(std::move(mockModule)));
     const std::unique_ptr<gmx::ICommandLineModule> module(
             gmx::ICommandLineOptionsModule::createModule("mod", "Description",
-                                                         std::move(runner)));
+                                                         createRunner()));
     testWriteHelp(module.get());
+}
+
+TEST_F(TrajectoryAnalysisCommandLineRunnerTest, RunsWithSubsetTrajectory)
+{
+    const char *const cmdline[] = {
+        "-fgroup", "atomnr 4 5 6 10 to 14"
+    };
+
+    using ::testing::_;
+    EXPECT_CALL(*mockModule_, initOptions(_, _));
+    EXPECT_CALL(*mockModule_, initAnalysis(_, _));
+    EXPECT_CALL(*mockModule_, analyzeFrame(0, _, _, _));
+    EXPECT_CALL(*mockModule_, analyzeFrame(1, _, _, _));
+    EXPECT_CALL(*mockModule_, finishAnalysis(2));
+    EXPECT_CALL(*mockModule_, writeOutput());
+
+    setInputFile("-s", "simple.gro");
+    setInputFile("-f", "simple-subset.gro");
+    EXPECT_NO_THROW_GMX(runTest(CommandLine(cmdline)));
+}
+
+TEST_F(TrajectoryAnalysisCommandLineRunnerTest, DetectsIncorrectTrajectorySubset)
+{
+    const char *const cmdline[] = {
+        "-fgroup", "atomnr 3 to 6 10 to 14"
+    };
+
+    using ::testing::_;
+    EXPECT_CALL(*mockModule_, initOptions(_, _));
+    EXPECT_CALL(*mockModule_, initAnalysis(_, _));
+
+    setInputFile("-s", "simple.gro");
+    setInputFile("-f", "simple-subset.gro");
+    EXPECT_THROW_GMX(runTest(CommandLine(cmdline)), gmx::InconsistentInputError);
+}
+
+TEST_F(TrajectoryAnalysisCommandLineRunnerTest, FailsWithTrajectorySubsetWithoutTrajectory)
+{
+    const char *const cmdline[] = {
+        "-fgroup", "atomnr 3 to 6 10 to 14"
+    };
+
+    using ::testing::_;
+    EXPECT_CALL(*mockModule_, initOptions(_, _));
+
+    setInputFile("-s", "simple.gro");
+    EXPECT_THROW_GMX(runTest(CommandLine(cmdline)), gmx::InconsistentInputError);
 }
 
 } // namespace

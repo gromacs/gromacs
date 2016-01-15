@@ -36,7 +36,11 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VMX_H
 
+#include "impl_ibm_vmx_definitions.h"
+#include "impl_ibm_vmx_general.h"
+// No double precision available for VMX
 #include "impl_ibm_vmx_simd4_float.h"
 #include "impl_ibm_vmx_simd_float.h"
+#include "impl_ibm_vmx_util_float.h"
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_H */
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_H

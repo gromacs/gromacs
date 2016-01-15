@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -82,7 +83,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
     double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
     real          sigma2[NSTATES], sigma_pow[NSTATES];
-    int           do_tab, tab_elemsize;
+    int           do_tab, tab_elemsize = 0;
     int           n0, n1C, n1V, nnn;
     real          Y, F, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
     int           icoul, ivdw;
@@ -322,8 +323,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         dlfac_vdw[i]  = DLF[i]*lam_power/sc_r_power*(lam_power == 2 ? (1-LFV[i]) : 1);
     }
     /* precalculate */
-    sigma2_def = std::pow(sigma6_def, 1.0/3.0);
-    sigma2_min = std::pow(sigma6_min, 1.0/3.0);
+    sigma2_def = std::cbrt(sigma6_def);
+    sigma2_min = std::cbrt(sigma6_min);
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
@@ -386,7 +387,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
             if (rsq > 0)
             {
-                rinv         = gmx_invsqrt(rsq);
+                rinv         = gmx::invsqrt(rsq);
                 r            = rsq*rinv;
             }
             else
@@ -438,8 +439,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     {
                         /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
                         sigma6[i]       = half*c12[i]/c6[i];
-                        sigma2[i]       = std::pow(sigma6[i], 1.0/3.0);
-                        /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
+                        sigma2[i]       = std::cbrt(sigma6[i]);
+                        /* should be able to get rid of cbrt call eventually.  Will require agreement on
                            what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
                         if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
                         {

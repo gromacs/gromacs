@@ -45,9 +45,10 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/orires.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -166,14 +167,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         if (ncon > 0 && ir->eConstrAlg == econtLINCS)
         {
-            if (ir->eI == eiSD2)
-            {
-                md->nCrmsd = 2;
-            }
-            else
-            {
-                md->nCrmsd = 1;
-            }
+            md->nCrmsd = 1;
         }
         md->bConstrVir = (getenv("GMX_CONSTRAINTVIR") != NULL);
     }
@@ -937,11 +931,7 @@ void upd_mdebin(t_mdebin       *md,
     add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
     if (md->nCrmsd)
     {
-        crmsd[0] = constr_rmsd(constr, FALSE);
-        if (md->nCrmsd > 1)
-        {
-            crmsd[1] = constr_rmsd(constr, TRUE);
-        }
+        crmsd[0] = constr_rmsd(constr);
         add_ebin(md->ebin, md->iconrmsd, md->nCrmsd, crmsd, FALSE);
     }
     if (md->bDynBox)
@@ -1011,7 +1001,7 @@ void upd_mdebin(t_mdebin       *md,
         add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *dens*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+                 *dens*gmx::square(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
     }
     if (md->nE > 1)
@@ -1253,7 +1243,7 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 FILE *log,
                 gmx_int64_t step, double time,
-                int mode, gmx_bool bCompact,
+                int mode,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts)
 {
@@ -1324,7 +1314,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     add_subblocks_enxblock(&(fr.block[b]), 1);
                     fr.block[b].id        = id[b];
                     fr.block[b].sub[0].nr = nr[b];
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                     fr.block[b].sub[0].type = xdr_datatype_float;
                     fr.block[b].sub[0].fval = block[b];
 #else
@@ -1344,7 +1334,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     fr.block[db].id        = enxDISRE;
                     fr.block[db].sub[0].nr = ndisre;
                     fr.block[db].sub[1].nr = ndisre;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                     fr.block[db].sub[0].type = xdr_datatype_float;
                     fr.block[db].sub[1].type = xdr_datatype_float;
                     fr.block[db].sub[0].fval = disre_rt;
@@ -1415,7 +1405,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
         pr_ebin(log, md->ebin, md->ie, md->f_nre+md->nCrmsd, 5, mode, TRUE);
         fprintf(log, "\n");
 
-        if (!bCompact)
+        if (mode == eprAVER)
         {
             if (md->bDynBox)
             {

@@ -164,7 +164,7 @@ class File(object):
         self._lines = None
         self._filter = None
         self._declared_defines = None
-        self._used_define_files = set()
+        self._used_defines = dict()
         directory.add_file(self)
 
     def set_doc_xml(self, rawdoc, sourcetree):
@@ -247,7 +247,9 @@ class File(object):
         """Add defines used in this file.
 
         Used internally by find_define_file_uses()."""
-        self._used_define_files.add(define_file)
+        if define_file not in self._used_defines:
+            self._used_defines[define_file] = set()
+        self._used_defines[define_file].update(defines)
 
     def get_reporter_location(self):
         return reporter.Location(self._abspath, None)
@@ -355,11 +357,16 @@ class File(object):
         return self._declared_defines
 
     def get_used_define_files(self):
-        """Return set of defines from config.h that are used in this file.
+        """Return files like config.h whose defines are used in this file.
 
         The return value is empty if find_define_file_uses() has not been called,
         as well as for headers that declare these defines."""
-        return self._used_define_files
+        return set(self._used_defines.iterkeys())
+
+    def get_used_defines(self, define_file):
+        """Return set of defines used in this file for a given file like config.h.
+        """
+        return self._used_defines.get(define_file, set())
 
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
@@ -417,7 +424,7 @@ class Directory(object):
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the directory."""
         assert self._rawdoc is None
-        assert self._abspath == rawdoc.get_path().rstrip('/')
+        assert rawdoc.get_path().rstrip('/') in (self._abspath, self._relpath)
         self._rawdoc = rawdoc
 
     def set_module(self, module):
@@ -864,9 +871,7 @@ class GromacsTree(object):
         """Load Doxygen XML directory information for a single directory."""
         path = dirdoc.get_path().rstrip('/')
         if not os.path.isabs(path):
-            self._reporter.xml_assert(dirdoc.get_xml_path(),
-                    "expected absolute path in Doxygen-produced XML file")
-            return
+            path = os.path.join(self._source_root, path)
         relpath = self._get_rel_path(path)
         dirobj = self._dirs.get(relpath)
         if not dirobj:
@@ -899,9 +904,7 @@ class GromacsTree(object):
                 # the path information is not set for unloaded files.
                 continue
             if not os.path.isabs(path):
-                self._reporter.xml_assert(filedoc.get_xml_path(),
-                        "expected absolute path in Doxygen-produced XML file")
-                continue
+                path = os.path.join(self._source_root, path)
             extension = os.path.splitext(path)[1]
             # We don't care about Markdown files that only produce pages
             # (and fail the directory check below).

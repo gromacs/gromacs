@@ -12,12 +12,11 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/txtdump.h"
+#include "gromacs/utility/strdb.h"
+#include "gromacs/utility/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -571,7 +570,7 @@ void Resp::readCube( const std::string fn, bool bESPonly)
         return;
     }
 
-    nlines = get_file(fn.c_str(), &strings);
+    nlines = get_lines(fn.c_str(), &strings);
     bOK    = (nlines > 100);
     if (bOK)
     {
@@ -798,7 +797,7 @@ void Resp::calcRho()
                         z = _ra[j]->getZeta(k);
                         if (z > 0)
                         {
-                            vv -= (_ra[j]->getQ(k)*pi32*exp(-sqr(r*z))*
+                            vv -= (_ra[j]->getQ(k)*pi32*exp(-gmx::square(r*z))*
                                    pow(z, 3));
                         }
                     }
@@ -1033,28 +1032,28 @@ void Resp::getSetVector(bool         bSet,
                             real zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
                             if (zeta <= zmin)
                             {
-                                _penalty += sqr(zeta-zmin);
+                                _penalty += gmx::square(zeta-zmin);
                             }
                             else if (zeta >= zmax)
                             {
-                                _penalty += sqr(zmax-zeta);
+                                _penalty += gmx::square(zmax-zeta);
                             }
                         }
                         else
                         {
                             if (zeta <= _zmin)
                             {
-                                _penalty += sqr(_zmin-zeta);
+                                _penalty += gmx::square(_zmin-zeta);
                             }
                             else if (zeta >= _zmax)
                             {
-                                _penalty += sqr(_zmax-zeta);
+                                _penalty += gmx::square(_zmax-zeta);
                             }
                             if ((_rDecrZeta >= 0) && (zz > 0) &&
                                 (_ra[i]->getZeta(zz-1) != 0) &&
                                 ((_ra[i]->getZeta(zz-1) - zeta) < _rDecrZeta))
                             {
-                                _penalty += sqr(_ra[i]->getZeta(zz-1) - zeta - _rDecrZeta);
+                                _penalty += gmx::square(_ra[i]->getZeta(zz-1) - zeta - _rDecrZeta);
                             }
                         }
                         n++;
@@ -1117,11 +1116,11 @@ void Resp::getSetVector(bool         bSet,
         }
         if (qi < _qmin)
         {
-            _penalty += sqr(_qmin-qi);
+            _penalty += gmx::square(_qmin-qi);
         }
         else if (qi > _qmax)
         {
-            _penalty += sqr(_qmax-qi);
+            _penalty += gmx::square(_qmax-qi);
         }
         else if ((qi < -0.02) && (_ra[i]->getAtomnumber() == 1))
         {
@@ -1194,13 +1193,13 @@ void Resp::calcRms()
                     _pot[i]-_potCalc[i],
                     (i < _natom)  ? buf : "");
         }
-        s2    = w*sqr(_pot[i]-_potCalc[i]);
+        s2    = w*gmx::square(_pot[i]-_potCalc[i]);
         if ((s2 > 0) && (_bEntropy))
         {
             entropy += s2*log(s2);
         }
         sum2 += s2;
-        pot2 += w*sqr(_pot[i]);
+        pot2 += w*gmx::square(_pot[i]);
         wtot += w;
     }
     _wtot = wtot;
@@ -1239,10 +1238,10 @@ void Resp::calcPenalty()
     p = 0;
     if (_bAXpRESP && (_iDistributionModel == eqdAXp))
     {
-        b2 = sqr(_bHyper);
+        b2 = gmx::square(_bHyper);
         for (i = 0; (i < _natom); i++)
         {
-            p += sqrt(sqr(_ra[i]->getQ(0)) + b2) - _bHyper;
+            p += sqrt(gmx::square(_ra[i]->getQ(0)) + b2) - _bHyper;
         }
         p = (_qfac * p);
     }

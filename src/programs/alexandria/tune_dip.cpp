@@ -12,11 +12,8 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
@@ -93,8 +90,8 @@ static void print_quad(FILE *fp, tensor Q_exp, tensor Q_calc, char *calc_name,
     if (NULL != calc_name)
     {
         m_sub(Q_exp, Q_calc, dQ);
-        delta = sqrt(sqr(dQ[XX][XX])+sqr(dQ[XX][YY])+sqr(dQ[XX][ZZ])+
-                     sqr(dQ[YY][YY])+sqr(dQ[YY][ZZ]));
+        delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
+                     gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
         fprintf(fp,
                 "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                 "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
@@ -253,7 +250,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                 }
             }
 
-            d2 += sqr(mi->dip_exp-mi->dip_calc);
+            d2 += gmx::square(mi->dip_exp-mi->dip_calc);
             fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
             aloop = gmx_mtop_atomloop_all_init(mi->mtop_);
             j     = 0;
@@ -404,7 +401,7 @@ static double dipole_function(void *params, double v[])
     std::string                qstr;
     char                       zstr[STRLEN], buf[STRLEN];
 
-#define HARMONIC(x, xmin, xmax) (x < xmin) ? (sqr(x-xmin)) : ((x > xmax) ? (sqr(x-xmax)) : 0)
+#define HARMONIC(x, xmin, xmax) (x < xmin) ? (gmx::square(x-xmin)) : ((x > xmax) ? (gmx::square(x-xmax)) : 0)
 
     /* Set parameters in eem record. There is a penalty if parameters
      * go out of bounds as well.
@@ -448,11 +445,11 @@ static double dipole_function(void *params, double v[])
         md->_hfac = v[k++];
         if (md->_hfac >  md->_hfac0)
         {
-            bounds += 100*sqr(md->_hfac - md->_hfac0);
+            bounds += 100*gmx::square(md->_hfac - md->_hfac0);
         }
         else if (md->_hfac < -md->_hfac0)
         {
-            bounds += 100*sqr(md->_hfac + md->_hfac0);
+            bounds += 100*gmx::square(md->_hfac + md->_hfac0);
         }
     }
     for (j = 0; (j < ermsNR); j++)

@@ -437,9 +437,9 @@ class HelpWriterContext::Impl
         {
             public:
                 //! Initializes the state with the given parameters.
-                SharedState(TextOutputStream *stream, HelpOutputFormat format,
+                SharedState(TextWriter *writer, HelpOutputFormat format,
                             const HelpLinks *links)
-                    : file_(stream), format_(format), links_(links)
+                    : file_(*writer), format_(format), links_(links)
                 {
                 }
 
@@ -466,7 +466,7 @@ class HelpWriterContext::Impl
                 }
 
                 //! Writer for writing the help.
-                TextWriter              file_;
+                TextWriter             &file_;
                 //! Output format for the help output.
                 HelpOutputFormat        format_;
                 //! Links to use.
@@ -476,6 +476,8 @@ class HelpWriterContext::Impl
                 //! Formatter for console output options.
                 // Never releases ownership.
                 mutable std::unique_ptr<TextTableFormatter> consoleOptionsFormatter_;
+
+                GMX_DISALLOW_COPY_AND_ASSIGN(SharedState);
         };
 
         struct ReplaceItem
@@ -598,14 +600,14 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  * HelpWriterContext
  */
 
-HelpWriterContext::HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(stream, format, NULL)), 0))
+HelpWriterContext::HelpWriterContext(TextWriter *writer, HelpOutputFormat format)
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, NULL)), 0))
 {
 }
 
-HelpWriterContext::HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format,
+HelpWriterContext::HelpWriterContext(TextWriter *writer, HelpOutputFormat format,
                                      const HelpLinks *links)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(stream, format, links)), 0))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, links)), 0))
 {
     if (links != NULL)
     {
@@ -641,8 +643,7 @@ HelpOutputFormat HelpWriterContext::outputFormat() const
 
 TextWriter &HelpWriterContext::outputFile() const
 {
-    // TODO: Consider how to deal with the const/non-const difference better.
-    return const_cast<TextWriter &>(impl_->state_->file_);
+    return impl_->state_->file_;
 }
 
 void HelpWriterContext::enterSubSection(const std::string &title)
@@ -678,11 +679,11 @@ void HelpWriterContext::writeTitle(const std::string &title) const
         return;
     }
     TextWriter &file = outputFile();
+    file.ensureEmptyLine();
     switch (outputFormat())
     {
         case eHelpOutputFormat_Console:
             file.writeLine(toUpperCase(title));
-            file.writeLine();
             break;
         case eHelpOutputFormat_Rst:
             file.writeLine(title);
@@ -693,6 +694,7 @@ void HelpWriterContext::writeTitle(const std::string &title) const
             GMX_THROW(NotImplementedError(
                               "This output format is not implemented"));
     }
+    file.ensureEmptyLine();
 }
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
@@ -703,6 +705,11 @@ void HelpWriterContext::writeTextBlock(const std::string &text) const
         settings.setLineLength(78);
     }
     outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
+}
+
+void HelpWriterContext::paragraphBreak() const
+{
+    outputFile().ensureEmptyLine();
 }
 
 void HelpWriterContext::writeOptionListStart() const

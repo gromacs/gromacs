@@ -40,42 +40,81 @@
 
 #include <smmintrin.h>
 
-#include "impl_x86_sse4_1_common.h"
+#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd_float.h"
 
-/* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
- * can be implemented more efficiently in SSE4.1.
- */
-#undef  gmx_simd_round_f
-#define gmx_simd_round_f(x)       _mm_round_ps(x, _MM_FROUND_NINT)
-
-#undef  gmx_simd_trunc_f
-#define gmx_simd_trunc_f(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
-
-#undef  gmx_simd_extract_fi
-#define gmx_simd_extract_fi       _mm_extract_epi32
-
-#undef  gmx_simd_mul_fi
-#define gmx_simd_mul_fi           _mm_mullo_epi32
-
-#undef  gmx_simd_blendv_f
-#define gmx_simd_blendv_f         _mm_blendv_ps
-
-#undef  gmx_simd_reduce_f
-#define gmx_simd_reduce_f(a)      gmx_simd_reduce_f_sse4_1(a)
-
-#undef  gmx_simd_blendv_fi
-#define gmx_simd_blendv_fi        _mm_blendv_epi8
-
-/* SIMD reduction function */
-static gmx_inline float gmx_simdcall
-gmx_simd_reduce_f_sse4_1(__m128 a)
+namespace gmx
 {
-    float  f;
 
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
-    return f;
+template<int index>
+static inline std::int32_t gmx_simdcall
+extract(SimdFInt32 a)
+{
+    return _mm_extract_epi32(a.simdInternal_, index);
 }
 
-#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H */
+static inline SimdFloat
+maskzRsqrt(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
+#endif
+    return {
+               _mm_and_ps(_mm_rsqrt_ps(x.simdInternal_), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat
+maskzRcp(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
+#endif
+    return {
+               _mm_and_ps(_mm_rcp_ps(x.simdInternal_), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+round(SimdFloat x)
+{
+    return {
+               _mm_round_ps(x.simdInternal_, _MM_FROUND_NINT)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+trunc(SimdFloat x)
+{
+    return {
+               _mm_round_ps(x.simdInternal_, _MM_FROUND_TRUNC)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+{
+    return {
+               _mm_blendv_ps(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator*(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm_mullo_epi32(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+{
+    return {
+               _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H

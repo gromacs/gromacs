@@ -94,7 +94,7 @@ eigensolver(real *   a,
     /* Call LAPACK routine using fortran interface. Note that we use upper storage,
      * but this corresponds to lower storage ("L") in Fortran.
      */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     F77_FUNC(dsyevr, DSYEVR) (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
                               &abstol, &m, eigenvalues, eigenvectors, &n,
                               isuppz, &w0, &lwork, &iw0, &liwork, &info);
@@ -118,7 +118,7 @@ eigensolver(real *   a,
 
     abstol = 0;
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     F77_FUNC(dsyevr, DSYEVR) (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
                               &abstol, &m, eigenvalues, eigenvectors, &n,
                               isuppz, work, &lwork, iwork, &liwork, &info);
@@ -207,7 +207,7 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
     iter = 1;
     do
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         F77_FUNC(pdsaupd, PDSAUPD) (&ido, "I", &n, "SA", &neig, &abstol,
                                     resid, &ncv, v, &n, iparam, ipntr,
                                     workd, iwork, workl, &lworkl, &info);
@@ -242,7 +242,7 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
     /* Extract eigenvalues and vectors from data */
     fprintf(stderr, "Calculating eigenvalues and eigenvectors...\n");
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     F77_FUNC(pdseupd, PDSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
                                 &n, NULL, "I", &n, "SA", &neig, &abstol,
                                 resid, &ncv, v, &n, iparam, ipntr,
@@ -334,7 +334,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     iter = 1;
     do
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         F77_FUNC(dsaupd, DSAUPD) (&ido, "I", &n, "SA", &neig, &abstol,
                                   resid, &ncv, v, &n, iparam, ipntr,
                                   workd, iwork, workl, &lworkl, &info);
@@ -369,7 +369,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     /* Extract eigenvalues and vectors from data */
     fprintf(stderr, "Calculating eigenvalues and eigenvectors...\n");
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     F77_FUNC(dseupd, DSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
                               &n, NULL, "I", &n, "SA", &neig, &abstol,
                               resid, &ncv, v, &n, iparam, ipntr,

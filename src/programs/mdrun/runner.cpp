@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,35 +60,35 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/gmx_detect_hardware.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/orires.h"
-#include "gromacs/gmxlib/sighandler.h"
-#include "gromacs/gmxlib/thread_affinity.h"
-#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/integrator.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/minimize.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
+#include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -98,11 +98,13 @@
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
@@ -122,7 +124,7 @@ matrix              deform_init_box_tpx;
 //! MPI variable for use in pressure scaling
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */
@@ -138,10 +140,10 @@ struct mdrunner_arglist
     const t_filenm         *fnm;
     const gmx_output_env_t *oenv;
     gmx_bool                bVerbose;
-    gmx_bool                bCompact;
     int                     nstglobalcomm;
     ivec                    ddxyz;
-    int                     dd_node_order;
+    int                     dd_rank_order;
+    int                     npme;
     real                    rdd;
     real                    rconstr;
     const char             *dddlb_opt;
@@ -192,8 +194,8 @@ static void mdrunner_start_fn(void *arg)
         }
 
         gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
-                      mc.ddxyz, mc.dd_node_order, mc.rdd,
+                      mc.bVerbose, mc.nstglobalcomm,
+                      mc.ddxyz, mc.dd_rank_order, mc.npme, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
                       mc.nbpu_opt, mc.nstlist_cmdline,
@@ -212,8 +214,9 @@ static void mdrunner_start_fn(void *arg)
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                         gmx_bool bCompact, int nstglobalcomm,
-                                         ivec ddxyz, int dd_node_order, real rdd, real rconstr,
+                                         int nstglobalcomm,
+                                         ivec ddxyz, int dd_rank_order, int npme,
+                                         real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt, int nstlist_cmdline,
@@ -247,12 +250,12 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->fnm             = fnmn;
     mda->oenv            = oenv;
     mda->bVerbose        = bVerbose;
-    mda->bCompact        = bCompact;
     mda->nstglobalcomm   = nstglobalcomm;
     mda->ddxyz[XX]       = ddxyz[XX];
     mda->ddxyz[YY]       = ddxyz[YY];
     mda->ddxyz[ZZ]       = ddxyz[ZZ];
-    mda->dd_node_order   = dd_node_order;
+    mda->dd_rank_order   = dd_rank_order;
+    mda->npme            = npme;
     mda->rdd             = rdd;
     mda->rconstr         = rconstr;
     mda->dddlb_opt       = dddlb_opt;
@@ -340,7 +343,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     const char            *box_err  = "Can not increase nstlist because the box is too small";
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
-    const float            oneThird = 1.0f / 3.0f;
 
     if (nstlist_cmdline <= 0)
     {
@@ -437,8 +439,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
                                               mtop->natoms/det(box));
-    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_ok, oneThird) - rlist_inc;
-    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_max, oneThird) - rlist_inc;
+    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_ok) - rlist_inc;
+    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_max) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
@@ -458,7 +460,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
-        bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC, box));
+        bBox = (gmx::square(rlist_new) < max_cutoff2(ir->ePBC, box));
         bDD  = TRUE;
         if (bBox && DOMAINDECOMP(cr))
         {
@@ -628,7 +630,6 @@ static integrator_t *my_integrator(unsigned int ei)
     {
         case eiMD:
         case eiBD:
-        case eiSD2:
         case eiSD1:
         case eiVV:
         case eiVVAK:
@@ -652,6 +653,8 @@ static integrator_t *my_integrator(unsigned int ei)
                 GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
             }
             return do_tpi;
+        case eiSD2_REMOVED:
+            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
         default:
             GMX_THROW(APIError("Non existing integrator selected"));
     }
@@ -660,8 +663,8 @@ static integrator_t *my_integrator(unsigned int ei)
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
-             ivec ddxyz, int dd_node_order, real rdd, real rconstr,
+             int nstglobalcomm,
+             ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt, int nstlist_cmdline,
@@ -781,20 +784,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
 
-#ifdef GMX_TARGET_BGQ
+#if GMX_TARGET_BGQ
             md_print_warn(cr, fplog,
                           "NOTE: There is no SIMD implementation of the group scheme kernels on\n"
                           "      BlueGene/Q. You will observe better performance from using the\n"
                           "      Verlet cut-off scheme.\n");
 #endif
-        }
-
-        if (inputrec->eI == eiSD2)
-        {
-            md_print_warn(cr, fplog, "The stochastic dynamics integrator %s is deprecated, since\n"
-                          "it is slower than integrator %s and is slightly less accurate\n"
-                          "with constraints. Use the %s integrator.",
-                          ei_names[inputrec->eI], ei_names[eiSD1], ei_names[eiSD1]);
         }
     }
 
@@ -805,10 +800,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_check_thread_affinity_set(fplog, cr,
                                   hw_opt, hwinfo->nthreads_hw_avail, FALSE);
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     if (SIMMASTER(cr))
     {
-        if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
+        if (npme > 0 && hw_opt->nthreads_tmpi <= 0)
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
@@ -830,8 +825,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             t_commrec *cr_old       = cr;
             /* now start the threads. */
             cr = mdrunner_start_threads(hw_opt, fplog, cr_old, nfile, fnm,
-                                        oenv, bVerbose, bCompact, nstglobalcomm,
-                                        ddxyz, dd_node_order, rdd, rconstr,
+                                        oenv, bVerbose, nstglobalcomm,
+                                        ddxyz, dd_rank_order, npme, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                         nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
@@ -884,14 +879,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
     if (!PAR(cr) &&
-        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || cr->npmenodes > 0))
+        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || npme > 0))
     {
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
-#ifndef GMX_MPI
+#if !GMX_MPI
                   "but %s was compiled without threads or MPI enabled"
 #else
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
                   "but the number of threads (option -nt) is 1"
 #else
                   "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec"
@@ -914,22 +909,22 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
     {
-        if (cr->npmenodes > 0)
+        if (npme > 0)
         {
             gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
                                  "PME-only ranks are requested, but the system does not use PME for electrostatics or LJ");
         }
 
-        cr->npmenodes = 0;
+        npme = 0;
     }
 
-    if (bUseGPU && cr->npmenodes < 0)
+    if (bUseGPU && npme < 0)
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
          * scaling is bad, but it's difficult to automate the setup.
          */
-        cr->npmenodes = 0;
+        npme = 0;
     }
 
 #ifdef GMX_FAHCORE
@@ -985,7 +980,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bool bReadEkin;
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
-                        cr, ddxyz,
+                        cr, ddxyz, &npme,
                         inputrec, state, &bReadEkin,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET));
@@ -1025,17 +1020,14 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, rdd, rconstr,
+        cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
+                                           dd_rank_order,
+                                           rdd, rconstr,
                                            dddlb_opt, dlb_scale,
                                            ddcsx, ddcsy, ddcsz,
                                            mtop, inputrec,
                                            box, state->x,
                                            &ddbox, &npme_major, &npme_minor);
-
-        make_dd_communicators(fplog, cr, dd_node_order);
-
-        /* Set overallocation to avoid frequent reallocation of arrays */
-        set_over_alloc_dd(TRUE);
     }
     else
     {
@@ -1063,7 +1055,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Initialize per-physical-node MPI process/thread ID and counters. */
     gmx_init_intranode_counters(cr);
-#ifdef GMX_MPI
+#if GMX_MPI
     if (MULTISIM(cr))
     {
         md_print_info(cr, fplog,
@@ -1073,7 +1065,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
     md_print_info(cr, fplog, "Using %d MPI %s\n",
                   cr->nnodes,
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
                   cr->nnodes == 1 ? "thread" : "threads"
 #else
                   cr->nnodes == 1 ? "process" : "processes"
@@ -1312,17 +1304,16 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
+            /* This call is not included in init_domain_decomposition mainly
+             * because fr->cginfo_mb is set later.
+             */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
-
-            set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, &ddbox);
-
-            setup_dd_grid(fplog, cr->dd);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
         my_integrator(inputrec->eI) (fplog, cr, nfile, fnm,
-                                     oenv, bVerbose, bCompact,
+                                     oenv, bVerbose,
                                      nstglobalcomm,
                                      vsite, constr,
                                      nstepout, inputrec, mtop,
@@ -1389,7 +1380,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     done_ed(&ed);
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to
        wait for that. */

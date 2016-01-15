@@ -38,88 +38,339 @@
 
 #include "config.h"
 
+#include <cassert>
+#include <cstddef>
+
 #include <immintrin.h>
 #include <x86intrin.h>
 
-#include "gromacs/utility/real.h"
-
-#include "impl_x86_avx_128_fma_common.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-
-/* Even if the _main_ SIMD implementation for this architecture file corresponds
- * to 128-bit AVX (since it will be faster), the 256-bit operations will always
- * be available in AVX, so we can use them for double precision SIMD4!
- */
-/* SIMD4 Double precision floating point */
-#define gmx_simd4_double_t               __m256d
-#define gmx_simd4_load_d                 _mm256_load_pd
-#define gmx_simd4_load1_d                _mm256_broadcast_sd
-#define gmx_simd4_set1_d                 _mm256_set1_pd
-#define gmx_simd4_store_d                _mm256_store_pd
-#define gmx_simd4_loadu_d                _mm256_loadu_pd
-#define gmx_simd4_storeu_d               _mm256_storeu_pd
-#define gmx_simd4_setzero_d              _mm256_setzero_pd
-#define gmx_simd4_add_d                  _mm256_add_pd
-#define gmx_simd4_sub_d                  _mm256_sub_pd
-#define gmx_simd4_mul_d                  _mm256_mul_pd
-#define gmx_simd4_fmadd_d                _mm256_macc_pd
-#define gmx_simd4_fmsub_d                _mm256_msub_pd
-#define gmx_simd4_fnmadd_d               _mm256_nmacc_pd
-#define gmx_simd4_fnmsub_d               _mm256_nmsub_pd
-#define gmx_simd4_and_d                  _mm256_and_pd
-#define gmx_simd4_andnot_d               _mm256_andnot_pd
-#define gmx_simd4_or_d                   _mm256_or_pd
-#define gmx_simd4_xor_d                  _mm256_xor_pd
-#define gmx_simd4_rsqrt_d(x)             _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
-#define gmx_simd4_fabs_d(x)              _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
-#define gmx_simd4_fneg_d(x)              _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
-#define gmx_simd4_max_d                  _mm256_max_pd
-#define gmx_simd4_min_d                  _mm256_min_pd
-#define gmx_simd4_round_d(x)             _mm256_round_pd(x, _MM_FROUND_NINT)
-#define gmx_simd4_trunc_d(x)             _mm256_round_pd(x, _MM_FROUND_TRUNC)
-#define gmx_simd4_dotproduct3_d          gmx_simd4_dotproduct3_d_avx_128_fma
-/* SIMD4 booleans corresponding to double */
-#define gmx_simd4_dbool_t                __m256d
-#define gmx_simd4_cmpeq_d(a, b)           _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
-#define gmx_simd4_cmplt_d(a, b)           _mm256_cmp_pd(a, b, _CMP_LT_OQ)
-#define gmx_simd4_cmple_d(a, b)           _mm256_cmp_pd(a, b, _CMP_LE_OQ)
-#define gmx_simd4_and_db                 _mm256_and_pd
-#define gmx_simd4_or_db                  _mm256_or_pd
-#define gmx_simd4_anytrue_db             _mm256_movemask_pd
-#define gmx_simd4_blendzero_d            _mm256_and_pd
-#define gmx_simd4_blendnotzero_d(a, sel)  _mm256_andnot_pd(sel, a)
-#define gmx_simd4_blendv_d               _mm256_blendv_pd
-#define gmx_simd4_reduce_d               gmx_simd4_reduce_d_avx_128_fma
-/* SIMD4 float/double conversion */
-#define gmx_simd4_cvt_f2d                _mm256_cvtps_pd
-#define gmx_simd4_cvt_d2f                _mm256_cvtpd_ps
-
-static gmx_inline double gmx_simdcall
-gmx_simd4_reduce_d_avx_128_fma(__m256d a)
+namespace gmx
 {
-    double  f;
-    __m128d a0, a1;
-    a  = _mm256_hadd_pd(a, a);
-    a0 = _mm256_castpd256_pd128(a);
-    a1 = _mm256_extractf128_pd(a, 0x1);
-    a0 = _mm_add_sd(a0, a1);
-    _mm_store_sd(&f, a0);
-    return f;
+
+class Simd4Double
+{
+    public:
+        Simd4Double() {}
+
+        Simd4Double(double d) : simdInternal_(_mm256_set1_pd(d)) {}
+
+        // Internal utility constructor to simplify return statements
+        Simd4Double(__m256d simd) : simdInternal_(simd) {}
+
+        __m256d  simdInternal_;
+};
+
+class Simd4DBool
+{
+    public:
+        Simd4DBool() {}
+
+        //! \brief Construct from scalar bool
+        Simd4DBool(bool b) : simdInternal_(_mm256_castsi256_pd(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
+
+        // Internal utility constructor to simplify return statements
+        Simd4DBool(__m256d simd) : simdInternal_(simd) {}
+
+        __m256d  simdInternal_;
+};
+
+static inline Simd4Double gmx_simdcall
+load4(const double *m)
+{
+    assert(size_t(m) % 32 == 0);
+    return {
+               _mm256_load_pd(m)
+    };
 }
 
-static gmx_inline double gmx_simdcall
-gmx_simd4_dotproduct3_d_avx_128_fma(__m256d a, __m256d b)
+static inline void gmx_simdcall
+store4(double *m, Simd4Double a)
 {
-    double  d;
+    assert(size_t(m) % 32 == 0);
+    _mm256_store_pd(m, a.simdInternal_);
+}
+
+static inline Simd4Double gmx_simdcall
+load4U(const double *m)
+{
+    return {
+               _mm256_loadu_pd(m)
+    };
+}
+
+static inline void gmx_simdcall
+store4U(double *m, Simd4Double a)
+{
+    _mm256_storeu_pd(m, a.simdInternal_);
+}
+
+static inline Simd4Double gmx_simdcall
+simd4SetZeroD()
+{
+    return {
+               _mm256_setzero_pd()
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator&(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_and_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+andNot(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_andnot_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator|(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_or_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator^(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_xor_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator+(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_add_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator-(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_sub_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator-(Simd4Double x)
+{
+    return {
+               _mm256_xor_pd(x.simdInternal_, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator*(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_mul_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fma(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_macc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fms(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_msub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fnma(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_nmacc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fnms(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_nmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+rsqrt(Simd4Double x)
+{
+    return {
+               _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x.simdInternal_)))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+abs(Simd4Double x)
+{
+    return {
+               _mm256_andnot_pd( _mm256_set1_pd(GMX_DOUBLE_NEGZERO), x.simdInternal_ )
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+max(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_max_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+min(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_min_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+round(Simd4Double x)
+{
+    return {
+               _mm256_round_pd(x.simdInternal_, _MM_FROUND_NINT)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+trunc(Simd4Double x)
+{
+    return {
+               _mm256_round_pd(x.simdInternal_, _MM_FROUND_TRUNC)
+    };
+}
+
+static inline float gmx_simdcall
+dotProduct(Simd4Double a, Simd4Double b)
+{
     __m128d tmp1, tmp2;
-    a    = _mm256_mul_pd(a, b);
-    tmp1 = _mm256_castpd256_pd128(a);
-    tmp2 = _mm256_extractf128_pd(a, 0x1);
+    a.simdInternal_  = _mm256_mul_pd(a.simdInternal_, b.simdInternal_);
+    tmp1             = _mm256_castpd256_pd128(a.simdInternal_);
+    tmp2             = _mm256_extractf128_pd(a.simdInternal_, 0x1);
 
     tmp1 = _mm_add_pd(tmp1, _mm_permute_pd(tmp1, _MM_SHUFFLE2(0, 1)));
     tmp1 = _mm_add_pd(tmp1, tmp2);
-    _mm_store_sd(&d, tmp1);
-    return d;
+    return *reinterpret_cast<double *>(&tmp1);
 }
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_DOUBLE_H */
+static inline void gmx_simdcall
+transpose(Simd4Double * v0, Simd4Double * v1,
+          Simd4Double * v2, Simd4Double * v3)
+{
+    __m256d t1, t2, t3, t4;
+    t1                = _mm256_unpacklo_pd(v0->simdInternal_, v1->simdInternal_);
+    t2                = _mm256_unpackhi_pd(v0->simdInternal_, v1->simdInternal_);
+    t3                = _mm256_unpacklo_pd(v2->simdInternal_, v3->simdInternal_);
+    t4                = _mm256_unpackhi_pd(v2->simdInternal_, v3->simdInternal_);
+    v0->simdInternal_ = _mm256_permute2f128_pd(t1, t3, 0x20);
+    v1->simdInternal_ = _mm256_permute2f128_pd(t2, t4, 0x20);
+    v2->simdInternal_ = _mm256_permute2f128_pd(t1, t3, 0x31);
+    v3->simdInternal_ = _mm256_permute2f128_pd(t2, t4, 0x31);
+}
+
+static inline Simd4DBool gmx_simdcall
+operator==(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.simdInternal_, b.simdInternal_, _CMP_EQ_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator!=(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.simdInternal_, b.simdInternal_, _CMP_NEQ_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator<(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.simdInternal_, b.simdInternal_, _CMP_LT_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator<=(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.simdInternal_, b.simdInternal_, _CMP_LE_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator&&(Simd4DBool a, Simd4DBool b)
+{
+    return {
+               _mm256_and_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator||(Simd4DBool a, Simd4DBool b)
+{
+    return {
+               _mm256_or_pd(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(Simd4DBool a) { return _mm256_movemask_pd(a.simdInternal_) != 0; }
+
+static inline Simd4Double gmx_simdcall
+selectByMask(Simd4Double a, Simd4DBool mask)
+{
+    return {
+               _mm256_and_pd(a.simdInternal_, mask.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+selectByNotMask(Simd4Double a, Simd4DBool mask)
+{
+    return {
+               _mm256_andnot_pd(mask.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
+{
+    return {
+               _mm256_blendv_pd(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline float gmx_simdcall
+reduce(Simd4Double a)
+{
+    __m128d a0, a1;
+    /* test with shuffle & add as an alternative to hadd later */
+    a.simdInternal_ = _mm256_hadd_pd(a.simdInternal_, a.simdInternal_);
+    a0              = _mm256_castpd256_pd128(a.simdInternal_);
+    a1              = _mm256_extractf128_pd(a.simdInternal_, 0x1);
+    a0              = _mm_add_sd(a0, a1);
+    return *reinterpret_cast<double *>(&a0);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_DOUBLE_H

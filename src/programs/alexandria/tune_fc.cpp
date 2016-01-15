@@ -13,13 +13,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/strdb.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -711,7 +707,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                     ax += fpp[i]*a[j][i];
                 }
                 da0  += (x[j]-ax);
-                chi2 += sqr(x[j]-ax);
+                chi2 += gmx::square(x[j]-ax);
             }
             da0 = da0 / nMol;
             a0 += da0;
@@ -970,7 +966,6 @@ double OptParam::CalcDeviation()
     tensor          force_vir = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     t_nrnb          my_nrnb;
     gmx_wallcycle_t wcycle;
-    gmx_bool        bConverged;
     FILE           *dbcopy;
 
     if (PAR(_cr))
@@ -1036,7 +1031,7 @@ double OptParam::CalcDeviation()
                                     &my_nrnb, wcycle, NULL,
                                     &(mymol->mtop_->groups),
                                     mymol->shellfc_, mymol->fr_, FALSE, t, mu_tot,
-                                    &bConverged, NULL, NULL);
+                                    NULL, NULL);
             }
             else
             {
@@ -1060,7 +1055,7 @@ double OptParam::CalcDeviation()
             mymol->Force2     /= mymol->molProp()->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc       = mymol->enerd_->term[F_EPOT];
-            ener               = sqr(mymol->Ecalc-mymol->Emol);
+            ener               = gmx::square(mymol->Ecalc-mymol->Emol);
             _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
 
             if (NULL != debug)
@@ -1076,11 +1071,11 @@ double OptParam::CalcDeviation()
     {
         if (_param[j] < _lower[j])
         {
-            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*sqr(_param[j]-_lower[j]);
+            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(_param[j]-_lower[j]);
         }
         else if (_param[j] > _upper[j])
         {
-            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*sqr(_param[j]-_upper[j]);
+            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(_param[j]-_upper[j]);
         }
     }
 
@@ -1101,7 +1096,7 @@ double OptParam::CalcDeviation()
     /* Global sum energies */
     if (PAR(_cr))
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         gmx_sumd(ermsNR, _ener, _cr);
 #else
         gmx_sumf(ermsNR, _ener, _cr);
@@ -1262,7 +1257,7 @@ void OptParam::Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
             for (k = 0; (k < n); k++)
             {
                 ssum[k]  += start[k];
-                s2sum[k] += sqr(start[k]);
+                s2sum[k] += gmx::square(start[k]);
             }
             nsum++;
         }
@@ -1290,7 +1285,7 @@ void OptParam::Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
         fprintf(fplog, "Average and standard deviation of parameters\n");
         for (k = 0; (k < n); k++)
         {
-            sig[k] = sqrt(s2sum[k]-sqr(ssum[k]));
+            sig[k] = sqrt(s2sum[k]-gmx::square(ssum[k]));
             fprintf(fplog, "%5d  %10g  %10g\n",
                     k, ssum[k], sig[k]);
             start[k] = ssum[k];
@@ -1455,7 +1450,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
                 mi->Hform, mi->Emol, DeltaE,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
-        msd += sqr(mi->Emol-mi->Ecalc);
+        msd += gmx::square(mi->Emol-mi->Ecalc);
         gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
         if (NULL != xvg)
         {

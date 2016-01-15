@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,12 +47,7 @@
 
 #include <algorithm>
 
-#ifdef GMX_NATIVE_WINDOWS
-// for _BitScanReverse()
-#include <intrin.h>
-#endif
-
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
 // for fp exception control stuff
 #include <fenv.h>
 #endif
@@ -79,46 +74,6 @@ gmx_numzero(double a)
     return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
 }
 
-unsigned int
-gmx_log2i(unsigned int n)
-{
-    assert(n != 0); /* behavior differs for 0 */
-#if defined(__INTEL_COMPILER)
-    return _bit_scan_reverse(n);
-#elif defined(__GNUC__) && UINT_MAX == 4294967295U /*also for clang*/
-    return __builtin_clz(n) ^ 31U;                 /* xor gets optimized out */
-#elif defined(_MSC_VER) && _MSC_VER >= 1400
-    {
-        unsigned long i;
-        _BitScanReverse(&i, n);
-        return i;
-    }
-#elif defined(__xlC__)
-    return 31 - __cntlz4(n);
-#else
-    /* http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup */
-#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
-    static const char     LogTable256[256] = {
-        -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-        LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
-        LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
-    };
-#undef LT
-
-    unsigned int r;     /* r will be lg(n) */
-    unsigned int t, tt; /* temporaries */
-
-    if ((tt = n >> 16) != 0)
-    {
-        r = ((t = tt >> 8) != 0) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
-    }
-    else
-    {
-        r = ((t = n >> 8) != 0) ? 8 + LogTable256[t] : LogTable256[n];
-    }
-    return r;
-#endif
-}
 
 gmx_bool
 check_int_multiply_for_overflow(gmx_int64_t  a,

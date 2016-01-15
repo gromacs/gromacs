@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"

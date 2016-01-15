@@ -41,8 +41,8 @@
 
 #include <cmath>
 
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
@@ -133,9 +133,9 @@ void principal_comp(int n, int index[], t_atom atom[], rvec x[],
         rx           = x[ai][XX];
         ry           = x[ai][YY];
         rz           = x[ai][ZZ];
-        inten[0][0] += mm*(sqr(ry)+sqr(rz));
-        inten[1][1] += mm*(sqr(rx)+sqr(rz));
-        inten[2][2] += mm*(sqr(rx)+sqr(ry));
+        inten[0][0] += mm*(gmx::square(ry)+gmx::square(rz));
+        inten[1][1] += mm*(gmx::square(rx)+gmx::square(rz));
+        inten[2][2] += mm*(gmx::square(rx)+gmx::square(ry));
         inten[1][0] -= mm*(ry*rx);
         inten[2][0] -= mm*(rx*rz);
         inten[2][1] -= mm*(rz*ry);

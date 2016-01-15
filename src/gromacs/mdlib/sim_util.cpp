@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,26 +51,26 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxlib/chargegroup.h"
-#include "gromacs/gmxlib/disre.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/orires.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/disre.h"
+#include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/genborn.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
@@ -102,26 +102,14 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
 #include "nbnxn_gpu.h"
 
-#if defined(GMX_GPU)
-#if defined(GMX_USE_OPENCL)
-// Have OpenCL support
-static const bool useCuda   = false;
-static const bool useOpenCL = true;
-#else
-// Have CUDA support
-static const bool useCuda   = true;
-static const bool useOpenCL = false;
-#endif
-#else
-// No GPU support
-static const bool useCuda   = false;
-static const bool useOpenCL = false;
-#endif
+static const bool useCuda   = GMX_GPU == GMX_GPU_CUDA;
+static const bool useOpenCL = GMX_GPU == GMX_GPU_OPENCL;
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -134,7 +122,7 @@ void print_time(FILE                     *out,
     double dt, elapsed_seconds, time_per_step;
     char   buf[48];
 
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
     if (!PAR(cr))
 #endif
     {
@@ -169,7 +157,7 @@ void print_time(FILE                     *out,
                     ir->delta_t/1000*24*60*60/time_per_step);
         }
     }
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
     if (PAR(cr))
     {
         fprintf(out, "\n");
@@ -267,11 +255,11 @@ static void calc_f_el(FILE *fp, int  start, int homenr,
             if (Et[m].n == 3)
             {
                 t0     = Et[m].a[1];
-                Ext[m] = cos(Et[m].a[0]*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(Et[m].a[2])));
+                Ext[m] = std::cos(Et[m].a[0]*(t-t0))*std::exp(-gmx::square(t-t0)/(2.0*gmx::square(Et[m].a[2])));
             }
             else
             {
-                Ext[m] = cos(Et[m].a[0]*t);
+                Ext[m] = std::cos(Et[m].a[0]*t);
             }
         }
         else
@@ -402,7 +390,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
     real pf2, fn2;
     char buf[STEPSTRSIZE];
 
-    pf2 = sqr(pforce);
+    pf2 = gmx::square(pforce);
     for (i = 0; i < md->homenr; i++)
     {
         fn2 = norm2(f[i]);
@@ -411,7 +399,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
         {
             fprintf(fp, "step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
                     gmx_step_str(step, buf),
-                    ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], sqrt(fn2));
+                    ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], std::sqrt(fn2));
         }
     }
 }
@@ -845,7 +833,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                  fr->shift_vec, nbv->grp[0].nbat);
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
         gmx_bool bBS;
@@ -1600,7 +1588,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         pr_rvecs(debug, 0, "cgcm", fr->cg_cm, top->cgs.nr);
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (!(cr->duty & DUTY_PME))
     {
         gmx_bool bBS;
@@ -1960,7 +1948,10 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
     real            dvdl_dum;
     rvec           *savex;
 
-    snew(savex, state->natoms);
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
+    snew(savex, state->natoms + 1);
 
     start = 0;
     end   = md->homenr;
@@ -2275,10 +2266,10 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * the reciprocal-space contribution is constant in the
              * region that contributes to the self-interaction).
              */
-            fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
+            fr->enershiftsix = gmx::power6(fr->ewaldcoeff_lj) / 6.0;
 
-            eners[0] += -pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3)/3.0;
-            virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
+            eners[0] += -gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj)/3.0;
+            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj);
         }
 
         fr->enerdiffsix    = eners[0];
@@ -2290,7 +2281,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 }
 
 void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
-                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
@@ -2316,13 +2306,13 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
         if (fr->n_tpi)
         {
             /* Only correct for the interactions with the inserted molecule */
-            dens   = (natoms - fr->n_tpi)*invvol;
+            dens   = (fr->numAtomsForDispersionCorrection - fr->n_tpi)*invvol;
             ninter = fr->n_tpi;
         }
         else
         {
-            dens   = natoms*invvol;
-            ninter = 0.5*natoms;
+            dens   = fr->numAtomsForDispersionCorrection*invvol;
+            ninter = 0.5*fr->numAtomsForDispersionCorrection;
         }
 
         if (ir->efep == efepNO)
@@ -2491,6 +2481,26 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
 }
 
+void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
+{
+    int t, nth;
+    nth = gmx_omp_nthreads_get(emntDefault);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (t = 0; t < nth; t++)
+    {
+        try
+        {
+            int offset, len;
+
+            offset = (natoms*t    )/nth;
+            len    = (natoms*(t + 1))/nth - offset;
+            put_atoms_in_box(ePBC, box, len, x + offset);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    }
+}
+
 // TODO This can be cleaned up a lot, and move back to runner.cpp
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
@@ -2510,7 +2520,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
     if (cr->nnodes > 1)
     {
         snew(nrnb_tot, 1);
-#ifdef GMX_MPI
+#if GMX_MPI
         MPI_Allreduce(nrnb->n, nrnb_tot->n, eNRNB, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
 #endif
@@ -2524,7 +2534,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
     elapsed_time_over_all_ranks                  = elapsed_time;
     elapsed_time_over_all_threads                = walltime_accounting_get_elapsed_time_over_all_threads(walltime_accounting);
     elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
-#ifdef GMX_MPI
+#if GMX_MPI
     if (cr->nnodes > 1)
     {
         /* reduce elapsed_time over all MPI ranks in the current simulation */
@@ -2672,7 +2682,7 @@ void init_md(FILE *fplog,
              double *t, double *t0,
              real *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
-             gmx_update_t *upd,
+             gmx_update_t **upd,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
@@ -2693,19 +2703,19 @@ void init_md(FILE *fplog,
             *bSimAnn = TRUE;
         }
     }
-    if (*bSimAnn)
-    {
-        update_annealing_target_temp(&(ir->opts), ir->init_t);
-    }
 
     /* Initialize lambda variables */
     initialize_lambdas(fplog, ir, fep_state, lambda, lam0);
 
+    // TODO upd is never NULL in practice, but the analysers don't know that
     if (upd)
     {
         *upd = init_update(ir);
     }
-
+    if (*bSimAnn)
+    {
+        update_annealing_target_temp(ir, ir->init_t, upd ? *upd : NULL);
+    }
 
     if (vcm != NULL)
     {

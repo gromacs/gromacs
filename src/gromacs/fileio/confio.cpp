@@ -48,7 +48,6 @@
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
@@ -57,6 +56,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -384,7 +384,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
                        rvec **x, rvec **v, matrix box, gmx_bool bMass)
 {
     t_tpxheader      header;
-    int              natoms, i, version, generation;
+    int              natoms, i;
     gmx_bool         bTop, bXNULL = FALSE;
     gmx_mtop_t      *mtop;
     gmx_atomprop_t   aps;
@@ -396,7 +396,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
     }
     if (bTop)
     {
-        read_tpxheader(infile, &header, TRUE, &version, &generation);
+        read_tpxheader(infile, &header, TRUE);
         if (x)
         {
             snew(*x, header.natoms);

@@ -44,22 +44,24 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/cmat.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 static void norm_princ(t_atoms *atoms, int isize, int *index, int natoms,
@@ -78,7 +80,7 @@ static void norm_princ(t_atoms *atoms, int isize, int *index, int natoms,
     {
         for (i = 0; i < isize; i++)
         {
-            vec[m] += sqr(x[index[i]][m]);
+            vec[m] += gmx::square(x[index[i]][m]);
         }
         vec[m] = std::sqrt(vec[m] / isize);
         /* calculate scaling constants */

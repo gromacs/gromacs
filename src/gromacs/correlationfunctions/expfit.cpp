@@ -56,6 +56,7 @@
 
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -484,7 +485,7 @@ static gmx_bool lmfit_exp(int          nfit,
         ochisq = chisq;
         lmcurve(nparam, parm, nfit, x, y, dy,
                 lmcurves[eFitFn], &control, status);
-        chisq = sqr(status->fnorm);
+        chisq = gmx::square(status->fnorm);
         if (bVerbose)
         {
             printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
@@ -679,7 +680,7 @@ static void print_chi2_params(FILE        *fp,
     for (i = 0; (i < nfitpnts); i++)
     {
         double yfit = lmcurves[eFitFn](x[i], fitparms);
-        chi2 += sqr(y[i] - yfit);
+        chi2 += gmx::square(y[i] - yfit);
     }
     fprintf(fp, "There are %d data points, %d parameters, %s chi2 = %g\nparams:",
             nfitpnts, effnNparams(eFitFn), label, chi2);

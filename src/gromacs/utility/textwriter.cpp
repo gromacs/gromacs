@@ -57,18 +57,62 @@ class TextWriter::Impl
 {
     public:
         explicit Impl(const TextOutputStreamPointer &stream)
-            : stream_(stream)
+            : stream_(stream), newLineCount_(2), currentLineLength_(0),
+              pendingNewLine_(false)
         {
             wrapper_.settings().setKeepFinalSpaces(true);
         }
 
+        void writeRawString(const char *str)
+        {
+            if (pendingNewLine_ && str[0] != '\n')
+            {
+                stream_->write("\n");
+            }
+            pendingNewLine_ = false;
+            const char *lastNewLine = std::strrchr(str, '\n');
+            if (lastNewLine == nullptr)
+            {
+                newLineCount_       = 0;
+                currentLineLength_ += std::strlen(str);
+            }
+            else if (lastNewLine[1] != '\0')
+            {
+                newLineCount_       = 0;
+                currentLineLength_ += std::strlen(lastNewLine+1);
+            }
+            else
+            {
+                currentLineLength_ = 0;
+                int newLineCount   = 0;
+                while (lastNewLine >= str && *lastNewLine == '\n')
+                {
+                    ++newLineCount;
+                    --lastNewLine;
+                }
+                if (lastNewLine >= str)
+                {
+                    newLineCount_ = 0;
+                }
+                newLineCount_ += newLineCount;
+            }
+            stream_->write(str);
+        }
+        void writeRawString(const std::string &str)
+        {
+            writeRawString(str.c_str());
+        }
+
         void writeWrappedString(const std::string &str)
         {
-            stream_->write(wrapper_.wrapToString(str).c_str());
+            writeRawString(wrapper_.wrapToString(str));
         }
 
         TextOutputStreamPointer stream_;
         TextLineWrapper         wrapper_;
+        int                     newLineCount_;
+        int                     currentLineLength_;
+        bool                    pendingNewLine_;
 };
 
 // static
@@ -104,11 +148,6 @@ TextWriter::~TextWriter()
 {
 }
 
-TextOutputStream &TextWriter::stream()
-{
-    return *impl_->stream_;
-}
-
 TextLineWrapperSettings &TextWriter::wrapperSettings()
 {
     return impl_->wrapper_.settings();
@@ -118,7 +157,7 @@ void TextWriter::writeString(const char *str)
 {
     if (impl_->wrapper_.isTrivial())
     {
-        impl_->stream_->write(str);
+        impl_->writeRawString(str);
     }
     else
     {
@@ -134,24 +173,35 @@ void TextWriter::writeString(const std::string &str)
 void TextWriter::writeLine(const char *line)
 {
     writeString(line);
-    if (!endsWith(line, "\n"))
-    {
-        writeLine();
-    }
+    ensureLineBreak();
 }
 
 void TextWriter::writeLine(const std::string &line)
 {
     writeString(line);
-    if (!endsWith(line, "\n"))
-    {
-        writeLine();
-    }
+    ensureLineBreak();
 }
 
 void TextWriter::writeLine()
 {
-    writeString("\n");
+    impl_->writeRawString("\n");
+}
+
+void TextWriter::ensureLineBreak()
+{
+    if (impl_->newLineCount_ == 0)
+    {
+        impl_->writeRawString("\n");
+    }
+}
+
+void TextWriter::ensureEmptyLine()
+{
+    ensureLineBreak();
+    if (impl_->newLineCount_ < 2)
+    {
+        impl_->pendingNewLine_ = true;
+    }
 }
 
 void TextWriter::close()

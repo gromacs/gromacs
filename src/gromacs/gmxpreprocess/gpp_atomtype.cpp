@@ -43,11 +43,11 @@
 #include <climits>
 #include <cmath>
 
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/math/vecdump.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"

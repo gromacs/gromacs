@@ -45,18 +45,19 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/correlationfunctions/integrate.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/fileio/txtdump.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
@@ -185,7 +186,7 @@ static void regression_analysis(int n, gmx_bool bXYdy,
                           gmx_stats_message(ok));
             }
         }
-        chi2 = sqr((n-2)*S);
+        chi2 = gmx::square((n-2)*S);
         printf("Chi2                    = %g\n", chi2);
         printf("S (Sqrt(Chi2/(n-2))     = %g\n", S);
         printf("Correlation coefficient = %.1f%%\n", 100*r);
@@ -369,7 +370,7 @@ static void average(const char *avfile, int avbar_opt,
             {
                 for (s = 0; s < nset; s++)
                 {
-                    var += sqr(val[s][i]-av);
+                    var += gmx::square(val[s][i]-av);
                 }
                 if (avbar_opt == avbarSTDDEV)
                 {
@@ -466,7 +467,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                     {
                         blav += val[s][bs*i+j];
                     }
-                    var += sqr(av[s] - blav/bs);
+                    var += gmx::square(av[s] - blav/bs);
                 }
                 tbs[nbs] = bs*dt;
                 if (sig[s] == 0)
@@ -731,7 +732,7 @@ static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
             d2 = 0;
             for (j = 0; (j < nn); j++)
             {
-                d2 += sqr(kt[j] - val[3][j]);
+                d2 += gmx::square(kt[j] - val[3][j]);
             }
             fprintf(debug, "RMS difference in derivatives is %g\n", std::sqrt(d2/nn));
         }
@@ -782,7 +783,7 @@ static void filter(real flen, int n, int nset, real **val, real dt)
             {
                 vf += filt[j]*(val[s][i-f]+val[s][i+f]);
             }
-            fluc += sqr(val[s][i] - vf);
+            fluc += gmx::square(val[s][i] - vf);
         }
         fluc    /= n - 2*f;
         fluctot += fluc;
@@ -1265,7 +1266,7 @@ int gmx_analyze(int argc, char *argv[])
                 tot = 0;
                 for (i = 0; i < n-j; i++)
                 {
-                    tot += sqr(val[s][i]-val[s][i+j]);
+                    tot += gmx::square(val[s][i]-val[s][i+j]);
                 }
                 tot /= (n-j);
                 fprintf(out, " %g %8g\n", dt*j, tot);

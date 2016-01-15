@@ -36,6 +36,8 @@
 
 #include "config.h"
 
+#include <cstdint>
+
 #include <vector>
 
 #include "gromacs/math/utilities.h"
@@ -63,7 +65,7 @@ class Simd4MathTest : public Simd4Test
     public:
         ::testing::AssertionResult
                              compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                                      real refFunc(real x),     gmx_simd4_real_t gmx_simdcall simd4Func(gmx_simd4_real_t x));
+                                                      real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x));
 };
 
 /*! \brief Test approximate equality of SIMD4 vs reference version of a function.
@@ -88,26 +90,26 @@ class Simd4MathTest : public Simd4Test
  */
 ::testing::AssertionResult
 Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                        real refFunc(real x),     gmx_simd4_real_t gmx_simdcall simd4Func(gmx_simd4_real_t x))
+                                        real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x))
 {
     std::vector<real>            vx(GMX_SIMD4_WIDTH);
     std::vector<real>            vref(GMX_SIMD4_WIDTH);
     std::vector<real>            vtst(GMX_SIMD4_WIDTH);
     real                         dx;
-    gmx_int64_t                  ulpDiff, maxUlpDiff;
+    std::int64_t                 ulpDiff, maxUlpDiff;
     real                         maxUlpDiffPos;
     real                         refValMaxUlpDiff, simdValMaxUlpDiff;
     bool                         eq, signOk;
     int                          i, iter;
     int                          niter   = s_nPoints/GMX_SIMD4_WIDTH;
     int                          npoints = niter*GMX_SIMD4_WIDTH;
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     union {
-        double r; gmx_int64_t i;
+        double r; std::int64_t i;
     } conv0, conv1;
 #    else
     union {
-        float  r; gmx_int32_t i;
+        float  r; std::int32_t i;
     } conv0, conv1;
 #    endif
 
@@ -195,23 +197,23 @@ namespace
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
 static real
-ref_invsqrt(real x)
+refInvsqrt(real x)
 {
-    return 1.0/sqrt(x);
+    return 1.0/std::sqrt(x);
 }
 
-TEST_F(Simd4MathTest, gmxSimd4InvsqrtR)
+TEST_F(Simd4MathTest, invsqrt)
 {
     setRange(1e-10, 1e10);
-    GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, gmx_simd4_invsqrt_r);
+    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrt);
 }
 
-TEST_F(Simd4MathTest, gmxSimd4InvsqrtSingleaccuracyR)
+TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
 {
     setRange(1e-10, 1e10);
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
-    GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, gmx_simd4_invsqrt_singleaccuracy_r);
+    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
 }
 
 }      // namespace

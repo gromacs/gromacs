@@ -48,6 +48,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -236,7 +237,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
     *nmin  = 0;
     *nmax  = 0;
 
-    rcut2 = sqr(rcut);
+    rcut2 = gmx::square(rcut);
 
     /* Must init pbc every step because of pressure coupling */
     if (bPBC)

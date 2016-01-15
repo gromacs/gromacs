@@ -43,14 +43,15 @@
 
 #include <cmath>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -90,7 +91,7 @@ static void set_ljparams(int comb, double reppow, double v, double w,
     {
         if (v >= 0)
         {
-            *c6  = 4*w*std::pow(v, 6.0);
+            *c6  = 4*w*gmx::power6(v);
             *c12 = 4*w*std::pow(v, reppow);
         }
         else
@@ -149,9 +150,9 @@ assign_param(t_functype ftype, t_iparams *newparam,
             break;
         case F_G96BONDS:
             /* Post processing of input data: store square of length itself */
-            newparam->harmonic.rA  = sqr(old[0]);
+            newparam->harmonic.rA  = gmx::square(old[0]);
             newparam->harmonic.krA = old[1];
-            newparam->harmonic.rB  = sqr(old[2]);
+            newparam->harmonic.rB  = gmx::square(old[2]);
             newparam->harmonic.krB = old[3];
             break;
         case F_FENEBONDS:
@@ -260,7 +261,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->thole.alpha2 = old[2];
             if ((old[1] > 0) && (old[2] > 0))
             {
-                newparam->thole.rfac = old[0]*std::pow(old[1]*old[2], static_cast<real>(-1.0/6.0));
+                newparam->thole.rfac = old[0]*gmx::invsixthroot(old[1]*old[2]);
             }
             else
             {

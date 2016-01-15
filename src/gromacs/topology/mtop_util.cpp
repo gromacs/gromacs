@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1191,4 +1191,22 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     sfree(mtop->molblock);
 
     return top;
+}
+
+std::vector<size_t> get_atom_index(gmx_mtop_t *mtop)
+{
+
+    std::vector<size_t>       atom_index;
+    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
+    t_atom                   *atom;
+    int                       nmol, j = 0;
+    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    {
+        if (atom->ptype == eptAtom)
+        {
+            atom_index.push_back(j);
+        }
+        j++;
+    }
+    return atom_index;
 }

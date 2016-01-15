@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,6 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/math/vec.h"
@@ -66,12 +65,13 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_USE_PLUGINS
+#if GMX_USE_PLUGINS
 #include "gromacs/fileio/vmdio.h"
 #endif
 
@@ -82,7 +82,11 @@
 
 struct t_trxstatus
 {
+    int                     flags;            /* flags for read_first/next_frame  */
     int                     __frame;
+    real                    t0;               /* time of the first frame, needed  *
+                                               * for skipping frames with -dt     */
+    real                    tf;               /* internal frame time              */
     t_trxframe             *xframe;
     int                     nxframe;
     t_fileio               *fio;
@@ -91,6 +95,9 @@ struct t_trxstatus
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
     char                   *persistent_line; /* Persistent line for reading g96 trajectories */
+#if GMX_USE_PLUGINS
+    gmx_vmdplugin_t        *vmdplugin;
+#endif
 };
 
 /* utility functions */
@@ -120,7 +127,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
 {
     int  r;
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     /* since t is float, we can not use double precision for bRmod */
     bDouble = FALSE;
 #endif
@@ -162,10 +169,13 @@ static void initcount(t_trxstatus *status)
 
 static void status_init(t_trxstatus *status)
 {
+    status->flags           = 0;
     status->nxframe         = 0;
     status->xframe          = NULL;
     status->fio             = NULL;
     status->__frame         = -1;
+    status->t0              = 0;
+    status->tf              = 0;
     status->persistent_line = NULL;
     status->tng             = NULL;
 }
@@ -285,13 +295,8 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
     fr->bBox      = FALSE;
     if (bFirst)
     {
-        fr->flags     = 0;
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
-        fr->t0        = 0;
-        fr->tf        = 0;
-        fr->tpf       = 0;
-        fr->tppf      = 0;
         fr->title     = NULL;
         fr->step      = 0;
         fr->time      = 0;
@@ -658,7 +663,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
         fr->bFepState = TRUE;
         fr->lambda    = sh.lambda;
         fr->bBox      = sh.box_size > 0;
-        if (fr->flags & (TRX_READ_X | TRX_NEED_X))
+        if (status->flags & (TRX_READ_X | TRX_NEED_X))
         {
             if (fr->x == NULL)
             {
@@ -666,7 +671,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             }
             fr->bX = sh.x_size > 0;
         }
-        if (fr->flags & (TRX_READ_V | TRX_NEED_V))
+        if (status->flags & (TRX_READ_V | TRX_NEED_V))
         {
             if (fr->v == NULL)
             {
@@ -674,7 +679,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             }
             fr->bV = sh.v_size > 0;
         }
-        if (fr->flags & (TRX_READ_F | TRX_NEED_F))
+        if (status->flags & (TRX_READ_F | TRX_NEED_F))
         {
             if (fr->f == NULL)
             {
@@ -802,13 +807,11 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
     int      ftp;
 
     bRet = FALSE;
-    pt   = fr->tf;
+    pt   = status->tf;
 
     do
     {
         clear_trxframe(fr, FALSE);
-        fr->tppf = fr->tpf;
-        fr->tpf  = fr->tf;
 
         if (status->tng)
         {
@@ -839,14 +842,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 break;
             }
             case efXTC:
-                /* B. Hess 2005-4-20
-                 * Sometimes is off by one frame
-                 * and sometimes reports frame not present/file not seekable
-                 */
-                /* DvdS 2005-05-31: this has been fixed along with the increased
-                 * accuracy of the control over -b and -e options.
-                 */
-                if (bTimeSet(TBEGIN) && (fr->tf < rTimeValue(TBEGIN)))
+                if (bTimeSet(TBEGIN) && (status->tf < rTimeValue(TBEGIN)))
                 {
                     if (xtc_seek_time(status->fio, rTimeValue(TBEGIN), fr->natoms, TRUE))
                     {
@@ -879,26 +875,26 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr);
                 break;
             default:
-#ifdef GMX_USE_PLUGINS
-                bRet = read_next_vmd_frame(fr);
+#if GMX_USE_PLUGINS
+                bRet = read_next_vmd_frame(status->vmdplugin, fr);
 #else
                 gmx_fatal(FARGS, "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
                           gmx_fio_getname(status->fio));
 #endif
         }
-        fr->tf = fr->time;
+        status->tf = fr->time;
 
         if (bRet)
         {
-            bMissingData = (((fr->flags & TRX_NEED_X) && !fr->bX) ||
-                            ((fr->flags & TRX_NEED_V) && !fr->bV) ||
-                            ((fr->flags & TRX_NEED_F) && !fr->bF));
+            bMissingData = (((status->flags & TRX_NEED_X) && !fr->bX) ||
+                            ((status->flags & TRX_NEED_V) && !fr->bV) ||
+                            ((status->flags & TRX_NEED_F) && !fr->bF));
             bSkip = FALSE;
             if (!bMissingData)
             {
-                ct = check_times2(fr->time, fr->t0, fr->bDouble);
-                if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct < 0))
+                ct = check_times2(fr->time, status->t0, fr->bDouble);
+                if (ct == 0 || ((status->flags & TRX_DONT_SKIP) && ct < 0))
                 {
                     printcount(status, oenv, fr->time, FALSE);
                 }
@@ -937,7 +933,6 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     int            ftp   = fn2ftp(fn);
 
     clear_trxframe(fr, TRUE);
-    fr->flags = flags;
 
     bFirst = TRUE;
 
@@ -946,6 +941,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     status_init( *status );
     (*status)->nxframe = 1;
     initcount(*status);
+    (*status)->flags = flags;
 
     if (efTNG == ftp)
     {
@@ -1043,13 +1039,13 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         default:
-#ifdef GMX_USE_PLUGINS
+#if GMX_USE_PLUGINS
             fprintf(stderr, "The file format of %s is not a known trajectory format to GROMACS.\n"
                     "Please make sure that the file is a trajectory!\n"
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
                     "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
             gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
-            if (!read_first_vmd_frame(fn, fr))
+            if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
             {
                 gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
             }
@@ -1060,17 +1056,17 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
 #endif
             break;
     }
-    fr->tf = fr->time;
+    (*status)->tf = fr->time;
 
     /* Return FALSE if we read a frame that's past the set ending time. */
-    if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
+    if (!bFirst && (!(flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
     {
-        fr->t0 = fr->time;
+        (*status)->t0 = fr->time;
         return FALSE;
     }
 
     if (bFirst ||
-        (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
+        (!(flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
     {
         /* Read a frame when no frame was read or the first was skipped */
         if (!read_next_frame(oenv, *status, fr))
@@ -1078,7 +1074,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             return FALSE;
         }
     }
-    fr->t0 = fr->time;
+    (*status)->t0 = fr->time;
 
     /* We need the number of atoms for random-access XTC searching, even when
      * we don't have access to the actual frame data.

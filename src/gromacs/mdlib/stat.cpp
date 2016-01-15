@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
@@ -137,14 +136,14 @@ static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
     return to;
 }
 
-void global_stat(FILE *fplog, gmx_global_stat_t gs,
+void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind, gmx_constr_t constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
-                 gmx_mtop_t *top_global, t_state *state_local,
+                 int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
@@ -160,6 +159,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     real      *rmsd_data = NULL;
     double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
+    bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
 
     bVV           = EI_VV(inputrec->eI);
     bTemp         = flags & CGLO_TEMPERATURE;
@@ -224,7 +224,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     }
     where();
 
-    if (bPres || !bVV)
+    if (bPres)
     {
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
@@ -240,7 +240,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             rmsd_data = constr_rmsd_data(constr);
             if (rmsd_data)
             {
-                irmsd = add_binr(rb, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
+                irmsd = add_binr(rb, 2, rmsd_data);
             }
         }
         if (!inputrecNeedMutot(inputrec))
@@ -282,7 +282,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (checkNumberOfBondedInteractions)
     {
         nb  = cr->dd->nbonded_local;
         inb = add_bind(rb, 1, &nb);
@@ -333,7 +333,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             where();
         }
     }
-    if (bPres || !bVV)
+    if (bPres)
     {
         extract_binr(rb, ifv, DIM*DIM, fvir[0]);
     }
@@ -343,7 +343,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         extract_binr(rb, ie, nener, copyenerd);
         if (rmsd_data)
         {
-            extract_binr(rb, irmsd, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
+            extract_binr(rb, irmsd, 2, rmsd_data);
         }
         if (!inputrecNeedMutot(inputrec))
         {
@@ -361,14 +361,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             if (enerd->n_lambda > 0)
             {
                 extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
-            }
-        }
-        if (DOMAINDECOMP(cr))
-        {
-            extract_bind(rb, inb, 1, &nb);
-            if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-            {
-                dd_print_missing_interactions(fplog, cr, (int)(nb + 0.5), top_global, state_local);
             }
         }
         where();
@@ -391,6 +383,12 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             extract_binr(rb, ici, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
             where();
         }
+    }
+
+    if (checkNumberOfBondedInteractions)
+    {
+        extract_bind(rb, inb, 1, &nb);
+        *totalNumberOfBondedInteractions = static_cast<int>(nb+0.5);
     }
 
     if (nsig > 0)

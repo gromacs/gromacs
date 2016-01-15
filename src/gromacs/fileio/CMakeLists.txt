@@ -54,7 +54,6 @@ gmx_install_headers(
     rgb.h
     tpxio.h
     trrio.h
-    trx.h
     trxio.h
     xdr_datatype.h
     xtcio.h

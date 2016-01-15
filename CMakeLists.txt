@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -183,8 +183,6 @@ gmx_dependent_option(
     ON
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
-mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
@@ -207,15 +205,22 @@ set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 set(REQUIRED_OPENCL_MIN_VERSION 1.1)
 
 if(NOT GMX_USE_OPENCL)
-    # CUDA detection is done only if GMX_USE_OPENCL is OFF
+    # CUDA detection is done only if GMX_USE_OPENCL is OFF.
     include(gmxManageGPU)
+    set(GMX_USE_CUDA ${GMX_GPU})
+    if(GMX_GPU)
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_CUDA")
+    else()
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
+    endif()
 else()
-    #Now the OpenCL path
+    #Now the OpenCL path (for both AMD and NVIDIA)
     if(GMX_GPU)
         include(gmxManageOpenCL)
-    else(GMX_GPU)
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_OPENCL")
+    else()
         message(FATAL_ERROR "OpenCL requested but GPU option is not enabled (try -DGMX_GPU=on) ")
-    endif(GMX_GPU)
+    endif()
 endif()
 
 include(gmxDetectSimd)
@@ -267,7 +272,6 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
 
-option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
@@ -339,17 +343,22 @@ if(GMX_SIMD STREQUAL "AVX_256"
     # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
 endif()
 
-
+# Implement double-precision option. This is complicated because we
+# need installed headers to use the precision mode of the build that
+# produced the library, but cannot use config.h in that case. We also
+# want such variables to always have a definition, because #if is more
+# robust than #ifdef. So, we put this value on the compiler command
+# line in all cases.
+#
+# GMX_RELAXED_DOUBLE_PRECISION does not need to be handled here,
+# because no installed header needs it
 if(GMX_DOUBLE)
-    add_definitions(-DGMX_DOUBLE)
-    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
-    if(GMX_RELAXED_DOUBLE_PRECISION)
-        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
-    endif()
+    set(GMX_DOUBLE_VALUE 1)
+else()
+    set(GMX_DOUBLE_VALUE 0)
 endif()
-if(GMX_SOFTWARE_INVSQRT)
-    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_SOFTWARE_INVSQRT")
-endif()
+add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
+list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
 if(WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
@@ -384,9 +393,17 @@ check_cxx_symbol_exists(_fileno           stdio.h      HAVE__FILENO)
 check_cxx_symbol_exists(fileno            stdio.h      HAVE_FILENO)
 check_cxx_symbol_exists(_commit           io.h         HAVE__COMMIT)
 check_cxx_symbol_exists(sigaction         signal.h     HAVE_SIGACTION)
-check_cxx_symbol_exists(rsqrt             math.h       HAVE_RSQRT)
-check_cxx_symbol_exists(rsqrtf            math.h       HAVE_RSQRTF)
-check_cxx_symbol_exists(sqrtf             math.h       HAVE_SQRTF)
+
+# We cannot check for the __builtins as symbols, but check if code compiles
+check_cxx_source_compiles("int main(){ return __builtin_clz(1);}"   HAVE_BUILTIN_CLZ)
+check_cxx_source_compiles("int main(){ return __builtin_clzll(1);}" HAVE_BUILTIN_CLZLL)
+if(MSVC)
+    check_cxx_source_compiles("#include <intrin.h>\n int main(){unsigned long r;unsigned long i=1;_BitScanReverse(&r,i);return r;}" HAVE_BITSCANREVERSE)
+    check_cxx_source_compiles("#include <intrin.h>\n int main(){unsigned long r;unsigned __int64 i=1;_BitScanReverse(&r,i);return r;}" HAVE_BITSCANREVERSE64)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
+    check_cxx_source_compiles("int main(){ return __cntlz4(1);}" HAVE_CNTLZ4)
+    check_cxx_source_compiles("int main(){ return __cntlz8(1);}" HAVE_CNTLZ8)
+endif()
 
 include(CheckLibraryExists)
 find_library(HAVE_LIBM m)
@@ -553,10 +570,8 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
-if(GMX_GPU)
-    # now that we have detected the dependencies, do the second configure pass
-    gmx_gpu_setup()
-endif()
+# now that we have detected the dependencies, do the second GPU configure pass
+gmx_gpu_setup()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)

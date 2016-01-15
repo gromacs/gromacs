@@ -41,7 +41,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/topology/residuetypes.h"
@@ -50,6 +49,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
 
 typedef struct {
     char *filebase;

@@ -47,9 +47,10 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/txtdump.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -692,7 +693,7 @@ int gmx_confrms(int argc, char *argv[])
         mass = atoms1->atom[index1[at]].m;
         for (m = 0; m < DIM; m++)
         {
-            msd       = sqr(x1[index1[at]][m] - x2[index2[at]][m]);
+            msd       = gmx::square(x1[index1[at]][m] - x2[index2[at]][m]);
             rms      += msd*mass;
             msds[at] += msd;
         }

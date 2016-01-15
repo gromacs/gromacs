@@ -43,8 +43,8 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -52,6 +52,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -136,7 +137,7 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
 
         kernel_type = nbnxnk4x4_PlainC;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
         if (bSIMD)
         {
 #ifdef GMX_NBNXN_SIMD_2XNN
@@ -257,11 +258,11 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                     {
                         case F_VSITE2:
                             /* Exact */
-                            vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
+                            vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*gmx::square(1-ip->vsite.a) + cam[1]*gmx::square(ip->vsite.a));
                             break;
                         case F_VSITE3:
                             /* Exact */
-                            vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
+                            vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*gmx::square(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*gmx::square(ip->vsite.a) + cam[1]*cam[2]*gmx::square(ip->vsite.b));
                             break;
                         case F_VSITEN:
                             gmx_incons("Invalid vsite type");
@@ -566,10 +567,10 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
     real ex, er;
 
     ex = exp(-x*x/(2*s2));
-    er = std::erfc(x/sqrt(2*s2));
+    er = std::erfc(x/std::sqrt(2*s2));
 
-    *shift = -x + sqrt(2*s2/M_PI)*ex/er;
-    *scale = 0.5*M_PI*exp(ex*ex/(M_PI*er*er))*er;
+    *shift = -x + std::sqrt(2*s2/M_PI)*ex/er;
+    *scale = 0.5*M_PI*std::exp(ex*ex/(M_PI*er*er))*er;
 }
 
 static real ener_drift(const verletbuf_atomtype_t *att, int natt,
@@ -679,10 +680,10 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                  * Note that pot has unit energy*length, as the linear
                  * atom density still needs to be put in.
                  */
-                c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
-                c_erfc = 0.5*std::erfc(rsh/(sqrt(2*s2)));
+                c_exp  = std::exp(-rsh*rsh/(2*s2))/std::sqrt(2*M_PI);
+                c_erfc = 0.5*std::erfc(rsh/(std::sqrt(2*s2)));
             }
-            s      = sqrt(s2);
+            s      = std::sqrt(s2);
             rsh2   = rsh*rsh;
 
             pot1 = sc_fac*
@@ -697,8 +698,8 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             {
                 fprintf(debug, "n %d %d d s %.3f %.3f %.3f %.3f con %d -d1 %8.1e d2 %8.1e -d3 %8.1e pot1 %8.1e pot2 %8.1e pot3 %8.1e pot %8.1e\n",
                         att[i].n, att[j].n,
-                        sqrt(s2i_2d), sqrt(s2i_3d),
-                        sqrt(s2j_2d), sqrt(s2j_3d),
+                        std::sqrt(s2i_2d), std::sqrt(s2i_3d),
+                        std::sqrt(s2j_2d), std::sqrt(s2j_3d),
                         att[i].prop.bConstr+att[j].prop.bConstr,
                         md1, d2, md3,
                         pot1, pot2, pot3, pot);
@@ -716,10 +717,10 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             /* We need the line density to get the energy drift of the system.
              * The effective average r^2 is close to (rlist+sigma)^2.
              */
-            pot *= 4*M_PI*sqr(rlist + s)/boxvol;
+            pot *= 4*M_PI*gmx::square(rlist + s)/boxvol;
 
             /* Add the unsigned drift to avoid cancellation of errors */
-            drift_tot += fabs(pot);
+            drift_tot += std::abs(pot);
         }
     }
 
@@ -763,11 +764,11 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
              * The surface around a tetrahedron is too complex for a full
              * analytical solution, so we use a Taylor expansion.
              */
-            area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
-                                      sqrt(3)*d*d*(1.0 +
-                                                   5.0/18.0*d*d +
-                                                   7.0/45.0*d*d*d*d +
-                                                   83.0/756.0*d*d*d*d*d*d)));
+            area_rel = (1.0 + 1/M_PI*(6*std::acos(1/std::sqrt(3))*d +
+                                      std::sqrt(3)*d*d*(1.0 +
+                                                        5.0/18.0*d*d +
+                                                        7.0/45.0*d*d*d*d +
+                                                        83.0/756.0*d*d*d*d*d*d)));
             break;
         default:
             gmx_incons("surface_frac called with unsupported cluster_size");
@@ -788,8 +789,8 @@ static real md3_force_switch(real p, real rswitch, real rc)
     real a, b;
     real md3_pot, md3_sw;
 
-    a = -((p + 4)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*pow(rc-rswitch, 2));
-    b =  ((p + 3)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*pow(rc-rswitch, 3));
+    a = -((p + 4)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*gmx::square(rc-rswitch));
+    b =  ((p + 3)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*gmx::power3(rc-rswitch));
 
     md3_pot = (p + 2)*(p + 1)*p*pow(rc, p+3);
     md3_sw  = 2*a + 6*b*(rc - rswitch);
@@ -879,7 +880,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
      */
 
     /* Worst case assumption: HCP packing of particles gives largest distance */
-    particle_distance = pow(boxvol*sqrt(2)/mtop->natoms, 1.0/3.0);
+    particle_distance = std::cbrt(boxvol*std::sqrt(2)/mtop->natoms);
 
     get_verlet_buffer_atomtypes(mtop, &att, &natt, n_nonlin_vsite);
     assert(att != NULL && natt >= 0);
@@ -907,7 +908,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                md1_ljd =     -6*pow(ir->rvdw, -7.0);
+                md1_ljd =     -6/(ir->rvdw*gmx::power6(ir->rvdw));
                 md1_ljr = reppow*pow(ir->rvdw, -(reppow+1));
                 /* The contribution of the higher derivatives is negligible */
                 break;
@@ -922,9 +923,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                  * the third derivative of the switch function.
                  */
                 sw_range  = ir->rvdw - ir->rvdw_switch;
-                md3_pswf  = 60.0*pow(sw_range, -3.0);
+                md3_pswf  = 60.0/gmx::power3(sw_range);
 
-                md3_ljd   = -pow(ir->rvdw, -6.0   )*md3_pswf;
+                md3_ljd   = -1.0/gmx::power6(ir->rvdw)*md3_pswf;
                 md3_ljr   =  pow(ir->rvdw, -reppow)*md3_pswf;
                 break;
             default:
@@ -941,8 +942,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br4      = br2*br2;
         br6      = br4*br2;
         /* -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2), see LJ-PME equations in manual] and r^-reppow */
-        md1_ljd  = -exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*pow(r, -7.0);
-        md1_ljr  = reppow*pow(r, -(reppow+1));
+        md1_ljd  = -std::exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)/(r*gmx::power6(r));
+        md1_ljr  = reppow*std::pow(r, -(reppow+1));
         /* The contribution of the higher derivatives is negligible */
     }
     else
@@ -968,20 +969,20 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             eps_rf = ir->epsilon_rf/ir->epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = pow(ir->rcoulomb, -3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
+                k_rf = (eps_rf - ir->epsilon_r)/( gmx::power3(ir->rcoulomb) * (2*eps_rf + ir->epsilon_r) );
             }
             else
             {
                 /* epsilon_rf = infinity */
-                k_rf = 0.5*pow(ir->rcoulomb, -3.0);
+                k_rf = 0.5/gmx::power3(ir->rcoulomb);
             }
         }
 
         if (eps_rf > 0)
         {
-            md1_el = elfac*(pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
+            md1_el = elfac*(1.0/gmx::square(ir->rcoulomb) - 2*k_rf*ir->rcoulomb);
         }
-        d2_el      = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
+        d2_el      = elfac*(2.0/gmx::power3(ir->rcoulomb) + 2*k_rf);
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
@@ -1041,7 +1042,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     }
     else
     {
-        kT_fac = BOLTZ*reference_temperature*sqr((ir->nstlist-1)*ir->delta_t);
+        kT_fac = BOLTZ*reference_temperature*gmx::square((ir->nstlist-1)*ir->delta_t);
     }
 
     mass_min = att[0].prop.mass;
@@ -1055,14 +1056,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         fprintf(debug, "md1_ljd %9.2e d2_ljd %9.2e md3_ljd %9.2e\n", md1_ljd, d2_ljd, md3_ljd);
         fprintf(debug, "md1_ljr %9.2e d2_ljr %9.2e md3_ljr %9.2e\n", md1_ljr, d2_ljr, md3_ljr);
         fprintf(debug, "md1_el  %9.2e d2_el  %9.2e\n", md1_el, d2_el);
-        fprintf(debug, "sqrt(kT_fac) %f\n", sqrt(kT_fac));
+        fprintf(debug, "sqrt(kT_fac) %f\n", std::sqrt(kT_fac));
         fprintf(debug, "mass_min %f\n", mass_min);
     }
 
     /* Search using bisection */
     ib0 = -1;
     /* The drift will be neglible at 5 times the max sigma */
-    ib1 = (int)(5*2*sqrt(kT_fac/mass_min)/resolution) + 1;
+    ib1 = (int)(5*2*std::sqrt(kT_fac/mass_min)/resolution) + 1;
     while (ib1 - ib0 > 1)
     {
         ib = (ib0 + ib1)/2;
@@ -1103,7 +1104,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                     drift);
         }
 
-        if (fabs(drift) > ir->verletbuf_tol)
+        if (std::abs(drift) > ir->verletbuf_tol)
         {
             ib0 = ib;
         }

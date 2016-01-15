@@ -46,11 +46,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/txtdump.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -913,12 +913,12 @@ int gmx_make_edi(int argc, char *argv[])
         {
             /* Trick: invert sign of Efl and alpha2 then this will give the same sign in the exponential and inverted sign outside */
             edi_params.flood.constEfl = -constEfl;
-            edi_params.flood.alpha2   = -sqr(alpha);
+            edi_params.flood.alpha2   = -gmx::square(alpha);
         }
         else
         {
             edi_params.flood.constEfl = constEfl;
-            edi_params.flood.alpha2   = sqr(alpha);
+            edi_params.flood.alpha2   = gmx::square(alpha);
         }
     }
 

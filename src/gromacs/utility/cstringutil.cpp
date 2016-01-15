@@ -46,6 +46,10 @@
 #include <cctype>
 #include <cstring>
 
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -574,6 +578,18 @@ char *gmx_step_str(gmx_int64_t i, char *buf)
     return buf;
 }
 
+void parse_digits_from_string(const char *digitstring, int *ndigits, int **digitlist)
+{
+    if (strstr(digitstring, ",") != NULL)
+    {
+        parse_digits_from_csv_string(digitstring, ndigits, digitlist);
+    }
+    else
+    {
+        parse_digits_from_plain_string(digitstring, ndigits, digitlist);
+    }
+}
+
 void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int **digitlist)
 {
     int i;
@@ -597,5 +613,36 @@ void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int *
                       digitstring[i]);
         }
         (*digitlist)[i] = digitstring[i] - '0';
+    }
+}
+
+void parse_digits_from_csv_string(const char *digitstring, int *ndigits, int **digitlist)
+{
+    if (NULL == digitstring)
+    {
+        *ndigits   = 0;
+        *digitlist = NULL;
+        return;
+    }
+
+    std::vector<int>   digits;
+    std::istringstream ss(digitstring);
+    std::string        token;
+    while (std::getline(ss, token, ','))
+    {
+        if (token.find_first_not_of("0123456789") != std::string::npos)
+        {
+            gmx_fatal(FARGS, "Invalid token in digit-only string: \"%s\"\n",
+                      token.c_str());
+        }
+        int number = static_cast<int>(str_to_int64_t(token.c_str(), NULL));
+        digits.push_back(number);
+    }
+
+    *ndigits = digits.size();
+    snew(*digitlist, *ndigits);
+    for (size_t i = 0; i < digits.size(); i++)
+    {
+        (*digitlist)[i] = digits[i];
     }
 }

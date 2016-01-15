@@ -46,6 +46,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -121,13 +122,13 @@ real evaluate_integral(int n, const real x[], const real y[],
         if (dy)
         {
             /* Assume all errors are uncorrelated */
-            sum_var += sqr(w*dy[j]);
+            sum_var += gmx::square(w*dy[j]);
         }
 
         if ((aver_start > 0) && (x[j] >= aver_start))
         {
             sum_tail  += sum;
-            sum2_tail += sqrt(sum_var);
+            sum2_tail += std::sqrt(sum_var);
             nsum_tail += 1;
         }
     }
@@ -140,7 +141,7 @@ real evaluate_integral(int n, const real x[], const real y[],
     }
     else
     {
-        *stddev = sqrt(sum_var);
+        *stddev = std::sqrt(sum_var);
     }
 
     return sum;

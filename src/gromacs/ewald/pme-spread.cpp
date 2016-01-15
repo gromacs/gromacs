@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -319,9 +320,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
     int            offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    real           thz_buffer[GMX_SIMD4_WIDTH*3], *thz_aligned;
-
-    thz_aligned = gmx_simd4_align_r(thz_buffer);
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH*2];
 #endif
 
     pnx = pmegrid->s[XX];
@@ -700,7 +699,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
     pme_overlap_t *overlap;
     int  send_index0, send_nindex;
     int  recv_nindex;
-#ifdef GMX_MPI
+#if GMX_MPI
     MPI_Status stat;
 #endif
     int  recv_size_y;
@@ -733,7 +732,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         {
             size_yx = 0;
         }
-#ifdef GMX_MPI
+#if GMX_MPI
         int datasize = (local_fft_ndata[XX] + size_yx)*local_fft_ndata[ZZ];
 
         int send_size_y = overlap->send_size;
@@ -758,7 +757,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
                         local_fft_ndata[XX], send_nindex, local_fft_ndata[ZZ]);
             }
 
-#ifdef GMX_MPI
+#if GMX_MPI
             int send_id = overlap->send_id[ipulse];
             int recv_id = overlap->recv_id[ipulse];
             MPI_Sendrecv(sendptr, send_size_y*datasize, GMX_MPI_REAL,
@@ -824,7 +823,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
                     send_nindex, local_fft_ndata[YY], local_fft_ndata[ZZ]);
         }
 
-#ifdef GMX_MPI
+#if GMX_MPI
         int datasize = local_fft_ndata[YY]*local_fft_ndata[ZZ];
         int send_id  = overlap->send_id[ipulse];
         int recv_id  = overlap->recv_id[ipulse];

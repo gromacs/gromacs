@@ -36,7 +36,7 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "thread_mpi/atomic.h"
 
@@ -45,10 +45,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
@@ -200,7 +196,7 @@ typedef struct {
  * but too small will result in overhead.
  * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define NBNXN_BUFFERFLAG_SIZE   8
 #else
 #define NBNXN_BUFFERFLAG_SIZE  16
@@ -230,9 +226,9 @@ typedef struct nbnxn_atomdata_t {
     real                    *nbfp;            /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
     int                      comb_rule;       /* Combination rule, see enum above                   */
     real                    *nbfp_comb;       /* LJ parameter per atom type, size ntype*2           */
-    real                    *nbfp_s4;         /* As nbfp, but with stride 4, size ntype^2*4. This
-                                               * might suit 4-wide SIMD loads of two values (e.g.
-                                               * two floats in single precision on x86).            */
+    real                    *nbfp_aligned;    /* As nbfp, but with an alignment (stride) suitable
+                                               * for the present SIMD architectures
+                                               */
     int                      natoms;          /* Number of atoms                                    */
     int                      natoms_local;    /* Number of local atoms                           */
     int                     *type;            /* Atom types                                         */
@@ -255,23 +251,17 @@ typedef struct nbnxn_atomdata_t {
      */
     real                    *simd_4xn_diagonal_j_minus_i;
     real                    *simd_2xnn_diagonal_j_minus_i;
-    /* Filters for topology exclusion masks for the SIMD kernels.
-     * filter2 is the same as filter1, but with each element duplicated.
-     */
-    unsigned int            *simd_exclusion_filter1;
-    unsigned int            *simd_exclusion_filter2;
-    real                    *simd_interaction_array; /* Array of masks needed for exclusions on QPX */
-    int                      nout;                   /* The number of force arrays                         */
-    nbnxn_atomdata_output_t *out;                    /* Output data structures               */
-    int                      nalloc;                 /* Allocation size of all arrays (for x/f *x/fstride) */
-    gmx_bool                 bUseBufferFlags;        /* Use the flags or operate on all atoms     */
-    nbnxn_buffer_flags_t     buffer_flags;           /* Flags for buffer zeroing+reduc.  */
-    gmx_bool                 bUseTreeReduce;         /* Use tree for force reduction */
-    tMPI_Atomic_t           *syncStep;               /* Synchronization step for tree reduce */
+    /* Filters for topology exclusion masks for the SIMD kernels. */
+    gmx_uint32_t            *simd_exclusion_filter;
+    gmx_uint64_t            *simd_exclusion_filter64; //!< Used for double w/o SIMD int32 logical support
+    real                    *simd_interaction_array;  /* Array of masks needed for exclusions */
+    int                      nout;                    /* The number of force arrays                         */
+    nbnxn_atomdata_output_t *out;                     /* Output data structures               */
+    int                      nalloc;                  /* Allocation size of all arrays (for x/f *x/fstride) */
+    gmx_bool                 bUseBufferFlags;         /* Use the flags or operate on all atoms     */
+    nbnxn_buffer_flags_t     buffer_flags;            /* Flags for buffer zeroing+reduc.  */
+    gmx_bool                 bUseTreeReduce;          /* Use tree for force reduction */
+    tMPI_Atomic_t           *syncStep;                /* Synchronization step for tree reduce */
 } nbnxn_atomdata_t;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

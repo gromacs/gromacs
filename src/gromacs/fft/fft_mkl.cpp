@@ -51,7 +51,7 @@
 #endif
 
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define GMX_DFTI_PREC  DFTI_DOUBLE
 #else
 #define GMX_DFTI_PREC  DFTI_SINGLE

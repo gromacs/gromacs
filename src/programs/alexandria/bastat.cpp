@@ -43,7 +43,6 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/listed-forces/bonded.h"

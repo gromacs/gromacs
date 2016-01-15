@@ -43,7 +43,7 @@
 #ifndef NBNXN_GPU_DATA_MGMT_H
 #define NBNXN_GPU_DATA_MGMT_H
 
-#include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
+#include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 #include "gromacs/mdtypes/interaction_const.h"
 

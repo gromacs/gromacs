@@ -62,6 +62,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
@@ -403,7 +404,7 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     }
     else
     {
-        cutoff2_        = sqr(cutoff_);
+        cutoff2_        = gmx::square(cutoff_);
     }
     bXY_             = false;
     nref_            = 0;
@@ -1375,7 +1376,7 @@ real AnalysisNeighborhoodSearch::minimumDistance(
     rvec          dx           = {0.0, 0.0, 0.0};
     MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
-    return sqrt(minDist2);
+    return std::sqrt(minDist2);
 }
 
 AnalysisNeighborhoodPair

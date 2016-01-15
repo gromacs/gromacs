@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,15 +44,16 @@
 #include <math.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/copyrite.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #define PROBABILITYCUTOFF 100
@@ -435,7 +436,7 @@ static void exchange_reals(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
     if (v)
     {
         snew(buf, n);
-#ifdef GMX_MPI
+#if GMX_MPI
         /*
            MPI_Sendrecv(v,  n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
@@ -468,7 +469,7 @@ static void exchange_doubles(const gmx_multisim_t gmx_unused *ms, int gmx_unused
     if (v)
     {
         snew(buf, n);
-#ifdef GMX_MPI
+#if GMX_MPI
         /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
@@ -500,7 +501,7 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
     if (v)
     {
         snew(buf, n);
-#ifdef GMX_MPI
+#if GMX_MPI
         /*
            MPI_Sendrecv(v[0],  n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
            buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
@@ -545,7 +546,6 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_doubles(ms, b, state->therm_integral, state->ngtc);
     exchange_rvecs(ms, b, state->x, state->natoms);
     exchange_rvecs(ms, b, state->v, state->natoms);
-    exchange_rvecs(ms, b, state->sd_X, state->natoms);
 }
 
 static void copy_rvecs(rvec *s, rvec *d, int n)
@@ -626,7 +626,6 @@ static void copy_state_nonatomdata(t_state *state, t_state *state_local)
     scopy_doubles(therm_integral, state->ngtc);
     scopy_rvecs(x, state->natoms);
     scopy_rvecs(v, state->natoms);
-    scopy_rvecs(sd_X, state->natoms);
     copy_ints(&(state->fep_state), &(state_local->fep_state), 1);
     scopy_reals(lambda, efptNR);
 }
@@ -1287,7 +1286,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
      * the next thing to do. */
     if (DOMAINDECOMP(cr))
     {
-#ifdef GMX_MPI
+#if GMX_MPI
         MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MASTERRANK(cr),
                   cr->mpi_comm_mygroup);
 #endif

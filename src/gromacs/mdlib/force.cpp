@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,19 +49,19 @@
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -156,7 +156,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     t_pbc       pbc;
     real        dvdl_dum[efptNR], dvdl_nb[efptNR];
 
-#ifdef GMX_MPI
+#if GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
 
@@ -183,7 +183,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
     /* Call the short range functions all in one go. */
 
-#ifdef GMX_MPI
+#if GMX_MPI
     /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
 #define TAKETIME FALSE
     if (TAKETIME)
@@ -284,7 +284,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         wallcycle_sub_stop(wcycle, ewcsLISTED);
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (TAKETIME)
     {
         t1          = MPI_Wtime();
@@ -613,7 +613,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         print_nrnb(debug, nrnb);
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (TAKETIME)
     {
         t2 = MPI_Wtime();

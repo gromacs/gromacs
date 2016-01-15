@@ -52,12 +52,12 @@
 #endif
 
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -211,7 +211,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     bool             *bB;
     int               i;
 
-    read_tpxheader(status, &sh, true, NULL, NULL);
+    read_tpxheader(status, &sh, true);
     snew(man->ix, sh.natoms);
     snew(man->zz, sh.natoms);
     snew(man->col, sh.natoms);

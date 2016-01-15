@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,24 +41,25 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/fileio/copyrite.h"
+#include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 /* We use the same defines as in broadcaststructs.cpp here */
@@ -67,9 +68,6 @@
 #define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
 /* #define TAKETIME */
 /* #define DEBUG  */
-enum {
-    ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
-};
 
 /* Enum for situations that can occur during log file parsing */
 enum {
@@ -184,7 +182,7 @@ static real estimate_direct(
     beta      = info->ewald_beta[0];
     r_coulomb = info->rcoulomb[0];
 
-    e_dir  = 2.0 * info->q2all * gmx_invsqrt( info->q2allnr  *  r_coulomb * info->volume );
+    e_dir  = 2.0 * info->q2all * gmx::invsqrt( info->q2allnr  *  r_coulomb * info->volume );
     e_dir *= exp (-beta*beta*r_coulomb*r_coulomb);
 
     return ONE_4PI_EPS0*e_dir;
@@ -507,13 +505,8 @@ static real estimate_reciprocal(
         stoplocal  = stopglobal;
         x_per_core = xtot;
     }
-/*
-   #ifdef GMX_LIB_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-   #endif
- */
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
     {
@@ -755,7 +748,7 @@ static real estimate_reciprocal(
         fprintf(stderr, "\n");
     }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
     {

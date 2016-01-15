@@ -13,7 +13,6 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/utilities.h"

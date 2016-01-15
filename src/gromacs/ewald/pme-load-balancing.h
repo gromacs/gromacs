@@ -47,12 +47,12 @@
 #define GMX_EWALD_PME_LOAD_BALANCING_H
 
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct t_commrec;
+struct t_inputrec;
 
 /*! \brief Object to manage PME load balancing */
 struct pme_load_balancing_t;

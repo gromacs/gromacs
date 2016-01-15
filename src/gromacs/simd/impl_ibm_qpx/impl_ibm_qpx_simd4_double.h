@@ -38,76 +38,198 @@
 
 #include "config.h"
 
-#include <math.h>
+#include "config.h"
+
+// Assert is buggy on xlc with high optimization, so we skip it for QPX
+#include <cstddef>
+
 #ifdef __clang__
 #include <qpxmath.h>
 #endif
 
-#include "impl_ibm_qpx_common.h"
-#include "impl_ibm_qpx_simd_double.h"
-
-/* QPX is already 4-wide both in single and double, so just reuse for SIMD4 */
-
-/* DOUBLE */
-#define gmx_simd4_double_t               gmx_simd_double_t
-#define gmx_simd4_load_d                 gmx_simd_load_d
-#define gmx_simd4_load1_d                gmx_simd_load1_d
-#define gmx_simd4_set1_d                 gmx_simd_set1_d
-#define gmx_simd4_store_d                gmx_simd_store_d
-#define gmx_simd4_loadu_d                gmx_simd_loadu_d
-#define gmx_simd4_storeu_d               gmx_simd_storeu_d
-#define gmx_simd4_setzero_d              gmx_simd_setzero_d
-#define gmx_simd4_add_d                  gmx_simd_add_d
-#define gmx_simd4_sub_d                  gmx_simd_sub_d
-#define gmx_simd4_mul_d                  gmx_simd_mul_d
-#define gmx_simd4_fmadd_d                gmx_simd_fmadd_d
-#define gmx_simd4_fmsub_d                gmx_simd_fmsub_d
-#define gmx_simd4_fnmadd_d               gmx_simd_fnmadd_d
-#define gmx_simd4_fnmsub_d               gmx_simd_fnmsub_d
-#define gmx_simd4_and_d                  gmx_simd_and_d
-#define gmx_simd4_andnot_d               gmx_simd_andnot_d
-#define gmx_simd4_or_d                   gmx_simd_or_d
-#define gmx_simd4_xor_d                  gmx_simd_xor_d
-#define gmx_simd4_rsqrt_d                gmx_simd_rsqrt_d
-#define gmx_simd4_rcp_d                  gmx_simd_rcp_d
-#define gmx_simd4_fabs_d                 gmx_simd_fabs_d
-#define gmx_simd4_fneg_d                 gmx_simd_fneg_d
-#define gmx_simd4_max_d                  gmx_simd_max_d
-#define gmx_simd4_min_d                  gmx_simd_min_d
-#define gmx_simd4_round_d                gmx_simd_round_d
-#define gmx_simd4_trunc_d                gmx_simd_trunc_d
-#define gmx_simd4_fraction_d             gmx_simd_fraction_d
-#define gmx_simd4_get_exponent_d         gmx_simd_get_exponent_d
-#define gmx_simd4_get_mantissa_d         gmx_simd_get_mantissa_d
-#define gmx_simd4_set_exponent_d         gmx_simd_set_exponent_d
-#define gmx_simd4_dotproduct3_d          gmx_simd4_dotproduct3_d_ibm_qpx
-#define gmx_simd4_dint32_t               gmx_simd_dint32_t
-#define gmx_simd4_load_di                gmx_simd_load_di
-#define gmx_simd4_load1_di               gmx_simd_load1_di
-#define gmx_simd4_set1_di                gmx_simd_set1_di
-#define gmx_simd4_store_di               gmx_simd_store_di
-#define gmx_simd4_loadu_di               gmx_simd_loadu_di
-#define gmx_simd4_storeu_di              gmx_simd_storeu_di
-#define gmx_simd4_setzero_di             gmx_simd_setzero_di
-#define gmx_simd4_cvt_d2i                gmx_simd_cvt_d2i
-#define gmx_simd4_cvtt_d2i               gmx_simd_cvtt_d2i
-#define gmx_simd4_cvt_i2f                gmx_simd_cvt_i2f
-#define gmx_simd4_dbool_t                gmx_simd_dbool_t
-#define gmx_simd4_cmpeq_d                gmx_simd_cmpeq_d
-#define gmx_simd4_cmplt_d                gmx_simd_cmplt_d
-#define gmx_simd4_cmple_d                gmx_simd_cmple_d
-#define gmx_simd4_and_db                 gmx_simd_and_db
-#define gmx_simd4_or_db                  gmx_simd_or_db
-#define gmx_simd4_anytrue_db             gmx_simd_anytrue_db
-#define gmx_simd4_blendzero_d            gmx_simd_blendzero_d
-#define gmx_simd4_blendnotzero_d         gmx_simd_blendnotzero_d
-#define gmx_simd4_blendv_d               gmx_simd_blendv_d
-#define gmx_simd4_reduce_d               gmx_simd_reduce_d
-
-static __attribute__((always_inline)) double gmx_simdcall
-gmx_simd4_dotproduct3_d_ibm_qpx(vector4double a, vector4double b)
+namespace gmx
 {
-    vector4double dp_sh0 = vec_mul(a, b);
+
+class Simd4Double
+{
+    public:
+        Simd4Double() {}
+
+        Simd4Double(double d) : simdInternal_(vec_splats(d)) {}
+
+        // Internal utility constructor to simplify return statements
+        Simd4Double(vector4double simd) : simdInternal_(simd) {}
+
+        vector4double  simdInternal_;
+};
+
+class Simd4DBool
+{
+    public:
+        Simd4DBool() {}
+
+        //! \brief Construct from scalar bool
+        Simd4DBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
+
+        // Internal utility constructor to simplify return statements
+        Simd4DBool(vector4double simd) : simdInternal_(simd) {}
+
+        vector4double  simdInternal_;
+};
+
+static inline Simd4Double gmx_simdcall
+load4(const double *m)
+{
+#ifdef NDEBUG
+    return {
+               vec_ld(0, const_cast<double *>(m))
+    };
+#else
+    return {
+               vec_lda(0, const_cast<double *>(m))
+    };
+#endif
+}
+
+static inline void gmx_simdcall
+store4(double *m, Simd4Double a)
+{
+#ifdef NDEBUG
+    vec_st(a.simdInternal_, 0, m);
+#else
+    vec_sta(a.simdInternal_, 0, m);
+#endif
+}
+
+static inline Simd4Double gmx_simdcall
+simd4SetZeroD()
+{
+    return {
+               vec_splats(0.0)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator+(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator-(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator-(Simd4Double x)
+{
+    return {
+               vec_neg(x.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+operator*(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_mul(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fma(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fms(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               vec_msub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fnma(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+fnms(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               vec_nmadd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+rsqrt(Simd4Double x)
+{
+    return {
+               vec_rsqrte(x.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+abs(Simd4Double x)
+{
+    return {
+               vec_abs( x.simdInternal_ )
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+max(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+min(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(b.simdInternal_, a.simdInternal_))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+round(Simd4Double x)
+{
+    // Note: It is critical to use vec_cfid(vec_ctid(a)) for the implementation
+    // here, since vec_round() does not adhere to the FP control
+    // word rounding scheme. We rely on float-to-float and float-to-integer
+    // rounding being the same for half-way values in a few algorithms.
+
+    return {
+               vec_cfid(vec_ctid(x.simdInternal_))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+trunc(Simd4Double x)
+{
+    return {
+               vec_trunc(x.simdInternal_)
+    };
+}
+
+static inline float gmx_simdcall
+dotProduct(Simd4Double a, Simd4Double b)
+{
+    vector4double dp_sh0 = vec_mul(a.simdInternal_, b.simdInternal_);
     vector4double dp_sh1 = vec_sldw(dp_sh0, dp_sh0, 1);
     vector4double dp_sh2 = vec_sldw(dp_sh0, dp_sh0, 2);
     vector4double dp     = vec_add(dp_sh2, vec_add(dp_sh0, dp_sh1));
@@ -115,4 +237,115 @@ gmx_simd4_dotproduct3_d_ibm_qpx(vector4double a, vector4double b)
     return vec_extract(dp, 0);
 }
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD4_DOUBLE_H */
+static inline void gmx_simdcall
+transpose(Simd4Double * v0, Simd4Double * v1,
+          Simd4Double * v2, Simd4Double * v3)
+{
+    vector4double t0 = vec_perm(v0->simdInternal_, v2->simdInternal_, vec_gpci(00415));
+    vector4double t1 = vec_perm(v0->simdInternal_, v2->simdInternal_, vec_gpci(02637));
+    vector4double t2 = vec_perm(v1->simdInternal_, v3->simdInternal_, vec_gpci(00415));
+    vector4double t3 = vec_perm(v1->simdInternal_, v3->simdInternal_, vec_gpci(02637));
+    v0->simdInternal_ = vec_perm(t0, t2, vec_gpci(00415));
+    v1->simdInternal_ = vec_perm(t0, t2, vec_gpci(02637));
+    v2->simdInternal_ = vec_perm(t1, t3, vec_gpci(00415));
+    v3->simdInternal_ = vec_perm(t1, t3, vec_gpci(02637));
+}
+
+static inline Simd4DBool gmx_simdcall
+operator==(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator!=(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_not(vec_cmpeq(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator<(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator<=(Simd4Double a, Simd4Double b)
+{
+    return {
+               vec_or(vec_cmplt(a.simdInternal_, b.simdInternal_), vec_cmpeq(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator&&(Simd4DBool a, Simd4DBool b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+operator||(Simd4DBool a, Simd4DBool b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(Simd4DBool a)
+{
+    vector4double b = vec_sldw(a.simdInternal_, a.simdInternal_, 2);
+
+    a.simdInternal_ = vec_or(a.simdInternal_, b);
+    b               = vec_sldw(a.simdInternal_, a.simdInternal_, 1);
+    b               = vec_or(a.simdInternal_, b);
+    return (vec_extract(b, 0) > 0);
+}
+
+static inline Simd4Double gmx_simdcall
+selectByMask(Simd4Double a, Simd4DBool m)
+{
+    return {
+               vec_sel(vec_splats(0.0), a.simdInternal_, m.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+selectByNotMask(Simd4Double a, Simd4DBool m)
+{
+    return {
+               vec_sel(a.simdInternal_, vec_splats(0.0), m.simdInternal_)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline double gmx_simdcall
+reduce(Simd4Double x)
+{
+    vector4double y = vec_sldw(x.simdInternal_, x.simdInternal_, 2);
+    vector4double z;
+
+    y = vec_add(y, x.simdInternal_);
+    z = vec_sldw(y, y, 1);
+    y = vec_add(y, z);
+    return vec_extract(y, 0);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD4_DOUBLE_H

@@ -43,7 +43,6 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"
@@ -546,7 +545,7 @@ static int decompose_frag(FILE *fplog,
                             ax += fpp[i]*a_copy[j][i];
                         }
                         da0  += (x_copy[j]-ax);
-                        chi2 += sqr(x_copy[j]-ax);
+                        chi2 += gmx::square(x_copy[j]-ax);
                     }
                     da0 = da0 / nusemol;
                     a0 += da0;

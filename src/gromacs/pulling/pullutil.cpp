@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -71,8 +73,8 @@ static void pull_reduce_real(t_commrec   *cr,
         }
         else
         {
-#ifdef GMX_MPI
-#ifdef MPI_IN_PLACE_EXISTS
+#if GMX_MPI
+#if MPI_IN_PLACE_EXISTS
             MPI_Allreduce(MPI_IN_PLACE, data, n, GMX_MPI_REAL, MPI_SUM,
                           comm->mpi_comm_com);
 #else
@@ -111,8 +113,8 @@ static void pull_reduce_double(t_commrec   *cr,
         }
         else
         {
-#ifdef GMX_MPI
-#ifdef MPI_IN_PLACE_EXISTS
+#if GMX_MPI
+#if MPI_IN_PLACE_EXISTS
             MPI_Allreduce(MPI_IN_PLACE, data, n, MPI_DOUBLE, MPI_SUM,
                           comm->mpi_comm_com);
 #else
@@ -216,7 +218,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
     start = 0;
     end   = md->homenr;
 
-    inv_cyl_r2 = 1/dsqr(pull->params.cylinder_r);
+    inv_cyl_r2 = 1.0/gmx::square(pull->params.cylinder_r);
 
     /* loop over all groups to make a reference group for each*/
     for (c = 0; c < pull->ncoord; c++)

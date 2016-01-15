@@ -47,7 +47,6 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/copyrite.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
@@ -59,10 +58,12 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
@@ -1004,7 +1005,7 @@ void MyMol::CalcMultipoles()
         r2   = iprod(x_[i], x_[i]);
         for (m = 0; (m < DIM); m++)
         {
-            Q_calc[m][m] += dfac*(3*sqr(x_[i][m]) - r2);
+            Q_calc[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
         }
         Q_calc[XX][YY] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][YY]+coq[YY]);
         Q_calc[XX][ZZ] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][ZZ]+coq[ZZ]);
@@ -1986,7 +1987,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         {
             mu_exp[m] = vec[m];
         }
-        mu_exp2 = sqr(value);
+        mu_exp2 = gmx::square(value);
         if (error <= 0)
         {
             if (debug)
@@ -1997,7 +1998,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
             nwarn++;
             error = 0.1*value;
         }
-        dip_weight = sqr(1.0/error);
+        dip_weight = gmx::square(1.0/error);
     }
     /* Check handling of LOT */
     if (molProp()->getPropRef(MPO_DIPOLE, iqmQM,
@@ -2062,7 +2063,7 @@ void MyMol::CalcQPol(Poldata * pd)
         {
             np++;
             poltot += pol;
-            sptot  += sqr(sigpol);
+            sptot  += gmx::square(sigpol);
         }
         if (1 ==
             pd->getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))

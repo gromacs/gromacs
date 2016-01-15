@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -238,7 +238,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
         h.a[i] = a[i];
     }
     typename TestFixture::ArrayRefType arrayRef(h.a);
-#if defined(GMX_TARGET_BGQ) && defined(__xlC__)
+#if GMX_TARGET_BGQ && defined(__xlC__)
     if (sizeof(typename TestFixture::ValueType) == sizeof(char))
 #endif
     {

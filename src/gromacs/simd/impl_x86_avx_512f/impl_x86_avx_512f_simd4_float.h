@@ -52,53 +52,53 @@
  * we cast to the full register width when those operations are cheaper. We
  * also save some register space by using mask registers for the booleans.
  */
-#define gmx_simd4_float_t           __m128
-#define gmx_simd4_load_f            _mm_load_ps
-#define gmx_simd4_load1_f           _mm_load1_ps
-#define gmx_simd4_set1_f            _mm_set1_ps
-#define gmx_simd4_store_f           _mm_store_ps
-#define gmx_simd4_loadu_f           _mm_loadu_ps
-#define gmx_simd4_storeu_f          _mm_storeu_ps
-#define gmx_simd4_setzero_f         _mm_setzero_ps
-#define gmx_simd4_add_f             _mm_add_ps
-#define gmx_simd4_sub_f             _mm_sub_ps
-#define gmx_simd4_mul_f             _mm_mul_ps
-#define gmx_simd4_fmadd_f           _mm_fmadd_ps
-#define gmx_simd4_fmsub_f           _mm_fmsub_ps
-#define gmx_simd4_fnmadd_f          _mm_fnmadd_ps
-#define gmx_simd4_fnmsub_f          _mm_fnmsub_ps
-#define gmx_simd4_and_f             _mm_and_ps
-#define gmx_simd4_andnot_f          _mm_andnot_ps
-#define gmx_simd4_or_f              _mm_or_ps
-#define gmx_simd4_xor_f             _mm_xor_ps
+#define Simd4Float           __m128
+#define simd4LoadF            _mm_load_ps
+#define simd4Load1F           _mm_load1_ps
+#define simd4Set1F            _mm_set1_ps
+#define simd4StoreF           _mm_store_ps
+#define simd4LoadUF           _mm_loadu_ps
+#define simd4StoreUF          _mm_storeu_ps
+#define simd4SetZeroF         _mm_setzero_ps
+#define simd4AddF             _mm_add_ps
+#define simd4SubF             _mm_sub_ps
+#define simd4MulF             _mm_mul_ps
+#define simd4FmaddF           _mm_fmadd_ps
+#define simd4FmsubF           _mm_fmsub_ps
+#define simd4FnmaddF          _mm_fnmadd_ps
+#define simd4FnmsubF          _mm_fnmsub_ps
+#define simd4AndF             _mm_and_ps
+#define simd4AndNotF          _mm_andnot_ps
+#define simd4OrF              _mm_or_ps
+#define simd4XorF             _mm_xor_ps
 /* We need to use the new table lookup instructions since we have specified
  * 14 bits of accuracy for AVX-512F.
  */
-#define gmx_simd4_rsqrt_f(x)        _mm512_castps512_ps128(_mm512_rsqrt14_ps(_mm512_castps128_ps512(x)))
+#define simd4RsqrtF(x)        _mm512_castps512_ps128(_mm512_rsqrt14_ps(_mm512_castps128_ps512(x)))
 /* abs/neg cannot cause FP exceptions, so we can operate on entire register */
-#define gmx_simd4_fabs_f(x)         _mm512_castps512_ps128(_mm512_abs_ps(_mm512_castps128_ps512(x)))
-#define gmx_simd4_fneg_f(x)         _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
-#define gmx_simd4_max_f             _mm_max_ps
-#define gmx_simd4_min_f             _mm_min_ps
-#define gmx_simd4_round_f(x)        _mm_round_ps(x, _MM_FROUND_NINT)
-#define gmx_simd4_trunc_f(x)        _mm_round_ps(x, _MM_FROUND_TRUNC)
-#define gmx_simd4_dotproduct3_f(a, b) gmx_simd4_dotproduct3_f_x86_avx_512f(a, b)
-#define gmx_simd4_fbool_t           __mmask16
-#define gmx_simd4_cmpeq_f(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_EQ_OQ)
-#define gmx_simd4_cmplt_f(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_LT_OS)
-#define gmx_simd4_cmple_f(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_LE_OS)
-#define gmx_simd4_and_fb            _mm512_kand
-#define gmx_simd4_or_fb             _mm512_kor
-#define gmx_simd4_anytrue_fb(x)     (_mm512_mask2int(x)&0xF)
-#define gmx_simd4_blendzero_f(a, sel)    _mm512_castps512_ps128(_mm512_mask_mov_ps(_mm512_setzero_ps(), sel, _mm512_castps128_ps512(a)))
-#define gmx_simd4_blendnotzero_f(a, sel) _mm512_castps512_ps128(_mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), _mm512_castps128_ps512(a)))
-#define gmx_simd4_blendv_f(a, b, sel)    _mm512_castps512_ps128(_mm512_mask_blend_ps(sel, _mm512_castps128_ps512(a), _mm512_castps128_ps512(b)))
-#define gmx_simd4_reduce_f(x)       gmx_simd4_reduce_f_x86_avx_512f(x)
+#define simd4AbsF(x)         _mm512_castps512_ps128(_mm512_abs_ps(_mm512_castps128_ps512(x)))
+#define simd4NegF(x)         _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
+#define simd4MaxF             _mm_max_ps
+#define simd4MinF             _mm_min_ps
+#define simd4RoundF(x)        _mm_round_ps(x, _MM_FROUND_NINT)
+#define simd4TruncF(x)        _mm_round_ps(x, _MM_FROUND_TRUNC)
+#define simd4DotProductF(a, b) simd4DotProductF_x86_avx_512f(a, b)
+#define Simd4FBool           __mmask16
+#define simd4CmpEqF(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_EQ_OQ)
+#define simd4CmpLtF(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_LT_OS)
+#define simd4CmpLeF(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_LE_OS)
+#define simd4AndFB            _mm512_kand
+#define simd4OrFB             _mm512_kor
+#define simd4AnyTrueFB(x)     (_mm512_mask2int(x)&0xF)
+#define simd4MaskF(a, sel)    _mm512_castps512_ps128(_mm512_mask_mov_ps(_mm512_setzero_ps(), sel, _mm512_castps128_ps512(a)))
+#define simd4MaskNotF(a, sel) _mm512_castps512_ps128(_mm512_mask_mov_ps(_mm512_setzero_ps(), _mm512_knot(sel), _mm512_castps128_ps512(a)))
+#define simd4BlendF(a, b, sel)    _mm512_castps512_ps128(_mm512_mask_blend_ps(sel, _mm512_castps128_ps512(a), _mm512_castps128_ps512(b)))
+#define simd4ReduceF(x)       simd4ReduceF_x86_avx_512f(x)
 
 
 /* Implementation helpers */
-static gmx_inline float
-gmx_simd4_reduce_f_x86_avx_512f(__m128 a)
+static inline float
+simd4ReduceF_x86_avx_512f(__m128 a)
 {
     float f;
     a = _mm_hadd_ps(a, a);
@@ -107,8 +107,8 @@ gmx_simd4_reduce_f_x86_avx_512f(__m128 a)
     return f;
 }
 
-static gmx_inline float
-gmx_simd4_dotproduct3_f_x86_avx_512f(__m128 a, __m128 b)
+static inline float
+simd4DotProductF_x86_avx_512f(__m128 a, __m128 b)
 {
     float  f;
     __m128 c;

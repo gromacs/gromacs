@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,16 +49,12 @@
 #include <sys/types.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/txtdump.h"
-#include "gromacs/gmxlib/calcgrid.h"
-#include "gromacs/gmxlib/ifunc.h"
-#include "gromacs/gmxlib/splitter.h"
-#include "gromacs/gmxlib/warninp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
@@ -71,6 +67,9 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
@@ -83,9 +82,11 @@
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -250,9 +251,9 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     ip = mtop->ffparams.iparams;
 
-    twopi2 = sqr(2*M_PI);
+    twopi2 = gmx::square(2*M_PI);
 
-    limit2 = sqr(min_steps_note*dt);
+    limit2 = gmx::square(min_steps_note*dt);
 
     w_a1      = w_a2 = -1;
     w_period2 = -1.0;
@@ -333,7 +334,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     if (w_moltype != NULL)
     {
-        bWarn = (w_period2 < sqr(min_steps_warn*dt));
+        bWarn = (w_period2 < gmx::square(min_steps_warn*dt));
         /* A check that would recognize most water models */
         bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O' &&
                   w_moltype->atoms.nr <= 5);
@@ -840,7 +841,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             clear_rvec(invbox[j]);
             invbox[j][j] = 1;
         }
-        m_inv_ur0(invbox, invbox);
+        gmx::invertBoxMatrix(invbox, invbox);
     }
 
     /* Copy the reference coordinates to mtop */
@@ -1393,7 +1394,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
-    if (sqr(ir->rlist) >= max_cutoff2(ir->ePBC, box))
+    if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
     {
         gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlist, std::sqrt(max_cutoff2(ir->ePBC, box)));
     }
@@ -1650,11 +1651,6 @@ int gmx_grompp(int argc, char *argv[])
         {
             clean_vsite_bondeds(mi[mt].plist, sys->moltype[mt].atoms.nr, bRmVSBds);
         }
-    }
-
-    if (nvsite && ir->eI == eiNM)
-    {
-        gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
     }
 
     if (ir->cutoff_scheme == ecutsVERLET)

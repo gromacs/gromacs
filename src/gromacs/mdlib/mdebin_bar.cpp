@@ -45,6 +45,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -246,31 +247,22 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             unsigned int i;
 
             blk->sub[2].nr = dh->ndh;
-/* For F@H for now. */
-#undef GMX_DOUBLE
-#ifndef GMX_DOUBLE
+            /* Michael commented in 2012 that this use of explicit
+               xdr_datatype_float was good for F@H for now.
+               Apparently it's still good enough. */
             blk->sub[2].type = xdr_datatype_float;
             for (i = 0; i < dh->ndh; i++)
             {
                 dh->dhf[i] = (float)dh->dh[i];
             }
             blk->sub[2].fval = dh->dhf;
-#else
-            blk->sub[2].type = xdr_datatype_double;
-            blk->sub[2].dval = dh->dh;
-#endif
-            dh->written = TRUE;
+            dh->written      = TRUE;
         }
         else
         {
-            blk->sub[2].nr = 0;
-#ifndef GMX_DOUBLE
+            blk->sub[2].nr   = 0;
             blk->sub[2].type = xdr_datatype_float;
             blk->sub[2].fval = NULL;
-#else
-            blk->sub[2].type = xdr_datatype_double;
-            blk->sub[2].dval = NULL;
-#endif
         }
     }
     else

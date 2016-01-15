@@ -65,9 +65,7 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
-//#if __CUDA_ARCH__ >= 350
-//__launch_bounds__(64, 16)
-//#endif
+
 /* NOTE:
  NB_KERNEL_FUNC_NAME differs from the CUDA equivalent as it is not a variadic macro due to OpenCL not having a support for them, this version only takes exactly 2 arguments.
  Thus if more strings need to be appended a new macro must be written or it must be directly appended here.
@@ -115,7 +113,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     float               rcoulomb_sq = nbparam->rcoulomb_sq;
 
 #ifdef VDW_CUTOFF_CHECK
-    float               rvdw_sq     = nbparam_params.rvdw_sq;//nbparam->rvdw_sq;
+    float               rvdw_sq     = nbparam_params.rvdw_sq;
     float               vdw_in_range;
 #endif
 #ifdef LJ_EWALD
@@ -178,7 +176,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     __local int *cjs     = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
     #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
 
-#ifdef IATYPE_SHMEM //Should not be defined! CUDA > 300
+#ifdef IATYPE_SHMEM //Should not be defined!
     /* shmem buffer for i atom-type pre-loading */
     __local int *atib = (__local int *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
@@ -207,7 +205,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
     xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
 
-#ifdef IATYPE_SHMEM //Should not be defined! CUDA > 300
+#ifdef IATYPE_SHMEM //NOTE: Should not be defined. Used with CUDA > 3.0 Re-evaluate the effect of preloading at a suitable time.
     /* Pre-load the i-atom types into shared memory */
     atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif
@@ -292,12 +290,8 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                 cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
             }
 
-            /* Unrolling this loop
-               - with pruning leads to register spilling;
-               - on Kepler is much slower;
-               - doesn't work on CUDA <v4.1
-               Tested with nvcc 3.2 - 5.0.7 */
-#if !defined PRUNE_NBL //&& __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
+            /* TODO: check loop unrolling with NVIDIA OpenCL */
+#if !defined PRUNE_NBL
 //#pragma unroll 4
 #endif
 
@@ -318,9 +312,8 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
                     fcj_buf = (float3)(0.0f);
 
-                    /* The PME and RF kernels don't unroll with CUDA <v4.1. */
-#if !defined PRUNE_NBL //&& !(CUDA_VERSION < 4010 && defined EXCLUSION_FORCES)
-//#pragma unroll 8
+#if !defined PRUNE_NBL
+#pragma unroll 8
 #endif
                     for (i = 0; i < NCL_PER_SUPERCL; i++)
                     {
@@ -366,7 +359,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                             {
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
-#ifdef IATYPE_SHMEM //Should not be defined! CUDA > 300
+#ifdef IATYPE_SHMEM //Should not be defined!
                                 typei   = atib[i * CL_SIZE + tidxi];
 #else
                                 typei   = atom_types[ai];
@@ -529,11 +522,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    /* add up local shift forces into global mem */    
-	//if (bCalcFshift && tidxj == 0)
-    //	atomicAdd_g_f3(&(fshift[3 * nb_sci.shift]),fshift_buf);
+    /* add up local shift forces into global mem */
     if (bCalcFshift)
-    {      
+    {
         /* Only threads with tidxj < 3 will update fshift.
            The threads performing the update must be the same with the threads
            which stored the reduction result in reduce_force_i function

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -101,6 +101,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf_libc #seems only important for security on non-std libc
         --suppress=invalidscanf      #same as last (style and portability checker have the same warning)
         --suppress=passedByValue:src/gromacs/simd/tests/*
+        --suppress=redundantAssignment:src/gromacs/simd/simd_math.h #sees to be a bug in cppcheck
         )
 
     # This list will hold the list of all files with cppcheck errors

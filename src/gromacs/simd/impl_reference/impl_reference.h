@@ -45,16 +45,29 @@
  * \ingroup module_simd
  */
 
-/* Special width-4 double-precision SIMD */
+
+// Definitions for this architecture
+#include "impl_reference_definitions.h"
+
+// Functions not related to floating-point SIMD (mainly prefetching)
+#include "impl_reference_general.h"
+
+// Special width-4 double-precision SIMD
 #include "impl_reference_simd4_double.h"
 
-/* Special width-4 single-precision SIMD */
+// Special width-4 single-precision SIMD
 #include "impl_reference_simd4_float.h"
 
-/* General double-precision SIMD (and double/float conversions) */
+// General double-precision SIMD (and double/float conversions)
 #include "impl_reference_simd_double.h"
 
-/* General single-precision SIMD */
+// General single-precision SIMD
 #include "impl_reference_simd_float.h"
 
-#endif /* GMX_SIMD_IMPL_REFERENCE_H */
+// Higher-level utility functions for double precision SIMD
+#include "impl_reference_util_double.h"
+
+// Higher-level utility functions for single precision SIMD
+#include "impl_reference_util_float.h"
+
+#endif // GMX_SIMD_IMPL_REFERENCE_H

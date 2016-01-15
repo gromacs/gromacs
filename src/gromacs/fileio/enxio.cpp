@@ -46,6 +46,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -94,7 +95,7 @@ struct ener_file
 static void enxsubblock_init(t_enxsubblock *sb)
 {
     sb->nr = 0;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     sb->type = xdr_datatype_double;
 #else
     sb->type = xdr_datatype_float;
@@ -445,7 +446,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
     gmx_bool     bRead      = gmx_fio_getread(ef->fio);
     int          ndisre     = 0;
     int          startb     = 0;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     xdr_datatype dtreal = xdr_datatype_float;
 #else
     xdr_datatype dtreal = xdr_datatype_double;
@@ -900,8 +901,8 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
             eav_all          = fr->ener[i].eav;
             fr->ener[i].esum = esum_all - ener_old->ener_prev[i].esum;
             fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
-                - dsqr(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
-                       - esum_all/nstep_all)*
+                - gmx::square(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
+                              - esum_all/nstep_all)*
                 (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;

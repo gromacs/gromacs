@@ -51,10 +51,10 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
-#include "gromacs/gmxlib/ifunc.h"
 #include "gromacs/listed-forces/listed-forces.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

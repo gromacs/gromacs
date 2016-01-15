@@ -49,13 +49,14 @@
 
 #include "thread_mpi/atomic.h"
 
-#include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
-#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
@@ -64,6 +65,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr, size_t nbytes)
@@ -382,23 +384,27 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
 
     if (bSIMD)
     {
-        /* nbfp_s4 stores two parameters using a stride of 4,
-         * because this would suit x86 SIMD single-precision
-         * quad-load intrinsics. There's a slight inefficiency in
-         * allocating and initializing nbfp_s4 when it might not
-         * be used, but introducing the conditional code is not
-         * really worth it. */
-        nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
+#if GMX_SIMD
+        /* nbfp_aligned stores two parameters using the stride most suitable
+         * for the present SIMD architecture, as specified by the constant
+         * c_simdBestPairAlignment from the SIMD header.
+         * There's a slight inefficiency in allocating and initializing nbfp_aligned
+         * when it might not be used, but introducing the conditional code is not
+         * really worth it.
+         */
+        nbat->alloc((void **)&nbat->nbfp_aligned,
+                    nt*nt*c_simdBestPairAlignment*sizeof(*nbat->nbfp_aligned));
         for (int i = 0; i < nt; i++)
         {
             for (int j = 0; j < nt; j++)
             {
-                nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
-                nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
-                nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
-                nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+                nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+0] = nbat->nbfp[(i*nt+j)*2+0];
+                nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+1] = nbat->nbfp[(i*nt+j)*2+1];
+                nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+2] = 0;
+                nbat->nbfp_aligned[(i*nt+j)*c_simdBestPairAlignment+3] = 0;
             }
         }
+#endif
     }
 
     /* We use combination rule data for SIMD combination rule kernels
@@ -428,7 +434,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
                     /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
                      * so we get 6*C6 and 12*C12 after combining.
                      */
-                    nbat->nbfp_comb[i*2  ] = 0.5*std::pow(static_cast<real>(c12/c6), static_cast<real>(1.0/6.0));
+                    nbat->nbfp_comb[i*2  ] = 0.5*gmx::sixthroot(c12/c6);
                     nbat->nbfp_comb[i*2+1] = std::sqrt(c6*c6/c12);
                 }
                 else
@@ -447,7 +453,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
     }
 }
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 static void
 nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 {
@@ -479,50 +485,52 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 
     /* We use up to 32 bits for exclusion masking.
      * The same masks are used for the 4xN and 2x(N+N) kernels.
-     * The masks are read either into epi32 SIMD registers or into
+     * The masks are read either into integer SIMD registers or into
      * real SIMD registers (together with a cast).
-     * In single precision this means the real and epi32 SIMD registers
+     * In single precision this means the real and integer SIMD registers
      * are of equal size.
-     * In double precision the epi32 registers can be smaller than
-     * the real registers, so depending on the architecture, we might
-     * need to use two, identical, 32-bit masks per real.
      */
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*simd_width;
-    snew_aligned(nbat->simd_exclusion_filter1, simd_excl_size,   NBNXN_MEM_ALIGN);
-    snew_aligned(nbat->simd_exclusion_filter2, simd_excl_size*2, NBNXN_MEM_ALIGN);
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+    snew_aligned(nbat->simd_exclusion_filter64, simd_excl_size,   NBNXN_MEM_ALIGN);
+#else
+    snew_aligned(nbat->simd_exclusion_filter, simd_excl_size,   NBNXN_MEM_ALIGN);
+#endif
 
     for (int j = 0; j < simd_excl_size; j++)
     {
         /* Set the consecutive bits for masking pair exclusions */
-        nbat->simd_exclusion_filter1[j]       = (1U << j);
-        nbat->simd_exclusion_filter2[j*2 + 0] = (1U << j);
-        nbat->simd_exclusion_filter2[j*2 + 1] = (1U << j);
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+        nbat->simd_exclusion_filter64[j]     = (1U << j);
+#else
+        nbat->simd_exclusion_filter[j]       = (1U << j);
+#endif
     }
 
-#if GMX_SIMD_IBM_QPX
-    /* The QPX kernels shouldn't do the bit masking that is done on
-     * x86, because the SIMD units lack bit-wise operations. Instead,
-     * we generate a vector of all 2^4 possible ways an i atom
-     * interacts with its 4 j atoms. Each array entry contains
-     * simd_width signed ints that are read in a single SIMD
-     * load. These ints must contain values that will be interpreted
-     * as true and false when loaded in the SIMD floating-point
-     * registers, ie. any positive or any negative value,
-     * respectively. Each array entry encodes how this i atom will
-     * interact with the 4 j atoms. Matching code exists in
-     * set_ci_top_excls() to generate indices into this array. Those
-     * indices are used in the kernels. */
+#if !GMX_SIMD_HAVE_LOGICAL && !GMX_SIMD_HAVE_INT32_LOGICAL
+    // If the SIMD implementation has no bitwise logical operation support
+    // whatsoever we cannot use the normal masking. Instead,
+    // we generate a vector of all 2^4 possible ways an i atom
+    // interacts with its 4 j atoms. Each array entry contains
+    // GMX_SIMD_REAL_WIDTH values that are read with a single aligned SIMD load.
+    // Since there is no logical value representation in this case, we use
+    // any nonzero value to indicate 'true', while zero mean 'false'.
+    // This can then be converted to a SIMD boolean internally in the SIMD
+    // module by comparing to zero.
+    // Each array entry encodes how this i atom will interact with the 4 j atoms.
+    // Matching code exists in set_ci_top_excls() to generate indices into this array.
+    // Those indices are used in the kernels.
 
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
-    const int  qpx_simd_width = GMX_SIMD_REAL_WIDTH;
-    const real simdFalse      = -1, simdTrue = 1;
+    const real simdFalse =  0.0;
+    const real simdTrue  =  1.0;
     real      *simd_interaction_array;
 
-    snew_aligned(simd_interaction_array, simd_excl_size * qpx_simd_width, NBNXN_MEM_ALIGN);
+    snew_aligned(simd_interaction_array, simd_excl_size * GMX_SIMD_REAL_WIDTH, NBNXN_MEM_ALIGN);
     for (int j = 0; j < simd_excl_size; j++)
     {
-        int index = j * qpx_simd_width;
-        for (int i = 0; i < qpx_simd_width; i++)
+        int index = j * GMX_SIMD_REAL_WIDTH;
+        for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
             simd_interaction_array[index + i] = (j & (1 << i)) ? simdTrue : simdFalse;
         }
@@ -598,7 +606,7 @@ void nbnxn_atomdata_init(FILE *fp,
         c12 = nbfp[(i*ntype+i)*2+1]/12.0;
         if (c6 > 0 && c12 > 0)
         {
-            nbat->nbfp_comb[i*2  ] = std::pow(static_cast<real>(c12/c6), static_cast<real>(1.0/6.0));
+            nbat->nbfp_comb[i*2  ] = gmx::sixthroot(c12/c6);
             nbat->nbfp_comb[i*2+1] = 0.25*c6*c6/c12;
         }
         else if (c6 == 0 && c12 == 0)
@@ -639,7 +647,7 @@ void nbnxn_atomdata_init(FILE *fp,
                     ((c6 == 0 && c12 == 0 &&
                       (nbat->nbfp_comb[i*2+1] == 0 || nbat->nbfp_comb[j*2+1] == 0)) ||
                      (c6 > 0 && c12 > 0 &&
-                      gmx_within_tol(std::pow(static_cast<real>(c12/c6), static_cast<real>(1.0/6.0)),
+                      gmx_within_tol(gmx::sixthroot(c12/c6),
                                      0.5*(nbat->nbfp_comb[i*2]+nbat->nbfp_comb[j*2]), tol) &&
                       gmx_within_tol(0.25*c6*c6/c12, std::sqrt(nbat->nbfp_comb[i*2+1]*nbat->nbfp_comb[j*2+1]), tol)));
             }
@@ -775,7 +783,7 @@ void nbnxn_atomdata_init(FILE *fp,
     nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->x       = NULL;
 
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
     if (simple)
     {
         nbnxn_atomdata_init_simple_exclusion_masks(nbat);
@@ -1261,36 +1269,36 @@ nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
                                  int gmx_unused nsrc,
                                  int gmx_unused i0, int gmx_unused i1)
 {
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-    gmx_simd_real_t dest_SSE, src_SSE;
+    SimdReal dest_SSE, src_SSE;
 
     if (bDestSet)
     {
         for (int i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_simd_load_r(dest+i);
+            dest_SSE = load(dest+i);
             for (int s = 0; s < nsrc; s++)
             {
-                src_SSE  = gmx_simd_load_r(src[s]+i);
-                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
+                src_SSE  = load(src[s]+i);
+                dest_SSE = dest_SSE + src_SSE;
             }
-            gmx_simd_store_r(dest+i, dest_SSE);
+            store(dest+i, dest_SSE);
         }
     }
     else
     {
         for (int i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
         {
-            dest_SSE = gmx_simd_load_r(src[0]+i);
+            dest_SSE = load(src[0]+i);
             for (int s = 1; s < nsrc; s++)
             {
-                src_SSE  = gmx_simd_load_r(src[s]+i);
-                dest_SSE = gmx_simd_add_r(dest_SSE, src_SSE);
+                src_SSE  = load(src[s]+i);
+                dest_SSE = dest_SSE + src_SSE;
             }
-            gmx_simd_store_r(dest+i, dest_SSE);
+            store(dest+i, dest_SSE);
         }
     }
 #endif
@@ -1417,7 +1425,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 {
     const nbnxn_buffer_flags_t *flags = &nbat->buffer_flags;
 
-    int next_pow2 = 1<<(gmx_log2i(nth-1)+1);
+    int next_pow2 = 1<<(gmx::log2I(nth-1)+1);
 
     assert(nbat->nout == nth); /* tree-reduce currently only works for nout==nth */
 
@@ -1515,7 +1523,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 
                         if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
                         {
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
                             nbnxn_atomdata_reduce_reals_simd
 #else
                             nbnxn_atomdata_reduce_reals
@@ -1572,7 +1580,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
                 }
                 if (nfptr > 0)
                 {
-#ifdef GMX_NBNXN_SIMD
+#if GMX_SIMD
                     nbnxn_atomdata_reduce_reals_simd
 #else
                     nbnxn_atomdata_reduce_reals

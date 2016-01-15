@@ -38,10 +38,12 @@
 
 #include "atoms.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/txtdump.h"
 
 const char *ptype_str[eptNR+1] = {
     "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
@@ -221,4 +223,92 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
     ri->ic       = ic;
     ri->chainnum = chainnum;
     ri->chainid  = chainid;
+}
+
+static void pr_atom(FILE *fp, int indent, const char *title, const t_atom *atom, int n)
+{
+    int i;
+
+    if (available(fp, atom, indent, title))
+    {
+        indent = pr_title_n(fp, indent, title, n);
+        for (i = 0; i < n; i++)
+        {
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
+                    "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
+                    title, i, atom[i].type, atom[i].typeB, ptype_str[atom[i].ptype],
+                    atom[i].m, atom[i].q, atom[i].mB, atom[i].qB,
+                    atom[i].resind, atom[i].atomnumber);
+        }
+    }
+}
+
+static void pr_strings2(FILE *fp, int indent, const char *title,
+                        char ***nm, char ***nmB, int n, gmx_bool bShowNumbers)
+{
+    int i;
+
+    if (available(fp, nm, indent, title))
+    {
+        indent = pr_title_n(fp, indent, title, n);
+        for (i = 0; i < n; i++)
+        {
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n",
+                    title, bShowNumbers ? i : -1, *(nm[i]), *(nmB[i]));
+        }
+    }
+}
+
+static void pr_resinfo(FILE *fp, int indent, const char *title, const t_resinfo *resinfo, int n,
+                       gmx_bool bShowNumbers)
+{
+    int i;
+
+    if (available(fp, resinfo, indent, title))
+    {
+        indent = pr_title_n(fp, indent, title, n);
+        for (i = 0; i < n; i++)
+        {
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
+                    title, bShowNumbers ? i : -1,
+                    *(resinfo[i].name), resinfo[i].nr,
+                    (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
+        }
+    }
+}
+
+void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
+              gmx_bool bShownumbers)
+{
+    if (available(fp, atoms, indent, title))
+    {
+        indent = pr_title(fp, indent, title);
+        pr_atom(fp, indent, "atom", atoms->atom, atoms->nr);
+        pr_strings(fp, indent, "atom", atoms->atomname, atoms->nr, bShownumbers);
+        pr_strings2(fp, indent, "type", atoms->atomtype, atoms->atomtypeB, atoms->nr, bShownumbers);
+        pr_resinfo(fp, indent, "residue", atoms->resinfo, atoms->nres, bShownumbers);
+    }
+}
+
+
+void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *atomtypes,
+                  gmx_bool bShowNumbers)
+{
+    int i;
+    if (available(fp, atomtypes, indent, title))
+    {
+        indent = pr_title(fp, indent, title);
+        for (i = 0; i < atomtypes->nr; i++)
+        {
+            pr_indent(fp, indent);
+            fprintf(fp,
+                    "atomtype[%3d]={radius=%12.5e, volume=%12.5e, gb_radius=%12.5e, surftens=%12.5e, atomnumber=%4d, S_hct=%12.5e)}\n",
+                    bShowNumbers ? i : -1, atomtypes->radius[i], atomtypes->vol[i],
+                    atomtypes->gb_radius[i],
+                    atomtypes->surftens[i], atomtypes->atomnumber[i], atomtypes->S_hct[i]);
+        }
+    }
 }

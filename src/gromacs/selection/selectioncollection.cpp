@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fileio/trx.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -58,6 +57,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
@@ -83,7 +83,7 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl()
-    : maxAtomIndex_(0), debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
+    : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
 {
     sc_.nvars     = 0;
     sc_.varstrs   = NULL;
@@ -91,6 +91,7 @@ SelectionCollection::Impl::Impl()
     gmx_ana_index_clear(&sc_.gall);
     sc_.mempool   = NULL;
     sc_.symtab.reset(new SelectionParserSymbolTable);
+    gmx_ana_index_clear(&requiredAtoms_);
     gmx_ana_selmethod_register_defaults(sc_.symtab.get());
 }
 
@@ -112,6 +113,7 @@ SelectionCollection::Impl::~Impl()
     {
         _gmx_sel_mempool_destroy(sc_.mempool);
     }
+    gmx_ana_index_deinit(&requiredAtoms_);
 }
 
 
@@ -285,7 +287,7 @@ void printHelp(TextWriter *writer, gmx_ana_selcollection_t *sc,
     {
         sc->rootHelp = createSelectionHelpTopic();
     }
-    HelpWriterContext context(&writer->stream(), eHelpOutputFormat_Console);
+    HelpWriterContext context(writer, eHelpOutputFormat_Console);
     HelpManager       manager(*sc->rootHelp, context);
     try
     {
@@ -831,15 +833,34 @@ SelectionCollection::compile()
 void
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
-    if (fr->natoms <= impl_->maxAtomIndex_)
+    if (fr->bIndex)
     {
-        std::string message = formatString(
-                    "Trajectory has less atoms (%d) than what is required for "
-                    "evaluating the provided selections (atoms up to index %d "
-                    "are required).", fr->natoms, impl_->maxAtomIndex_ + 1);
-        GMX_THROW(InconsistentInputError(message));
+        gmx_ana_index_t g;
+        gmx_ana_index_set(&g, fr->natoms, fr->index, 0);
+        GMX_RELEASE_ASSERT(gmx_ana_index_check_sorted(&g),
+                           "Only trajectories with atoms in ascending order "
+                           "are currently supported");
+        if (!gmx_ana_index_contains(&g, &impl_->requiredAtoms_))
+        {
+            const std::string message = formatString(
+                        "Trajectory does not contain all atoms required for "
+                        "evaluating the provided selections.");
+            GMX_THROW(InconsistentInputError(message));
+        }
     }
-    impl_->sc_.pcc.initFrame();
+    else
+    {
+        const int maxAtomIndex = gmx_ana_index_get_max_index(&impl_->requiredAtoms_);
+        if (fr->natoms <= maxAtomIndex)
+        {
+            const std::string message = formatString(
+                        "Trajectory has less atoms (%d) than what is required for "
+                        "evaluating the provided selections (atoms up to index %d "
+                        "are required).", fr->natoms, maxAtomIndex + 1);
+            GMX_THROW(InconsistentInputError(message));
+        }
+    }
+    impl_->sc_.pcc.initFrame(fr);
 
     SelectionEvaluator evaluator;
     evaluator.evaluate(this, fr, pbc);
