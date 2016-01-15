@@ -216,8 +216,9 @@ static void gmx_molprop_read_babel(const char *g98,
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
-        //        OpenBabel::OBMol         mol2 = mol;
-        std::string              ss = conv->WriteString(&mol, false);
+        // We need a copy here because WriteString removes the H.
+        OpenBabel::OBMol         mol2 = mol;
+        std::string              ss = conv->WriteString(&mol2, false);
         std::vector<std::string> vs = gmx::splitString(ss);
         for (size_t i = 0; (i < vs.size()); i++)
         {
