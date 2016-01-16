@@ -34,7 +34,6 @@
 
 import os
 import re
-import shutil
 
 build_out_of_source = True
 
@@ -133,6 +132,4 @@ def do_build(context):
         version_info = context.read_cmake_variable_file('VersionInfo.cmake')
         version = version_info['GMX_VERSION_STRING']
         package_name = 'website-' + version
-        shutil.move('docs/html', package_name)
-        context.make_archive(package_name, root_dir=package_name)
-        shutil.move(package_name, 'docs/html')
+        context.make_archive(package_name, root_dir='docs/html', prefix=package_name)
