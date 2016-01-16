@@ -195,9 +195,6 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
     if (dir == GMX_FFT_FORWARD || dir == GMX_FFT_REAL_TO_COMPLEX)
     {
         fft5d_execute(pfft_setup->p1, thread, wcycle);
-        fft5d_execute(pfft_setup->p1_virx, thread, wcycle);
-        fft5d_execute(pfft_setup->p1_viry, thread, wcycle);
-        fft5d_execute(pfft_setup->p1_virz, thread, wcycle);
     }
     else
     {

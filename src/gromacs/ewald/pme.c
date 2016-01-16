@@ -2058,8 +2058,6 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
     tmp1  = work->tmp1;
     eterm = work->eterm;
     m2inv = work->m2inv;
-// this is *the* virial, not a buffer.
-    local_virial = vir;
 
     iyz0 = local_ndata[YY]*local_ndata[ZZ]* thread   /nthread;
     iyz1 = local_ndata[YY]*local_ndata[ZZ]*(thread+1)/nthread;
@@ -2109,6 +2107,9 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
         else
         {
             kxstart = local_offset[XX] + 1;
+
+            p0_virx->re  = p0_viry->re  = p0_virz->re  = 0.0;
+            p0_virx->im  = p0_viry->im  = p0_virz->im  = 0.0;
             p0++;
             p0_virx++;
             p0_viry++;
@@ -2185,6 +2186,9 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
                 p0_virx->im  = .5*(1e25/AVOGADRO)* p0->im*(vfactor*mhx[kx]*mhx[kx]-1);
                 p0_viry->im  = .5*(1e25/AVOGADRO)* p0->im*(vfactor*mhy[kx]*mhy[kx]-1);
                 p0_virz->im  = .5*(1e25/AVOGADRO)* p0->im*(vfactor*mhz[kx]*mhz[kx]-1);
+
+
+
             }
 
             for (kx = kxstart; kx < kxend; kx++)
