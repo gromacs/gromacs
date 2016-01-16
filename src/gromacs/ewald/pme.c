@@ -1724,6 +1724,7 @@ static void pmegrids_init(pmegrids_t *grids,
             {
                 for (z = 0; z < grids->nc[ZZ]; z++)
                 {
+		    int gid;
                     pmegrid_init(&grids->grid_th[t],
                                  x, y, z,
                                  (n[XX]*(x  ))/grids->nc[XX],
@@ -1739,7 +1740,7 @@ static void pmegrids_init(pmegrids_t *grids,
 		    g[0]=grids_virx; 
 		    g[1]=grids_viry; 
 		    g[2]=grids_virz; 
-                    for(int gid=0;gid<3;gid++){
+                    for(gid=0;gid<3;gid++){
                       pmegrid_init(&g[gid]->grid_th[t],
                                  x, y, z,
                                  (n[XX]*(x  ))/g[gid]->nc[XX],
