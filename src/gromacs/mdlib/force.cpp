@@ -540,7 +540,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                         pme_flags |= GMX_PME_CALC_POT;
                     }
                     wallcycle_start(wcycle, ewcPMEMESH);
-printf("calling HERE\n");
                     status = gmx_pme_do(fr->pmedata,
                                         0, md->homenr - fr->n_tpi,
                                         x, fr->f_novirsum, vir,
