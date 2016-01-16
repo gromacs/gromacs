@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@ import os.path
 
 extra_options = {
     'mdrun-only': Option.simple,
+    'static': Option.simple,
     'reference': Option.simple,
     'release': Option.simple,
     'release-with-debug-info': Option.simple,
@@ -65,6 +66,9 @@ def do_build(context):
         cmake_opts['CMAKE_BUILD_TYPE'] = 'ASAN'
     elif context.opts.tsan:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'TSAN'
+
+    if context.opts.static:
+        cmake_opts['BUILD_SHARED_LIBS'] = 'OFF'
 
     if context.opts.phi:
         cmake_opts['CMAKE_TOOLCHAIN_FILE'] = 'Platform/XeonPhi'
