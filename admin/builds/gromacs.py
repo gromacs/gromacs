@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@ import os.path
 
 extra_options = {
     'mdrun-only': Option.simple,
+    'static': Option.simple,
     'reference': Option.simple,
     'release': Option.simple,
     'release-with-debug-info': Option.simple,
@@ -65,6 +66,9 @@ def do_build(context):
         cmake_opts['CMAKE_BUILD_TYPE'] = 'ASAN'
     elif context.opts.tsan:
         cmake_opts['CMAKE_BUILD_TYPE'] = 'TSAN'
+
+    if context.opts.static:
+        cmake_opts['BUILD_SHARED_LIBS'] = 'OFF'
 
     if context.opts.phi:
         cmake_opts['CMAKE_TOOLCHAIN_FILE'] = 'Platform/XeonPhi'
@@ -102,48 +106,68 @@ def do_build(context):
     if context.opts.mdrun_only:
         cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
 
+    if context.job_type == JobType.RELEASE:
+        # TODO: Consider using REGRESSIONTESTS_DOWNLOAD here, after refactoring
+        # it to make that possible.
+        cmake_opts['REGRESSIONTESTS_PATH'] = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
+
     context.env.add_env_var('GMX_NO_TERM', '1')
 
     context.run_cmake(cmake_opts)
     context.build_target(target=None, keep_going=True)
-    context.build_target(target='tests', keep_going=True)
 
-    context.run_ctest(args=['--output-on-failure'])
+    # TODO: Consider if it would be better to split this into a separate build
+    # script, since it is somewhat different, even though it benefits from some
+    # of the same build options.
+    if context.job_type == JobType.RELEASE:
+        context.build_target(target='check', keep_going=True)
+        context.build_target(target='install')
+        context.workspace.clean_build_dir()
+        cmake_opts['REGRESSIONTESTS_PATH'] = None
+        cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
+        context.build_target(target=None, keep_going=True)
+        context.build_target(target='check', keep_going=True)
+        context.build_target(target='install')
+        # TODO: Run regression tests against the installed version.
+    else:
+        context.build_target(target='tests', keep_going=True)
 
-    if not context.opts.mdrun_only:
-        context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
-        context.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
+        context.run_ctest(args=['--output-on-failure'])
 
-        if not context.opts.mpi and context.opts.thread_mpi is not False:
-            use_tmpi = True
+        if not context.opts.mdrun_only:
+            context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
+            context.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
 
-        cmd = 'perl gmxtest.pl -mpirun mpirun -xml -nosuffix all'
-        if context.opts.asan:
-            cmd+=' -parse asan_symbolize.py'
+            if not context.opts.mpi and context.opts.thread_mpi is not False:
+                use_tmpi = True
 
-        # setting this stuff below is just a temporary solution,
-        # it should all be passed as a proper the runconf from outside
-        # The whole mechanism should be rethought in #1587.
-        if context.opts.phi:
-            cmd += ' -ntomp 28'
-        elif context.opts.openmp:
-            # OpenMP should always work when compiled in! Currently not set if
-            # not explicitly set
-            cmd += ' -ntomp 2'
+            cmd = 'perl gmxtest.pl -mpirun mpirun -xml -nosuffix all'
+            if context.opts.asan:
+                cmd+=' -parse asan_symbolize.py'
 
-        if context.opts.gpu:
-            if context.opts.mpi or use_tmpi:
-                gpu_id = '01' # for (T)MPI use the two GT 640-s
-            else:
-                gpu_id = '0' # use GPU #0 by default
-            cmd += ' -gpu_id ' + gpu_id
+            # setting this stuff below is just a temporary solution,
+            # it should all be passed as a proper the runconf from outside
+            # The whole mechanism should be rethought in #1587.
+            if context.opts.phi:
+                cmd += ' -ntomp 28'
+            elif context.opts.openmp:
+                # OpenMP should always work when compiled in! Currently not set if
+                # not explicitly set
+                cmd += ' -ntomp 2'
 
-        # TODO: Add options to influence this (should be now local to the build
-        # script).
-        if context.opts.mpi:
-            cmd += ' -np 2'
-        elif use_tmpi:
-            cmd += ' -nt 2'
-        if context.opts.double:
-            cmd += ' -double'
-        context.run_cmd_with_env(cmd, shell=True, failure_message='Regression tests failed to execute')
+            if context.opts.gpu:
+                if context.opts.mpi or use_tmpi:
+                    gpu_id = '01' # for (T)MPI use the two GT 640-s
+                else:
+                    gpu_id = '0' # use GPU #0 by default
+                cmd += ' -gpu_id ' + gpu_id
+
+            # TODO: Add options to influence this (should be now local to the build
+            # script).
+            if context.opts.mpi:
+                cmd += ' -np 2'
+            elif use_tmpi:
+                cmd += ' -nt 2'
+            if context.opts.double:
+                cmd += ' -double'
+            context.run_cmd_with_env(cmd, shell=True, failure_message='Regression tests failed to execute')
