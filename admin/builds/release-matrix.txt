@@ -1,0 +1,6 @@
+# These configurations will be used to build and test the tarballs
+# before the release.
+gcc-4.8 mpi mdrun-only
+gcc-4.6 static
+gcc-4.7 double
+clang-3.4 static double
