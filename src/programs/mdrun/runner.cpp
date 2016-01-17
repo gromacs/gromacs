@@ -633,6 +633,7 @@ static integrator_t *my_integrator(unsigned int ei)
         case eiSD1:
         case eiVV:
         case eiVVAK:
+        case eiISO:
             if (!EI_DYNAMICS(ei))
             {
                 GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));

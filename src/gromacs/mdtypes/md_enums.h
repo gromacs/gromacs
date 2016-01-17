@@ -234,7 +234,7 @@ extern const char *ens_names[ensNR+1];
  * and the half step kinetic energy for temperature control
  */
 enum {
-    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD, eiSteep, eiCG, eiBD, eiISO, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
 };
 //! Name of the integrator algorithm
 extern const char *ei_names[eiNR+1];
@@ -245,7 +245,7 @@ extern const char *ei_names[eiNR+1];
 //! Do we use molecular dynamics
 #define EI_MD(e) ((e) == eiMD || EI_VV(e))
 //! Do we use stochastic dynamics
-#define EI_SD(e) ((e) == eiSD1)
+#define EI_SD(e) ((e) == eiSD1 || (e) == eiISO)
 //! Do we use any stochastic integrator
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/

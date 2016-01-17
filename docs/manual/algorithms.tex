@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -2191,6 +2191,73 @@ The velocity is first updated a full time step without friction and noise to get
 When using SD as a thermostat, an appropriate value for $\gamma$ is e.g. 0.5 ps$^{-1}$,
 since this results in a friction that is lower than the internal friction
 of water, while it still provides efficient thermostatting.
+
+\section{Dissipative Particle Dynamics\swapindexquiet{Dissipative Particle Dynamics}{dynamics}}
+
+The essence of Didssipative Particle Dynamics (DPD)-like friction and noise is that it is applied to velocity differences (or relative velocities) between pairs of particles~\cite{Goga2012}. If done properly, the pairwise application ensures conservation of total linear momentum. In Gromacs the friction and noise is applied isotropically (ISO) to the velocity difference vector, irrespective of its direction. After determining the change in the relative velocity due to the impulsive friction and noise, this change is distributed over the two particles such that the c.o.m. is conserved. ISO is an option of the mdrun program.
+
+\subsection{Dissipative Particle Dynamics Without Constraints}
+
+This particle pair selection can be done in several ways. In principle all neighbors from the list can be selected, but it is sufficient and much more efficient to select only one neighbor per particle at random. The DPD algorithm looks like follows.
+
+For each selected pair $i,j$ with velocities $\ve{v}_i,\ve{v}_j$, do the following:
+\begin{enumerate}
+
+  \item
+  Choose the \textit{velocity reduction factor} $f$  based on the inter-particle distance $r_{ij}$. 
+  \item
+  Determine the \textit{velocity noise factor} $g$, defined as
+  \bea
+    g = \sqrt{f(2-f) k_\mathrm{B}T_\mathrm{ref}/\mu},
+  \eea
+  where $\mu =\frac{m_i m_j}{m_i+ m_j}$   is the reduced mass of the two particles.
+
+  \item
+  Construct the relative velocity vector $\ve{v}$ of the selected pair:
+  \bea
+    \ve{v} = \ve{v}_i - \ve{v}_j.
+    \label{eq:vi-vj}
+  \eea
+
+ 
+  \item
+  Choose 3 random numbers $\ve{\xi}= (\xi_1,\xi_2,\xi_3)$ from a  standard normal distribution (mean=1, sd=1).
+  \item
+  Construct the vector
+  \bea
+    \Delta \ve{v} = - f \ve{v} + g \ve{\xi}.
+    \label{eq:delv-iso}
+  \eea
+
+\item
+  Distribute the relative velocity change over the two particles:
+  \bea
+    \ve{v}_i &\leftarrow& \ve{v}_i + \frac{\mu}{m_i} \Delta \ve{v}, \label{eq:delvi}\\
+    \ve{v}_j &\leftarrow& \ve{v}_j - \frac{\mu}{m_j} \Delta \ve{v}. \label{eq:delvj}
+  \eea
+  In this way the velocities of the particles are updated while the total momentum $m_i\ve{v}_i+ m_j \ve{v}_j$ is conserved.
+
+\end{enumerate}
+
+Note that the particle velocities are updated after each impulsive event, not at the end of each step. This is necessary, as a single particle may be involved in more than one pair events; first adding the velocity changes and updating the velocities with the sum of the velocity changes gives erroneous results.
+
+
+\subsection{Dissipative Particle Dynamics With Constraints}
+The algorithm from the previous section is modified for the constraints case in the following way.
+
+\begin{enumerate}
+\item Compute unconstrained forces $\ve{F}^u = -\ve{\nabla} V(\ve{x}(t))$ and compute virial using $\ve{x}(t)$
+\item Advance velocities $\forall{i}: v_i = v_i(t - \frac12 \Delta t) + (F_i^u/m_i) \Delta t$
+\item Advance positions $\forall{i}: x_i = x_i(t) + v_i  \Delta t$
+\item Apply constraints to new positions: $(\ve{x}^c, \ve{v}^c) = $\texttt{constr}$(\ve{x};\ve{x}(t), \ve{v})$ and add constraint contribution to virial
+\item Obtain a Maxwellian velocity distribution $v^m$, constrain it and obtain  $ v^{m,c}$ 
+\item Add to velocity the Maxwelian contribution $\forall{i}: v_i^c = v_i^c + (v_i^m - v_i^{m,c})$
+\item Advance the positions with the Maxwelian contribution $\forall{i}: x_i = x_i +  (v_i^m - v_i^{m,c}) \Delta t$
+\item Apply DPD friction and noise isotropically (as described in the previous section) and obtain $v_i'$
+\item Correct positions for velocity change: $\forall{i}: x_i' = x_i^c +\frac12 (v_i' - v_i^c) \Delta t $
+\item Apply constraints to corrected positions: $(\ve{x}(t+\Delta t), \ve{v}_i(t+\frac12 \Delta t) = $\texttt{constr}$(\ve{x}';\ve{x}(t), \ve{v}'_i)$; do \textbf{not} add constraint contribution to virial
+\end{enumerate}
+Note that the constraint algorithm is applied twice: the first time in step 4 to correct the effect of the unconstrained forces (this application also provides the conservative constraint force and computes the constraint contribution to the virial) and the second time in step 10 to annihilate the effects of friction and noise in the constraint directions. The latter concerns non-conservative forces acting on the velocities, which do not contribute to the virial. Steps 5 to 7 are needed for compensating the loss of degrees of freedom through the application of constraints (first time in step 4). This compensation is needed for the correct functioning of DPD-ISO algorithm in step 8 (for a larger discussion on this topic we refer to~\cite{Goga2014}).
 
 
 \section{Brownian Dynamics\swapindexquiet{Brownian}{dynamics}}

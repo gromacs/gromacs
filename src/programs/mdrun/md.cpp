@@ -274,6 +274,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                                                           simulation stops. If equal to zero, don't
                                                                           communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
+    rvec                * vold;
+    t_pbc                 pbc1;
+    real                 *invmass1;
+    int                  *DPD_Made;
+    real                 *vi;
     pme_load_balancing_t *pme_loadbal      = NULL;
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
@@ -747,6 +752,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
 
     /* and stop now if we should */
+
+    snew (vold, top_global->natoms);
+    snew (vi, 10*top_global->natoms);
+    snew (DPD_Made, 10*top_global->natoms);
+    snew (invmass1, 10*top_global->natoms);
+
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
                  ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
     while (!bLastStep || (bRerunMD && bNotLastFrame))
@@ -1094,7 +1105,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                           ekind, M, upd, etrtVELOCITY1,
-                          cr, constr);
+                          cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi, bInitStep);
 
             if (!bRerunMD || rerun_fr.bV || bForceUpdate)         /* Why is rerun_fr.bV here?  Unclear. */
             {
@@ -1103,7 +1114,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                                   TRUE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
             else if (graph)
@@ -1335,7 +1346,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                                   TRUE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
             }
         }
         /* Box is changed in update() when we do pressure coupling,
@@ -1371,7 +1382,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* velocity half-step update */
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
                               ekind, M, upd, etrtVELOCITY2,
-                              cr, constr);
+                              cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi, bInitStep);
             }
 
             /* Above, initialize just copies ekinh into ekin,
@@ -1390,15 +1401,20 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 copy_rvecn(state->x, cbuf, 0, state->natoms);
             }
 
+            if (ir->eI == eiISO)
+            {
+                set_pbc(&pbc1, ir->ePBC, state->box);
+            }
+
             update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                          ekind, M, upd, etrtPOSITION, cr, constr);
+                          ekind, M, upd, etrtPOSITION, cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi, bInitStep);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
-                               FALSE, bCalcVir);
+                               FALSE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
 
             if (ir->eI == eiVVAK)
             {
@@ -1416,7 +1432,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
                 update_coords(fplog, step, ir, mdatoms, state, f, fcd,
-                              ekind, M, upd, etrtPOSITION, cr, constr);
+                              ekind, M, upd, etrtPOSITION, cr, constr, vold, fr, &pbc1, invmass1, DPD_Made, vi, bInitStep);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
@@ -1428,7 +1444,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    state, fr->bMolPBC, graph, f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, NULL,
-                                   FALSE, bCalcVir);
+                                   FALSE, bCalcVir, vold, fr, &pbc1, bInitStep, invmass1, DPD_Made, vi);
             }
             if (EI_VV(ir->eI))
             {
