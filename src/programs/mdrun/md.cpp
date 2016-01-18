@@ -910,7 +910,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bBornRadii = TRUE;
         }
 
-        do_log     = do_per_step(step, ir->nstlog) || bFirstStep || bLastStep;
+        /* do_log triggers energy and virial calculation. Because this leads
+         * to different code paths, forces can be different. Thus for exact
+         * continuation we should avoid extra log output.
+         * Note that the || bLastStep can result in non-exact continuation
+         * beyond the last step. But we don't consider that to be an issue.
+         */
+        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !bStateFromCP) || bLastStep;
         do_verbose = bVerbose &&
             (step % stepout == 0 || bFirstStep || bLastStep);
 
