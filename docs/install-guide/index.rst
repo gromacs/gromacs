@@ -82,6 +82,10 @@ Platform
 These include any distribution of Linux, Mac OS X or Windows, and
 architectures including x86, AMD64/x86-64, PPC, ARM v7 and SPARC VIII.
 
+On Linux, a 64-bit operating system is strongly recommended, since currently
+|Gromacs| cannot operate on large trajectories when compiled on a 32-bit
+system.
+
 Compiler
 --------
 Technically, |Gromacs| can be compiled on any platform with an ANSI C99
