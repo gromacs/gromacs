@@ -55,7 +55,7 @@ void ewald_LRcorrection(int start, int end,
                         real *sigmaA, real *sigmaB,
                         real *sigma3A, real *sigma3B,
                         gmx_bool calc_excl_corr,
-                        t_blocka *excl, rvec x[],
+                        t_blocka *excl, rvec x[],rvec vir[],
                         matrix box, rvec mu_tot[],
                         int ewald_geometry, real epsilon_surface,
                         rvec *f, tensor vir_q, tensor vir_lj,
@@ -255,6 +255,8 @@ void ewald_LRcorrection(int start, int end,
                                         {
                                             dxdf_q[iv][jv] += dx[iv]*df[jv];
                                         }
+					vir[i][iv]-=0.5*(1e25/AVOGADRO)* dx[iv]*df[iv];
+					vir[k][iv]-=0.5*(1e25/AVOGADRO)* dx[iv]*df[iv];
                                     }
                                 }
 

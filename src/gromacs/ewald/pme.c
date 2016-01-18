@@ -2597,7 +2597,6 @@ static void get_pme_ener_vir_q(const gmx_pme_t pme, int nthread,
     if(nthread>1) exit(printf("ERROR, this version of the code works only with 1 thread...\n")); 
     *mesh_energy = pme->work[0].energy_q;
     copy_mat(pme->work[0].vir_q, vir);
-
     for (thread = 1; thread < nthread; thread++)
     {
         *mesh_energy += pme->work[thread].energy_q;
@@ -2641,9 +2640,6 @@ static void get_pme_ener_vir_lj(const gmx_pme_t pme, int nthread,
             for (ithz = 0; (ithz < order); ithz++)      \
             {                                      \
                 gval  = grid[index_xy+(k0+ithz)];  \
-                gval_virx  = grid_virx[index_xy+(k0+ithz)];  \
-                gval_viry  = grid_viry[index_xy+(k0+ithz)];  \
-                gval_virz  = grid_virz[index_xy+(k0+ithz)];  \
                 fxy1 += thz[ithz]*gval;            \
                 fz1  += dthz[ithz]*gval;           \
             }                                      \

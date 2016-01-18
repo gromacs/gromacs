@@ -1040,7 +1040,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         else
         {
             bCalcEner = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            bCalcVir  = bCalcEner || do_per_step(step+1, ir->nstpcouple) ||   //
                 (ir->epc != epcNO && do_per_step(step, ir->nstpcouple));
         }
 
@@ -1367,7 +1367,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
-
         for (i = 0; i < state_global->natoms; i++)
         {
         	clear_rvec(vir[i]);
