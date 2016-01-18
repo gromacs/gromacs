@@ -1592,36 +1592,32 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Output stuff */
         if (MASTER(cr))
         {
-            gmx_bool do_dr, do_or;
-
             if (fplog && do_log && bDoExpanded)
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
                                           &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
-            if (!(bStartingFromCpt && (EI_VV(ir->eI))))
+            if (bCalcEner)
             {
-                if (bCalcEner)
-                {
-                    upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
-                               t, mdatoms->tmass, enerd, state,
-                               ir->fepvals, ir->expandedvals, lastbox,
-                               shake_vir, force_vir, total_vir, pres,
-                               ekind, mu_tot, constr);
-                }
-                else
-                {
-                    upd_mdebin_step(mdebin);
-                }
-
-                do_dr  = do_per_step(step, ir->nstdisreout);
-                do_or  = do_per_step(step, ir->nstorireout);
-
-                print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
-                           step, t,
-                           eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
+                upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
+                           t, mdatoms->tmass, enerd, state,
+                           ir->fepvals, ir->expandedvals, lastbox,
+                           shake_vir, force_vir, total_vir, pres,
+                           ekind, mu_tot, constr);
             }
+            else
+            {
+                upd_mdebin_step(mdebin);
+            }
+
+            gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
+            gmx_bool do_or  = do_per_step(step, ir->nstorireout);
+
+            print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
+                       step, t,
+                       eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
+
             if (ir->bPull)
             {
                 pull_print_output(ir->pull_work, step, t);
