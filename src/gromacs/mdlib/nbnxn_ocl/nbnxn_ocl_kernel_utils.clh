@@ -61,10 +61,10 @@ __constant sampler_t generic_sampler     = CLK_NORMALIZED_COORDS_FALSE  /* Natur
 
 #define __device__
 
-#define WARP_SIZE_POW2_EXPONENT     (5)
-#define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
-#define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
-#define FBUF_STRIDE                 (CL_SIZE_SQ)
+#define WARP_SIZE_LOG2  (5)
+#define CL_SIZE_LOG2    (3)  /* change this together with CL_SIZE !*/
+#define CL_SIZE_SQ      (CL_SIZE * CL_SIZE)
+#define FBUF_STRIDE     (CL_SIZE_SQ)
 
 #define ONE_SIXTH_F     0.16666667f
 #define ONE_TWELVETH_F  0.08333333f
