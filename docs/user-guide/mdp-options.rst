@@ -1645,7 +1645,12 @@ applicable pulling coordinate.
 
    .. mdp-value:: flat-bottom
 
-      At distances beyond :mdp:`pull-coord1-init` a harmonic potential
+      At distances above :mdp:`pull-coord1-init` a harmonic potential
+      is applied, otherwise no potential is applied.
+
+   .. mdp-value:: flat-bottom-high
+
+      At distances below :mdp:`pull-coord1-init` a harmonic potential
       is applied, otherwise no potential is applied.
 
 .. mdp:: pull-coord1-geometry
