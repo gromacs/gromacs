@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -197,7 +197,7 @@ $Z_{spring}$ is the location of the spring.}
 \label{fig:pull} 
 \end{figure}
 
-Three different types of calculation are supported,
+Several different pull types, i.e. ways to apply the pull force, are supported,
 and in all cases the reference distance can be constant
 or linearly changing with time.
 \begin{enumerate}
@@ -216,8 +216,9 @@ Thus, the potential is linear.
 In this case there is no reference distance of pull rate.
 \item{\textbf{Flat bottom pulling}}
 Like umbrella pulling, but the potential and force are zero for
-negative deviations. This is useful for restraining the distance
-between e.g. two molecules to a certain maximum distance.
+deviations below ({\tt pull-coord?-type = flat-bottom})or above ({\tt pull-coord?-type = flat-bottom-high}) a reference value.
+This is useful for restraining e.g. the distance
+between two molecules to a certain region.
 \end{enumerate}
 
 \subsubsection{Definition of the center of mass}

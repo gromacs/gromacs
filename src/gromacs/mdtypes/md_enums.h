@@ -507,7 +507,7 @@ extern const char *ewt_names[ewtNR+1];
 
 //! Pulling algorithm.
 enum {
-    epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullFLATBOTTOM, epullNR
+    epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullFLATBOTTOM, epullFLATBOTTOMHIGH, epullNR
 };
 //! String for pulling algorithm
 extern const char *epull_names[epullNR+1];
