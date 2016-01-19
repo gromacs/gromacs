@@ -32,14 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef CUDA_ARCH_UTILS_CUH_
+#define CUDA_ARCH_UTILS_CUH_
 
 /*! \file
  *  \brief CUDA arch dependent definitions.
  *
  *  \author Szilard Pall <pall.szilard@gmail.com>
  */
-
-/* TODO move here other CUDA arch-related defines like WARP_SIZE */
 
 /* GMX_PTX_ARCH is set to the virtual arch (PTX) version targeted by
  * the current compiler pass or zero for the host pass and it is
@@ -50,3 +50,12 @@
 #else
     #define GMX_PTX_ARCH __CUDA_ARCH__
 #endif
+
+/* Until CC 5.2 and likely for the near future all NVIDIA architectures
+   have a warp size of 32, but this could change later. If it does, the
+   following constants should depend on the value of GMX_PTX_ARCH.
+ */
+static const int warp_size      = 32;
+static const int warp_size_log2 = 5;
+
+#endif /* CUDA_ARCH_UTILS_CUH_ */

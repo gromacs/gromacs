@@ -44,12 +44,6 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-/* CUDA library and hardware related defines */
-/* TODO list some constants instead that can be used for consistency checks to
-   detect future devices with features that make the currect code incompatible
-   with them (e.g. expected warp size = 32, check against the dev_info->props.warpsize). */
-#define WARP_SIZE           32
-
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
    based on where they occur in the code:
    - non performance-critical: these errors are unsafe to be ignored and must be

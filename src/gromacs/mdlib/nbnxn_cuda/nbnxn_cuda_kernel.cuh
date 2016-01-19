@@ -117,38 +117,38 @@
  * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
  */
 #if GMX_PTX_ARCH == 370
-#define NTHREAD_Z           (2)
-#define MIN_BLOCKS_PER_MP   (16)
+    #define NTHREAD_Z           (2)
+    #define MIN_BLOCKS_PER_MP   (16)
 #else
-#define NTHREAD_Z           (1)
-#define MIN_BLOCKS_PER_MP   (16)
-#endif
+    #define NTHREAD_Z           (1)
+    #define MIN_BLOCKS_PER_MP   (16)
+#endif /* GMX_PTX_ARCH == 370 */
 #define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
 
 
 #if GMX_PTX_ARCH >= 350
 #if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
-#error NTHREAD_Z > 1 will give incorrect results on CC 2.x
+    #error NTHREAD_Z > 1 will give incorrect results on CC 2.x
 #endif
 /**@}*/
 
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
-#endif
+#endif /* GMX_PTX_ARCH >= 350 */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
 #else
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
-#endif
+#endif /* CALC_ENERGIES */
 #else
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
 #else
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
-#endif
-#endif
+#endif /* CALC_ENERGIES */
+#endif /* PRUNE_NBL */
 (const cu_atomdata_t atdat,
  const cu_nbparam_t nbparam,
  const cu_plist_t plist,
@@ -212,7 +212,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     unsigned int tidxz  = threadIdx.z;
 #endif
     unsigned int bidx   = blockIdx.x;
-    unsigned int widx   = tidx / WARP_SIZE; /* warp index */
+    unsigned int widx   = tidx / warp_size; /* warp index */
 
     int          sci, ci, cj, ci_offset,
                  ai, aj,
@@ -339,7 +339,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     {
         wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
         imask       = pl_cj4[j4].imei[widx].imask;
-        wexcl       = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
+        wexcl       = excl[wexcl_idx].pair[(tidx) & (warp_size - 1)];
 
 #ifndef PRUNE_NBL
         if (imask)
@@ -617,7 +617,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* flush the energies to shmem and reduce them */
     f_buf[              tidx] = E_lj;
     f_buf[FBUF_STRIDE + tidx] = E_el;
-    reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+    reduce_energy_pow2(f_buf + (tidx & warp_size), e_lj, e_el, tidx & ~warp_size);
 #endif
 #endif
 }
