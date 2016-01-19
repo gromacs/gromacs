@@ -117,38 +117,38 @@
  * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
  */
 #if GMX_PTX_ARCH == 370
-#define NTHREAD_Z           (2)
-#define MIN_BLOCKS_PER_MP   (16)
+    #define NTHREAD_Z           (2)
+    #define MIN_BLOCKS_PER_MP   (16)
 #else
-#define NTHREAD_Z           (1)
-#define MIN_BLOCKS_PER_MP   (16)
-#endif
+    #define NTHREAD_Z           (1)
+    #define MIN_BLOCKS_PER_MP   (16)
+#endif /* GMX_PTX_ARCH == 370 */
 #define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
 
 
 #if GMX_PTX_ARCH >= 350
 #if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
-#error NTHREAD_Z > 1 will give incorrect results on CC 2.x
+    #error NTHREAD_Z > 1 will give incorrect results on CC 2.x
 #endif
 /**@}*/
 
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
-#endif
+#endif /* GMX_PTX_ARCH >= 350 */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
 #else
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
-#endif
+#endif /* CALC_ENERGIES */
 #else
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
 #else
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
-#endif
-#endif
+#endif /* CALC_ENERGIES */
+#endif /* PRUNE_NBL */
 (const cu_atomdata_t atdat,
  const cu_nbparam_t nbparam,
  const cu_plist_t plist,
