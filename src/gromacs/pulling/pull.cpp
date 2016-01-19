@@ -1111,10 +1111,13 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
     {
         case epullUMBRELLA:
         case epullFLATBOTTOM:
+        case epullFLATBOTTOMHIGH:
             /* The only difference between an umbrella and a flat-bottom
-             * potential is that a flat-bottom is zero below zero.
+             * potential is that a flat-bottom is zero above or below
+               the reference value.
              */
-            if (pcrd->params.eType == epullFLATBOTTOM && dev < 0)
+            if ((pcrd->params.eType == epullFLATBOTTOM && dev < 0) ||
+                (pcrd->params.eType == epullFLATBOTTOMHIGH && dev > 0))
             {
                 dev = 0;
             }
