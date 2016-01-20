@@ -9,10 +9,10 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/exceptions.h"
 
+#include "poldata.h"
 #include "poldata_xml.h"
-
-using namespace alexandria;
 
 int alex_poldata_test(int argc, char*argv[])
 {
@@ -33,8 +33,15 @@ int alex_poldata_test(int argc, char*argv[])
     }
 
     gmx_atomprop_t aps  = gmx_atomprop_init();
-    Poldata     *  pd   = alexandria::PoldataXml::read(opt2fn("-f", NFILE, fnm), aps);
-    alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), pd, 0);
+
+    alexandria::Poldata pd;
+    try 
+    {
+        alexandria::readPoldata(opt2fn("-f", NFILE, fnm), pd, aps);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    alexandria::writePoldata(opt2fn("-o", NFILE, fnm), pd, 0);
 
     return 0;
 }

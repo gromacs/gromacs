@@ -70,9 +70,11 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "gauss_io.h"
 #include "gentop_core.h"
@@ -137,31 +139,30 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return false;
 }
 
-void MyMol::getForceConstants(Poldata *pd)
+void MyMol::getForceConstants(const Poldata &pd)
 {
     int         n;
     double      xx, sx, bo;
     std::string params;
 
-#define ATP(ii) (pd->atypeToBtype( *topology_->atoms.atomtype[ii]).c_str())
     for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
          (pw < plist_.end()); ++pw)
     {
         switch (pw->getFtype())
         {
-            case F_BONDS:
-                for (ParamIterator j = pw->beginParam();
-                     (j < pw->endParam()); ++j)
+        case F_BONDS:
+            for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                std::string cai, caj;
+                if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
+                    pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj))
                 {
-                    int ai = j->a[0];
-                    int aj = j->a[1];
-                    if (0 < pd->searchBond(
-                                ATP(ai),
-                                ATP(aj),
-                                &xx, &sx, NULL, &bo, &params))
+                    int ntrain;
+                    if (!pd.searchBond(cai, caj,
+                                       &xx, &sx, &ntrain, &bo, params))
                     {
                         j->c[0] = convert2gmx(xx, eg2cPm);
-                        std::vector<std::string> ptr = split(params, ' ');
+                        std::vector<std::string> ptr = gmx::splitString(params);
                         n = 0;
                         for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
@@ -172,26 +173,28 @@ void MyMol::getForceConstants(Poldata *pd)
                             }
                         }
                     }
-                    else
-                    {
-                        // Default bond parameters
-                        j->c[0] = 0.15;
-                        j->c[1] = 2e5;
-                    }
                 }
-                break;
-            case F_ANGLES:
-                for (ParamIterator j = pw->beginParam();
-                     (j < pw->endParam()); ++j)
+                else
                 {
-                    if (0 < pd->searchAngle(
-                                ATP(j->a[0]),
-                                ATP(j->a[1]),
-                                ATP(j->a[2]),
-                                &xx, &sx, NULL, &params))
+                    // Default bond parameters
+                    j->c[0] = 0.15;
+                    j->c[1] = 2e5;
+                }
+            }
+            break;
+        case F_ANGLES:
+            for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                std::string cai, caj, cak;
+                if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
+                    pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
+                    pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak))
+                {
+                    if (pd.searchAngle(cai, caj, cak,
+                                       &xx, &sx, NULL, params))
                     {
                         j->c[0] = xx;
-                        std::vector<std::string> ptr = split(params, ' ');
+                        std::vector<std::string> ptr = gmx::splitString(params);
                         n = 0;
                         for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
@@ -202,28 +205,35 @@ void MyMol::getForceConstants(Poldata *pd)
                             }
                         }
                     }
-                    else
-                    {
-                        // Default angle parameters
-                        j->c[0] = 109;
-                        j->c[1] = 400;
-                    }
-
                 }
-                break;
-            case F_PDIHS:
-                for (ParamIterator j = pw->beginParam();
-                     (j < pw->endParam()); ++j)
+                else
                 {
-                    if (0 < pd->searchDihedral( egdPDIHS,
-                                                ATP(j->a[0]),
-                                                ATP(j->a[1]),
-                                                ATP(j->a[2]),
-                                                ATP(j->a[3]),
-                                                &xx, &sx, NULL, &params))
+                    // Default angle parameters
+                    j->c[0] = 109;
+                    j->c[1] = 400;
+                }
+            }
+            break;
+        case F_PDIHS:
+        case F_IDIHS:
+            int egd = egdPDIHS;
+            if (pw->getFtype() == F_IDIHS)
+            {
+                egd = egdIDIHS;
+            }
+            for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
+            {
+                std::string cai, caj, cak, cal;
+                if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
+                    pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
+                    pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak) &&
+                    pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], cal))
+                {
+                    if (pd.searchDihedral(egd, cai, caj, cak, cal,
+                                          &xx, &sx, NULL, params))
                     {
                         j->c[0] = xx;
-                        std::vector<std::string> ptr = split(params, ' ');
+                        std::vector<std::string> ptr = gmx::splitString(params);
                         n = 0;
                         for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
@@ -234,49 +244,24 @@ void MyMol::getForceConstants(Poldata *pd)
                             }
                         }
                     }
-                    else
-                    {
-                        // Default dihedral parameters
-                        j->c[0] = 0;
-                        j->c[1] = 5;
-                        j->c[2] = 0;
-                    }
                 }
-                break;
-            case F_IDIHS:
-                for (ParamIterator j = pw->beginParam();
-                     (j < pw->endParam()); ++j)
+                else if (pw->getFtype() == F_PDIHS)
                 {
-                    if (0 < pd->searchDihedral( egdIDIHS,
-                                                ATP(j->a[0]),
-                                                ATP(j->a[1]),
-                                                ATP(j->a[2]),
-                                                ATP(j->a[3]),
-                                                &xx, &sx, NULL, &params))
-                    {
-                        j->c[0] = xx;
-                        std::vector<std::string> ptr = split(params, ' ');
-                        n = 0;
-                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                        {
-                            if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                            {
-                                j->c[1+n] = atof(pi->c_str());
-                                n++;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Default improper dihedral parameters
-                        j->c[0] = 0;
-                        j->c[1] = 5;
-                    }
-
+                    // Default dihedral parameters
+                    j->c[0] = 0;
+                    j->c[1] = 5;
+                    j->c[2] = 0;
                 }
-                break;
-            default:
-                break;
+                else 
+                {
+                    // Default improper dihedral parameters
+                    j->c[0] = 0;
+                    j->c[1] = 5;
+                }
+            }
+            break;
+            //default:
+            //break;
         }
     }
 }
@@ -492,10 +477,10 @@ static void generate_nbparam(int ftype, int comb, double ci[], double cj[],
     }
 }
 
-static void do_init_mtop(Poldata     * pd,
-                         gmx_mtop_t   *mtop_,
-                         char        **molname,
-                         t_atoms      *atoms)
+static void do_init_mtop(const Poldata &pd,
+                         gmx_mtop_t    *mtop_,
+                         char         **molname,
+                         t_atoms       *atoms)
 {
     init_mtop(mtop_);
     mtop_->name     = molname;
@@ -529,7 +514,7 @@ static void do_init_mtop(Poldata     * pd,
     mtop_->ffparams.ntypes = ntype*ntype;
     mtop_->ffparams.reppow = 12;
 
-    int vdw_type = pd->getVdwFtype();
+    int vdw_type = pd.getVdwFtype();
 
     snew(mtop_->ffparams.functype, mtop_->ffparams.ntypes);
     snew(mtop_->ffparams.iparams, mtop_->ffparams.ntypes);
@@ -554,7 +539,7 @@ static void do_init_mtop(Poldata     * pd,
                     break;
                 default:
                     fprintf(stderr, "Invalid van der waals type %s\n",
-                            pd->getVdwFunction().c_str());
+                            pd.getVdwFunction().c_str());
             }
         }
     }
@@ -595,16 +580,16 @@ static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     blocka->nra          = nra;
 }
 
-static void plist_to_mtop(Poldata     *             pd,
-                          std::vector<PlistWrapper> plist,
-                          gmx_mtop_t               *mtop_)
+static void plist_to_mtop(const Poldata             &pd,
+                          std::vector<PlistWrapper>  plist,
+                          gmx_mtop_t                *mtop_)
 {
     double fudgeLJ;
     double reppow = 12.0;
     int    n      = 0;
 
     /* Generate pairs */
-    fudgeLJ = pd->getFudgeLJ();
+    fudgeLJ = pd.getFudgeLJ();
 
     int nfptot = mtop_->ffparams.ntypes;
     for (std::vector<PlistWrapper>::iterator pw = plist.begin();
@@ -849,7 +834,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             {
                 // TODO Clean up this mess.
                 if ((qi->getType().compare("ESP") == 0) ||
-                    (Poldata::name2eemtype(qi->getType().c_str()) == iChargeDistributionModel))
+                    (name2eemtype(qi->getType()) == iChargeDistributionModel))
                 {
                     myunit = string2unit((char *)qi->getUnit().c_str());
                     q      = convert2gmx(qi->getQ(), myunit);
@@ -908,7 +893,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
 }
 
 immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
-                                  Poldata     *           pd,
+                                  const Poldata          &pd,
                                   const char             *lot,
                                   ChargeDistributionModel iChargeDistributionModel,
                                   int                     nexcl,
@@ -1013,12 +998,12 @@ void MyMol::CalcMultipoles()
 
         i++;
     }
-    gmx_assert(i, topology_->atoms.nr);
+    GMX_RELEASE_ASSERT(i == topology_->atoms.nr, "Inconsistency 1 in mymol.cpp");
     copy_rvec(mu, mu_calc);
     dip_calc = norm(mu);
 }
 
-immStatus MyMol::GenerateCharges(Poldata * pd,
+immStatus MyMol::GenerateCharges(const Poldata &pd,
                                  gmx_atomprop_t ap,
                                  ChargeDistributionModel iChargeDistributionModel,
                                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
@@ -1239,7 +1224,7 @@ static void write_zeta_q(FILE *fp, GentopQgen * qgen,
             {
                 fprintf(fp, "%5s %6s %3d",
                         *atoms->atomtype[i],
-                        Poldata::getEemtypeName(iChargeDistributionModel).c_str(), (bAtom) ? nz : 1);
+                        getEemtypeName(iChargeDistributionModel), (bAtom) ? nz : 1);
             }
             for (j = (bAtom ? 0 : nz); (j < (bAtom ? nz : nz)); j++)
             {
@@ -1305,7 +1290,7 @@ static void write_zeta_q2(GentopQgen * qgen, gpp_atomtype_t atype,
         nz = qgen->getNzeta( k);
         if (nz != NOTSET)
         {
-            fprintf(fp, "%6s  %5s  %5d", Poldata::getEemtypeName(iChargeDistributionModel).c_str(),
+            fprintf(fp, "%6s  %5s  %5d", getEemtypeName(iChargeDistributionModel),
                     get_atomtype_name(atoms->atom[i].type, atype),
                     (bAtom) ? nz-1 : 1);
             qtot = 0;
@@ -1382,7 +1367,7 @@ static void write_top2(FILE *out, char *molname,
                        std::vector<PlistWrapper> plist_,
                        t_excls excls[],
                        gpp_atomtype_t atype, int *cgnr, int nrexcl,
-                       Poldata * pd)
+                       const Poldata &pd)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype && cgnr)
@@ -1393,21 +1378,21 @@ static void write_top2(FILE *out, char *molname,
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
         print_bondeds2(out, d_bonds, F_BONDS,
-                       pd->getBondFtype(),
+                       pd.getBondFtype(),
                        plist_);
         print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
         print_bondeds2(out, d_angles, F_ANGLES,
-                       pd->getAngleFtype(), plist_);
+                       pd.getAngleFtype(), plist_);
         print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES,
                        plist_);
         print_bondeds2(out, d_dihedrals, F_PDIHS,
-                       pd->getDihedralFtype( egdPDIHS), plist_);
+                       pd.getDihedralFtype( egdPDIHS), plist_);
         /* Check whether the dihedrals use the same function */
         print_bondeds2(out, d_dihedrals, F_IDIHS,
-                       pd->getDihedralFtype( egdIDIHS), plist_);
+                       pd.getDihedralFtype( egdIDIHS), plist_);
         print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
         print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION,
                        plist_);
@@ -1423,7 +1408,7 @@ static void write_top2(FILE *out, char *molname,
 }
 
 
-static void print_top_header2(FILE *fp, Poldata * pd,
+static void print_top_header2(FILE *fp, const Poldata &pd,
                               gmx_atomprop_t aps, bool bPol,
                               std::vector<std::string> commercials,
                               bool bItp)
@@ -1445,16 +1430,16 @@ static void print_top_header2(FILE *fp, Poldata * pd,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        std::string ff = pd->getVdwFunction();
+        std::string ff = pd.getVdwFunction();
         if (strcasecmp(ff.c_str(), "LJ_SR") == 0)
         {
             ff = "LJ";
         }
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff.c_str(),
-                pd->getCombinationRule().c_str(),
-                pd->getFudgeLJ(),
-                pd->getFudgeQQ());
+                pd.getCombinationRule().c_str(),
+                pd.getFudgeLJ(),
+                pd.getFudgeQQ());
 
         fprintf(fp, "[ atomtypes ]\n");
         fprintf(fp, "%-7s%-6s  %6s  %11s  %10s  %5s %-s  %s\n",
@@ -1463,8 +1448,8 @@ static void print_top_header2(FILE *fp, Poldata * pd,
 
         gt_old = "";
 
-        for (FfatypeIterator aType = pd->getAtypeBegin();
-             aType != pd->getAtypeEnd(); aType++)
+        for (FfatypeConstIterator aType = pd.getAtypeBegin();
+             aType != pd.getAtypeEnd(); aType++)
         {
             gt_type = aType->getType();
             btype   = aType->getBtype();
@@ -1498,7 +1483,7 @@ static void print_top_header2(FILE *fp, Poldata * pd,
 void MyMol::PrintTopology(const char             *fn,
                           ChargeDistributionModel iChargeDistributionModel,
                           bool                    bVerbose,
-                          Poldata     *           pd,
+                          const Poldata          &pd,
                           gmx_atomprop_t          aps)
 {
     FILE                    *fp;
@@ -1702,7 +1687,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void MyMol::AddShells(Poldata * pd, ePolar epol, ChargeDistributionModel iModel)
+void MyMol::AddShells(const Poldata &pd, ePolar epol, ChargeDistributionModel iModel)
 {
     int              i, j, k, iat, shell, ns = 0;
     std::vector<int> renum, inv_renum;
@@ -1730,8 +1715,8 @@ void MyMol::AddShells(Poldata * pd, ePolar epol, ChargeDistributionModel iModel)
     }
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        if (1 == pd->getAtypePol( *topology_->atoms.atomtype[i],
-                                  &pol, &sigpol))
+        if (pd.getAtypePol(*topology_->atoms.atomtype[i],
+                           &pol, &sigpol))
         {
             renum.push_back(i+ns);
             inv_renum[i+ns] = i;
@@ -1808,8 +1793,8 @@ void MyMol::AddShells(Poldata * pd, ePolar epol, ChargeDistributionModel iModel)
             for (j = iat+1; (j < renum[i+1]); j++)
             {
                 newa->atom[j]            = topology_->atoms.atom[i];
-                newa->atom[iat].q        = pd->getQ(iModel, *topology_->atoms.atomtype[i], 0);
-                newa->atom[iat].qB       = pd->getQ(iModel, *topology_->atoms.atomtype[i], 0);
+                newa->atom[iat].q        = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
+                newa->atom[iat].qB       = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
                 newa->atom[j].m          = 0;
                 newa->atom[j].mB         = 0;
                 newa->atom[j].atomnumber = 0;
@@ -1886,7 +1871,7 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 }
 
 void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
-                         Poldata     *           pd,
+                         const Poldata          &pd,
                          real                    spacing,
                          const char             *reffn,
                          const char             *pcfn,
@@ -1914,7 +1899,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 
             sprintf(buf, "Potential generated by %s based on %s charges",
                     gentop_version,
-                    Poldata::getEemtypeName(iChargeDistributionModel).c_str());
+                    getEemtypeName(iChargeDistributionModel));
 
             if (NULL != difffn)
             {
@@ -1930,12 +1915,12 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
             if (NULL != rhofn)
             {
                 sprintf(buf, "Electron density generated by %s based on %s charges",
-                        gentop_version, Poldata::getEemtypeName(iChargeDistributionModel).c_str());
+                        gentop_version, getEemtypeName(iChargeDistributionModel));
                 gr_->calcRho();
                 gr_->writeRho(rhofn, buf);
             }
             sprintf(buf, "Potential generated by %s based on %s charges",
-                    gentop_version, Poldata::getEemtypeName(iChargeDistributionModel).c_str());
+                    gentop_version, getEemtypeName(iChargeDistributionModel));
             if (NULL != potfn)
             {
                 gr_->calcPot();
@@ -1949,7 +1934,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
             {
                 sprintf(buf, "Potential difference generated by %s based on %s charges",
                         gentop_version,
-                        Poldata::getEemtypeName(iChargeDistributionModel).c_str());
+                        getEemtypeName(iChargeDistributionModel));
 
                 gr_->writeDiffCube(grref, difffn, diffhistfn, buf, oenv, 0);
                 delete grref;
@@ -2044,7 +2029,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
     return imm;
 }
 
-void MyMol::CalcQPol(Poldata * pd)
+void MyMol::CalcQPol(const Poldata &pd)
 
 {
     int     i, m, np;
@@ -2058,15 +2043,14 @@ void MyMol::CalcQPol(Poldata * pd)
     clear_rvec(mu);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        if (1 ==
-            pd->getAtypePol( *topology_->atoms.atomtype[i], &pol, &sigpol))
+        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol))
         {
             np++;
             poltot += pol;
             sptot  += gmx::square(sigpol);
         }
         if (1 ==
-            pd->getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))
+            pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))
         {
             ereftot += eref;
         }
@@ -2081,7 +2065,8 @@ void MyMol::CalcQPol(Poldata * pd)
     sig_pol_        = sqrt(sptot/topology_->atoms.nr);
 }
 
-void MyMol::UpdateIdef(Poldata * pd, bool bOpt[])
+void MyMol::UpdateIdef(const Poldata &pd, 
+                       bool bOpt[])
 {
     int          gt, i, tp, ai, aj, ak, al;
     int          ftb, fta, ftd;
@@ -2089,72 +2074,80 @@ void MyMol::UpdateIdef(Poldata * pd, bool bOpt[])
     int          lu;
     double       value;
 
-
-    lu = string2unit(pd->getLengthUnit().c_str());
+    lu = string2unit(pd.getLengthUnit().c_str());
     if (bOpt[ebtsBONDS])
     {
-        ftb = pd->getBondFtype();
+        ftb = pd.getBondFtype();
         for (i = 0; (i < ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
         {
             tp  = ltop_->idef.il[ftb].iatoms[i];
             ai  = ltop_->idef.il[ftb].iatoms[i+1];
             aj  = ltop_->idef.il[ftb].iatoms[i+2];
-            aai = pd->atypeToBtype( *topology_->atoms.atomtype[ai]);
-            aaj = pd->atypeToBtype( *topology_->atoms.atomtype[aj]);
-            /* Here unfortunately we need a case statement for the types */
-            if ((gt = pd->searchBond( aai, aaj, &value, NULL, NULL, NULL, &params)) != 0)
+            std::string aai, aaj;
+            if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
+                pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
             {
-                mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
-
-                std::vector<std::string> ptr = split(params, ' ');
-                int n = 0;
-                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                /* Here unfortunately we need a case statement for the types */
+                double sigma, bondorder;
+                int ntrain;
+                if (pd.searchBond(aai, aaj, &value, &sigma, &ntrain, &bondorder, params))
                 {
-                    if (pi->length() > 0)
+                    mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
+
+                    std::vector<std::string> ptr = splitString(params);
+                    int n = 0;
+                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                     {
-                        if (n == 0)
+                        if (pi->length() > 0)
                         {
-                            mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
+                            if (n == 0)
+                            {
+                                mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
+                            }
+                            else
+                            {
+                                mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
+                            }
+                            n++;
                         }
-                        else
-                        {
-                            mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
-                        }
-                        n++;
                     }
                 }
             }
             else
             {
-                gmx_fatal(FARGS, "here are no parameters for bond %s-%s in the force field", aai.c_str(), aaj.c_str());
+                gmx_fatal(FARGS, "There are no parameters for bond %s-%s in the force field", aai.c_str(), aaj.c_str());
             }
         }
     }
     if (bOpt[ebtsANGLES])
     {
-        fta = pd->getAngleFtype();
+        fta = pd.getAngleFtype();
         for (i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
         {
             tp  = ltop_->idef.il[fta].iatoms[i];
             ai  = ltop_->idef.il[fta].iatoms[i+1];
             aj  = ltop_->idef.il[fta].iatoms[i+2];
             ak  = ltop_->idef.il[fta].iatoms[i+3];
-            aai = pd->atypeToBtype( *topology_->atoms.atomtype[ai]);
-            aaj = pd->atypeToBtype( *topology_->atoms.atomtype[aj]);
-            aak = pd->atypeToBtype( *topology_->atoms.atomtype[ak]);
-
-            if ((gt = pd->searchAngle( aai, aaj, aak, &value,
-                                       NULL, NULL, &params)) != 0)
+            std::string aai, aaj, aak;
+            if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
+                pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
+                pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
             {
-                mtop_->ffparams.iparams[tp].harmonic.rA     =
-                    mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                std::vector<std::string> ptr = split(params, ' ');
-                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                double sigma;
+                int ntrain;
+                if (pd.searchAngle( aai, aaj, aak, &value,
+                                    &sigma, &ntrain, params))
                 {
-                    if (pi->length() > 0)
+                    mtop_->ffparams.iparams[tp].harmonic.rA     =
+                        mtop_->ffparams.iparams[tp].harmonic.rB = value;
+                    std::vector<std::string> ptr = splitString(params);
+                    for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                     {
-                        mtop_->ffparams.iparams[tp].harmonic.krA     =
-                            mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                        if (pi->length() > 0)
+                        {
+                            mtop_->ffparams.iparams[tp].harmonic.krA     =
+                                mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                        }
                     }
                 }
             }
@@ -2164,83 +2157,63 @@ void MyMol::UpdateIdef(Poldata * pd, bool bOpt[])
             }
         }
     }
-    if (bOpt[ebtsPDIHS])
+    for(int dd=0; (dd<egdNR); dd++)
     {
-        ftd = pd->getDihedralFtype( egdPDIHS);
-
-        for (i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
+        int ebts = ebtsPDIHS;
+        if (bOpt[ebts])
         {
-            tp  = ltop_->idef.il[ftd].iatoms[i];
-            ai  = ltop_->idef.il[ftd].iatoms[i+1];
-            aj  = ltop_->idef.il[ftd].iatoms[i+2];
-            ak  = ltop_->idef.il[ftd].iatoms[i+3];
-            al  = ltop_->idef.il[ftd].iatoms[i+4];
-            aai = pd->atypeToBtype( *topology_->atoms.atomtype[ai]);
-            aaj = pd->atypeToBtype( *topology_->atoms.atomtype[aj]);
-            aak = pd->atypeToBtype( *topology_->atoms.atomtype[ak]);
-            aal = pd->atypeToBtype( *topology_->atoms.atomtype[al]);
-            if ((gt = pd->searchDihedral( egdPDIHS, aai, aaj, aak, aal,
-                                          &value, NULL, NULL, &params)) != 0)
+            ftd = pd.getDihedralFtype(dd);
+
+            for (i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
             {
-                mtop_->ffparams.iparams[tp].pdihs.phiA = value;
-                std::vector<std::string> ptr = split(params, ' ');
-                int n = 0;
-                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                tp  = ltop_->idef.il[ftd].iatoms[i];
+                ai  = ltop_->idef.il[ftd].iatoms[i+1];
+                aj  = ltop_->idef.il[ftd].iatoms[i+2];
+                ak  = ltop_->idef.il[ftd].iatoms[i+3];
+                al  = ltop_->idef.il[ftd].iatoms[i+4];
+                std::string aai, aaj, aak;
+                if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
+                    pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
+                    pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
+                    pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
-                    if (pi->length() > 0)
+                    double sigma;
+                    int ntrain;
+                    if ((gt = pd.searchDihedral(dd, aai, aaj, aak, aal,
+                                                &value, &sigma, &ntrain, params)) != 0)
                     {
-                        if (n == 0)
+                        std::vector<std::string> ptr = splitString(params);
+                        if (dd == egdPDIHS)
                         {
-                            mtop_->ffparams.iparams[tp].pdihs.cpA     =
-                                mtop_->ffparams.iparams[tp].pdihs.cpB =
-                                    atof(pi->c_str());
+                            mtop_->ffparams.iparams[tp].pdihs.phiA = value;
+
+                            if (ptr[0].length() > 0)
+                            {
+                                mtop_->ffparams.iparams[tp].pdihs.cpA     =
+                                    mtop_->ffparams.iparams[tp].pdihs.cpB =
+                                    atof(ptr[0].c_str());
+                            }
+                            if (ptr[1].length() > 0)
+                            {
+                                mtop_->ffparams.iparams[tp].pdihs.mult = atof(ptr[1].c_str());
+                            }
                         }
                         else
                         {
-                            mtop_->ffparams.iparams[tp].pdihs.mult = atof(pi->c_str());
+                            mtop_->ffparams.iparams[tp].harmonic.rA     =
+                                mtop_->ffparams.iparams[tp].harmonic.rB = value;
+                            if (ptr[0].length() > 0)
+                            {
+                                mtop_->ffparams.iparams[tp].harmonic.krA     =
+                                    mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0].c_str());
+                            }
                         }
-                        n++;
                     }
                 }
-            }
-            else
-            {
-                gmx_fatal(FARGS, "There are no parameters for angle %s-%s-%s in the force field", aai.c_str(), aaj.c_str(), aak.c_str());
-            }
-        }
-    }
-    if (bOpt[ebtsIDIHS])
-    {
-        ftd = pd->getDihedralFtype( egdIDIHS);
-
-        for (i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
-        {
-            tp  = ltop_->idef.il[ftd].iatoms[i];
-            ai  = ltop_->idef.il[ftd].iatoms[i+1];
-            aj  = ltop_->idef.il[ftd].iatoms[i+2];
-            ak  = ltop_->idef.il[ftd].iatoms[i+3];
-            al  = ltop_->idef.il[ftd].iatoms[i+4];
-            aai = pd->atypeToBtype( *topology_->atoms.atomtype[ai]);
-            aaj = pd->atypeToBtype( *topology_->atoms.atomtype[aj]);
-            aak = pd->atypeToBtype( *topology_->atoms.atomtype[ak]);
-            aal = pd->atypeToBtype( *topology_->atoms.atomtype[al]);
-            if ((gt = pd->searchDihedral(egdIDIHS, aai, aaj, aak, aal,
-                                         &value, NULL, NULL, &params)) != 0)
-            {
-                mtop_->ffparams.iparams[tp].harmonic.rA     =
-                    mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                std::vector<std::string>           ptr = split(params, ' ');
-                std::vector<std::string>::iterator pi  = ptr.begin();
-                if (pi->length() > 0)
+                else
                 {
-                    mtop_->ffparams.iparams[tp].harmonic.krA     =
-                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                    gmx_fatal(FARGS, "There are no parameters for angle %s-%s-%s in the force field", aai.c_str(), aaj.c_str(), aak.c_str());
                 }
-            }
-            else
-            {
-                gmx_fatal(FARGS, "There are no parameters for improper %-%s-%s-%s in the force field for %s",
-                          aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), molProp()->getMolname().c_str());
             }
         }
     }

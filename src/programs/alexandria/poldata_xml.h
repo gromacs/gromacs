@@ -5,40 +5,34 @@
 #ifndef POLDATA_XML_H
 #define POLDATA_XML_H
 
+#include <string>
+
 #include "gromacs/topology/atomprop.h"
 
-#include "poldata.h"
-#include "xml_util.h"
-
-
-//extern int xmlDoValidityCheckingDefaultValue;
 namespace alexandria
 {
-//using namespace alexandria;
-/* This source code file is part of the Alexandria project */
-class PoldataXml
-{
-    public:
+    class Poldata;
 
-        PoldataXml(){}
+    /*! \brief Store the Poldata class to an XML file
+     *
+     * \param[in] fileName The filename to save to
+     * \param[in] pd       Pointer to a Poldata class instance
+     * \param[in] compress Whether or not to write a compressed file
+     */
+    void writePoldata(const std::string &fileName,
+                      const Poldata &pd,
+                      bool compress = true);
 
-        static void write(const std::string fn, Poldata * pd,
-                          gmx_bool bCompress);
+    /*! \brief Read a Poldata class from an XML file
+     *
+     * \param[in]  fileName The filename to read from
+     * \param[out] pd       The Poldata class instance
+     * \param[in]  aps      Atom properties
+     */
+    void readPoldata(const std::string &fileName,
+                     Poldata &pd,
+                     const gmx_atomprop_t aps);
 
-        static Poldata * read(const char *fn, gmx_atomprop_t aps);
+} // namespace alexandria
 
-    private:
-        static void sp(int n, char buf[], int maxindent);
-
-        static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
-                                int indent, Poldata  * pd);
-
-        static void processTree(FILE *fp, xmlNodePtr tree, int indent,
-                                Poldata * pd, gmx_atomprop_t aps);
-
-        static void addXmlPoldata(xmlNodePtr parent, Poldata * pd);
-
-
-};
-}
 #endif

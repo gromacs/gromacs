@@ -9,9 +9,6 @@
 #include <ctype.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/strdb.h"
-#include "gromacs/utility/txtdump.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -23,7 +20,10 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
+#include "gromacs/utility/txtdump.h"
 
 #include "gmx_resp.h"
 #include "molprop.h"
@@ -34,7 +34,7 @@ namespace alexandria
 {
 
 
-GentopQgen::GentopQgen(Poldata * pd, t_atoms *atoms, gmx_atomprop_t aps,
+GentopQgen::GentopQgen(const Poldata &pd, t_atoms *atoms, gmx_atomprop_t aps,
                        rvec *x,
                        ChargeDistributionModel   iChargeDistributionModel,
                        ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
@@ -106,13 +106,13 @@ GentopQgen::GentopQgen(Poldata * pd, t_atoms *atoms, gmx_atomprop_t aps,
                           *(atoms->atomname[j]));
             }
             atp = *atoms->atomtype[j];
-            if (pd->haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
+            if (pd.haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
             {
                 atp = gmx_atomprop_element(aps, atm);
-                if (pd->haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
+                if (pd.haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
                 {
                     fprintf(stderr, "No charge distribution support for atom %s (element %s), model %s\n",
-                            *atoms->atomtype[j], atp.c_str(), Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
+                            *atoms->atomtype[j], atp.c_str(), getEemtypeName(_iChargeDistributionModel));
                     bSup = FALSE;
                 }
             }
@@ -120,7 +120,7 @@ GentopQgen::GentopQgen(Poldata * pd, t_atoms *atoms, gmx_atomprop_t aps,
             {
                 _elem[j].assign(atp);
                 _atomnr[j]      = atm;
-                nz              = pd->getNzeta(_iChargeDistributionModel, atp);
+                nz              = pd.getNzeta(_iChargeDistributionModel, atp);
                 _nZeta[j]       = nz;
 
                 _q[j].resize(nz);
@@ -130,9 +130,9 @@ GentopQgen::GentopQgen(Poldata * pd, t_atoms *atoms, gmx_atomprop_t aps,
                 _row[j].resize(nz);
                 for (k = 0; (k < nz); k++)
                 {
-                    _q[j][k]    = pd->getQ(_iChargeDistributionModel, *atoms->atomtype[j], k);
-                    _zeta[j][k] = pd->getZeta(_iChargeDistributionModel, *atoms->atomtype[j], k);
-                    _row[j][k]  = pd->getRow(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    _q[j][k]    = pd.getQ(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    _zeta[j][k] = pd.getZeta(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    _row[j][k]  = pd.getRow(_iChargeDistributionModel, *atoms->atomtype[j], k);
                     if (_row[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -738,21 +738,21 @@ void GentopQgen::message( int len, char buf[], Resp * gr)
     }
 }
 
-void GentopQgen::checkSupport(Poldata * pd, gmx_atomprop_t aps)
+void GentopQgen::checkSupport(const Poldata &pd, gmx_atomprop_t aps)
 {
     int      i;
     gmx_bool bSup = TRUE;
 
     for (i = 0; (i < _natom); i++)
     {
-        if (pd->haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
+        if (pd.haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
         {
             /*sfree(elem[i]);*/
             _elem[i].assign(gmx_atomprop_element(aps, _atomnr[i]));
-            if (pd->haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
+            if (pd.haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
             {
                 fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                        _elem[i].c_str(), Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
+                        _elem[i].c_str(), getEemtypeName(_iChargeDistributionModel));
                 bSup = FALSE;
             }
         }
@@ -767,7 +767,7 @@ void GentopQgen::checkSupport(Poldata * pd, gmx_atomprop_t aps)
     }
 }
 
-void GentopQgen::updatePd(t_atoms *atoms, Poldata * pd)
+void GentopQgen::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
 {
     int i, j, n, nz;
 
@@ -775,14 +775,14 @@ void GentopQgen::updatePd(t_atoms *atoms, Poldata * pd)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
-            _chi0[j]       = pd->getChi0(_iChargeDistributionModel, _elem[j].c_str());
-            _j00[j]        = pd->getJ00(_iChargeDistributionModel, _elem[j].c_str());
-            nz             = pd->getNzeta(_iChargeDistributionModel, _elem[j].c_str());
+            _chi0[j]       = pd.getChi0(_iChargeDistributionModel, _elem[j].c_str());
+            _j00[j]        = pd.getJ00(_iChargeDistributionModel, _elem[j].c_str());
+            nz             = pd.getNzeta(_iChargeDistributionModel, _elem[j].c_str());
             for (n = 0; (n < nz); n++)
             {
-                _zeta[j][n] = pd->getZeta(_iChargeDistributionModel, _elem[j].c_str(), n);
-                _q[j][n]    = pd->getQ(_iChargeDistributionModel, _elem[j].c_str(), n);
-                _row[j][n]  = pd->getRow(_iChargeDistributionModel, _elem[j].c_str(), n);
+                _zeta[j][n] = pd.getZeta(_iChargeDistributionModel, _elem[j].c_str(), n);
+                _q[j][n]    = pd.getQ(_iChargeDistributionModel, _elem[j].c_str(), n);
+                _row[j][n]  = pd.getRow(_iChargeDistributionModel, _elem[j].c_str(), n);
             }
             j++;
         }
@@ -790,7 +790,7 @@ void GentopQgen::updatePd(t_atoms *atoms, Poldata * pd)
 }
 
 int GentopQgen::generateChargesSm(FILE *fp,
-                                  Poldata * pd,
+                                  const Poldata &pd,
                                   t_atoms *atoms,
                                   real tol, int maxiter, gmx_atomprop_t aps,
                                   real *chieq)
@@ -803,7 +803,7 @@ int GentopQgen::generateChargesSm(FILE *fp,
     if (eQGEN_OK == _eQGEN)
     {
 
-        updatePd(atoms, pd);
+        updateFromPoldata(atoms, pd);
 
         qq.resize(atoms->nr+1);
         for (i = j = 0; (i < atoms->nr); i++)
@@ -874,13 +874,14 @@ int GentopQgen::generateChargesSm(FILE *fp,
 }
 
 int GentopQgen::generateChargesBultinck(FILE *fp,
-                                        Poldata * pd, t_atoms *atoms,
+                                        const Poldata &pd,
+                                        t_atoms *atoms,
                                         gmx_atomprop_t aps)
 {
     checkSupport(pd, aps);
     if (eQGEN_OK == _eQGEN)
     {
-        updatePd(atoms, pd);
+        updateFromPoldata(atoms, pd);
 
         calcJab();
         calcRhs();
@@ -895,7 +896,8 @@ int GentopQgen::generateChargesBultinck(FILE *fp,
 
 int GentopQgen::generateCharges(FILE *fp,
                                 Resp * gr,
-                                const std::string molname, Poldata * pd,
+                                const std::string molname, 
+                                const Poldata &pd,
                                 t_atoms *atoms,
                                 real tol, int maxiter, int maxcycle,
                                 gmx_atomprop_t aps)
@@ -914,7 +916,7 @@ int GentopQgen::generateCharges(FILE *fp,
             if (fp)
             {
                 fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-                        Poldata::getEemtypeName(_iChargeDistributionModel).c_str(), molname.c_str());
+                        getEemtypeName(_iChargeDistributionModel), molname.c_str());
             }
             for (cc = 0; (cc < maxcycle); cc++)
             {
@@ -956,7 +958,7 @@ int GentopQgen::generateCharges(FILE *fp,
             if (fp)
             {
                 fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                        molname.c_str(), Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
+                        molname.c_str(), getEemtypeName(_iChargeDistributionModel));
             }
             if (_iChargeDistributionModel == eqdBultinck)
             {

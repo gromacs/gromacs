@@ -34,7 +34,7 @@ void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms,
                         alexandria::PlistWrapperIterator bonds,
-                        Poldata * pd,
+                        const Poldata &pd,
                         gmx_atomprop *aps, const char *symm_string,
                         std::vector<int> &sym_charges);
 

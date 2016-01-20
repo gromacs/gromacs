@@ -31,7 +31,7 @@ static void gmx_molprop_csv(const char *fn,
 #define NEMP 3
     MolPropObservable           mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
     const char                 *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
-    t_qmcount                  *qmc[NEMP];
+    alexandria::t_qmcount      *qmc[NEMP];
 
     qmc[0] = find_calculations(mp, mpo[0], dip_str);
     qmc[1] = find_calculations(mp, mpo[1], pol_str);

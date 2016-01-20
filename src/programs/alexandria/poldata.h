@@ -7,818 +7,53 @@
 
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "gromacs/utility/smalloc.h"
 
+#include "poldata-low.h"
 #include "stringutil.h"
 
 /* This source code file is part of the Alexandria project */
 
 struct t_commrec;
 
-/*! \brief
- * Enumerated type holding the charge distribution models used in PolData
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-enum ChargeDistributionModel {
-    eqdAXp,
-    eqdAXg,
-    eqdAXs,
-    eqdYang,
-    eqdBultinck,
-    eqdRappe,
-    eqdNR
-};
-
-enum DihedralType {
-    egdPDIHS,
-    egdIDIHS,
-    egdNR
-};
-
-
 namespace alexandria
 {
-class Ptype
-{
-    private:
-        std::string type;
-        std::string miller;
-        std::string bosque;
-        double      polarizability;
-        double      sigPol;
 
-    public:
-        Ptype(std::string ptype, std::string miller, std::string bosque,
-              double polarizability, double sigPol)
-            :
-              type(ptype),
-              miller(miller),
-              bosque(bosque),
-              polarizability(polarizability),
-              sigPol(sigPol)
-        {
-        }
-
-        std::string getType()
-        {
-            return type;
-        }
-
-        std::string getMiller()
-        {
-            return miller;
-        }
-
-        std::string getBosque()
-        {
-            return bosque;
-        }
-
-        double getPolarizability()
-        {
-            return polarizability;
-        }
-
-        void setPolarizability(double polarizability)
-        {
-            this->polarizability = polarizability;
-        }
-
-        double getSigPol()
-        {
-            return sigPol;
-        }
-
-        void setSigPol(double sigPol)
-        {
-            this->sigPol = sigPol;
-        }
-
-};
 typedef std::vector<Ptype>::iterator PtypeIterator;
+typedef std::vector<Ptype>::const_iterator PtypeConstIterator;
 
-class Ffatype
-{
-    private:
-        std::string desc;
-        std::string type;
-        std::string ptype;
-        std::string btype;
-        std::string elem;
-        std::string vdwparams;
-        double      refEnthalpy;
-    public:
-        Ffatype(std::string desc,
-                std::string type,
-                std::string ptype,
-                std::string btype,
-                std::string elem,
-                std::string vdwparams,
-                double      refEnthalpy) :
-            desc(desc),
-            type(type),
-            ptype(ptype),
-            btype(btype),
-            elem(elem),
-            vdwparams(vdwparams),
-            refEnthalpy(refEnthalpy)
-        {
-        }
-
-        Ffatype()
-        {
-        }
-
-        std::string getDesc() const { return desc; }
-
-        std::string getType() const { return type; }
-
-        std::string getPtype() const { return ptype; }
-
-        std::string getBtype() const { return btype; }
-
-        std::string getElem() const { return elem; }
-
-        std::string getVdwparams() const { return vdwparams; }
-
-        double getRefEnthalpy() const { return refEnthalpy; }
-};
 typedef std::vector<Ffatype>::iterator FfatypeIterator;
-
-
-class Brule
-{
-    private:
-        std::string              elem;
-        std::string              rule;
-        std::string              type;
-        std::string              neighbors;
-        std::string              geometry;
-        int                      numbonds;
-        int iAromatic;
-        double                   valence;
-        std::vector<std::string> nb;
-
-    public:
-        Brule(std::string              elem,
-              std::string              rule,
-              std::string              type,
-              std::string              neighbors,
-              std::string              geometry,
-              int                      numbonds,
-              int                      iAromatic,
-              double                   valence,
-              std::vector<std::string> nb) :
-            elem(elem),
-            rule(rule),
-            type(type),
-            neighbors(neighbors),
-            geometry(geometry),
-            numbonds(numbonds),
-            iAromatic(iAromatic),
-            valence(valence),
-            nb(nb)
-        {
-        }
-
-        std::string getElem()
-        {
-            return elem;
-        }
-
-        std::string getRule()
-        {
-            return rule;
-        }
-
-        std::string getType()
-        {
-            return type;
-        }
-
-        std::string getNeighbors()
-        {
-            return neighbors;
-        }
-
-        std::string getGeometry()
-        {
-            return geometry;
-        }
-
-        int getNumbonds()
-        {
-            return numbonds;
-        }
-
-        int getIAromatic()
-        {
-            return iAromatic;
-        }
-
-        double getValence()
-        {
-            return valence;
-        }
-
-        std::vector<std::string> getNb()
-        {
-            return nb;
-        }
-
-};
-typedef std::vector<Brule>::iterator BruleIterator;
-
-class GtBond
-{
-    private:
-        std::string atom1;
-        std::string atom2;
-        std::string params;
-        std::string elem1, elem2;
-        double      length;
-        double      sigma;
-        double      bondorder;
-        int         ntrain;
-    public:
-        GtBond(std::string atom1,
-               std::string atom2,
-               std::string params,
-               std::string elem1,
-               std::string elem2,
-               double      length,
-               double      sigma,
-               double      bondorder,
-               int         ntrain)
-            :
-              atom1(atom1),
-              atom2(atom2),
-              params(params),
-              elem1(elem1),
-              elem2(elem2),
-              length(length),
-              sigma(sigma),
-              bondorder(bondorder),
-              ntrain(ntrain)
-        {
-        }
-
-        GtBond() {}
-
-        std::string getAtom1() const { return atom1; }
-
-        std::string getAtom2() const { return atom2; }
-
-        std::string getParams() const { return params; }
-
-        std::string getElem1() const { return elem1; }
-
-        std::string getElem2() const { return elem2; }
-
-        void setElem1(std::string elem) { elem1 = elem; }
-
-        void setElem2(std::string elem) { elem2 = elem; }
-
-        double getLength() { return length; }
-
-        double getSigma() { return sigma; }
-
-        double getBondorder() { return bondorder; }
-
-        int getNtrain() { return ntrain; }
-
-        void setAtom1(std::string atom) { atom1 = atom; }
-
-        void setAtom2(std::string atom) { atom2 = atom; }
-
-        void setBondorder(double bondorder) { this->bondorder = bondorder; }
-
-        void setLength(double length) { this->length = length; }
-
-        void setParams(std::string params) { this->params = params; }
-
-        void setSigma(double sigma) { this->sigma = sigma; }
-
-        void setNtrain(int ntrain) { this->ntrain = ntrain; }
-};
+typedef std::vector<Ffatype>::const_iterator FfatypeConstIterator;
 
 typedef std::vector<GtBond>::iterator GtBondIterator;
+typedef std::vector<GtBond>::const_iterator GtBondConstIterator;
 
-class GtAngle
-{
-    private:
-        std::string atom1_;
-        std::string atom2_;
-        std::string atom3_;
-        std::string params_;
-        double      angle_;
-        double      sigma_;
-        int         ntrain_;
-    public:
-        GtAngle(std::string atom1,
-                std::string atom2,
-                std::string atom3,
-                std::string params,
-                double      angle,
-                double      sigma,
-                int         ntrain)
-            :
-              atom1_(atom1),
-              atom2_(atom2),
-              atom3_(atom3),
-              params_(params),
-              angle_(angle),
-              sigma_(sigma),
-              ntrain_(ntrain)
-        {}
-
-        GtAngle() {}
-
-        std::string getAtom1() const { return atom1_; }
-
-        std::string getAtom2() const { return atom2_; }
-
-        std::string getAtom3() const { return atom3_; }
-        
-        std::string getParams() const { return params_; }
-
-        double getAngle() const { return angle_; }
-
-        double getSigma() const { return sigma_; }
-
-        int getNtrain() const { return ntrain_; }
-
-        void setParams(std::string params) { params_ = params; }
-
-        void setAngle(double angle) { angle_ = angle; }
-
-        void setSigma(double sigma) { sigma_ = sigma; }
-
-        void setNtrain(int ntrain) { ntrain_ = ntrain; }
-};
 typedef std::vector<GtAngle>::iterator GtAngleIterator;
+typedef std::vector<GtAngle>::const_iterator GtAngleConstIterator;
 
-class GtDihedral
-{
-    private:
-        std::string atom1;
-        std::string atom2;
-        std::string atom3;
-        std::string atom4;
-        std::string params;
-        double      dihedral;
-        double      sigma;
-        int         ntrain;
-    public:
-        GtDihedral(std::string atom1,
-                   std::string atom2,
-                   std::string atom3,
-                   std::string atom4,
-                   std::string params,
-                   double      dihedral,
-                   double      sigma,
-                   int         ntrain)
-            :
-              atom1(atom1),
-              atom2(atom2),
-              atom3(atom3),
-              atom4(atom4),
-              params(params),
-              dihedral(dihedral),
-              sigma(sigma),
-              ntrain(ntrain)
-        {
-        }
-
-        GtDihedral()
-        {
-        }
-
-        std::string getAtom1() const { return atom1; }
-
-        std::string getAtom2() const { return atom2; }
-
-        std::string getAtom3() const { return atom3; }
-
-        std::string getAtom4() const { return atom4; }
-
-        void setAtom1(std::string atom) { atom1 = atom; }
-
-        void setAtom2(std::string atom) { atom2 = atom; }
-
-        void setAtom3(std::string atom) { atom3 = atom; }
-
-        void setAtom4(std::string atom) { atom4 = atom; }
-
-        std::string getParams() { return params; }
-
-        double getDihedral() { return dihedral; }
-
-        double getSigma() { return sigma; }
-
-        int getNtrain() { return ntrain; }
-        
-        bool compare(const GtDihedral &gtB) const;
-
-        void setParams(std::string params) { this->params = params; }
-
-        void setDihedral(double dihedral) { this->dihedral = dihedral; }
-
-        void setSigma(double sigma) { this->sigma = sigma; }
-
-        void setNtrain(int ntrain) { this->ntrain = ntrain; }
-};
 typedef std::vector<GtDihedral>::iterator DihedralIterator;
+typedef std::vector<GtDihedral>::const_iterator DihedralConstIterator;
 
-class Bosque
-{
-    private:
-        std::string bosque;
-        double      polarizability;
-    public:
-        Bosque(std::string bosque,
-               double      polarizability)
-            :
-              bosque(bosque),
-              polarizability(polarizability)
-        {
-        }
-
-        std::string getBosque()
-        {
-            return bosque;
-        }
-
-        double getPolarizability()
-        {
-            return polarizability;
-        }
-
-};
 typedef std::vector<Bosque>::iterator BosqueIterator;
+typedef std::vector<Bosque>::const_iterator BosqueConstIterator;
 
-class Miller
-{
-    private:
-        std::string miller;
-        int         atomnumber;
-        double      tauAhc;
-        double      alphaAhp;
-    public:
-        Miller(std::string miller,
-               int         atomnumber,
-               double      tauAhc,
-               double      alphaAhp)
-            :
-              miller(miller),
-              atomnumber(atomnumber),
-              tauAhc(tauAhc),
-              alphaAhp(alphaAhp)
-        {
-        }
-
-        std::string getMiller()
-        {
-            return miller;
-        }
-
-        int getAtomnumber()
-        {
-            return atomnumber;
-        }
-
-        double getTauAhc()
-        {
-            return tauAhc;
-        }
-
-        double getAlphaAhp()
-        {
-            return alphaAhp;
-        }
-};
 typedef std::vector<Miller>::iterator MillerIterator;
-
-class Symcharges
-{
-    private:
-        std::string central;
-        std::string attached;
-        int         numattach;
-    public:
-        Symcharges(std::string central,
-                   std::string attached,
-                   int         numattach) :
-            central(central),
-            attached(attached),
-            numattach(numattach)
-        {
-        }
-
-        std::string getCentral()
-        {
-            return central;
-        }
-
-        std::string getAttached()
-        {
-            return attached;
-        }
-
-        int getNumattach()
-        {
-            return numattach;
-        }
-};
+typedef std::vector<Miller>::const_iterator MillerConstIterator;
 
 typedef std::vector<Symcharges>::iterator SymchargesIterator;
-
-class Epref
-{
-    private:
-        ChargeDistributionModel eqdModel;
-        std::string             epref;
-    public:
-        Epref(ChargeDistributionModel eqdModel,
-              std::string             epref)
-            :
-              eqdModel(eqdModel),
-              epref(epref)
-        {
-        }
-
-
-        ChargeDistributionModel getEqdModel()
-        {
-            return eqdModel;
-        }
-
-        std::string getEpref()
-        {
-            return epref;
-        }
-
-        void setEpref(std::string epref)
-        {
-            this->epref = epref;
-        }
-
-};
-typedef std::vector<Epref>::iterator EprefIterator;
-
-
-class EempropsData
-{
-    private:
-        std::vector<double> q;
-        std::vector<double> zeta;
-        std::vector<int>    row;
-    public:
-
-        EempropsData(int size)
-            :
-              q(size),
-              zeta(size),
-              row(size)
-        {
-        }
-
-        EempropsData()
-        {
-        }
-
-
-        std::vector<double> getQ()
-        {
-            return q;
-        }
-
-        std::vector<double> getZeta()
-        {
-            return zeta;
-        }
-
-        std::vector<int> getRow()
-        {
-            return row;
-        }
-
-
-        void setZeta(double zeta, int index)
-        {
-            this->zeta[index] = zeta;
-        }
-
-        void setRow(double row, int index)
-        {
-            this->row[index] = row;
-        }
-
-
-        void setQ(double q, int index)
-        {
-            this->q[index] = q;
-        }
-};
-
-typedef std::vector<EempropsData>::iterator EempropsDataIterator;
-
-//#define EEMBUFSIZE 256
-#define MAXZETA    12
-class Eemprops
-{
-    private:
-        ChargeDistributionModel eqdModel;
-        int                     nzeta;
-        std::string             name;
-        std::string             zetastr;
-        std::string             qstr;
-        std::string             rowstr;
-        double                  J0;
-        double                  chi0;
-        EempropsData            data;
-
-    public:
-        Eemprops(ChargeDistributionModel eqdModel,
-                 int                     nzeta,
-                 std::string             name,
-                 std::string             zetastr,
-                 std::string             qstr,
-                 std::string             rowstr,
-                 double                  J0,
-                 double                  chi0)
-            :
-              eqdModel(eqdModel),
-              nzeta(nzeta),
-              name(name),
-              zetastr(zetastr),
-              qstr(qstr),
-              rowstr(rowstr),
-              J0(J0),
-              chi0(chi0),
-              data(MAXZETA)
-        {
-        }
-
-        Eemprops() :
-            data(MAXZETA)
-        {
-        }
-
-        ChargeDistributionModel getEqdModel()
-        {
-            return eqdModel;
-        }
-
-        int getNzeta()
-        {
-            return nzeta;
-        }
-
-        std::string getName()
-        {
-            return name;
-        }
-
-        std::string getZetastr()
-        {
-            return zetastr;
-        }
-
-        std::string getQstr()
-        {
-            return qstr;
-        }
-
-        std::string getRowstr()
-        {
-            return rowstr;
-        }
-
-        double getJ0()
-        {
-            return J0;
-        }
-
-        double getChi0()
-        {
-            return chi0;
-        }
-
-        void setEqdModel(ChargeDistributionModel eqdModel)
-        {
-            this->eqdModel = eqdModel;
-        }
-
-        void setNzeta(int nzeta)
-        {
-            this->nzeta = nzeta;
-        }
-
-        void setName(std::string name)
-        {
-            this->name = name;
-        }
-
-        void setZetastr(std::string zetastr)
-        {
-            this->zetastr = zetastr;
-        }
-
-        void setQstr(std::string qstr)
-        {
-            this->qstr = qstr;
-        }
-
-        void setRowstr(std::string rowstr)
-        {
-            this->rowstr = rowstr;
-        }
-
-        void setJ0(double J0)
-        {
-            this->J0 = J0;
-        }
-
-        void setChi0(double chi0)
-        {
-            this->chi0 = chi0;
-        }
-
-        double getZeta(int index)
-        {
-            return data.getZeta()[index];
-        }
-
-        double getQ(int index)
-        {
-            return data.getQ()[index];
-        }
-
-        int getRow(int index)
-        {
-            return data.getRow()[index];
-        }
-
-        std::vector<double> getAllZeta()
-        {
-            return data.getZeta();
-        }
-
-        std::vector<double> getAllQ()
-        {
-            return data.getQ();
-        }
-
-        std::vector<int> getAllRow()
-        {
-            return data.getRow();
-        }
-
-        void setZeta(int index, double zeta)
-        {
-            data.setZeta(zeta, index);
-        }
-
-        void setQ(int index, double q)
-        {
-            data.setQ(q, index);
-        }
-
-        void setRow(int index, int row)
-        {
-            data.setRow(row, index);
-        }
-};
-typedef std::vector<Eemprops>::iterator EempropsIterator;
-
+typedef std::vector<Symcharges>::const_iterator SymchargesConstIterator;
 
 class Poldata
 {
     public:
-
         Poldata(); //Constructor
         ~Poldata(){}
 
+        void  setFilename(const std::string &fn2);
 
-        void  setFilename(std::string fn2);
-
-        void  addBondingRule(std::string gtBrule, std::string atype,
-                             std::string geometry, int numbonds,
-                             double valence, int iAromatic,
-                             std::string neighbors);
-
-        BruleIterator getBruleBegin()
-        {
-            return _brule.begin();
-        }
-
-        BruleIterator getBruleEnd()
-        {
-            return _brule.end();
-        }
+        void  setVdwFunction(const std::string &func);
 
         void  addPtype(const std::string &ptype,
                        const std::string &miller,
@@ -834,98 +69,67 @@ class Poldata
                        const std::string &vdwparams,
                        double            ref_enthalpy);
 
-        void  setPtypePolarizability(  const std::string ptype,
-                                       double polarizability, double sigPol);
+        bool setPtypePolarizability(const std::string &ptype,
+                                    double polarizability, 
+                                    double sigPol);
 
-
-
-        void setPolarUnit( const std::string polarUnit)
+        void setPolarUnit(const std::string &polarUnit)
         {
-            _alexandriaPolarUnit.assign(polarUnit);
-
+            _alexandriaPolarUnit = polarUnit;
         }
 
-        void setPolarRef( const std::string polarRef)
+        void setPolarRef(const std::string &polarRef)
         {
-            _alexandriaPolarRef.assign(polarRef);
+            _alexandriaPolarRef = polarRef;
         }
 
-        std::string getForceField()
+        const std::string &getForceField() const { return _alexandriaForcefield; }
+
+        void setForceField(const std::string &forcefield)
         {
-            return _alexandriaForcefield;
+            _alexandriaForcefield = forcefield;
         }
 
-        void setForceField( const std::string forcefield)
+        void setLengthUnit(const std::string length_unit)
         {
-            _alexandriaForcefield.assign(forcefield);
+            _gtLengthUnit = length_unit;
         }
 
-        void setLengthUnit( const std::string length_unit)
-        {
-            _gtLengthUnit.assign(length_unit);
-        }
+        int getVdwFtype() const { return _gtVdwFtype; }
 
-        void  setVdwFunction(  const std::string func);
+        void setNexcl(int nexcl) { _nexcl = nexcl; }
 
-        int  getVdwFtype( );
+        int getNexcl() const { return _nexcl; }
 
-        void setNexcl( int nexcl)
-        {
-            _nexcl = nexcl;
-        }
+        void setFudgeQQ(double fudgeQQ) { _fudgeQQ = fudgeQQ; }
 
-        int getNexcl( );
+        size_t getNatypes() const { return _alexandria.size(); }
 
+        size_t getNptypes() const { return _ptype.size(); }
 
-        void setFudgeQQ( double fudgeQQ)
-        {
-            _fudgeQQ = fudgeQQ;
-        }
+        size_t getNgtBond() const { return _gtBond.size(); }
 
-        int getNatypes()
-        {
-            return _alexandria.size();
-        }
+        size_t getNgtAngle() const { return _gtAngle.size(); }
 
-        int getNptypes()
-        {
-            return _ptype.size();
-        }
+        size_t getNgtDihedral(int egd) const { return _gtDihedral[egd].size(); }
 
-        unsigned int getNgtBond()
-        {
-            return _gtBond.size();
-        }
+        double getFudgeQQ() const { return _fudgeQQ; }
 
-        int getNgtAngle()
-        {
-            return _gtAngle.size();
-        }
+        void setFudgeLJ(double fudgeLJ) { _fudgeLJ = fudgeLJ; }
 
-        int getNgtDihedral( int egd)
-        {
-            return _gtDihedral[egd].size();
-        }
+        double getFudgeLJ() const { return _fudgeLJ; }
 
-        double  getFudgeQQ( );
+        bool getAtypeRefEnthalpy(const std::string &atype,
+                                 double            *Href) const;
 
-        void setFudgeLJ(double fudgeLJ)
-        {
-            _fudgeLJ = fudgeLJ;
-        }
+        void setCombinationRule(const std::string &func);
 
-        double  getFudgeLJ( );
+        const std::string &getCombinationRule() const { return _gtCombinationRule; }
 
-        int getAtypeRefEnthalpy( const std::string atype,
-                                 double           *Href);
+        int  getCombRule() const { return _gtCombRule; }
 
-        void  setCombinationRule(  std::string func);
+        const std::string &getLengthUnit() const { return _gtLengthUnit; }
 
-        std::string  getCombinationRule( );
-
-        int  getCombRule( );
-
-        std::string  getLengthUnit( );
 
         /* Return array of atomtypes compatible with the bonded neighbors.
            The array should be freed, but not the contents of the elements.
@@ -942,373 +146,400 @@ class Poldata
         /* Get the charge from the gentop.dat file */
         std::string  getCharge(  std::string atype);
 
-        FfatypeIterator getAtypeBegin()
+        FfatypeIterator getAtypeBegin() { return _alexandria.begin(); }
+
+        FfatypeIterator getAtypeEnd() { return _alexandria.end(); }
+        
+        FfatypeConstIterator getAtypeBegin() const { return _alexandria.begin(); }
+
+        FfatypeConstIterator getAtypeEnd() const { return _alexandria.end(); }
+        
+        FfatypeIterator findAtype(const std::string &atype)
         {
-            return _alexandria.begin();
+            return std::find_if(_alexandria.begin(), _alexandria.end(),
+                                [atype](Ffatype const &f)
+                                { return (atype.compare(f.getType())); });
         }
 
-        FfatypeIterator getAtypeEnd()
+        FfatypeConstIterator findAtype(const std::string &atype) const
         {
-            return _alexandria.end();
-        }
-        
-        FfatypeIterator searchType(const std::string &type);
-        
-        FfatypeIterator searchBtype(const std::string &btype);
-        
-        FfatypeIterator searchPtype(const std::string &ptype);
-        
-        PtypeIterator getPtypeBegin()
-        {
-            return _ptype.begin();
+            FfatypeConstIterator ab = _alexandria.begin(), ae = _alexandria.end();
+            return std::find_if(ab, ae, [atype](Ffatype const &f)
+                                { return (atype.compare(f.getType())); });
         }
 
-        PtypeIterator getPtypeEnd()
+        FfatypeIterator btypeToAtype(const std::string &btype)
         {
-            return _ptype.end();
+            return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                                [btype](Ffatype const &f) 
+                                { return f.getBtype().compare(btype); });
         }
 
-        std::string  atypeToPtype(  const std::string atype);
+        FfatypeIterator ptypeToAtype(const std::string &ptype)
+        {
+            return std::find_if(_alexandria.begin(), _alexandria.end(), 
+                                [ptype](Ffatype const &f) 
+                                { return f.getPtype().compare(ptype); });
+        }
+        
+        PtypeConstIterator getPtypeBegin() const { return _ptype.begin(); }
 
-        std::string  atypeToBtype(  const std::string atype);
+        PtypeConstIterator getPtypeEnd() const { return _ptype.end(); }
+        
+        PtypeIterator findPtype(const std::string &ptype)
+        {
+            return std::find_if(_ptype.begin(), _ptype.end(),
+                                [ptype](Ptype const &p)
+                                { return ptype.compare(p.getType()); });
+        }
+
+        //! Return the poltype corresponding to atype of nullptr
+        bool atypeToPtype(const std::string &atype,
+                          std::string       &ptype) const;
+
+        //! Return the poltype corresponding to atype of nullptr
+        bool atypeToBtype(const std::string &atype,
+                          std::string       &btype) const;
+        
+        /* Return true if OK, false if not found */
+        bool searchAtype(const std::string &key,
+                         Ffatype           &type)
+        {
+            for(FfatypeIterator fi = _alexandria.begin(); fi < _alexandria.end(); ++fi)
+            {
+                if (key.compare(fi->getType()) == 0)
+                {
+                    type = *fi;
+                    return true;
+                }
+            }
+            return false;
+        }
 
         /* Return 1 if OK, 0 if not found */
-        int  searchAtype(std::string   key,
-                         Ffatype     * type);
-
-        /* Return 1 if OK, 0 if not found */
-        int  getPtypePol(  const std::string ptype,
-                           double *polarizability, double *sigPol);
-        int  getAtypePol(  const std::string atype,
-                           double *polarizability, double *sigPol);
-
-        int getAtypeRefEnthalpy(Poldata * pd, const std::string atype,
-                                double *Href);
-
-        /* Return 1 if OK, 0 if not found */
-        int  bondingRuleValence(  std::string gtBrule, double *valence);
+        bool getPtypePol(  const std::string &ptype,
+                           double *polarizability, double *sigPol) const;
+        bool getAtypePol(  const std::string &atype,
+                           double *polarizability, double *sigPol) const ;
 
         void  addMiller(std::string   miller,
                         int           atomnumber,
                         double        tauAhc,
                         double        alphaAhp);
 
-        /* Return 1 if "miller" was found */
-        int  getMillerPol(std::string   miller,
-                          int          *atomnumber,
-                          double       *tauAhc,
-                          double       *alphaAhp);
+        /* Return true if "miller" was found */
+        bool getMillerPol(const std::string &miller,
+                          int               *atomnumber,
+                          double            *tauAhc,
+                          double            *alphaAhp) const;
 
+        MillerIterator getMillerBegin() { return _miller.begin(); }
 
+        MillerIterator getMillerEnd() { return _miller.end(); }
 
-        MillerIterator getMillerBegin()
+        MillerConstIterator getMillerBegin() const { return _miller.begin(); }
+
+        MillerConstIterator getMillerEnd() const { return _miller.end(); }
+
+        void  setMillerUnits(const std::string &tauUnit,
+                             const std::string &ahpUnit)
         {
-            return _miller.begin();
+            _millerTauUnit = tauUnit;
+            _millerAhpUnit = ahpUnit;
         }
 
-        MillerIterator getMillerEnd()
+        void  getMillerUnits(std::string &tauUnit,
+                             std::string &ahpUnit) const
         {
-            return _miller.end();
+            tauUnit = _millerTauUnit;
+            ahpUnit = _millerAhpUnit;
         }
 
+        //! Convert poltype to miller name. Return true if found
+        bool ptypeToMiller(const std::string &ptype,
+                           std::string       &mil_type) const;
 
-
-        void  setMillerUnits(  std::string tauUnit,
-                               std::string ahpUnit);
-
-        void  getMillerUnits(  std::string *tauUnit,
-                               std::string *ahpUnit);
-
-        /* Returns miller name or NULL if not found */
-        std::string  ptypeToMiller(  const std::string ptype);
-
-        void  addBosque(std::string   bosque,
-                        double        polarizability);
-
-        BosqueIterator getBosqueBegin()
+        void  addBosque(const std::string &bosque,
+                        double             polarizability)
         {
-            return _bosque.begin();
+            Bosque bos(bosque, polarizability);
+            _bosque.push_back(bos);
         }
 
-        BosqueIterator getBosqueEnd()
-        {
-            return _bosque.end();
-        }
+        BosqueIterator getBosqueBegin() { return _bosque.begin(); }
+
+        BosqueIterator getBosqueEnd() { return _bosque.end(); }
+
+        BosqueConstIterator getBosqueBegin() const { return _bosque.begin(); }
+
+        BosqueConstIterator getBosqueEnd() const { return _bosque.end(); }
 
         void setBosqueUnit( std::string polarUnit)
         {
             _bosquePolarUnit.assign(polarUnit);
         }
 
-        std::string getBosqueUnit()
-        {
-            return _bosquePolarUnit;
-        }
+        const std::string &getBosqueUnit() const { return _bosquePolarUnit; }
 
-        /* Returns bosque name or NULL if not found */
-        std::string  ptypeToBosque(  const std::string ptype);
+        //! Convert poltype to bosque name or nullptr if not found
+        bool ptypeToBosque(const std::string &ptype,
+                           std::string       &bosque) const;
 
-        int  getBosquePol(  std::string bosque, double *polarizability);
+        bool getBosquePol(const std::string &bosque, 
+                          double            *polarizability) const;
 
-        /* Return 1 on success or 0 otherwise */
-        int  addBond(  std::string atom1, std::string atom2,
-                       double length, double sigma, int ntrain,
-                       double bondorder, std::string params);
+        /* Return true on success or false otherwise */
+        bool addBond(const std::string &atom1,
+                     const std::string &atom2,
+                     double length, 
+                     double sigma, 
+                     int ntrain,
+                     double bondorder,
+                     const std::string &params);
 
-        int  setBondParams(  std::string atom1, std::string atom2,
-                             double length, double sigma, int ntrain,
-                             double bondorder, std::string params);
+        bool setBondParams(const std::string &atom1,
+                           const std::string &atom2,
+                           double length, 
+                           double sigma,
+                           int ntrain,
+                           double bondorder, 
+                           const std::string &params);
 
-        GtBondIterator getBondBegin()
-        {
-            return _gtBond.begin();
-        }
+        GtBondIterator getBondBegin() { return _gtBond.begin(); }
 
-        GtBondIterator getBondEnd()
-        {
-            return _gtBond.end();
-        }
+        GtBondIterator getBondEnd() { return _gtBond.end(); }
 
-        void  setBondFunction(  std::string fn);
+        GtBondConstIterator getBondBegin() const { return _gtBond.begin(); }
 
-        std::string getBondFunction()
+        GtBondConstIterator getBondEnd() const { return _gtBond.end(); }
+
+        void  setBondFunction(const std::string &fn);
+
+        const std::string &getBondFunction() const
         {
             return _gtBondFunction;
         }
 
-        /* Return bond-index 1-N or 0 if not found */
-        int  searchBond(  std::string atom1, std::string atom2,
-                          double *length, double *sigma, int *ntrain,
-                          double *bondorder, std::string *params);
+        GtBondIterator findBond(const std::string &atom1,
+                                const std::string &atom2,
+                                double bondorder);
+                                
+        GtBondConstIterator findBond(const std::string &atom1,
+                                     const std::string &atom2,
+                                     double bondorder) const;
+            
+        /* Return true or false */
+        bool searchBond(const std::string &atom1,
+                        const std::string &atom2,
+                        double *length, 
+                        double *sigma, 
+                        int *ntrain,
+                        double *bondorder, 
+                        std::string &params) const;
 
-        /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
-        int  elemIsBond(  std::string elem1, std::string elem2,
-                          double distance, double toler);
+        void setAngleFunction(const std::string &fn);
 
-        /* Return maximal valence for a give element */
-        double  elemGetMaxValence(  std::string elem);
+        const std::string &getAngleFunction() const { return _gtAngleFunction; }
 
-        /* Return NULL-terminated array of potential bondorders */
-        double * elemGetBondorders(  std::string elem1, std::string elem2,
-                                     double distance, double toler);
-        /* Returns the bondorder. Toler is absolute in length-units. */
-        double  atypeBondorder(  std::string atype1, std::string atype2,
-                                 double distance, double toler);
+        int getBondFtype() const { return _gtBondFtype; }
 
-        void  setAngleFunction(  std::string fn);
+        int getAngleFtype() const { return _gtAngleFtype; }
 
-        std::string getAngleFunction()
-        {
-            return _gtAngleFunction;
-        }
+        int getDihedralFtype(int egd) const { return _gtDihedralFtype[egd]; }
 
-        int getBondFtype()
-        {
-            return _gtBondFtype;
-        }
+        const std::string &getVdwFunction() const { return _gtVdwFunction; }
 
-        int getAngleFtype()
-        {
-            return _gtAngleFtype;
-        }
+        const std::string &getPolarUnit() const { return _alexandriaPolarUnit; }
 
-        int getDihedralFtype( int egd)
-        {
-            return _gtDihedralFtype[egd];
-        }
+        const std::string &getPolarRef() const { return _alexandriaPolarRef; }
 
-        std::string getVdwFunction()
-        {
-            return _gtVdwFunction;
-        }
+        /* Return true on success, false otherwise */
+        bool addAngle(const std::string &atom1, 
+                      const std::string &atom2,
+                      const std::string &atom3,
+                      double angle, 
+                      double sigma,
+                      int ntrain,
+                      const std::string &params);
 
-        std::string getPolarUnit()
-        {
-            return _alexandriaPolarUnit;
-        }
-
-        std::string getPolarRef()
-        {
-            return _alexandriaPolarRef;
-        }
-
-        /* Return 1 on success, 0 otherwise */
-        int  addAngle(
-            std::string atom1, std::string atom2,
-            std::string atom3, double angle, double sigma,
-            int ntrain, std::string params);
-
-        int  setAngleParams(std::string atom1,
-                            std::string atom2,
-                            std::string atom3, 
+        bool setAngleParams(const std::string &atom1,
+                            const std::string &atom2,
+                            const std::string &atom3, 
                             double angle, 
                             double sigma, 
                             int ntrain, 
-                            std::string params);
+                            const std::string &params);
 
+        GtAngleIterator getAngleBegin() { return _gtAngle.begin(); }
 
-        GtAngleIterator getAngleBegin()
-        {
-            return _gtAngle.begin();
-        }
+        GtAngleIterator getAngleEnd() { return _gtAngle.end(); }
 
-        GtAngleIterator getAngleEnd()
-        {
-            return _gtAngle.end();
-        }
+        GtAngleConstIterator getAngleBegin() const { return _gtAngle.begin(); }
 
-        /* Return angle-index 1-N or 0 if not found */
-        int  searchAngle(  std::string atom1, std::string atom2,
-                           std::string atom3, double *angle, double *sigma,
-                           int *ntrain, std::string *params);
+        GtAngleConstIterator getAngleEnd() const { return _gtAngle.end(); }
 
-        void setAngleUnit( std::string angleUnit)
-        {
-            _gtAngleUnit.assign(angleUnit);
-        }
+        GtAngleIterator findAngle(const std::string &atom1,
+                                  const std::string &atom2,
+                                  const std::string &atom3);
+                                  
+        GtAngleConstIterator findAngle(const std::string &atom1,
+                                       const std::string &atom2,
+                                       const std::string &atom3) const;
+                                  
+                                  
+        /* Return true or false */
+        bool searchAngle(const std::string &atom1,
+                         const std::string &atom2,
+                         const std::string &atom3,
+                         double *angle, 
+                         double *sigma,
+                         int *ntrain, 
+                         std::string &params) const;
 
-        std::string getAngleUnit()
-        {
-            return _gtAngleUnit;
-        }
+        void setAngleUnit(const std::string &angleUnit) { _gtAngleUnit= angleUnit; }
 
-        void  setDihedralFunction(  int egd, std::string fn);
+        const std::string &getAngleUnit() const { return _gtAngleUnit; }
 
-        std::string getDihedralFunction( int egd)
+        void  setDihedralFunction(int egd, const std::string &fn);
+
+        const std::string &getDihedralFunction(int egd) const
         {
             return _gtDihedralFunction[egd];
         }
 
         /* Return 1 on success or 0 otherwise */
-        int  addDihedral(  int egd, std::string atom1, std::string atom2,
-                           std::string atom3, std::string atom4,
-                           double dihedral, double sigma,
-                           int ntrain, std::string params);
+        bool addDihedral(int egd, 
+                         const std::string &atom1,
+                         const std::string &atom2,
+                         const std::string &atom3, 
+                         const std::string &atom4,
+                         double dihedral, 
+                         double sigma,
+                         int ntrain,
+                         const std::string &params);
 
-        int  setDihedralParams(  int egd,
-                                 std::string atom1, std::string atom2,
-                                 std::string atom3, std::string atom4,
-                                 double angle, double sigma,
-                                 int ntrain, std::string params);
+        bool setDihedralParams(int egd,
+                               const std::string &atom1,
+                               const std::string &atom2,
+                               const std::string &atom3, 
+                               const std::string &atom4,
+                               double angle, 
+                               double sigma,
+                               int ntrain, 
+                               const std::string &params);
 
+        DihedralIterator getDihedralBegin(int egd) { return _gtDihedral[egd].begin(); }
 
-        DihedralIterator getDihedralBegin(int egd)
-        {
-            return _gtDihedral[egd].begin();
-        }
+        DihedralIterator getDihedralEnd(int egd) { return _gtDihedral[egd].end(); }
 
-        DihedralIterator getDihedralEnd(int egd)
-        {
-            return _gtDihedral[egd].end();
-        }
+        DihedralConstIterator getDihedralBegin(int egd) const { return _gtDihedral[egd].begin(); }
 
-        /* Return dihedral-index 1-N or 0 if not found */
-        DihedralIterator searchDihedral(int egd,
-                                        const std::string &atom1, 
-                                        const std::string &atom2,
-                                        const std::string &atom3, 
-                                        const std::string &atom4);
+        DihedralConstIterator getDihedralEnd(int egd) const { return _gtDihedral[egd].end(); }
 
-        int searchDihedral(int egd, 
-                           std::string atom1, std::string atom2,
-                           std::string atom3, std::string atom4,
-                           double *dihedral, double *sigma,
-                           int *ntrain, std::string *params);
+        /* Return iterator */
+        DihedralIterator findDihedral(int egd,
+                                      const std::string &atom1, 
+                                      const std::string &atom2,
+                                      const std::string &atom3, 
+                                      const std::string &atom4);
 
-        void  setDihedralUnit(  int         egd,
-                                std::string dihedralUnit);
+        DihedralConstIterator findDihedral(int egd,
+                                           const std::string &atom1, 
+                                           const std::string &atom2,
+                                           const std::string &atom3, 
+                                           const std::string &atom4) const;
 
-        std::string  getDihedralUnit(  int egd);
+        bool searchDihedral(int egd, 
+                            const std::string &atom1, 
+                            const std::string &atom2,
+                            const std::string &atom3,
+                            const std::string &atom4,
+                            double *dihedral, 
+                            double *sigma,
+                            int *ntrain, 
+                            std::string &params) const;
 
-        void  addSymcharges(  std::string central,
-                              std::string attached, int numattach);
+        const std::string &getDihedralUnit(int egd) const;
 
-        int  getSymcharges(  std::string *central,
-                             std::string *attached, int *numattach);
+        void addSymcharges(const std::string &central,
+                           const std::string &attached, 
+                           int numattach);
 
-        SymchargesIterator getSymchargesBegin()
-        {
-            return _symcharges.begin();
-        }
+        SymchargesIterator getSymchargesBegin() { return _symcharges.begin(); }
 
-        SymchargesIterator getSymchargesEnd()
-        {
-            return _symcharges.end();
-        }
+        SymchargesIterator getSymchargesEnd() { return _symcharges.end(); }
 
-        int  searchSymcharges(  std::string central,
-                                std::string attached, int numattach);
+        SymchargesConstIterator getSymchargesBegin() const { return _symcharges.begin(); }
 
-        static ChargeDistributionModel name2eemtype(const std::string name);
+        SymchargesConstIterator getSymchargesEnd() const { return _symcharges.end(); }
 
-        static  std::string getEemtypeName(ChargeDistributionModel eem);
+        int getNumprops(ChargeDistributionModel eqdModel) const;
 
-        std::string  getEemref(  ChargeDistributionModel eqdModel);
+        int havePolSupport(const std::string &atype) const;
 
-        int  getNumprops(  ChargeDistributionModel eqdModel);
+        int haveEemSupport(ChargeDistributionModel  eqdModel,
+                           const std::string       &name,
+                           gmx_bool                 bAllowZeroParameters) const;
 
-        int  havePolSupport(  const std::string atype);
+        double getJ00(ChargeDistributionModel  eqdModel, 
+                      const std::string       &name) const;
 
-        int  haveEemSupport(  ChargeDistributionModel eqdModel,
-                              const std::string       name,
-                              gmx_bool                bAllowZeroParameters);
+        int getNzeta(ChargeDistributionModel eqdModel, 
+                     const std::string &name) const;
 
-        double  getJ00(  ChargeDistributionModel eqdModel, const std::string name);
+        double getZeta(ChargeDistributionModel eqdModel, 
+                       const std::string &name, int zz) const;
 
-        int  getNzeta(  ChargeDistributionModel eqdModel, const std::string name);
+        const char *getQstr(ChargeDistributionModel  eqdModel, 
+                            const std::string       &name) const;
 
-        double  getZeta(  ChargeDistributionModel eqdModel, const std::string name, int zz);
+        const char *getRowstr(ChargeDistributionModel  eqdModel, 
+                              const std::string       &name) const;
 
-        std::string  getQstr(  ChargeDistributionModel eqdModel, std::string name);
+        double getQ(ChargeDistributionModel eqdModel,
+                    const std::string &name, 
+                    int zz) const;
 
-        std::string  getRowstr(  ChargeDistributionModel eqdModel, std::string name);
+        int getRow(ChargeDistributionModel eqdModel,
+                   const std::string &name,
+                   int zz) const;
 
-        double  getQ(  ChargeDistributionModel eqdModel, const std::string name, int zz);
+        double getChi0(ChargeDistributionModel eqdModel,
+                       const std::string &name) const;
 
-        int  getRow(  ChargeDistributionModel eqdModel, const std::string name, int zz);
+        const char *getOpts(ChargeDistributionModel eqdModel, 
+                            const std::string &name) const;
 
-        double  getChi0(  ChargeDistributionModel eqdModel, const std::string name);
+        void  setEemprops(ChargeDistributionModel eqdModel, 
+                          const std::string &name,
+                          double J0, 
+                          double chi0,
+                          const std::string &zeta, 
+                          const std::string &q, 
+                          const std::string &row);
 
-        std::string  getOpts(  ChargeDistributionModel eqdModel, std::string name);
+        EempropsConstIterator BeginEemprops() const { return _eep.begin(); }
 
-        void  setEemprops(ChargeDistributionModel eqdModel, const std::string name,
-                          double J0, double chi0,
-                          const std::string zeta, const  std::string q, const std::string row);
+        EempropsConstIterator EndEemprops() const { return _eep.end(); }
 
-        EempropsIterator getEempropsBegin()
-        {
-            return _eep.begin();
-        }
+        EempropsIterator BeginEemprops() { return _eep.begin(); }
 
-        EempropsIterator getEempropsEnd()
-        {
-            return _eep.end();
-        }
+        EempropsIterator EndEemprops() { return _eep.end(); }
 
-        void  setEpref(  ChargeDistributionModel eqdModel, std::string epref);
+        void  setEpref(ChargeDistributionModel eqdModel, 
+                       const std::string &epref);
 
-        std::string getEpref(ChargeDistributionModel eqdModel);
+        const char *getEpref(ChargeDistributionModel eqdModel) const;
 
-        EprefIterator getEprefBegin()
-        {
-            return _epr.begin();
-        }
+        void  commEemprops(t_commrec *cr);
 
-        EprefIterator getEprefEnd()
-        {
-            return _epr.end();
-        }
-
-        void  commEemprops(  t_commrec *cr);
-
-        void  commForceParameters( t_commrec *cr);
+        void  commForceParameters(t_commrec *cr);
 
     private:
         std::string                           _filename;
         std::vector<Ptype>                    _ptype;
         std::vector<Ffatype>                  _alexandria;
         std::vector<std::string>              _btype;
-        std::vector<Brule>                    _brule;
         std::string                           _alexandriaPolarUnit;
         std::string                           _alexandriaPolarRef;
         std::string                           _alexandriaForcefield;
@@ -1339,15 +570,42 @@ class Poldata
 
         gmx_bool strcasestrStart(std::string needle, std::string haystack);
 
-        int countNeighbors(Brule *brule, int nbond, std::string nbhybrid[], int *score);
+        GtBondIterator searchBond(const std::string &atom1, 
+                                  const std::string &atom2,
+                                  double bondorder);
 
-        GtBond *searchBond(  std::string atom1, std::string atom2,
-                             double bondorder);
-
-        int searchBondtype(  std::string atom);
-
-        Eemprops *getEep(ChargeDistributionModel       eqdModel,
-                         const std::string             name);
+        EempropsConstIterator getEep(ChargeDistributionModel  eqdModel,
+                                     const std::string       &name) const
+        {
+            for(EempropsConstIterator ei = _eep.begin(); (ei != _eep.end()); ++ei)
+            {
+                if ((strcasecmp(ei->getName(), name.c_str()) == 0) &&
+                    (ei->getEqdModel() == eqdModel))
+                {
+                    return ei;
+                }
+            }
+            return _eep.end();
+        }
+        EempropsIterator getEep(ChargeDistributionModel  eqdModel,
+                                const std::string       &name)
+        {
+            for(EempropsIterator ei = _eep.begin(); (ei != _eep.end()); ++ei)
+            {
+                if ((strcasecmp(ei->getName(), name.c_str()) == 0) &&
+                    (ei->getEqdModel() == eqdModel))
+                {
+                    return ei;
+                }
+            }
+            return _eep.end();
+        }
+        /*   return std::find_if(_eep.begin(), _eep.end(),
+                                [eqdModel,name](const Eemprops &e)
+                                { return ((strcasecmp(e.getName().c_str(), name.c_str()) == 0) &&
+                                          (e.getEqdModel() == eqdModel));
+                                });
+                                }*/
 
         static int gtbComp(const void *a, const void *b);
 
@@ -1359,5 +617,10 @@ class Poldata
             return (pointer - &(vector[0]));
         }
 };
+
+const char *getEemtypeName(ChargeDistributionModel eem);
+
+ChargeDistributionModel name2eemtype(const std::string name);
+
 }
 #endif

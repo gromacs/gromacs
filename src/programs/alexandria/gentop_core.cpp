@@ -45,10 +45,7 @@
 #include <string.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/pleasecite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/utility/strdb.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -56,6 +53,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
@@ -64,11 +62,15 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "gentop_vsite.h"
 #include "plistwrapper.h"
 #include "poldata.h"
+#include "poldata-low.h"
 #include "stringutil.h"
 
 
@@ -313,7 +315,7 @@ void reset_q(t_atoms *atoms)
 
 void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         std::vector<alexandria::PlistWrapper>::iterator bonds,
-                        Poldata * pd,
+                        const Poldata &pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges)
 {
@@ -335,7 +337,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
     {
         if ((NULL != symm_string) && (strlen(symm_string) > 0))
         {
-            std::vector<std::string> ss = split(symm_string, ' ');
+            std::vector<std::string> ss = gmx::splitString(symm_string);
             if ((int)ss.size() != atoms->nr)
             {
                 gmx_fatal(FARGS, "Wrong number (%d) of atom-numbers in symm_string: expected %d",
@@ -351,8 +353,8 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         }
         else
         {
-            for (SymchargesIterator symcharges = pd->getSymchargesBegin();
-                 symcharges != pd->getSymchargesEnd(); symcharges++)
+            for (SymchargesConstIterator symcharges = pd.getSymchargesBegin();
+                 symcharges != pd.getSymchargesEnd(); symcharges++)
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
                 anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());

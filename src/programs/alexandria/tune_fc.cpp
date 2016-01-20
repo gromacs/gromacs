@@ -38,9 +38,11 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "nmsimplex.h"
 
@@ -55,226 +57,131 @@
 #include "molselect.h"
 #include "mymol.h"
 #include "poldata.h"
+#include "poldata-low.h"
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-typedef struct {
-    int    nb[ebtsNR], *ngtb[ebtsNR];
-    char **cgt[ebtsNR];
-} opt_mask_t;
-
-static void check_support(FILE                           *fp,
-                          std::vector<alexandria::MyMol> &mm,
-                          Poldata     *                   pd,
-                          t_commrec                      *cr,
-                          bool                            bOpt[])
+typedef struct OptMask
 {
-    int ntotal  = (int) mm.size();
-    int nlocal  = 0;
+    int         ngtb;
+    std::string cgt; 
+};
+typedef std::vector<OptMask>::iterator OptMaskIterator;
 
-    for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); )
+class ForceConstants
+{
+private:
+    std::vector<opt_mask> om_[ebtsNR];
+public:
+    ForceConstants() {}
+
+    void addForceConstant(int bt, OptMask om) { om_[bt].push_back(om); }
+
+    void analyzeIdef(FILE                      *fp, 
+                     t_idef                    *idef,
+                     const alexandria::Mymol   &mymol,
+                     const alexandria::Poldata &pd);
+
+    OptMaskIterator beginOM(int bt) { return om_[bt].begin(); }
+
+    OptMaskIterator endOM(int bt) { return om_[bt].end(); }
+};
+
+
+void ForceConstants::analyzeIdef(FILE                          *fp,
+                                 std::vector<alexandria::MyMol> mm,
+                                 const Poldata                  pd,
+                                 bool                           bOpt[])
+{
+    int          gt, i, ak, al, ft;
+    int          ntot[ebtsNR];
+    std::string  aai, aaj, aak, aal, params;
+    const char  *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
+
+    for (int bt = 0; (bt <= ebtsIDIHS); bt++)
     {
-        if (mymol->eSupp != eSupportLocal)
+        if (!bOpt[bt])
         {
             continue;
         }
-        bool bSupport = true;
-
-        for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
+        switch (bt)
         {
-            int  ft;
-            if (bOpt[bt])
+        case ebtsBONDS:
+            omt->nb[bt] = pd->getNgtBond();
+            ft          = pd->getBondFtype();
+            break;
+        case ebtsANGLES:
+            omt->nb[bt] = pd->getNgtAngle();
+            ft          = pd->getAngleFtype();
+            break;
+        case ebtsPDIHS:
+            omt->nb[bt] = pd->getNgtDihedral( egdPDIHS);
+            ft          = pd->getDihedralFtype( egdPDIHS);
+            break;
+        case ebtsIDIHS:
+            omt->nb[bt] = pd->getNgtDihedral( egdIDIHS);
+            ft          = pd->getDihedralFtype( egdIDIHS);
+            break;
+        default:
+            gmx_fatal(FARGS, "Boe");
+        }
+        
+        for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin();
+             (mymol < mm.end()); mymol++)
+        {
+            for (i = 0; (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
             {
-                switch (bt)
-                {
+                double value, sigma, bondorder;
+                int ntrain;
+                bool found = false;
+                int ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
+                int aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
+                if (pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai], aai) &&
+                    pd->atypeToBtype( *mymol->topology_->atoms.atomtype[aj], aaj))
+                { 
+                    char buf[STRLEN];
+                    switch (bt)
+                    {
                     case ebtsBONDS:
-                        ft = pd->getBondFtype();
+                        GtBondConstIterator gtb = pd->findBond(aai, aaj, 0);
+                        if (pd->getBondEnd() != gtb)
+                        {
+                            sprintf(buf, "%s-%s", 
+                                    gtb->atom1().c_str(), 
+                                    gtb->atom2().c_str());
+                            found = true;
+                        }
                         break;
                     case ebtsANGLES:
-                        ft = pd->getAngleFtype();
-                        break;
-                    case ebtsPDIHS:
-                        ft = pd->getDihedralFtype(egdPDIHS);
-                        break;
-                    case ebtsIDIHS:
-                        ft = pd->getDihedralFtype( egdIDIHS);
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Boe");
-                }
-
-                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
-                {
-                    int         ai, aj, ak, al, gt = 0;
-                    std::string aai, aaj, aak, aal;
-
-                    ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
-                    aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    aai = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai]);
-                    aaj = pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
-                    if ((0 == aai.size()) || (0 == aaj.size()))
-                    {
-                        bSupport = false;
-                    }
-                    switch (bt)
-                    {
-                        case ebtsBONDS:
-                            gt = pd->searchBond( aai, aaj, NULL,
-                                                 NULL, NULL, NULL, NULL);
-                            break;
-                        case ebtsANGLES:
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            if (0 == aak.size())
-                            {
-                                bSupport = false;
-                            }
-                            else
-                            {
-                                gt  = pd->searchAngle( aai, aaj, aak, NULL,
-                                                       NULL, NULL, NULL);
-                            }
-                            break;
-                        case ebtsPDIHS:
-                        case ebtsIDIHS:
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            aal = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
-                            if ((0 == aak.size()) || (0 == aal.size()))
-                            {
-                                bSupport = false;
-                            }
-                            else
-                            {
-                                gt  = pd->searchDihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
-                                                          aai, aaj, aak, aal,
-                                                          NULL, NULL, NULL, NULL);
-                            }
-                            break;
-                    }
-                    if (gt == 0)
-                    {
-                        bSupport = false;
-                    }
-                }
-            }
-        }
-        if (!bSupport)
-        {
-            fprintf(stderr, "No force field support for %s\n",
-                    mymol->molProp()->getMolname().c_str());
-            mymol = mm.erase(mymol);
-        }
-        else
-        {
-            mymol++;
-            nlocal++;
-        }
-    }
-    if (PAR(cr))
-    {
-        gmx_sumi(1, &nlocal, cr);
-    }
-    if (NULL != fp)
-    {
-        fprintf(fp, "%d out of %d molecules have support in the force field.\n",
-                nlocal, ntotal);
-    }
-}
-
-static opt_mask_t *analyze_idef(FILE                          *fp,
-                                std::vector<alexandria::MyMol> mm,
-                                Poldata     *                  pd,
-                                bool                           bOpt[])
-{
-    int               gt, i, bt, ai, aj, ak, al, ft;
-    int               ntot[ebtsNR];
-    std::string       aai, aaj, aak, aal, params;
-    opt_mask_t       *omt;
-    const char       *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
-
-    fprintf(fp, "In the total data set of %d molecules we have:\n", (int)mm.size());
-    snew(omt, 1);
-    for (bt = 0; (bt < ebtsNR); bt++)
-    {
-        ntot[bt] = 0;
-    }
-    for (bt = 0; (bt <= ebtsIDIHS); bt++)
-    {
-        if (bOpt[bt])
-        {
-            switch (bt)
-            {
-                case ebtsBONDS:
-                    omt->nb[bt] = pd->getNgtBond();
-                    ft          = pd->getBondFtype();
-                    break;
-                case ebtsANGLES:
-                    omt->nb[bt] = pd->getNgtAngle();
-                    ft          = pd->getAngleFtype();
-                    break;
-                case ebtsPDIHS:
-                    omt->nb[bt] = pd->getNgtDihedral( egdPDIHS);
-                    ft          = pd->getDihedralFtype( egdPDIHS);
-                    break;
-                case ebtsIDIHS:
-                    omt->nb[bt] = pd->getNgtDihedral( egdIDIHS);
-                    ft          = pd->getDihedralFtype( egdIDIHS);
-                    break;
-                default:
-                    gmx_fatal(FARGS, "Boe");
-            }
-            snew(omt->ngtb[bt], omt->nb[bt]);
-            snew(omt->cgt[bt], omt->nb[bt]);
-
-            for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin();
-                 (mymol < mm.end()); mymol++)
-            {
-                for (i = 0; (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
-                {
-                    ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
-                    aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    aai = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai]);
-                    aaj = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[aj]);
-                    char buf[STRLEN];
-                    gt = 0;
-                    switch (bt)
-                    {
-                        case ebtsBONDS:
-                            gt = pd->searchBond( aai, aaj, NULL,
-                                                 NULL, NULL, NULL, &params);
-                            if (gt > 0)
-                            {
-                                sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
-                            }
-                            break;
-                        case ebtsANGLES:
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            gt  = pd->searchAngle( aai, aaj, aak, NULL,
-                                                   NULL, NULL, &params);
-                            if (gt > 0)
+                        ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
+                        if (pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
+                        {
+                            if (pd->searchAngle(aai, aaj, aak, &value,
+                                                &sigma, &ntrain, params))
                             {
                                 sprintf(buf, "%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str());
+                                found = true;
                             }
-                            break;
-                        case ebtsPDIHS:
-                        case ebtsIDIHS:
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            aal = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
-                            gt  = pd->searchDihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
-                                                      aai, aaj, aak, aal,
-                                                      NULL, NULL, NULL, &params);
-                            if (gt > 0)
+                        }
+                        break;
+                    case ebtsPDIHS:
+                    case ebtsIDIHS:
+                        ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
+                        al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
+                        if (pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
+                            pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal))
+                        {
+                            if (pd->searchDihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
+                                                    aai, aaj, aak, aal,
+                                                    &value, &sigma, &ntrain, params))
                             {
                                 sprintf(buf, "%s-%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                                    found = true;
                             }
-                            break;
+                        }
+                        break;
                     }
-                    if (gt > 0)
+                    if (found)
                     {
                         omt->ngtb[bt][gt-1]++;
                         if (NULL == omt->cgt[bt][gt-1])
@@ -306,6 +213,129 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
     }
 
     return omt;
+}
+
+static void check_support(FILE                           *fp,
+                          std::vector<alexandria::MyMol> &mm,
+                          const Poldata                  &pd,
+                          t_commrec                      *cr,
+                          bool                            bOpt[])
+{
+    int ntotal  = (int) mm.size();
+    int nlocal  = 0;
+
+    for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); )
+    {
+        if (mymol->eSupp != eSupportLocal)
+        {
+            continue;
+        }
+        bool bSupport = true;
+
+        for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
+        {
+            int  ft;
+            if (bOpt[bt])
+            {
+                switch (bt)
+                {
+                    case ebtsBONDS:
+                        ft = pd.getBondFtype();
+                        break;
+                    case ebtsANGLES:
+                        ft = pd.getAngleFtype();
+                        break;
+                    case ebtsPDIHS:
+                        ft = pd.getDihedralFtype(egdPDIHS);
+                        break;
+                    case ebtsIDIHS:
+                        ft = pd.getDihedralFtype( egdIDIHS);
+                        break;
+                    default:
+                        gmx_fatal(FARGS, "Boe");
+                }
+
+                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
+                {
+                    int         ai, aj, ak, al;
+                    std::string aai, aaj, aak, aal;
+
+                    ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
+                    aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
+                    if (!(pd.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+                          pd.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
+                    {
+                        bSupport = false;
+                    }
+                    switch (bt)
+                    {
+                    case ebtsBONDS:
+                        {
+                        double value, sigma, bondorder;
+                        int ntrain;
+                        std::string params;
+                        bSupport = (bSupport &&
+                                    pd.searchBond(aai, aaj, &value, &sigma,
+                                                   &ntrain, &bondorder, params));
+                        break;
+                        }
+                    case ebtsANGLES:
+                        {
+                        ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
+                        if (!pd.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
+                        {
+                            bSupport = false;
+                        }
+                        else
+                        {
+                                bSupport = (bSupport &&
+                                            pd.findAngle(aai, aaj, aak) != pd.getAngleEnd());
+                        }
+                        break;
+                        {
+                    case ebtsPDIHS:
+                    case ebtsIDIHS:
+                        {
+                        ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
+                        al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
+                        if (!(pd.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
+                              pd.atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
+                        {
+                            bSupport = false;
+                        }
+                        else
+                        {
+                            int egd = (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
+                            bSupport = (bSupport &&
+                                        pd.findDihedral(egd, aai, aaj, aak, aal) != pd.getDihedralEnd(egd));
+                        }
+                        break;
+                        }
+                    }
+                }
+            }
+        }
+        if (!bSupport)
+        {
+            fprintf(stderr, "No force field support for %s\n",
+                    mymol->molProp()->getMolname().c_str());
+            mymol = mm.erase(mymol);
+        }
+        else
+        {
+            mymol++;
+            nlocal++;
+        }
+    }
+    if (PAR(cr))
+    {
+        gmx_sumi(1, &nlocal, cr);
+    }
+    if (NULL != fp)
+    {
+        fprintf(fp, "%d out of %d molecules have support in the force field.\n",
+                nlocal, ntotal);
+    }
 }
 
 static void done_opt_mask(opt_mask_t **omt)
@@ -762,7 +792,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
             ai[1] = bond->getAtom2();
             if (omt->ngtb[ebtsBONDS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(bond->getParams(), ' ');
+                std::vector<std::string> ptr = splitString(bond->getParams());
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -799,7 +829,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
 
             if (omt->ngtb[ebtsANGLES][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(angle->getParams(), ' ');
+                std::vector<std::string> ptr = splitString(angle->getParams());
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -828,7 +858,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
             ai[3]  = dihydral->getAtom4();
             if (omt->ngtb[ebtsPDIHS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(dihydral->getParams().c_str(), ' ');
+                std::vector<std::string> ptr = splitString(dihydral->getParams());
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -858,7 +888,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
 
             if (omt->ngtb[ebtsIDIHS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(dihydral->getParams(), ' ');
+                std::vector<std::string> ptr = splitString(dihydral->getParams());
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -1681,10 +1711,10 @@ int alex_tune_fc(int argc, char *argv[])
 
     check_support(fp, opt._mymol, opt._pd, opt._cr, bOpt);
 
-    omt = analyze_idef(fp,
-                       opt._mymol,
-                       opt._pd,
-                       bOpt);
+    fprintf(fp, "In the total data set of %d molecules we have:\n", 
+            opt_.mymol.size());
+    ForceConstants fc;
+    fc.analyzeIdef(fp, opt._mymol, opt._pd, bOpt);
 
     opt.InitOpt(fp, &nparam, bOpt, D0, beta0,
                 omt, factor);

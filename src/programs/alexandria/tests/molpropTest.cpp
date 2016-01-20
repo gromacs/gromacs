@@ -60,7 +60,6 @@
 
 class MolpropTest : public gmx::test::CommandLineTestBase
 {
-
     protected:
         std::vector<alexandria::MolProp>  mp_;
         gmx_atomprop_t                    aps_;

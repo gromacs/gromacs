@@ -54,6 +54,8 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/coolstuff.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
@@ -157,7 +159,8 @@ void sort_bonds(t_bonds *b)
     qsort(b->imp, b->nimp, sizeof(b->imp[0]), dihcmp);
 }
 
-void add_bond(FILE *fplog, const char *molname, t_bonds *b, const char *a1, const char *a2,
+void add_bond(FILE *fplog, const char *molname, t_bonds *b, 
+              const char *a1, const char *a2,
               double blen, double spacing, int order)
 {
     int i, j, index;
@@ -414,7 +417,7 @@ static void round_numbers(real *av, real *sig)
     *sig = ((int)(*sig*100+50))/100.0;
 }
 
-void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
+void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
                real Dm, real beta, real kt, real klin, real kp)
 {
     int    i, N;
@@ -422,7 +425,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
     char   pbuf[256];
     double bondorder;
 
-    pd->setLengthUnit( unit2string(eg2cPm));
+    pd.setLengthUnit( unit2string(eg2cPm));
     for (i = 0; (i < b->nbond); i++)
     {
         gmx_stats_get_average(b->bond[i].lsq, &av);
@@ -432,7 +435,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         bondorder = b->bond[i].order;
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        pd->addBond( b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
+        pd.addBond( b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 b->bond[i].a1, b->bond[i].a2, av, sig, N,
                 (sig > 1.5) ? " WARNING" : "");
@@ -453,7 +456,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         {
             sprintf(pbuf, "%g", klin);
         }
-        pd->addAngle(
+        pd.addAngle(
                 b->angle[i].a1, b->angle[i].a2,
                 b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -468,7 +471,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        pd->addDihedral( egdPDIHS,
+        pd.addDihedral( egdPDIHS,
                          b->dih[i].a1, b->dih[i].a2,
                          b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -482,7 +485,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        pd->addDihedral( egdIDIHS,
+        pd.addDihedral( egdIDIHS,
                          b->imp[i].a1, b->imp[i].a2,
                          b->imp[i].a3, b->imp[i].a4, av, sig, N, pbuf);
         fprintf(fp, "improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -556,7 +559,7 @@ int alex_bastat(int argc, char *argv[])
     double                           aspacing = 0.5; /* degree */
     double                           dspacing = 1;   /* degree */
     gmx_output_env_t                *oenv     = NULL;
-    Poldata                         *pd;
+    Poldata                          pd;
     gmx_atomprop_t                   aps;
     int                              nfiles;
     char                           **fns;
@@ -569,7 +572,7 @@ int alex_bastat(int argc, char *argv[])
         return 0;
     }
 
-    iDistributionModel = Poldata::name2eemtype(cqdist[0]);
+    iDistributionModel = name2eemtype(cqdist[0]);
 
     fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
@@ -583,11 +586,12 @@ int alex_bastat(int argc, char *argv[])
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
 
-    /* Read polarization stuff */
-    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
+    /* Read force field stuff */
+    try
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+        readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     /* read Molprops */
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
@@ -626,10 +630,11 @@ int alex_bastat(int argc, char *argv[])
                 }
                 continue;
             }
-#define BTP(ii) pd->atypeToBtype( *mmi.topology_->atoms.atomtype[ii])
+#define ATP(ii) (*mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
-                if (0 == BTP(i).size())
+                std::string btpi;
+                if (!pd.atypeToBtype(*mmi.topology_->atoms.atomtype[i], btpi))
                 {
                     if (NULL != debug)
                     {
@@ -648,9 +653,9 @@ int alex_bastat(int argc, char *argv[])
                 int         ai = mmi.ltop_->idef.il[ftb].iatoms[j+1];
                 int         aj = mmi.ltop_->idef.il[ftb].iatoms[j+2];
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-                std::string cai = BTP(ai);
-                std::string caj = BTP(aj);
-                if ((0 != cai.size()) && (0 != caj.size()))
+                std::string cai, caj;
+                if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
+                    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
                 {
                     for (alexandria::BondIterator bi = mmi.molProp()->BeginBond(); (bi < mmi.molProp()->EndBond()); bi++)
                     {
@@ -664,7 +669,8 @@ int alex_bastat(int argc, char *argv[])
                         }
                         if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
                         {
-                            add_bond(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), 1000*norm(dx),
+                            add_bond(fp, mmi.molProp()->getMolname().c_str(), b, 
+                                     cai.c_str(), caj.c_str(), 1000*norm(dx),
                                      bspacing, xb);
                             break;
                         }
@@ -673,7 +679,7 @@ int alex_bastat(int argc, char *argv[])
                 else
                 {
                     fprintf(stderr, "No bond_atom type for either %s or %s\n",
-                            BTP(ai).c_str(), BTP(aj).c_str());
+                            ATP(ai), ATP(aj));
                 }
             }
             for (int j = 0; (j < mmi.ltop_->idef.il[fta].nr); j += interaction_function[fta].nratoms+1)
@@ -684,69 +690,58 @@ int alex_bastat(int argc, char *argv[])
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
                 rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
                 double      ang = RAD2DEG*gmx_angle(dx, dx2);
-                std::string cai = BTP(ai);
-                std::string caj = BTP(aj);
-                std::string cak = BTP(ak);
-                if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()))
+                std::string cai, caj, cak;
+                if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
+                    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
+                    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak))
                 {
-                    add_angle(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
+                    add_angle(fp, mmi.molProp()->getMolname().c_str(), b, 
+                              cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
                 }
                 else
                 {
                     fprintf(stderr, "No bond_atom type for either %s, %s or %s\n",
-                            BTP(ai).c_str(), BTP(aj).c_str(), BTP(ak).c_str());
+                            ATP(ai), ATP(aj), ATP(ak));
                 }
             }
             clear_mat(box);
             set_pbc(&pbc, epbcNONE, box);
 
-            for (int j = 0; (j < mmi.ltop_->idef.il[ftd].nr); j += interaction_function[ftd].nratoms+1)
+            for(int ddd = 0; (ddd < 2); ddd++)
             {
-                int    ai  = mmi.ltop_->idef.il[ftd].iatoms[j+1];
-                int    aj  = mmi.ltop_->idef.il[ftd].iatoms[j+2];
-                int    ak  = mmi.ltop_->idef.il[ftd].iatoms[j+3];
-                int    al  = mmi.ltop_->idef.il[ftd].iatoms[j+4];
-                double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
-                                               mmi.x_[ak], mmi.x_[al],
-                                               &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
-                                               &sign, &t1, &t2, &t3);
-                std::string cai = BTP(ai);
-                std::string caj = BTP(aj);
-                std::string cak = BTP(ak);
-                std::string cal = BTP(al);
-                if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
+                int ftx = ftd;
+                int egd = egdPDIHS;
+                if (ddd == 1)
                 {
-                    add_dih(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdPDIHS);
+                    ftx = fti;
+                    egd = egdIDIHS;
                 }
-                else
-                {
-                    fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
-                            BTP(ai).c_str(), BTP(aj).c_str(), BTP(ak).c_str(), BTP(al).c_str());
-                }
-            }
 
-            for (int j = 0; (j < mmi.ltop_->idef.il[fti].nr); j += interaction_function[fti].nratoms+1)
-            {
-                int    ai  = mmi.ltop_->idef.il[fti].iatoms[j+1];
-                int    aj  = mmi.ltop_->idef.il[fti].iatoms[j+2];
-                int    ak  = mmi.ltop_->idef.il[fti].iatoms[j+3];
-                int    al  = mmi.ltop_->idef.il[fti].iatoms[j+4];
-                double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
-                                               mmi.x_[ak], mmi.x_[al],
-                                               &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
-                                               &sign, &t1, &t2, &t3);
-                std::string cai = BTP(ai);
-                std::string caj = BTP(aj);
-                std::string cak = BTP(ak);
-                std::string cal = BTP(al);
-                if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
+                for (int j = 0; (j < mmi.ltop_->idef.il[ftx].nr); j += interaction_function[ftx].nratoms+1)
                 {
-                    add_dih(fp, mmi.molProp()->getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdIDIHS);
-                }
-                else
-                {
-                    fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
-                            BTP(ai).c_str(), BTP(aj).c_str(), BTP(ak).c_str(), BTP(al).c_str());
+                    int    ai  = mmi.ltop_->idef.il[ftx].iatoms[j+1];
+                    int    aj  = mmi.ltop_->idef.il[ftx].iatoms[j+2];
+                    int    ak  = mmi.ltop_->idef.il[ftx].iatoms[j+3];
+                    int    al  = mmi.ltop_->idef.il[ftx].iatoms[j+4];
+                    double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
+                                                   mmi.x_[ak], mmi.x_[al],
+                                                   &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
+                                                   &sign, &t1, &t2, &t3);
+                    std::string cai, caj, cak, cal;
+                    if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
+                        pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
+                        pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak) &&
+                        pd.atypeToBtype(*mmi.topology_->atoms.atomtype[al], cal))
+                    {
+                        add_dih(fp, mmi.molProp()->getMolname().c_str(), b, 
+                                cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(),
+                                ang, dspacing, egd);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
+                                    ATP(ai), ATP(aj), ATP(ak), ATP(al));
+                    }
                 }
             }
         }
@@ -758,7 +753,7 @@ int alex_bastat(int argc, char *argv[])
     }
     update_pd(fp, b, pd, Dm, beta, kt, klin, kp);
 
-    alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), pd, compress);
+    writePoldata(opt2fn("-o", NFILE, fnm), pd, compress);
 
     printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
            b->nbond, b->nangle, b->ndih, b->nimp);

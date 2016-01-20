@@ -6,9 +6,9 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "gmx_simple_comm.h"
+
+#include <string.h>
 
 #include "gromacs/utility/fatalerror.h"
 #include <gromacs/utility/gmxmpi.h>

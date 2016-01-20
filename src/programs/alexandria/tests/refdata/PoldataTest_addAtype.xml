@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Bool Name="search valid">true</Bool>
   <Bool Name="elem">true</Bool>
   <Bool Name="desc">true</Bool>
   <Bool Name="atype">true</Bool>

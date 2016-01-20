@@ -92,7 +92,7 @@ class MyMol
         void MakeSpecialInteractions(bool bUseVsites);
 
         //! Fetch the force constants
-        void getForceConstants(Poldata * pd);
+        void getForceConstants(const Poldata &pd);
     public:
         rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix                    box;
@@ -124,10 +124,11 @@ class MyMol
         ~MyMol();
 
         //! Return my inner molprop
-        MolProp *molProp() { return mp_; }
+        MolProp *molProp() const { return mp_; }
+
         //! Generate the topology structure
         immStatus GenerateTopology(gmx_atomprop_t          ap,
-                                   Poldata                *pd,
+                                   const Poldata          &pd,
                                    const char             *lot,
                                    ChargeDistributionModel iModel,
                                    int                     nexcl,
@@ -135,7 +136,7 @@ class MyMol
                                    bool                    bPairs,
                                    bool                    bDih);
         //! Generate Charges
-        immStatus GenerateCharges(Poldata *pd, gmx_atomprop_t ap,
+        immStatus GenerateCharges(const Poldata &pd, gmx_atomprop_t ap,
                                   ChargeDistributionModel iModel,
                                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
                                   real hfac, real epsr,
@@ -152,34 +153,34 @@ class MyMol
         void PrintTopology(const char             *fn,
                            ChargeDistributionModel iModel,
                            bool                    bVerbose,
-                           Poldata                *pd,
+                           const Poldata          &pd,
                            gmx_atomprop_t          aps);
 
 
 
         //! Compute/derive global info about the molecule
-        void CalcQPol(Poldata * pd);
+        void CalcQPol(const Poldata &pd);
 
 
         //! Set the force field
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 
         //! Updated internal structures due to changes in pd
-        void UpdateIdef(Poldata *pd, bool bOpt[]);
+        void UpdateIdef(const Poldata &pd, bool bOpt[]);
 
         //! Get the force field
         std::string getForceField() { return forcefield_; }
 
         void CalcMultipoles();
 
-        void AddShells(Poldata *pd, ePolar epol, ChargeDistributionModel iModel);
+        void AddShells(const Poldata &pd, ePolar epol, ChargeDistributionModel iModel);
 
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
         immStatus GenerateGromacs(t_commrec *cr);
 
         void GenerateCube(ChargeDistributionModel iModel,
-                          Poldata                *pd,
+                          const Poldata          &pd,
                           real                    spacing,
                           const char             *reffn,
                           const char             *pcfn,
@@ -199,7 +200,5 @@ class MyMol
 const char *immsg(immStatus imm);
 
 }
-
-#define gmx_assert(n, m) if (n != m) { gmx_fatal(FARGS, "Variable %s = %d, should have been %d",#n, n, m); }
 
 #endif

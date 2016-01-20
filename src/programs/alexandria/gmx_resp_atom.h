@@ -19,7 +19,7 @@ class RespAtom
         RespAtom(int atomnumber, 
                  int atype,
                  const char *atomtype, 
-                 Poldata * pd,
+                 const Poldata &pd,
                  ChargeDistributionModel iDistributionModel, 
                  std::vector<std::string>  dzatoms);
         ~RespAtom();

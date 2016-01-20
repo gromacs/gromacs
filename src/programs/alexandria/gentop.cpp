@@ -54,6 +54,8 @@
 #include "gromacs/random/random.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -125,7 +127,6 @@ int alex_gentop(int argc, char *argv[])
     };
     gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    Poldata                         *pd;
     gmx_bool                         bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
     char                             ffname[STRLEN];
@@ -358,7 +359,7 @@ int alex_gentop(int argc, char *argv[])
     ePolar                    epol = (ePolar) get_option(polaropt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
-    if ((iChargeDistributionModel = Poldata::name2eemtype(cqdist[0])) == eqdNR)
+    if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
     {
         gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqdist[0]);
     }
@@ -366,15 +367,17 @@ int alex_gentop(int argc, char *argv[])
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
 
-    /* Read polarization stuff */
-    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
+    alexandria::Poldata pd;
+    try 
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, aps);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
-               pd->getNatypes());
+               static_cast<int>(pd.getNatypes()));
     }
 
     if (strlen(dbname) > 0)
@@ -420,7 +423,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"XXX";
         }
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd->getForceField().c_str());
+                  maxpot, nsymm, pd.getForceField().c_str());
         mps.push_back(mp);
         mpi = mps.begin();
     }

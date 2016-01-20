@@ -50,7 +50,10 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "stringutil.h"
 
@@ -218,8 +221,10 @@ static gmx_bool const_index_count(t_index_count *ic, char *name)
     return FALSE;
 }
 
-static void dump_index_count(t_index_count *ic, FILE *fp,
-                             ChargeDistributionModel iDistributionModel, Poldata * pd,
+static void dump_index_count(t_index_count *ic,
+                             FILE *fp,
+                             ChargeDistributionModel iDistributionModel, 
+                             const Poldata &pd,
                              gmx_bool bFitZeta)
 {
     int    i, j, nZeta, nZopt;
@@ -230,11 +235,11 @@ static void dump_index_count(t_index_count *ic, FILE *fp,
         fprintf(fp, "Name  Number  Action   #Zeta\n");
         for (i = 0; (i < ic->n); i++)
         {
-            nZeta = pd->getNzeta(iDistributionModel, ic->name[i]);
+            nZeta = pd.getNzeta(iDistributionModel, ic->name[i]);
             nZopt = 0;
             for (j = 0; (j < nZeta); j++)
             {
-                zz = pd->getZeta(iDistributionModel, ic->name[i], j);
+                zz = pd.getZeta(iDistributionModel, ic->name[i], j);
                 if (zz > 0)
                 {
                     nZopt++;
@@ -289,15 +294,15 @@ static int clean_index_count(t_index_count *ic, int minimum_data, FILE *fp)
     return nremove;
 }
 
-static void update_index_count_bool(t_index_count *ic, Poldata * pd,
+static void update_index_count_bool(t_index_count *ic, const Poldata &pd,
                                     const char *string, gmx_bool bSet,
                                     gmx_bool bAllowZero, ChargeDistributionModel iDistributionModel)
 {
-    std::vector<std::string> ptr = split(string, ' ');
+    std::vector<std::string> ptr = gmx::splitString(string);
     for (std::vector<std::string>::iterator k = ptr.begin();
          (k < ptr.end()); ++k)
     {
-        if (pd->haveEemSupport(iDistributionModel, k->c_str(), bAllowZero))
+        if (pd.haveEemSupport(iDistributionModel, k->c_str(), bAllowZero))
         {
             add_index_count(ic, k->c_str(), bSet);
         }
@@ -305,19 +310,19 @@ static void update_index_count_bool(t_index_count *ic, Poldata * pd,
 }
 
 static int check_data_sufficiency(FILE *fp,
-                                  std::vector<alexandria::MyMol> mol,
-                                  int minimum_data, Poldata * pd,
-                                  t_index_count *ic, ChargeDistributionModel iDistributionModel, char *opt_elem, char *const_elem,
+                                  std::vector<alexandria::MyMol> &mol,
+                                  int minimum_data, 
+                                  const Poldata &pd,
+                                  t_index_count *ic, 
+                                  ChargeDistributionModel iDistributionModel, 
+                                  char *opt_elem, char *const_elem,
                                   t_commrec *cr, gmx_bool bPol,
                                   gmx_bool bFitZeta)
 {
-    std::vector<alexandria::MyMol>::iterator   mmi;
-
-    int                                        j, nremove, nsupported;
-    gmx_mtop_atomloop_all_t                    aloop;
-    t_atom                                    *atom;
-    int                                        k, at_global;
-
+    int                      j, nremove, nsupported;
+    gmx_mtop_atomloop_all_t  aloop;
+    t_atom                  *atom;
+    int                      k, at_global;
 
     /* Parse opt_elem list to test which elements to optimize */
     if (NULL != const_elem)
@@ -330,57 +335,57 @@ static int check_data_sufficiency(FILE *fp,
     }
     else
     {
-        for (EempropsIterator eep = pd->getEempropsBegin();
-             eep != pd->getEempropsEnd(); eep++)
+        for (EempropsConstIterator eep = pd.BeginEemprops();
+             eep != pd.EndEemprops(); eep++)
         {
             if ((eep->getEqdModel() == iDistributionModel) &&
-                !const_index_count(ic, (char *)eep->getName().c_str()) &&
-                pd->haveEemSupport( iDistributionModel, eep->getName(), FALSE))
+                !const_index_count(ic, (char *)eep->getName()) &&
+                pd.haveEemSupport( iDistributionModel, eep->getName(), FALSE))
             {
-                add_index_count(ic, (char *)eep->getName().c_str(), FALSE);
+                add_index_count(ic, eep->getName(), FALSE);
             }
         }
     }
     sum_index_count(ic, cr);
     dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
-    for (mmi = mol.begin(); (mmi < mol.end()); mmi++)
+    for (auto &mmi : mol)
     {
-        if (mmi->eSupp != eSupportNo)
+        if (mmi.eSupp != eSupportNo)
         {
-            aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
+            aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
             k     = 0;
             while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom) &&
-                   (mmi->eSupp != eSupportNo))
+                   (mmi.eSupp != eSupportNo))
             {
                 if ((atom->atomnumber > 0) || !bPol)
                 {
-                    if (n_index_count(ic, *(mmi->topology_->atoms.atomtype[k])) == -1)
+                    if (n_index_count(ic, *(mmi.topology_->atoms.atomtype[k])) == -1)
                     {
                         if (debug)
                         {
                             fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                                    mmi->molProp()->getMolname().c_str(),
-                                    *(mmi->topology_->atoms.atomtype[k]));
+                                    mmi.molProp()->getMolname().c_str(),
+                                    *(mmi.topology_->atoms.atomtype[k]));
                         }
-                        mmi->eSupp = eSupportNo;
+                        mmi.eSupp = eSupportNo;
                     }
                 }
                 k++;
             }
-            if (mmi->eSupp != eSupportNo)
+            if (mmi.eSupp != eSupportNo)
             {
-                gmx_assert(k, mmi->topology_->atoms.nr);
-                aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
+                GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 1 in moldip.cpp");
+                aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
                 k     = 0;
                 while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                 {
                     if ((atom->atomnumber > 0) || !bPol)
                     {
-                        inc_index_count(ic, *(mmi->topology_->atoms.atomtype[k]));
+                        inc_index_count(ic, *(mmi.topology_->atoms.atomtype[k]));
                     }
                     k++;
                 }
-                gmx_assert(k, mmi->topology_->atoms.nr);
+                GMX_RELEASE_ASSERT(k == mmi.topology_->atoms.nr, "Inconsistency 2in moldip.cpp");
             }
         }
     }
@@ -389,35 +394,35 @@ static int check_data_sufficiency(FILE *fp,
         sum_index_count(ic, cr);
         dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
         nremove = 0;
-        for (mmi = mol.begin(); (mmi < mol.end()); mmi++)
+        for (auto &mmi : mol)
         {
-            if (mmi->eSupp != eSupportNo)
+            if (mmi.eSupp != eSupportNo)
             {
                 j     = 0;
-                aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
+                aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
                 while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                 {
-                    if (c_index_count(ic, *(mmi->topology_->atoms.atomtype[j])) < minimum_data)
+                    if (c_index_count(ic, *(mmi.topology_->atoms.atomtype[j])) < minimum_data)
                     {
                         if (debug)
                         {
                             fprintf(debug, "Removing %s because of no support for name %s\n",
-                                    mmi->molProp()->getMolname().c_str(),
-                                    *(mmi->topology_->atoms.atomtype[j]));
+                                    mmi.molProp()->getMolname().c_str(),
+                                    *(mmi.topology_->atoms.atomtype[j]));
                         }
                         break;
                     }
                     j++;
                 }
-                if (j < mmi->mtop_->natoms)
+                if (j < mmi.mtop_->natoms)
                 {
-                    aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
+                    aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
                     k     = 0;
                     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                     {
-                        dec_index_count(ic, *(mmi->topology_->atoms.atomtype[k++]));
+                        dec_index_count(ic, *(mmi.topology_->atoms.atomtype[k++]));
                     }
-                    mmi->eSupp = eSupportNo;
+                    mmi.eSupp = eSupportNo;
                     nremove++;
                 }
             }
@@ -434,14 +439,14 @@ static int check_data_sufficiency(FILE *fp,
     dump_index_count(ic, fp, iDistributionModel, pd, bFitZeta);
 
     nsupported = 0;
-    for (mmi = mol.begin(); (mmi < mol.end()); mmi++)
+    for (auto &mmi : mol)
     {
-        if (mmi->eSupp == eSupportLocal)
+        if (mmi.eSupp == eSupportLocal)
         {
             if (NULL != debug)
             {
                 fprintf(debug, "Supported molecule %s on CPU %d\n",
-                        mmi->molProp()->getMolname().c_str(), cr->nodeid);
+                        mmi.molProp()->getMolname().c_str(), cr->nodeid);
             }
             nsupported++;
         }
@@ -538,22 +543,18 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     _atomprop   = gmx_atomprop_init();
 
     /* Force field data */
-    if ((_pd = PoldataXml::read(pd_fn, _atomprop)) == NULL)
+    try 
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", pd_fn);
+        alexandria::readPoldata(pd_fn, pd_, _atomprop);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    if ((n = _pd->getNumprops(_iChargeDistributionModel)) == 0)
-    {
-        gmx_fatal(FARGS, "File %s does not contain the requested parameters for model %d", pd_fn, _iChargeDistributionModel);
-    }
-
-    nexcl = _pd->getNexcl();
+    nexcl = pd_.getNexcl();
 
     if (NULL != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
-                n, pd_fn);
+                static_cast<int>(pd_.getNatypes()), pd_fn);
         fprintf(fp, "---\n\n");
     }
 
@@ -564,7 +565,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         MolPropRead(fn, mp);
         for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            if (false == mpi->GenerateComposition(_pd))
+            if (false == mpi->GenerateComposition(pd_))
             {
                 mpi = mp.erase(mpi);
             }
@@ -584,7 +585,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     if (MASTER(_cr))
     {
         i = -1;
-        for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+        int n = 0;
+        for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); ++mpi)
         {
             if (imsTrain == gmx_molselect_status(gms, mpi->getIupac().c_str()))
             {
@@ -593,20 +595,14 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
                 mpnew.molProp()->Merge(mpi);
 
-                imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iChargeDistributionModel, nexcl,
+                imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
+                                             _iChargeDistributionModel, nexcl,
                                              false, false, edihNo);
 
                 if (_iChargeGenerationAlgorithm != eqgNONE)
                 {
                     if (immOK == imm)
                     {
-                        /*mpnew.gr_ = new Resp(_iChargeDistributionModel,
-                                                            TRUE, 0.001, 0.1,
-                                                            mpnew.getCharge(),
-                                                            1, 100, 5,
-                                                            TRUE, watoms, 5, TRUE, TRUE,
-                                                            1, TRUE,
-                                                            TRUE, NULL, seed);*/
                         mpnew.gr_ = new Resp(_iChargeDistributionModel, mpnew.molProp()->getCharge());
                         mpnew.gr_->setBAXpRESP(true);
                         mpnew.gr_->setZmin(1);
@@ -624,7 +620,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
                     if (immOK == imm)
                     {
-                        imm = mpnew.GenerateCharges(_pd, _atomprop,
+                        imm = mpnew.GenerateCharges(pd_, _atomprop,
                                                     _iChargeDistributionModel,
                                                     _iChargeGenerationAlgorithm,
                                                     _hfac, _epsr,
@@ -737,7 +733,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 fflush(debug);
             }
 
-            imm = mpnew.GenerateTopology(_atomprop, _pd, lot, _iChargeDistributionModel, nexcl,
+            imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel, nexcl,
                                          false, false, edihNo);
 
             if (immOK == imm)
@@ -765,7 +761,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-                imm = mpnew.GenerateCharges(_pd, _atomprop, _iChargeDistributionModel,
+                imm = mpnew.GenerateCharges(pd_, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm,
                                             _hfac, _epsr,
                                             lot, TRUE, NULL);
@@ -843,7 +839,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     {
         _nmol_support =
             check_data_sufficiency(MASTER(_cr) ? fp : NULL, _mymol,
-                                   minimum_data, _pd, _ic,
+                                   minimum_data, pd_, _ic,
                                    _iChargeDistributionModel, opt_elem, const_elem, _cr,
                                    _bPol, _bFitZeta);
         if (_nmol_support == 0)
@@ -939,7 +935,7 @@ void MolDip::CalcDeviation()
     }
     if (PAR(_cr))
     {
-        _pd->commEemprops(_cr);
+        pd_.commEemprops(_cr);
     }
     init_nrnb(&my_nrnb);
     snew(epot, 1);
@@ -964,7 +960,7 @@ void MolDip::CalcDeviation()
             if (NULL == mymol->qgen_)
             {
                 mymol->qgen_ = new
-                    GentopQgen(_pd, &(mymol->topology_->atoms), _atomprop,
+                    GentopQgen(pd_, &(mymol->topology_->atoms), _atomprop,
                                mymol->x_, _iChargeDistributionModel,
                                _iChargeGenerationAlgorithm,
                                _hfac,
@@ -973,7 +969,7 @@ void MolDip::CalcDeviation()
             /*if (strcmp(mymol->molname,"1-butene") == 0)
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = mymol->qgen_->generateChargesSm(debug,
-                                                 _pd, &(mymol->topology_->atoms),
+                                                 pd_, &(mymol->topology_->atoms),
                                                  1e-4, 100, _atomprop,
                                                  &(mymol->chieq));
             if (eQ != eQGEN_OK)
@@ -991,7 +987,7 @@ void MolDip::CalcDeviation()
                     atom->q = mymol->topology_->atoms.atom[j].q;
                     j++;
                 }
-                gmx_assert(j, mymol->topology_->atoms.nr);
+                GMX_RELEASE_ASSERT(j == mymol->topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
             }
 
             /* Now optimize the shell positions */
@@ -1018,8 +1014,8 @@ void MolDip::CalcDeviation()
             /* Compute the ESP on the points */
             if ((NULL != mymol->gr_) && _bQM)
             {
-                /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
-                //mymol->gr_->fillZeta( _pd);
+                /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),pd_);*/
+                //mymol->gr_->fillZeta( pd_);
                 mymol->gr_->fillZeta();
                 mymol->gr_->fillQ(&(mymol->topology_->atoms));
                 mymol->gr_->calcPot();

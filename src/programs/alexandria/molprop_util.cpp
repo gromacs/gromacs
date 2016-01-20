@@ -58,6 +58,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -74,26 +75,29 @@
 #include "poldata_xml.h"
 #include "stringutil.h"
 
-void generate_composition(std::vector<alexandria::MolProp> &mp, Poldata * pd)
+namespace alexandria
 {
-    int nOK = 0;
-    alexandria::MolPropIterator  mpi;
-    alexandria::CompositionSpecs cs;
 
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+void generate_composition(std::vector<MolProp> &mp, 
+                          const Poldata &pd)
+{
+    int              nOK = 0;
+    CompositionSpecs cs;
+
+    for (auto &mpi : mp)
     {
         for (alexandria::CompositionSpecIterator csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
         {
-            mpi->DeleteComposition(csi->name());
+            mpi.DeleteComposition(csi->name());
         }
-        if (true == mpi->GenerateComposition(pd))
+        if (true == mpi.GenerateComposition(pd))
         {
             nOK++;
         }
         else if (debug)
         {
             fprintf(debug, "Failed to make composition for %s\n",
-                    mpi->getMolname().c_str());
+                    mpi.getMolname().c_str());
         }
     }
     if (mp.size() > 1)
@@ -103,33 +107,13 @@ void generate_composition(std::vector<alexandria::MolProp> &mp, Poldata * pd)
     }
 }
 
-void generate_formula(std::vector<alexandria::MolProp> &mp, gmx_atomprop_t ap)
+void generate_formula(std::vector<MolProp> &mp,
+                      gmx_atomprop_t ap)
 {
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto &mpi : mp)
     {
-        mpi->GenerateFormula(ap);
+        mpi.GenerateFormula(ap);
     }
-}
-
-alexandria::MolProp atoms_2_molprop(char *molname, int natoms, char **smnames,
-                                    gmx_atomprop_t ap)
-{
-    alexandria::MolProp              mp;
-    alexandria::CompositionSpecs     cs;
-    alexandria::MolecularComposition mci(cs.searchCS(alexandria::iCalexandria)->name());
-    int i;
-
-    mp.SetMolname(molname);
-
-    for (i = 0; (i < natoms); i++)
-    {
-        alexandria::AtomNum an(smnames[i], 1);
-        mci.AddAtom(an);
-    }
-    mp.AddComposition(mci);
-    (void) mp.GenerateFormula(ap);
-
-    return mp;
 }
 
 static bool molprop_2_atoms(alexandria::MolProp mp, gmx_atomprop_t ap,
@@ -202,13 +186,12 @@ bool molprop_2_topology2(alexandria::MolProp mp, gmx_atomprop_t ap,
                          rvec **x, t_params plist[F_NRE],
                          int nexcl, t_excls **excls)
 {
-    alexandria::BondIterator bi;
-
-    int                      natom, ftb;
-    t_param                  b;
-    t_nextnb                 nnb;
-    t_restp                 *rtp;
-    t_topology              *top;
+    BondIterator  bi;
+    int           natom, ftb;
+    t_param       b;
+    t_nextnb      nnb;
+    t_restp      *rtp;
+    t_topology   *top;
 
     snew(rtp, 1);
     snew(*mytop, 1);
@@ -364,7 +347,8 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
 int merge_xml(int nfile, char **filens,
               std::vector<alexandria::MolProp> &mpout,
               char *outf, char *sorted, char *doubles,
-              gmx_atomprop_t ap, Poldata * pd,
+              gmx_atomprop_t ap, 
+              const Poldata &pd,
               bool bForceMerge)
 {
     std::vector<alexandria::MolProp> mp;
@@ -634,9 +618,9 @@ static void add_qmc_calc(t_qmcount *qmc, const char *method, const char *basis, 
     }
 }
 
-t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
-                             MolPropObservable                mpo,
-                             const char                      *fc_str)
+t_qmcount *find_calculations(std::vector<alexandria::MolProp> &mp,
+                             MolPropObservable                       mpo,
+                             const char                             *fc_str )
 {
     alexandria::MolPropIterator        mpi;
 
@@ -719,3 +703,5 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
 
     return qmc;
 }
+
+} // namespace alexandria
