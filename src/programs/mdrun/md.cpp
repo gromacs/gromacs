@@ -1321,7 +1321,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         /* #########   START SECOND UPDATE STEP ################# */
 
-        /* at the start of step, randomize the velocities (if vv. Restriction of Andersen controlled
+        /* at the start of step, randomize or scale the velocities ((if vv. Restriction of Andersen controlled
            in preprocessing */
 
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
