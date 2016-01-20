@@ -14,9 +14,12 @@
 namespace alexandria
 {
 
-RespAtom::RespAtom(int atomnumber, int atype,
-       const char *atomtype, Poldata * pd,
-       ChargeDistributionModel iDistributionModel, std::vector<std::string> dzatoms)
+RespAtom::RespAtom(int atomnumber, 
+                   int atype,
+                   const char *atomtype, 
+                   const Poldata &pd,
+                   ChargeDistributionModel iDistributionModel,
+                   std::vector<std::string> dzatoms)
 {
     int         k, zz = 0, shell;
     bool        bRestr;
@@ -69,10 +72,10 @@ RespAtom::RespAtom(int atomnumber, int atype,
         atomtype_new = _atomtype.substr(0, shell_name);
     }
 
-    _q[zz]            = pd->getQ( iDistributionModel, atomtype_new.c_str(), shell);
+    _q[zz]            = pd.getQ( iDistributionModel, atomtype_new.c_str(), shell);
     _zetaRef[zz]      =
-        _zeta[zz]     = pd->getZeta( iDistributionModel, atomtype_new.c_str(), shell);
-    _row[zz]          = pd->getRow( iDistributionModel, atomtype_new.c_str(), shell);
+        _zeta[zz]     = pd.getZeta( iDistributionModel, atomtype_new.c_str(), shell);
+    _row[zz]          = pd.getRow( iDistributionModel, atomtype_new.c_str(), shell);
 
     _bSetUpcorrectly = true;
 }

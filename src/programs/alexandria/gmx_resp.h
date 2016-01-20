@@ -108,16 +108,14 @@ class Resp
 
         void updateAtomtypes( t_atoms *atoms);
 
-        //void fillZeta( alexandria::Poldata * pd);
-
         void fillZeta();
 
         void fillQ( t_atoms *atoms);
 
         void addAtomCoords( rvec *x);
 
-        bool addAtomInfo( t_atoms              *atoms,
-                          alexandria::Poldata * pd);
+        bool addAtomInfo(t_atoms              *atoms,
+                         const alexandria::Poldata &pd);
 
         void getAtomInfo( t_atoms *atoms,
                           t_symtab *symtab, rvec **x);

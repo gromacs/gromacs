@@ -40,10 +40,13 @@
 
 #include "gauss_io.h"
 
+#include "config.h"
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
@@ -101,7 +104,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #if HAVE_LIBOPENBABEL2
 // Hack to make this compile!
 #undef ANGSTROM
-#if HAVE_SYS_TIME_H
+#ifdef HAVE_SYS_TIME_H
 #define KOKO HAVE_SYS_TIME_H
 #undef HAVE_SYS_TIME_H
 #endif
@@ -208,7 +211,6 @@ static void gmx_molprop_read_babel(const char *g98,
     // Now extract classification info.
     if (conv->SetOutFormat("fpt"))
     {
-
         const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
 
@@ -219,12 +221,12 @@ static void gmx_molprop_read_babel(const char *g98,
         OpenBabel::OBMol         mol2 = mol;
         std::string              ss = conv->WriteString(&mol2, false);
         std::vector<std::string> vs = gmx::splitString(ss);
-        for (size_t i = 0; (i < vs.size()); i++)
+        for (const auto &i : vs)
         {
             size_t j;
             for (j = 0; (j < nexclude); j++)
             {
-                if (strcasecmp(exclude[j], vs[i].c_str()) == 0)
+                if (strcasecmp(exclude[j], i.c_str()) == 0)
                 {
                     break;
                 }
@@ -232,12 +234,13 @@ static void gmx_molprop_read_babel(const char *g98,
             if (j == nexclude)
             {
                 char *ptr;
-                char *dup = strdup(vs[i].c_str());
+                char *dup = strdup(i.c_str());
                 while (NULL != (ptr = strchr(dup, '_')))
                 {
                     *ptr = ' ';
                 }
                 mpt.AddCategory(dup);
+                sfree(dup);
             }
         }
     }

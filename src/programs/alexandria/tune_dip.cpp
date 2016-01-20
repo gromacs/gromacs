@@ -30,6 +30,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -281,7 +283,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                 gmx_stats_add_point(lsq_q, mi->qESP[j], atom->q, 0, 0);
                 j++;
             }
-            gmx_assert(j, mi->topology_->atoms.nr);
+            GMX_RELEASE_ASSERT(j == mi->topology_->atoms.nr, "Inconsistency 1 in tune_dip.cpp.");
             fprintf(fp, "\n");
             n++;
         }
@@ -419,16 +421,16 @@ static double dipole_function(void *params, double v[])
         }
         else
         {
-            chi0 = md->_pd->getChi0( md->_iChargeDistributionModel, name);
+            chi0 = md->pd_.getChi0( md->_iChargeDistributionModel, name);
         }
 
-        qstr    = md->_pd->getQstr( md->_iChargeDistributionModel, name);
-        rowstr  = md->_pd->getRowstr( md->_iChargeDistributionModel, name);
-        nzeta   = md->_pd->getNzeta( md->_iChargeDistributionModel, name);
+        qstr    = md->pd_.getQstr( md->_iChargeDistributionModel, name);
+        rowstr  = md->pd_.getRowstr( md->_iChargeDistributionModel, name);
+        nzeta   = md->pd_.getNzeta( md->_iChargeDistributionModel, name);
         zstr[0] = '\0';
         for (zz = 0; (zz < nzeta); zz++)
         {
-            z = md->_pd->getZeta( md->_iChargeDistributionModel, name, zz);
+            z = md->pd_.getZeta( md->_iChargeDistributionModel, name, zz);
             if ((0 != z) && (md->_bFitZeta))
             {
                 z       = v[k++];
@@ -437,7 +439,7 @@ static double dipole_function(void *params, double v[])
             sprintf(buf, "  %g", z);
             strcat(zstr, buf);
         }
-        md->_pd->setEemprops( md->_iChargeDistributionModel, name, J0, chi0,
+        md->pd_.setEemprops( md->_iChargeDistributionModel, name, J0, chi0,
                               zstr, qstr, rowstr);
     }
     if (md->_bOptHfac)
@@ -517,7 +519,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
     {
         if (bStart)
         {
-            J00 = md->_pd->getJ00( md->_iChargeDistributionModel, name);
+            J00 = md->pd_.getJ00( md->_iChargeDistributionModel, name);
             xxx = guess_new_param(J00, stepsize, md->_J0_0, md->_J0_1, rng, bRand);
             if (bRand)
             {
@@ -535,7 +537,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
         }
         test_param[k++] = J00;
 
-        chi0 = md->_pd->getChi0( md->_iChargeDistributionModel, name);
+        chi0 = md->pd_.getChi0( md->_iChargeDistributionModel, name);
         if (strcasecmp(name, md->_fixchi) != 0)
         {
             if (bStart)
@@ -557,21 +559,21 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             }
             test_param[k++] = chi0;
         }
-        qstr = md->_pd->getQstr( md->_iChargeDistributionModel, name);
+        qstr = md->pd_.getQstr( md->_iChargeDistributionModel, name);
         if (qstr.size() == 0)
         {
             gmx_fatal(FARGS, "No qstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
-        rowstr = md->_pd->getRowstr( md->_iChargeDistributionModel, name);
+        rowstr = md->pd_.getRowstr( md->_iChargeDistributionModel, name);
         if (rowstr.size() == 0)
         {
             gmx_fatal(FARGS, "No rowstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
-        nzeta   = md->_pd->getNzeta( md->_iChargeDistributionModel, name);
+        nzeta   = md->pd_.getNzeta( md->_iChargeDistributionModel, name);
         zstr[0] = '\0';
         for (zz = 0; (zz < nzeta); zz++)
         {
-            zeta = md->_pd->getZeta( md->_iChargeDistributionModel, name, zz);
+            zeta = md->pd_.getZeta( md->_iChargeDistributionModel, name, zz);
             if ((md->_bFitZeta) && (0 != zeta))
             {
                 if (bStart)
@@ -589,7 +591,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             sprintf(buf, "  %10g", zeta);
             strcat(zstr, buf);
         }
-        md->_pd->setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
+        md->pd_.setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
                               zstr, qstr, rowstr);
         fprintf(fplog, "%-5s %10g %10g %10s\n", name, J00, chi0, zstr);
     }
@@ -635,10 +637,10 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             }
             if (md->_bFitZeta)
             {
-                nzeta  = md->_pd->getNzeta( md->_iChargeDistributionModel, name);
+                nzeta  = md->pd_.getNzeta( md->_iChargeDistributionModel, name);
                 for (i = 0; (i < nzeta); i++)
                 {
-                    zeta = md->_pd->getZeta( md->_iChargeDistributionModel, name, i);
+                    zeta = md->pd_.getZeta( md->_iChargeDistributionModel, name, i);
                     if (zeta > 0)
                     {
                         nparam++;
@@ -739,18 +741,18 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             while (name.size() != 0)
             {
                 J00    = start[k++];
-                chi0   = md->_pd->getChi0( md->_iChargeDistributionModel, name);
+                chi0   = md->pd_.getChi0( md->_iChargeDistributionModel, name);
                 if (strcasecmp(name.c_str(), md->_fixchi) != 0)
                 {
                     chi0 = start[k++];
                 }
-                qstr    = md->_pd->getQstr( md->_iChargeDistributionModel, name);
-                rowstr  = md->_pd->getRowstr( md->_iChargeDistributionModel, name);
-                nzeta   = md->_pd->getNzeta( md->_iChargeDistributionModel, name);
+                qstr    = md->pd_.getQstr( md->_iChargeDistributionModel, name);
+                rowstr  = md->pd_.getRowstr( md->_iChargeDistributionModel, name);
+                nzeta   = md->pd_.getNzeta( md->_iChargeDistributionModel, name);
                 zstr[0] = '\0';
                 for (zz = 0; (zz < nzeta); zz++)
                 {
-                    zeta = md->_pd->getZeta( md->_iChargeDistributionModel, name, zz);
+                    zeta = md->pd_.getZeta( md->_iChargeDistributionModel, name, zz);
                     if ((0 != zeta) && md->_bFitZeta)
                     {
                         zeta = start[k++];
@@ -758,14 +760,14 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                     sprintf(buf, " %g", zeta);
                     strcat(zstr, buf);
                 }
-                md->_pd->setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
+                md->pd_.setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
                                       zstr, qstr, rowstr);
             }
             if (md->_bOptHfac)
             {
                 md->_hfac = start[k++];
             }
-            gmx_assert(k, nparam);
+            GMX_RELEASE_ASSERT(k == nparam, "Inconsistency 2 in tune_dip.cpp");
 
             md->CalcDeviation();
             chi2        = sqrt(md->_ener[ermsTOT]);
@@ -971,7 +973,7 @@ int alex_tune_dip(int argc, char *argv[])
         return 0;
     }
 
-    ChargeDistributionModel   iChargeDistributionModel   = Poldata::name2eemtype(cqdist[0]);
+    ChargeDistributionModel   iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
     if (MASTER(cr))
@@ -1027,7 +1029,7 @@ int alex_tune_dip(int argc, char *argv[])
 
         gmx_ffclose(fp);
 
-        alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), md._pd, compress);
+        alexandria::writePoldata(opt2fn("-o", NFILE, fnm), md.pd_, compress);
     }
 
     return 0;

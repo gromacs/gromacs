@@ -51,6 +51,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -176,7 +177,7 @@ static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
     return false;
 }
 
-static void dump_csv(Poldata     *                     pd,
+static void dump_csv(const alexandria::Poldata        &pd,
                      std::vector<alexandria::MolProp> &mp,
                      gmx_molselect  *                  gms,
                      std::vector<pType>               &ptypes,
@@ -211,24 +212,27 @@ static void dump_csv(Poldata     *                     pd,
             for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
                  ani < mci->EndAtomNum(); ani++)
             {
-                const char  *atomname = ani->getAtom().c_str();
-                std::string  ptype    = pd->atypeToPtype(atomname);
-                unsigned int i;
-                for (i = 0; (i < ptypes.size()); i++)
+                std::string  ptype;
+                if (pd.atypeToPtype(ani->getAtom(), ptype))
                 {
-                    if (strcmp(ptype.c_str(), ptypes[i].name().c_str()) == 0)
+                    size_t i;
+                    for(i = 0; (i < ptypes.size()); i++)
                     {
-                        break;
+                        if (strcmp(ptype.c_str(), ptypes[i].name().c_str()) == 0)
+                        {
+                            break;
+                        }
                     }
-                }
-                if (i < ptypes.size())
-                {
-                    count[i] += ani->getNumber();
+                    if (i < ptypes.size())
+                    {
+                        count[i] += ani->getNumber();
+                    }
                 }
                 else if (NULL != debug)
                 {
                     fprintf(debug, "Supported molecule %s has unsupported or zeropol atom %s (ptype %s)",
-                            mpi->getMolname().c_str(), atomname, ptype.c_str());
+                            mpi->getMolname().c_str(), ani->getAtom().c_str(),
+                            ptype.c_str());
                 }
             }
             for (unsigned int i = 0; (i < ptypes.size()); i++)
@@ -250,7 +254,7 @@ static void dump_csv(Poldata     *                     pd,
 
 static int decompose_frag(FILE *fplog,
                           const char *hisfn,
-                          Poldata * pd,
+                          alexandria::Poldata &pd,
                           std::vector<alexandria::MolProp> &mp,
                           gmx_bool bQM, char *lot,
                           int mindata, gmx_molselect *gms,
@@ -273,8 +277,8 @@ static int decompose_frag(FILE *fplog,
     snew(x, mp.size()+1);
     // Copy all atom types into array. Set usage array.
     {
-        for (PtypeIterator ptype = pd->getPtypeBegin();
-             ptype != pd->getPtypeEnd(); ptype++)
+        for (alexandria::PtypeConstIterator ptype = pd.getPtypeBegin();
+             ptype != pd.getPtypeEnd(); ptype++)
         {
 
             if (!bZeroPol(ptype->getType().c_str(), zeropol))
@@ -323,8 +327,8 @@ static int decompose_frag(FILE *fplog,
                  (bUseMol && (ani < mci->EndAtomNum())); ++ani)
             {
                 const char *atomname = ani->getAtom().c_str();
-                std::string ptype    = pd->atypeToPtype( atomname);
-                if (0 == ptype.size())
+                std::string ptype;
+                if (pd.atypeToPtype(atomname, ptype))
                 {
                     if (NULL != fplog)
                     {
@@ -338,7 +342,7 @@ static int decompose_frag(FILE *fplog,
                     npolarizable++;
                 }
 #ifdef OLD
-                else if (0 == pd->getPtypePol( ptype.c_str(), &apol, &spol))
+                else if (0 == pd.getPtypePol( ptype.c_str(), &apol, &spol))
                 {
                     /* No polarizability found for this one, seems unnecessary
                      * as we first lookup the polarizability ptype */
@@ -389,7 +393,7 @@ static int decompose_frag(FILE *fplog,
         {
             pi->resetCopies();
 
-            if ((1 == pd->getPtypePol( pi->name(),
+            if ((1 == pd.getPtypePol( pi->name(),
                                        &pol, &sig_pol)) &&
                 ((pol == 0) || bForceFit))
             {
@@ -400,8 +404,9 @@ static int decompose_frag(FILE *fplog,
                     for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
                          ani < mci->EndAtomNum(); ani++)
                     {
-                        if (strcmp(pi->name().c_str(),
-                                   pd->atypeToPtype( ani->getAtom()).c_str()) == 0)
+                        std::string p;
+                        if (pd.atypeToPtype(ani->getAtom(), p) &&
+                            (p.compare(pi->name()) == 0))
                         {
                             pi->incCopies();
                             break;
@@ -584,7 +589,7 @@ static int decompose_frag(FILE *fplog,
         if ((estatsOK == (result1 = gmx_stats_get_average(i->stats(), &aver))) &&
             (estatsOK == (result2 = gmx_stats_get_sigma(i->stats(), &sigma))))
         {
-            pd->setPtypePolarizability( i->name().c_str(), aver, sigma);
+            pd.setPtypePolarizability( i->name().c_str(), aver, sigma);
             fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", i->name().c_str(), aver, sigma);
             int   nbins = 1+sqrt(nBootStrap);
             real *my_x, *my_y;
@@ -609,7 +614,7 @@ static int decompose_frag(FILE *fplog,
     if (bZero)
     {
         const char *null = (const char *)"0";
-        pd->addPtype( null, NULL, null, a0, 0);
+        pd.addPtype( null, NULL, null, a0, 0);
     }
     sfree(fpp);
     free_matrix(a);
@@ -703,7 +708,7 @@ int alex_tune_pol(int argc, char *argv[])
     MolPropSortAlgorithm                   mpsa;
 
     gmx_atomprop_t                         ap;
-    Poldata           *                    pd;
+    alexandria::Poldata                    pd;
     gmx_output_env_t *                     oenv;
     gmx_molselect  *                       gms;
     int                                    npa = sizeof(pa)/sizeof(pa[0]);
@@ -723,10 +728,12 @@ int alex_tune_pol(int argc, char *argv[])
         gmx_fatal(FARGS, "nBootStrap should be >= 1");
     }
     ap = gmx_atomprop_init();
-    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-di", NFILE, fnm), ap)) == NULL)
+    try
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+        alexandria::readPoldata(opt2fn_null("-di", NFILE, fnm), pd, ap);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
     int nwarn = merge_xml(nfiles, fns, mp, NULL, NULL, (char *)"double_dip.dat", ap, pd, TRUE);
     if (nwarn > maxwarn)
@@ -753,7 +760,7 @@ int alex_tune_pol(int argc, char *argv[])
     std::vector<std::string> zpol;
     if (NULL != zeropol)
     {
-        zpol = split(zeropol, ' ');
+        zpol = gmx::splitString(zeropol);
     }
 
     nalexandria_atypes = decompose_frag(fplog, opt2fn("-his", NFILE, fnm),
@@ -765,7 +772,7 @@ int alex_tune_pol(int argc, char *argv[])
 
     const char *pdout = opt2fn("-do", NFILE, fnm);
     fprintf(fplog, "Now writing force field file %s\n", pdout);
-    alexandria::PoldataXml::write(pdout, pd,  bCompress);
+    alexandria::writePoldata(pdout, pd,  bCompress);
 
     const char *atype = opt2fn("-atype", NFILE, fnm);
     fprintf(fplog, "Now writing LaTeX description of force field to %s\n", atype);

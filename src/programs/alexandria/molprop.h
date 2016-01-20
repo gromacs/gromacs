@@ -148,7 +148,7 @@ class AtomNum
         ~AtomNum() {};
 
         //! Return the name of the atom for this AtomNum
-        std::string getAtom() { return _catom; }
+        const std::string &getAtom() const { return _catom; }
 
         //! Set the name of the atom for this AtomNum
         void SetAtom(std::string catom) { _catom = catom; }
@@ -157,7 +157,7 @@ class AtomNum
         void SetAtom(const char *catom) { _catom.assign(catom); }
 
         //! Return the number of atoms for this AtomNum
-        int getNumber() { return _cnumber; }
+        int getNumber() const { return _cnumber; }
 
         //! Set the number of atoms for this AtomNum
         void SetNumber(int cnumber) { _cnumber = cnumber; }
@@ -216,7 +216,7 @@ class MolecularComposition
         ~MolecularComposition() {}
 
         //! Return the composition name
-        std::string getCompName() { return _compname; }
+        const std::string &getCompName() const { return _compname; }
 
         //! Set the composition name
         void SetCompName(std::string compname) { _compname = compname; }
@@ -313,16 +313,16 @@ class GenericProperty
         ~GenericProperty() {};
 
         //! Return the property type
-        std::string getType() { return type_; }
+        const std::string &getType() const { return type_; }
 
         //! Return the unit of the property
-        std::string getUnit() { return unit_; }
+        const std::string &getUnit() const { return unit_; }
 
         //! Return the temperature
-        double getTemperature() { return T_; }
+        double getTemperature() const { return T_; }
 
         //! Return the phase
-        ePhase getPhase() { return eP_; }
+        ePhase getPhase() const { return eP_; }
 
         //! Set the type of the property
         void SetType(std::string type);
@@ -388,22 +388,22 @@ class MolecularQuadrupole : public GenericProperty
         void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) { *xx = xx_; *yy = yy_; *zz = zz_; *xy = xy_; *xz = xz_; *yz = yz_; };
 
         //! Return the XX component of the quadrupole tensor
-        double getXX() { return xx_; }
+        double getXX() const { return xx_; }
 
         //! Return the YY component of the quadrupole tensor
-        double getYY() { return yy_; }
+        double getYY() const { return yy_; }
 
         //! Return the ZZ component of the quadrupole tensor
-        double getZZ() { return zz_; }
+        double getZZ() const { return zz_; }
 
         //! Return the XY component of the quadrupole tensor
-        double getXY() { return xy_; }
+        double getXY() const { return xy_; }
 
         //! Return the XZ component of the quadrupole tensor
-        double getXZ() { return xz_; }
+        double getXZ() const { return xz_; }
 
         //! Return the YZ component of the quadrupole tensor
-        double getYZ() { return yz_; }
+        double getYZ() const { return yz_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -461,7 +461,7 @@ class MolecularPolarizability : public GenericProperty
         //! get all the elements of the polarizability tensor
         void get(double *xx, double *yy, double *zz,
                  double *xy, double *xz, double *yz,
-                 double *average, double *error)
+                 double *average, double *error) const
         {
             *xx      = xx_; *yy = yy_; *zz = zz_;
             *xy      = xy_; *xz = xz_; *yz = yz_;
@@ -469,28 +469,28 @@ class MolecularPolarizability : public GenericProperty
         }
 
         //! Return the XX component of the polarizability tensor
-        double getXX() { return xx_; }
+        double getXX() const { return xx_; }
 
         //! Return the YY component of the polarizability tensor
-        double getYY() { return yy_; }
+        double getYY() const { return yy_; }
 
         //! Return the ZZ component of the polarizability tensor
-        double getZZ() { return zz_; }
+        double getZZ() const { return zz_; }
 
         //! Return the XY component of the polarizability tensor
-        double getXY() { return xy_; }
+        double getXY() const { return xy_; }
 
         //! Return the XZ component of the polarizability tensor
-        double getXZ() { return xz_; }
+        double getXZ() const { return xz_; }
 
         //! Return the YZ component of the polarizability tensor
-        double getYZ() { return yz_; }
+        double getYZ() const { return yz_; }
 
         //! Return the average of the polarizability tensor
-        double getAverage() { return _average; }
+        double getAverage() const { return _average; }
 
         //! Return the error in the polarizability tensor
-        double getError() { return _error; }
+        double getError() const { return _error; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -541,19 +541,19 @@ class MolecularEnergy : public GenericProperty
         void Set(double value, double error) { _value = value; _error = error; };
 
         //! get the value and error for this energy
-        void get(double *value, double *error) { *value = _value; *error = _error; };
+        void get(double *value, double *error) const { *value = _value; *error = _error; };
 
         //! Set the value for the energy
         void SetValue(double value) { _value = value; };
 
         //! Return the energy value
-        double getValue() { return _value; };
+        double getValue() const { return _value; };
 
         //! Set the error in the energy value
         void SetError(double error) { _value = error; };
 
         //! Return the error in the energy
-        double getError() { return _error; };
+        double getError() const { return _error; };
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -602,22 +602,23 @@ class MolecularDipole : public GenericProperty
         void Set(double x, double y, double z, double aver, double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
 
         //! Return all properties of this dipole
-        void get(double *x, double *y, double *z, double *aver, double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
+        void get(double *x, double *y, double *z, double *aver, double *error) const
+        { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
 
         //! Return the average dipole value
-        double getAver() { return _aver; }
+        double getAver() const { return _aver; }
 
         //! Return the error in the average dipole
-        double getError() { return _error; }
+        double getError() const { return _error; }
 
         //! Return the X component of the dipole
-        double getX() { return _x; }
+        double getX() const { return _x; }
 
         //! Return the Y component of the dipole
-        double getY() { return _y; }
+        double getY() const { return _y; }
 
         //! Return the Z component of the dipole
-        double getZ() { return _z; }
+        double getZ() const { return _z; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -678,31 +679,31 @@ class ElectrostaticPotential
         }
 
         //! Return the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        void get(char **xyz_unit, char **V_unit, int *espid, double *x, double *y, double *z, double *V)
+        void get(char **xyz_unit, char **V_unit, int *espid, double *x, double *y, double *z, double *V) const
         {
             *xyz_unit = strdup(xyzUnit_.c_str()); *V_unit = strdup(vUnit_.c_str()); *espid = espID_; *x = x_; *y = y_; *z = z_; *V = V_;
         };
 
         //! Return the unit of the coordinates
-        std::string getXYZunit() { return xyzUnit_; }
+        const std::string &getXYZunit() const { return xyzUnit_; }
 
         //! Return the unit of the potential
-        std::string getVunit() { return vUnit_; }
+        const std::string &getVunit() const { return vUnit_; }
 
         //! Return the ESP id from the original calculation
-        int getEspid() { return espID_; }
+        int getEspid() const { return espID_; }
 
         //! Return the X coordinate of the ESP point
-        double getX() { return x_; }
+        double getX() const { return x_; }
 
         //! Return the Y coordinate of the ESP point
-        double getY() { return y_; }
+        double getY() const { return y_; }
 
         //! Return the Z coordinate of the ESP point
-        double getZ() { return z_; }
+        double getZ() const { return z_; }
 
         //! Return the electrostatic potential at this point in space
-        double getV() { return V_; }
+        double getV() const { return V_; }
 
         //! Set the potential for this instance of the class
         void SetV(double V) { V_ = V; }
@@ -756,16 +757,17 @@ class Bond
         void Set(int ai, int aj, int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder; };
 
         //! Returns the ids of the atoms and the bondorder
-        void get(int *ai, int *aj, int *bondorder) { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
+        void get(int *ai, int *aj, int *bondorder) const 
+        { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
 
         //! Returns the first atom id
-        int getAi() { return _ai; }
+        int getAi() const { return _ai; }
 
         //! Returns the second atom id
-        int getAj() { return _aj; }
+        int getAj() const { return _aj; }
 
         //! Returns the bondorder
-        int getBondOrder() { return _bondorder; }
+        int getBondOrder() const { return _bondorder; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -815,7 +817,7 @@ class AtomicCharge : public GenericProperty
         void SetQ(double q) { _q = q; };
 
         //! Return the charge
-        double getQ() { return _q; }
+        double getQ() const { return _q; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -887,16 +889,16 @@ class CalcAtom
         AtomicChargeIterator EndQ() { return q_.end(); }
 
         //! Return the atom id of the atom
-        int getAtomid() { return atomID_; }
+        int getAtomid() const { return atomID_; }
 
         //! Return the name of the atom
-        std::string getName() { return name_; }
+        const std::string &getName() const { return name_; }
 
         //! Return the OpenBabel type of the atom
-        std::string getObtype() { return obType_; }
+        const std::string &getObtype() const { return obType_; }
 
         //! Return the unit of the coordinates of the atom
-        std::string getUnit() { return unit_; }
+        const std::string &getUnit() const { return unit_; }
 
         //! Set the unit of the coordinates of the atom
         void SetUnit(std::string unit);
@@ -908,16 +910,17 @@ class CalcAtom
         void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
 
         //! Return all the coordinates of the atom
-        void getCoords(double *x, double *y, double *z) { *x = x_; *y = y_; *z = z_; }
+        void getCoords(double *x, double *y, double *z) const 
+        { *x = x_; *y = y_; *z = z_; }
 
         //! Return the X coordinate of the atom
-        double getX() { return x_; }
+        double getX() const { return x_; }
 
         //! Return the Y coordinate of the atom
-        double getY() { return y_; }
+        double getY() const { return y_; }
 
         //! Return the Z coordinate of the atom
-        double getZ() { return z_; }
+        double getZ() const { return z_; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -1047,10 +1050,10 @@ class Experiment
         MolecularEnergyIterator EndEnergy()   { return energy_.end(); }
 
         //! Return the molecular conformation
-        std::string getConformation() { return conformation_; }
+        const std::string &getConformation() const { return conformation_; }
 
         //! Return the literature reference
-        std::string getReference() { return reference_; }
+        const std::string &getReference() const { return reference_; }
 
         //! Add a CalcAtom object to the list of atoms
         void AddAtom(CalcAtom ca);
@@ -1080,16 +1083,16 @@ class Experiment
         ElectrostaticPotentialIterator EndPotential() { return _potential.end(); }
 
         //! Return the program used to perform the calculation
-        std::string getProgram() { return _program; }
+        const std::string &getProgram() const { return _program; }
 
         //! Return the basis set used to perform the calculation
-        std::string getBasisset() { return _basisset; }
+        const std::string &getBasisset() const { return _basisset; }
 
         //! Return the method used to perform the calculation
-        std::string getMethod() { return _method; }
+        const std::string &getMethod() const { return _method; }
 
         //! Return the datafile from which the calculation output was extracted
-        std::string getDatafile() { return _datafile; }
+        const std::string &getDatafile() const { return _datafile; }
 
         /*! \brief
          * Convenience function that fetches a value from this experiment
@@ -1144,7 +1147,7 @@ class MolProp
         double                            _mass;
         int                               _charge, _multiplicity;
         std::string                       _formula, _texform, _molname, _iupac, _cas, _cid, _inchi;
-        std::vector<std::string>          _category;
+        std::vector<std::string>          category_;
         std::vector<MolecularComposition> _mol_comp;
         std::vector<Experiment>           _exper;
         std::vector<Bond>                 _bond;
@@ -1166,25 +1169,25 @@ class MolProp
         void SetIndex(int index) { _index = index; }
 
         //! Return the index number for sorting
-        int getIndex() { return _index; }
+        int getIndex() const { return _index; }
 
         //! Set the molecular mass
         void SetMass(double mass) { _mass = mass; }
 
         //! Return the molecular mass
-        double getMass() { return _mass; }
+        double getMass() const { return _mass; }
 
         //! Set the total charge of the molecule
         void SetCharge(double charge) { _charge = charge; }
 
         //! Return the total charge of the molecule
-        int getCharge() { return _charge; }
+        int getCharge() const { return _charge; }
 
         //! Set the multiplicity of the molecule
         void SetMultiplicity(int multiplicity) { _multiplicity = multiplicity; }
 
         //! Return the multiplicity  of the molecule
-        int getMultiplicity() { return _multiplicity; }
+        int getMultiplicity() const { return _multiplicity; }
 
         /*! \brief
          * Merge the content of another MolProp into this one
@@ -1205,10 +1208,10 @@ class MolProp
         void SetFormula(const std::string &formula) { _formula.assign(formula); }
 
         //! Return the formula
-        std::string formula() { return _formula; }
+        const std::string &formula() const { return _formula; }
 
         //! Return the LaTeX formula
-        std::string getTexFormula();
+        const std::string &getTexFormula() const;
 
         /*! \brief
          * Generate the chemical formula for this molecule based on atoms
@@ -1227,7 +1230,7 @@ class MolProp
         void SetMolname(std::string molname) { _molname = molname; }
 
         //! Return the molname
-        std::string getMolname() { return _molname; }
+        const std::string &getMolname() const { return _molname; }
 
         //! Set the IUPAC name
         void SetIupac(const char *iupac) { _iupac.assign(iupac); }
@@ -1236,7 +1239,17 @@ class MolProp
         void SetIupac(std::string iupac) { _iupac = iupac; }
 
         //! Return IUPAC name or, if not found, the molname
-        std::string getIupac() { if (_iupac.size() > 0) { return _iupac; } else{ return _molname; } }
+        const std::string &getIupac() const
+        {
+            if (_iupac.size() > 0) 
+            {
+                return _iupac; 
+            } 
+            else
+            {
+                return _molname; 
+            }
+        }
 
         //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
         void SetCas(const char *cas) { _cas.assign(cas); }
@@ -1245,7 +1258,7 @@ class MolProp
         void SetCas(std::string cas) { _cas.assign(cas); }
 
         //! Return the CAS (Chemical Abstract Service) identifier, see http:://www.cas.org
-        std::string getCas() { return _cas; }
+        const std::string &getCas() const { return _cas; }
 
         //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
         void SetCid(const char *cid) { _cid.assign(cid); }
@@ -1254,7 +1267,7 @@ class MolProp
         void SetCid(std::string cid) { _cid = cid; }
 
         //! Return the CID (Chemspider identifier) see http:://www.chemspider.com
-        std::string getCid() { return _cid; }
+        const std::string &getCid() const { return _cid; }
 
         //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
         void SetInchi(const char *inchi) { _inchi.assign(inchi); }
@@ -1263,7 +1276,7 @@ class MolProp
         void SetInchi(std::string inchi) { _inchi = inchi; }
 
         //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
-        std::string getInchi() { return _inchi; }
+        const std::string &getInchi() const { return _inchi; }
 
         //! Convenience function
         bool getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
@@ -1278,46 +1291,34 @@ class MolProp
                      double *value, double *error, double *T);
 
         //! Add a classification category for this molecule
-        void AddCategory(const char *category)
+        void AddCategory(const std::string &category)
         {
-            std::string _str(category); AddCategory(_str);
-        }
-
-        //! Add a classification category for this molecule
-        void AddCategory(std::string category)
-        {
-            if (SearchCategory(category) == 0) { _category.push_back(category); }
+            if (!SearchCategory(category)) { category_.push_back(category); }
         }
 
         //! Return the number of categories
-        int NCategory() { return _category.size(); }
+        int NCategory() { return category_.size(); }
 
         //! Return iterator Begin over categories
-        std::vector<std::string>::iterator BeginCategory() { return _category.begin(); }
+        std::vector<std::string>::iterator BeginCategory() { return category_.begin(); }
 
         //! Return iterator End over categories
-        std::vector<std::string>::iterator EndCategory() { return _category.end(); }
+        std::vector<std::string>::iterator EndCategory() { return category_.end(); }
 
         //! Return true if catname is an existing category
-        bool SearchCategory(const char *catname)
-        {
-            std::string _str(catname); return SearchCategory(_str);
-        }
-
-        //! Return true if catname is an existing category
-        bool SearchCategory(std::string catname);
+        bool SearchCategory(const std::string &catname) const;
 
         //! Delete a composition type if present
-        void DeleteComposition(std::string compname);
-
-        //! Delete a composition type if present
-        void DeleteComposition(const char *compname)
-        {
-            std::string _str(compname); DeleteComposition(_str);
-        }
+        void DeleteComposition(const std::string &compname);
 
         //! Add a composition entry
         void AddComposition(MolecularComposition mc);
+
+        std::vector<MolecularComposition> &MolComp() 
+        { return _mol_comp; }
+
+        const std::vector<MolecularComposition> &MolComp() const
+        { return _mol_comp; }
 
         //! Begin Iterator over MolecularCompostion items
         MolecularCompositionIterator BeginMolecularComposition() { return _mol_comp.begin(); }
@@ -1335,7 +1336,7 @@ class MolProp
         int NAtom();
 
         //! Routine to generate compositions based on calculation data
-        bool GenerateComposition(Poldata * pd);
+        bool GenerateComposition(const Poldata &pd);
 
         //! Returns boolean stating whether a particular composition is present
         bool HasComposition(char *composition) { std::string _str(composition); return HasComposition(_str); }
@@ -1350,7 +1351,7 @@ class MolProp
         bool BondExists(Bond b);
 
         //! Return the number of Bond elements
-        int NBond() { return _bond.size(); }
+        int NBond() const { return _bond.size(); }
 
         //! Begin Iterator over Bond elements
         BondIterator BeginBond() { return _bond.begin(); }
@@ -1368,7 +1369,7 @@ class MolProp
                    (int)_exper.size());
         }
         //! Return the number of experiments
-        int NExperiment() { return _exper.size(); }
+        int NExperiment() const { return _exper.size(); }
 
         //! Iterator Begin over experiments
         ExperimentIterator BeginExperiment() { return _exper.begin(); }
@@ -1417,6 +1418,7 @@ class MolProp
 };
 //! Iterates over MolProp items
 typedef std::vector<MolProp>::iterator MolPropIterator;
+typedef std::vector<MolProp>::const_iterator MolPropConstIterator;
 
 /*! \brief Utility to compare temperatures
  *

@@ -161,9 +161,7 @@ void LongTable::printHLine()
     fprintf(fp_, "\\hline\n");
 }
 
-}
-
-static void stats_header(alexandria::LongTable &lt,
+static void stats_header(LongTable &lt,
                          MolPropObservable      mpo,
                          t_qmcount             *qmc,
                          iMolSelect             ims)
@@ -215,26 +213,26 @@ static void stats_header(alexandria::LongTable &lt,
     lt.printHeader();
 }
 
-void gmx_molprop_stats_table(FILE                            *fp,
-                             MolPropObservable                mpo,
-                             std::vector<alexandria::MolProp> mp,
-                             t_qmcount                       *qmc,
-                             char                            *exp_type,
-                             double                           outlier,
-                             alexandria::CategoryList         cList,
-                             gmx_molselect *                 gms,
-                             iMolSelect                       ims)
+void gmx_molprop_stats_table(FILE                 *fp,
+                             MolPropObservable     mpo,
+                             std::vector<MolProp> &mp,
+                             t_qmcount            *qmc,
+                             char                 *exp_type,
+                             double                outlier,
+                             CategoryList          cList,
+                             gmx_molselect        *gms,
+                             iMolSelect            ims)
 {
-    std::vector<alexandria::MolProp>::iterator mpi;
+    std::vector<MolProp>::iterator mpi;
     std::vector<std::string>::iterator         si;
     int                                        k, N;
     double                                     exp_val, qm_val;
     real                                       rms, R, a, da, b, db, chi2;
     char                                       buf[256];
     gmx_stats_t                                lsq, *lsqtot;
-    alexandria::LongTable                      lt(fp, true, NULL);
-    alexandria::CompositionSpecs               cs;
-    const char                                *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    LongTable                      lt(fp, true, NULL);
+    CompositionSpecs               cs;
+    const char                                *alex = cs.searchCS(iCalexandria)->name();
 
     if (0 == cList.nCategories())
     {
@@ -244,7 +242,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
 
     stats_header(lt, mpo, qmc, ims);
 
-    for (alexandria::CategoryListElementIterator i = cList.beginCategories();
+    for (CategoryListElementIterator i = cList.beginCategories();
          (i < cList.endCategories()); ++i)
     {
         std::string catbuf;
@@ -259,28 +257,28 @@ void gmx_molprop_stats_table(FILE                            *fp,
             lsq = gmx_stats_init();
             if (strcmp(exp_type, qmc->type[k]) == 0)
             {
-                for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+                for (auto &mpi : mp)
                 {
-                    if ((i->hasMolecule(mpi->getIupac())) &&
-                        (mpi->SearchCategory(i->getName()) == 1))
+                    if ((i->hasMolecule(mpi.getIupac())) &&
+                        (mpi.SearchCategory(i->getName()) == 1))
                     {
                         double exp_err = 0;
                         double Texp    = -1;
-                        bool   bExp    = mpi->getProp(mpo, iqmExp, NULL, NULL,
-                                                      exp_type, &exp_val, &exp_err, &Texp);
+                        bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
+                                                     exp_type, &exp_val, &exp_err, &Texp);
                         if (bExp)
                         {
                             double qm_err = 0;
                             double Tqm    = Texp;
-                            bool   bQM    = mpi->getProp(mpo, iqmQM, lot, NULL,
-                                                         qmc->type[k], &qm_val, &qm_err, &Tqm);
+                            bool   bQM    = mpi.getProp(mpo, iqmQM, lot, NULL,
+                                                        qmc->type[k], &qm_val, &qm_err, &Tqm);
                             //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                             if (bQM)
                             {
                                 if (debug)
                                 {
                                     fprintf(debug, "%s %s k = %d - TAB4\n",
-                                            mpi->getMolname().c_str(),
+                                            mpi.getMolname().c_str(),
                                             i->getName().c_str(), k);
                                 }
                                 gmx_stats_add_point(lsq, exp_val, qm_val, exp_err, qm_err);
@@ -459,7 +457,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
     sfree(lsqtot);
 }
 
-static void composition_header(alexandria::LongTable &lt,
+static void composition_header(LongTable &lt,
                                iMolSelect             ims)
 {
     char caption[STRLEN];
@@ -473,16 +471,16 @@ static void composition_header(alexandria::LongTable &lt,
     lt.printHeader();
 }
 
-void gmx_molprop_composition_table(FILE *fp, std::vector<alexandria::MolProp> mp,
+void gmx_molprop_composition_table(FILE *fp, std::vector<MolProp> mp,
                                    gmx_molselect *gms, iMolSelect ims)
 {
-    std::vector<alexandria::MolProp>::iterator mpi;
-    alexandria::MolecularCompositionIterator   mci;
+    std::vector<MolProp>::iterator mpi;
+    MolecularCompositionIterator   mci;
     int                                        q, m, iline, nprint;
     char                                       qbuf[32], longbuf[STRLEN], buf[256];
-    alexandria::LongTable                      lt(fp, true, "small");
-    alexandria::CompositionSpecs               cs;
-    const char                                *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    LongTable                      lt(fp, true, "small");
+    CompositionSpecs               cs;
+    const char                                *alex = cs.searchCS(iCalexandria)->name();
 
     nprint = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
@@ -531,10 +529,10 @@ void gmx_molprop_composition_table(FILE *fp, std::vector<alexandria::MolProp> mp
                      mpi->getIupac().c_str(),
                      qbuf,
                      mpi->getTexFormula().c_str());
-            mci = mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());
+            mci = mpi->SearchMolecularComposition(cs.searchCS(iCalexandria)->name());
             if (mci != mpi->EndMolecularComposition())
             {
-                alexandria::AtomNumIterator ani;
+                AtomNumIterator ani;
 
                 for (ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
                 {
@@ -550,7 +548,7 @@ void gmx_molprop_composition_table(FILE *fp, std::vector<alexandria::MolProp> mp
 }
 
 
-static void category_header(alexandria::LongTable &lt)
+static void category_header(LongTable &lt)
 {
     char longbuf[STRLEN];
 
@@ -565,13 +563,13 @@ static void category_header(alexandria::LongTable &lt)
 
 void gmx_molprop_category_table(FILE                             *fp,
                                 int                               catmin,
-                                alexandria::CategoryList          cList)
+                                CategoryList          cList)
 {
     if (cList.nCategories() > 0)
     {
-        alexandria::LongTable lt(fp, true, "small");
+        LongTable lt(fp, true, "small");
         category_header(lt);
-        for (alexandria::CategoryListElementIterator i = cList.beginCategories();
+        for (CategoryListElementIterator i = cList.beginCategories();
              (i < cList.endCategories()); ++i)
         {
             std::string longbuf;
@@ -604,10 +602,10 @@ void gmx_molprop_category_table(FILE                             *fp,
     }
 }
 
-static void atomtype_tab_header(alexandria::LongTable &lt)
+static void atomtype_tab_header(LongTable &lt)
 {
     char longbuf[STRLEN];
-    alexandria::CompositionSpecs cs;
+    CompositionSpecs cs;
 
     lt.setColumns("ccccccc");
 
@@ -617,8 +615,8 @@ static void atomtype_tab_header(alexandria::LongTable &lt)
     snprintf(longbuf, STRLEN, "Name  & N$_{Exp}$ & N$_{QM}$ & \\multicolumn{4}{c}{Polarizability}");
     lt.addHeadLine(longbuf);
     snprintf(longbuf, STRLEN, "& & & %s ($\\sigma_{AX}$) & Ahc & Ahp & %s ",
-             cs.searchCS(alexandria::iCalexandria)->abbreviation(),
-             cs.searchCS(alexandria::iCbosque)->abbreviation());
+             cs.searchCS(iCalexandria)->abbreviation(),
+             cs.searchCS(iCbosque)->abbreviation());
     lt.addHeadLine(longbuf);
     lt.printHeader();
 }
@@ -629,19 +627,19 @@ typedef struct {
     int         nexp, nqm;
 } t_sm_lsq;
 
-static void gmx_molprop_atomtype_polar_table(FILE                            *fp,
-                                             Poldata                         *pd,
-                                             std::vector<alexandria::MolProp> mp,
-                                             char                            *lot,
-                                             char                            *exp_type)
+static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
+                                             Poldata              &pd,
+                                             std::vector<MolProp> &mp,
+                                             char                 *lot,
+                                             char                 *exp_type)
 {
-    std::vector<alexandria::MolProp>::iterator mpi;
-    double                                     ahc, ahp, bos_pol;
-    char                                       longbuf[STRLEN];
-    MolPropObservable                          mpo = MPO_POLARIZABILITY;
-    alexandria::LongTable                      lt(fp, false, NULL);
-    alexandria::CompositionSpecs               cs;
-    const char                                *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    std::vector<MolProp>::iterator mpi;
+    double                         ahc, ahp, bos_pol;
+    char                           longbuf[STRLEN];
+    MolPropObservable              mpo = MPO_POLARIZABILITY;
+    LongTable                      lt(fp, false, NULL);
+    CompositionSpecs               cs;
+    const char                     *alex = cs.searchCS(iCalexandria)->name();
 
     /* Prepare printing it! */
     atomtype_tab_header(lt);
@@ -651,8 +649,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
      * do not need to have the same sets of types,
      * as we check for the type name.
      */
-    for (PtypeIterator pType = pd->getPtypeBegin();
-         pType != pd->getPtypeEnd(); pType++)
+    for (PtypeConstIterator pType = pd.getPtypeBegin();
+         pType != pd.getPtypeEnd(); pType++)
     {
         if (pType->getPolarizability() > 0)
         {
@@ -663,19 +661,18 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
             /* Now loop over the poltypes and count number of occurrences
              * in molecules
              */
-            for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+            for (auto &mpi : mp)
             {
-                alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(alex);
+                MolecularCompositionIterator mci = mpi.SearchMolecularComposition(alex);
 
-                if (mci != mpi->EndMolecularComposition())
+                if (mci != mpi.EndMolecularComposition())
                 {
                     bool bFound = false;
 
-                    for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
+                    for (AtomNumIterator ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
                     {
-                        std::string pt =
-                            pd->atypeToPtype(ani->getAtom());
-                        if ((0 != pt.size()) && (strcasecmp(pt.c_str(), pType->getType().c_str()) == 0))
+                        std::string pt;
+                        if (pd.atypeToPtype(ani->getAtom(), pt))
                         {
                             bFound = true;
                         }
@@ -683,11 +680,11 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
                     if (bFound)
                     {
                         double val, T;
-                        if (mpi->getProp(mpo, iqmExp, lot, NULL, exp_type, &val, NULL, &T))
+                        if (mpi.getProp(mpo, iqmExp, lot, NULL, exp_type, &val, NULL, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi->getProp(mpo, iqmQM, lot, NULL, NULL, &val, NULL, &T))
+                        else if (mpi.getProp(mpo, iqmQM, lot, NULL, NULL, &val, NULL, &T))
                         {
                             nqm++;
                         }
@@ -697,12 +694,12 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 
             /* Determine Miller and Bosque polarizabilities for this Alexandria element */
             ahc = ahp = bos_pol = 0;
-            if (1 == pd->getMillerPol(pType->getMiller(),
+            if (1 == pd.getMillerPol(pType->getMiller(),
                                       &atomnumber, &ahc, &ahp))
             {
                 ahc = (4.0/atomnumber)*gmx::square(ahc);
             }
-            if (0 == pd->getBosquePol(pType->getBosque(), &bos_pol))
+            if (0 == pd.getBosquePol(pType->getBosque(), &bos_pol))
             {
                 bos_pol = 0;
             }
@@ -728,7 +725,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
     fflush(fp);
 }
 
-static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
+static void gmx_molprop_atomtype_dip_table(FILE    *fp, 
+                                           Poldata &pd)
 {
     int         i, k, m, cur = 0;
     std::string gt_type[2] = { "", "" };
@@ -743,7 +741,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     int                     npcol[NEQG]  = { 2, 3, 3 };
     const char             *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
     int                     ncol;
-    alexandria::LongTable   lt(fp, true, NULL);
+    LongTable   lt(fp, true, NULL);
 
     ncol = 1;
     for (i = 0; (i < NEQG); i++)
@@ -758,7 +756,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     for (i = 0; (i < NEQG); i++)
     {
         snprintf(buf, 256, " & \\multicolumn{%d}{c}{%s}", npcol[i],
-                 Poldata::getEemtypeName(eqgcol[i]).c_str());
+                 getEemtypeName(eqgcol[i]));
         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
     }
     lt.addHeadLine(longbuf);
@@ -775,8 +773,8 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     lt.addHeadLine(longbuf);
     lt.printHeader();
 
-    for (FfatypeIterator aType = pd->getAtypeBegin();
-         aType != pd->getAtypeEnd(); aType++)
+    for (FfatypeIterator aType = pd.getAtypeBegin();
+         aType != pd.getAtypeEnd(); aType++)
     {
         gt_type[cur] = aType->getType();
         if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(), gt_type[cur].c_str()) != 0)))
@@ -784,20 +782,20 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
             snprintf(longbuf, STRLEN, "%s\n", gt_type[cur].c_str());
             for (k = 0; (k < NEQG); k++)
             {
-                if (pd->haveEemSupport(eqgcol[k], gt_type[cur], false))
+                if (pd.haveEemSupport(eqgcol[k], gt_type[cur], false))
                 {
-                    snprintf(buf, 256, " & %.3f", pd->getJ00(eqgcol[k], gt_type[cur]));
+                    snprintf(buf, 256, " & %.3f", pd.getJ00(eqgcol[k], gt_type[cur]));
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
-                    snprintf(buf, 256, " & %.3f", pd->getChi0(eqgcol[k], gt_type[cur]));
+                    snprintf(buf, 256, " & %.3f", pd.getChi0(eqgcol[k], gt_type[cur]));
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     if (npcol[k] == 3)
                     {
-                        snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 1));
+                        snprintf(buf, 256, " & %.3f", pd.getZeta(eqgcol[k], gt_type[cur], 1));
                         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     }
                     if (npcol[k] == 4)
                     {
-                        snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 2));
+                        snprintf(buf, 256, " & %.3f", pd.getZeta(eqgcol[k], gt_type[cur], 2));
                         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     }
                 }
@@ -817,10 +815,12 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     lt.printFooter();
 }
 
-void gmx_molprop_atomtype_table(FILE *fp, bool bPolar,
-                                Poldata  *pd,
-                                std::vector<alexandria::MolProp> mp,
-                                char *lot, char *exp_type)
+void gmx_molprop_atomtype_table(FILE *fp, 
+                                bool bPolar,
+                                Poldata &pd,
+                                std::vector<MolProp> &mp,
+                                char *lot,
+                                char *exp_type)
 {
     if (bPolar)
     {
@@ -832,7 +832,7 @@ void gmx_molprop_atomtype_table(FILE *fp, bool bPolar,
     }
 }
 
-static void prop_header(alexandria::LongTable &lt,
+static void prop_header(LongTable &lt,
                         const char            *property,
                         const char            *unit,
                         real                   rel_toler,
@@ -972,14 +972,14 @@ class CalcData
 
 void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             real rel_toler, real abs_toler,
-                            std::vector<alexandria::MolProp> mp,
+                            std::vector<MolProp> mp,
                             t_qmcount *qmc,
                             const char *exp_type, bool bPrintAll,
                             bool bPrintBasis, bool bPrintMultQ,
                             gmx_molselect *gms, iMolSelect ims)
 {
-    alexandria::MolecularQuadrupoleIterator qi;
-    alexandria::MolecularEnergyIterator     mei;
+    MolecularQuadrupoleIterator qi;
+    MolecularEnergyIterator     mei;
 
     int                                     j, iprint = 0;
 #define BLEN 1024
@@ -989,13 +989,13 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     double                                  dvec[DIM];
     tensor                                  quadrupole;
     bool                                    bPrintConf;
-    alexandria::CompositionSpecs            cs;
-    const char                             *alex = cs.searchCS(alexandria::iCalexandria)->name();
+    CompositionSpecs            cs;
+    const char                             *alex = cs.searchCS(iCalexandria)->name();
 
-    alexandria::LongTable                   lt(fp, true, "small");
+    LongTable                   lt(fp, true, "small");
 
     nprint = 0;
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
             (mpi->HasComposition(alex)))
@@ -1011,19 +1011,19 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     prop_header(lt, mpo_name[mpo], mpo_unit[mpo],
                 rel_toler, abs_toler, qmc,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
             (mpi->HasComposition(alex)))
         {
             std::vector<ExpData>  ed;
             std::vector<CalcData> cd;
-            for (alexandria::ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
+            for (ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
             {
                 switch (mpo)
                 {
                     case MPO_DIPOLE:
-                        for (alexandria::MolecularDipoleIterator mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
+                        for (MolecularDipoleIterator mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
                         {
                             if (mdi->getType().compare(exp_type) == 0)
                             {
@@ -1038,7 +1038,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                         }
                         break;
                     case MPO_POLARIZABILITY:
-                        for (alexandria::MolecularPolarizabilityIterator mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
+                        for (MolecularPolarizabilityIterator mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
                         {
                             if (mdi->getType().compare(exp_type) == 0)
                             {
@@ -1204,3 +1204,5 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     }
     lt.printFooter();
 }
+
+} // namespace

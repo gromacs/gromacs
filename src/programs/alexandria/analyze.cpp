@@ -44,15 +44,17 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/utility/pleasecite.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "categories.h"
@@ -65,9 +67,9 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 
-static void calc_frag_miller(Poldata     *                     pd,
+static void calc_frag_miller(alexandria::Poldata              &pd,
                              std::vector<alexandria::MolProp> &mp,
-                             gmx_molselect  *                  gms)
+                             gmx_molselect                    *gms)
 {
     double                       bos0, polar, sig_pol;
 
@@ -78,14 +80,14 @@ static void calc_frag_miller(Poldata     *                     pd,
     alexandria::CompositionSpecs cs;
 
     ang3    = unit2string(eg2cAngstrom3);
-    if (0 == pd->getBosquePol( null, &bos0))
+    if (0 == pd.getBosquePol( null, &bos0))
     {
         gmx_fatal(FARGS, "Can not find Bosque polarizability for %s", null);
     }
 
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto &mpi : mp)
     {
-        const char *iupac = mpi->getIupac().c_str();
+        const char *iupac = mpi.getIupac().c_str();
         ims = gmx_molselect_status(gms, iupac);
         if ((ims == imsTrain) || (ims == imsTest))
         {
@@ -93,8 +95,8 @@ static void calc_frag_miller(Poldata     *                     pd,
             {
                 alexandria::iComp ic = csi->iC();
                 alexandria::MolecularCompositionIterator mci =
-                    mpi->SearchMolecularComposition(csi->name());
-                if (mci != mpi->EndMolecularComposition())
+                    mpi.SearchMolecularComposition(csi->name());
+                if (mci != mpi.EndMolecularComposition())
                 {
                     double p         = 0, sp = 0;
                     double ahc       = 0, ahp = 0;
@@ -107,16 +109,16 @@ static void calc_frag_miller(Poldata     *                     pd,
                         switch (ic)
                         {
                             case alexandria::iCalexandria:
-                                bSupport = (pd->getAtypePol( (char *)atomname, &polar, &sig_pol) == 1);
+                                bSupport = (pd.getAtypePol( (char *)atomname, &polar, &sig_pol) == 1);
                                 break;
                             case alexandria::iCbosque:
-                                bSupport = (pd->getBosquePol( (char *)atomname, &polar) == 1);
+                                bSupport = (pd.getBosquePol( (char *)atomname, &polar) == 1);
                                 sig_pol  = 0;
                                 break;
                             case alexandria::iCmiller:
                                 double tau_ahc, alpha_ahp;
                                 int    atomnumber;
-                                bSupport = (pd->getMillerPol( (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
+                                bSupport = (pd.getMillerPol( (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
 
                                 ahc   += tau_ahc*natom;
                                 ahp   += alpha_ahp*natom;
@@ -146,13 +148,13 @@ static void calc_frag_miller(Poldata     *                     pd,
                             ahc = 4*gmx::square(ahc)/Nelec;
                             alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
-                            mpi->AddExperiment(calc1);
+                            mpi.AddExperiment(calc1);
 
                             alexandria::Experiment              calc2(program, type, (char *)"ahp",
                                                                       ref, minimum, nofile);
                             alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahp, 0);
                             calc2.AddPolar(md2);
-                            mpi->AddExperiment(calc2);
+                            mpi.AddExperiment(calc2);
                         }
                         else
                         {
@@ -160,7 +162,7 @@ static void calc_frag_miller(Poldata     *                     pd,
                                                                      ref, minimum, nofile);
                             alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
-                            mpi->AddExperiment(calc);
+                            mpi.AddExperiment(calc);
                             if (NULL != debug)
                             {
                                 fprintf(debug, "Added polarizability %g for %s\n", p, iupac);
@@ -174,13 +176,13 @@ static void calc_frag_miller(Poldata     *                     pd,
 }
 
 static void write_corr_xvg(const char *fn,
-                           std::vector<alexandria::MolProp> mp,
-                           MolPropObservable mpo, t_qmcount *qmc,
+                           std::vector<alexandria::MolProp> &mp,
+                           MolPropObservable mpo, 
+                           alexandria::t_qmcount *qmc,
                            real rtoler, real atoler,
                            const gmx_output_env_t *oenv, gmx_molselect *gms,
                            char *exp_type)
 {
-    alexandria::MolPropIterator mpi;
     FILE                       *fp;
     int    i, k, nout;
     iMolSelect                  ims;
@@ -207,19 +209,19 @@ static void write_corr_xvg(const char *fn,
             fprintf(debug, "QM: %s\n", qmc->lot[i]);
         }
         nout = 0;
-        for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+        for (auto &mpi : mp)
         {
-            ims = gmx_molselect_status(gms, mpi->getIupac().c_str());
+            ims = gmx_molselect_status(gms, mpi.getIupac().c_str());
             if ((ims == imsTrain) || (ims == imsTest))
             {
                 for (k = 0; (k < qmc->nconf); k++)
                 {
                     double Texp = -1;
-                    bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL,
+                    bool   bExp = mpi.getProp(mpo, iqmExp, NULL, NULL,
                                                exp_type,
                                                &exp_val, NULL, &Texp);
                     double Tqm  = Texp;
-                    bool   bQM  = mpi->getProp(mpo, iqmQM, lbuf, qmc->conf[k],
+                    bool   bQM  = mpi.getProp(mpo, iqmQM, lbuf, qmc->conf[k],
                                                qmc->type[i],
                                                &qm_val, &qm_error, &Tqm);
                     if (bExp && bQM && (strcmp(exp_type, qmc->type[i]) == 0))
@@ -231,13 +233,13 @@ static void write_corr_xvg(const char *fn,
                              ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                         {
                             fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g\n",
-                                    mpi->getIupac().c_str(), exp_val, qm_val, qm_error);
+                                    mpi.getIupac().c_str(), exp_val, qm_val, qm_error);
                             nout++;
                         }
                     }
                     else if (NULL != debug)
                     {
-                        fprintf(debug, "%s bQM = %d bExp = %d\n", mpi->getMolname().c_str(),
+                        fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(),
                                 bQM ? 1 : 0, bExp ? 1 : 0);
                     }
                 }
@@ -283,7 +285,7 @@ static void add_refc(t_refcount *rc, const char *ref)
 }
 
 static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
-                                Poldata * pd,
+                                alexandria::Poldata &pd,
                                 gmx_bool bCalcPol,
                                 MolPropObservable mpo, char *exp_type,
                                 char *lot,
@@ -303,7 +305,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     alexandria::CategoryList       cList;
     FILE                          *fp, *gp;
     int                            i, ntot;
-    t_qmcount                     *qmc;
+    alexandria::t_qmcount         *qmc;
     t_refcount                    *rc;
     double                         T, value, error, vec[3];
     tensor                         quadrupole;
@@ -317,9 +319,9 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     qmc = find_calculations(mp, mpo, fc_str);
 
     snew(rc, 1);
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); ++mpi)
+    for (auto &mpi : mp)
     {
-        for (alexandria::ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ++ei)
+        for (alexandria::ExperimentIterator ei = mpi.BeginExperiment(); (ei < mpi.EndExperiment()); ++ei)
         {
             T = -1;
             if (ei->getVal(exp_type, mpo, &value, &error, &T, vec, quadrupole))
@@ -497,10 +499,9 @@ int alex_analyze(int argc, char *argv[])
     MolPropSortAlgorithm             mpsa;
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
-    Poldata                         *pd;
     gmx_output_env_t                *oenv;
     gmx_molselect  *                 gms;
-    char                           **mpname = NULL, **fns = NULL;
+    char                           **mpname = NULL;
     int                              nmpfile;
 
     npa = sizeof(pa)/sizeof(pa[0]);
@@ -545,10 +546,13 @@ int alex_analyze(int argc, char *argv[])
     {
         mpo = MPO_DIPOLE;
     }
-    if (NULL == (pd = alexandria::PoldataXml::read(opt2fn("-d", NFILE, fnm), ap)))
+    
+    alexandria::Poldata pd;
+    try 
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", fns[i]);
+        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, ap);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (bMerge)
     {

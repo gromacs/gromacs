@@ -47,6 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -223,7 +224,7 @@ int alex_merge_mp(int argc, char *argv[])
     int                              nfiles;
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t                   ap;
-    Poldata                         *pd;
+    alexandria::Poldata              pd;
     gmx_output_env_t                *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
@@ -235,10 +236,12 @@ int alex_merge_mp(int argc, char *argv[])
     }
 
     ap = gmx_atomprop_init();
-    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-di", NFILE, fnm), ap)) == NULL)
+    try 
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, ap);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
     int nwarn = merge_xml(nfiles, fns, mp, NULL, NULL, NULL, ap, pd, TRUE);
 

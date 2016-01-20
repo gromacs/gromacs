@@ -20,6 +20,8 @@ extern char *ftoa(double f);
 //! Utility function converting int to char *
 extern char *itoa(int f);
 
+namespace alexandria 
+{
 /*! \brief
  * Generates a LaTeX table containing the statistics (RMSD from experiment) of a calculated property per molecule category
  *
@@ -38,12 +40,15 @@ extern char *itoa(int f);
  * \todo Transform iQM to enum
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_stats_table(FILE *fp, MolPropObservable eprop,
-                                    std::vector<alexandria::MolProp> mp,
-                                    t_qmcount *qmc, char *exp_type,
+extern void gmx_molprop_stats_table(FILE *fp, 
+                                    MolPropObservable eprop,
+                                    std::vector<MolProp> &mp,
+                                    t_qmcount *qmc, 
+                                    char *exp_type,
                                     double outlier,
-                                    alexandria::CategoryList cList,
-                                    gmx_molselect *gms, iMolSelect ims);
+                                    CategoryList cList,
+                                    gmx_molselect *gms, 
+                                    iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -102,23 +107,20 @@ extern void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
  *
  * \param[out] fp   File pointer to write to
  * \param[in] bPolar Calling this with bPolar TRUE will print an atomtype table with polarizability information. With bPolar FALSE it will print the same table with EEM parameters.
- * \param[in] pd    Force field file
+ * \param[in] pd    Force field data
  * \param[in] mp    Array of molecules
- * \param[in] iQM   Selecting the reference between QM and Experimental
  * \param[in] lot   Level of theory in 'A/B' format
  * \param[in] exp_type The type of experimental property
- * \param[in] exp_type The type of experimental property
- * \param[in] oenv  Information for generating xvg files
- * \param[in] histo File name for histogram data
- * \param[in] gms   Structure containing selections of which molecules to output
- * \param[in] ims   The actual selection of the right set
- * \todo Transform iQM to enum
  * \todo More explanation text
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_atomtype_table(FILE *fp, bool bPolar,
-                                       Poldata * pd,
-                                       std::vector<alexandria::MolProp> mp,
-                                       char *lot, char *exp_type);
+void gmx_molprop_atomtype_table(FILE *fp, 
+                                bool bPolar,
+                                Poldata &pd,
+                                std::vector<alexandria::MolProp> &mp,
+                                char *lot, 
+                                char *exp_type);
+
+} // namespace alexandria
 
 #endif

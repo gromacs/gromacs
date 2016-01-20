@@ -42,6 +42,7 @@
 
 #include <cmath>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -268,7 +269,7 @@ int MolProp::NAtom()
 {
     if (_mol_comp.size() > 0)
     {
-        int nat = BeginMolecularComposition()->CountAtoms();
+        int nat = _mol_comp[0].CountAtoms();
         return nat;
     }
     return 0;
@@ -372,13 +373,11 @@ void MolProp::CheckConsistency()
 {
 }
 
-bool MolProp::SearchCategory(std::string catname)
+bool MolProp::SearchCategory(const std::string &catname) const
 {
-    std::vector<std::string>::iterator i;
-
-    for (i = BeginCategory(); (i < EndCategory()); i++)
+    for (auto &i : category_)
     {
-        if (catname.compare(*i) == 0)
+        if (i.compare(catname) == 0)
         {
             return true;
         }
@@ -386,21 +385,11 @@ bool MolProp::SearchCategory(std::string catname)
     return false;
 }
 
-void MolProp::DeleteComposition(std::string compname)
+void MolProp::DeleteComposition(const std::string &compname)
 {
-    MolecularCompositionIterator i;
-
-    for (i = BeginMolecularComposition(); (i < EndMolecularComposition()); i++)
-    {
-        if (compname.compare(i->getCompName()) == 0)
-        {
-            break;
-        }
-    }
-    if (i < EndMolecularComposition())
-    {
-        _mol_comp.erase(i);
-    }
+    std::remove_if(_mol_comp.begin(), _mol_comp.end(),
+                   [compname](MolecularComposition mc)
+                   { return (compname.compare(mc.getCompName()) == 0); });
 }
 
 void Experiment::Dump(FILE *fp)
@@ -710,17 +699,9 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
 
 MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str)
 {
-    MolecularCompositionIterator i;
-
-    for (i = BeginMolecularComposition(); (i < EndMolecularComposition()); i++)
-    {
-        std::string s = i->getCompName();
-        if (s.compare(str) == 0)
-        {
-            break;
-        }
-    }
-    return i;
+    return std::find_if(_mol_comp.begin(), _mol_comp.end(),
+                        [str](MolecularComposition const &mc) 
+                        { return (str.compare(mc.getCompName()) == 0); });
 }
 
 void MolProp::Dump(FILE *fp)
@@ -752,7 +733,7 @@ void MolProp::Dump(FILE *fp)
     }
 }
 
-bool MolProp::GenerateComposition(Poldata * pd)
+bool MolProp::GenerateComposition(const Poldata &pd)
 {
     ExperimentIterator   ci;
     CalcAtomIterator     cai;
@@ -779,18 +760,17 @@ bool MolProp::GenerateComposition(Poldata * pd)
             AtomNum ans(cai->getObtype(), 1);
             mci_alexandria.AddAtom(ans);
 
-            std::string ptype = pd->atypeToPtype(cai->getObtype());
-            if (0 != ptype.size())
+            std::string ptype;
+            if (pd.atypeToPtype(cai->getObtype(), ptype))
             {
-                std::string bos_type = pd->ptypeToBosque(ptype);
-                if (0 != bos_type.size())
+                std::string bos_type;
+                if (pd.ptypeToBosque(ptype, bos_type))
                 {
                     AtomNum anb(bos_type, 1);
                     mci_bosque.AddAtom(anb);
                 }
-                std::string mil_type = pd->ptypeToMiller(ptype);
-
-                if (0 != mil_type.size())
+                std::string mil_type;
+                if (pd.ptypeToMiller(ptype, mil_type))
                 {
                     AtomNum anm(mil_type.c_str(), 1);
                     mci_miller.AddAtom(anm);
@@ -2010,7 +1990,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
     return cs;
 }
 
-std::string MolProp::getTexFormula()
+const std::string &MolProp::getTexFormula() const
 {
     if (_texform.size() > 0)
     {

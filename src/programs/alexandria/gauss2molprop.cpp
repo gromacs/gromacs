@@ -12,13 +12,13 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-//#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -69,7 +69,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     };
     gmx_output_env_t                *oenv;
     gmx_atomprop_t                   aps;
-    Poldata                         *pd;
+    alexandria::Poldata              pd;
     std::vector<alexandria::MolProp> mp;
     alexandria::GaussAtomProp        gap;
     char **fns = NULL;
@@ -85,11 +85,12 @@ int alex_gauss2molprop(int argc, char *argv[])
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
 
-    /* Read polarization stuff */
-    if ((pd = alexandria::PoldataXml::read(nullptr, aps)) == NULL)
+    /* Read force field stuff */
+    try
     {
-        gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+        readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
     }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     nfn = ftp2fns(&fns, efLOG, NFILE, fnm);
     for (i = 0; (i < nfn); i++)
@@ -97,7 +98,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         alexandria::MolProp mmm;
 
         ReadGauss(fns[i], mmm, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd->getForceField().c_str());
+                  maxpot, nsymm, pd.getForceField().c_str());
         mp.push_back(mmm);
     }
 

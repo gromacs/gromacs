@@ -12,10 +12,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/pleasecite.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/utility/strdb.h"
-#include "gromacs/utility/txtdump.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
@@ -32,7 +29,10 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/strdb.h"
+#include "gromacs/utility/txtdump.h"
 
 #include "gentop_qgen.h"
 #include "nmsimplex.h"
@@ -150,20 +150,6 @@ void Resp::addAtomCoords( rvec *x)
     }
 }
 
-/*void Resp::fillZeta( alexandria::Poldata * pd)
-   {
-   int i, zz;
-
-   for (i = 0; (i < _natom); i++)
-    {
-      for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
-    {
-          setZeta( i, zz, pd->getZeta( _iDistributionModel,
-                   _ra[i]->getAtomtype().c_str(), zz));
-    }
-    }
-    }*/
-
 void Resp::fillZeta()
 {
     int i;
@@ -191,7 +177,8 @@ void Resp::fillQ( t_atoms *atoms)
     }
 }
 
-bool Resp::addAtomInfo( t_atoms *atoms, alexandria::Poldata * pd)
+bool Resp::addAtomInfo(t_atoms *atoms, 
+                       const alexandria::Poldata &pd)
 {
     int  i;
 
@@ -861,7 +848,7 @@ void Resp::calcPot()
                     break;
                 default:
                     gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-                              alexandria::Poldata::getEemtypeName(_iDistributionModel).c_str());
+                              getEemtypeName(_iDistributionModel));
             }
             V  += vv;
         }

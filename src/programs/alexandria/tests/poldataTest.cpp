@@ -54,7 +54,7 @@
 class PoldataTest : public ::testing::Test
 {
     protected:
-        static  alexandria::Poldata                    * pd;
+        static  alexandria::Poldata                      pd_;
         gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
         static const  int numModels = 3;
@@ -74,11 +74,15 @@ class PoldataTest : public ::testing::Test
             // Reads the file, the file only supports 3 chargedistributionModels
             // eqdAXp,eqdAXg,  eqdAXs,  23/07/15
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-            pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
+            try
+            {
+                alexandria::readPoldata(dataName.c_str(), pd_, aps);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-            alexandria::FfatypeIterator iter = pd->getAtypeBegin();
+            alexandria::FfatypeIterator iter = pd_.getAtypeBegin();
             atomName = iter->getType();
-            for (; iter != pd->getAtypeEnd(); iter++)
+            for (; iter != pd_.getAtypeEnd(); iter++)
             {
                 atomNames.push_back(iter->getType());
             }
@@ -91,13 +95,13 @@ class PoldataTest : public ::testing::Test
 
 };
 
-alexandria::Poldata    * PoldataTest::pd;
+alexandria::Poldata      PoldataTest::pd_;
 const int                PoldataTest::numModels;
 std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
-    alexandria::FfatypeIterator aType =  pd->getAtypeBegin();
+    alexandria::FfatypeIterator aType =  pd_.getAtypeBegin();
 
     checker_.checkString(aType->getElem(), "elem");
     checker_.checkString(aType->getDesc(), "desc");
@@ -109,15 +113,16 @@ TEST_F (PoldataTest, getAtype){
 }
 
 TEST_F(PoldataTest, searchAtype){
-    alexandria::Ffatype  type;
-    pd->searchAtype(atomName, &type);
-
-    checker_.checkString(type.getElem(), "elem");
-    checker_.checkString(type.getDesc(), "desc");
-    checker_.checkString(type.getPtype(), "ptype");
-    checker_.checkString(type.getBtype(), "btype");
-    checker_.checkString(type.getVdwparams(), "vdwparams");
-    checker_.checkBoolean(type.getType().compare(atomName) == 0, "Same type");
+    alexandria::Ffatype type;
+    if (pd_.searchAtype(atomName, type))
+    {
+        checker_.checkString(type.getElem(), "elem");
+        checker_.checkString(type.getDesc(), "desc");
+        checker_.checkString(type.getPtype(), "ptype");
+        checker_.checkString(type.getBtype(), "btype");
+        checker_.checkString(type.getVdwparams(), "vdwparams");
+        checker_.checkBoolean(type.getType().compare(atomName) == 0, "Same type");
+    }
 }
 
 TEST_F(PoldataTest, addAtype){
@@ -138,32 +143,31 @@ TEST_F(PoldataTest, addAtype){
     alexandria::Ffatype      fatype;
 
 
-    pd->addAtype( elem,
-                  desc,
-                  atype,
-                  ptype,
-                  btype,
-                  vdwparams,
-                  ref_enthalpy);
+    pd_.addAtype( elem,
+                 desc,
+                 atype,
+                 ptype,
+                 btype,
+                 vdwparams,
+                 ref_enthalpy);
 
-    int valid = pd->searchAtype(atype, &fatype);
-    //will faill if the seartch failed
-    checker_.checkBoolean(valid == 1, "search valid");
-
-    //test if the extraction where corect
-    checker_.checkBoolean(fatype.getElem().compare(elem) == 0, "elem");
-    checker_.checkBoolean(fatype.getDesc().compare(desc) == 0, "desc");
-    checker_.checkBoolean(fatype.getType().compare(atype) == 0, "atype");
-    checker_.checkBoolean(fatype.getPtype().compare(ptype) == 0, "ptype");
-    checker_.checkBoolean(fatype.getBtype().compare(btype) == 0, "btype");
-    checker_.checkBoolean(fatype.getVdwparams().compare(vdwparams) == 0, "vdwparams" );
+    if (pd_.searchAtype(atype, fatype))
+    {
+        // Test if the extractions where correct
+        checker_.checkBoolean(fatype.getElem().compare(elem) == 0, "elem");
+        checker_.checkBoolean(fatype.getDesc().compare(desc) == 0, "desc");
+        checker_.checkBoolean(fatype.getType().compare(atype) == 0, "atype");
+        checker_.checkBoolean(fatype.getPtype().compare(ptype) == 0, "ptype");
+        checker_.checkBoolean(fatype.getBtype().compare(btype) == 0, "btype");
+        checker_.checkBoolean(fatype.getVdwparams().compare(vdwparams) == 0, "vdwparams" );
+    }
 }
 
 
 
 TEST_F (PoldataTest, Ptype)
 {
-    alexandria::PtypeIterator ptype = pd->getPtypeBegin();
+    alexandria::PtypeConstIterator ptype = pd_.getPtypeBegin();
     checker_.checkString(ptype->getType(), "type");
     checker_.checkString(ptype->getMiller(), "miller");
     checker_.checkString(ptype->getBosque(), "bosque");
@@ -173,7 +177,7 @@ TEST_F (PoldataTest, Ptype)
 
 TEST_F (PoldataTest, Miller)
 {
-    alexandria::MillerIterator miller = pd->getMillerBegin();
+    alexandria::MillerIterator miller = pd_.getMillerBegin();
     checker_.checkInteger(miller->getAtomnumber(), "atomnumber");
     checker_.checkDouble(miller->getTauAhc(), "tauAhc");
     checker_.checkDouble(miller->getAlphaAhp(), "alphaAhp");
@@ -182,7 +186,7 @@ TEST_F (PoldataTest, Miller)
 
 TEST_F (PoldataTest, Bosque)
 {
-    alexandria::BosqueIterator bosque = pd->getBosqueBegin();
+    alexandria::BosqueIterator bosque = pd_.getBosqueBegin();
     checker_.checkString(bosque->getBosque(), "bosque");
     checker_.checkDouble(bosque->getPolarizability(), "polarizability");
 }
@@ -194,7 +198,7 @@ TEST_F (PoldataTest, chi)
 
     for (int model = 0; model < numModels; model++)
     {
-        chi0s.push_back(pd->getChi0((ChargeDistributionModel)model, atomName));
+        chi0s.push_back(pd_.getChi0((ChargeDistributionModel)model, atomName));
     }
     checker_.checkSequence(chi0s.begin(), chi0s.end(), "chi");
 }
@@ -207,7 +211,7 @@ TEST_F (PoldataTest, row){
     {
         for (int model = 0; model <  numModels; model++)
         {
-            rows.push_back(pd->getRow((ChargeDistributionModel)model, atomName, atomNr));
+            rows.push_back(pd_.getRow((ChargeDistributionModel)model, atomName, atomNr));
         }
     }
     checker_.checkSequence(rows.begin(), rows.end(), "row");
@@ -223,7 +227,7 @@ TEST_F (PoldataTest, zeta)
     {
         for (int model = 0; model <  numModels; model++)
         {
-            zetas.push_back(pd->getZeta((ChargeDistributionModel)model, atomName, atomNr));
+            zetas.push_back(pd_.getZeta((ChargeDistributionModel)model, atomName, atomNr));
         }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
@@ -231,26 +235,26 @@ TEST_F (PoldataTest, zeta)
 
 TEST_F (PoldataTest, forceField)
 {
-    std::string force =  pd->getForceField( );
+    std::string force =  pd_.getForceField( );
     checker_.checkString(force, "forceField");
 }
 
 TEST_F (PoldataTest, lenghtUnit)
 {
-    std::string lenght =  pd->getLengthUnit( );
+    std::string lenght =  pd_.getLengthUnit( );
     checker_.checkString(lenght, "lenghtUnit");
 }
 
 
 TEST_F (PoldataTest, polarUnit)
 {
-    std::string polarUnit = pd->getPolarUnit( );
+    std::string polarUnit = pd_.getPolarUnit( );
     checker_.checkString(polarUnit, "polarUnit");
 }
 
 
 TEST_F (PoldataTest, polarRef)
 {
-    std::string polarRef =  pd->getPolarRef( );
+    std::string polarRef =  pd_.getPolarRef( );
     checker_.checkString(polarRef, "polarRef");
 }

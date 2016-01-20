@@ -46,33 +46,27 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/state.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/gmx_resp.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-
-class RespTest : public ::testing::Test
+class RespTest : public gmx::test::CommandLineTestBase
 {
-
     protected:
-        gmx::test::TestReferenceData                     refData_;
-        gmx::test::TestReferenceChecker                  checker_;
-        alexandria::Poldata                             *pd_;
-        alexandria::MyMol                                mp_;
-        gmx_atomprop_t                                   aps_;
+        gmx::test::TestReferenceChecker checker_;
+        alexandria::Poldata             pd_;
+        alexandria::MyMol               mp_;
+        gmx_atomprop_t                  aps_;
 
         //init set tolecrance
-        RespTest () : refData_(gmx::test::erefdataCompare),
-                      checker_(refData_.rootChecker())
+        RespTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
             aps_ = gmx_atomprop_init();
@@ -86,13 +80,17 @@ class RespTest : public ::testing::Test
             int                       nsymm    = 0;
 
             //read input file for poldata
-            std::string          dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-            pd_ = alexandria::PoldataXml::read(dataName.c_str(), aps_);
+            std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
+            try
+            {
+                alexandria::readPoldata(dataName.c_str(), pd_, aps_);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_->getForceField().c_str());
+                      maxpot, nsymm, pd_.getForceField().c_str());
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());

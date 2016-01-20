@@ -9,7 +9,7 @@
  * \param[in] opts List of strings to select from
  * \returns the index or -1 if not found
  */
-extern int get_option(const char **opts);
+int get_option(const char **opts);
 
 /*! \brief
  * Split a string into substrings separated by a delimiter character
@@ -18,9 +18,9 @@ extern int get_option(const char **opts);
  * \param[in] elems A vector of substring elements
  * \returns The vector of substring elements (same as input elems)
  */
-extern std::vector<std::string> &split(const std::string        &s,
-                                       char                      delim,
-                                       std::vector<std::string> &elems);
+std::vector<std::string> &split(const std::string        &s,
+                                char                      delim,
+                                std::vector<std::string> &elems);
 
 /*! \brief
  * Split a string into substrings separated by a delimiter character
@@ -28,8 +28,8 @@ extern std::vector<std::string> &split(const std::string        &s,
  * \parin[in] delim The delimiting character
  * \returns A vector of substring elements
  */
-extern std::vector<std::string> split(const std::string &s,
-                                      char               delim);
+std::vector<std::string> split(const std::string &s,
+                               char               delim);
 
 /** return new string with f printed. */
 extern std::string gmx_ftoa(double f);

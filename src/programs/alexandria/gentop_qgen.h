@@ -29,7 +29,8 @@ class GentopQgen
         ~GentopQgen();
 
 
-        GentopQgen(Poldata * pd, t_atoms *atoms,
+        GentopQgen(const Poldata &pd,
+                   t_atoms *atoms,
                    gmx_atomprop_t aps,
                    rvec *x,
                    ChargeDistributionModel   iChargeDistributionModel,
@@ -40,13 +41,14 @@ class GentopQgen
         // void done();
 
         int generateChargesSm(FILE *fp,
-                              Poldata * pd, t_atoms *atoms,
+                              const Poldata &pd,
+                              t_atoms *atoms,
                               real tol, int maxiter, gmx_atomprop_t aps,
                               real *chieq);
 
         int generateCharges(FILE *fp,
                             Resp * gr, const std::string molname,
-                            Poldata * pd,
+                            const Poldata &pd,
                             t_atoms *atoms,
                             real tol, int maxiter, int maxcycle,
                             gmx_atomprop_t aps);
@@ -61,7 +63,7 @@ class GentopQgen
 
         double getQ(int atom, int z);
 
-        void checkSupport(Poldata * pd, gmx_atomprop_t aps);
+        void checkSupport(const Poldata &pd, gmx_atomprop_t aps);
 
         void saveParams( Resp * gr);
 
@@ -109,10 +111,12 @@ class GentopQgen
 
         real calcSij(int i, int j);
 
-        void updatePd(t_atoms *atoms, Poldata * pd);
+        void updateFromPoldata(t_atoms *atoms,
+                               const Poldata &pd);
 
         int generateChargesBultinck(FILE *fp,
-                                    Poldata * pd, t_atoms *atoms,
+                                    const Poldata &pd,
+                                    t_atoms *atoms,
                                     gmx_atomprop_t aps);
 
         void calcRhs();
