@@ -42,6 +42,7 @@
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/utility/pleasecite.h"
