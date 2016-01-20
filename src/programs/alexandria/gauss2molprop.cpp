@@ -88,7 +88,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     /* Read force field stuff */
     try
     {
-        readPoldata(opt2fn_null("-d", NFILE, fnm), pd, aps);
+        readPoldata("", pd, aps);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

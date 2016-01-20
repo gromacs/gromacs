@@ -195,7 +195,7 @@ static void gmx_molprop_read_babel(const char *g98,
 
     std::vector<alexandria::ElectrostaticPotential> espv;
 
-    const char *reference = "Ghahremanpour2015a", *unknown = "unknown";
+    const char *reference = "Ghahremanpour2016a", *unknown = "unknown";
     char       *program, *method, *basis, *charge_model, *ptr, *g98ptr;
     int         bondid;
 
