@@ -2514,6 +2514,8 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     nbl->na_cj       = 0;
     nbl->nci         = 0;
     nbl->ci          = NULL;
+    nbl->nsci        = 0;
+    nbl->sci         = NULL;
     nbl->ci_nalloc   = 0;
     nbl->ncj         = 0;
     nbl->cj          = NULL;
