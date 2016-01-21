@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "poldata-low.h"
 #include "stringutil.h"

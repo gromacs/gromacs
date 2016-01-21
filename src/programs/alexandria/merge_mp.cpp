@@ -238,7 +238,7 @@ int alex_merge_mp(int argc, char *argv[])
     ap = gmx_atomprop_init();
     try 
     {
-        alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, ap);
+        alexandria::readPoldata(opt2fn("-di", NFILE, fnm), pd, ap);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
