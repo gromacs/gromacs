@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,6 @@ extern "C" {
 
 /* With GPU kernels the cluster size is 8 atoms */
 #define NBNXN_GPU_CLUSTER_SIZE         8
-
-/* With GPU kernels we group cluster pairs in 4 to optimize memory usage.
- * To change this, also change nbnxn_cj4_t in gromacs/mdlib/nbnxn_pairlist.h.
- */
-#define NBNXN_GPU_JGROUP_SIZE       4
-#define NBNXN_GPU_JGROUP_SIZE_2LOG  2
 
 /* To avoid NaN when excluded atoms are at zero distance, we add a small
  * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.

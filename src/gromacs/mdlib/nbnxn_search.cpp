@@ -701,9 +701,6 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 {
     int ncj4_max, w;
 
-#define NWARP       2
-#define WARP_SIZE  32
-
     /* We can have maximally nsupercell*GPU_NSUBCELL sj lists */
     /* We can store 4 j-subcell - i-supercell pairs in one struct.
      * since we round down, we need one extra entry.
@@ -724,7 +721,7 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
         for (int j4 = nbl->work->cj4_init; j4 < ncj4_max; j4++)
         {
             /* No i-subcells and no excl's in the list initially */
-            for (w = 0; w < NWARP; w++)
+            for (w = 0; w < nbnxn_gpu_clusterpair_split; w++)
             {
                 nbl->cj4[j4].imei[w].imask    = 0U;
                 nbl->cj4[j4].imei[w].excl_ind = 0;
@@ -738,7 +735,7 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 /* Set all excl masks for one GPU warp no exclusions */
 static void set_no_excls(nbnxn_excl_t *excl)
 {
-    for (int t = 0; t < WARP_SIZE; t++)
+    for (int t = 0; t < nbnxn_gpu_excl_size; t++)
     {
         /* Turn all interaction bits on */
         excl->pair[t] = NBNXN_INTERACTION_MASK_ALL;
@@ -786,6 +783,8 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     if (!nbl->bSimple)
     {
+        assert(nbnxn_gpu_clusterpair_split*nbnxn_gpu_excl_size == NBNXN_GPU_CLUSTER_SIZE*NBNXN_GPU_CLUSTER_SIZE);
+
         nbl->excl        = NULL;
         nbl->excl_nalloc = 0;
         nbl->nexcl       = 0;
@@ -809,7 +808,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     }
     snew_aligned(nbl->work->x_ci, NBNXN_NA_SC_MAX*DIM, NBNXN_SEARCH_BB_MEM_ALIGN);
 #if GMX_SIMD
-    snew_aligned(nbl->work->x_ci_simd, 4*DIM*GMX_SIMD_REAL_WIDTH, GMX_SIMD_REAL_WIDTH);
+    snew_aligned(nbl->work->x_ci_simd, NBNXN_CPU_CLUSTER_I_SIZE*DIM*GMX_SIMD_REAL_WIDTH, GMX_SIMD_REAL_WIDTH);
 #endif
     snew_aligned(nbl->work->d2, GPU_NSUBCELL, NBNXN_SEARCH_BB_MEM_ALIGN);
 
@@ -1039,9 +1038,11 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
                                                int cj4_ind, int sj_offset,
                                                int si)
 {
-    nbnxn_excl_t *excl[2];
+    nbnxn_excl_t *excl[nbnxn_gpu_clusterpair_split];
 
     /* Here we only set the set self and double pair exclusions */
+
+    assert(nbnxn_gpu_clusterpair_split == 2);
 
     get_nbl_exclusions_2(nbl, cj4_ind, &excl[0], &excl[1]);
 
@@ -1375,7 +1376,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
             }
 
             /* Copy the cluster interaction mask to the list */
-            for (w = 0; w < NWARP; w++)
+            for (w = 0; w < nbnxn_gpu_clusterpair_split; w++)
             {
                 cj4->imei[w].imask |= imask;
             }
