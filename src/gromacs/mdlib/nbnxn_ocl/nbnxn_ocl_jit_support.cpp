@@ -193,11 +193,10 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     context          = nb->dev_info->context;
 
     sprintf(runtime_consts,
-            "-DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s",
+            "-DCENTRAL=%d -DNCL_PER_SUPERCL=%d -DCL_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s",
             CENTRAL,                                    /* Defined in ishift.h */
-            NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER,        /* Defined in nbnxn_consts.h */
-            NBNXN_GPU_CLUSTER_SIZE,                     /* Defined in nbnxn_consts.h */
-            NBNXN_GPU_JGROUP_SIZE,                      /* Defined in nbnxn_consts.h */
+            nbnxn_gpu_ncluster_per_cell,                /* Defined in nbnxn_pairlist.h */
+            nbnxn_gpu_cluster_size,                     /* Defined in nbnxn_pairlist.h */
             STRINGIFY_MACRO(NBNXN_AVOID_SING_R2_INC)    /* Defined in nbnxn_consts.h */
                                                         /* NBNXN_AVOID_SING_R2_INC passed as string to avoid
                                                            floating point representation problems with sprintf */

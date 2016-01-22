@@ -91,10 +91,11 @@ struct gmx_domdec_zones_t;
 #        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 #    endif
 
-#    if defined NBNXN_SEARCH_SIMD4_FLOAT_X_BB && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
-/* Store bounding boxes with x, y and z coordinates in packs of 4 */
-#        define NBNXN_PBB_SIMD4
-#    endif
+/* Store bounding boxes with x, y and z coordinates in packs of 4.
+ * This only works when nbnxn_gpu_ncluster_per_cell is a multiple of 4;
+ * we assert this in nbnxn_search.cpp.
+ */
+#    define NBNXN_PBB_SIMD4
 
 /* The packed bounding box coordinate stride is always set to 4.
  * With AVX we could use 8, but that turns out not to be faster.
@@ -108,12 +109,6 @@ struct gmx_domdec_zones_t;
 #    define NNBSBB_XXXX  (NNBSBB_D*DIM*STRIDE_PBB)
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
-
-
-/* This macro is a lazy way to avoid interdependence of the grid
- * and searching data structures.
- */
-#define NBNXN_NA_SC_MAX  (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 
 /* Bounding box for a nbnxn atom cluster */
@@ -278,12 +273,6 @@ typedef struct nbnxn_search {
     int                  nthread_max; /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
 } nbnxn_search_t_t;
-
-
-/* This define is a lazy way to avoid interdependence of the grid
- * and searching data structures.
- */
-#define NBNXN_NA_SC_MAX  (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 
 static void nbs_cycle_start(nbnxn_cycle_t *cc)
