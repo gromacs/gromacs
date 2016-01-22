@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -193,11 +193,10 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     context          = nb->dev_info->context;
 
     sprintf(runtime_consts,
-            "-DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s",
+            "-DCENTRAL=%d -DNCL_PER_SUPERCL=%d -DCL_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s",
             CENTRAL,                                    /* Defined in ishift.h */
-            NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER,        /* Defined in nbnxn_consts.h */
-            NBNXN_GPU_CLUSTER_SIZE,                     /* Defined in nbnxn_consts.h */
-            NBNXN_GPU_JGROUP_SIZE,                      /* Defined in nbnxn_consts.h */
+            nbnxn_gpu_ncluster_per_supercluster,        /* Defined in nbnxn_pairlist.h */
+            nbnxn_gpu_cluster_size,                     /* Defined in nbnxn_pairlist.h */
             STRINGIFY_MACRO(NBNXN_AVOID_SING_R2_INC)    /* Defined in nbnxn_consts.h */
                                                         /* NBNXN_AVOID_SING_R2_INC passed as string to avoid
                                                            floating point representation problems with sprintf */
