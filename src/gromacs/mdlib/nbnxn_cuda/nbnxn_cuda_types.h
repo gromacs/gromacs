@@ -55,10 +55,10 @@
 
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
-/*! \brief number of clusters per supercluster. */
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+/*! \brief number of clusters per supercluster = pair search cell. */
+static const int NCL_PER_SUPERCL = nbnxn_gpu_ncluster_per_cell;
 /*! \brief cluster size = number of atoms per cluster. */
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+static const int CL_SIZE         = nbnxn_gpu_cluster_size;
 
 #ifdef __cplusplus
 extern "C" {
