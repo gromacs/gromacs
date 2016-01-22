@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,10 +76,10 @@
 #define USE_TEXOBJ
 #endif
 
-/*! \brief Convenience defines */
+/*! \brief Convenience constants */
 //@{
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+static const int ncl_per_supercl = nbnxn_gpu_ncluster_per_supercluster;
+static const int cl_size         = nbnxn_gpu_cluster_size;
 //@}
 
 /*! \brief Always/never run the energy/pruning kernels -- only for benchmarking purposes */
@@ -252,9 +252,9 @@ static inline int calc_shmem_required()
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float) * 4; /* xqib */
+    shmem  = ncl_per_supercl * cl_size * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately */
-    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);       /* cjs  */
+    shmem += 2 * nbnxn_gpu_jgroup_size * sizeof(int);       /* cjs  */
 #ifdef IATYPE_SHMEM
     /* FIXME: this should not be compile-time decided but rather at runtime.
      * This issue propagated from the CUDA code where due to the source to source
@@ -264,10 +264,10 @@ static inline int calc_shmem_required()
      */
     /* i-atom types in shared memory */
     #pragma error "Should not be defined"
-    shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);       /* atib */
+    shmem += ncl_per_supercl * cl_size * sizeof(int);       /* atib */
 #endif
     /* force reduction buffers in shared memory */
-    shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float); /* f_buf */
+    shmem += cl_size * cl_size * 3 * sizeof(float); /* f_buf */
     /* Warp vote. In fact it must be * number of warps in block.. */
     shmem += sizeof(cl_uint) * 2;                   /* warp_any */
     return shmem;
@@ -507,8 +507,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
                                     plist->bDoPrune || always_prune);
 
     /* kernel launch config */
-    local_work_size[0] = CL_SIZE;
-    local_work_size[1] = CL_SIZE;
+    local_work_size[0] = cl_size;
+    local_work_size[1] = cl_size;
     local_work_size[2] = 1;
 
     global_work_size[0] = plist->nsci * local_work_size[0];
@@ -546,8 +546,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         fprintf(debug, "GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
-                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c);
+                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*ncl_per_supercl,
+                ncl_per_supercl, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
