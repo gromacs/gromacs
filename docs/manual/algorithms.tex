@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -564,35 +564,53 @@ types of systems, particularly on newer hardware.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Energy drift and pair-list buffering}
-For a canonical (NVT) ensemble, the average energy error caused by the
-finite Verlet buffer size can be determined from the atomic
+For a canonical (NVT) ensemble, the average energy error caused by
+diffusion of $j$ particles from outside the pair-list cut-off
+$r_\ell$ to inside the interaction cut-off $r_c$ over the lifetime
+of the list can be determined from the atomic
 displacements and the shape of the potential at the cut-off.
 %Since we are interested in the small drift regime, we will assume
 %#that atoms will only move within the cut-off distance in the last step,
 %$n_\mathrm{ps}-1$, of the pair list update interval $n_\mathrm{ps}$.
 %Over this number of steps the displacment of an atom with mass $m$
 The displacement distribution along one dimension for a freely moving
-particle with mass $m$ over time $t$ at temperature $T$ is Gaussian
-with zero mean and variance $\sigma^2 = t\,k_B T/m$. For the distance
+particle with mass $m$ over time $t$ at temperature $T$ is
+a Gaussian $G(x)$
+of zero mean and variance $\sigma^2 = t^2 k_B T/m$. For the distance
 between two particles, the variance changes to $\sigma^2 = \sigma_{12}^2 =
-t\,k_B T(1/m_1+1/m_2)$.  Note that in practice particles usually
+t^2 k_B T(1/m_1+1/m_2)$. Note that in practice particles usually
 interact with other particles over time $t$ and therefore the real
 displacement distribution is much narrower.  Given a non-bonded
 interaction cut-off distance of $r_c$ and a pair-list cut-off
-$r_\ell=r_c+r_b$, we can then write the average energy error after
-time $t$ for pair interactions between one particle of type 1
-surrounded by particles of type 2 with number density $\rho_2$, when
-the inter particle distance changes from $r_0$ to $r_t$, as:
-
+$r_\ell=r_c+r_b$ for $r_b$ the Verlet buffer size, we can then
+write the average energy error after time $t$ for all missing pair
+interactions between a single $i$ particle of type 1 surrounded
+by all $j$ particles that are of type 2 with number density $\rho_2$,
+when the inter-particle distance changes from $r_0$ to $r_t$, as:
+\beq
+\langle \Delta V \rangle =
+\int_{0}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 V(r_t) G\!\left(\frac{r_t-r_0}{\sigma}\right) d r_0\, d r_t
+\eeq
+To evaluate this analytically, we need to make some approximations. First we replace $V(r_t)$ by a Taylor expansion around $r_c$, then we can move the lower bound of the integral over $r_0$ to $-\infty$ which will simplify the result:
 \begin{eqnarray}
-\langle \Delta V \rangle \! &=&
-\int_{0}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 V(r_t) G\!\left(\frac{r_t-r_0}{\sigma}\right) d r_0\, d r_t \\
-&\approx&
+\langle \Delta V \rangle &\approx&
 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[ V'(r_c) (r_t - r_c) +
 \nonumber\\
 & &
 \phantom{\int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[}
- V''(r_c)\frac{1}{2}(r_t - r_c)^2 \Big] G\!\left(\frac{r_t-r_0}{\sigma}\right) d r_0 \, d r_t\\
+V''(r_c)\frac{1}{2}(r_t - r_c)^2 +
+\nonumber\\
+& &
+\phantom{\int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[}
+  V'''(r_c)\frac{1}{6}(r_t - r_c)^3 +
+  \nonumber\\
+& &
+\phantom{\int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[}
+  O \! \left((r_t - r_c)^4 \right)\Big] G\!\left(\frac{r_t-r_0}{\sigma}\right) d r_0 \, d r_t
+\end{eqnarray}
+Replacing the factor $r_0^2$ by $(r_\ell + \sigma)^2$, which results in a slight overestimate, allows us to calculate the integrals analytically:
+\begin{eqnarray}
+\langle \Delta V \rangle \!
 &\approx&
 4 \pi (r_\ell+\sigma)^2 \rho_2
 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[ V'(r_c) (r_t - r_c) +
@@ -611,15 +629,19 @@ d r_0 \, d r_t\\
 \nonumber\\
 & &
 \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
-\frac{1}{6}V''(r_c)\left[ \sigma(r_b^2+2\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - r_b(r_b^2+3\sigma^2 ) E\!\left(\frac{r_b}{\sigma}\right) \right] +
+\frac{1}{6}V''(r_c)\left[ \sigma(r_b^2+2\sigma^2) G\!\left(\frac{r_b}{\sigma}\right) - r_b(r_b^2+3\sigma^2 ) E\!\left(\frac{r_b}{\sigma}\right) \right] +
 \nonumber\\
 & &
 \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
-\frac{1}{24}V'''(r_c)\left[ r_b\sigma(r_b^2+5\sigma^2)G\!\left(\frac{r_b}{\sigma}\right) - (r_b^4+6r_b^2\sigma^2+3\sigma^4 ) E\!\left(\frac{r_b}{\sigma}\right) \right]
+\frac{1}{24}V'''(r_c)\bigg[ r_b\sigma(r_b^2+5\sigma^2) G\!\left(\frac{r_b}{\sigma}\right)
+\nonumber\\
+& &
+\phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ \frac{1}{24}V'''(r_c)\bigg[ }
+ - (r_b^4+6r_b^2\sigma^2+3\sigma^4 ) E\!\left(\frac{r_b}{\sigma}\right) \bigg]
 \bigg\}
 \end{eqnarray}
 
-where $G$ is a Gaussian distribution with 0 mean and unit variance and
+where $G(x)$ is a Gaussian distribution with 0 mean and unit variance and
 $E(x)=\frac{1}{2}\mathrm{erfc}(x/\sqrt{2})$. We always want to achieve
 small energy error, so $\sigma$ will be small compared to both $r_c$
 and $r_\ell$, thus the approximations in the equations above are good,
@@ -628,7 +650,7 @@ to be averaged over all particle pair types and weighted with the
 particle counts. In {\gromacs} we don't allow cancellation of error
 between pair types, so we average the absolute values. To obtain the
 average energy error per unit time, it needs to be divided by the
-neighbor-list life time $t = ({\tt nstlist} - 1)\times{\tt dt}$. This
+neighbor-list life time $t = ({\tt nstlist} - 1)\times{\tt dt}$. The
 function can not be inverted analytically, so we use bisection to
 obtain the buffer size $r_b$ for a target drift.  Again we note that
 in practice the error we usually be much smaller than this estimate,
@@ -636,27 +658,32 @@ as in the condensed phase particle displacements will be much smaller
 than for freely moving particles, which is the assumption used here.
 
 When (bond) constraints are present, some particles will have fewer
-degrees of freedom. This will reduce the energy errors. The
-displacement in an arbitrary direction of a particle with 2 degrees of
-freedom is not Gaussian, but rather follows the complementary error
-function: \beq
+degrees of freedom. This will reduce the energy errors. For simplicity,
+we only consider one constraint per particle, the heaviest particle
+in case a particle is involved in multiple constraints.
+This simplification overestimates the displacement. The motion of
+a constrained particle is a superposition of the 3D motion of the
+center of mass of both particles and a 2D rotation around the center of mass.
+The displacement in an arbitrary direction of a particle with 2 degrees
+of freedom is not Gaussian, but rather follows the complementary error
+function:
+\beq
 \frac{\sqrt{\pi}}{2\sqrt{2}\sigma}\,\mathrm{erfc}\left(\frac{|r|}{\sqrt{2}\,\sigma}\right)
-\eeq where $\sigma^2$ is again $k_B T/m$.  This distribution can no
+\label{eqn:2D_disp}
+\eeq
+where $\sigma^2$ is again $t^2 k_B T/m$.  This distribution can no
 longer be integrated analytically to obtain the energy error. But we
 can generate a tight upper bound using a scaled and shifted Gaussian
 distribution (not shown). This Gaussian distribution can then be used
-to calculate the energy error as described above. We consider
-particles constrained, i.e. having 2 degrees of freedom or fewer, when
-they are connected by constraints to particles with a total mass of at
-least 1.5 times the mass of the particles itself. For a particle with
-a single constraint this would give a total mass along the constraint
-direction of at least 2.5, which leads to a reduction in the variance
-of the displacement along that direction by at least a factor of 6.25.
-As the Gaussian distribution decays very rapidly, this effectively
-removes one degree of freedom from the displacement. Multiple
-constraints would reduce the displacement even more, but as this gets
-very complex, we consider those as particles with 2 degrees of
-freedom.
+to calculate the energy error as described above. The rotation displacement
+around the center of mass can not be more than the length of the arm.
+To take this into account, we scale $\sigma$ in \eqnref{2D_disp} (details
+not presented here) to obtain an overestimate of the real displacement.
+This latter effect significantly reduces the buffer size for longer
+neighborlist lifetimes in e.g. water, as constrained hydrogens are by far
+the fastest particles, but they can not move further than 0.1 nm
+from the heavy atom they are connected to.
+
 
 There is one important implementation detail that reduces the energy
 errors caused by the finite Verlet buffer list size. The derivation
