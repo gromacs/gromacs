@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,8 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+static const int ncl_per_supercl = nbnxn_gpu_ncluster_per_supercluster;
+static const int cl_size         = nbnxn_gpu_cluster_size;
 
 void
 nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
@@ -107,9 +107,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     int                 npair_tot, npair;
     int                 nhwu, nhwu_pruned;
 
-    if (nbl->na_ci != CL_SIZE)
+    if (nbl->na_ci != cl_size)
     {
-        gmx_fatal(FARGS, "The neighborlist cluster size in the GPU reference kernel is %d, expected it to be %d", nbl->na_ci, CL_SIZE);
+        gmx_fatal(FARGS, "The neighborlist cluster size in the GPU reference kernel is %d, expected it to be %d", nbl->na_ci, cl_size);
     }
 
     if (clearF == enbvClearFYes)
@@ -157,17 +157,17 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         Vvdwtot          = 0;
 
         if (nbln->shift == CENTRAL &&
-            nbl->cj4[cj4_ind0].cj[0] == sci*NCL_PER_SUPERCL)
+            nbl->cj4[cj4_ind0].cj[0] == sci*ncl_per_supercl)
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
              */
-            for (im = 0; im < NCL_PER_SUPERCL; im++)
+            for (im = 0; im < ncl_per_supercl; im++)
             {
-                ci = sci*NCL_PER_SUPERCL + im;
-                for (ic = 0; ic < CL_SIZE; ic++)
+                ci = sci*ncl_per_supercl + im;
+                for (ic = 0; ic < cl_size; ic++)
                 {
-                    ia     = ci*CL_SIZE + ic;
+                    ia     = ci*cl_size + ic;
                     iq     = x[ia*nbat->xstride+3];
                     vctot += iq*iq;
                 }
@@ -188,26 +188,26 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             excl[0]           = &nbl->excl[nbl->cj4[cj4_ind].imei[0].excl_ind];
             excl[1]           = &nbl->excl[nbl->cj4[cj4_ind].imei[1].excl_ind];
 
-            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
+            for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
                 cj               = nbl->cj4[cj4_ind].cj[jm];
 
-                for (im = 0; im < NCL_PER_SUPERCL; im++)
+                for (im = 0; im < ncl_per_supercl; im++)
                 {
                     /* We're only using the first imask,
                      * but here imei[1].imask is identical.
                      */
-                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm*NCL_PER_SUPERCL+im)) & 1)
+                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm*ncl_per_supercl + im)) & 1)
                     {
                         gmx_bool within_rlist;
 
-                        ci               = sci*NCL_PER_SUPERCL + im;
+                        ci               = sci*ncl_per_supercl + im;
 
                         within_rlist     = FALSE;
                         npair            = 0;
-                        for (ic = 0; ic < CL_SIZE; ic++)
+                        for (ic = 0; ic < cl_size; ic++)
                         {
-                            ia               = ci*CL_SIZE + ic;
+                            ia               = ci*cl_size + ic;
 
                             is               = ia*nbat->xstride;
                             ifs              = ia*nbat->fstride;
@@ -221,9 +221,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             fiy              = 0;
                             fiz              = 0;
 
-                            for (jc = 0; jc < CL_SIZE; jc++)
+                            for (jc = 0; jc < cl_size; jc++)
                             {
-                                ja               = cj*CL_SIZE + jc;
+                                ja               = cj*cl_size + jc;
 
                                 if (nbln->shift == CENTRAL &&
                                     ci == cj && ja <= ia)
@@ -231,7 +231,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     continue;
                                 }
 
-                                int_bit = ((excl[jc>>2]->pair[(jc & 3)*CL_SIZE+ic] >> (jm*NCL_PER_SUPERCL+im)) & 1);
+                                int_bit = ((excl[jc >> 2]->pair[(jc & 3)*cl_size + ic] >> (jm*ncl_per_supercl + im)) & 1);
 
                                 js               = ja*nbat->xstride;
                                 jfs              = ja*nbat->fstride;
@@ -334,7 +334,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             /* Count in half work-units.
                              * In CUDA one work-unit is 2 warps.
                              */
-                            if ((ic+1) % (CL_SIZE/2) == 0)
+                            if ((ic+1) % (cl_size/nbnxn_gpu_clusterpair_split) == 0)
                             {
                                 npair_tot += npair;
 
