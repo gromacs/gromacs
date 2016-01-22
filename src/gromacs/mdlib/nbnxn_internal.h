@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,14 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 struct gmx_domdec_zones_t;
 
+
+/* The number of clusters in a pair-search cell, used for GPU */
+static const int gpu_ncluster_per_cell_z = 2;
+static const int gpu_ncluster_per_cell_y = 2;
+static const int gpu_ncluster_per_cell_x = 2;
+static const int gpu_ncluster_per_cell   = gpu_ncluster_per_cell_z*gpu_ncluster_per_cell_y*gpu_ncluster_per_cell_x;
+
+
 #if GMX_SIMD
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
 #define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH*sizeof(real))
@@ -91,8 +99,11 @@ struct gmx_domdec_zones_t;
 #        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 #    endif
 
-#    if defined NBNXN_SEARCH_SIMD4_FLOAT_X_BB && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
-/* Store bounding boxes with x, y and z coordinates in packs of 4 */
+#    ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
+/* Store bounding boxes with x, y and z coordinates in packs of 4.
+ * This only works when gpu_ncluster_per_cell is a multiple of 4;
+ * we assert this in nbnxn_search.cpp.
+ */
 #        define NBNXN_PBB_SIMD4
 #    endif
 
@@ -108,12 +119,6 @@ struct gmx_domdec_zones_t;
 #    define NNBSBB_XXXX  (NNBSBB_D*DIM*STRIDE_PBB)
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
-
-
-/* This macro is a lazy way to avoid interdependence of the grid
- * and searching data structures.
- */
-#define NBNXN_NA_SC_MAX  (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 
 /* Bounding box for a nbnxn atom cluster */
@@ -278,12 +283,6 @@ typedef struct nbnxn_search {
     int                  nthread_max; /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
 } nbnxn_search_t_t;
-
-
-/* This define is a lazy way to avoid interdependence of the grid
- * and searching data structures.
- */
-#define NBNXN_NA_SC_MAX  (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 
 static void nbs_cycle_start(nbnxn_cycle_t *cc)

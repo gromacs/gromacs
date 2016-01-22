@@ -239,10 +239,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
     /* shmem buffer for cj, for each warp separately */
-    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * NBNXN_GPU_JGROUP_SIZE;
+    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * nbnxn_gpu_jgroup_size;
 #ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
-    int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE;
+    int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size;
 #endif
 
 #ifndef REDUCE_SHUFFLE
@@ -250,7 +250,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef IATYPE_SHMEM
     float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
 #else
-    float *f_buf = (float *)(cjs + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE);
+    float *f_buf = (float *)(cjs + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size);
 #endif
 #endif
 
@@ -346,9 +346,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
         {
             /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            if ((tidxj == 0 || tidxj == 4) && tidxi < nbnxn_gpu_jgroup_size)
             {
-                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+                cjs[tidxi + tidxj * nbnxn_gpu_jgroup_size / 4] = pl_cj4[j4].cj[tidxi];
             }
 
             /* Unrolling this loop
@@ -358,7 +358,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #if !defined PRUNE_NBL && GMX_PTX_ARCH < 300
 #pragma unroll 4
 #endif
-            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
+            for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
                 /* ((1U << NCL_PER_SUPERCL) - 1U) is the i-cluster interaction
                  * mask for a super-cluster with all NCL_PER_SUPERCL bits set.
@@ -367,7 +367,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
+                    cj      = cjs[jm + (tidxj & 4) * nbnxn_gpu_jgroup_size / 4];
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
