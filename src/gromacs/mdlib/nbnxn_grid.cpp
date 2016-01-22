@@ -135,8 +135,8 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         {
             /* Approximately cubic sub cells */
             tlen   = std::cbrt(grid->na_c/atom_density);
-            tlen_x = tlen*GPU_NSUBCELL_X;
-            tlen_y = tlen*GPU_NSUBCELL_Y;
+            tlen_x = tlen*gpu_ncluster_per_cell_x;
+            tlen_y = tlen*gpu_ncluster_per_cell_y;
         }
         /* We round ncx and ncy down, because we get less cell pairs
          * in the nbsist when the fixed cell dimensions (x,y) are
@@ -213,10 +213,10 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 #ifdef NBNXN_BBXXXX
             int pbb_nalloc;
 
-            pbb_nalloc = grid->nc_nalloc*GPU_NSUBCELL/STRIDE_PBB*NNBSBB_XXXX;
+            pbb_nalloc = grid->nc_nalloc*gpu_ncluster_per_cell/STRIDE_PBB*NNBSBB_XXXX;
             snew_aligned(grid->pbb, pbb_nalloc, 16);
 #else
-            snew_aligned(grid->bb, grid->nc_nalloc*GPU_NSUBCELL, 16);
+            snew_aligned(grid->bb, grid->nc_nalloc*gpu_ncluster_per_cell, 16);
 #endif
         }
 
@@ -715,7 +715,7 @@ static void print_bbsizes_supersub(FILE                *fp,
 #ifdef NBNXN_BBXXXX
         for (int s = 0; s < grid->nsubc[c]; s += STRIDE_PBB)
         {
-            int cs_w = (c*GPU_NSUBCELL + s)/STRIDE_PBB;
+            int cs_w = (c*gpu_ncluster_per_cell + s)/STRIDE_PBB;
             for (int i = 0; i < STRIDE_PBB; i++)
             {
                 for (int d = 0; d < DIM; d++)
@@ -729,7 +729,7 @@ static void print_bbsizes_supersub(FILE                *fp,
 #else
         for (int s = 0; s < grid->nsubc[c]; s++)
         {
-            int cs = c*GPU_NSUBCELL + s;
+            int cs = c*gpu_ncluster_per_cell + s;
             for (int d = 0; d < DIM; d++)
             {
                 ba[d] += grid->bb[cs].upper[d] - grid->bb[cs].lower[d];
@@ -741,40 +741,42 @@ static void print_bbsizes_supersub(FILE                *fp,
     dsvmul(1.0/ns, ba, ba);
 
     fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            grid->sx/GPU_NSUBCELL_X,
-            grid->sy/GPU_NSUBCELL_Y,
+            grid->sx/gpu_ncluster_per_cell_x,
+            grid->sy/gpu_ncluster_per_cell_y,
             grid->atom_density > 0 ?
-            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z) : 0.0,
+            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*gpu_ncluster_per_cell_z) : 0.0,
             ba[XX], ba[YY], ba[ZZ],
-            ba[XX]*GPU_NSUBCELL_X/grid->sx,
-            ba[YY]*GPU_NSUBCELL_Y/grid->sy,
+            ba[XX]*gpu_ncluster_per_cell_x/grid->sx,
+            ba[YY]*gpu_ncluster_per_cell_y/grid->sy,
             grid->atom_density > 0 ?
-            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z)) : 0.0);
+            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*gpu_ncluster_per_cell_z)) : 0.0);
 }
 
 /* Set non-bonded interaction flags for the current cluster.
  * Sorts atoms on LJ coefficients: !=0 first, ==0 at the end.
  */
-static void sort_cluster_on_flag(int na_c,
+static void sort_cluster_on_flag(int natoms_cluster,
                                  int a0, int a1, const int *atinfo,
                                  int *order,
                                  int *flags)
 {
-    int      subc;
-    int      sort1[NBNXN_NA_SC_MAX/GPU_NSUBCELL];
-    int      sort2[NBNXN_NA_SC_MAX/GPU_NSUBCELL];
+    const int natoms_cluster_max = 8;
+    int       sort1[natoms_cluster_max];
+    int       sort2[natoms_cluster_max];
+
+    assert(natoms_cluster <= natoms_cluster_max);
 
     *flags = 0;
 
-    subc = 0;
-    for (int s = a0; s < a1; s += na_c)
+    int subc = 0;
+    for (int s = a0; s < a1; s += natoms_cluster)
     {
         /* Make lists for this (sub-)cell on atoms with and without LJ */
         int      n1         = 0;
         int      n2         = 0;
         gmx_bool haveQ      = FALSE;
         int      a_lj_max   = -1;
-        for (int a = s; a < std::min(s+na_c, a1); a++)
+        for (int a = s; a < std::min(s + natoms_cluster, a1); a++)
         {
             haveQ = haveQ || GET_CGINFO_HAS_Q(atinfo[order[a]]);
 
@@ -794,21 +796,21 @@ static void sort_cluster_on_flag(int na_c,
         {
             *flags |= NBNXN_CI_DO_LJ(subc);
 
-            if (2*n1 <= na_c)
+            if (2*n1 <= natoms_cluster)
             {
                 /* Only sort when strictly necessary. Ordering particles
                  * Ordering particles can lead to less accurate summation
                  * due to rounding, both for LJ and Coulomb interactions.
                  */
-                if (2*(a_lj_max - s) >= na_c)
+                if (2*(a_lj_max - s) >= natoms_cluster)
                 {
                     for (int i = 0; i < n1; i++)
                     {
-                        order[a0+i] = sort1[i];
+                        order[a0 + i]      = sort1[i];
                     }
                     for (int j = 0; j < n2; j++)
                     {
-                        order[a0+n1+j] = sort2[j];
+                        order[a0 + n1 + j] = sort2[j];
                     }
                 }
 
@@ -860,7 +862,7 @@ static void fill_cell(const nbnxn_search_t nbs,
         int c;
 
         /* The grid-local cluster/(sub-)cell index */
-        c            = (a0 >> grid->na_c_2log) - grid->cell0*(grid->bSimple ? 1 : GPU_NSUBCELL);
+        c            = (a0 >> grid->na_c_2log) - grid->cell0*(grid->bSimple ? 1 : gpu_ncluster_per_cell);
         grid->fep[c] = 0;
         for (int at = a0; at < a1; at++)
         {
@@ -1058,8 +1060,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     }
 
     int subdiv_x = grid->na_c;
-    int subdiv_y = GPU_NSUBCELL_X*subdiv_x;
-    int subdiv_z = GPU_NSUBCELL_Y*subdiv_y;
+    int subdiv_y = gpu_ncluster_per_cell_x*subdiv_x;
+    int subdiv_z = gpu_ncluster_per_cell_y*subdiv_y;
 
     /* Sort the atoms within each x,y column in 3 dimensions */
     for (int cxy = cxy_start; cxy < cxy_end; cxy++)
@@ -1073,66 +1075,68 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
         /* Sort the atoms within each x,y column on z coordinate */
         sort_atoms(ZZ, FALSE, dd_zone,
-                   nbs->a+ash, na, x,
+                   nbs->a + ash, na, x,
                    grid->c0[ZZ],
                    1.0/grid->size[ZZ], ncz*grid->na_sc,
                    sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
-        for (int sub_z = 0; sub_z < ncz*GPU_NSUBCELL_Z; sub_z++)
+        for (int sub_z = 0; sub_z < ncz*gpu_ncluster_per_cell_z; sub_z++)
         {
             int ash_z = ash + sub_z*subdiv_z;
-            int na_z  = std::min(subdiv_z, na-(ash_z-ash));
+            int na_z  = std::min(subdiv_z, na - (ash_z - ash));
             int cz    = -1;
             /* We have already sorted on z */
 
-            if (sub_z % GPU_NSUBCELL_Z == 0)
+            if (sub_z % gpu_ncluster_per_cell_z == 0)
             {
-                cz = sub_z/GPU_NSUBCELL_Z;
+                cz = sub_z/gpu_ncluster_per_cell_z;
                 int c  = grid->cxy_ind[cxy] + cz;
 
                 /* The number of atoms in this supercell */
-                int na_c = std::min(grid->na_sc, na-(ash_z-ash));
+                int na_c = std::min(grid->na_sc, na - (ash_z - ash));
 
-                grid->nsubc[c] = std::min(GPU_NSUBCELL, (na_c+grid->na_c-1)/grid->na_c);
+                grid->nsubc[c] = std::min(gpu_ncluster_per_cell, (na_c + grid->na_c - 1)/grid->na_c);
 
                 /* Store the z-boundaries of the super cell */
                 grid->bbcz[c*NNBSBB_D  ] = x[nbs->a[ash_z]][ZZ];
-                grid->bbcz[c*NNBSBB_D+1] = x[nbs->a[ash_z+na_c-1]][ZZ];
+                grid->bbcz[c*NNBSBB_D+1] = x[nbs->a[ash_z + na_c - 1]][ZZ];
             }
 
-#if GPU_NSUBCELL_Y > 1
-            /* Sort the atoms along y */
-            sort_atoms(YY, (sub_z & 1), dd_zone,
-                       nbs->a+ash_z, na_z, x,
-                       grid->c0[YY]+cy*grid->sy,
-                       grid->inv_sy, subdiv_z,
-                       sort_work);
-#endif
+            if (gpu_ncluster_per_cell_y > 1)
+            {
+                /* Sort the atoms along y */
+                sort_atoms(YY, (sub_z & 1), dd_zone,
+                           nbs->a+ash_z, na_z, x,
+                           grid->c0[YY] + cy*grid->sy,
+                           grid->inv_sy, subdiv_z,
+                           sort_work);
+            }
 
-            for (int sub_y = 0; sub_y < GPU_NSUBCELL_Y; sub_y++)
+            for (int sub_y = 0; sub_y < gpu_ncluster_per_cell_y; sub_y++)
             {
                 int ash_y = ash_z + sub_y*subdiv_y;
-                int na_y  = std::min(subdiv_y, na-(ash_y-ash));
+                int na_y  = std::min(subdiv_y, na - (ash_y - ash));
 
-#if GPU_NSUBCELL_X > 1
-                /* Sort the atoms along x */
-                sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1), dd_zone,
-                           nbs->a+ash_y, na_y, x,
-                           grid->c0[XX]+cx*grid->sx,
-                           grid->inv_sx, subdiv_y,
-                           sort_work);
-#endif
+                if (gpu_ncluster_per_cell_x > 1)
+                {
+                    /* Sort the atoms along x */
+                    sort_atoms(XX, ((cz*gpu_ncluster_per_cell_y + sub_y) & 1), dd_zone,
+                               nbs->a + ash_y, na_y, x,
+                               grid->c0[XX] + cx*grid->sx,
+                               grid->inv_sx, subdiv_y,
+                               sort_work);
+                }
 
-                for (int sub_x = 0; sub_x < GPU_NSUBCELL_X; sub_x++)
+                for (int sub_x = 0; sub_x < gpu_ncluster_per_cell_x; sub_x++)
                 {
                     int ash_x = ash_y + sub_x*subdiv_x;
-                    int na_x  = std::min(subdiv_x, na-(ash_x-ash));
+                    int na_x  = std::min(subdiv_x, na - (ash_x - ash));
 
                     fill_cell(nbs, grid, nbat,
-                              ash_x, ash_x+na_x, atinfo, x,
-                              grid->na_c*(cx*GPU_NSUBCELL_X+sub_x) + (dd_zone >> 2),
-                              grid->na_c*(cy*GPU_NSUBCELL_Y+sub_y) + (dd_zone & 3),
+                              ash_x, ash_x + na_x, atinfo, x,
+                              grid->na_c*(cx*gpu_ncluster_per_cell_x + sub_x) + (dd_zone >> 2),
+                              grid->na_c*(cy*gpu_ncluster_per_cell_y + sub_y) + (dd_zone & 3),
                               grid->na_c*sub_z,
                               bb_work_aligned);
                 }
@@ -1459,7 +1463,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     grid->na_c      = nbnxn_kernel_to_cluster_i_size(nb_kernel_type);
     grid->na_cj     = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
-    grid->na_sc     = (grid->bSimple ? 1 : GPU_NSUBCELL)*grid->na_c;
+    grid->na_sc     = (grid->bSimple ? 1 : gpu_ncluster_per_cell)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 
     nbat->na_c = grid->na_c;

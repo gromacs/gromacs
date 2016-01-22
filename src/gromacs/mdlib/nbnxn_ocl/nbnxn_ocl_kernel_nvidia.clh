@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -174,7 +174,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
     /* shmem buffer for cj, for both warps separately */
     __local int *cjs     = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
-    #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
+    #define LOCAL_OFFSET cjs + 2 * nbnxn_gpu_jgroup_size
 
 #ifdef IATYPE_SHMEM //Should not be defined!
     /* shmem buffer for i atom-type pre-loading */
@@ -285,9 +285,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #endif
         {
             /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            if ((tidxj == 0 || tidxj == 4) && tidxi < nbnxn_gpu_jgroup_size)
             {
-                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+                cjs[tidxi + tidxj * nbnxn_gpu_jgroup_size / 4] = pl_cj4[j4].cj[tidxi];
             }
 
             /* TODO: check loop unrolling with NVIDIA OpenCL */
@@ -295,13 +295,13 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 //#pragma unroll 4
 #endif
 
-            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
+            for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
                 if (imask & (supercl_interaction_mask << (jm * NCL_PER_SUPERCL)))
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
+                    cj      = cjs[jm + (tidxj & 4) * nbnxn_gpu_jgroup_size / 4];
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
