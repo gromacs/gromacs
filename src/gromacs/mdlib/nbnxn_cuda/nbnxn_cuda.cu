@@ -260,7 +260,7 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
     /* i-atom x+q in shared memory */
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
     /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    shmem += num_threads_z * 2 * nbnxn_gpu_jgroup_size * sizeof(int);
     if (dinfo->prop.major >= 3)
     {
         /* i-atom types in shared memory */
