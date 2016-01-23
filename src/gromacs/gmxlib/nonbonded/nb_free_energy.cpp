@@ -141,7 +141,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     sh_ewald            = fr->ic->sh_ewald;
     ewtab               = fr->ic->tabq_coul_FDV0;
     ewtabscale          = fr->ic->tabq_scale;
-    ewtabhalfspace      = half/ewtabscale;
+    ewtabhalfspace      = (ewtabscale != 0.0) ? half/ewtabscale : 0.0;
     tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
     tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
 
