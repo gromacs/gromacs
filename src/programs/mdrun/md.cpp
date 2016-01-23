@@ -224,8 +224,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
-    gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
-                    bFirstStep, startingFromCheckpoint, bInitStep, bLastStep,
+    gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD,
+                    bFirstStep, startingFromCheckpoint, bInitStep, bLastStep = FALSE,
                     bBornRadii;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
@@ -689,9 +689,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         rerun_fr.natoms = 0;
         if (MASTER(cr))
         {
-            bNotLastFrame = read_first_frame(oenv, &status,
-                                             opt2fn("-rerun", nfile, fnm),
-                                             &rerun_fr, TRX_NEED_X | TRX_READ_V);
+            bLastStep = !read_first_frame(oenv, &status,
+                                          opt2fn("-rerun", nfile, fnm),
+                                          &rerun_fr, TRX_NEED_X | TRX_READ_V);
             if (rerun_fr.natoms != top_global->natoms)
             {
                 gmx_fatal(FARGS,
@@ -714,7 +714,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (PAR(cr))
         {
-            rerun_parallel_comm(cr, &rerun_fr, &bNotLastFrame);
+            rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
         }
 
         if (ir->ePBC != epbcNONE)
@@ -747,9 +747,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
 
     /* and stop now if we should */
-    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
+    bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
                  ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
-    while (!bLastStep || (bRerunMD && bNotLastFrame))
+    while (!bLastStep)
     {
 
         /* Determine if this is a neighbor search step */
@@ -919,9 +919,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bBornRadii = TRUE;
         }
 
-        do_log     = do_per_step(step, ir->nstlog) || bFirstStep || bLastStep;
+        do_log     = do_per_step(step, ir->nstlog) || bFirstStep || bLastStep || bRerunMD;
         do_verbose = bVerbose &&
-            (step % stepout == 0 || bFirstStep || bLastStep);
+            (step % stepout == 0 || bFirstStep || bLastStep || bRerunMD);
 
         if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD))
         {
@@ -1026,7 +1026,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   do_per_step(step, nstglobalcomm) ||
                   (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
 
-        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
+        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep || bRerunMD);
 
         if (do_ene || do_log || bDoReplEx)
         {
@@ -1682,12 +1682,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if (MASTER(cr))
             {
                 /* read next frame from input trajectory */
-                bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
+                bLastStep = !read_next_frame(oenv, status, &rerun_fr);
             }
 
             if (PAR(cr))
             {
-                rerun_parallel_comm(cr, &rerun_fr, &bNotLastFrame);
+                rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
             }
         }
 
