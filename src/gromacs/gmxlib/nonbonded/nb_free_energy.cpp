@@ -138,13 +138,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real    six         = 6.0;
     const real    fourtyeight = 48.0;
 
-    sh_ewald            = fr->ic->sh_ewald;
-    ewtab               = fr->ic->tabq_coul_FDV0;
-    ewtabscale          = fr->ic->tabq_scale;
-    ewtabhalfspace      = half/ewtabscale;
-    tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
-    tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
-
     x                   = xx[0];
     f                   = ff[0];
 
@@ -267,6 +260,16 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
     bEwaldLJ        = (ivdw == GMX_NBKERNEL_VDW_LJEWALD);
+
+    if (bEwald || bEwaldLJ)
+    {
+        sh_ewald       = fr->ic->sh_ewald;
+        ewtab          = fr->ic->tabq_coul_FDV0;
+        ewtabscale     = fr->ic->tabq_scale;
+        ewtabhalfspace = half/ewtabscale;
+        tab_ewald_F_lj = fr->ic->tabq_vdw_F;
+        tab_ewald_V_lj = fr->ic->tabq_vdw_V;
+    }
 
     /* For Ewald/PME interactions we cannot easily apply the soft-core component to
      * reciprocal space. When we use vanilla (not switch/shift) Ewald interactions, we
