@@ -99,7 +99,7 @@ set(ALEXANDRIA_SOURCES
         poldata_test.cpp
         stringutil.cpp
         tune_dip.cpp
- #       tune_fc.cpp
+        tune_fc.cpp
         tune_pol.cpp
 #        gen_ff.cpp
 	)

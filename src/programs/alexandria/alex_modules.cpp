@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 int alex_gentop(int argc, char *argv[]);
-//int alex_tune_fc(int argc, char *argv[]);
+int alex_tune_fc(int argc, char *argv[]);
 int alex_tune_dip(int argc, char *argv[]);
 int alex_tune_pol(int argc, char *argv[]);
 int alex_poldata_test(int argc, char *argv[]);
@@ -85,8 +85,8 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
     // Modules from this directory
     registerModule(manager, &alex_gentop, "gentop",
                    "Generate topology for structure files");
-    //    registerModule(manager, &alex_tune_fc, "tune_fc",
-    //             "Optimize force field parameters");
+    registerModule(manager, &alex_tune_fc, "tune_fc",
+                   "Optimize force field parameters");
     registerModule(manager, &alex_tune_pol, "tune_pol",
                    "Optimize polarizabilities");
     registerModule(manager, &alex_tune_dip, "tune_dip",
@@ -122,8 +122,9 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("bastat");
         group.addModule("tune_pol");
         group.addModule("tune_dip");
-        //        group.addModule("tune_fc");
+        group.addModule("tune_fc");
         group.addModule("gauss2molprop");
+        group.addModule("molprop_chek");
     }
     {
         gmx::CommandLineModuleGroup group =
