@@ -104,7 +104,8 @@ int alex_gauss2molprop(int argc, char *argv[])
 
     printf("Succesfully read %d molprops from %d Gaussian files.\n",
            (int)mp.size(), nfn);
-    MolPropSort(mp, MPSA_MOLNAME, NULL, NULL);
+    alexandria::MolSelect gms;
+    MolPropSort(mp, MPSA_MOLNAME, NULL, gms);
     merge_doubles(mp, NULL, TRUE);
     if (mp.size() > 0)
     {

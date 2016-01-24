@@ -179,7 +179,7 @@ static bool bZeroPol(const char *ptype, std::vector<std::string> zeropol)
 
 static void dump_csv(const alexandria::Poldata        &pd,
                      std::vector<alexandria::MolProp> &mp,
-                     gmx_molselect  *                  gms,
+                     const alexandria::MolSelect      &gms,
                      std::vector<pType>               &ptypes,
                      int                               nusemol,
                      double                            x[],
@@ -199,7 +199,7 @@ static void dump_csv(const alexandria::Poldata        &pd,
     int j  = 0;
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++, j++)
     {
-        iMolSelect ims  = gmx_molselect_status(gms, mpi->getIupac().c_str());
+        iMolSelect ims  = gms.status(mpi->getIupac());
 
         if (imsTrain == ims)
         {
@@ -257,7 +257,8 @@ static int decompose_frag(FILE *fplog,
                           alexandria::Poldata &pd,
                           std::vector<alexandria::MolProp> &mp,
                           gmx_bool bQM, char *lot,
-                          int mindata, gmx_molselect *gms,
+                          int mindata, 
+                          const alexandria::MolSelect &gms,
                           gmx_bool bZero, gmx_bool bForceFit,
                           int nBootStrap, real fractionBootStrap,
                           int seed,
@@ -303,7 +304,7 @@ static int decompose_frag(FILE *fplog,
         double T;
         for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); )
         {
-            iMolSelect ims  = gmx_molselect_status(gms, mpi->getIupac().c_str());
+            iMolSelect ims  = gms.status(mpi->getIupac());
 
             pol             = 0;
             bool       bPol = mpi->getProp(MPO_POLARIZABILITY,
@@ -365,7 +366,7 @@ static int decompose_frag(FILE *fplog,
                 fprintf(fplog, "Mol: %s, IUPAC: %s, ims: %s, bPol: %s, pol: %g - %s\n",
                         mpi->getMolname().c_str(),
                         mpi->getIupac().c_str(),
-                        ims_names[ims], gmx::boolToString(bPol), pol,
+                        iMolSelectName(ims), gmx::boolToString(bPol), pol,
                         bUseMol ? "Used" : "Not used");
             }
 
@@ -710,7 +711,6 @@ int alex_tune_pol(int argc, char *argv[])
     gmx_atomprop_t                         ap;
     alexandria::Poldata                    pd;
     gmx_output_env_t *                     oenv;
-    gmx_molselect  *                       gms;
     int                                    npa = sizeof(pa)/sizeof(pa[0]);
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
@@ -755,7 +755,8 @@ int alex_tune_pol(int argc, char *argv[])
             fprintf(debug, "\n");
         }
     }
-    gms               = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
+    alexandria::MolSelect gms;
+    gms.read(opt2fn("-sel", NFILE, fnm));
     FILE                    *fplog       = opt2FILE("-g", NFILE, fnm, "w");
     std::vector<std::string> zpol;
     if (NULL != zeropol)
@@ -799,7 +800,8 @@ int alex_tune_pol(int argc, char *argv[])
         }
         if (mpsa != MPSA_NR)
         {
-            MolPropSort(mp, mpsa, ap, NULL);
+            alexandria::MolSelect gms;
+            MolPropSort(mp, mpsa, ap, gms);
         }
 
         MolPropWrite(mpfn, mp, bCompress);

@@ -89,7 +89,7 @@ class CategoryList
 
 void makeCategoryList(CategoryList         &cList,
                       std::vector<MolProp>  mp,
-                      gmx_molselect *      gms,
+                      const MolSelect      &gms,
                       iMolSelect            ims);
 
 }

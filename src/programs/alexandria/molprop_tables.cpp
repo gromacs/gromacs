@@ -176,7 +176,7 @@ static void stats_header(LongTable &lt,
         if (0 == k)
         {
             snprintf(caption, STRLEN, "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
-                     mpo_name[mpo], mpo_unit[mpo], ims_names[ims]);
+                     mpo_name[mpo], mpo_unit[mpo], iMolSelectName(ims));
             snprintf(label, STRLEN, "%s_rmsd", mpo_name[mpo]);
             lt.setCaption(caption);
             lt.setLabel(label);
@@ -220,7 +220,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
                              char                 *exp_type,
                              double                outlier,
                              CategoryList          cList,
-                             gmx_molselect        *gms,
+                             const MolSelect      &gms,
                              iMolSelect            ims)
 {
     std::vector<MolProp>::iterator mpi;
@@ -321,7 +321,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
         lsqtot[k] = gmx_stats_init();
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
-            if ((gmx_molselect_status(gms, mpi->getIupac().c_str()) == ims) &&
+            if ((gms.status(mpi->getIupac()) == ims) &&
                 (mpi->HasComposition(alex)))
             {
                 double exp_err, qm_err;
@@ -463,7 +463,7 @@ static void composition_header(LongTable &lt,
     char caption[STRLEN];
 
     snprintf(caption, STRLEN, "Decomposition of molecules into Alexandria atom types. {\\bf Data set: %s.} Charge is given when not zero, multiplicity is given when not 1.",
-             ims_names[ims]);
+             iMolSelectName(ims));
     lt.setCaption(caption);
     lt.setLabel("frag_defs");
     lt.setColumns("p{75mm}ll");
@@ -472,7 +472,7 @@ static void composition_header(LongTable &lt,
 }
 
 void gmx_molprop_composition_table(FILE *fp, std::vector<MolProp> mp,
-                                   gmx_molselect *gms, iMolSelect ims)
+                                   const MolSelect &gms, iMolSelect ims)
 {
     std::vector<MolProp>::iterator mpi;
     MolecularCompositionIterator   mci;
@@ -485,7 +485,7 @@ void gmx_molprop_composition_table(FILE *fp, std::vector<MolProp> mp,
     nprint = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
+        if ((ims == gms.status(mpi->getIupac())) &&
             (mpi->HasComposition(alex)))
         {
             nprint++;
@@ -500,7 +500,7 @@ void gmx_molprop_composition_table(FILE *fp, std::vector<MolProp> mp,
     iline = 0;
     for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
+        if ((ims == gms.status(mpi->getIupac())) &&
             (mpi->HasComposition(alex)))
         {
             q = mpi->getCharge();
@@ -869,13 +869,13 @@ static void prop_header(LongTable &lt,
         if (0 == k)
         {
             snprintf(longbuf, STRLEN, "Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.",
-                     property, ims_names[ims],
+                     property, iMolSelectName(ims),
                      (abs_toler > 0) ? abs_toler   : 100*rel_toler,
                      (abs_toler > 0) ? unit : "\\%",
                      (abs_toler > 0) ? 2*abs_toler : 200*rel_toler,
                      (abs_toler > 0) ? unit : "\\%");
             lt.setCaption(longbuf);
-            snprintf(longbuf, STRLEN, "%s", ims_names[ims]);
+            snprintf(longbuf, STRLEN, "%s", iMolSelectName(ims));
             lt.setLabel(longbuf);
         }
         else
@@ -976,7 +976,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             t_qmcount *qmc,
                             const char *exp_type, bool bPrintAll,
                             bool bPrintBasis, bool bPrintMultQ,
-                            gmx_molselect *gms, iMolSelect ims)
+                            const MolSelect &gms, iMolSelect ims)
 {
     MolecularQuadrupoleIterator qi;
     MolecularEnergyIterator     mei;
@@ -997,7 +997,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     nprint = 0;
     for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
+        if ((ims == gms.status(mpi->getIupac())) &&
             (mpi->HasComposition(alex)))
         {
             nprint++;
@@ -1013,7 +1013,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
     for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
+        if ((ims == gms.status(mpi->getIupac())) &&
             (mpi->HasComposition(alex)))
         {
             std::vector<ExpData>  ed;

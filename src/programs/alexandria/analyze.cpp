@@ -69,7 +69,7 @@
 
 static void calc_frag_miller(alexandria::Poldata              &pd,
                              std::vector<alexandria::MolProp> &mp,
-                             gmx_molselect                    *gms)
+                             const alexandria::MolSelect      &gms)
 {
     double                       bos0, polar, sig_pol;
 
@@ -87,8 +87,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
 
     for (auto &mpi : mp)
     {
-        const char *iupac = mpi.getIupac().c_str();
-        ims = gmx_molselect_status(gms, iupac);
+        ims = gms.status(mpi.getIupac());
         if ((ims == imsTrain) || (ims == imsTest))
         {
             for (alexandria::CompositionSpecIterator csi = cs.beginCS(); (csi < cs.endCS()); ++csi)
@@ -165,7 +164,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                             mpi.AddExperiment(calc);
                             if (NULL != debug)
                             {
-                                fprintf(debug, "Added polarizability %g for %s\n", p, iupac);
+                                fprintf(debug, "Added polarizability %g for %s\n", p, mpi.getIupac().c_str());
                             }
                         }
                     }
@@ -180,7 +179,8 @@ static void write_corr_xvg(const char *fn,
                            MolPropObservable mpo, 
                            alexandria::t_qmcount *qmc,
                            real rtoler, real atoler,
-                           const gmx_output_env_t *oenv, gmx_molselect *gms,
+                           const gmx_output_env_t *oenv, 
+                           const alexandria::MolSelect &gms,
                            char *exp_type)
 {
     FILE                       *fp;
@@ -211,7 +211,7 @@ static void write_corr_xvg(const char *fn,
         nout = 0;
         for (auto &mpi : mp)
         {
-            ims = gmx_molselect_status(gms, mpi.getIupac().c_str());
+            ims = gms.status(mpi.getIupac());
             if ((ims == imsTrain) || (ims == imsTest))
             {
                 for (k = 0; (k < qmc->nconf); k++)
@@ -299,7 +299,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 const char *texfn,
                                 const char *xvgfn,
                                 const gmx_output_env_t *oenv,
-                                gmx_molselect *gms,
+                                const alexandria::MolSelect &gms,
                                 const char *selout)
 {
     alexandria::CategoryList       cList;
@@ -500,7 +500,6 @@ int alex_analyze(int argc, char *argv[])
     MolPropObservable                mpo;
     gmx_atomprop_t                   ap;
     gmx_output_env_t                *oenv;
-    gmx_molselect  *                 gms;
     char                           **mpname = NULL;
     int                              nmpfile;
 
@@ -516,7 +515,8 @@ int alex_analyze(int argc, char *argv[])
     ap = gmx_atomprop_init();
 
     nmpfile = opt2fns(&mpname, "-m", NFILE, fnm);
-    gms     = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
+    alexandria::MolSelect gms;
+    gms.read(opt2fn("-sel", NFILE, fnm));
 
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort", npa, pa))

@@ -124,7 +124,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("tune_dip");
         group.addModule("tune_fc");
         group.addModule("gauss2molprop");
-        group.addModule("molprop_chek");
+        group.addModule("molprop_check");
     }
     {
         gmx::CommandLineModuleGroup group =

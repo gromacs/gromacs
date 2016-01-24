@@ -5,20 +5,59 @@
 #ifndef MOLSELECT_H
 #define MOLSELECT_H
 
-struct gmx_molselect;
+#include <string>
+#include <vector>
 
 enum iMolSelect {
     imsTrain, imsTest, imsIgnore, imsUnknown, imsNR
 };
 
-extern const char *ims_names[imsNR];
+const char *iMolSelectName(iMolSelect ims);
 
-gmx_molselect *gmx_molselect_init(const char *fn);
+namespace alexandria
+{
 
-void gmx_molselect_done(gmx_molselect *gms);
+class IMolSelect 
+{
+private:
+    std::string iupac_;
+    iMolSelect  status_;
+    int         index_;
+public:
+    IMolSelect(const std::string &iupac, iMolSelect status, int index) :
+        iupac_(iupac), status_(status), index_(index) {}
 
-iMolSelect gmx_molselect_status(gmx_molselect *gms, const char *iupac);
+    const std::string &iupac() const { return iupac_; }
 
-int gmx_molselect_index(gmx_molselect *gms, const char *iupac);
+    iMolSelect status() const { return status_; }
+
+    int index() const { return index_; }
+};
+
+class MolSelect 
+{
+private:
+    std::vector<IMolSelect> ims_;
+
+public:
+    MolSelect() {};
+
+    void read(const char *filename);
+
+    size_t nMol() const { return ims_.size(); }
+
+    iMolSelect status(const std::string &iupac) const;
+
+    int index(const std::string &iupac) const;
+
+    int count(iMolSelect ims) const
+    {
+        return std::count_if(ims_.begin(), ims_.end(),
+                             [ims](IMolSelect const &i)
+                             { return i.status() == ims; });
+    }
+};
+
+} // namespace
 
 #endif

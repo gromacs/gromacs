@@ -960,7 +960,6 @@ int alex_tune_dip(int argc, char *argv[])
     FILE                       *fp;
     t_commrec                  *cr;
     gmx_output_env_t *          oenv;
-    gmx_molselect *            gms;
     time_t                      my_t;
 
     cr = init_commrec();
@@ -989,13 +988,10 @@ int alex_tune_dip(int argc, char *argv[])
     {
         fp = NULL;
     }
+    MolSelect gms;
     if (MASTER(cr))
     {
-        gms = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
-    }
-    else
-    {
-        gms = NULL;
+        gms.read(opt2fn("-sel", NFILE, fnm));
     }
     md.Init(cr, bQM, bGaussianBug,
             iChargeDistributionModel,

@@ -1578,7 +1578,6 @@ int alex_tune_fc(int argc, char *argv[])
     FILE                 *fp;
     t_commrec            *cr;
     gmx_output_env_t     *oenv;
-    gmx_molselect        *gms;
     time_t                my_t;
 
     cr = init_commrec();
@@ -1609,13 +1608,10 @@ int alex_tune_fc(int argc, char *argv[])
         fp = NULL;
     }
 
+    MolSelect gms;
     if (MASTER(cr))
     {
-        gms = gmx_molselect_init(opt2fn_null("-sel", NFILE, fnm));
-    }
-    else
-    {
-        gms = NULL;
+        gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
     alexandria::OptParam      opt;
@@ -1666,7 +1662,6 @@ int alex_tune_fc(int argc, char *argv[])
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
 
-        gmx_molselect_done(gms);
         done_filenms(NFILE, fnm);
 
         gmx_ffclose(fp);

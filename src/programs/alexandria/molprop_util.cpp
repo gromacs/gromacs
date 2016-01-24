@@ -381,7 +381,8 @@ int merge_xml(int nfile, char **filens,
             mpi->Dump(debug);
         }
     }
-    MolPropSort(mpout, MPSA_MOLNAME, NULL, NULL);
+    MolSelect gms;
+    MolPropSort(mpout, MPSA_MOLNAME, NULL, gms);
     nwarn += merge_doubles(mpout, doubles, bForceMerge);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout.size());
@@ -393,7 +394,7 @@ int merge_xml(int nfile, char **filens,
     }
     if (sorted)
     {
-        MolPropSort(mpout, MPSA_FORMULA, NULL, NULL);
+        MolPropSort(mpout, MPSA_FORMULA, NULL, gms);
         MolPropWrite(sorted, mpout, false);
         dump_mp(mpout);
     }
@@ -499,7 +500,7 @@ alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
 
 void MolPropSort(std::vector<alexandria::MolProp> &mp,
                  MolPropSortAlgorithm mpsa, gmx_atomprop_t apt,
-                 gmx_molselect *gms)
+                 const MolSelect &gms)
 {
     printf("There are %d molprops. Will now sort them.\n", (int)mp.size());
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
@@ -530,11 +531,11 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
             }
             break;
         case MPSA_SELECTION:
-            if (NULL != gms)
+            if (gms.nMol() > 0)
             {
                 for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
                 {
-                    int index = gmx_molselect_index(gms, mpi->getIupac().c_str());
+                    int index = gms.index(mpi->getIupac());
                     mpi->SetIndex(index);
                 }
                 std::sort(mp.begin(), mp.end(), comp_mp_index);

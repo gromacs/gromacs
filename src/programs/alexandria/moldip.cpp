@@ -524,7 +524,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   gmx_bool bZero,
                   char *opt_elem, char *const_elem,
                   char *lot,
-                  gmx_molselect *gms,
+                  const MolSelect &gms,
                   real watoms, gmx_bool bCheckSupport,
                   unsigned int seed)
 {
@@ -588,7 +588,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         int n = 0;
         for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); ++mpi)
         {
-            if (imsTrain == gmx_molselect_status(gms, mpi->getIupac().c_str()))
+            if (imsTrain == gms.status(mpi->getIupac()))
             {
                 int               dest = (n % _cr->nnodes);
                 alexandria::MyMol mpnew;

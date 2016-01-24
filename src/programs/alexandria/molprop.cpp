@@ -743,9 +743,7 @@ bool MolProp::GenerateComposition(const Poldata &pd)
     MolecularComposition mci_miller(cs.searchCS(iCmiller)->name());
 
     // Why was this again?
-    //DeleteComposition(alexandria);
-    //DeleteComposition(bosque);
-    //DeleteComposition(miller);
+    _mol_comp.clear();
 
     int natoms = 0;
     for (ci = BeginExperiment(); (mci_alexandria.CountAtoms() <= 0) && (ci < EndExperiment()); ci++)

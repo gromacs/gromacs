@@ -100,7 +100,7 @@ void CategoryList::sortCategories()
 
 void makeCategoryList(CategoryList         &cList,
                       std::vector<MolProp>  mp,
-                      gmx_molselect *      gms,
+                      const MolSelect      &gms,
                       iMolSelect            ims)
 {
     alexandria::CompositionSpecs  cs;
@@ -108,7 +108,7 @@ void makeCategoryList(CategoryList         &cList,
 
     for (std::vector<alexandria::MolProp>::iterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if ((ims == gmx_molselect_status(gms, mpi->getIupac().c_str())) &&
+        if ((ims == gms.status(mpi->getIupac())) &&
             mpi->HasComposition(alex))
         {
             for (std::vector<std::string>::iterator si = mpi->BeginCategory(); (si < mpi->EndCategory()); si++)

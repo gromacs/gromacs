@@ -546,7 +546,6 @@ int alex_bastat(int argc, char *argv[])
     //alexandria::MolDip    md;
     FILE                            *fp;
     ChargeDistributionModel          iDistributionModel;
-    gmx_molselect  *                 gms;
     time_t                           my_t;
     t_bonds                         *b;
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
@@ -581,7 +580,10 @@ int alex_bastat(int argc, char *argv[])
     fprintf(fp, "# alexandria is part of G R O M A C S:\n#\n");
     fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
 
-    gms = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
+    MolSelect gms;
+    gms.read(opt2fn("-sel", NFILE, fnm));
+    printf("There are %d molecules in the training group\n",
+           gms.count(imsTrain));
 
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
@@ -609,7 +611,7 @@ int alex_bastat(int argc, char *argv[])
     snew(b, 1);
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        if (gmx_molselect_status(gms, mpi->getIupac().c_str()) == imsTrain)
+        if (gms.status(mpi->getIupac()) == imsTrain)
         {
             alexandria::MyMol mmi;
             int               i;
@@ -626,7 +628,9 @@ int alex_bastat(int argc, char *argv[])
             {
                 if (NULL != debug)
                 {
-                    fprintf(debug, "Could not make topology for %s\n", mmi.molProp()->getMolname().c_str());
+                    fprintf(debug, "Could not make topology for %s, reason %s\n", 
+                            mmi.molProp()->getMolname().c_str(),
+                            immsg(imm) );
                 }
                 continue;
             }

@@ -116,7 +116,7 @@ namespace alexandria
     void MolPropSort(std::vector<MolProp> &mp,
                      MolPropSortAlgorithm mpsa,
                      gmx_atomprop_t apt,
-                     gmx_molselect *gms);
+                     const MolSelect &gms);
     
 } // namespace alexandria
 
