@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
 #include "stringutil.h"
