@@ -223,7 +223,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_int64_t     step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
-    gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
+    gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
                     bFirstStep, startingFromCheckpoint, bInitStep, bLastStep,
                     bBornRadii;
@@ -919,7 +919,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bBornRadii = TRUE;
         }
 
-        do_log     = do_per_step(step, ir->nstlog) || bFirstStep || bLastStep;
+        /* do_log triggers energy and virial calculation. Because this leads
+         * to different code paths, forces can be different. Thus for exact
+         * continuation we should avoid extra log output.
+         * Note that the || bLastStep can result in non-exact continuation
+         * beyond the last step. But we don't consider that to be an issue.
+         */
+        do_log     = do_per_step(step, ir->nstlog) || (bFirstStep && !startingFromCheckpoint) || bLastStep;
         do_verbose = bVerbose &&
             (step % stepout == 0 || bFirstStep || bLastStep);
 
@@ -1010,21 +1016,18 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                but the virial needs to be calculated on both the current step and the 'next' step. Future
                reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
 
-            bCalcEner = do_per_step(step-1, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            /* TODO: This is probably not what we want, we will write to energy file one step after nstcalcenergy steps. */
+            bCalcEnerStep = do_per_step(step - 1, ir->nstcalcenergy);
+            bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && (do_per_step(step, ir->nstpcouple) || do_per_step(step-1, ir->nstpcouple)));
         }
         else
         {
-            bCalcEner = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir  = bCalcEner ||
+            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
+            bCalcVir      = bCalcEnerStep ||
                 (ir->epc != epcNO && do_per_step(step, ir->nstpcouple));
         }
-
-        /* Do we need global communication ? */
-        bGStat = (bCalcVir || bCalcEner || bStopCM ||
-                  do_per_step(step, nstglobalcomm) ||
-                  (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
+        bCalcEner = bCalcEnerStep;
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
@@ -1032,8 +1035,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             bCalcVir  = TRUE;
             bCalcEner = TRUE;
-            bGStat    = TRUE;
         }
+
+        /* Do we need global communication ? */
+        bGStat = (bCalcVir || bCalcEner || bStopCM ||
+                  do_per_step(step, nstglobalcomm) ||
+                  (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step-1, nstglobalcomm)));
 
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((inputrecDynamicBox(ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
@@ -1554,36 +1561,32 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Output stuff */
         if (MASTER(cr))
         {
-            gmx_bool do_dr, do_or;
-
             if (fplog && do_log && bDoExpanded)
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
                                           &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
-            if (!(startingFromCheckpoint && (EI_VV(ir->eI))))
+            if (bCalcEner)
             {
-                if (bCalcEner)
-                {
-                    upd_mdebin(mdebin, bDoDHDL, TRUE,
-                               t, mdatoms->tmass, enerd, state,
-                               ir->fepvals, ir->expandedvals, lastbox,
-                               shake_vir, force_vir, total_vir, pres,
-                               ekind, mu_tot, constr);
-                }
-                else
-                {
-                    upd_mdebin_step(mdebin);
-                }
-
-                do_dr  = do_per_step(step, ir->nstdisreout);
-                do_or  = do_per_step(step, ir->nstorireout);
-
-                print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
-                           step, t,
-                           eprNORMAL, mdebin, fcd, groups, &(ir->opts));
+                upd_mdebin(mdebin, bDoDHDL, bCalcEnerStep,
+                           t, mdatoms->tmass, enerd, state,
+                           ir->fepvals, ir->expandedvals, lastbox,
+                           shake_vir, force_vir, total_vir, pres,
+                           ekind, mu_tot, constr);
             }
+            else
+            {
+                upd_mdebin_step(mdebin);
+            }
+
+            gmx_bool do_dr  = do_per_step(step, ir->nstdisreout);
+            gmx_bool do_or  = do_per_step(step, ir->nstorireout);
+
+            print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
+                       step, t,
+                       eprNORMAL, mdebin, fcd, groups, &(ir->opts));
+
             if (ir->bPull)
             {
                 pull_print_output(ir->pull_work, step, t);
