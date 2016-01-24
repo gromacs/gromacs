@@ -320,11 +320,9 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         std::vector<int> &sym_charges)
 {
     std::string  central, attached;
-    int          nh, ai, aj, anri, anrj;
+    int          ai, aj, anri, anrj;
     int          anr_central, anr_attached, nrq;
-    int          hs[8];
     double       qaver, qsum;
-    int          hsmin;
 
     //printf("Fix me: symmetrize charges algorithm is broken in: file %s, line %d\n",
     //       __FILE__, __LINE__ );
@@ -358,12 +356,12 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
                 anr_attached = gmx_atomprop_atomnumber(aps, symcharges->getAttached().c_str());
-                hsmin        = -1;
+                int              hsmin = -1;
+                std::vector<int> hs;
                 for (int i = 0; (i < atoms->nr); i++)
                 {
                     if (atoms->atom[i].atomnumber == anr_central)
                     {
-                        nh = 0;
                         for (alexandria::ParamIterator j = bonds->beginParam();
                              (j < bonds->endParam()); ++j)
                         {
@@ -374,18 +372,19 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
 
                             if ((ai == i) && (anrj == anr_attached))
                             {
-                                hs[nh++] = aj;
+                                hs.push_back(aj);
                             }
                             else if ((aj == i) && (anri == anr_attached))
                             {
-                                hs[nh++] = ai;
+                                hs.push_back(ai);
                             }
-                            if ((hsmin == -1) || (hs[nh-1] < hsmin))
+                            if ((hs.size() > 0) && (hsmin == -1 || hs.back() < hsmin))
                             {
-                                hsmin = hs[nh-1];
+                                hsmin = hs.back();
                             }
                         }
-                        if ((nh == symcharges->getNumattach()) && (hsmin != -1))
+                        if ((static_cast<int>(hs.size()) == symcharges->getNumattach()) && 
+                            (hsmin != -1))
                         {
                             for (int j = 0; (j < symcharges->getNumattach()); j++)
                             {
