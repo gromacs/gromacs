@@ -194,7 +194,7 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
     }
 }
 
-static void process_children(xmlNodePtr tree, std::vector<std::string> xbuf)
+static void process_children(xmlNodePtr tree, std::vector<std::string> &xbuf)
 {
     int node;
 

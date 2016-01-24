@@ -425,7 +425,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
 {
     int nwarn = 0;
 
-    for (alexandria::MolecularEnergyIterator mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
+    for (MolecularEnergyIterator mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
     {
         alexandria::MolecularEnergy me(mei->getType(),
                                        mei->getUnit(),
@@ -436,7 +436,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         AddEnergy(me);
     }
 
-    for (alexandria::MolecularDipoleIterator dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
+    for (MolecularDipoleIterator dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
     {
         alexandria::MolecularDipole dp(dpi->getType(),
                                        dpi->getUnit(),
