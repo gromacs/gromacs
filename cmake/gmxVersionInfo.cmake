@@ -232,7 +232,7 @@ set(GMX_VERSION_SUFFIX "")
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
 set(LIBRARY_SOVERSION_MAJOR 1)
-set(LIBRARY_SOVERSION_MINOR 1)
+set(LIBRARY_SOVERSION_MINOR 2)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
 #####################################################################
@@ -256,7 +256,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # each release. It's hard to test because it is only used for
 # REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
 # been placed on the server.
-set(REGRESSIONTEST_MD5SUM "614a74e9b143bda5476f87f4ce08eec0" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "407581b7093de67f6db2dff6c4024393" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_MINOR}*100 + ${GMX_VERSION_PATCH}")
