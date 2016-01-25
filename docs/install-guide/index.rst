@@ -102,7 +102,10 @@ most recent version of your preferred compiler for your platform.
 There is a large amount of |Gromacs| code that depends on effective
 compiler optimization to get high performance. This makes |Gromacs|
 performance sensitive to the compiler used, and the binary will often
-only work on the hardware for which it is compiled.
+only work on the hardware for which it is compiled. You may also need
+the most recent version compiler toolchain components beside the
+compiler itself (e.g. assembler or linker); these are often shipped by
+the distribution's binutils package.
 
 * In particular, |Gromacs| includes a lot of explicit SIMD (single
   instruction, multiple data) optimization that suits
