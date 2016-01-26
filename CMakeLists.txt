@@ -204,23 +204,20 @@ set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 # OpenCL required version: 1.1 or newer
 set(REQUIRED_OPENCL_MIN_VERSION 1.1)
 
+gmx_option_trivalue(GMX_GPU "Enable CUDA GPU acceleration" AUTO)
+
 if(NOT GMX_USE_OPENCL)
     # CUDA detection is done only if GMX_USE_OPENCL is OFF.
-    include(gmxManageGPU)
-    set(GMX_USE_CUDA ${GMX_GPU})
-    if(GMX_GPU)
+    include(gmxManageCUDA)
+    if(GMX_USE_CUDA)
         set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_CUDA")
     else()
         set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
     endif()
 else()
     #Now the OpenCL path (for both AMD and NVIDIA)
-    if(GMX_GPU)
-        include(gmxManageOpenCL)
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_OPENCL")
-    else()
-        message(FATAL_ERROR "OpenCL requested but GPU option is not enabled (try -DGMX_GPU=on) ")
-    endif()
+    include(gmxManageOpenCL)
+    set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_OPENCL")
 endif()
 
 include(gmxDetectSimd)
@@ -310,10 +307,8 @@ mark_as_advanced(GMX_BUILD_SHARED_EXE)
 ######################################################################
 # Detect OpenMP support
 ######################################################################
-# The OpenMP detection _must_ come before tests for other CFLAGS.
+# The OpenMP detection must come before tests for other CFLAGS.
 include(gmxManageOpenMP)
-
-
 
 ######################################################################
 # Compiler tests
@@ -528,9 +523,6 @@ endif()
 if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
-
-# now that we have detected the dependencies, do the second GPU configure pass
-gmx_gpu_setup()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
@@ -869,10 +861,14 @@ gmx_cpack_write_config()
 
 # Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
 # Don't bother the user after the first configure pass.
-if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
+if (GMX_GPU_AUTO AND NOT CUDA_FOUND AND GMX_DETECT_GPU_AVAILABLE AND NOT GMX_GPU_DETECTION_DONE)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
 endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
+
+if ((GMX_USE_OPENCL OR GMX_USE_CUDA) AND NOT GMX_OPENMP)
+    message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
+endif()
 
 #######################
 ## uninstall target
