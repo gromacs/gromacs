@@ -709,7 +709,7 @@ available to date (up to and including Maxwell, compute capability 5.2).
 
 Application clocks can be set using the NVIDIA system managemet tool
 ``nvidia-smi``. If the system permissions allow, :ref:`gmx mdrun` has
-built-in support to set application clocks if built with :ref:`NVML support<CUDA GPU acceleration>`.
+built-in support to set application clocks if built with :ref:`NVML support<native GPU acceleration>`.
 Note that application clocks are a global setting, hence affect the
 performance of all applications that use the respective GPU(s).
 For this reason, :ref:`gmx mdrun` sets application clocks at initialization
