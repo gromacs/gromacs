@@ -111,6 +111,12 @@ const real maxRelativeSlowdownAccepted = 1.12;
  * choosing a slower setup due to acceleration or fluctuations.
  */
 const real maxFluctuationAccepted = 1.02;
+/*! \brief Number of nstlist cycles to skip before starting load-balancing
+ *  at the beginning of the run. */
+const int  numFirstCycleSkip        = 0;
+/*! \brief Number of nstlist cycles to skip after switching to a new setting
+ *  during balancing. */
+const int  numPostSwitchCycleSkip   = 1;
 
 /*! \brief Enumeration whose values describe the effect limiting the load balancing */
 enum epmelb {
@@ -565,10 +571,11 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     rtab = ir->rlist + ir->tabext;
 
-    if (set->count % 2 == 1)
+    if (set->count <= numPostSwitchCycleSkip)
     {
-        /* Skip the first cycle, because the first step after a switch
-         * is much slower due to allocation and/or caching effects.
+        /* Skip the first numPostSwitchCycleSkip cycles,
+         * because the first/first few step(s) after a switch
+         * is/are much slower due to allocation and/or caching effects.
          */
         return;
     }
@@ -576,7 +583,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     sprintf(buf, "step %4s: ", gmx_step_str(step, sbuf));
     print_grid(fp_err, fp_log, buf, "timed with", set, cycles);
 
-    if (set->count <= 2)
+    if (set->count == (numPostSwitchCycleSkip + 1))
     {
         set->cycles = cycles;
     }
@@ -922,8 +929,9 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
 
     /* Before the first step we haven't done any steps yet.
      * Also handle cases where ir->init_step % ir->nstlist != 0.
-     */
-    if (pme_lb->cycles_n < ir->nstlist)
+     * We also want to skip a number of steps while the CPU
+     * performance stabilizes. */
+    if (pme_lb->cycles_n == 0 || step_rel < numFirstCycleSkip*ir->nstlist)
     {
         return;
     }
