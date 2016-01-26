@@ -64,8 +64,8 @@ appropriate value instead of ``xxx`` :
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
 * ``-DGMX_MPI=on`` to build using `MPI support`_ (generally good to combine with `building only mdrun`_)
-* ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `CUDA GPU acceleration`_ or an OpenCL_ GPU
-* ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. ``GMX_GPU`` must also be set.
+* ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `native GPU acceleration`_
+* ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. (``GMX_GPU`` is ignored in this case.)
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
 * ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to build |Gromacs| in double precision (slower, and not normally useful)
@@ -638,7 +638,7 @@ To trigger an OpenCL_ build the following CMake flags must be set
 
 ::
 
-    cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+    cmake .. -DGMX_USE_OPENCL=ON
 
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.
