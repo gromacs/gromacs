@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2670,27 +2670,38 @@ static void set_excl_all(t_blocka *excl)
 }
 
 static void decouple_atoms(t_atoms *atoms, int atomtype_decouple,
-                           int couple_lam0, int couple_lam1)
+                           int couple_lam0, int couple_lam1,
+                           const char *mol_name)
 {
     int i;
 
     for (i = 0; i < atoms->nr; i++)
     {
+        t_atom *atom;
+
+        atom = &atoms->atom[i];
+
+        if (atom->qB != atom->q || atom->typeB != atom->type)
+        {
+            gmx_fatal(FARGS, "Atom %d in molecule type '%s' has different A and B state charges and/or atom types set in the topology file as well as through the mdp option '%s'. You can not use both these methods simultaneously.",
+                      i + 1, mol_name, "couple-moltype");
+        }
+
         if (couple_lam0 == ecouplamNONE || couple_lam0 == ecouplamVDW)
         {
-            atoms->atom[i].q     = 0.0;
+            atom->q     = 0.0;
         }
         if (couple_lam0 == ecouplamNONE || couple_lam0 == ecouplamQ)
         {
-            atoms->atom[i].type  = atomtype_decouple;
+            atom->type  = atomtype_decouple;
         }
         if (couple_lam1 == ecouplamNONE || couple_lam1 == ecouplamVDW)
         {
-            atoms->atom[i].qB    = 0.0;
+            atom->qB    = 0.0;
         }
         if (couple_lam1 == ecouplamNONE || couple_lam1 == ecouplamQ)
         {
-            atoms->atom[i].typeB = atomtype_decouple;
+            atom->typeB = atomtype_decouple;
         }
     }
 }
@@ -2705,5 +2716,6 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple, real fudgeQQ,
         generate_LJCpairsNB(mol, nb_funct, nbp);
         set_excl_all(&mol->excls);
     }
-    decouple_atoms(&mol->atoms, atomtype_decouple, couple_lam0, couple_lam1);
+    decouple_atoms(&mol->atoms, atomtype_decouple, couple_lam0, couple_lam1,
+                   *mol->name);
 }
