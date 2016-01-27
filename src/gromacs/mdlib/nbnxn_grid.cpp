@@ -451,20 +451,20 @@ static void calc_bounding_box_x_x4(int na, const real *x, nbnxn_bb_t *bb)
 {
     real xl, xh, yl, yh, zl, zh;
 
-    xl = x[XX*PACK_X4];
-    xh = x[XX*PACK_X4];
-    yl = x[YY*PACK_X4];
-    yh = x[YY*PACK_X4];
-    zl = x[ZZ*PACK_X4];
-    zh = x[ZZ*PACK_X4];
+    xl = x[XX*pack_x4];
+    xh = x[XX*pack_x4];
+    yl = x[YY*pack_x4];
+    yh = x[YY*pack_x4];
+    zl = x[ZZ*pack_x4];
+    zh = x[ZZ*pack_x4];
     for (int j = 1; j < na; j++)
     {
-        xl = std::min(xl, x[j+XX*PACK_X4]);
-        xh = std::max(xh, x[j+XX*PACK_X4]);
-        yl = std::min(yl, x[j+YY*PACK_X4]);
-        yh = std::max(yh, x[j+YY*PACK_X4]);
-        zl = std::min(zl, x[j+ZZ*PACK_X4]);
-        zh = std::max(zh, x[j+ZZ*PACK_X4]);
+        xl = std::min(xl, x[j+XX*pack_x4]);
+        xh = std::max(xh, x[j+XX*pack_x4]);
+        yl = std::min(yl, x[j+YY*pack_x4]);
+        yh = std::max(yh, x[j+YY*pack_x4]);
+        zl = std::min(zl, x[j+ZZ*pack_x4]);
+        zh = std::max(zh, x[j+ZZ*pack_x4]);
     }
     /* Note: possible double to float conversion here */
     bb->lower[BB_X] = R2F_D(xl);
@@ -480,20 +480,20 @@ static void calc_bounding_box_x_x8(int na, const real *x, nbnxn_bb_t *bb)
 {
     real xl, xh, yl, yh, zl, zh;
 
-    xl = x[XX*PACK_X8];
-    xh = x[XX*PACK_X8];
-    yl = x[YY*PACK_X8];
-    yh = x[YY*PACK_X8];
-    zl = x[ZZ*PACK_X8];
-    zh = x[ZZ*PACK_X8];
+    xl = x[XX*pack_x8];
+    xh = x[XX*pack_x8];
+    yl = x[YY*pack_x8];
+    yh = x[YY*pack_x8];
+    zl = x[ZZ*pack_x8];
+    zh = x[ZZ*pack_x8];
     for (int j = 1; j < na; j++)
     {
-        xl = std::min(xl, x[j+XX*PACK_X8]);
-        xh = std::max(xh, x[j+XX*PACK_X8]);
-        yl = std::min(yl, x[j+YY*PACK_X8]);
-        yh = std::max(yh, x[j+YY*PACK_X8]);
-        zl = std::min(zl, x[j+ZZ*PACK_X8]);
-        zh = std::max(zh, x[j+ZZ*PACK_X8]);
+        xl = std::min(xl, x[j+XX*pack_x8]);
+        xh = std::max(xh, x[j+XX*pack_x8]);
+        yl = std::min(yl, x[j+YY*pack_x8]);
+        yh = std::max(yh, x[j+YY*pack_x8]);
+        zl = std::min(zl, x[j+ZZ*pack_x8]);
+        zh = std::max(zh, x[j+ZZ*pack_x8]);
     }
     /* Note: possible double to float conversion here */
     bb->lower[BB_X] = R2F_D(xl);
@@ -515,7 +515,7 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
 
     if (na > 2)
     {
-        calc_bounding_box_x_x4(std::min(na-2, 2), x+(PACK_X4>>1), bbj+1);
+        calc_bounding_box_x_x4(std::min(na-2, 2), x+(pack_x4>>1), bbj+1);
     }
     else
     {
@@ -892,13 +892,13 @@ static void fill_cell(const nbnxn_search_t nbs,
 #if GMX_SIMD && GMX_SIMD_REAL_WIDTH == 2
         if (2*grid->na_cj == grid->na_c)
         {
-            calc_bounding_box_x_x4_halves(na, nbat->x+X4_IND_A(a0), bb_ptr,
+            calc_bounding_box_x_x4_halves(na, nbat->x + atom_to_x_index<pack_x4>(a0), bb_ptr,
                                           grid->bbj+offset*2);
         }
         else
 #endif
         {
-            calc_bounding_box_x_x4(na, nbat->x+X4_IND_A(a0), bb_ptr);
+            calc_bounding_box_x_x4(na, nbat->x + atom_to_x_index<pack_x4>(a0), bb_ptr);
         }
     }
     else if (nbat->XFormat == nbatX8)
@@ -907,7 +907,7 @@ static void fill_cell(const nbnxn_search_t nbs,
         offset = (a0 - grid->cell0*grid->na_sc) >> grid->na_c_2log;
         bb_ptr = grid->bb + offset;
 
-        calc_bounding_box_x_x8(na, nbat->x+X8_IND_A(a0), bb_ptr);
+        calc_bounding_box_x_x8(na, nbat->x +  atom_to_x_index<pack_x8>(a0), bb_ptr);
     }
 #ifdef NBNXN_BBXXXX
     else if (!grid->bSimple)
@@ -1645,13 +1645,13 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
                     switch (nbat->XFormat)
                     {
                         case nbatX4:
-                            /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
+                            /* pack_x4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
                             calc_bounding_box_x_x4(na, nbat->x+tx*STRIDE_P4,
                                                    bb+tx);
                             break;
                         case nbatX8:
-                            /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
-                            calc_bounding_box_x_x8(na, nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
+                            /* pack_x8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
+                            calc_bounding_box_x_x8(na, nbat->x + atom_to_x_index<pack_x8>(tx*NBNXN_CPU_CLUSTER_I_SIZE),
                                                    bb+tx);
                             break;
                         default:
