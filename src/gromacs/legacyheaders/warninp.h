@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,6 +101,9 @@ warning_error(warninp_t wi, const char *s);
  * are printed, nwarn_error (local) is incremented.
  */
 
+gmx_bool warning_errors_exist(warninp_t wi);
+/* Return whether any error-level warnings were issued to wi. */
+
 void
 check_warning_error(warninp_t wi, int f_errno, const char *file, int line);
 /* When warning_error has been called at least once gmx_fatal is called,
@@ -115,6 +118,10 @@ done_warning(warninp_t wi, int f_errno, const char *file, int line);
  * warnings were generatesd.
  * Frees the data structure pointed to by wi.
  */
+
+void
+free_warning(warninp_t wi);
+/* Frees the data structure pointed to by wi. */
 
 void
 _too_few(warninp_t wi, const char *fn, int line);
