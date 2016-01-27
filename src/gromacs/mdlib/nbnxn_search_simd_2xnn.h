@@ -51,7 +51,7 @@ icell_set_x_simd_2xnn(int ci,
     int   ia;
     real *x_ci_simd = work->x_ci_simd;
 
-    ia = X_IND_CI_SIMD_2XNN(ci);
+    ia = x_ind_ci_simd_2xnn(ci);
 
     store(x_ci_simd + 0*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0*STRIDE_S + 0) + SimdReal(shx) );
     store(x_ci_simd + 1*GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1*STRIDE_S + 0) + SimdReal(shy) );
@@ -96,8 +96,8 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     float                               d2;
     int                                 xind_f, xind_l, cj;
 
-    cjf = CI_TO_CJ_SIMD_2XNN(cjf);
-    cjl = CI_TO_CJ_SIMD_2XNN(cjl+1) - 1;
+    cjf = ci_to_cj_simd_2xnn(cjf);
+    cjl = ci_to_cj_simd_2xnn(cjl + 1) - 1;
 
     x_ci_simd = nbl->work->x_ci_simd;
 
@@ -126,7 +126,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            xind_f  = X_IND_CJ_SIMD_2XNN(CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cjf);
+            xind_f  = x_ind_cj_simd_2xnn(ci_to_cj_simd_2xnn(gridj->cell0) + cjf);
 
             jx_S  = loadDuplicateHsimd(x_j+xind_f+0*STRIDE_S);
             jy_S  = loadDuplicateHsimd(x_j+xind_f+1*STRIDE_S);
@@ -184,7 +184,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            xind_l  = X_IND_CJ_SIMD_2XNN(CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cjl);
+            xind_l  = x_ind_cj_simd_2xnn(ci_to_cj_simd_2xnn(gridj->cell0) + cjl);
 
             jx_S  = loadDuplicateHsimd(x_j+xind_l+0*STRIDE_S);
             jy_S  = loadDuplicateHsimd(x_j+xind_l+1*STRIDE_S);
@@ -222,7 +222,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         for (cj = cjf; cj <= cjl; cj++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cj;
+            nbl->cj[nbl->ncj].cj   = ci_to_cj_simd_2xnn(gridj->cell0) + cj;
             nbl->cj[nbl->ncj].excl = get_imask_simd_2xnn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
