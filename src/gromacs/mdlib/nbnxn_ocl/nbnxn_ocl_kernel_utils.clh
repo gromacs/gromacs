@@ -513,7 +513,7 @@ void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
      * Can't just use i as loop variable because than nvcc refuses to unroll.
      */
     i = CL_SIZE/2;
-    for (j = CL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
@@ -576,7 +576,7 @@ void reduce_energy_pow2(volatile __local float  *buf,
     i = WARP_SIZE/2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
-    for (j = WARP_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = WARP_SIZE_LOG2 - 1; j > 0; j--)
     {
         if (tidx < i)
         {
