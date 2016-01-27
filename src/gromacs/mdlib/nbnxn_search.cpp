@@ -72,70 +72,12 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-#if GMX_SIMD
-
-/* The functions below are macros as they are performance sensitive */
-
-/* 4x4 list, pack=4: no complex conversion required */
-/* i-cluster to j-cluster conversion */
-#define CI_TO_CJ_J4(ci)   (ci)
-/* cluster index to coordinate array index conversion */
-#define X_IND_CI_J4(ci)  ((ci)*STRIDE_P4)
-#define X_IND_CJ_J4(cj)  ((cj)*STRIDE_P4)
-
-/* 4x2 list, pack=4: j-cluster size is half the packing width */
-/* i-cluster to j-cluster conversion */
-#define CI_TO_CJ_J2(ci)  ((ci)<<1)
-/* cluster index to coordinate array index conversion */
-#define X_IND_CI_J2(ci)  ((ci)*STRIDE_P4)
-#define X_IND_CJ_J2(cj)  (((cj)>>1)*STRIDE_P4 + ((cj) & 1)*(PACK_X4>>1))
-
-/* 4x8 list, pack=8: i-cluster size is half the packing width */
-/* i-cluster to j-cluster conversion */
-#define CI_TO_CJ_J8(ci)  ((ci)>>1)
-/* cluster index to coordinate array index conversion */
-#define X_IND_CI_J8(ci)  (((ci)>>1)*STRIDE_P8 + ((ci) & 1)*(PACK_X8>>1))
-#define X_IND_CJ_J8(cj)  ((cj)*STRIDE_P8)
-
-/* The j-cluster size is matched to the SIMD width */
-#if GMX_SIMD_REAL_WIDTH == 2
-#define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J2(ci)
-#define X_IND_CI_SIMD_4XN(ci)  X_IND_CI_J2(ci)
-#define X_IND_CJ_SIMD_4XN(cj)  X_IND_CJ_J2(cj)
-#else
-#if GMX_SIMD_REAL_WIDTH == 4
-#define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J4(ci)
-#define X_IND_CI_SIMD_4XN(ci)  X_IND_CI_J4(ci)
-#define X_IND_CJ_SIMD_4XN(cj)  X_IND_CJ_J4(cj)
-#else
-#if GMX_SIMD_REAL_WIDTH == 8
-#define CI_TO_CJ_SIMD_4XN(ci)  CI_TO_CJ_J8(ci)
-#define X_IND_CI_SIMD_4XN(ci)  X_IND_CI_J8(ci)
-#define X_IND_CJ_SIMD_4XN(cj)  X_IND_CJ_J8(cj)
-/* Half SIMD with j-cluster size */
-#define CI_TO_CJ_SIMD_2XNN(ci) CI_TO_CJ_J4(ci)
-#define X_IND_CI_SIMD_2XNN(ci) X_IND_CI_J4(ci)
-#define X_IND_CJ_SIMD_2XNN(cj) X_IND_CJ_J4(cj)
-#else
-#if GMX_SIMD_REAL_WIDTH == 16
-#define CI_TO_CJ_SIMD_2XNN(ci) CI_TO_CJ_J8(ci)
-#define X_IND_CI_SIMD_2XNN(ci) X_IND_CI_J8(ci)
-#define X_IND_CJ_SIMD_2XNN(cj) X_IND_CJ_J8(cj)
-#else
-#error "unsupported GMX_SIMD_REAL_WIDTH"
-#endif
-#endif
-#endif
-#endif
-
-#endif // GMX_SIMD
-
 
 /* We shift the i-particles backward for PBC.
  * This leads to more conditionals than shifting forward.
  * We do this to get more balanced pair lists.
  */
-#define NBNXN_SHIFT_BACKWARD
+#define NBNXN_SHIFT_BACKWARD  1
 
 
 static void nbs_cycle_clear(nbnxn_cycle_t *cc)
@@ -178,17 +120,111 @@ static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
     fprintf(fp, "\n");
 }
 
-static gmx_inline int ci_to_cj(int na_cj_2log, int ci)
+static gmx_inline int ci_to_cj(int ci, int na_cj_2log)
 {
     switch (na_cj_2log)
     {
         case 2: return ci;     break;
-        case 1: return (ci<<1); break;
         case 3: return (ci>>1); break;
+        case 1: return (ci<<1); break;
     }
 
     return 0;
 }
+
+#if GMX_SIMD
+
+/* Returns the j-cluster index corresponding to the i-cluster index */
+template<int cj_size> static gmx_inline int ci_to_cj(int ci)
+{
+    if (cj_size == 2)
+    {
+        return ci << 1;
+    }
+    if (cj_size == 4)
+    {
+        return ci;
+    }
+    if (cj_size == 8)
+    {
+        return ci >> 1;
+    }
+    GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
+    return -1;
+}
+
+/* Returns the index in the coordinate array corresponding to the i-cluster index */
+template<int cj_size> static gmx_inline int x_ind_ci(int ci)
+{
+    if (cj_size <= 4)
+    {
+        /* Coordinates are stored packed in groups of 4 */
+        return ci*STRIDE_P4;
+    }
+    if (cj_size == 8)
+    {
+        /* Coordinates packed in 8, i-cluster size is half the packing width */
+        return (ci >> 1)*STRIDE_P8 + (ci & 1)*(pack_x8 >> 1);
+    }
+    GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
+    return -1;
+}
+
+/* Returns the index in the coordinate array corresponding to the j-cluster index */
+template<int cj_size> static gmx_inline int x_ind_cj(int cj)
+{
+    if (cj_size == 2)
+    {
+        /* Coordinates are stored packed in groups of 4 */
+        return (cj >> 1)*STRIDE_P4 + (cj & 1)*(pack_x4 >> 1);
+    }
+    if (cj_size <= 4)
+    {
+        /* Coordinates are stored packed in groups of 4 */
+        return cj*STRIDE_P4;
+    }
+    if (cj_size == 8)
+    {
+        /* Coordinates are stored packed in groups of 8 */
+        return cj*STRIDE_P8;
+    }
+    GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
+    return -1;
+}
+
+/* The 6 functions below are only introduced to make the code more readable */
+
+static gmx_inline int ci_to_cj_simd_4xn(int ci)
+{
+    return ci_to_cj<GMX_SIMD_REAL_WIDTH>(ci);
+}
+
+static gmx_inline int x_ind_ci_simd_4xn(int ci)
+{
+    return x_ind_ci<GMX_SIMD_REAL_WIDTH>(ci);
+}
+
+static gmx_inline int x_ind_cj_simd_4xn(int cj)
+{
+    return x_ind_cj<GMX_SIMD_REAL_WIDTH>(cj);
+}
+
+static gmx_inline int ci_to_cj_simd_2xnn(int ci)
+{
+    return ci_to_cj<GMX_SIMD_REAL_WIDTH/2>(ci);
+}
+
+static gmx_inline int x_ind_ci_simd_2xnn(int ci)
+{
+    return x_ind_ci<GMX_SIMD_REAL_WIDTH/2>(ci);
+}
+
+static gmx_inline int x_ind_cj_simd_2xnn(int cj)
+{
+    return x_ind_cj<GMX_SIMD_REAL_WIDTH/2>(cj);
+}
+
+#endif // GMX_SIMD
 
 gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 {
@@ -404,7 +440,7 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
     return d2;
 }
 
-#ifdef NBNXN_SEARCH_BB_SIMD4
+#if NBNXN_SEARCH_BB_SIMD4
 
 /* 4-wide SIMD code for bb distance for bb format xyz0 */
 static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
@@ -527,7 +563,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
                      int csj, int stride, const real *x_j,
                      real rl2)
 {
-#ifndef NBNXN_SEARCH_BB_SIMD4
+#if !NBNXN_SEARCH_BB_SIMD4
 
     /* Plain C version.
      * All coordinates are stored as xyzxyz...
@@ -802,7 +838,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     }
     else
     {
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
         snew_aligned(nbl->work->pbb_ci, gpu_ncluster_per_cell/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
 #else
         snew_aligned(nbl->work->bb_ci, gpu_ncluster_per_cell, NBNXN_SEARCH_BB_MEM_ALIGN);
@@ -1240,23 +1276,24 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 {
     nbnxn_list_work_t *work   = nbl->work;
 
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
     const float       *pbb_ci = work->pbb_ci;
 #else
     const nbnxn_bb_t  *bb_ci  = work->bb_ci;
 #endif
 
-    const int na_c = nbnxn_gpu_cluster_size;
-    assert(na_c == gridi->na_c);
-    assert(na_c == gridj->na_c);
+    assert(nbnxn_gpu_cluster_size == gridi->na_c);
+    assert(nbnxn_gpu_cluster_size == gridj->na_c);
 
     /* We generate the pairlist mainly based on bounding-box distances
      * and do atom pair distance based pruning on the GPU.
      * Only if a j-group contains a single cluster-pair, we try to prune
      * that pair based on atom distances on the CPU to avoid empty j-groups.
      */
-#define PRUNE_LIST_CPU_ONE
-#ifdef PRUNE_LIST_CPU_ONE
+#define PRUNE_LIST_CPU_ONE 1
+#define PRUNE_LIST_CPU_ALL 0
+
+#if PRUNE_LIST_CPU_ONE
     int  ci_last = -1;
 #endif
 
@@ -1285,11 +1322,11 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
             ci1 = gridi->nsubc[sci];
         }
 
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
         subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
                                  ci1, pbb_ci, d2l);
-        *ndistc += na_c*2;
+        *ndistc += nbnxn_gpu_cluster_size*2;
 #endif
 
         int          npair = 0;
@@ -1302,20 +1339,20 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                 break;
             }
 
-#ifndef NBNXN_BBXXXX
+#if !NBNXN_BBXXXX
             /* Determine the bb distance between ci and cj */
             d2l[ci]  = subc_bb_dist2(ci, bb_ci, cj, gridj->bb);
             *ndistc += 2;
 #endif
             float d2 = d2l[ci];
 
-#ifdef PRUNE_LIST_CPU_ALL
+#if PRUNE_LIST_CPU_ALL
             /* Check if the distance is within the distance where
              * we use only the bounding box distance rbb,
              * or within the cut-off and there is at least one atom pair
              * within the cut-off. This check is very costly.
              */
-            *ndistc += na_c*na_c;
+            *ndistc += nbnxn_gpu_cluster_size*nbnxn_gpu_cluster_size;
             if (d2 < rbb2 ||
                 (d2 < rl2 &&
                  clusterpair_in_range(work, ci, cj_gl, stride, x, rl2)))
@@ -1329,7 +1366,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                 /* Flag this i-subcell to be taken into account */
                 imask |= (1U << (cj_offset*gpu_ncluster_per_cell + ci));
 
-#ifdef PRUNE_LIST_CPU_ONE
+#if PRUNE_LIST_CPU_ONE
                 ci_last = ci;
 #endif
 
@@ -1337,7 +1374,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
             }
         }
 
-#ifdef PRUNE_LIST_CPU_ONE
+#if PRUNE_LIST_CPU_ONE
         /* If we only found 1 pair, check if any atoms are actually
          * within the cut-off, so we could get rid of it.
          */
@@ -1430,11 +1467,11 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
             ndirect++;
         }
     }
-#ifdef NBNXN_SEARCH_BB_SIMD4
+#if NBNXN_SEARCH_BB_SIMD4
     else
     {
         while (cj_ind_first + ndirect <= cj_ind_last &&
-               nbl->cj[cj_ind_first+ndirect].cj == ci_to_cj(na_cj_2log, ci) + ndirect)
+               nbl->cj[cj_ind_first+ndirect].cj == ci_to_cj(ci, na_cj_2log) + ndirect)
         {
             ndirect++;
         }
@@ -2363,7 +2400,7 @@ static gmx_inline void set_icell_bb_simple(const nbnxn_bb_t *bb, int ci,
     bb_ci->upper[BB_Z] = bb[ci].upper[BB_Z] + shz;
 }
 
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
 static void set_icell_bbxxxx_supersub(const float *bb, int ci,
                                       real shx, real shy, real shz,
@@ -2420,7 +2457,7 @@ static void icell_set_x_supersub(int ci,
                                  int stride, const real *x,
                                  nbnxn_list_work_t *work)
 {
-#ifndef NBNXN_SEARCH_BB_SIMD4
+#if !NBNXN_SEARCH_BB_SIMD4
 
     real * x_ci = work->x_ci;
 
@@ -3096,7 +3133,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     real              shx, shy, shz;
     int               conv_i, cell0_i;
     const nbnxn_bb_t *bb_i = NULL;
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
     const float      *pbb_i = NULL;
 #endif
     const float      *bbcz_i, *bbcz_j;
@@ -3206,7 +3243,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     else
     {
         conv_i  = 1;
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
         if (gridi->bSimple)
         {
             bb_i  = gridi->bb;
@@ -3357,7 +3394,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 {
                     shift = XYZ2IS(tx, ty, tz);
 
-#ifdef NBNXN_SHIFT_BACKWARD
+#if NBNXN_SHIFT_BACKWARD
                     if (gridi == gridj && shift > CENTRAL)
                     {
                         continue;
@@ -3396,7 +3433,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         new_sci_entry(nbl, cell0_i+ci, shift);
                     }
 
-#ifndef NBNXN_SHIFT_BACKWARD
+#if !NBNXN_SHIFT_BACKWARD
                     if (cxf < ci_x)
 #else
                     if (shift == CENTRAL && gridi == gridj &&
@@ -3416,7 +3453,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
                     else
                     {
-#ifdef NBNXN_BBXXXX
+#if NBNXN_BBXXXX
                         set_icell_bbxxxx_supersub(pbb_i, ci, shx, shy, shz,
                                                   nbl->work->pbb_ci);
 #else
@@ -3441,7 +3478,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             d2zx += gmx::square(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
                         }
 
-#ifndef NBNXN_SHIFT_BACKWARD
+#if !NBNXN_SHIFT_BACKWARD
                         if (gridi == gridj &&
                             cx == 0 && cyf < ci_y)
 #else
@@ -3463,7 +3500,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         {
                             c0 = gridj->cxy_ind[cx*gridj->ncy+cy];
                             c1 = gridj->cxy_ind[cx*gridj->ncy+cy+1];
-#ifdef NBNXN_SHIFT_BACKWARD
+#if NBNXN_SHIFT_BACKWARD
                             if (gridi == gridj &&
                                 shift == CENTRAL && c0 < ci)
                             {
@@ -3540,7 +3577,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                     /* We want each atom/cell pair only once,
                                      * only use cj >= ci.
                                      */
-#ifndef NBNXN_SHIFT_BACKWARD
+#if !NBNXN_SHIFT_BACKWARD
                                     cf = std::max(cf, ci);
 #else
                                     if (shift == CENTRAL)
@@ -3569,7 +3606,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                             break;
 #ifdef GMX_NBNXN_SIMD_4XN
                                         case nbnxnk4xN_SIMD_4xN:
-                                            check_cell_list_space_simple(nbl, ci_to_cj(na_cj_2log, cl-cf)+2);
+                                            check_cell_list_space_simple(nbl, ci_to_cj_simd_4xn(cl - cf) + 2);
                                             make_cluster_list_simd_4xn(gridj,
                                                                        nbl, ci, cf, cl,
                                                                        (gridi == gridj && shift == CENTRAL),
@@ -3580,7 +3617,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
                                         case nbnxnk4xN_SIMD_2xNN:
-                                            check_cell_list_space_simple(nbl, ci_to_cj(na_cj_2log, cl-cf)+2);
+                                            check_cell_list_space_simple(nbl, ci_to_cj_simd_2xnn(cl - cf) + 2);
                                             make_cluster_list_simd_2xnn(gridj,
                                                                         nbl, ci, cf, cl,
                                                                         (gridi == gridj && shift == CENTRAL),
