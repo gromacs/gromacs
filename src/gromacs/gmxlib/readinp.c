@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -385,7 +385,7 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     else
     {
         ret = strtol((*inp)[ii].value, &ptr, 10);
-        if (ptr == (*inp)[ii].value)
+        if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
             warning_error(wi, warn_buf);
@@ -415,7 +415,7 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
     else
     {
         ret = str_to_int64_t((*inp)[ii].value, &ptr);
-        if (ptr == (*inp)[ii].value)
+        if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
             warning_error(wi, warn_buf);
@@ -444,7 +444,7 @@ double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
     else
     {
         ret = strtod((*inp)[ii].value, &ptr);
-        if (ptr == (*inp)[ii].value)
+        if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not a real value\n", (*inp)[ii].value, (*inp)[ii].name);
             warning_error(wi, warn_buf);
