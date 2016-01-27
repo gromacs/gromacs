@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,9 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
         set_warning_line(wi, fn, lc);
         if (ptr)
         {
+            // TODO This parsing should be using strip_comment, trim,
+            // strchr, etc. rather than re-inventing wheels.
+
             /* Strip comment */
             if ((cptr = strchr(buf, COMMENTSIGN)) != NULL)
             {
@@ -366,6 +369,7 @@ static int get_einp(int *ninp, t_inpfile **inp, const char *name)
     }
 }
 
+/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
              warninp_t wi)
 {
@@ -385,7 +389,7 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     else
     {
         ret = strtol((*inp)[ii].value, &ptr, 10);
-        if (ptr == (*inp)[ii].value)
+        if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
             warning_error(wi, warn_buf);
@@ -395,6 +399,7 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     }
 }
 
+/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
 gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
                        const char *name, gmx_int64_t def,
                        warninp_t wi)
@@ -415,7 +420,7 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
     else
     {
         ret = str_to_int64_t((*inp)[ii].value, &ptr);
-        if (ptr == (*inp)[ii].value)
+        if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
             warning_error(wi, warn_buf);
@@ -425,6 +430,7 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
     }
 }
 
+/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
 double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
                  warninp_t wi)
 {
@@ -444,7 +450,7 @@ double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
     else
     {
         ret = strtod((*inp)[ii].value, &ptr);
-        if (ptr == (*inp)[ii].value)
+        if (*ptr != '\0')
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not a real value\n", (*inp)[ii].value, (*inp)[ii].name);
             warning_error(wi, warn_buf);
@@ -454,6 +460,7 @@ double get_ereal(int *ninp, t_inpfile **inp, const char *name, double def,
     }
 }
 
+/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
 const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *def)
 {
     char buf[32];
@@ -481,6 +488,7 @@ const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *d
     }
 }
 
+/* Note that sanitizing the trailing part of (*inp)[ii].value was the responsibility of read_inpfile() */
 int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
                warninp_t wi)
 {
