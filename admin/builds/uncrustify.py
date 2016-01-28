@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 def do_build(context):
-    context.env.add_env_var('UNCRUSTIFY', context.env.get_uncrustify_command())
+    context.env.set_env_var('UNCRUSTIFY', context.env.get_uncrustify_command())
     warning_log = context.workspace.get_path_for_logfile('uncrustify.log', category='uncrustify')
     cmd = ['admin/uncrustify.sh', 'check', '--rev=HEAD^', '--warnings=' + warning_log]
     ret = context.run_cmd(cmd, use_return_code=True)
