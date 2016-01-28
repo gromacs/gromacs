@@ -537,6 +537,10 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
         {
             return gmx_strdup(result.c_str());
         }
+        else if (!bFatal)
+        {
+            return NULL;
+        }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     return NULL;
