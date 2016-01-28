@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if __APPLE__
+#ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
 
