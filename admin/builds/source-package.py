@@ -33,7 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 import os
-import re
 
 build_out_of_source = True
 

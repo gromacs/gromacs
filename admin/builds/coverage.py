@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@ def do_build(context):
     # too slow that way (and also with None)...
     cmake_opts['GMX_SIMD'] = 'SSE4.1'
 
-    context.env.add_env_var('GMX_NO_TERM', '1')
+    context.env.set_env_var('GMX_NO_TERM', '1')
 
     context.run_cmake(cmake_opts)
     context.build_target(target=None)
@@ -59,6 +59,6 @@ def do_build(context):
     context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
     context.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
     cmd = ['perl', 'gmxtest.pl', '-xml', 'all', '-nt', '2']
-    context.run_cmd_with_env(cmd, failure_message='Regression tests failed to execute')
+    context.run_cmd(cmd, failure_message='Regression tests failed to execute')
 
     context.process_coverage_results(exclude=['^src/external/'])

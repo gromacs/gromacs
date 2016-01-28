@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ def do_build(context):
     if context.opts.mdrun_only:
         cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
 
-    context.env.add_env_var('GMX_NO_TERM', '1')
+    context.env.set_env_var('GMX_NO_TERM', '1')
 
     context.run_cmake(cmake_opts)
     context.build_target(target=None, keep_going=True)
@@ -146,4 +146,4 @@ def do_build(context):
             cmd += ' -nt 2'
         if context.opts.double:
             cmd += ' -double'
-        context.run_cmd_with_env(cmd, shell=True, failure_message='Regression tests failed to execute')
+        context.run_cmd(cmd, shell=True, failure_message='Regression tests failed to execute')
