@@ -790,20 +790,31 @@ make_gridindex5_to_localindex(int n, int local_start, int local_range,
                               int **global_to_local,
                               real **fraction_shift)
 {
-    int    i;
+    /* Here we construct array for looking up the grid line index and
+     * fraction for particles. This is done because it is slighlty
+     * faster than the modulo operation and to because we need to take
+     * care of rounding issues, see below.
+     * We use an array size of 5 times the grid size to allow for particles
+     * to be out of the triclinic unit-cell by up to 2 box lengths, which
+     * can be needed along dimension x for a very skewed unit-cell.
+     */
     int  * gtl;
     real * fsh;
 
     snew(gtl, 5*n);
     snew(fsh, 5*n);
-    for (i = 0; (i < 5*n); i++)
+
+    for (int i = 0; i < 5*n; i++)
     {
-        /* Determine the global to local grid index */
+        /* Transform global grid index to the local grid index.
+         * Our local grid always runs from 0 to local_range-1.
+         */
         gtl[i] = (i - local_start + n) % n;
         /* For coordinates that fall within the local grid the fraction
          * is correct, we don't need to shift it.
          */
         fsh[i] = 0;
+        /* Check if we are using domain decomposition for PME */
         if (local_range < n)
         {
             /* Due to rounding issues i could be 1 beyond the lower or
@@ -816,19 +827,17 @@ make_gridindex5_to_localindex(int n, int local_start, int local_range,
              * between zero and values close to the precision of a real,
              * which is anyhow the accuracy of the whole mesh calculation.
              */
-            /* With local_range=0 we should not change i=local_start */
-            if (i % n != local_start)
+            if (gtl[i] == n - 1)
             {
-                if (gtl[i] == n-1)
-                {
-                    gtl[i] = 0;
-                    fsh[i] = -1;
-                }
-                else if (gtl[i] == local_range)
-                {
-                    gtl[i] = local_range - 1;
-                    fsh[i] = 1;
-                }
+                /* When this i is used, we should round the local index up */
+                gtl[i] = 0;
+                fsh[i] = -1;
+            }
+            else if (gtl[i] == local_range && local_range > 0)
+            {
+                /* When this i is used, we should round the local index down */
+                gtl[i] = local_range - 1;
+                fsh[i] = 1;
             }
         }
     }
