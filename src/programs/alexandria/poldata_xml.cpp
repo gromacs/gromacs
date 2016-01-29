@@ -453,9 +453,13 @@ void readPoldata(const std::string &fileName,
 
     if (fileName.size() > 0)
     {
-        fn2 = gmxlibfn(fileName.c_str());
+        const char *f = low_gmxlibfn(fileName.c_str(), TRUE, FALSE);
+        if (NULL != f)
+        {
+            fn2.assign(f);
+        }
     }
-    if (0 == fn2.size())
+    if (!gmx_fexist(fn2.c_str()))
     {
         fn2 = gmxlibfn("alexandria.ff/gentop.dat");
     }

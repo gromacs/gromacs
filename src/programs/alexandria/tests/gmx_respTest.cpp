@@ -112,7 +112,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, edih);
 
-            mp_.gr_ = new alexandria::Resp(model, mp_.molProp()->getCharge());
+            mp_.gr_.setOptions(model, 1993,
+                               false, 5, 100, 5, false,
+                               mp_.molProp()->getCharge(),
+                               -2, 2, false, 0);
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;
@@ -122,13 +125,13 @@ class RespTest : public gmx::test::CommandLineTestBase
                                 hfac, epsr, lot, true, symm_string);
 
             std::vector<double> qtotValues;
-            for (int atom = 0; atom < mp_.gr_->nAtom(); atom++)
+            for (size_t atom = 0; atom < mp_.gr_.nAtom(); atom++)
             {
-                qtotValues.push_back(mp_.gr_->getQtot(atom));
+                qtotValues.push_back(mp_.gr_.getAtomCharge(atom));
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
-                     static_cast<int>(mp_.gr_->chargeDistributionModel()));
+                     static_cast<int>(mp_.gr_.chargeDistributionModel()));
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }

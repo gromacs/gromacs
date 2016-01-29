@@ -147,7 +147,7 @@ class MyMol
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
         gmx_enerdata_t           *enerd_;
-        Resp                     *gr_;
+        Resp                      gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;
 

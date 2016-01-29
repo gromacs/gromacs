@@ -513,7 +513,6 @@ FILE *gmx_ffopen(const char *file, const char *mode)
             {
                 ff = gunzip(buf, mode);
             }
-            else
             {
                 gmx_file(file);
             }

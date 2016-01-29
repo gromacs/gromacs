@@ -302,7 +302,7 @@ static void update_index_count_bool(t_index_count *ic, const Poldata &pd,
     for (std::vector<std::string>::iterator k = ptr.begin();
          (k < ptr.end()); ++k)
     {
-        if (pd.haveEemSupport(iDistributionModel, k->c_str(), bAllowZero))
+        if (pd.haveEemSupport(iDistributionModel, *k, bAllowZero))
         {
             add_index_count(ic, k->c_str(), bSet);
         }
@@ -603,19 +603,12 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 {
                     if (immOK == imm)
                     {
-                        mpnew.gr_ = new Resp(_iChargeDistributionModel, mpnew.molProp()->getCharge());
-                        mpnew.gr_->setBAXpRESP(true);
-                        mpnew.gr_->setZmin(1);
-                        mpnew.gr_->setDeltaZ(5);
-                        mpnew.gr_->setWatoms(watoms);
-                        mpnew.gr_->setRDecrZeta(5);
-                        mpnew.gr_->setBRandZeta(true);
-                        mpnew.gr_->setBEntropy(true);
-                        mpnew.gr_->setSeed(seed);
-                        if (NULL == mpnew.gr_)
-                        {
-                            imm = immRespInit;
-                        }
+                        mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
+                                             true, 1, 200, 5, true,
+                                             mpnew.molProp()->getCharge(),
+                                             -2, 2, false, watoms);
+                        mpnew.gr_.setBAXpRESP(true);
+                        mpnew.gr_.setBEntropy(true);
                     }
 
                     if (immOK == imm)
@@ -738,25 +731,12 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-                /*  mpnew.gr_ = new  Resp(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
-                                            1, 100, 5,
-                                            TRUE, watoms, 5, TRUE, TRUE,
-                                            1, TRUE,
-                                            TRUE, NULL, seed);*/
-
-                mpnew.gr_ = new  Resp(_iChargeDistributionModel, mpnew.molProp()->getCharge());
-                mpnew.gr_->setBAXpRESP(true);
-                mpnew.gr_->setZmin(1);
-                mpnew.gr_->setDeltaZ(5);
-                mpnew.gr_->setWatoms(watoms);
-                mpnew.gr_->setRDecrZeta(5);
-                mpnew.gr_->setBRandZeta(true);
-                mpnew.gr_->setBEntropy(true);
-                mpnew.gr_->setSeed(seed);
-                if (NULL == mpnew.gr_)
-                {
-                    imm = immRespInit;
-                }
+                mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
+                                     true, 1, 200, 5, true,
+                                     mpnew.molProp()->getCharge(),
+                                     -2, 2, false, watoms);
+                mpnew.gr_.setBAXpRESP(true);
+                mpnew.gr_.setBEntropy(true);
             }
 
             if (immOK == imm)
@@ -966,8 +946,6 @@ void MolDip::CalcDeviation()
                                _hfac,
                                mymol->molProp()->getCharge(), _epsr);
             }
-            /*if (strcmp(mymol->molname,"1-butene") == 0)
-               fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = mymol->qgen_->generateChargesSm(debug,
                                                  pd_, &(mymol->topology_->atoms),
                                                  1e-4, 100, _atomprop,
@@ -975,7 +953,7 @@ void MolDip::CalcDeviation()
             if (eQ != eQGEN_OK)
             {
                 char buf[STRLEN];
-                mymol->qgen_->message(STRLEN, buf, NULL);
+                mymol->qgen_->message(STRLEN, buf, mymol->gr_);
                 fprintf(stderr, "%s\n", buf);
             }
             else
@@ -1012,13 +990,9 @@ void MolDip::CalcDeviation()
             mymol->CalcMultipoles();
 
             /* Compute the ESP on the points */
-            if ((NULL != mymol->gr_) && _bQM)
+            if (mymol->gr_.nEsp() > 0 && _bQM)
             {
-                /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),pd_);*/
-                //mymol->gr_->fillZeta( pd_);
-                mymol->gr_->fillZeta();
-                mymol->gr_->fillQ(&(mymol->topology_->atoms));
-                mymol->gr_->calcPot();
+                mymol->gr_.calcPot();
             }
             qtot = 0;
             for (j = 0; (j < mymol->topology_->atoms.nr); j++)
@@ -1066,9 +1040,10 @@ void MolDip::CalcDeviation()
                         _ener[ermsQUAD] += gmx::square(mymol->Q_exp[mm][mm] - mymol->Q_calc[mm][mm]);
                     }
                 }
-                if (NULL != mymol->gr_)
+                if (mymol->gr_.nEsp() > 0)
                 {
-                    _ener[ermsESP] += mymol->gr_->getRms(&wtot);
+                    real rrms;
+                    _ener[ermsESP] += mymol->gr_.getRms(&wtot, &rrms);
                     if (NULL != debug)
                     {
                         fprintf(debug, "RMS %s = %g\n",

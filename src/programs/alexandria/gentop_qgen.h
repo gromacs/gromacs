@@ -38,8 +38,6 @@ class GentopQgen
                    real hfac, int qtotal,
                    real epsr);
 
-        // void done();
-
         int generateChargesSm(FILE *fp,
                               const Poldata &pd,
                               t_atoms *atoms,
@@ -47,13 +45,15 @@ class GentopQgen
                               real *chieq);
 
         int generateCharges(FILE *fp,
-                            Resp * gr, const std::string molname,
+                            Resp &gr,
+                            const std::string molname,
                             const Poldata &pd,
                             t_atoms *atoms,
-                            real tol, int maxiter, int maxcycle,
+                            real tol, int maxiter,
                             gmx_atomprop_t aps);
 
-        void message(int len, char buf[], Resp * gr);
+        void message(int len, char buf[],
+                     Resp &gr);
         gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
 
         /* The routines below return NOTSET if something is out of the ordinary */
@@ -65,9 +65,6 @@ class GentopQgen
 
         void checkSupport(const Poldata &pd, gmx_atomprop_t aps);
 
-        void saveParams( Resp * gr);
-
-        void getParams( Resp *  gr);
         double getZeta(int atom, int z);
 
 
@@ -91,7 +88,7 @@ class GentopQgen
         /* For each atom i there are nZeta[i] row, q and zeta entries */
         std::vector<int>                                   _nZeta;
         std::vector<std::vector<int> >                     _row;
-        gmx_bool                                           _bAllocSave;
+        bool                                               _bAllocSave;
         std::vector<std::vector<real> >                    _q, _zeta, _qsave, _zetasave;
 
 
@@ -103,6 +100,8 @@ class GentopQgen
                      std::vector<int> rowI,
                      std::vector<int> rowJ);
 
+        void copyChargesToAtoms(t_atoms *atoms);
+        
         void calcJab();
 
         void solveQEem(FILE *fp,  real hardsnesFactor);
@@ -118,6 +117,9 @@ class GentopQgen
                                     const Poldata &pd,
                                     t_atoms *atoms,
                                     gmx_atomprop_t aps);
+        void saveParams(Resp &gr);
+
+        void restoreParams(Resp &gr);
 
         void calcRhs();
 };
