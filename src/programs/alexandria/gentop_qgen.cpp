@@ -19,6 +19,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
@@ -122,6 +123,7 @@ GentopQgen::GentopQgen(const Poldata &pd, t_atoms *atoms, gmx_atomprop_t aps,
                     _q[j][k]    = pd.getQ(_iChargeDistributionModel, *atoms->atomtype[j], k);
                     _zeta[j][k] = pd.getZeta(_iChargeDistributionModel, *atoms->atomtype[j], k);
                     _row[j][k]  = pd.getRow(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    GMX_RELEASE_ASSERT(_row[j][k] > 0, "Row (in the periodic table) should be at least 1");
                     if (_row[j][k] > SLATER_MAX)
                     {
                         if (debug)

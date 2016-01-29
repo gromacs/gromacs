@@ -31,6 +31,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -137,29 +138,48 @@ void Resp::summary(FILE             *fp,
     }
 }
 
-void Resp::addParam(int aindex, eParm eparm, size_t zz)
+int Resp::addParam(size_t aindex, eParm eparm, size_t zz)
 {
+    FILE * debug = stdout;
+    int iParam = -1;
     if (eparm == eparmQ)
     {
         range_check(aindex, 0, nAtom());
         raparam_.push_back(RespParam(eparm, aindex, zz));
         if (debug)
         {
-            fprintf(debug, "GRESP: Adding parameter %d for atom %d\n", 
-                    eparm, aindex);
+            fprintf(debug, "GRESP: Adding charge for atom %d\n",
+                    static_cast<int>(aindex));
         }
+        iParam = nParam()-1;
     }
-    else if (_bFitZeta && (zz < ratype_[aindex].getNZeta()))
+    else if (_bFitZeta)
     {
-        range_check(aindex, 0, nAtomType());
-        raparam_.push_back(RespParam(eparm, aindex, zz));
-        FILE * debug = stdout;
-        if (debug)
+        RespAtomTypeIterator rat = findRAT(aindex);
+        GMX_RELEASE_ASSERT(rat != endRAT(), "Can not not find atomtype");
+        GMX_RELEASE_ASSERT(zz < rat->getNZeta(), "Zeta out of range");
+        // See if we have this one in the library already.
+        RespParamIterator rap = std::find_if(raparam_.begin(), raparam_.end(),
+                                             [eparm, aindex, zz](RespParam const &rp)
+                                             { return (rp.eParam() == eparm &&
+                                                       rp.aIndex() == aindex &&
+                                                       rp.zIndex() == zz); });
+        if (rap == raparam_.end())
         {
-            fprintf(debug, "GRESP: Adding parameter %d for atom type %d zz %d\n", 
-                    eparm, aindex, static_cast<int>(zz));
+            raparam_.push_back(RespParam(eparm, aindex, zz));
+            iParam = nParam()-1;
+            if (debug)
+            {
+                fprintf(debug, "GRESP: Adding zeta %d for atom type %d\n", 
+                        static_cast<int>(zz), static_cast<int>(aindex));
+            }
+        }
+        else
+        {
+            iParam = rap - raparam_.begin();
         }
     }
+    return iParam;
 }
 
 void Resp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
@@ -180,22 +200,23 @@ void Resp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
              */
             for (size_t zz = 0; (zz < rai->getNZeta()); zz++)
             {
-                addParam(atype, eparmZ, zz);
-                (rai->beginRZ()+zz)->setZindex(nParam()-1);
+                int iParam = addParam(atype, eparmZ, zz);
+                (rai->beginRZ()+zz)->setZindex(iParam);
             }
         }
         else if (symmetricAtoms[i] == static_cast<int>(i))
         {
             // We optimize at most 1 charge per atom, so use index 0
-            addParam(i, eparmQ, 0);
-            ra_[i].setQindex(nParam()-1);
+            int iParam = addParam(i, eparmQ, 0);
+            ra_[i].setQindex(iParam);
             // Check if we have this atype covered already
-            if (rai == ratype_.end())
+            if (rai != ratype_.end())
             {
                 // New atom type
                 for (size_t zz = 0; (zz < rai->getNZeta()); zz++)
                 {
-                    addParam(atype, eparmZ, zz);
+                    iParam = addParam(atype, eparmZ, zz);
+                    (rai->beginRZ()+zz)->setZindex(iParam);
                 }
             }
         }
@@ -241,9 +262,8 @@ void Resp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
             fprintf(debug, "\n");
         }
     }
-    printf("There are %d variables to optimize for %d atoms and %d ESP points.\n",
-           static_cast<int>(nParam()), static_cast<int>(nAtom()),
-           static_cast<int>(nEsp()));
+    printf("There are %d variables to optimize for %d atoms.\n",
+           static_cast<int>(nParam()), static_cast<int>(nAtom()));
 }
 
 void Resp::writeHisto(const std::string &fn,
@@ -669,19 +689,25 @@ void Resp::calcRho()
 void Resp::calcPot()
 {
     std::fill(_potCalc.begin(), _potCalc.end(), 0);
-    for (size_t i = 0; (i < nEsp()); i++)
+    int nthreads = gmx_omp_get_max_threads();
+    for(auto &ra : ra_)
     {
-        double V = 0;
-        for (auto ra : ra_)
+        int                  atype = ra.atype();
+        RespAtomTypeIterator rat   = findRAT(atype);
+        gmx::RVec            rax   = ra.x();
+#pragma omp_parallel
         {
-            gmx::RVec            dx;
-            rvec_sub(_esp[i], ra.x(), dx);
-            double               r     = norm(dx);
-            int                  atype = ra.atype();
-            RespAtomTypeIterator rat   = findRAT(atype);
-            double vv                  = 0;
-            switch (_iDistributionModel)
+            int thread_id = gmx_omp_get_thread_num();
+            int i0 = thread_id*nEsp()/nthreads;
+            int i1 = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
+            for (int i = i0; (i < i1); i++)
             {
+                gmx::RVec dx;
+                rvec_sub(_esp[i], rax, dx);
+                double    r  = norm(dx);
+                double    vv = 0;
+                switch (_iDistributionModel)
+                {
                 case eqdBultinck:
                 case eqdAXp:
                     if (r > 0.01)
@@ -690,7 +716,6 @@ void Resp::calcPot()
                     }
                     break;
                 case eqdAXs:
-                    vv = 0;
                     for(auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                     {
                         real q = k->q();
@@ -710,7 +735,6 @@ void Resp::calcPot()
                                                 rat->beginRZ()->zeta());
                     break;
                 case eqdAXg:
-                    vv = 0;
                     for(auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                     {
                         real q = k->q();
@@ -724,10 +748,10 @@ void Resp::calcPot()
                 default:
                     gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
                               getEemtypeName(_iDistributionModel));
+                }
+                _potCalc[i] += vv*ONE_4PI_EPS0;
             }
-            V  += vv;
         }
-        _potCalc[i] = V*ONE_4PI_EPS0;
     }
 }
 

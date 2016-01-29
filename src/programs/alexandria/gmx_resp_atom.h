@@ -158,23 +158,26 @@ enum eParm {
 class RespParam
 {
  public:
-    RespParam(eParm eparm, int aindex, int zindex) : 
+    RespParam(eParm eparm, size_t aindex, size_t zindex) : 
     eparm_(eparm), aindex_(aindex), zindex_(zindex) {}
  
     eParm eParam() const { return eparm_; }
     
-    int aIndex() const { return aindex_; }
+    size_t aIndex() const { return aindex_; }
     
-    int zIndex() const { return zindex_; }
+    size_t zIndex() const { return zindex_; }
     
  private:
     //! Type of parameter
-    eParm eparm_;
+    eParm  eparm_;
     //! Atom index (for charges) or atype index (for zeta)
-    int   aindex_;
+    size_t aindex_;
     //! Zeta index (in the RespAtomType) in case we're optimizing zeta
-    int   zindex_;
+    size_t zindex_;
 };
+
+//! Looking for the right Resp parameters? Here to help.
+typedef std::vector<RespParam>::iterator RespParamIterator;
 
 } // namespace
 

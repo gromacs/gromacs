@@ -43,6 +43,7 @@ gmx_build_unit_test(
     gentop_qgenTest.cpp
     molpropTest.cpp
     poldataTest.cpp	
+    eem_qgenTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>
     )

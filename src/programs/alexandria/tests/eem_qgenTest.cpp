@@ -46,6 +46,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/topology/topology.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/gmx_resp.h"
 #include "programs/alexandria/mymol.h"
@@ -57,7 +58,7 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-class RespTest : public gmx::test::CommandLineTestBase
+class EemTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
@@ -66,7 +67,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         gmx_atomprop_t                  aps_;
 
         //init set tolecrance
-        RespTest () : checker_(this->rootChecker())
+        EemTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
             aps_ = gmx_atomprop_init();
@@ -101,7 +102,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testResp(ChargeDistributionModel model, bool fitZeta)
+    void testEem(ChargeDistributionModel model)
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
@@ -112,26 +113,22 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, edih);
 
-            mp_.gr_.setOptions(model, 1993,
-                               fitZeta, 5, 100, 5, false,
-                               mp_.molProp()->getCharge(),
-                               -2, 2, false, 0);
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;
             char       *symm_string = (char *)"";
 
-            mp_.GenerateCharges(pd_, aps_, model, eqgRESP,
+            mp_.GenerateCharges(pd_, aps_, model, eqgEEM,
                                 hfac, epsr, lot, true, symm_string);
 
             std::vector<double> qtotValues;
-            for (size_t atom = 0; atom < mp_.gr_.nAtom(); atom++)
+            for(int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
             {
-                qtotValues.push_back(mp_.gr_.getAtomCharge(atom));
+                qtotValues.push_back(mp_.topology_->atoms.atom[atom].q);
             }
             char buf[256];
-            snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
-                     static_cast<int>(mp_.gr_.chargeDistributionModel()));
+            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d",
+                     static_cast<int>(ChargeGenerationAlgorithm()));
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
@@ -142,28 +139,33 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 };
 
-TEST_F (RespTest, AXpValues)
+TEST_F (EemTest, Bultinck)
 {
-    testResp(eqdAXp, false);
+    testEem(eqdBultinck);
 }
 
-TEST_F (RespTest, AXgValues)
+TEST_F (EemTest, Rappe)
 {
-    testResp(eqdAXg, false);
+    testEem(eqdRappe);
 }
 
-TEST_F (RespTest, AXgZetaValues)
+TEST_F (EemTest, Yang)
 {
-    testResp(eqdAXg, true);
+    testEem(eqdYang);
 }
 
-TEST_F (RespTest, AXsValues)
+TEST_F (EemTest, AXp)
 {
-    testResp(eqdAXs, false);
+    testEem(eqdAXp);
 }
 
-TEST_F (RespTest, AXsVZetaalues)
+TEST_F (EemTest, AXg)
 {
-    testResp(eqdAXs, true);
+    testEem(eqdAXg);
+}
+
+TEST_F (EemTest, AXs)
+{
+    testEem(eqdAXs);
 }
 

@@ -242,7 +242,16 @@ class Resp
 
         real myWeight(size_t iatom) const;
 
-        void addParam(int atom, eParm eparm, size_t zz);
+        /*! \brief Adds a parameter to the optimization list
+         *
+         * \param[in] atom  Either the atom index or the atom type
+         * \param[in] eparm Either eparmQ, in which case atom is the
+         *                  atom index, or eparmZ, in which case atom
+         *                  is the atom type.
+         * \param[in] zz    The zeta index
+         * \return The index in the parameter list.
+         */
+        int addParam(size_t atom, eParm eparm, size_t zz);
 };
 
 } // namespace
