@@ -34,6 +34,7 @@
 
 set(test_sources
     confio.cpp
+    strdb.cpp
     )
 if (GMX_USE_TNG)
     list(APPEND test_sources tngio.cpp)
