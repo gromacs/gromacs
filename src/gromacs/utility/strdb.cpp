@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+/* TODO There may be value in calling trim(line) before this function
+   returns, because not all cases trim leading and trailing whitespace
+   at the moment. */
 gmx_bool get_a_line(FILE *fp, char line[], int n)
 {
     char *line0;
@@ -56,6 +59,7 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
 
     do
     {
+        // Try to read a line
         if (!fgets(line0, n+1, fp))
         {
             sfree(line0);
@@ -64,26 +68,35 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
         dum = std::strchr(line0, '\n');
         if (dum)
         {
+            // A newline was found, so make that the end of the string
             dum[0] = '\0';
         }
         else if (static_cast<int>(std::strlen(line0)) == n)
         {
+            // No newline or null terminator was found in the string
             fprintf(stderr, "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
             line0[n-1] = '\0';
         }
         else
         {
+            // No newline was found in the string
             fprintf(stderr, "Warning: file does not end with a newline, last line:\n%s\n",
                     line0);
         }
+        // Find the first semicolon, which would start a comment
         dum = std::strchr(line0, ';');
         if (dum)
         {
+            // Found a comment, so delete the rest of the line
             dum[0] = '\0';
         }
+        // Copy the edited version of string into the return buffer
         std::strncpy(line, line0, n);
+        // Set dum to the start of the edited version of the string
         dum = line0;
+        // If the line originally contained at most whitespace, organize to skip it
         ltrim(dum);
+        // Loop to get the next line if this line parsed equivalent to a blank line
     }
     while (dum[0] == '\0');
 
