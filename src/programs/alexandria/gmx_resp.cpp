@@ -695,7 +695,7 @@ void Resp::calcPot()
         int                  atype = ra.atype();
         RespAtomTypeIterator rat   = findRAT(atype);
         gmx::RVec            rax   = ra.x();
-#pragma omp_parallel
+        #pragma omp parallel
         {
             int thread_id = gmx_omp_get_thread_num();
             int i0 = thread_id*nEsp()/nthreads;

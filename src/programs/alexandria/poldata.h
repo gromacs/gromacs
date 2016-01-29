@@ -135,10 +135,10 @@ class Poldata
         /* Return array of atomtypes compatible with the bonded neighbors.
            The array should be freed, but not the contents of the elements.
          */
-        std::string * getBondingRules(  std::string elem,
-                                        int nbond, std::string neighbors[],
-                                        const std::string geometry,
-                                        int iAromatic);
+        //        std::string * getBondingRules(std::string elem,
+        //                            int nbond, std::string neighbors[],
+        //                            const std::string geometry,
+        //                            int iAromatic);
 
         std::string  getGeometry(  std::string gtBrule);
 

@@ -891,6 +891,28 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
     return imm;
 }
 
+immStatus MyMol::checkAtoms(const Poldata &pd)
+{
+    int nmissing = 0;
+    
+    for(int i = 0; i < topology_->atoms.nr; i++)
+    {
+        const std::string atype(*topology_->atoms.atomtype[i]);
+        FfatypeConstIterator fa = pd.findAtype(atype);
+        if (fa == pd.getAtypeEnd())
+        {
+            printf("Could not find a force field entry for atomtype %s atom %d\n", 
+                   *topology_->atoms.atomtype[i], i+1);
+            nmissing++;
+        }
+    }
+    if (nmissing > 0)
+    {
+        return immAtomTypes;
+    }
+    return immOK;
+}
+
 immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   const Poldata          &pd,
                                   const char             *lot,
@@ -921,6 +943,10 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         init_top(topology_);
         /* get atoms */
         imm = GenerateAtoms(ap, lot, iChargeDistributionModel);
+    }
+    if (immOK == imm)
+    {
+        imm = checkAtoms(pd);
     }
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;

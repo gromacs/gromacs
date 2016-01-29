@@ -123,7 +123,11 @@ GentopQgen::GentopQgen(const Poldata &pd, t_atoms *atoms, gmx_atomprop_t aps,
                     _q[j][k]    = pd.getQ(_iChargeDistributionModel, *atoms->atomtype[j], k);
                     _zeta[j][k] = pd.getZeta(_iChargeDistributionModel, *atoms->atomtype[j], k);
                     _row[j][k]  = pd.getRow(_iChargeDistributionModel, *atoms->atomtype[j], k);
-                    GMX_RELEASE_ASSERT(_row[j][k] > 0, "Row (in the periodic table) should be at least 1");
+                    printf("atype = %s q = %g zeta = %g row = %d model = %d\n",
+                           *atoms->atomtype[j],
+                           _q[j][k], _zeta[j][k], _row[j][k], static_cast<int>(_iChargeDistributionModel));
+                    GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp ||
+                                       _row[j][k] != 0, "Row (in the periodic table) should be at least 1");
                     if (_row[j][k] > SLATER_MAX)
                     {
                         if (debug)

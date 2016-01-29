@@ -125,6 +125,9 @@ class MyMol
         //! Generate virtual sites or linear angles
         void MakeSpecialInteractions(bool bUseVsites);
 
+        //! Check whether atom types exist in the force field
+        immStatus checkAtoms(const Poldata &pd);
+
         //! Fetch the force constants
         void getForceConstants(const Poldata &pd);
     public:
