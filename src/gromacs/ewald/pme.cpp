@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -925,6 +925,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     int                  fep_state;
     int                  fep_states_lj           = pme->bFEP_lj ? 2 : 1;
     const gmx_bool       bCalcEnerVir            = flags & GMX_PME_CALC_ENER_VIR;
+    const gmx_bool       bBackFFT                = flags & (GMX_PME_CALC_F | GMX_PME_CALC_POT);
     const gmx_bool       bCalcF                  = flags & GMX_PME_CALC_F;
 
     assert(pme->nnodes > 0);
@@ -1136,7 +1137,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 }
             }
 
-            if (bCalcF)
+            if (bBackFFT)
             {
                 /* do 3d-invfft */
                 if (thread == 0)
@@ -1172,7 +1173,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
          * With MPI we have to synchronize here before gmx_sum_qgrid_dd.
          */
 
-        if (bCalcF)
+        if (bBackFFT)
         {
             /* distribute local grid to all nodes */
 #ifdef GMX_MPI
@@ -1184,7 +1185,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             where();
 
             unwrap_periodic_pmegrid(pme, grid);
+        }
 
+        if (bCalcF)
+        {
             /* interpolate forces for our local atoms */
 
             where();
@@ -1400,7 +1404,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[2+fep_state], vir_AB[2+fep_state]);
             }
 
-            if (bCalcF)
+            if (bBackFFT)
             {
                 bFirst = !(flags & GMX_PME_DO_COULOMB);
                 calc_initial_lb_coeffs(pme, local_c6, local_sigma);
@@ -1455,22 +1459,25 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                     unwrap_periodic_pmegrid(pme, grid);
 
-                    /* interpolate forces for our local atoms */
-                    where();
-                    bClearF = (bFirst && PAR(cr));
-                    scale   = pme->bFEP ? (fep_state < 1 ? 1.0-lambda_lj : lambda_lj) : 1.0;
-                    scale  *= lb_scale_factor[grid_index-2];
-#pragma omp parallel for num_threads(pme->nthread) schedule(static)
-                    for (thread = 0; thread < pme->nthread; thread++)
+                    if (bCalcF)
                     {
-                        gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
-                                          &pme->atc[0].spline[thread],
-                                          scale);
-                    }
-                    where();
+                        /* interpolate forces for our local atoms */
+                        where();
+                        bClearF = (bFirst && PAR(cr));
+                        scale   = pme->bFEP ? (fep_state < 1 ? 1.0-lambda_lj : lambda_lj) : 1.0;
+                        scale  *= lb_scale_factor[grid_index-2];
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
+                        for (thread = 0; thread < pme->nthread; thread++)
+                        {
+                            gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
+                                              &pme->atc[0].spline[thread],
+                                              scale);
+                        }
+                        where();
 
-                    inc_nrnb(nrnb, eNR_GATHERFBSP,
-                             pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+                        inc_nrnb(nrnb, eNR_GATHERFBSP,
+                                 pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+                    }
                     wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
 
                     bFirst = FALSE;
