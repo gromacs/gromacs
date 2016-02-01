@@ -14,9 +14,12 @@
 ???  P     0.18
 ???  S     0.18
 ???  Cl    0.175
+; Drudes for polarizable simulations
+???  D     0
+; Generic lone pair
+???  LP    0
 ; Water charge sites
 SOL  MW    0
-SOL  LP    0
 ; Masses for vsite construction
 GLY  MN1   0
 GLY  MN2   0
