@@ -47,7 +47,7 @@
 struct t_block;
 struct t_blocka;
 
-#define MAXSLEN 32
+#define MAXSLEN 64 
 
 typedef struct {
     gmx_bool bSet;              /* Has this combination been set        */
