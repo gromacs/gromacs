@@ -102,7 +102,11 @@ static void xlate_atomname_gmx2pdb(char *name)
     char temp;
 
     length = std::strlen(name);
-    if (length > 3 && std::isdigit(name[length-1]))
+    /* jal - this breaks everything with polarizable models
+     * so I am adding a condition that we don't have 'D' (Drude) or
+     * 'L' (lone pair) as the first letter */
+    /* if (length > 3 && std::isdigit(name[length-1]) && (!is_drude(const_cast<char *>(name[0])))) */
+    if (length > 3 && std::isdigit(name[length-1]) && (!(name[0] == 'D')) && (!(name[0] == 'L')))
     {
         temp = name[length-1];
         for (i = length-1; i > 0; --i)
