@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -818,6 +818,15 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     int                   ib0, ib1, ib;
     real                  rb, rl;
     real                  drift;
+
+    if (!EI_DYNAMICS(ir->eI))
+    {
+        gmx_incons("Can only determine the Verlet buffer size for integrators that perform dynamics");
+    }
+    if (ir->verletbuf_tol <= 0)
+    {
+        gmx_incons("The Verlet buffer tolerance needs to be larger than zero");
+    }
 
     if (reference_temperature < 0)
     {

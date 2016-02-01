@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -512,7 +512,9 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   gmx_bool                        bUseGPU)
 {
     /* For NVE simulations, we will retain the initial list buffer */
-    if (ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
+    if (EI_DYNAMICS(ir->eI) &&
+        ir->verletbuf_tol > 0 &&
+        !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
