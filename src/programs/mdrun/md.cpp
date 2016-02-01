@@ -1005,7 +1005,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        (bDoFEP ? GMX_FORCE_DHDL : 0)
                        );
 
-        if (ir->bDrude && ir->drude->drudemode == edrudeSCF)
+        /* Do not re-relax the shells if we are doing a rerun! */
+        if (ir->bDrude && ir->drude->drudemode == edrudeSCF && !bRerunMD)
         {
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, bVerbose, step,
