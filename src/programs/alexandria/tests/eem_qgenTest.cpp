@@ -154,6 +154,8 @@ TEST_F (EemTest, Yang)
     testEem(eqdYang);
 }
 
+// The tests below are outcommented since we do not have a parameters for the AX? methods.
+/*
 TEST_F (EemTest, AXp)
 {
     testEem(eqdAXp);
@@ -168,4 +170,4 @@ TEST_F (EemTest, AXs)
 {
     testEem(eqdAXs);
 }
-
+*/

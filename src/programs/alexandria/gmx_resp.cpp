@@ -140,7 +140,6 @@ void Resp::summary(FILE             *fp,
 
 int Resp::addParam(size_t aindex, eParm eparm, size_t zz)
 {
-    FILE * debug = stdout;
     int iParam = -1;
     if (eparm == eparmQ)
     {
@@ -254,7 +253,7 @@ void Resp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
             RespAtomTypeIterator rai = findRAT(atype);
             fprintf(debug, "GRQ: %3d %5s", static_cast<int>(i+1),
                     rai->getAtomtype().c_str());
-            for (RespZetaConstIterator zz = rai->beginRZ(); zz <  rai->endRZ(); ++zz)
+            for (RowZetaQConstIterator zz = rai->beginRZ(); zz <  rai->endRZ(); ++zz)
             {
                 fprintf(debug, " %8.4f %8.4f\n",
                         ra_[i].charge(), zz->zeta());
@@ -695,7 +694,7 @@ void Resp::calcPot()
         int                  atype = ra.atype();
         RespAtomTypeIterator rat   = findRAT(atype);
         gmx::RVec            rax   = ra.x();
-        #pragma omp parallel
+#pragma omp parallel
         {
             int thread_id = gmx_omp_get_thread_num();
             int i0 = thread_id*nEsp()/nthreads;
@@ -785,7 +784,7 @@ void Resp::setVector(double *params)
             int atype = rp.aIndex();
             int zz    = rp.zIndex();
             RespAtomTypeIterator rai = findRAT(atype);
-            RespZetaIterator rzi = rai->beginRZ() + zz;
+            RowZetaQIterator rzi = rai->beginRZ() + zz;
             if (_bRandZeta)
             {
                 real zmin = _zmin;

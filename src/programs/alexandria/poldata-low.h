@@ -10,6 +10,11 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+
+#include "coulombintegrals/coulombintegrals.h"
+
 /*! \brief
  * Enumerated type holding the charge distribution models used in PolData
  *
@@ -79,7 +84,7 @@ class Ffatype
         std::string btype_;
         std::string elem_;
         std::string vdwparams_;
-        double      refEnthalpy_;
+        std::string refEnthalpy_;
     public:
         Ffatype(const std::string &desc,
                 const std::string &type,
@@ -87,7 +92,7 @@ class Ffatype
                 const std::string &btype,
                 const std::string &elem,
                 const std::string &vdwparams,
-                double             refEnthalpy) :
+                const std::string &refEnthalpy) :
             desc_(desc),
             type_(type),
             ptype_(ptype),
@@ -110,7 +115,7 @@ class Ffatype
 
         const std::string &getVdwparams() const { return vdwparams_; }
 
-        double getRefEnthalpy() const { return refEnthalpy_; }
+        const std::string &getRefEnthalpy() const { return refEnthalpy_; }
 };
 
 class GtBond
@@ -327,20 +332,28 @@ class Bosque
 class Miller
 {
     private:
+    //! Atom type name
         std::string miller_;
+        //! Atomic number
         int         atomnumber_;
+        //! Polarizability description tau
         double      tauAhc_;
+        //! Polarizability description alpha
         double      alphaAhp_;
+        //! Alexandria type 
+        std::string alexandria_equiv_;
     public:
         Miller(const std::string &miller,
-               int               atomnumber,
-               double            tauAhc,
-               double            alphaAhp)
+               int                atomnumber,
+               double             tauAhc,
+               double             alphaAhp,
+               const std::string &alexandria_equiv)
             :
-              miller_(miller),
-              atomnumber_(atomnumber),
-              tauAhc_(tauAhc),
-              alphaAhp_(alphaAhp) {}
+        miller_(miller),
+            atomnumber_(atomnumber),
+            tauAhc_(tauAhc),
+            alphaAhp_(alphaAhp), 
+            alexandria_equiv_(alexandria_equiv) {}
 
         const std::string &getMiller() const { return miller_; }
 
@@ -349,6 +362,8 @@ class Miller
         double getTauAhc() const { return tauAhc_; }
 
         double getAlphaAhp() const { return alphaAhp_; }
+
+        const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
 };
 
 class Symcharges
@@ -391,77 +406,91 @@ class Epref
 
         void setEpref(std::string epref) { epref_ = epref; }
 };
+//! Loop over EEMprop references
+typedef std::vector<Epref>::iterator EprefIterator;
+//! Loop over EEMprop references
+typedef std::vector<Epref>::const_iterator EprefConstIterator;
  
-class EempropsData
+class RowZetaQ
 {
-    private:
-        std::vector<double> q_;
-        std::vector<double> zeta_;
-        std::vector<int>    row_;
-    public:
-
-        EempropsData(int size) : q_(size), zeta_(size), row_(size) {}
-
-        //EempropsData() {}
-
-        double getQ(int index) const { return q_[index]; }
-
-        const std::vector<double> &getQ() const { return q_; }
-
-        double getZeta(int index) const { return zeta_[index]; }
-
-        const std::vector<double> &getZeta() const { return zeta_; }
-
-        int getRow(int index) const { return row_[index]; }
-
-        const std::vector<int> &getRow() const { return row_; }
-
-        void setZeta(double zeta, int index) { zeta_[index] = zeta; }
-
-        void setRow(double row, int index) { row_[index] = row; }
-
-        void setQ(double q, int index) { q_[index] = q; }
+ public:
+ RowZetaQ(int row, double zeta, double q) : row_(row), zeta_(zeta), q_(q),
+        zetaRef_(zeta) 
+        { 
+            zindex_ = -1; 
+            char buf[256];
+            row_ = std::min(row_, SLATER_MAX);
+            if (row_ < row && debug)
+            {
+                fprintf(debug, "Reducing row from %d to %d\n", row, row_);
+            }
+            snprintf(buf, sizeof(buf), "Row (%d) in the periodic table must be > 0 and <= %d",
+                     row_, SLATER_MAX);
+            GMX_RELEASE_ASSERT(row_ > 0 && row_ <= SLATER_MAX, buf);
+        }
+    
+    int row() const { return row_; };
+    
+    void setRow(int row) { row_ = row; }
+    
+    double q() const { return q_; }
+    
+    void setQ(double q) { q_ = q; }
+    
+    double zeta() const { return zeta_; } 
+    
+    void setZeta(double z) { zeta_ = z; }
+    
+    double zetaRef() const { return zetaRef_; } 
+    
+    void setZetaRef(double z) { zetaRef_ = z; }
+    
+    int zIndex() const { return zindex_; }
+    
+    void setZindex(int zi) { zindex_ = zi; }
+    
+ private:
+    //! The row in the periodic table for each of the charge components
+    int  row_;
+    //! Inverse screening length of each of the components
+    double zeta_;
+    //! Charge of each of the components
+    double q_;
+    //! Reference (starting) value for zeta
+    double zetaRef_;
+    //! Parameter optimization index
+    int  zindex_;
 };
-typedef std::vector<EempropsData>::iterator EempropsDataIterator;
+//! Loop over RowZetaQ
+typedef std::vector<RowZetaQ>::iterator RowZetaQIterator;
 
-#define MAXZETA    12
+//! Loop over RowZetaQ
+typedef std::vector<RowZetaQ>::const_iterator RowZetaQConstIterator;
+
 class Eemprops
 {
     private:
         ChargeDistributionModel eqdModel_;
-        int                     nzeta_;
         std::string             name_;
+        std::string             rowstr_;
         std::string             zetastr_;
         std::string             qstr_;
-        std::string             rowstr_;
         double                  J0_;
         double                  chi0_;
-        EempropsData            data_;
+        std::vector<RowZetaQ>   rzq_;
 
     public:
         Eemprops(ChargeDistributionModel eqdModel,
-                 int                     nzeta,
                  const std::string      &name,
                  const std::string      &zetastr,
                  const std::string      &qstr,
                  const std::string      &rowstr,
                  double                  J0,
-                 double                  chi0)
-            : eqdModel_(eqdModel),
-              nzeta_(nzeta),
-              name_(name),
-              zetastr_(zetastr),
-              qstr_(qstr),
-              rowstr_(rowstr),
-              J0_(J0),
-              chi0_(chi0),
-              data_(MAXZETA) {}
-
-        Eemprops() : data_(MAXZETA) {}
+                 double                  chi0);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
 
-        int getNzeta() const { return nzeta_; }
+        int getNzeta() const { return rzq_.size(); }
 
         const char *getName() const { return name_.c_str(); }
 
@@ -477,37 +506,27 @@ class Eemprops
 
         void setEqdModel(ChargeDistributionModel eqdModel) { eqdModel_ = eqdModel; }
 
-        void setNzeta(int nzeta) { nzeta_ = nzeta; }
-
         void setName(const std::string &name) { name_ = name; }
 
-        void setZetastr(const std::string &zetastr) { zetastr_ = zetastr; }
-
-        void setQstr(const std::string &qstr) { qstr_ = qstr; }
-
-        void setRowstr(const std::string &rowstr) { rowstr_ = rowstr; }
+        void setRowZetaQ(const std::string &rowstr,
+                         const std::string &zetastr,
+                         const std::string &qstr);
 
         void setJ0(double J0) { J0_ = J0; }
 
         void setChi0(double chi0) { chi0_ = chi0; }
 
-        double getZeta(int index) const { return data_.getZeta(index); }
+        double getZeta(int index) const { return rzq_[index].zeta(); }
 
-        double getQ(int index) const { return data_.getQ(index); }
+        double getQ(int index) const { return rzq_[index].q(); }
 
-        int getRow(int index) const { return data_.getRow(index); }
+        int getRow(int index) const { return rzq_[index].row(); }
 
-        std::vector<double> getAllZeta() { return data_.getZeta(); }
+        void setZeta(int index, double zeta) { rzq_[index].setZeta(zeta); }
 
-        std::vector<double> getAllQ() { return data_.getQ(); }
+        void setQ(int index, double q) { rzq_[index].setQ(q); }
 
-        std::vector<int> getAllRow() { return data_.getRow(); }
-
-        void setZeta(int index, double zeta) { data_.setZeta(zeta, index); }
-
-        void setQ(int index, double q) { data_.setQ(q, index); }
-
-        void setRow(int index, int row) { data_.setRow(row, index); }
+        void setRow(int index, int row) { rzq_[index].setRow(row); }
 };
 typedef std::vector<Eemprops>::iterator EempropsIterator;
 typedef std::vector<Eemprops>::const_iterator EempropsConstIterator;

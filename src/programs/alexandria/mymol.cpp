@@ -1041,7 +1041,7 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
     char      qgen_msg[STRLEN];
     immStatus imm = immOK;
 
-    qgen_ = new GentopQgen(pd, &topology_->atoms, ap, x_,
+    qgen_ = new GentopQgen(pd, &topology_->atoms, x_,
                            iChargeDistributionModel,
                            iChargeGenerationAlgorithm,
                            hfac, molProp()->getCharge(), epsr);
@@ -1114,7 +1114,7 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
                                                    gr_, molProp()->getMolname().c_str(),
                                                    pd, &topology_->atoms,
                                                    tolerance,
-                                                   maxiter, ap);
+                                                   maxiter);
                 }
                 break;
             case eqgESP:
@@ -1138,7 +1138,7 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
                                                gr_, molProp()->getMolname().c_str(),
                                                pd, &topology_->atoms, 
                                                tolerance,
-                                               maxiter, ap);
+                                               maxiter);
                 break;
         }
         qgen_->message(sizeof(qgen_msg), qgen_msg, gr_);
@@ -1493,9 +1493,9 @@ static void print_top_header2(FILE *fp, const Poldata &pd,
                     {
                         btype = gt_type;
                     }
-                    fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A     %-s  %f\n",
+                    fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A     %-s  %s\n",
                             gt_type.c_str(), aType->getBtype().c_str(), atomnumber, mass, 0.0, aType->getVdwparams().c_str(),
-                            aType->getRefEnthalpy());
+                            aType->getRefEnthalpy().c_str());
                     if (bPol)
                     {
                         fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",

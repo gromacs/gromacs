@@ -440,8 +440,12 @@ static double dipole_function(void *params, double v[])
             sprintf(buf, "  %g", z);
             strcat(zstr, buf);
         }
-        md->pd_.setEemprops( md->_iChargeDistributionModel, name, J0, chi0,
-                              zstr, qstr, rowstr);
+        EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, name);
+        GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Can not find eemprops");
+        
+        ei->setRowZetaQ(rowstr, zstr, qstr);
+        ei->setJ0(J0);
+        ei->setChi0(chi0);
     }
     if (md->_bOptHfac)
     {
@@ -592,8 +596,11 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             sprintf(buf, "  %10g", zeta);
             strcat(zstr, buf);
         }
-        md->pd_.setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
-                              zstr, qstr, rowstr);
+        EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, name);
+        GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Can not find eemprops");
+        ei->setRowZetaQ(rowstr, zstr, qstr);
+        ei->setJ0(J00);
+        ei->setChi0(chi0);
         fprintf(fplog, "%-5s %10g %10g %10s\n", name, J00, chi0, zstr);
     }
     fprintf(fplog, "\n");
@@ -761,8 +768,11 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                     sprintf(buf, " %g", zeta);
                     strcat(zstr, buf);
                 }
-                md->pd_.setEemprops( md->_iChargeDistributionModel, name, J00, chi0,
-                                      zstr, qstr, rowstr);
+                EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, name);
+                GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Could not find eemprops");
+                ei->setRowZetaQ(rowstr, zstr, qstr);
+                ei->setJ0(J00);
+                ei->setChi0(chi0);
             }
             if (md->_bOptHfac)
             {

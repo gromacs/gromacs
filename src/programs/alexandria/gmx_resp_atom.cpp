@@ -20,7 +20,7 @@ RespAtomType::RespAtomType(int atype,
                            ChargeDistributionModel iDistributionModel,
                            const std::vector<std::string> &dzatoms)
 {
-    int         k, shell;
+    int         k;
     std::string atomtype_new;
 
     bool bRestr = false;
@@ -36,23 +36,25 @@ RespAtomType::RespAtomType(int atype,
     atype_       = atype;
     atomtype_    = atomtype;
     atomtype_new = atomtype_;
-    shell        = 0;
 
     bRestrained_ = bRestr;
 
     int nZeta    = std::max(1, pd.getNzeta(iDistributionModel, atomtype_));
     for(int i = 0; i < nZeta-1; i++)
     {
-        rz_.push_back(RespZeta(0, 0, 0));
+        rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype, i),
+                               pd.getQ(iDistributionModel, atomtype, i),
+                               pd.getZeta(iDistributionModel, atomtype, i)));
     }
 
+    int    shell      = nZeta-1;
     size_t shell_name = atomtype_.find("_s");
     if (shell_name != std::string::npos)
     {
         shell        = 1;
         atomtype_new = atomtype_.substr(0, shell_name);
     }
-    rz_.push_back(RespZeta(pd.getRow(iDistributionModel, atomtype_new, shell),
+    rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, shell),
                            pd.getQ(iDistributionModel, atomtype_new, shell),
                            pd.getZeta(iDistributionModel, atomtype_new, shell)));
 }

@@ -157,13 +157,13 @@ TEST_F (RespTest, AXgZetaValues)
     testResp(eqdAXg, true);
 }
 
-TEST_F (RespTest, AXsValues)
-{
-    testResp(eqdAXs, false);
-}
+//TEST_F (RespTest, AXsValues)
+//{
+//   testResp(eqdAXs, false);
+//}
 
-TEST_F (RespTest, AXsVZetaalues)
-{
-    testResp(eqdAXs, true);
-}
+//TEST_F (RespTest, AXsVZetaalues)
+//{
+//   testResp(eqdAXs, true);
+//}
 

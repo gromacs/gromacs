@@ -39,8 +39,6 @@
 
 #define SLATER_MAX 3
 
-#ifdef __cplusplus
-extern "C" {
 double Coulomb_SS(double r,int i,int j,double xi,double xj);
 
 double Nuclear_SS(double r,int i,double xi);
@@ -48,9 +46,5 @@ double Nuclear_SS(double r,int i,double xi);
 double DCoulomb_SS(double r,int i,int j,double xi,double xj);
 
 double DNuclear_SS(double r,int i,double xi);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

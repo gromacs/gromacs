@@ -31,26 +31,24 @@ class GentopQgen
 
         GentopQgen(const Poldata &pd,
                    t_atoms *atoms,
-                   gmx_atomprop_t aps,
                    rvec *x,
                    ChargeDistributionModel   iChargeDistributionModel,
                    ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                   real hfac, int qtotal,
-                   real epsr);
+                   double hfac, int qtotal,
+                   double epsr);
 
         int generateChargesSm(FILE *fp,
                               const Poldata &pd,
                               t_atoms *atoms,
-                              real tol, int maxiter, gmx_atomprop_t aps,
-                              real *chieq);
+                              double tol, int maxiter, 
+                              double *chieq);
 
         int generateCharges(FILE *fp,
                             Resp &gr,
                             const std::string molname,
                             const Poldata &pd,
                             t_atoms *atoms,
-                            real tol, int maxiter,
-                            gmx_atomprop_t aps);
+                            double tol, int maxiter);
 
         void message(int len, char buf[],
                      Resp &gr);
@@ -63,7 +61,7 @@ class GentopQgen
 
         double getQ(int atom, int z);
 
-        void checkSupport(const Poldata &pd, gmx_atomprop_t aps);
+        void checkSupport(const Poldata &pd);
 
         double getZeta(int atom, int z);
 
@@ -77,46 +75,45 @@ class GentopQgen
         ChargeDistributionModel                            _iChargeDistributionModel;
         ChargeGenerationAlgorithm                          _iChargeGenerationAlgorithm;
         int                                                _natom, _eQGEN;
-        real                                               _qtotal, _chieq, _hfac, _epsr;
+        double                                             _qtotal, _chieq, _hfac, _epsr;
         /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
         std::vector<std::string>                           _elem;
         std::vector<int>                                   _atomnr;
-        std::vector<real>                                  _chi0, _rhs, _j00;
+        std::vector<double>                                _chi0, _rhs, _j00;
         rvec                         *                     _x;
         /* Jab is a matrix over atom pairs */
-        std::vector<std::vector<real> >                    _Jab;
+        std::vector<std::vector<double> >                  _Jab;
         /* For each atom i there are nZeta[i] row, q and zeta entries */
         std::vector<int>                                   _nZeta;
         std::vector<std::vector<int> >                     _row;
         bool                                               _bAllocSave;
-        std::vector<std::vector<real> >                    _q, _zeta, _qsave, _zetasave;
+        std::vector<std::vector<double> >                  _q, _zeta, _qsave, _zetasave;
 
 
-        real calcJab(ChargeDistributionModel iChargeDistributionModel,
-                     rvec xi, rvec xj,
-                     int nZi, int nZj,
-                     std::vector<real> zetaI,
-                     std::vector<real> zetaJ,
-                     std::vector<int> rowI,
-                     std::vector<int> rowJ);
+        double calcJab(ChargeDistributionModel iChargeDistributionModel,
+                       rvec xi, rvec xj,
+                       int nZi, int nZj,
+                       std::vector<double> zetaI,
+                       std::vector<double> zetaJ,
+                       std::vector<int> rowI,
+                       std::vector<int> rowJ);
 
         void copyChargesToAtoms(t_atoms *atoms);
         
         void calcJab();
 
-        void solveQEem(FILE *fp,  real hardsnesFactor);
+        void solveQEem(FILE *fp, double hardnessFactor);
 
         void updateJ00();
 
-        real calcSij(int i, int j);
+        double calcSij(int i, int j);
 
         void updateFromPoldata(t_atoms *atoms,
                                const Poldata &pd);
 
         int generateChargesBultinck(FILE *fp,
                                     const Poldata &pd,
-                                    t_atoms *atoms,
-                                    gmx_atomprop_t aps);
+                                    t_atoms *atoms);
         void saveParams(Resp &gr);
 
         void restoreParams(Resp &gr);

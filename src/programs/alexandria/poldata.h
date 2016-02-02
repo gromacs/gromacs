@@ -8,6 +8,7 @@
 #include "gmxpre.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -68,7 +69,7 @@ class Poldata
                        const std::string &ptype,
                        const std::string &btype,
                        const std::string &vdwparams,
-                       double            ref_enthalpy);
+                       const std::string &ref_enthalpy);
 
         bool setPtypePolarizability(const std::string &ptype,
                                     double polarizability, 
@@ -159,28 +160,28 @@ class Poldata
         {
             return std::find_if(_alexandria.begin(), _alexandria.end(),
                                 [atype](Ffatype const &f)
-                                { return (atype.compare(f.getType())); });
+                                { return (atype.compare(f.getType()) == 0); });
         }
 
         FfatypeConstIterator findAtype(const std::string &atype) const
         {
-            FfatypeConstIterator ab = _alexandria.begin(), ae = _alexandria.end();
-            return std::find_if(ab, ae, [atype](Ffatype const &f)
-                                { return (atype.compare(f.getType())); });
+            return std::find_if(_alexandria.begin(), _alexandria.end(),
+                                [atype](Ffatype const &f)
+                                { return (atype.compare(f.getType()) ==0); });
         }
 
         FfatypeIterator btypeToAtype(const std::string &btype)
         {
             return std::find_if(_alexandria.begin(), _alexandria.end(), 
                                 [btype](Ffatype const &f) 
-                                { return f.getBtype().compare(btype); });
+                                { return (f.getBtype().compare(btype) == 0); });
         }
 
         FfatypeIterator ptypeToAtype(const std::string &ptype)
         {
             return std::find_if(_alexandria.begin(), _alexandria.end(), 
                                 [ptype](Ffatype const &f) 
-                                { return f.getPtype().compare(ptype); });
+                                { return (f.getPtype().compare(ptype) ==0); });
         }
         
         PtypeConstIterator getPtypeBegin() const { return _ptype.begin(); }
@@ -191,7 +192,7 @@ class Poldata
         {
             return std::find_if(_ptype.begin(), _ptype.end(),
                                 [ptype](Ptype const &p)
-                                { return ptype.compare(p.getType()); });
+                                { return (ptype.compare(p.getType()) == 0); });
         }
 
         //! Return the poltype corresponding to atype of nullptr
@@ -223,16 +224,18 @@ class Poldata
         bool getAtypePol(  const std::string &atype,
                            double *polarizability, double *sigPol) const ;
 
-        void  addMiller(std::string   miller,
-                        int           atomnumber,
-                        double        tauAhc,
-                        double        alphaAhp);
+        void addMiller(const std::string &miller,
+                       int                atomnumber,
+                       double             tauAhc,
+                       double             alphaAhp,
+                       const std::string &alexandria_equiv);
 
         /* Return true if "miller" was found */
         bool getMillerPol(const std::string &miller,
                           int               *atomnumber,
                           double            *tauAhc,
-                          double            *alphaAhp) const;
+                          double            *alphaAhp,
+                          std::string       &alexandria_equiv) const;
 
         MillerIterator getMillerBegin() { return _miller.begin(); }
 
@@ -242,18 +245,22 @@ class Poldata
 
         MillerConstIterator getMillerEnd() const { return _miller.end(); }
 
-        void  setMillerUnits(const std::string &tauUnit,
-                             const std::string &ahpUnit)
+        void setMillerFlags(const std::string &tauUnit,
+                            const std::string &ahpUnit,
+                            const std::string &ref)
         {
             _millerTauUnit = tauUnit;
             _millerAhpUnit = ahpUnit;
+            _millerRef     = ref;
         }
 
-        void  getMillerUnits(std::string &tauUnit,
-                             std::string &ahpUnit) const
+        void getMillerFlags(std::string &tauUnit,
+                            std::string &ahpUnit,
+                            std::string &ref) const
         {
             tauUnit = _millerTauUnit;
             ahpUnit = _millerAhpUnit;
+            ref     = _millerRef;
         }
 
         //! Convert poltype to miller name. Return true if found
@@ -275,12 +282,19 @@ class Poldata
 
         BosqueConstIterator getBosqueEnd() const { return _bosque.end(); }
 
-        void setBosqueUnit( std::string polarUnit)
+        void setBosqueFlags(const std::string &polarUnit,
+                            const std::string &ref)
         {
-            _bosquePolarUnit.assign(polarUnit);
+            _bosquePolarUnit = polarUnit;
+            _bosqueRef      = ref;
         }
 
-        const std::string &getBosqueUnit() const { return _bosquePolarUnit; }
+        void getBosqueFlags(std::string &polarUnit,
+                            std::string &ref) const
+        { 
+            polarUnit = _bosquePolarUnit; 
+            ref       = _bosqueRef;
+        }
 
         //! Convert poltype to bosque name or nullptr if not found
         bool ptypeToBosque(const std::string &ptype,
@@ -478,9 +492,9 @@ class Poldata
 
         int havePolSupport(const std::string &atype) const;
 
-        int haveEemSupport(ChargeDistributionModel  eqdModel,
-                           const std::string       &name,
-                           gmx_bool                 bAllowZeroParameters) const;
+        bool haveEemSupport(ChargeDistributionModel  eqdModel,
+                            const std::string       &name,
+                            gmx_bool                 bAllowZeroParameters) const;
 
         double getJ00(ChargeDistributionModel  eqdModel, 
                       const std::string       &name) const;
@@ -511,14 +525,8 @@ class Poldata
         const char *getOpts(ChargeDistributionModel eqdModel, 
                             const std::string &name) const;
 
-        void  setEemprops(ChargeDistributionModel eqdModel, 
-                          const std::string &name,
-                          double J0, 
-                          double chi0,
-                          const std::string &zeta, 
-                          const std::string &q, 
-                          const std::string &row);
-
+        void  addEemprops(Eemprops eep) { _eep.push_back(eep); }
+        
         EempropsConstIterator BeginEemprops() const { return _eep.begin(); }
 
         EempropsConstIterator EndEemprops() const { return _eep.end(); }
@@ -526,15 +534,24 @@ class Poldata
         EempropsIterator BeginEemprops() { return _eep.begin(); }
 
         EempropsIterator EndEemprops() { return _eep.end(); }
+        
+        EempropsConstIterator findEem(ChargeDistributionModel  eqdModel,
+                                      const std::string       &name) const;
 
+        EempropsIterator findEem(ChargeDistributionModel  eqdModel,
+                                 const std::string       &name);
+        
         void  setEpref(ChargeDistributionModel eqdModel, 
                        const std::string &epref);
 
         const char *getEpref(ChargeDistributionModel eqdModel) const;
 
-        void  commEemprops(t_commrec *cr);
+        //! Spread from master to slave nodes
+        void  broadcast(t_commrec *cr);
 
-        void  commForceParameters(t_commrec *cr);
+        EprefConstIterator epRefBegin() const { return _epr.begin(); }
+        
+        EprefConstIterator epRefEnd() const { return _epr.end(); }
 
     private:
         std::string                           _filename;
@@ -561,8 +578,10 @@ class Poldata
         std::vector<std::vector<GtDihedral> > _gtDihedral;
         std::vector<Miller>                   _miller;
         std::string                           _millerTauUnit, _millerAhpUnit;
+        std::string                           _millerRef;
         std::vector<Bosque>                   _bosque;
         std::string                           _bosquePolarUnit;
+        std::string                           _bosqueRef;
         std::vector<Symcharges>               _symcharges;
         std::vector<Eemprops>                 _eep;
         std::vector<Epref>                    _epr;
@@ -574,39 +593,6 @@ class Poldata
         GtBondIterator searchBond(const std::string &atom1, 
                                   const std::string &atom2,
                                   double bondorder);
-
-        EempropsConstIterator getEep(ChargeDistributionModel  eqdModel,
-                                     const std::string       &name) const
-        {
-            for(EempropsConstIterator ei = _eep.begin(); (ei != _eep.end()); ++ei)
-            {
-                if ((strcasecmp(ei->getName(), name.c_str()) == 0) &&
-                    (ei->getEqdModel() == eqdModel))
-                {
-                    return ei;
-                }
-            }
-            return _eep.end();
-        }
-        EempropsIterator getEep(ChargeDistributionModel  eqdModel,
-                                const std::string       &name)
-        {
-            for(EempropsIterator ei = _eep.begin(); (ei != _eep.end()); ++ei)
-            {
-                if ((strcasecmp(ei->getName(), name.c_str()) == 0) &&
-                    (ei->getEqdModel() == eqdModel))
-                {
-                    return ei;
-                }
-            }
-            return _eep.end();
-        }
-        /*   return std::find_if(_eep.begin(), _eep.end(),
-                                [eqdModel,name](const Eemprops &e)
-                                { return ((strcasecmp(e.getName().c_str(), name.c_str()) == 0) &&
-                                          (e.getEqdModel() == eqdModel));
-                                });
-                                }*/
 
         static int gtbComp(const void *a, const void *b);
 
