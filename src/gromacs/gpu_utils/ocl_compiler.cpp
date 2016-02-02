@@ -65,6 +65,12 @@
  */
 #define SEPARATOR '/'
 
+
+/* Check if OpenCL caching is ON - currently caching is disabled
+   until we resolve concurrency issues. */
+/* bCacheOclBuild = (NULL == getenv("GMX_OCL_NOGENCACHE"));*/
+static bool bCacheOclBuild = false;
+
 /*! \brief Compiler options index
  */
 typedef enum {
@@ -196,7 +202,7 @@ create_ocl_build_options_length(
     if ((build_device_vendor_id == OCL_VENDOR_AMD) && getenv("GMX_OCL_DUMP_INTERM_FILES"))
     {
         /* To dump OpenCL build intermediate files, caching must be off */
-        if (NULL != getenv("GMX_OCL_NOGENCACHE"))
+        if (bCacheOclBuild)
         {
             build_options_length +=
                 get_ocl_build_option_length(b_amd_dump_temp_files) + whitespace;
@@ -891,7 +897,6 @@ ocl_compile_program(
     size_t         ocl_source_length       = 0;
     size_t         kernel_filename_len     = 0;
 
-    bool           bCacheOclBuild           = false;
     bool           bOclCacheValid           = false;
 
     char           ocl_binary_filename[256] = { 0 };
@@ -932,9 +937,6 @@ ocl_compile_program(
                                      defines_for_kernel_types,
                                      runtime_consts);
 
-    /* Check if OpenCL caching is ON - currently caching is disabled
-       until we resolve concurrency issues. */
-    /* bCacheOclBuild = (NULL == getenv("GMX_OCL_NOGENCACHE"));*/
     if (bCacheOclBuild)
     {
         clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(ocl_binary_filename), ocl_binary_filename, NULL);
