@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,21 +115,25 @@ gmx_bool bshakef(FILE           *log,          /* Log file			*/
  * Return TRUE when OK, FALSE when shake-error
  */
 
-gmx_settledata_t settle_init(real mO, real mH, real invmO, real invmH,
-                             real dOH, real dHH);
+gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
 /* Initializes and returns a structure with SETTLE parameters */
 
+void settle_set_constraints(gmx_settledata_t  settled,
+                            const t_ilist    *il_settle,
+                            const t_mdatoms  *mdatoms);
+/* Set up the indices for the settle constraints */
+
 void csettle(gmx_settledata_t    settled,
-             int                 nsettle,          /* Number of settles            */
-             t_iatom             iatoms[],         /* The settle iatom list        */
-             const struct t_pbc *pbc,              /* PBC data pointer, can be NULL */
-             real                b4[],             /* Old coordinates              */
-             real                after[],          /* New coords, to be settled    */
-             real                invdt,            /* 1/delta_t                    */
-             real               *v,                /* Also constrain v if v!=NULL  */
-             int                 calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
-             tensor              vir_r_m_dr,       /* sum r x m delta_r            */
-             int                *xerror
+             int                 nthread,
+             int                 thread,
+             const struct t_pbc *pbc,         /* PBC data pointer, can be NULL */
+             const real          b4[],        /* Old coordinates */
+             real                after[],     /* New coords, to be settled */
+             real                invdt,       /* 1/delta_t */
+             real               *v,           /* Also constrain v if v!=NULL  */
+             bool                bCalcVirial, /* Calculate the virial contribution */
+             tensor              vir_r_m_dr,  /* sum r x m delta_r            */
+             bool               *bError
              );
 
 void settle_proj(gmx_settledata_t settled, int econq,
