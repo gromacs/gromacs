@@ -376,9 +376,9 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             {
                 Eemprops eep(name2eemtype(xbuf[exmlMODEL]), 
                              xbuf[exmlNAME],
+                             xbuf[exmlROW],
                              xbuf[exmlZETA], 
                              xbuf[exmlCHARGES], 
-                             xbuf[exmlROW],
                              my_atof(xbuf[exmlJ0].c_str()), 
                              my_atof(xbuf[exmlCHI0].c_str()) );
                 pd.addEemprops(eep);

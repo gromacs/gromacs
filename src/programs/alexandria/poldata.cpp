@@ -1189,9 +1189,9 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
 {
     rzq_.clear();
     std::vector<std::string>  sz, sq, sr;
+    sr = gmx::splitString(rowstr);
     sz = gmx::splitString(zetastr);
     sq = gmx::splitString(qstr);
-    sr = gmx::splitString(rowstr);
     size_t nn = std::min(sz.size(), std::min(sq.size(), sr.size()));
     
     char buf[256];
@@ -1214,9 +1214,9 @@ void Eemprops::setRowZetaQ(const std::string &rowstr,
                    
 Eemprops::Eemprops(ChargeDistributionModel eqdModel,
                    const std::string      &name,
+                   const std::string      &rowstr,
                    const std::string      &zetastr,
                    const std::string      &qstr,
-                   const std::string      &rowstr,
                    double                  J0,
                    double                  chi0) :
     eqdModel_(eqdModel),

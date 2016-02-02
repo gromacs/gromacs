@@ -50,7 +50,7 @@ Resp::Resp()
 {
     rnd_                = nullptr; 
     setOptions(eqdAXp, 0, false, 5, 100, -1, false,
-               0, -2, 2, true, 0);
+               0, -3, 3, true, 0);
     _bAXpRESP           = false;
     _qfac               = 1e-3;
     _bHyper             = 0.1;
@@ -74,7 +74,7 @@ void Resp::setOptions(ChargeDistributionModel c,
                       real                    watoms)
 {
     _iDistributionModel = c;
-    _bFitZeta           = fitZeta;
+    _bFitZeta           = fitZeta && (c != eqdAXp);
     _zmin               = zetaMin;
     _zmax               = zetaMax;
     _deltaZ             = deltaZeta;
@@ -118,6 +118,16 @@ void Resp::setAtomInfo(t_atoms                   *atoms,
                                            *(atoms->atomtype[i]), pd, 
                                            _iDistributionModel, _dzatoms));
         }
+        // Now compute starting charge for atom, taking into account
+        // the charges of the other "shells".
+        RespAtomTypeIterator rat = findRAT(atoms->atom[i].type);
+        GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
+        double q = atoms->atom[i].q;
+        for(auto rz = rat->beginRZ(); rz < rat->endRZ(); ++rz)
+        {
+            q -= rz->q();
+        }
+        ra_.back().setCharge(q);
     }
 }
 
@@ -687,7 +697,7 @@ void Resp::calcRho()
 
 void Resp::calcPot()
 {
-    std::fill(_potCalc.begin(), _potCalc.end(), 0);
+    std::fill(_potCalc.begin(), _potCalc.end(), 0.0);
     int nthreads = gmx_omp_get_max_threads();
     for(auto &ra : ra_)
     {
@@ -701,10 +711,14 @@ void Resp::calcPot()
             int i1 = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
             for (int i = i0; (i < i1); i++)
             {
-                gmx::RVec dx;
-                rvec_sub(_esp[i], rax, dx);
-                double    r  = norm(dx);
-                double    vv = 0;
+                double r2 = 0;
+                for(int m = 0; m < DIM; m++)
+                {
+                    //printf("ESP %g ra %g\n", _esp[i][m], rax[m]);
+                    r2 += gmx::square(_esp[i][m] - rax[m]);
+                }
+                double r  = std::sqrt(r2);
+                double vv = 0;
                 switch (_iDistributionModel)
                 {
                 case eqdBultinck:
@@ -770,13 +784,10 @@ void Resp::setVector(double *params)
         {
             /* First do charges */
             int atom = rp.aIndex();
+            params[n] = ra_[atom].charge();
             if (_bRandQ)
             {
-                params[n] = 0.2*(gmx_rng_uniform_real(rnd_)-0.5);
-            }
-            else
-            {
-                params[n] = ra_[atom].charge();
+                params[n] += 0.2*(gmx_rng_uniform_real(rnd_)-0.5);
             }
         }
         else 
@@ -825,6 +836,12 @@ void Resp::getVector(double *params)
         {
             ra.setCharge(params[qi]);
             qtot += params[qi];
+        }
+        // Make sure to add the charges for nuclei to qtot
+        auto rat = findRAT(ra.atype());
+        for(auto rz = rat->beginRZ(); rz < rat->endRZ()-1; ++rz)
+        {
+            qtot += rz->q();
         }
     }
     ra_[0].setCharge(_qtot-qtot);
@@ -945,11 +962,16 @@ double Resp::calcPenalty()
     for (auto &ra : ra_)
     {
         real qi    = ra.charge();
-        int  atype = ra.atype();
-        RespAtomTypeIterator rat = findRAT(atype);
-        for (auto z = rat->beginRZ(); z < rat->endRZ(); ++z)
+        if (_iDistributionModel == eqdAXg ||
+            _iDistributionModel == eqdAXs)
         {
-            qi += z->q();
+            int  atype = ra.atype();
+            RespAtomTypeIterator rat = findRAT(atype);
+            
+            for (auto z = rat->beginRZ(); z < rat->endRZ()-1; ++z)
+            {
+                qi += z->q();
+            }
         }
         if (qi < _qmin)
         {
@@ -1102,11 +1124,15 @@ double Resp::getAtomCharge(int atom) const
 {
     range_check(atom, 0, nAtom());
     double                    q     = ra_[atom].charge();
-    int                       atype = ra_[atom].atype();
-    RespAtomTypeConstIterator rat   = findRAT(atype);
-    for (auto z = rat->beginRZ(); z < rat->endRZ()-1; ++z)
+    if (_iDistributionModel == eqdAXg ||
+        _iDistributionModel == eqdAXs)
     {
-        q += z->q();
+        int                       atype = ra_[atom].atype();
+        RespAtomTypeConstIterator rat   = findRAT(atype);
+        for (auto z = rat->beginRZ(); z < rat->endRZ()-1; ++z)
+        {
+            q += z->q();
+        }
     }
     return q;
 }
@@ -1117,7 +1143,7 @@ double Resp::getCharge(int atom, size_t zz) const
     double                    q     = ra_[atom].charge();
     int                       atype = ra_[atom].atype();
     RespAtomTypeConstIterator rat   = findRAT(atype);
-    if (zz < rat->getNZeta())
+    if (zz < rat->getNZeta()-1)
     {
         q = (rat->beginRZ()+zz)->q();
     }

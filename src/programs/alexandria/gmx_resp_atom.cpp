@@ -43,8 +43,8 @@ RespAtomType::RespAtomType(int atype,
     for(int i = 0; i < nZeta-1; i++)
     {
         rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype, i),
-                               pd.getQ(iDistributionModel, atomtype, i),
-                               pd.getZeta(iDistributionModel, atomtype, i)));
+                               pd.getZeta(iDistributionModel, atomtype, i),
+                               pd.getQ(iDistributionModel, atomtype, i)));
     }
 
     int    shell      = nZeta-1;
@@ -55,8 +55,8 @@ RespAtomType::RespAtomType(int atype,
         atomtype_new = atomtype_.substr(0, shell_name);
     }
     rz_.push_back(RowZetaQ(pd.getRow(iDistributionModel, atomtype_new, shell),
-                           pd.getQ(iDistributionModel, atomtype_new, shell),
-                           pd.getZeta(iDistributionModel, atomtype_new, shell)));
+                           pd.getZeta(iDistributionModel, atomtype_new, shell),
+                           pd.getQ(iDistributionModel, atomtype_new, shell)));
 }
 
 } // namespace

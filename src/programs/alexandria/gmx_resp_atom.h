@@ -91,7 +91,7 @@ class RespAtom
         //! Atom type
         int       atype_;
         //! Total charge of the atom (which is optimized in resp)
-        double      q_;
+        double    q_;
         //! Coordinates for this atom
         gmx::RVec x_;
         //! Index in parameterization array
