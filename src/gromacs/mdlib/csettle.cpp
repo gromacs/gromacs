@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,17 +36,30 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
+
+#include <algorithm>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc-simd.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 typedef struct
 {
@@ -69,8 +82,17 @@ typedef struct
 
 typedef struct gmx_settledata
 {
-    settleparam_t massw;
-    settleparam_t mass1;
+    settleparam_t massw;    /* Parameters for SETTLE for coordinates */
+    settleparam_t mass1;    /* Parameters with all masses 1, for forces */
+
+    int           nsettle;  /* The number of settles on our rank */
+    int          *ow1;      /* Index to OW1 atoms, size nsettle + SIMD padding */
+    int          *hw2;      /* Index to HW2 atoms, size nsettle + SIMD padding */
+    int          *hw3;      /* Index to HW3 atoms, size nsettle + SIMD padding */
+    real         *virfac;   /* Virial factor 0 or 1, size nsettle + SIMD pad. */
+    int           nalloc;   /* Allocation size of ow1, hw2, hw3, virfac */
+
+    bool          bUseSIMD; /* Use SIMD intrinsics code, if possible */
 } t_gmx_settledata;
 
 
@@ -137,37 +159,130 @@ static void settleparam_init(settleparam_t *p,
     }
 }
 
-gmx_settledata_t settle_init(real mO, real mH, real invmO, real invmH,
-                             real dOH, real dHH)
+gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
 {
+    /* Check that we have only one settle type */
+    int                   settle_type = -1;
+    gmx_mtop_ilistloop_t  iloop       = gmx_mtop_ilistloop_init(mtop);
+    t_ilist              *ilist;
+    int                   nmol;
+    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
+    {
+        for (int i = 0; i < ilist[F_SETTLE].nr; i += 4)
+        {
+            if (settle_type == -1)
+            {
+                settle_type = ilist[F_SETTLE].iatoms[i];
+            }
+            else if (ilist[F_SETTLE].iatoms[i] != settle_type)
+            {
+                gmx_fatal(FARGS,
+                          "The [molecules] section of your topology specifies more than one block of\n"
+                          "a [moleculetype] with a [settles] block. Only one such is allowed. If you\n"
+                          "are trying to partition your solvent into different *groups* (e.g. for\n"
+                          "freezing, T-coupling, etc.) then you are using the wrong approach. Index\n"
+                          "files specify groups. Otherwise, you may wish to change the least-used\n"
+                          "block of molecules with SETTLE constraints into 3 normal constraints.");
+            }
+        }
+    }
+    GMX_RELEASE_ASSERT(settle_type >= 0, "settle_init called without settles");
+
     gmx_settledata_t settled;
 
     snew(settled, 1);
 
-    settleparam_init(&settled->massw, mO, mH, invmO, invmH, dOH, dHH);
+    /* We will not initialize the normal SETTLE parameters here yet,
+     * since the atom (inv)masses can depend on the integrator and
+     * free-energy perturbation. We set mO=-1 to trigger later initialization.
+     */
+    settled->massw.mO = -1;
 
+    real dOH = mtop->ffparams.iparams[settle_type].settle.doh;
+    real dHH = mtop->ffparams.iparams[settle_type].settle.dhh;
     settleparam_init(&settled->mass1, 1.0, 1.0, 1.0, 1.0, dOH, dHH);
+
+    settled->ow1    = NULL;
+    settled->hw2    = NULL;
+    settled->hw3    = NULL;
+    settled->virfac = NULL;
+    settled->nalloc = 0;
+
+    /* Without SIMD configured, this bool is not used */
+    settled->bUseSIMD = (getenv("GMX_DISABLE_SIMD_KERNELS") == NULL);
 
     return settled;
 }
 
-#ifdef DEBUG
-static void check_cons(FILE *fp, char *title, real x[], int OW1, int HW2, int HW3)
+void settle_set_constraints(gmx_settledata_t  settled,
+                            const t_ilist    *il_settle,
+                            const t_mdatoms  *mdatoms)
 {
-    rvec dOH1, dOH2, dHH;
-    int  m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        dOH1[m] = x[OW1+m]-x[HW2+m];
-        dOH2[m] = x[OW1+m]-x[HW3+m];
-        dHH[m]  = x[HW2+m]-x[HW3+m];
-    }
-    fprintf(fp, "%10s, OW1=%3d, HW2=%3d, HW3=%3d,  dOH1: %8.3f, dOH2: %8.3f, dHH: %8.3f\n",
-            title, OW1/DIM, HW2/DIM, HW3/DIM, norm(dOH1), norm(dOH2), norm(dHH));
-}
+#if GMX_SIMD_HAVE_REAL
+    const int pack_size = GMX_SIMD_REAL_WIDTH;
+#else
+    const int pack_size = 1;
 #endif
 
+    int nsettle      = il_settle->nr/4;
+    settled->nsettle = nsettle;
+
+    if (nsettle > 0)
+    {
+        const t_iatom *iatoms = il_settle->iatoms;
+
+        /* Here we initialize the normal SETTLE parameters */
+        if (settled->massw.mO < 0)
+        {
+            int firstO = iatoms[1];
+            int firstH = iatoms[2];
+            settleparam_init(&settled->massw,
+                             mdatoms->massT[firstO],
+                             mdatoms->massT[firstH],
+                             mdatoms->invmass[firstO],
+                             mdatoms->invmass[firstH],
+                             settled->mass1.dOH,
+                             settled->mass1.dHH);
+        }
+
+        if (nsettle + pack_size > settled->nalloc)
+        {
+            settled->nalloc = over_alloc_dd(nsettle + pack_size);
+            sfree_aligned(settled->ow1);
+            sfree_aligned(settled->hw2);
+            sfree_aligned(settled->hw3);
+            sfree_aligned(settled->virfac);
+            snew_aligned(settled->ow1, settled->nalloc, 16);
+            snew_aligned(settled->hw2, settled->nalloc, 16);
+            snew_aligned(settled->hw3, settled->nalloc, 16);
+            snew_aligned(settled->virfac, settled->nalloc, 16);
+        }
+
+        for (int i = 0; i < nsettle; i++)
+        {
+            settled->ow1[i]    = iatoms[i*4 + 1];
+            settled->hw2[i]    = iatoms[i*4 + 2];
+            settled->hw3[i]    = iatoms[i*4 + 3];
+            /* We should avoid double counting of virial contributions for
+             * SETTLEs that appear in multiple DD domains, so we only count
+             * the contribution on the home range of the oxygen atom.
+             */
+            settled->virfac[i] = (iatoms[i*4 + 1] < mdatoms->homenr ? 1 : 0);
+        }
+
+        /* Pack the index array to the full SIMD width with copies from
+         * the last normal entry, but with no virial contribution.
+         */
+        int end_packed = ((nsettle + pack_size - 1)/pack_size)*pack_size;
+        for (int i = nsettle; i < end_packed; i++)
+        {
+            settled->ow1[i]    = settled->ow1[nsettle - 1];
+            settled->hw2[i]    = settled->hw2[nsettle - 1];
+            settled->hw3[i]    = settled->hw3[nsettle - 1];
+            settled->virfac[i] = 0;
+        }
+    }
+}
 
 void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
@@ -277,126 +392,105 @@ void settle_proj(gmx_settledata_t settled, int econq,
 }
 
 
-void csettle(gmx_settledata_t settled,
-             int nsettle, t_iatom iatoms[],
-             const t_pbc *pbc,
-             real b4[], real after[],
-             real invdt, real *v, int CalcVirAtomEnd,
-             tensor vir_r_m_dr,
-             int *error)
+/* The actual settle code, templated for real/SimdReal and for optimization */
+template<typename T, typename TypeBool, int pack_size,
+         typename pbc_type,
+         bool bCorrectVelocity,
+         bool bCalcVirial>
+static void settle_template(const gmx_settledata_t settled,
+                            int settle_start, int settle_end,
+                            const pbc_type pbc,
+                            const real *b4, real *after,
+                            real invdt, real * gmx_restrict v,
+                            tensor vir_r_m_dr,
+                            bool *bErrorOccurred)
 {
-    /* ***************************************************************** */
-    /*                                                               ** */
-    /*    Subroutine : setlep - reset positions of TIP3P waters      ** */
-    /*    Author : Shuichi Miyamoto                                  ** */
-    /*    Date of last update : Oct. 1, 1992                         ** */
-    /*                                                               ** */
-    /*    Reference for the SETTLE algorithm                         ** */
-    /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992). ** */
-    /*                                                               ** */
-    /* ***************************************************************** */
+    /* ******************************************************************* */
+    /*                                                                  ** */
+    /*    Original code by Shuichi Miyamoto, last update Oct. 1, 1992   ** */
+    /*                                                                  ** */
+    /*    Algorithm changes by Berk Hess:                               ** */
+    /*    2004-07-15 Convert COM to double precision to avoid drift     ** */
+    /*    2006-10-16 Changed velocity update to use differences         ** */
+    /*    2012-09-24 Use oxygen as reference instead of COM             ** */
+    /*    2016-02    Complete rewrite of the code for SIMD              ** */
+    /*                                                                  ** */
+    /*    Reference for the SETTLE algorithm                            ** */
+    /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992).    ** */
+    /*                                                                  ** */
+    /* ******************************************************************* */
 
-    /* Initialized data */
-    settleparam_t *p;
-    real           wh, ra, rb, rc, irc2;
-    real           mO, mH;
+    assert(settle_start % pack_size == 0);
+    assert(settle_end   % pack_size == 0);
 
-    /* Local variables */
-    real     gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
-    real     axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22,
-             trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe,
-             cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd,
-             xb0, yb0, zb0, xc0, yc0, zc0, xa1;
-    real     ya1, za1, xb1, yb1;
-    real     zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3,
-             xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d,
-             za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d,
-             xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
-    real     t1, t2;
-    real     dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
-    real     mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
+    TypeBool       bError = TypeBool(false);
 
-    gmx_bool bOK;
+    settleparam_t *p    = &settled->massw;
+    T              wh   = T(p->wh);
+    T              rc   = T(p->rc);
+    T              ra   = T(p->ra);
+    T              rb   = T(p->rb);
+    T              irc2 = T(p->irc2);
+    T              mO   = T(p->mO);
+    T              mH   = T(p->mH);
 
-    int      i, ow1, hw2, hw3;
+    T              almost_zero = T(1e-12);
 
-    rvec     dx, sh_hw2 = {0, 0, 0}, sh_hw3 = {0, 0, 0};
-    rvec     doh2, doh3;
-    int      is;
+    T              sum_r_m_dr[DIM][DIM];
 
-    *error = -1;
-
-    CalcVirAtomEnd *= 3;
-
-    p     = &settled->massw;
-    wh    = p->wh;
-    rc    = p->rc;
-    ra    = p->ra;
-    rb    = p->rb;
-    irc2  = p->irc2;
-    mO    = p->mO;
-    mH    = p->mH;
-
-#ifdef PRAGMAS
-#pragma ivdep
-#endif
-    for (i = 0; i < nsettle; ++i)
+    if (bCalcVirial)
     {
-        bOK = TRUE;
-        /*    --- Step1  A1' ---      */
-        ow1 = iatoms[i*4+1] * 3;
-        hw2 = iatoms[i*4+2] * 3;
-        hw3 = iatoms[i*4+3] * 3;
-        if (pbc == NULL)
+        for (int d2 = 0; d2 < DIM; d2++)
         {
-            xb0 = b4[hw2 + XX] - b4[ow1 + XX];
-            yb0 = b4[hw2 + YY] - b4[ow1 + YY];
-            zb0 = b4[hw2 + ZZ] - b4[ow1 + ZZ];
-            xc0 = b4[hw3 + XX] - b4[ow1 + XX];
-            yc0 = b4[hw3 + YY] - b4[ow1 + YY];
-            zc0 = b4[hw3 + ZZ] - b4[ow1 + ZZ];
-            /* 6 flops */
-
-            rvec_sub(after+hw2, after+ow1, doh2);
-            rvec_sub(after+hw3, after+ow1, doh3);
-            /* 6 flops */
+            for (int d = 0; d < DIM; d++)
+            {
+                sum_r_m_dr[d2][d] = T(0);
+            }
         }
-        else
-        {
-            pbc_dx_aiuc(pbc, b4+hw2, b4+ow1, dx);
-            xb0 = dx[XX];
-            yb0 = dx[YY];
-            zb0 = dx[ZZ];
-            pbc_dx_aiuc(pbc, b4+hw3, b4+ow1, dx);
-            xc0 = dx[XX];
-            yc0 = dx[YY];
-            zc0 = dx[ZZ];
+    }
 
-            /* Tedious way of doing pbc */
-            is = pbc_dx_aiuc(pbc, after+hw2, after+ow1, doh2);
-            if (is == CENTRAL)
-            {
-                clear_rvec(sh_hw2);
-            }
-            else
-            {
-                sh_hw2[XX] = after[hw2 + XX] - (after[ow1 + XX] + doh2[XX]);
-                sh_hw2[YY] = after[hw2 + YY] - (after[ow1 + YY] + doh2[YY]);
-                sh_hw2[ZZ] = after[hw2 + ZZ] - (after[ow1 + ZZ] + doh2[ZZ]);
-                rvec_dec(after+hw2, sh_hw2);
-            }
-            is = pbc_dx_aiuc(pbc, after+hw3, after+ow1, doh3);
-            if (is == CENTRAL)
-            {
-                clear_rvec(sh_hw3);
-            }
-            else
-            {
-                sh_hw3[XX] = after[hw3 + XX] - (after[ow1 + XX] + doh3[XX]);
-                sh_hw3[YY] = after[hw3 + YY] - (after[ow1 + YY] + doh3[YY]);
-                sh_hw3[ZZ] = after[hw3 + ZZ] - (after[ow1 + ZZ] + doh3[ZZ]);
-                rvec_dec(after+hw3, sh_hw3);
-            }
+    for (int i = settle_start; i < settle_end; i += pack_size)
+    {
+        /* Here we pad up to pack_size with copies from the last valid entry.
+         * This gives correct results, since we store (not increment) all
+         * output, so we store the same output multiple times.
+         */
+        const int *ow1 = settled->ow1 + i;
+        const int *hw2 = settled->hw2 + i;
+        const int *hw3 = settled->hw3 + i;
+
+        T          b4_ow1[DIM], b4_hw2[DIM], b4_hw3[DIM];
+
+        gatherLoadUTranspose<3>(b4, ow1, &b4_ow1[XX], &b4_ow1[YY], &b4_ow1[ZZ]);
+        gatherLoadUTranspose<3>(b4, hw2, &b4_hw2[XX], &b4_hw2[YY], &b4_hw2[ZZ]);
+        gatherLoadUTranspose<3>(b4, hw3, &b4_hw3[XX], &b4_hw3[YY], &b4_hw3[ZZ]);
+
+        T after_ow1[DIM], after_hw2[DIM], after_hw3[DIM];
+
+        gatherLoadUTranspose<3>(after, ow1, &after_ow1[XX], &after_ow1[YY], &after_ow1[ZZ]);
+        gatherLoadUTranspose<3>(after, hw2, &after_hw2[XX], &after_hw2[YY], &after_hw2[ZZ]);
+        gatherLoadUTranspose<3>(after, hw3, &after_hw3[XX], &after_hw3[YY], &after_hw3[ZZ]);
+
+        T dist21[DIM], dist31[DIM];
+        T doh2[DIM], doh3[DIM];
+        T sh_hw2[DIM], sh_hw3[DIM];
+
+        pbc_dx_aiuc(pbc, b4_hw2, b4_ow1, dist21);
+
+        pbc_dx_aiuc(pbc, b4_hw3, b4_ow1, dist31);
+
+        /* Tedious way of doing pbc */
+        pbc_dx_aiuc(pbc, after_hw2, after_ow1, doh2);
+        for (int d = 0; d < DIM; d++)
+        {
+            sh_hw2[d]    = after_hw2[d] - (after_ow1[d] + doh2[d]);
+            after_hw2[d] = after_hw2[d] - sh_hw2[d];
+        }
+        pbc_dx_aiuc(pbc, after_hw3, after_ow1, doh3);
+        for (int d = 0; d < DIM; d++)
+        {
+            sh_hw3[d]    = after_hw3[d] - (after_ow1[d] + doh3[d]);
+            after_hw3[d] = after_hw3[d] - sh_hw3[d];
         }
 
         /* Not calculating the center of mass using the oxygen position
@@ -405,206 +499,376 @@ void csettle(gmx_settledata_t settled,
          * as then the oxygen coordinate is multiplied by 0.89 at every step,
          * which can then transfer a systematic rounding to the oxygen velocity.
          */
-        xa1 = -(doh2[XX] + doh3[XX]) * wh;
-        ya1 = -(doh2[YY] + doh3[YY]) * wh;
-        za1 = -(doh2[ZZ] + doh3[ZZ]) * wh;
-
-        xcom = after[ow1 + XX] - xa1;
-        ycom = after[ow1 + YY] - ya1;
-        zcom = after[ow1 + ZZ] - za1;
-
-        xb1 = after[hw2 + XX] - xcom;
-        yb1 = after[hw2 + YY] - ycom;
-        zb1 = after[hw2 + ZZ] - zcom;
-        xc1 = after[hw3 + XX] - xcom;
-        yc1 = after[hw3 + YY] - ycom;
-        zc1 = after[hw3 + ZZ] - zcom;
+        T a1[DIM], com[DIM];
+        for (int d = 0; d < DIM; d++)
+        {
+            a1[d]  = -(doh2[d] + doh3[d]) * wh;
+            com[d] = after_ow1[d] - a1[d];
+        }
+        T b1[DIM];
+        for (int d = 0; d < DIM; d++)
+        {
+            b1[d]  = after_hw2[d] - com[d];
+        }
+        T c1[DIM];
+        for (int d = 0; d < DIM; d++)
+        {
+            c1[d]  = after_hw3[d] - com[d];
+        }
         /* 15 flops */
 
-        xakszd = yb0 * zc0 - zb0 * yc0;
-        yakszd = zb0 * xc0 - xb0 * zc0;
-        zakszd = xb0 * yc0 - yb0 * xc0;
-        xaksxd = ya1 * zakszd - za1 * yakszd;
-        yaksxd = za1 * xakszd - xa1 * zakszd;
-        zaksxd = xa1 * yakszd - ya1 * xakszd;
-        xaksyd = yakszd * zaksxd - zakszd * yaksxd;
-        yaksyd = zakszd * xaksxd - xakszd * zaksxd;
-        zaksyd = xakszd * yaksxd - yakszd * xaksxd;
+        T xakszd = dist21[YY] * dist31[ZZ] - dist21[ZZ] * dist31[YY];
+        T yakszd = dist21[ZZ] * dist31[XX] - dist21[XX] * dist31[ZZ];
+        T zakszd = dist21[XX] * dist31[YY] - dist21[YY] * dist31[XX];
+        T xaksxd = a1[YY] * zakszd - a1[ZZ] * yakszd;
+        T yaksxd = a1[ZZ] * xakszd - a1[XX] * zakszd;
+        T zaksxd = a1[XX] * yakszd - a1[YY] * xakszd;
+        T xaksyd = yakszd * zaksxd - zakszd * yaksxd;
+        T yaksyd = zakszd * xaksxd - xakszd * zaksxd;
+        T zaksyd = xakszd * yaksxd - yakszd * xaksxd;
         /* 27 flops */
 
-        axlng = gmx::invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
-        aylng = gmx::invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
-        azlng = gmx::invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
+        T axlng = gmx::invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
+        T aylng = gmx::invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
+        T azlng = gmx::invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
 
-        trns11 = xaksxd * axlng;
-        trns21 = yaksxd * axlng;
-        trns31 = zaksxd * axlng;
-        trns12 = xaksyd * aylng;
-        trns22 = yaksyd * aylng;
-        trns32 = zaksyd * aylng;
-        trns13 = xakszd * azlng;
-        trns23 = yakszd * azlng;
-        trns33 = zakszd * azlng;
+        T trns1[DIM], trns2[DIM], trns3[DIM];
+
+        trns1[XX] = xaksxd * axlng;
+        trns2[XX] = yaksxd * axlng;
+        trns3[XX] = zaksxd * axlng;
+        trns1[YY] = xaksyd * aylng;
+        trns2[YY] = yaksyd * aylng;
+        trns3[YY] = zaksyd * aylng;
+        trns1[ZZ] = xakszd * azlng;
+        trns2[ZZ] = yakszd * azlng;
+        trns3[ZZ] = zakszd * azlng;
         /* 24 flops */
 
-        xb0d = trns11 * xb0 + trns21 * yb0 + trns31 * zb0;
-        yb0d = trns12 * xb0 + trns22 * yb0 + trns32 * zb0;
-        xc0d = trns11 * xc0 + trns21 * yc0 + trns31 * zc0;
-        yc0d = trns12 * xc0 + trns22 * yc0 + trns32 * zc0;
-        /*
-           xa1d = trns11 * xa1 + trns21 * ya1 + trns31 * za1;
-           ya1d = trns12 * xa1 + trns22 * ya1 + trns32 * za1;
-         */
-        za1d = trns13 * xa1 + trns23 * ya1 + trns33 * za1;
-        xb1d = trns11 * xb1 + trns21 * yb1 + trns31 * zb1;
-        yb1d = trns12 * xb1 + trns22 * yb1 + trns32 * zb1;
-        zb1d = trns13 * xb1 + trns23 * yb1 + trns33 * zb1;
-        xc1d = trns11 * xc1 + trns21 * yc1 + trns31 * zc1;
-        yc1d = trns12 * xc1 + trns22 * yc1 + trns32 * zc1;
-        zc1d = trns13 * xc1 + trns23 * yc1 + trns33 * zc1;
+        T b0d[2], c0d[2];
+
+        for (int d = 0; d < 2; d++)
+        {
+            b0d[d] = trns1[d] * dist21[XX] + trns2[d] * dist21[YY] + trns3[d] * dist21[ZZ];
+            c0d[d] = trns1[d] * dist31[XX] + trns2[d] * dist31[YY] + trns3[d] * dist31[ZZ];
+        }
+
+        T a1d_z, b1d[DIM], c1d[DIM];
+
+        a1d_z = trns1[ZZ] * a1[XX] + trns2[ZZ] * a1[YY] + trns3[ZZ] * a1[ZZ];
+        for (int d = 0; d < DIM; d++)
+        {
+            b1d[d] = trns1[d] * b1[XX] + trns2[d] * b1[YY] + trns3[d] * b1[ZZ];
+            c1d[d] = trns1[d] * c1[XX] + trns2[d] * c1[YY] + trns3[d] * c1[ZZ];
+        }
         /* 65 flops */
 
-        sinphi = za1d * gmx::invsqrt(ra*ra);
-        tmp    = 1.0 - sinphi * sinphi;
-        if (tmp <= 0)
-        {
-            bOK = FALSE;
-        }
-        else
-        {
-            tmp2   = gmx::invsqrt(tmp);
-            cosphi = tmp*tmp2;
-            sinpsi = (zb1d - zc1d) * irc2 * tmp2;
-            tmp2   = 1.0 - sinpsi * sinpsi;
-            if (tmp2 <= 0)
-            {
-                bOK = FALSE;
-            }
-            else
-            {
-                cospsi = tmp2*gmx::invsqrt(tmp2);
-            }
-        }
+        T tmp, tmp2;
+
+        T sinphi = a1d_z * gmx::invsqrt(ra*ra);
+        tmp2     = 1.0 - sinphi * sinphi;
+
+        /* If tmp2 gets close to or beyond zero we have severly distorted
+         * water molecules and we should terminate the simulation.
+         * Below we take the max with almost_zero to continue the loop.
+         */
+        bError   = bError || (tmp2 <= almost_zero);
+
+        tmp2     = max(tmp2, almost_zero);
+        tmp      = gmx::invsqrt(tmp2);
+        T cosphi = tmp2*tmp;
+        T sinpsi = (b1d[ZZ] - c1d[ZZ]) * irc2 * tmp;
+        tmp2     = 1.0 - sinpsi * sinpsi;
+
+        T cospsi = tmp2*gmx::invsqrt(tmp2);
         /* 46 flops */
 
-        if (bOK)
+        T a2d_y  =  ra * cosphi;
+        T b2d_x  = -rc * cospsi;
+        T t1     = -rb * cosphi;
+        T t2     =  rc * sinpsi * sinphi;
+        T b2d_y  =  t1 - t2;
+        T c2d_y  =  t1 + t2;
+        /* 7 flops */
+
+        /*     --- Step3  al,be,ga            --- */
+        T alpha  = b2d_x * (b0d[XX] - c0d[XX]) + b0d[YY] * b2d_y + c0d[YY] * c2d_y;
+        T beta   = b2d_x * (c0d[YY] - b0d[YY]) + b0d[XX] * b2d_y + c0d[XX] * c2d_y;
+        T gamma  = b0d[XX] * b1d[YY] - b1d[XX] * b0d[YY] + c0d[XX] * c1d[YY] - c1d[XX] * c0d[YY];
+        T al2be2 = alpha * alpha + beta * beta;
+        tmp2     = (al2be2 - gamma * gamma);
+        T sinthe = (alpha * gamma - beta * tmp2*gmx::invsqrt(tmp2)) * gmx::invsqrt(al2be2*al2be2);
+        /* 47 flops */
+
+        /*  --- Step4  A3' --- */
+        tmp2     = 1.0 - sinthe * sinthe;
+        T costhe = tmp2*gmx::invsqrt(tmp2);
+
+        T a3d[DIM], b3d[DIM], c3d[DIM];
+
+        a3d[XX]  = -a2d_y * sinthe;
+        a3d[YY]  = a2d_y * costhe;
+        a3d[ZZ]  = a1d_z;
+        b3d[XX]  = b2d_x * costhe - b2d_y * sinthe;
+        b3d[YY]  = b2d_x * sinthe + b2d_y * costhe;
+        b3d[ZZ]  = b1d[ZZ];
+        c3d[XX]  = -b2d_x * costhe - c2d_y * sinthe;
+        c3d[YY]  = -b2d_x * sinthe + c2d_y * costhe;
+        c3d[ZZ]  = c1d[ZZ];
+        /* 26 flops */
+
+        /*    --- Step5  A3 --- */
+        T a3[DIM], b3[DIM], c3[DIM];
+
+        a3[XX] = trns1[XX]*a3d[XX] + trns1[YY]*a3d[YY] + trns1[ZZ]*a3d[ZZ];
+        a3[YY] = trns2[XX]*a3d[XX] + trns2[YY]*a3d[YY] + trns2[ZZ]*a3d[ZZ];
+        a3[ZZ] = trns3[XX]*a3d[XX] + trns3[YY]*a3d[YY] + trns3[ZZ]*a3d[ZZ];
+        b3[XX] = trns1[XX]*b3d[XX] + trns1[YY]*b3d[YY] + trns1[ZZ]*b3d[ZZ];
+        b3[YY] = trns2[XX]*b3d[XX] + trns2[YY]*b3d[YY] + trns2[ZZ]*b3d[ZZ];
+        b3[ZZ] = trns3[XX]*b3d[XX] + trns3[YY]*b3d[YY] + trns3[ZZ]*b3d[ZZ];
+        c3[XX] = trns1[XX]*c3d[XX] + trns1[YY]*c3d[YY] + trns1[ZZ]*c3d[ZZ];
+        c3[YY] = trns2[XX]*c3d[XX] + trns2[YY]*c3d[YY] + trns2[ZZ]*c3d[ZZ];
+        c3[ZZ] = trns3[XX]*c3d[XX] + trns3[YY]*c3d[YY] + trns3[ZZ]*c3d[ZZ];
+        /* 45 flops */
+
+        /* Compute and store the corrected new coordinate */
+        for (int d = 0; d < DIM; d++)
         {
-            ya2d =  ra * cosphi;
-            xb2d = -rc * cospsi;
-            t1   = -rb * cosphi;
-            t2   =  rc * sinpsi * sinphi;
-            yb2d =  t1 - t2;
-            yc2d =  t1 + t2;
-            /* 7 flops */
+            after_ow1[d] = com[d] + a3[d];
+        }
+        for (int d = 0; d < DIM; d++)
+        {
+            after_hw2[d] = com[d] + b3[d] + sh_hw2[d];;
+        }
+        for (int d = 0; d < DIM; d++)
+        {
+            after_hw3[d] = com[d] + c3[d] + sh_hw3[d];
+        }
+        /* 9 flops + 6 pbc flops */
 
-            /*     --- Step3  al,be,ga            --- */
-            alpa   = xb2d * (xb0d - xc0d) + yb0d * yb2d + yc0d * yc2d;
-            beta   = xb2d * (yc0d - yb0d) + xb0d * yb2d + xc0d * yc2d;
-            gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
-            al2be2 = alpa * alpa + beta * beta;
-            tmp2   = (al2be2 - gama * gama);
-            sinthe = (alpa * gama - beta * tmp2*gmx::invsqrt(tmp2)) * gmx::invsqrt(al2be2*al2be2);
-            /* 47 flops */
+        transposeScatterStoreU<3>(after, ow1, after_ow1[XX], after_ow1[YY], after_ow1[ZZ]);
+        transposeScatterStoreU<3>(after, hw2, after_hw2[XX], after_hw2[YY], after_hw2[ZZ]);
+        transposeScatterStoreU<3>(after, hw3, after_hw3[XX], after_hw3[YY], after_hw3[ZZ]);
 
-            /*  --- Step4  A3' --- */
-            tmp2   = 1.0 - sinthe * sinthe;
-            costhe = tmp2*gmx::invsqrt(tmp2);
-            xa3d   = -ya2d * sinthe;
-            ya3d   = ya2d * costhe;
-            za3d   = za1d;
-            xb3d   = xb2d * costhe - yb2d * sinthe;
-            yb3d   = xb2d * sinthe + yb2d * costhe;
-            zb3d   = zb1d;
-            xc3d   = -xb2d * costhe - yc2d * sinthe;
-            yc3d   = -xb2d * sinthe + yc2d * costhe;
-            zc3d   = zc1d;
-            /* 26 flops */
-
-            /*    --- Step5  A3 --- */
-            xa3 = trns11 * xa3d + trns12 * ya3d + trns13 * za3d;
-            ya3 = trns21 * xa3d + trns22 * ya3d + trns23 * za3d;
-            za3 = trns31 * xa3d + trns32 * ya3d + trns33 * za3d;
-            xb3 = trns11 * xb3d + trns12 * yb3d + trns13 * zb3d;
-            yb3 = trns21 * xb3d + trns22 * yb3d + trns23 * zb3d;
-            zb3 = trns31 * xb3d + trns32 * yb3d + trns33 * zb3d;
-            xc3 = trns11 * xc3d + trns12 * yc3d + trns13 * zc3d;
-            yc3 = trns21 * xc3d + trns22 * yc3d + trns23 * zc3d;
-            zc3 = trns31 * xc3d + trns32 * yc3d + trns33 * zc3d;
-            /* 45 flops */
-            after[ow1]     = xcom + xa3;
-            after[ow1 + 1] = ycom + ya3;
-            after[ow1 + 2] = zcom + za3;
-            after[hw2]     = xcom + xb3;
-            after[hw2 + 1] = ycom + yb3;
-            after[hw2 + 2] = zcom + zb3;
-            after[hw3]     = xcom + xc3;
-            after[hw3 + 1] = ycom + yc3;
-            after[hw3 + 2] = zcom + zc3;
+        // cppcheck-suppress duplicateExpression
+        if (bCorrectVelocity || bCalcVirial)
+        {
+            T da[DIM], db[DIM], dc[DIM];
+            for (int d = 0; d < DIM; d++)
+            {
+                da[d] = a3[d] - a1[d];
+            }
+            for (int d = 0; d < DIM; d++)
+            {
+                db[d] = b3[d] - b1[d];
+            }
+            for (int d = 0; d < DIM; d++)
+            {
+                dc[d] = c3[d] - c1[d];
+            }
             /* 9 flops */
 
-            if (pbc != NULL)
+            if (bCorrectVelocity)
             {
-                rvec_inc(after+hw2, sh_hw2);
-                rvec_inc(after+hw3, sh_hw3);
-            }
+                T v_ow1[DIM], v_hw2[DIM], v_hw3[DIM];
 
-            dax = xa3 - xa1;
-            day = ya3 - ya1;
-            daz = za3 - za1;
-            dbx = xb3 - xb1;
-            dby = yb3 - yb1;
-            dbz = zb3 - zb1;
-            dcx = xc3 - xc1;
-            dcy = yc3 - yc1;
-            dcz = zc3 - zc1;
-            /* 9 flops, counted with the virial */
+                gatherLoadUTranspose<3>(v, ow1, &v_ow1[XX], &v_ow1[YY], &v_ow1[ZZ]);
+                gatherLoadUTranspose<3>(v, hw2, &v_hw2[XX], &v_hw2[YY], &v_hw2[ZZ]);
+                gatherLoadUTranspose<3>(v, hw3, &v_hw3[XX], &v_hw3[YY], &v_hw3[ZZ]);
 
-            if (v != NULL)
-            {
-                v[ow1]     += dax*invdt;
-                v[ow1 + 1] += day*invdt;
-                v[ow1 + 2] += daz*invdt;
-                v[hw2]     += dbx*invdt;
-                v[hw2 + 1] += dby*invdt;
-                v[hw2 + 2] += dbz*invdt;
-                v[hw3]     += dcx*invdt;
-                v[hw3 + 1] += dcy*invdt;
-                v[hw3 + 2] += dcz*invdt;
+                /* Add the position correction divided by dt to the velocity */
+                for (int d = 0; d < DIM; d++)
+                {
+                    v_ow1[d] = gmx::fma(da[d], invdt, v_ow1[d]);
+                }
+                for (int d = 0; d < DIM; d++)
+                {
+                    v_hw2[d] = gmx::fma(db[d], invdt, v_hw2[d]);
+                }
+                for (int d = 0; d < DIM; d++)
+                {
+                    v_hw3[d] = gmx::fma(dc[d], invdt, v_hw3[d]);
+                }
                 /* 3*6 flops */
+
+                transposeScatterStoreU<3>(v, ow1, v_ow1[XX], v_ow1[YY], v_ow1[ZZ]);
+                transposeScatterStoreU<3>(v, hw2, v_hw2[XX], v_hw2[YY], v_hw2[ZZ]);
+                transposeScatterStoreU<3>(v, hw3, v_hw3[XX], v_hw3[YY], v_hw3[ZZ]);
             }
 
-            if (ow1 < CalcVirAtomEnd)
+            if (bCalcVirial)
             {
-                mdax                = mO*dax;
-                mday                = mO*day;
-                mdaz                = mO*daz;
-                mdbx                = mH*dbx;
-                mdby                = mH*dby;
-                mdbz                = mH*dbz;
-                mdcx                = mH*dcx;
-                mdcy                = mH*dcy;
-                mdcz                = mH*dcz;
-                vir_r_m_dr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
-                vir_r_m_dr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
-                vir_r_m_dr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
-                vir_r_m_dr[YY][XX] -= b4[ow1+1]*mdax + (b4[ow1+1]+yb0)*mdbx + (b4[ow1+1]+yc0)*mdcx;
-                vir_r_m_dr[YY][YY] -= b4[ow1+1]*mday + (b4[ow1+1]+yb0)*mdby + (b4[ow1+1]+yc0)*mdcy;
-                vir_r_m_dr[YY][ZZ] -= b4[ow1+1]*mdaz + (b4[ow1+1]+yb0)*mdbz + (b4[ow1+1]+yc0)*mdcz;
-                vir_r_m_dr[ZZ][XX] -= b4[ow1+2]*mdax + (b4[ow1+2]+zb0)*mdbx + (b4[ow1+2]+zc0)*mdcx;
-                vir_r_m_dr[ZZ][YY] -= b4[ow1+2]*mday + (b4[ow1+2]+zb0)*mdby + (b4[ow1+2]+zc0)*mdcy;
-                vir_r_m_dr[ZZ][ZZ] -= b4[ow1+2]*mdaz + (b4[ow1+2]+zb0)*mdbz + (b4[ow1+2]+zc0)*mdcz;
-                /* 3*24 - 9 flops */
+                /* Filter out the non-local settles */
+                T filter = load(settled->virfac + i);
+                T mOf    = filter*mO;
+                T mHf    = filter*mH;
+
+                T mdo[DIM], mdb[DIM], mdc[DIM];
+
+                for (int d = 0; d < DIM; d++)
+                {
+                    mdb[d] = mHf*db[d];
+                    mdc[d] = mHf*dc[d];
+                    mdo[d] = mOf*da[d] + mdb[d] + mdc[d];
+                }
+
+                for (int d2 = 0; d2 < DIM; d2++)
+                {
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        sum_r_m_dr[d2][d] = sum_r_m_dr[d2][d] -
+                            (b4_ow1[d2]*mdo[d] +
+                             dist21[d2]*mdb[d] +
+                             dist31[d2]*mdc[d]);
+                    }
+                }
+                /* 71 flops */
             }
+        }
+    }
+
+    if (bCalcVirial)
+    {
+        for (int d2 = 0; d2 < DIM; d2++)
+        {
+            for (int d = 0; d < DIM; d++)
+            {
+                vir_r_m_dr[d2][d] += reduce(sum_r_m_dr[d2][d]);
+            }
+        }
+    }
+
+    *bErrorOccurred = anyTrue(bError);
+}
+
+/* Wrapper template function that divides the settles over threads
+ * and instantiates the core template with instantiated booleans.
+ */
+template<typename T, typename TypeBool, int pack_size, typename pbc_type>
+static void settle_template_wrapper(gmx_settledata_t settled,
+                                    int nthread, int thread,
+                                    pbc_type pbc,
+                                    const real b4[], real after[],
+                                    real invdt, real *v,
+                                    bool bCalcVirial, tensor vir_r_m_dr,
+                                    bool *bError)
+{
+    /* We need to assign settles to threads in groups of pack_size */
+    int nsettle_packs = (settled->nsettle + pack_size - 1)/pack_size;
+    /* Round the end value up to give thread 0 more work */
+    int settle_start  = ((nsettle_packs* thread      + nthread - 1)/nthread)*pack_size;
+    int settle_end    = ((nsettle_packs*(thread + 1) + nthread - 1)/nthread)*pack_size;
+
+    if (v != NULL)
+    {
+        if (!bCalcVirial)
+        {
+            settle_template<T, TypeBool, pack_size,
+                            pbc_type,
+                            true,
+                            false>
+                (settled, settle_start, settle_end,
+                pbc,
+                b4, after,
+                invdt, v,
+                NULL,
+                bError);
         }
         else
         {
-            *error = i;
+            settle_template<T, TypeBool, pack_size,
+                            pbc_type,
+                            true,
+                            true>
+                (settled, settle_start, settle_end,
+                pbc,
+                b4, after,
+                invdt, v,
+                vir_r_m_dr,
+                bError);
         }
-#ifdef DEBUG
-        if (debug)
+    }
+    else
+    {
+        if (!bCalcVirial)
         {
-            check_cons(debug, "settle", after, ow1, hw2, hw3);
+            settle_template<T, TypeBool, pack_size,
+                            pbc_type,
+                            false,
+                            false>
+                (settled, settle_start, settle_end,
+                pbc,
+                b4, after,
+                invdt, v,
+                NULL,
+                bError);
         }
+        else
+        {
+            settle_template<T, TypeBool, pack_size,
+                            pbc_type,
+                            false,
+                            true>
+                (settled, settle_start, settle_end,
+                pbc,
+                b4, after,
+                invdt, v,
+                vir_r_m_dr,
+                bError);
+        }
+    }
+}
+
+void csettle(gmx_settledata_t settled,
+             int nthread, int thread,
+             const t_pbc *pbc,
+             const real b4[], real after[],
+             real invdt, real *v,
+             bool bCalcVirial, tensor vir_r_m_dr,
+             bool *bError)
+{
+#if GMX_SIMD_HAVE_REAL
+    if (settled->bUseSIMD)
+    {
+        /* Convert the pbc struct for SIMD */
+        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+        set_pbc_simd(pbc, pbc_simd);
+
+        settle_template_wrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
+                                const real *>(settled,
+                                              nthread, thread,
+                                              pbc_simd,
+                                              b4, after,
+                                              invdt,
+                                              v,
+                                              bCalcVirial, vir_r_m_dr,
+                                              bError);
+    }
+    else
 #endif
+    {
+        /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
+        t_pbc        pbc_no;
+        const t_pbc *pbc_nonnull;
+
+        if (pbc != NULL)
+        {
+            pbc_nonnull   = pbc;
+        }
+        else
+        {
+            set_pbc(&pbc_no, epbcNONE, NULL);
+            pbc_nonnull   = &pbc_no;
+        }
+
+        settle_template_wrapper<real, bool, 1,
+                                const t_pbc *>(settled,
+                                               nthread, thread,
+                                               pbc_nonnull,
+                                               b4, after,
+                                               invdt,
+                                               v,
+                                               bCalcVirial, vir_r_m_dr,
+                                               bError);
     }
 }
