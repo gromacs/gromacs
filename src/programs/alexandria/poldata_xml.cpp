@@ -130,6 +130,14 @@ static void sp(int n, char buf[], int maxindent)
     buf[i] = '\0';
 }
 
+static double my_atof(const char *str)
+{
+    char   *ptr = NULL;
+    double  d = strtod(str, &ptr);
+    GMX_RELEASE_ASSERT(ptr == NULL || strcmp(ptr, str) != 0, "Could not read double precision number");
+    return d;
+}
+
 static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                         int indent, Poldata &pd)
 {
@@ -208,9 +216,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlBSATOMS:
-            if (NN(xbuf[exmlPOLAR_UNIT]))
+            if (NN(xbuf[exmlPOLAR_UNIT]) &&
+                NN(xbuf[exmlREFERENCE]))
             {
-                pd.setBosqueUnit(xbuf[exmlPOLAR_UNIT]);
+                pd.setBosqueFlags(xbuf[exmlPOLAR_UNIT], xbuf[exmlREFERENCE]);
             }
             break;
         case exmlGT_DIHEDRALS:
@@ -246,9 +255,12 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlMILATOMS:
-            if (NN(xbuf[exmlTAU_UNIT]) && NN(xbuf[exmlAHP_UNIT]))
+            if (NN(xbuf[exmlTAU_UNIT]) && 
+                NN(xbuf[exmlAHP_UNIT]) && 
+                NN(xbuf[exmlREFERENCE]))
             {
-                pd.setMillerUnits(xbuf[exmlTAU_UNIT], xbuf[exmlAHP_UNIT]);
+                pd.setMillerFlags(xbuf[exmlTAU_UNIT], xbuf[exmlAHP_UNIT], 
+                                  xbuf[exmlREFERENCE]);
             }
             break;
         case exmlPOLTYPE:
@@ -256,41 +268,43 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlSIGPOL]))
             {
                 pd.addPtype(xbuf[exmlPTYPE],
-                             xbuf[exmlMILLER],
-                             xbuf[exmlBOSQUE],
-                             atof(xbuf[exmlPOLARIZABILITY].c_str()),
-                             atof(xbuf[exmlSIGPOL].c_str()));
+                            xbuf[exmlMILLER],
+                            xbuf[exmlBOSQUE],
+                            my_atof(xbuf[exmlPOLARIZABILITY].c_str()),
+                            my_atof(xbuf[exmlSIGPOL].c_str()));
             }
             break;
         case exmlATOMTYPE:
             if (NN(xbuf[exmlELEM]) &&
                 NN(xbuf[exmlATYPE]) &&
                 NN(xbuf[exmlPTYPE]) &&
-                NN(xbuf[exmlBTYPE]) &&
                 NN(xbuf[exmlVDWPARAMS]) &&
                 NN(xbuf[exmlEREF]))
             {
                 pd.addAtype(xbuf[exmlELEM],
-                             xbuf[exmlDESC],
-                             xbuf[exmlATYPE],
-                             xbuf[exmlPTYPE],
-                             xbuf[exmlBTYPE],
-                             xbuf[exmlVDWPARAMS],
-                             atof(xbuf[exmlEREF].c_str()));
+                            xbuf[exmlDESC],
+                            xbuf[exmlATYPE],
+                            xbuf[exmlPTYPE],
+                            xbuf[exmlBTYPE],
+                            xbuf[exmlVDWPARAMS],
+                            xbuf[exmlEREF]);
             }
             break;
         case exmlMILATOM:
             if (NN(xbuf[exmlMILNAME]) && NN(xbuf[exmlATOMNUMBER]) &&
                 NN(xbuf[exmlTAU_AHC]) && NN(xbuf[exmlALPHA_AHP]))
             {
-                pd.addMiller(xbuf[exmlMILNAME], atoi(xbuf[exmlATOMNUMBER].c_str()),
-                             atof(xbuf[exmlTAU_AHC].c_str()), atof(xbuf[exmlALPHA_AHP].c_str()));
+                pd.addMiller(xbuf[exmlMILNAME],
+                             atoi(xbuf[exmlATOMNUMBER].c_str()),
+                             my_atof(xbuf[exmlTAU_AHC].c_str()), 
+                             my_atof(xbuf[exmlALPHA_AHP].c_str()),
+                             xbuf[exmlALEXANDRIA_EQUIV]);
             }
             break;
         case exmlBSATOM:
             if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
             {
-                pd.addBosque( xbuf[exmlELEM], atof(xbuf[exmlPOLARIZABILITY].c_str()));
+                pd.addBosque( xbuf[exmlELEM], my_atof(xbuf[exmlPOLARIZABILITY].c_str()));
             }
             break;
         case exmlGT_BOND:
@@ -299,10 +313,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlPARAMS]) && NN(xbuf[exmlNTRAIN]))
             {
                 pd.addBond( xbuf[exmlATOM1], xbuf[exmlATOM2],
-                             atof(xbuf[exmlLENGTH].c_str()),
-                             atof(xbuf[exmlSIGMA].c_str()),
+                             my_atof(xbuf[exmlLENGTH].c_str()),
+                             my_atof(xbuf[exmlSIGMA].c_str()),
                              atoi(xbuf[exmlNTRAIN].c_str()),
-                             atof(xbuf[exmlBONDORDER].c_str()),
+                             my_atof(xbuf[exmlBONDORDER].c_str()),
                              xbuf[exmlPARAMS]);
             }
             break;
@@ -312,8 +326,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlPARAMS]) && NN(xbuf[exmlNTRAIN]))
             {
                 pd.addAngle( xbuf[exmlATOM1], xbuf[exmlATOM2],
-                              xbuf[exmlATOM3], atof(xbuf[exmlANGLE].c_str()),
-                              atof(xbuf[exmlSIGMA].c_str()), atoi(xbuf[exmlNTRAIN].c_str()),
+                              xbuf[exmlATOM3], my_atof(xbuf[exmlANGLE].c_str()),
+                              my_atof(xbuf[exmlSIGMA].c_str()), atoi(xbuf[exmlNTRAIN].c_str()),
                               xbuf[exmlPARAMS].c_str());
             }
             break;
@@ -326,7 +340,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 pd.addDihedral( egdPDIHS,
                                  xbuf[exmlATOM1], xbuf[exmlATOM2],
                                  xbuf[exmlATOM3], xbuf[exmlATOM4],
-                                 atof(xbuf[exmlANGLE].c_str()), atof(xbuf[exmlSIGMA].c_str()),
+                                 my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
                                  atoi(xbuf[exmlNTRAIN].c_str()),
                                  xbuf[exmlPARAMS]);
             }
@@ -340,7 +354,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 pd.addDihedral( egdIDIHS,
                                  xbuf[exmlATOM1], xbuf[exmlATOM2],
                                  xbuf[exmlATOM3], xbuf[exmlATOM4],
-                                 atof(xbuf[exmlANGLE].c_str()), atof(xbuf[exmlSIGMA].c_str()),
+                                 my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
                                  atoi(xbuf[exmlNTRAIN].c_str()),
                                  xbuf[exmlPARAMS]);
             }
@@ -360,11 +374,14 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES]) &&
                 NN(xbuf[exmlROW]))
             {
-                pd.setEemprops(name2eemtype(xbuf[exmlMODEL]), 
-                               xbuf[exmlNAME],
-                               atof(xbuf[exmlJ0].c_str()), 
-                               atof(xbuf[exmlCHI0].c_str()),
-                               xbuf[exmlZETA], xbuf[exmlCHARGES], xbuf[exmlROW]);
+                Eemprops eep(name2eemtype(xbuf[exmlMODEL]), 
+                             xbuf[exmlNAME],
+                             xbuf[exmlZETA], 
+                             xbuf[exmlCHARGES], 
+                             xbuf[exmlROW],
+                             my_atof(xbuf[exmlJ0].c_str()), 
+                             my_atof(xbuf[exmlCHI0].c_str()) );
+                pd.addEemprops(eep);
             }
             break;
         case exmlEEMPROP_REF:
@@ -533,7 +550,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
             add_xml_char(grandchild, exml_names[exmlPTYPE], aType->getPtype().c_str());
             add_xml_char(grandchild, exml_names[exmlBTYPE], aType->getBtype().c_str());
             add_xml_char(grandchild, exml_names[exmlVDWPARAMS], aType->getVdwparams().c_str());
-            add_xml_double(grandchild, exml_names[exmlEREF], aType->getRefEnthalpy());
+            add_xml_char(grandchild, exml_names[exmlEREF], aType->getRefEnthalpy().c_str());
         }
     }
     child = add_xml_child(parent, exml_names[exmlPOLTYPES]);
@@ -639,11 +656,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         }
     }
     child = add_xml_child(parent, exml_names[exmlBSATOMS]);
-    tmp   = pd.getBosqueUnit();
-    if (tmp.size() != 0)
-    {
-        add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
-    }
+    std::string ref;
+    pd.getBosqueFlags(tmp, ref);
+    add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
+    add_xml_char(child, exml_names[exmlREFERENCE], ref.c_str());
+    
     for (BosqueConstIterator bosque = pd.getBosqueBegin();
          bosque != pd.getBosqueEnd(); bosque++)
     {
@@ -652,15 +669,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], bosque->getPolarizability());
     }
     child = add_xml_child(parent, exml_names[exmlMILATOMS]);
-    pd.getMillerUnits(tau_unit, ahp_unit);
-    if (tau_unit.size() != 0)
-    {
-        add_xml_char(child, exml_names[exmlTAU_UNIT], tau_unit.c_str());
-    }
-    if (ahp_unit.size() != 0)
-    {
-        add_xml_char(child, exml_names[exmlAHP_UNIT], ahp_unit.c_str());
-    }
+    std::string milref;
+    pd.getMillerFlags(tau_unit, ahp_unit, milref);
+    add_xml_char(child, exml_names[exmlTAU_UNIT], tau_unit.c_str());
+    add_xml_char(child, exml_names[exmlAHP_UNIT], ahp_unit.c_str());
+    add_xml_char(child, exml_names[exmlREFERENCE], milref.c_str());
     for (MillerConstIterator miller = pd.getMillerBegin();
          miller != pd.getMillerEnd(); miller++)
     {
@@ -669,6 +682,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_int(grandchild, exml_names[exmlATOMNUMBER], miller->getAtomnumber());
         add_xml_double(grandchild, exml_names[exmlTAU_AHC], miller->getTauAhc());
         add_xml_double(grandchild, exml_names[exmlALPHA_AHP], miller->getAlphaAhp());
+        const std::string ae = miller->getAlexandriaEquiv();
+        if (ae.size() > 0)
+        {
+            add_xml_char(grandchild, exml_names[exmlALEXANDRIA_EQUIV], ae.c_str());
+        }
     }
 
     child = add_xml_child(parent, exml_names[exmlSYMMETRIC_CHARGES]);
@@ -697,12 +715,11 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr());
     }
-    for (EempropsConstIterator eep = pd.BeginEemprops();
-         eep != pd.EndEemprops(); eep++)
+    for(auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);
-        add_xml_char(grandchild, exml_names[exmlMODEL], eep->getName());
-        add_xml_char(grandchild, exml_names[exmlEPREF], pd.getEpref(eep->getEqdModel()));
+        add_xml_char(grandchild, exml_names[exmlMODEL], getEemtypeName(eep->getEqdModel()));
+        add_xml_char(grandchild, exml_names[exmlEPREF], eep->getEpref());
     }
 }
 

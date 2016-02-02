@@ -7,5 +7,5 @@
   <String Name="ptype">ha</String>
   <String Name="btype">h1</String>
   <String Name="vdwparams">2.47135e-01 6.56888e-02</String>
-  <Real Name="refEnthalpy">217.999</Real>
+  <String Name="refEnthalpy">217.999</String>
 </ReferenceData>

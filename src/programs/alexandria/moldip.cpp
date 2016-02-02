@@ -915,7 +915,7 @@ void MolDip::CalcDeviation()
     }
     if (PAR(_cr))
     {
-        pd_.commEemprops(_cr);
+        pd_.broadcast(_cr);
     }
     init_nrnb(&my_nrnb);
     snew(epot, 1);
@@ -940,16 +940,18 @@ void MolDip::CalcDeviation()
             if (NULL == mymol->qgen_)
             {
                 mymol->qgen_ = new
-                    GentopQgen(pd_, &(mymol->topology_->atoms), _atomprop,
+                    GentopQgen(pd_, &(mymol->topology_->atoms), 
                                mymol->x_, _iChargeDistributionModel,
                                _iChargeGenerationAlgorithm,
                                _hfac,
                                mymol->molProp()->getCharge(), _epsr);
             }
+            double chieq = 0;
             eQ = mymol->qgen_->generateChargesSm(debug,
                                                  pd_, &(mymol->topology_->atoms),
-                                                 1e-4, 100, _atomprop,
-                                                 &(mymol->chieq));
+                                                 1e-4, 100, 
+                                                 &chieq);
+            mymol->chieq = chieq;
             if (eQ != eQGEN_OK)
             {
                 char buf[STRLEN];

@@ -109,7 +109,7 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->getPtype(), "ptype");
     checker_.checkString(aType->getBtype(), "btype");
     checker_.checkString(aType->getVdwparams(), "vdwparams");
-    checker_.checkDouble(aType->getRefEnthalpy(), "refEnthalpy");
+    checker_.checkString(aType->getRefEnthalpy(), "refEnthalpy");
 }
 
 TEST_F(PoldataTest, searchAtype){
@@ -132,7 +132,7 @@ TEST_F(PoldataTest, addAtype){
     const std::string        ptype        = "Type";
     const std::string        btype        = "bType";
     const std::string        vdwparams    = "vdwparams";
-    const double             ref_enthalpy = 1000;
+    const std::string        ref_enthalpy = "1000";
 
     std::string              newElem;
     std::string              newDesc;
@@ -142,8 +142,7 @@ TEST_F(PoldataTest, addAtype){
     std::string              newVdwparams;
     alexandria::Ffatype      fatype;
 
-
-    pd_.addAtype( elem,
+    pd_.addAtype(elem,
                  desc,
                  atype,
                  ptype,

@@ -947,7 +947,7 @@ double OptParam::CalcDeviation()
     }
     if (PAR(_cr))
     {
-        pd_.commForceParameters( _cr);
+        pd_.broadcast(_cr);
     }
     if (NULL == debug)
     {

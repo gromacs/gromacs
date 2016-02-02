@@ -397,6 +397,11 @@ static void gmx_molprop_read_babel(const char *g98,
         }
     }
 
+    // Get the energy as well.
+    alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS,
+                                    convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
+    mpt.LastExperiment()->AddEnergy(mes);
+    
     /* Now add properties by extracting them from the OpenBabel structure */
     OBpd = (OpenBabel::OBPairData *) mol.GetData("PartialCharges");
     if (NULL != OBpd)

@@ -40,7 +40,6 @@ gmx_build_unit_test(
     ${exename}
     # files with code for tests
     gmx_respTest.cpp
-    gentop_qgenTest.cpp
     molpropTest.cpp
     poldataTest.cpp	
     eem_qgenTest.cpp

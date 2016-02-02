@@ -8,55 +8,11 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/real.h"
 
 #include "poldata.h"
 
 namespace alexandria
 {
-class RespZeta
-{
- public:
-    RespZeta(int row, real q, real zeta) : row_(row), q_(q), zeta_(zeta), 
-        zetaRef_(zeta) { zindex_ = -1; }
-    
-    int row() const { return row_; };
-    
-    real q() const { return q_; }
-    
-    void setQ(real q) { q_ = q; }
-    
-    real zeta() const { return zeta_; } 
-    
-    void setZeta(double z) { zeta_ = z; }
-    
-    real zetaRef() const { return zetaRef_; } 
-    
-    void setZetaRef(double z) { zetaRef_ = z; }
-    
-    int zIndex() const { return zindex_; }
-    
-    void setZindex(int zi) { zindex_ = zi; }
-    
- private:
-    //! The row in the periodic table for each of the charge components
-    int  row_;
-    //! Charge of each of the components
-    real q_;
-    //! Inverse screening length of each of the components
-    real zeta_;
-    //! Reference (starting) value for zeta
-    real zetaRef_;
-    //! Parameter optimization index
-    int  zindex_;
-};
-//! Loop over RespZeta
-typedef std::vector<RespZeta>::iterator RespZetaIterator;
-
-//! Loop over RespZeta
-typedef std::vector<RespZeta>::const_iterator RespZetaConstIterator;
-
 class RespAtomType
 {
     public:
@@ -78,13 +34,13 @@ class RespAtomType
 
         void setAtype(int i) { atype_ = i; }
         
-        RespZetaIterator beginRZ() { return rz_.begin(); }
+        RowZetaQIterator beginRZ() { return rz_.begin(); }
 
-        RespZetaIterator endRZ() { return rz_.end(); }
+        RowZetaQIterator endRZ() { return rz_.end(); }
 
-        RespZetaConstIterator beginRZ() const { return rz_.begin(); }
+        RowZetaQConstIterator beginRZ() const { return rz_.begin(); }
 
-        RespZetaConstIterator endRZ() const { return rz_.end(); }
+        RowZetaQConstIterator endRZ() const { return rz_.end(); }
 
  private:
         //! Atom type index
@@ -94,7 +50,7 @@ class RespAtomType
         //! String corresponding to atom type
         std::string           atomtype_;
         //! Arrays of charge components
-        std::vector<RespZeta> rz_;
+        std::vector<RowZetaQ> rz_;
 };
 
 //! Iterator over RespAtomType vector
@@ -106,7 +62,7 @@ typedef std::vector<RespAtomType>::const_iterator RespAtomTypeConstIterator;
 class RespAtom
 {
     public:
-    RespAtom(int atomnumber, int atype, real q, gmx::RVec x) 
+    RespAtom(int atomnumber, int atype, double q, gmx::RVec x) 
      : atomnumber_(atomnumber), atype_(atype), q_(q), x_(x) 
     { qindex_ = -1; }
 
@@ -118,9 +74,9 @@ class RespAtom
 
         void setAtomnumber(int i) { atomnumber_ = i; }
 
-        real charge() const { return q_; }
+        double charge() const { return q_; }
 
-        void setCharge(real value) { q_ = value; }
+        void setCharge(double value) { q_ = value; }
         
         const gmx::RVec &x() const { return x_; }
     
@@ -135,7 +91,7 @@ class RespAtom
         //! Atom type
         int       atype_;
         //! Total charge of the atom (which is optimized in resp)
-        real      q_;
+        double      q_;
         //! Coordinates for this atom
         gmx::RVec x_;
         //! Index in parameterization array

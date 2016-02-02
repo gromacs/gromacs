@@ -38,9 +38,11 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -115,13 +117,20 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                                 sig_pol  = 0;
                                 break;
                             case alexandria::iCmiller:
-                                double tau_ahc, alpha_ahp;
-                                int    atomnumber;
-                                bSupport = (pd.getMillerPol( (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
-
-                                ahc   += tau_ahc*natom;
-                                ahp   += alpha_ahp*natom;
-                                Nelec += atomnumber*natom;
+                                {
+                                    double      tau_ahc, alpha_ahp;
+                                    int         atomnumber;
+                                    std::string aequiv;
+                                    bSupport = (pd.getMillerPol((char *)atomname, 
+                                                                &atomnumber,
+                                                                &tau_ahc, 
+                                                                &alpha_ahp, 
+                                                                aequiv) == 1);
+                                    
+                                    ahc   += tau_ahc*natom;
+                                    ahp   += alpha_ahp*natom;
+                                    Nelec += atomnumber*natom;
+                                }
                                 break;
                             default:
                                 gmx_incons("Out of range");

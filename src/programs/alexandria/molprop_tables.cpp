@@ -694,8 +694,9 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
 
             /* Determine Miller and Bosque polarizabilities for this Alexandria element */
             ahc = ahp = bos_pol = 0;
+            std::string aequiv;
             if (1 == pd.getMillerPol(pType->getMiller(),
-                                      &atomnumber, &ahc, &ahp))
+                                     &atomnumber, &ahc, &ahp, aequiv))
             {
                 ahc = (4.0/atomnumber)*gmx::square(ahc);
             }
