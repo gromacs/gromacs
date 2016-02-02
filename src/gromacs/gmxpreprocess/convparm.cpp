@@ -265,7 +265,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->thole.a      = old[2] + old[3];
             if ((old[0] > 0) && (old[1] > 0))
             {
-                newparam->thole.rfac = (old[2]+old[3])*gmx::invsixthroot(old[0]*old[1]);
+                newparam->thole.rfac = (old[0]*old[1])*gmx::invsixthroot(old[2]+old[3]);
             }
             else
             {

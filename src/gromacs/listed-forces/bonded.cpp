@@ -1041,8 +1041,7 @@ real thole_pol(int nbonds,
         a     = forceparams[type].thole.a;
         al1   = forceparams[type].thole.alpha1;
         al2   = forceparams[type].thole.alpha2;
-
-        afac  = a*gmx::invsixthroot(al1*al2);
+        afac  = forceparams[type].thole.rfac;
 
         if (debug)
         {
