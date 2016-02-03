@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -361,6 +361,13 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
     pbc->ePBC      = ePBC;
     pbc->ndim_ePBC = ePBC2npbcdim(ePBC);
 
+    if (pbc->ePBC == epbcNONE)
+    {
+        pbc->ePBCDX = epbcdxNOPBC;
+
+        return;
+    }
+
     copy_mat(box, pbc->box);
     pbc->max_cutoff2    = 0;
     pbc->dim            = -1;
@@ -374,11 +381,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
     }
 
     ptr = check_box(ePBC, box);
-    if (ePBC == epbcNONE)
-    {
-        pbc->ePBCDX = epbcdxNOPBC;
-    }
-    else if (ptr)
+    if (ptr)
     {
         fprintf(stderr,   "Warning: %s\n", ptr);
         pr_rvecs(stderr, 0, "         Box", box, DIM);
