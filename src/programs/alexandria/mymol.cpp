@@ -1110,7 +1110,7 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
                         printf("Added %d ESP points to the RESP structure.\n",
                                static_cast<int>(gr_.nEsp()));
                     }
-                    eQGEN = qgen_->generateCharges(NULL,
+                    eQGEN = qgen_->generateCharges(debug,
                                                    gr_, molProp()->getMolname().c_str(),
                                                    pd, &topology_->atoms,
                                                    tolerance,

@@ -60,16 +60,16 @@ static void print_progress(FILE *fp, int iter, int n, double **v, double *f)
     {
         if (iter == 0)
         {
-            fprintf(fp, "Initial values\n");
+            fprintf(fp, "NM Initial values\n");
         }
         else
         {
-            fprintf(fp, "Iteration %d\n", iter);
+            fprintf(fp, "NM Iteration %d\n", iter);
         }
 
         for (j = 0; j <= n; j++)
         {
-            fprintf(fp, "%2d", j+1);
+            fprintf(fp, "NM %2d", j+1);
             for (i = 0; i < n; i++)
             {
                 fprintf(fp, "  %10g", v[j][i]);
@@ -368,9 +368,9 @@ int nmsimplex(FILE          *fp,
 
         if (NULL != fp)
         {
-            fprintf(fp, "\nA local minimum was found at chi2 = %g\n", min);
-            fprintf(fp, "after %d fuction calls and %d iterations.\n", k, itr);
-            fprintf(fp, "Parameters:");
+            fprintf(fp, "\nNM A local minimum was found at chi2 = %g\n", min);
+            fprintf(fp, "NM after %d fuction calls and %d iterations.\n", k, itr);
+            fprintf(fp, "NM Parameters:");
             for (j = 0; j < n; j++)
             {
                 fprintf(fp, " %10g", v[vs][j]);

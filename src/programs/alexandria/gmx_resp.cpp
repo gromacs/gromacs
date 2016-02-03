@@ -590,15 +590,6 @@ void Resp::copyGrid(Resp &src)
     }
 }
 
-//Resp * Resp::copy()
-//{
-//   Resp * dest = new Resp(_iDistributionModel, _qtot);
-
-//  memcpy(dest, this, sizeof(*this));
-
-//    return dest;
-//}
-
 void Resp::makeGrid(real spacing, matrix box, rvec x[])
 {
     if (0 != nEsp())
@@ -838,10 +829,14 @@ void Resp::getVector(double *params)
             qtot += params[qi];
         }
         // Make sure to add the charges for nuclei to qtot
-        auto rat = findRAT(ra.atype());
-        for(auto rz = rat->beginRZ(); rz < rat->endRZ()-1; ++rz)
+        if (_iDistributionModel == eqdAXg ||
+            _iDistributionModel == eqdAXs)
         {
-            qtot += rz->q();
+            auto rat = findRAT(ra.atype());
+            for(auto rz = rat->beginRZ(); rz < rat->endRZ()-1; ++rz)
+            {
+                qtot += rz->q();
+            }
         }
     }
     ra_[0].setCharge(_qtot-qtot);
@@ -910,7 +905,7 @@ void Resp::calcRms()
         w = myWeight(i);
         if ((NULL != debug) && (i < 4*nAtom()))
         {
-            fprintf(debug, "ESP %d QM: %g EEM: %g DIFF: %g%s\n",
+            fprintf(debug, "ESP %d QM: %g FIT: %g DIFF: %g%s\n",
                     static_cast<int>(i), _pot[i], _potCalc[i],
                     _pot[i]-_potCalc[i],
                     (i < nAtom())  ? buf : "");

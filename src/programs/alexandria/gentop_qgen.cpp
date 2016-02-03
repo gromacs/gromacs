@@ -915,7 +915,9 @@ int GentopQgen::generateCharges(FILE              *fp,
         _eQGEN = gr.optimizeCharges(fp, maxiter, tol, &chi2);
         if (_eQGEN == eQGEN_OK)
         {
-            printf("chi2 for RESP: %g\n", chi2);
+            real wtot, rrms;
+            real rms = gr.getRms(&wtot, &rrms);
+            printf("RESP RMS: %g  RRMS: %g\n", rms, rrms);
             for(int i = 0; i < _natom; i++)
             {
                 atoms->atom[i].q = 
