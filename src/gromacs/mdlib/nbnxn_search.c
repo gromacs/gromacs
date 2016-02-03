@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2515,6 +2515,9 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     nbl->nci         = 0;
     nbl->ci          = NULL;
     nbl->ci_nalloc   = 0;
+    nbl->nsci        = 0;
+    nbl->sci         = NULL;
+    nbl->sci_nalloc  = 0;
     nbl->ncj         = 0;
     nbl->cj          = NULL;
     nbl->cj_nalloc   = 0;
