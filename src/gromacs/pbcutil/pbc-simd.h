@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,6 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 struct gmx_domdec_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Set the SIMD PBC data from a normal t_pbc struct.
  *
  * \param pbc        Type of periodic boundary,
@@ -106,12 +102,33 @@ pbc_correct_dx_simd(SimdReal         *dx,
 
     shx = round(*dx * load(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
     *dx = *dx - shx * load(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
+
+}
+
+/*! \brief Calculates the PBC corrected distance between SIMD coordinates.
+ *
+ * \param pbc_simd  SIMD formatted PBC information
+ * \param x1        Packed coordinates of atom1, size 3*GMX_SIMD_REAL_WIDTH
+ * \param x2        Packed coordinates of atom2, size 3*GMX_SIMD_REAL_WIDTH
+ * \param dx        The PBC corrected distance x1 - x2
+ *
+ * This routine only returns the shortest distance correctd for PBC
+ * when all atoms are in the unit-cell (aiuc).
+ * This is the SIMD equivalent of the scalar version declared in pbc.h.
+ */
+static gmx_inline void gmx_simdcall
+pbc_dx_aiuc(const real       *pbc_simd,
+            const SimdReal   *x1,
+            const SimdReal   *x2,
+            SimdReal         *dx)
+{
+    for (int d = 0; d < DIM; d++)
+    {
+        dx[d] = x1[d] - x2[d];
+    }
+    pbc_correct_dx_simd(&dx[XX], &dx[YY], &dx[ZZ], pbc_simd);
 }
 
 #endif /* GMX_SIMD_HAVE_REAL */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
