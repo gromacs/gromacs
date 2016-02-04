@@ -44,6 +44,8 @@
  */
 #include "config.h"
 
+#include <assert.h>
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
@@ -63,12 +65,18 @@
 #define USE_TEXOBJ
 #endif
 
-#define CL_SIZE_LOG2 (3)  /* change this together with CL_SIZE !*/
-#define CL_SIZE_SQ   (CL_SIZE * CL_SIZE)
-#define FBUF_STRIDE  (CL_SIZE_SQ)
+/*! \brief Log of the i and j cluster size.
+  *  change this together with cl_size !*/
+static const int cl_size_log2  = 3;
+/*! \brief Square of cluster size. */
+static const int cl_size_sq    = cl_size*cl_size;
+/*! \brief j-cluster size after split (4 in the current implementation). */
+static const int split_cl_size = cl_size/nbnxn_gpu_clusterpair_split;
+/*! \brief Stride in the force accumualation buffer */
+static const int fbuf_stride   = cl_size_sq;
 
-#define ONE_SIXTH_F     0.16666667f
-#define ONE_TWELVETH_F  0.08333333f
+static const float  one_sixth    = 0.16666667f;
+static const float  one_twelveth = 0.08333333f;
 
 /* With multiple compilation units this ensures that texture refs are available
    in the the kernels' compilation units. */
@@ -276,7 +284,7 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
 
     /* Shift should be applied only to real LJ pairs */
     sh_mask   = nbparam.sh_lj_ewald*int_bit;
-    *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+    *E_lj    += one_sixth*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
 }
 
 /*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
@@ -325,7 +333,7 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
 
         /* Shift should be applied only to real LJ pairs */
         sh_mask   = nbparam.sh_lj_ewald*int_bit;
-        *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+        *E_lj    += one_sixth*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
     }
 }
 
@@ -407,9 +415,9 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
     if (tidxi < 3)
     {
         float f = 0.0f;
-        for (int j = tidxj * CL_SIZE; j < (tidxj + 1) * CL_SIZE; j++)
+        for (int j = tidxj * cl_size; j < (tidxj + 1) * cl_size; j++)
         {
-            f += f_buf[FBUF_STRIDE * tidxi + j];
+            f += f_buf[fbuf_stride * tidxi + j];
         }
 
         atomicAdd((&fout[aidx].x)+tidxi, f);
@@ -462,9 +470,9 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
     if (tidxj < 3)
     {
         float f = 0.0f;
-        for (int j = tidxi; j < CL_SIZE_SQ; j += CL_SIZE)
+        for (int j = tidxi; j < cl_size_sq; j += cl_size)
         {
-            f += f_buf[tidxj * FBUF_STRIDE + j];
+            f += f_buf[tidxj * fbuf_stride + j];
         }
 
         atomicAdd(&fout[aidx].x + tidxj, f);
@@ -487,20 +495,22 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     int     i, j;
     float   f;
 
-    /* Reduce the initial CL_SIZE values for each i atom to half
-     * every step by using CL_SIZE * i threads.
+    assert(cl_size == 1 << cl_size_log2);
+
+    /* Reduce the initial cl_size values for each i atom to half
+     * every step by using cl_size * i threads.
      * Can't just use i as loop variable because than nvcc refuses to unroll.
      */
-    i = CL_SIZE/2;
+    i = cl_size/2;
 #pragma unroll 5
-    for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
+    for (j = cl_size_log2 - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
 
-            f_buf[                  tidxj * CL_SIZE + tidxi] += f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
-            f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
-            f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+            f_buf[                  tidxj * cl_size + tidxi] += f_buf[                  (tidxj + i) * cl_size + tidxi];
+            f_buf[    fbuf_stride + tidxj * cl_size + tidxi] += f_buf[    fbuf_stride + (tidxj + i) * cl_size + tidxi];
+            f_buf[2 * fbuf_stride + tidxj * cl_size + tidxi] += f_buf[2 * fbuf_stride + (tidxj + i) * cl_size + tidxi];
         }
         i >>= 1;
     }
@@ -508,9 +518,9 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     /* i == 1, last reduction step, writing to global mem */
     if (tidxj < 3)
     {
-        /* tidxj*FBUF_STRIDE selects x, y or z */
-        f = f_buf[tidxj * FBUF_STRIDE               + tidxi] +
-            f_buf[tidxj * FBUF_STRIDE + i * CL_SIZE + tidxi];
+        /* tidxj*fbuf_stride selects x, y or z */
+        f = f_buf[tidxj * fbuf_stride               + tidxi] +
+            f_buf[tidxj * fbuf_stride + i * cl_size + tidxi];
 
         atomicAdd(&(fout[aidx].x) + tidxj, f);
 
@@ -530,7 +540,7 @@ void reduce_force_i(float *f_buf, float3 *f,
                     float *fshift_buf, bool bCalcFshift,
                     int tidxi, int tidxj, int ai)
 {
-    if ((CL_SIZE & (CL_SIZE - 1)))
+    if ((cl_size & (cl_size - 1)))
     {
         reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
     }
@@ -549,17 +559,17 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
                               int tidxj, int aidx)
 {
-    fin.x += __shfl_down(fin.x, CL_SIZE);
-    fin.y += __shfl_up  (fin.y, CL_SIZE);
-    fin.z += __shfl_down(fin.z, CL_SIZE);
+    fin.x += __shfl_down(fin.x, cl_size);
+    fin.y += __shfl_up  (fin.y, cl_size);
+    fin.z += __shfl_down(fin.z, cl_size);
 
     if (tidxj & 1)
     {
         fin.x = fin.y;
     }
 
-    fin.x += __shfl_down(fin.x, 2*CL_SIZE);
-    fin.z += __shfl_up  (fin.z, 2*CL_SIZE);
+    fin.x += __shfl_down(fin.x, 2*cl_size);
+    fin.z += __shfl_up  (fin.z, 2*cl_size);
 
     if (tidxj & 2)
     {
@@ -599,7 +609,7 @@ void reduce_energy_pow2(volatile float *buf,
         if (tidx < i)
         {
             buf[              tidx] += buf[              tidx + i];
-            buf[FBUF_STRIDE + tidx] += buf[FBUF_STRIDE + tidx + i];
+            buf[fbuf_stride + tidx] += buf[fbuf_stride + tidx + i];
         }
         i >>= 1;
     }
@@ -610,7 +620,7 @@ void reduce_energy_pow2(volatile float *buf,
     if (tidx == 0)
     {
         e1 = buf[              tidx] + buf[              tidx + i];
-        e2 = buf[FBUF_STRIDE + tidx] + buf[FBUF_STRIDE + tidx + i];
+        e2 = buf[fbuf_stride + tidx] + buf[fbuf_stride + tidx + i];
 
         atomicAdd(e_lj, e1);
         atomicAdd(e_el, e2);
