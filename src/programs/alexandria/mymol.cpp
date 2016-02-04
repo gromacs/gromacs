@@ -1037,116 +1037,98 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
                                  bool bSymmetricCharges,
                                  const char *symm_string)
 {
-    int       i, eQGEN;
-    char      qgen_msg[STRLEN];
-    immStatus imm = immOK;
+    immStatus imm       = immOK;
+    real      tolerance = 1e-8;
+    int       maxiter   = 1000;
 
-    qgen_ = new GentopQgen(pd, &topology_->atoms, x_,
-                           iChargeDistributionModel,
-                           iChargeGenerationAlgorithm,
-                           hfac, molProp()->getCharge(), epsr);
-    if (NULL == qgen_)
+    if (bSymmetricCharges)
     {
-        return immChargeGeneration;
-    }
-    if (iChargeGenerationAlgorithm == eqgNONE)
-    {
-        return imm;
-    }
-    if (immOK == imm)
-    {
-        if (bSymmetricCharges)
+        std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_BONDS);
+        if (plist_.end() != pw)
         {
-            std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_BONDS);
-            if (plist_.end() != pw)
+            symmetrize_charges(bSymmetricCharges,
+                               &topology_->atoms,
+                               pw,
+                               pd, ap, symm_string, symmetric_charges_);
+        }
+    }
+
+    /* Check which algorithm to use for charge generation */
+    switch (iChargeGenerationAlgorithm)
+    {
+    case eqgNONE:
+        printf("Using zero charges!\n");
+        for (int i = 0; (i < topology_->atoms.nr); i++)
+        {
+            topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
+        }
+        return immOK;
+    case eqgRESP:
+        {
+            gr_.setAtomInfo(&topology_->atoms, pd, x_);
+            gr_.setAtomSymmetry(symmetric_charges_);
+            gr_.summary(debug, symmetric_charges_);
+            /* Even if we get the right LoT it may still not have
+             * the ESP
+             */
+            ExperimentIterator ci = molProp()->getLotPropType(lot,
+                                                              MPO_POTENTIAL,
+                                                              NULL);
+            if (ci != molProp()->EndExperiment())
             {
-                symmetrize_charges(bSymmetricCharges,
-                                   &topology_->atoms,
-                                   pw,
-                                   pd, ap, symm_string, symmetric_charges_);
+                for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)
+                {
+                    /* Maybe not convert to gmx ? */
+                    int xu = string2unit(epi->getXYZunit().c_str());
+                    int vu = string2unit(epi->getVunit().c_str());
+                    if (-1 == xu)
+                    {
+                        xu = eg2cAngstrom;
+                    }
+                    if (-1 == vu)
+                    {
+                        vu = eg2cHartree_e;
+                    }
+                    gr_.addEspPoint(convert2gmx(epi->getX(), xu),
+                                    convert2gmx(epi->getY(), xu),
+                                    convert2gmx(epi->getZ(), xu),
+                                    convert2gmx(epi->getV(), vu));
+                }
+                printf("Added %d ESP points to the RESP structure.\n",
+                       static_cast<int>(gr_.nEsp()));
+            }
+            real chi2    = 0;
+            gr_.optimizeCharges(debug, maxiter, tolerance, &chi2);
+            for(int i = 0; i < topology_->atoms.nr; i++)
+            {
+                topology_->atoms.atom[i].q = 
+                    topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
+            }
+
+        }
+        break;
+    case eqgEEM:
+        {
+            QgenEem qgen(pd, &topology_->atoms, x_,
+                         iChargeDistributionModel,
+                         hfac, molProp()->getCharge(), epsr);
+                            
+            if (eQGEN_OK != qgen.generateCharges(NULL,
+                                                 molProp()->getMolname().c_str(),
+                                                 pd, &topology_->atoms, 
+                                                 tolerance,
+                                                 maxiter))
+            {
+                imm = immChargeGeneration;
             }
         }
+        break;
+    case eqgESP:
+    default:
+        gmx_fatal(FARGS, "Not implemented ESP");
+        break;
     }
-    
-    real tolerance = 1e-8;
-    int  maxiter   = 10000;
-    if (immOK == imm)
-    {
-        eQGEN = eQGEN_OK;
-        switch (iChargeGenerationAlgorithm)
-        {
-            case eqgRESP:
-                {
-                    gr_.setAtomInfo(&topology_->atoms, pd, x_);
-                    gr_.setAtomSymmetry(symmetric_charges_);
-                    gr_.summary(debug, symmetric_charges_);
-                    /* Even if we get the right LoT it may still not have
-                     * the ESP
-                     */
-                    ExperimentIterator ci = molProp()->getLotPropType(lot,
-                                                                      MPO_POTENTIAL,
-                                                                      NULL);
-                    if (ci != molProp()->EndExperiment())
-                    {
-                        //printf("There are %d potential points\n",ci->NPotential());
-                        for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)
-                        {
-                            /* Maybe not convert to gmx ? */
-                            int xu = string2unit(epi->getXYZunit().c_str());
-                            int vu = string2unit(epi->getVunit().c_str());
-                            if (-1 == xu)
-                            {
-                                xu = eg2cAngstrom;
-                            }
-                            if (-1 == vu)
-                            {
-                                vu = eg2cHartree_e;
-                            }
-                            gr_.addEspPoint(convert2gmx(epi->getX(), xu),
-                                             convert2gmx(epi->getY(), xu),
-                                             convert2gmx(epi->getZ(), xu),
-                                             convert2gmx(epi->getV(), vu));
-                        }
-                        printf("Added %d ESP points to the RESP structure.\n",
-                               static_cast<int>(gr_.nEsp()));
-                    }
-                    eQGEN = qgen_->generateCharges(debug,
-                                                   gr_, molProp()->getMolname().c_str(),
-                                                   pd, &topology_->atoms,
-                                                   tolerance,
-                                                   maxiter);
-                }
-                break;
-            case eqgESP:
-                break;
-            case eqgNONE:
-                /* Check which algorithm to use for charge generation */
-                strcpy(qgen_msg, "");
-                printf("Using zero charges!\n");
-                for (i = 0; (i < topology_->atoms.nr); i++)
-                {
-                    topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
-                }
-                eQGEN = eQGEN_OK;
-                break;
-            default:
-                if (NULL == qgen_)
-                {
-                    gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", molProp()->getMolname().c_str());
-                }
-                eQGEN = qgen_->generateCharges(NULL,
-                                               gr_, molProp()->getMolname().c_str(),
-                                               pd, &topology_->atoms, 
-                                               tolerance,
-                                               maxiter);
-                break;
-        }
-        qgen_->message(sizeof(qgen_msg), qgen_msg, gr_);
-        if (eQGEN_OK != eQGEN)
-        {
-            imm = immChargeGeneration;
-        }
-    }
+
     return imm;
 }
 
@@ -1208,7 +1190,7 @@ void MyMol::PrintConformation(const char *fn)
     write_sto_conf(fn, title, &topology_->atoms, x_, NULL, epbcNONE, box);
 }
 
-static void write_zeta_q(FILE *fp, GentopQgen * qgen,
+static void write_zeta_q(FILE *fp, QgenEem * qgen,
                          t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
 {
     int    i, ii, j, k, nz, row;
@@ -1290,7 +1272,7 @@ static void write_zeta_q(FILE *fp, GentopQgen * qgen,
     fprintf(fp, "\n");
 }
 
-static void write_zeta_q2(GentopQgen * qgen, gpp_atomtype_t atype,
+static void write_zeta_q2(QgenEem * qgen, gpp_atomtype_t atype,
                           t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
 {
     FILE      *fp;

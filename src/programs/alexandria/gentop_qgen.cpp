@@ -34,11 +34,10 @@
 namespace alexandria
 {
 
-GentopQgen::GentopQgen(const Poldata &pd, 
+QgenEem::QgenEem(const Poldata &pd, 
                        t_atoms *atoms, 
                        rvec *x,
                        ChargeDistributionModel   iChargeDistributionModel,
-                       ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
                        double hfac, 
                        int  qtotal, 
                        double epsr)
@@ -52,7 +51,6 @@ GentopQgen::GentopQgen(const Poldata &pd,
     int          i, j, k, atm;
 
     _iChargeDistributionModel   = iChargeDistributionModel;
-    _iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
     _hfac                       = hfac;
     _qtotal                     = qtotal;
     _epsr                       = std::max(1.0, epsr);
@@ -144,12 +142,12 @@ GentopQgen::GentopQgen(const Poldata &pd,
     }
 }
 
-GentopQgen::~GentopQgen()
+QgenEem::~QgenEem()
 {
     sfree(_x);
 }
 
-void GentopQgen::saveParams(Resp &gr)
+void QgenEem::saveParams(Resp &gr)
 {
     int i, j;
     if (!_bAllocSave)
@@ -182,7 +180,7 @@ void GentopQgen::saveParams(Resp &gr)
     _bAllocSave = true;
 }
 
-void GentopQgen::restoreParams(Resp &gr)
+void QgenEem::restoreParams(Resp &gr)
 {
     int i, j;
 
@@ -208,7 +206,7 @@ void GentopQgen::restoreParams(Resp &gr)
     }
 }
 
-int GentopQgen::getNzeta( int atom)
+int QgenEem::getNzeta( int atom)
 {
     if ((0 <= atom) && (atom < _natom))
     {
@@ -218,7 +216,7 @@ int GentopQgen::getNzeta( int atom)
 
 }
 
-int GentopQgen::getRow( int atom, int z)
+int QgenEem::getRow( int atom, int z)
 {
     if ((0 <= atom) && (atom < _natom) &&
         (0 <= z) && (z <= _nZeta[atom]))
@@ -228,7 +226,7 @@ int GentopQgen::getRow( int atom, int z)
     return 0;
 
 }
-double GentopQgen::getQ(int atom, int z)
+double QgenEem::getQ(int atom, int z)
 {
     if ((0 <= atom) && (atom < _natom) &&
         (0 <= z) && (z <= _nZeta[atom]))
@@ -240,7 +238,7 @@ double GentopQgen::getQ(int atom, int z)
 }
 
 
-double GentopQgen::getZeta(int atom, int z)
+double QgenEem::getZeta(int atom, int z)
 {
     if ((0 <= atom) && (atom < _natom) &&
         (0 <= z) && (z <= _nZeta[atom]))
@@ -255,7 +253,7 @@ double CoulombNN(double r)
     return 1/r;
 }
 
-double GentopQgen::calcJab(ChargeDistributionModel iChargeDistributionModel,
+double QgenEem::calcJab(ChargeDistributionModel iChargeDistributionModel,
                          rvec xi, rvec xj,
                          int nZi, int nZj,
                          std::vector<double> zetaI, std::vector<double> zetaJ,
@@ -310,7 +308,7 @@ double GentopQgen::calcJab(ChargeDistributionModel iChargeDistributionModel,
     return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
 }
 
-void GentopQgen::solveQEem(FILE *fp,  double hardnessFactor)
+void QgenEem::solveQEem(FILE *fp,  double hardnessFactor)
 {
     double **a, qtot, q;
     int      i, j, n;
@@ -375,7 +373,7 @@ void GentopQgen::solveQEem(FILE *fp,  double hardnessFactor)
     free_matrix(a);
 }
 
-void GentopQgen::updateJ00()
+void QgenEem::updateJ00()
 {
     int    i;
     double j0, qq;
@@ -401,7 +399,7 @@ void GentopQgen::updateJ00()
     }
 }
 
-void GentopQgen::debugFun(FILE *fp)
+void QgenEem::debugFun(FILE *fp)
 {
     int i, j;
 
@@ -427,7 +425,7 @@ void GentopQgen::debugFun(FILE *fp)
     fprintf(fp, "\n");
 }
 
-double GentopQgen::calcSij(int i, int j)
+double QgenEem::calcSij(int i, int j)
 {
     double dist, dism, Sij = 1.0;
     rvec dx;
@@ -526,7 +524,7 @@ double GentopQgen::calcSij(int i, int j)
     return Sij;
 }
 
-void GentopQgen::calcJab()
+void QgenEem::calcJab()
 {
     int    i, j;
     double Jab;
@@ -549,7 +547,7 @@ void GentopQgen::calcJab()
     }
 }
 
-void GentopQgen::calcRhs()
+void QgenEem::calcRhs()
 {
     int    i, j, k, l;
     rvec   dx;
@@ -649,7 +647,7 @@ int atomicnumber2rowXX(int elem)
     return row;
 }
 
-void GentopQgen::copyChargesToAtoms(t_atoms *atoms)
+void QgenEem::copyChargesToAtoms(t_atoms *atoms)
 {
     int j;
     for (int i = j= 0; (i < atoms->nr); i++)
@@ -667,7 +665,7 @@ void GentopQgen::copyChargesToAtoms(t_atoms *atoms)
     }
 } 
 
-void GentopQgen::print(FILE *fp, t_atoms *atoms)
+void QgenEem::print(FILE *fp, t_atoms *atoms)
 {
     int  i, j;
     rvec mu = { 0, 0, 0 };
@@ -709,7 +707,7 @@ void GentopQgen::print(FILE *fp, t_atoms *atoms)
     }
 }
 
-void GentopQgen::message( int len, char buf[], Resp &gr)
+void QgenEem::message( int len, char buf[], Resp &gr)
 {
     switch (_eQGEN)
     {
@@ -737,7 +735,7 @@ void GentopQgen::message( int len, char buf[], Resp &gr)
     }
 }
 
-void GentopQgen::checkSupport(const Poldata &pd)
+void QgenEem::checkSupport(const Poldata &pd)
 {
     int  i;
     bool bSupport = true;
@@ -761,7 +759,7 @@ void GentopQgen::checkSupport(const Poldata &pd)
     }
 }
 
-void GentopQgen::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
+void QgenEem::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
 {
     int i, j, n, nz;
 
@@ -783,7 +781,7 @@ void GentopQgen::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
     }
 }
 
-int GentopQgen::generateChargesSm(FILE *fp,
+int QgenEem::generateChargesSm(FILE *fp,
                                   const Poldata &pd,
                                   t_atoms *atoms,
                                   double tol, 
@@ -869,9 +867,9 @@ int GentopQgen::generateChargesSm(FILE *fp,
     return _eQGEN;
 }
 
-int GentopQgen::generateChargesBultinck(FILE *fp,
-                                        const Poldata &pd,
-                                        t_atoms *atoms)
+int QgenEem::generateChargesBultinck(FILE *fp,
+                                     const Poldata &pd,
+                                     t_atoms *atoms)
 {
     checkSupport(pd);
     if (eQGEN_OK == _eQGEN)
@@ -889,62 +887,31 @@ int GentopQgen::generateChargesBultinck(FILE *fp,
     return _eQGEN;
 }
 
-int GentopQgen::generateCharges(FILE              *fp,
-                                Resp              &gr,
-                                const std::string  molname, 
-                                const Poldata     &pd,
-                                t_atoms           *atoms,
-                                double             tol,
-                                int                maxiter)
+int QgenEem::generateCharges(FILE              *fp,
+                             const std::string  molname, 
+                             const Poldata     &pd,
+                             t_atoms           *atoms,
+                             double             tol,
+                             int                maxiter)
 {
     double chieq;
-    real   chi2 = 0;
-    /* Generate charges */
-    if (_iChargeGenerationAlgorithm == eqgRESP)
+    /* Generate charges using empirical algorithms */
+    if (fp)
     {
-        if (gr.nAtom() == 0)
-        {
-            gmx_incons("No RESP data structure");
-        }
-        if (fp)
-        {
-            fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-                    getEemtypeName(_iChargeDistributionModel), molname.c_str());
-        }
-        /* Fit charges to electrostatic potential */
-        _eQGEN = gr.optimizeCharges(fp, maxiter, tol, &chi2);
-        if (_eQGEN == eQGEN_OK)
-        {
-            real wtot, rrms;
-            real rms = gr.getRms(&wtot, &rrms);
-            printf("RESP RMS: %g  RRMS: %g\n", rms, rrms);
-            for(int i = 0; i < _natom; i++)
-            {
-                atoms->atom[i].q = 
-                    atoms->atom[i].qB = gr.getAtomCharge(i);
-            }
-            print(fp, atoms);
-        }
+        fprintf(fp, "Generating charges for %s using %s algorithm\n",
+                molname.c_str(), 
+                getEemtypeName(_iChargeDistributionModel));
+    }
+    if (_iChargeDistributionModel == eqdBultinck)
+    {
+        (void) generateChargesBultinck(fp, pd, atoms);
     }
     else
     {
-        /* Use empirical algorithms */
-        if (fp)
-        {
-            fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                    molname.c_str(), 
-                    getEemtypeName(_iChargeDistributionModel));
-        }
-        if (_iChargeDistributionModel == eqdBultinck)
-        {
-            (void) generateChargesBultinck(fp, pd, atoms);
-        }
-        else
-        {
-            (void) generateChargesSm(fp, pd, atoms, tol, maxiter, &chieq);
-        }
-        copyChargesToAtoms(atoms);
+        (void) generateChargesSm(fp, pd, atoms, tol, maxiter, &chieq);
     }
+    copyChargesToAtoms(atoms);
+    
     return _eQGEN;
 }
 

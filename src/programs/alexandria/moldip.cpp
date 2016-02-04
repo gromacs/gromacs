@@ -599,27 +599,22 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                                              _iChargeDistributionModel, nexcl,
                                              false, false, edihNo);
 
-                if (_iChargeGenerationAlgorithm != eqgNONE)
+                if (_iChargeGenerationAlgorithm == eqgRESP)
                 {
-                    if (immOK == imm)
-                    {
-                        mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
-                                             true, 1, 200, 5, true,
-                                             mpnew.molProp()->getCharge(),
-                                             -2, 2, false, watoms);
-                        mpnew.gr_.setBAXpRESP(true);
-                        mpnew.gr_.setBEntropy(true);
-                    }
-
-                    if (immOK == imm)
-                    {
-                        imm = mpnew.GenerateCharges(pd_, _atomprop,
-                                                    _iChargeDistributionModel,
-                                                    _iChargeGenerationAlgorithm,
-                                                    _hfac, _epsr,
-                                                    lot, TRUE, NULL);
-                    }
+                    mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
+                                         true, 1, 200, 5, true,
+                                         mpnew.molProp()->getCharge(),
+                                         -2, 2, false, watoms);
+                    mpnew.gr_.setBAXpRESP(true);
+                    mpnew.gr_.setBEntropy(true);
                 }
+
+                imm = mpnew.GenerateCharges(pd_, _atomprop,
+                                            _iChargeDistributionModel,
+                                            _iChargeGenerationAlgorithm,
+                                            _hfac, _epsr,
+                                            lot, TRUE, NULL);
+
                 if (immOK == imm)
                 {
                     imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
@@ -937,25 +932,21 @@ void MolDip::CalcDeviation()
                 _ener[j] = 0;
             }
 
-            if (NULL == mymol->qgen_)
-            {
-                mymol->qgen_ = new
-                    GentopQgen(pd_, &(mymol->topology_->atoms), 
-                               mymol->x_, _iChargeDistributionModel,
-                               _iChargeGenerationAlgorithm,
-                               _hfac,
-                               mymol->molProp()->getCharge(), _epsr);
-            }
+            QgenEem qgen(pd_, &(mymol->topology_->atoms), 
+                         mymol->x_, _iChargeDistributionModel,
+                         _hfac,
+                         mymol->molProp()->getCharge(), _epsr);
+            
             double chieq = 0;
-            eQ = mymol->qgen_->generateChargesSm(debug,
-                                                 pd_, &(mymol->topology_->atoms),
-                                                 1e-4, 100, 
-                                                 &chieq);
+            eQ = qgen.generateChargesSm(debug,
+                                        pd_, &(mymol->topology_->atoms),
+                                        1e-4, 100, 
+                                        &chieq);
             mymol->chieq = chieq;
             if (eQ != eQGEN_OK)
             {
                 char buf[STRLEN];
-                mymol->qgen_->message(STRLEN, buf, mymol->gr_);
+                qgen.message(STRLEN, buf, mymol->gr_);
                 fprintf(stderr, "%s\n", buf);
             }
             else

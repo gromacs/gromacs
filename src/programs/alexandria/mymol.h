@@ -146,7 +146,6 @@ class MyMol
         gmx_localtop_t           *ltop_;
         gpp_atomtype_t            atype_;
         gmx_shellfc_t            *shellfc_;
-        GentopQgen               *qgen_;
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
         gmx_enerdata_t           *enerd_;

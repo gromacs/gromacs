@@ -21,21 +21,20 @@ enum ChargeGenerationAlgorithm {
 namespace alexandria
 {
 
-class GentopQgen
+class QgenEem
 {
 
     public:
 
-        ~GentopQgen();
+        ~QgenEem();
 
 
-        GentopQgen(const Poldata &pd,
-                   t_atoms *atoms,
-                   rvec *x,
-                   ChargeDistributionModel   iChargeDistributionModel,
-                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                   double hfac, int qtotal,
-                   double epsr);
+        QgenEem(const Poldata &pd,
+                t_atoms *atoms,
+                rvec *x,
+                ChargeDistributionModel   iChargeDistributionModel,
+                double hfac, int qtotal,
+                double epsr);
 
         int generateChargesSm(FILE *fp,
                               const Poldata &pd,
@@ -44,7 +43,6 @@ class GentopQgen
                               double *chieq);
 
         int generateCharges(FILE *fp,
-                            Resp &gr,
                             const std::string molname,
                             const Poldata &pd,
                             t_atoms *atoms,
@@ -73,7 +71,6 @@ class GentopQgen
     private:
         gmx_bool                                           _bWarned;
         ChargeDistributionModel                            _iChargeDistributionModel;
-        ChargeGenerationAlgorithm                          _iChargeGenerationAlgorithm;
         int                                                _natom, _eQGEN;
         double                                             _qtotal, _chieq, _hfac, _epsr;
         /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
