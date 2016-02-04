@@ -56,9 +56,9 @@
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
 /*! \brief number of clusters per supercluster. */
-static const int NCL_PER_SUPERCL = c_nbnxnGpuNumClusterPerSupercluster;
+static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
-static const int CL_SIZE         = c_nbnxnGpuClusterSize;
+static const int c_clSize          = c_nbnxnGpuClusterSize;
 
 #ifdef __cplusplus
 extern "C" {
