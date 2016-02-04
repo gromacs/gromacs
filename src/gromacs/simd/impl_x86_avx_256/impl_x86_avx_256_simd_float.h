@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ class SimdFBool
 };
 
 static inline SimdFloat gmx_simdcall
-load(const float *m)
+simdLoad(const float *m)
 {
     assert(std::size_t(m) % 32 == 0);
     return {
@@ -103,7 +103,7 @@ store(float *m, SimdFloat a)
 }
 
 static inline SimdFloat gmx_simdcall
-loadU(const float *m)
+simdLoadU(const float *m)
 {
     return {
                _mm256_loadu_ps(m)
@@ -125,7 +125,7 @@ setZeroF()
 }
 
 static inline SimdFInt32 gmx_simdcall
-loadFI(const std::int32_t * m)
+simdLoadFI(const std::int32_t * m)
 {
     assert(std::size_t(m) % 32 == 0);
     return {
@@ -141,7 +141,7 @@ store(std::int32_t * m, SimdFInt32 a)
 }
 
 static inline SimdFInt32 gmx_simdcall
-loadUFI(const std::int32_t *m)
+simdLoadUFI(const std::int32_t *m)
 {
     return {
                _mm256_loadu_si256(reinterpret_cast<const __m256i *>(m))
