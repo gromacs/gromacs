@@ -1160,7 +1160,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         if (pme->nodeid == 0)
                         {
                             real ntot = pme->nkx*pme->nky*pme->nkz;
-                            npme  = static_cast<int>(ntot*log(ntot)/log(2.0));
+                            npme  = static_cast<int>(ntot*std::log(ntot)/std::log(2.0));
                             inc_nrnb(nrnb, eNR_FFT, 2*npme);
                         }
 
@@ -1457,7 +1457,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                                 if (pme->nodeid == 0)
                                 {
                                     real ntot = pme->nkx*pme->nky*pme->nkz;
-                                    npme  = static_cast<int>(ntot*log(ntot)/log(2.0));
+                                    npme  = static_cast<int>(ntot*std::log(ntot)/std::log(2.0));
                                     inc_nrnb(nrnb, eNR_FFT, 2*npme);
                                 }
                                 wallcycle_start(wcycle, ewcPME_SPREADGATHER);

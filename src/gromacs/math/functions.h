@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -158,17 +158,14 @@ greatestCommonDivisor(std::int64_t p, std::int64_t q);
  * \param  x  Positive value to calculate inverse square root for
  *
  * For now this is implemented with std::sqrt(x) since gcc seems to do a
- * decent job optimizing it if we remember the 'f' suffix. However, we might
- * decide to use instrinsics or compiler-specific functions in the future.
+ * decent job optimizing it. However, we might decide to use instrinsics
+ * or compiler-specific functions in the future.
  *
  * \return 1.0/sqrt(x)
  */
 static inline float
 invsqrt(float x)
 {
-    // Note that the 'f' suffix is IMPERATIVE. Without it, gcc will generate
-    // a sequence of very expensive sqrtsd and divsd instructions instead
-    // of using the reciprocal square root estimate.
     return 1.0f/std::sqrt(x);
 }
 

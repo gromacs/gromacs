@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,7 +195,7 @@ class SimdDIBool
  * \return SIMD variable with data loaded.
  */
 static inline SimdDouble gmx_simdcall
-load(const double *m)
+simdLoad(const double *m)
 {
     SimdDouble a;
 
@@ -226,7 +226,7 @@ store(double *m, SimdDouble a)
  * \return SIMD variable with data loaded.
  */
 static inline SimdDouble gmx_simdcall
-loadU(const double *m)
+simdLoadU(const double *m)
 {
     SimdDouble a;
     std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
@@ -274,7 +274,7 @@ setZeroD()
  * \return SIMD integer variable.
  */
 static inline SimdDInt32 gmx_simdcall
-loadDI(const std::int32_t * m)
+simdLoadDI(const std::int32_t * m)
 {
     SimdDInt32 a;
 
@@ -308,7 +308,7 @@ store(std::int32_t * m, SimdDInt32 a)
  * \return SIMD integer variable.
  */
 static inline SimdDInt32 gmx_simdcall
-loadUDI(const std::int32_t *m)
+simdLoadUDI(const std::int32_t *m)
 {
     SimdDInt32 a;
     std::copy(m, m+a.simdInternal_.size(), a.simdInternal_.begin());
