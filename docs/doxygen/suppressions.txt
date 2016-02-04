@@ -50,6 +50,10 @@ src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning
 src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_common.h: warning: should include "simd.h"
 
+src/gromacs/simd/tests/scalar.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/simd/tests/scalar_math.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/simd/tests/scalar_util.cpp: warning: includes "simd.h" unnecessarily
+
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"
 src/gmxpre.h: warning: includes non-local file as "swindirect.h"
