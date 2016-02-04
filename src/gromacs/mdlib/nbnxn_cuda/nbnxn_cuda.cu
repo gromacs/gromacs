@@ -58,6 +58,7 @@
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "nbnxn_cuda_types.h"
 
@@ -216,15 +217,22 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] =
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
-static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
-                                                       int  evdwtype,
-                                                       bool bDoEne,
-                                                       bool bDoPrune)
+static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                       eeltype,
+                                                       int                       evdwtype,
+                                                       bool                      bDoEne,
+                                                       bool                      bDoPrune,
+                                                       struct gmx_device_info_t *devInfo)
 {
     nbnxn_cu_kfunc_ptr_t res;
 
-    assert(eeltype < eelCuNR);
-    assert(evdwtype < evdwCuNR);
+    GMX_ASSERT(eeltype < eelCuNR,
+               "The electrostatics type requested is not implemented in the CUDA kernels.");
+    GMX_ASSERT(evdwtype < evdwCuNR,
+               "The VdW type requested is not implemented in the CUDA kernels.");
+
+    /* assert assumptions made by the kernels */
+    GMX_ASSERT(nbnxn_gpu_cluster_size*nbnxn_gpu_cluster_size/nbnxn_gpu_clusterpair_split == devInfo->prop.warpSize,
+               "The CUDA kernels require the cluster_size_i*cluster_size_j/nbnxn_gpu_clusterpair_split to match the warp size of the architecture targeted.");
 
     if (bDoEne)
     {
@@ -262,18 +270,18 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
+    shmem  = ncl_per_supercl * cl_size * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * 2 * nbnxn_gpu_jgroup_size * sizeof(int);
     if (dinfo->prop.major >= 3)
     {
         /* i-atom types in shared memory */
-        shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
+        shmem += ncl_per_supercl * cl_size * sizeof(int);
     }
     if (dinfo->prop.major < 3)
     {
         /* force reduction buffers in shared memory */
-        shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
+        shmem += cl_size * cl_size * 3 * sizeof(float);
     }
     return shmem;
 }
@@ -397,7 +405,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     nb_kernel = select_nbnxn_kernel(nbp->eeltype,
                                     nbp->vdwtype,
                                     bCalcEner,
-                                    plist->bDoPrune || always_prune);
+                                    plist->bDoPrune || always_prune,
+                                    nb->dev_info);
 
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,
@@ -410,7 +419,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         num_threads_z = 2;
     }
     nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
-    dim_block = dim3(CL_SIZE, CL_SIZE, num_threads_z);
+    dim_block = dim3(cl_size, cl_size, num_threads_z);
     dim_grid  = dim3(nblock, 1, 1);
     shmem     = calc_shmem_required(num_threads_z, nb->dev_info);
 
@@ -420,8 +429,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                 "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
-                dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c,
+                dim_grid.x, dim_grid.y, plist->nsci*ncl_per_supercl,
+                ncl_per_supercl, plist->na_c,
                 shmem);
     }
 
