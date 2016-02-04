@@ -85,7 +85,7 @@
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
-    - #threads  = NTHREAD_Z * CL_SIZE^2
+    - #threads  = NTHREAD_Z * cl_size^2
     - shmem     = see nbnxn_cuda.cu:calc_shmem_required()
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
@@ -123,15 +123,13 @@
     #define NTHREAD_Z           (1)
     #define MIN_BLOCKS_PER_MP   (16)
 #endif /* GMX_PTX_ARCH == 370 */
-#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
-
+#define THREADS_PER_BLOCK   (cl_size*cl_size*NTHREAD_Z)
 
 #if GMX_PTX_ARCH >= 350
 #if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
     #error NTHREAD_Z > 1 will give incorrect results on CC 2.x
 #endif
 /**@}*/
-
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
@@ -233,22 +231,22 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
     float3       xi, xj, rv, f_ij, fcj_buf;
-    float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
+    float3       fci_buf[ncl_per_supercl]; /* i force buffer */
     nbnxn_sci_t  nb_sci;
 
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
     /* shmem buffer for cj, for each warp separately */
-    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * nbnxn_gpu_jgroup_size;
+    int *cjs     = ((int *)(xqib + ncl_per_supercl * cl_size)) + tidxz * 2 * nbnxn_gpu_jgroup_size;
 #ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
-    int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size;
+    int *atib    = ((int *)(xqib + ncl_per_supercl * cl_size)) + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size;
 #endif
 
 #ifndef REDUCE_SHUFFLE
     /* shmem j force buffer */
 #ifdef IATYPE_SHMEM
-    float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
+    float *f_buf = (float *)(atib + ncl_per_supercl * cl_size);
 #else
     float *f_buf = (float *)(cjs + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size);
 #endif
@@ -262,17 +260,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     if (tidxz == 0)
     {
         /* Pre-load i-atom x and q into shared memory */
-        ci = sci * NCL_PER_SUPERCL + tidxj;
-        ai = ci * CL_SIZE + tidxi;
-        xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
+        ci = sci * ncl_per_supercl + tidxj;
+        ai = ci * cl_size + tidxi;
+        xqib[tidxj * cl_size + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
 #ifdef IATYPE_SHMEM
         /* Pre-load the i-atom types into shared memory */
-        atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
+        atib[tidxj * cl_size + tidxi] = atom_types[ai];
 #endif
     }
     __syncthreads();
 
-    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    for (ci_offset = 0; ci_offset < ncl_per_supercl; ci_offset++)
     {
         fci_buf[ci_offset] = make_float3(0.0f);
     }
@@ -280,7 +278,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef LJ_EWALD
     /* TODO: we are trading registers with flops by keeping lje_coeff-s, try re-calculating it later */
     lje_coeff2   = nbparam.ewaldcoeff_lj*nbparam.ewaldcoeff_lj;
-    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2*ONE_SIXTH_F;
+    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2*one_sixth;
 #endif /* LJ_EWALD */
 
 
@@ -289,21 +287,21 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     E_el = 0.0f;
 
 #if defined EXCLUSION_FORCES /* Ewald or RF */
-    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NCL_PER_SUPERCL)
+    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*ncl_per_supercl)
     {
         /* we have the diagonal: add the charge and LJ self interaction energy term */
-        for (i = 0; i < NCL_PER_SUPERCL; i++)
+        for (i = 0; i < ncl_per_supercl; i++)
         {
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
-            qi    = xqib[i * CL_SIZE + tidxi].w;
+            qi    = xqib[i * cl_size + tidxi].w;
             E_el += qi*qi;
 #endif
 
 #if defined LJ_EWALD
 #ifdef USE_TEXOBJ
-            E_lj += tex1Dfetch<float>(nbparam.nbfp_texobj, atom_types[(sci*NCL_PER_SUPERCL + i)*CL_SIZE + tidxi]*(ntypes + 1)*2);
+            E_lj += tex1Dfetch<float>(nbparam.nbfp_texobj, atom_types[(sci*ncl_per_supercl + i)*cl_size + tidxi]*(ntypes + 1)*2);
 #else
-            E_lj += tex1Dfetch(nbfp_texref, atom_types[(sci*NCL_PER_SUPERCL + i)*CL_SIZE + tidxi]*(ntypes + 1)*2);
+            E_lj += tex1Dfetch(nbfp_texref, atom_types[(sci*ncl_per_supercl + i)*cl_size + tidxi]*(ntypes + 1)*2);
 #endif /* USE_TEXOBJ */
 #endif /* LJ_EWALD */
 
@@ -311,12 +309,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
         /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
 #ifdef LJ_EWALD
-        E_lj /= CL_SIZE*NTHREAD_Z;
-        E_lj *= 0.5f*ONE_SIXTH_F*lje_coeff6_6;
+        E_lj /= cl_size*NTHREAD_Z;
+        E_lj *= 0.5f*one_sixth*lje_coeff6_6;
 #endif  /* LJ_EWALD */
 
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
-        E_el /= CL_SIZE*NTHREAD_Z;
+        E_el /= cl_size*NTHREAD_Z;
 #if defined EL_RF || defined EL_CUTOFF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
@@ -348,27 +346,27 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             /* Pre-load cj into shared memory on both warps separately */
             if ((tidxj == 0 || tidxj == 4) && tidxi < nbnxn_gpu_jgroup_size)
             {
-                cjs[tidxi + tidxj * nbnxn_gpu_jgroup_size / 4] = pl_cj4[j4].cj[tidxi];
+                cjs[tidxi + tidxj * nbnxn_gpu_jgroup_size/split_cl_size] = pl_cj4[j4].cj[tidxi];
             }
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
-               - on Kepler is much slower;
-               Tested with nvcc 3.2 - 5.0.7 */
+               - on Kepler and later it is much slower;
+               Tested with up to nvcc 7.5 */
 #if !defined PRUNE_NBL && GMX_PTX_ARCH < 300
 #pragma unroll 4
 #endif
             for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
-                /* ((1U << NCL_PER_SUPERCL) - 1U) is the i-cluster interaction
-                 * mask for a super-cluster with all NCL_PER_SUPERCL bits set.
+                /* ((1U << ncl_per_supercl) - 1U) is the i-cluster interaction
+                 * mask for a super-cluster with all ncl_per_supercl bits set.
                  */
-                if (imask & (((1U << NCL_PER_SUPERCL) - 1U) << (jm * NCL_PER_SUPERCL)))
+                if (imask & (((1U << ncl_per_supercl) - 1U) << (jm * ncl_per_supercl)))
                 {
-                    mask_ji = (1U << (jm * NCL_PER_SUPERCL));
+                    mask_ji = (1U << (jm * ncl_per_supercl));
 
-                    cj      = cjs[jm + (tidxj & 4) * nbnxn_gpu_jgroup_size / 4];
-                    aj      = cj * CL_SIZE + tidxj;
+                    cj      = cjs[jm + (tidxj & 4) * nbnxn_gpu_jgroup_size/split_cl_size];
+                    aj      = cj * cl_size + tidxj;
 
                     /* load j atom data */
                     xqbuf   = xq[aj];
@@ -381,17 +379,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #if !defined PRUNE_NBL
 #pragma unroll 8
 #endif
-                    for (i = 0; i < NCL_PER_SUPERCL; i++)
+                    for (i = 0; i < ncl_per_supercl; i++)
                     {
                         if (imask & mask_ji)
                         {
                             ci_offset   = i;                     /* i force buffer offset */
 
-                            ci      = sci * NCL_PER_SUPERCL + i; /* i cluster index */
-                            ai      = ci * CL_SIZE + tidxi;      /* i atom index */
+                            ci      = sci * ncl_per_supercl + i; /* i cluster index */
+                            ai      = ci * cl_size + tidxi;      /* i atom index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
-                            xqbuf   = xqib[i * CL_SIZE + tidxi];
+                            xqbuf   = xqib[i * cl_size + tidxi];
                             xi      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
 
                             /* distance between i and j atoms */
@@ -421,7 +419,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
 #ifdef IATYPE_SHMEM
-                                typei   = atib[i * CL_SIZE + tidxi];
+                                typei   = atib[i * cl_size + tidxi];
 #else
                                 typei   = atom_types[ai];
 #endif
@@ -450,8 +448,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
                                 F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot)*ONE_TWELVETH_F -
-                                                     c6 * (inv_r6 + nbparam.dispersion_shift.cpot)*ONE_SIXTH_F);
+                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot)*one_twelveth -
+                                                     c6 * (inv_r6 + nbparam.dispersion_shift.cpot)*one_sixth);
 #endif
 
 #ifdef LJ_FORCE_SWITCH
@@ -559,8 +557,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #else
                     /* store j forces in shmem */
                     f_buf[                  tidx] = fcj_buf.x;
-                    f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
-                    f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
+                    f_buf[    fbuf_stride + tidx] = fcj_buf.y;
+                    f_buf[2 * fbuf_stride + tidx] = fcj_buf.z;
 
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
 #endif
@@ -577,17 +575,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float fshift_buf = 0.0f;
 
     /* reduce i forces */
-    for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    for (ci_offset = 0; ci_offset < ncl_per_supercl; ci_offset++)
     {
-        ai  = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
+        ai  = (sci * ncl_per_supercl + ci_offset) * cl_size + tidxi;
 #ifdef REDUCE_SHUFFLE
         reduce_force_i_warp_shfl(fci_buf[ci_offset], f,
                                  &fshift_buf, bCalcFshift,
                                  tidxj, ai);
 #else
         f_buf[                  tidx] = fci_buf[ci_offset].x;
-        f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
-        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
+        f_buf[    fbuf_stride + tidx] = fci_buf[ci_offset].y;
+        f_buf[2 * fbuf_stride + tidx] = fci_buf[ci_offset].z;
         __syncthreads();
         reduce_force_i(f_buf, f,
                        &fshift_buf, bCalcFshift,
@@ -616,7 +614,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #else
     /* flush the energies to shmem and reduce them */
     f_buf[              tidx] = E_lj;
-    f_buf[FBUF_STRIDE + tidx] = E_el;
+    f_buf[fbuf_stride + tidx] = E_el;
     reduce_energy_pow2(f_buf + (tidx & warp_size), e_lj, e_el, tidx & ~warp_size);
 #endif
 #endif
