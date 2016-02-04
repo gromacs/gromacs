@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -215,7 +215,7 @@ gmx_inline static void calc_exponentials_q(int gmx_unused start, int end, real f
         {
             tmp_d1   = load(d_aligned+kx);
             tmp_r    = load(r_aligned+kx);
-            tmp_r    = exp(tmp_r);
+            tmp_r    = gmx::exp(tmp_r);
             tmp_e    = f_simd / tmp_d1;
             tmp_e    = tmp_e * tmp_r;
             store(e_aligned+kx, tmp_e);
@@ -232,7 +232,7 @@ gmx_inline static void calc_exponentials_q(int start, int end, real f, real *d, 
     }
     for (kx = start; kx < end; kx++)
     {
-        r[kx] = exp(r[kx]);
+        r[kx] = std::exp(r[kx]);
     }
     for (kx = start; kx < end; kx++)
     {
@@ -257,7 +257,7 @@ gmx_inline static void calc_exponentials_lj(int gmx_unused start, int end, real 
         d_inv = SimdReal(1.0) / tmp_d;
         store(d_aligned+kx, d_inv);
         tmp_r = load(r_aligned+kx);
-        tmp_r = exp(tmp_r);
+        tmp_r = gmx::exp(tmp_r);
         store(r_aligned+kx, tmp_r);
         tmp_mk  = load(factor_aligned+kx);
         tmp_fac = sqr_PI * tmp_mk * erfc(tmp_mk);
@@ -276,7 +276,7 @@ gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *t
 
     for (kx = start; kx < end; kx++)
     {
-        r[kx] = exp(r[kx]);
+        r[kx] = std::exp(r[kx]);
     }
 
     for (kx = start; kx < end; kx++)
