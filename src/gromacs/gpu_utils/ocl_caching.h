@@ -32,54 +32,72 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare infrastructure for OpenCL JIT compilation
+/*! \internal \file
+ *  \brief Declare infrastructure for managing caching of OpenCL
+ *  JIT-ted binaries
+ *
+ *  This functionality is currently disabled in compileProgram()
  *
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *  \inlibraryapi
  */
-#ifndef GMX_GPU_UTILS_OCL_COMPILER_H
-#define GMX_GPU_UTILS_OCL_COMPILER_H
+#ifndef GMX_GPU_UTILS_OCL_CACHING_H
+#define GMX_GPU_UTILS_OCL_CACHING_H
 
 #include <string>
 
 #include "gromacs/gpu_utils/oclutils.h"
-#include "gromacs/hardware/gpu_hw_info.h"
 
 namespace gmx
 {
 namespace ocl
 {
 
-/*! \brief Compile the specified kernel for the context and device.
+/*! \brief Construct the name for the binary cache file
  *
- * \param[out] fplog                 Open file pointer for log output
- * \param[in]  kernelBaseFilename    The name of the kernel source file to compile, e.g. "nbnxn_ocl_kernels.cl"
- * \param[in]  extraDefines          Preprocessor defines required by the calling code, e.g. for configuring the kernels
- * \param[in]  context               OpenCL context on the device to compile for
- * \param[in]  deviceId              OpenCL device id of the device to compile for
- * \param[in]  deviceVendorId        Enumerator of the device vendor to compile for
+ * \param[in]  kernelFilename  Name of the kernel from which the binary will be compiled.
+ * \param[in]  deviceId        ID of the device upon which the binary is used.
  *
- * \returns The compiled OpenCL program
+ * \todo The set of preprocessor options should also form part of the
+ * identification of the cached binary. Also perhaps compiler, runtime
+ * and device version info?
  *
- * \todo Consider whether we can parallelize the compilation of all
- * the kernels by compiling them in separate programs - but since the
- * resulting programs can't refer to each other, that might lead to
- * bloat of util code?
+ * \todo Mutual exclusion of ranks and nodes should also be implemented
+ * if/when caching is re-enabled.
  *
- * \throws std::bad_alloc  if out of memory.
- *         FileIOError     if a file I/O error prevents returning a valid compiled program.
- *         InternalError   if an OpenCL API error prevents returning a valid compiled program. */
+ * \returns The name of the cache file.
+ */
+std::string makeBinaryCacheFilename(const std::string &kernelFilename,
+                                    cl_device_id       deviceId);
+
+/*! \brief Check if there's a valid cache available, and return it if so
+ *
+ * \param[in]  filename   Name of valid file containing the binary cache
+ * \param[in]  context    The OpenCL context
+ * \param[in]  deviceId   The ID of the device on which to use the program
+ *
+ * \returns The OpenCL program read from the cache
+ *
+ * \throws InternalError  if an OpenCL error was encountered
+ *         FileIOError    if the file could not be opened
+ */
 cl_program
-compileProgram(FILE              *fplog,
-               const std::string &kernelBaseFilename,
-               const std::string &extraDefines,
-               cl_context         context,
-               cl_device_id       deviceId,
-               ocl_vendor_id_t    deviceVendorId);
+makeProgramFromCache(const std::string &filename,
+                     cl_context         context,
+                     cl_device_id       deviceId);
+
+/*! \brief Implement caching of OpenCL binaries
+ *
+ * \param[in] program     Index of program to cache
+ * \param[in] filename    Name of file to use for the cache
+ *
+ * \throws InternalError  if an OpenCL error was encountered
+ *         FileIOError    if the file could not be opened
+ */
+void
+writeBinaryToCache(cl_program program, const std::string &filename);
 
 } // namespace
 } // namespace

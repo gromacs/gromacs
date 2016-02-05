@@ -51,6 +51,8 @@
 #    include <CL/opencl.h>
 #endif
 
+#include <string>
+
 /*! \brief OpenCL vendor IDs */
 typedef enum {
     OCL_VENDOR_NVIDIA = 0,
@@ -137,6 +139,6 @@ void ocl_pmalloc(void **h_ptr, size_t nbytes);
 void ocl_pfree(void *h_ptr);
 
 /*! \brief Convert error code to diagnostic string */
-const char *ocl_get_error_string(cl_int error);
+std::string ocl_get_error_string(cl_int error);
 
 #endif
