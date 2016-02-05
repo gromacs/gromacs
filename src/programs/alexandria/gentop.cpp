@@ -169,7 +169,7 @@ int alex_gentop(int argc, char *argv[])
     static const char               *polaropt[]     = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
     static gmx_bool                  bPairs         = FALSE, bPBC = TRUE;
     static gmx_bool                  bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
-    static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
+    static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = FALSE, bEntropy = FALSE;
     static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE;
     static char                     *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
     static int                       maxpot         = 0;

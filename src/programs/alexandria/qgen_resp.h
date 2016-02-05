@@ -116,8 +116,7 @@ class QgenResp
         
         void statistics(int len, char buf[]);
 
-        void summary(FILE             *gp,
-                     std::vector<int> &symmetricAtoms);
+        void summary(FILE *gp);
 
         RespAtomTypeIterator beginRAT() { return ratype_.begin(); }
         
@@ -235,6 +234,7 @@ class QgenResp
         std::string               _stoichiometry;
         std::vector<double>       _pot, _potCalc, _rho;
         std::vector<gmx::RVec>    _esp;
+        std::vector<int>          symmetricAtoms_;
 
         void warning(const std::string fn, int line);
 
