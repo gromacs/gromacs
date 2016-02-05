@@ -64,10 +64,10 @@ set(ALEXANDRIA_SOURCES
      coulombintegrals/gaussian_integrals.c
      coulombintegrals/slater_integrals.cpp
 	gentop_core.cpp
-	gentop_qgen.cpp
 	gentop_vsite.cpp
-	gmx_resp.cpp
-	gmx_resp_atom.cpp
+        qgen_eem.cpp
+	qgen_resp.cpp
+        qgen_resp_atom.cpp
 	gmx_simple_comm.cpp
 	molprop.cpp
 	molprop_util.cpp

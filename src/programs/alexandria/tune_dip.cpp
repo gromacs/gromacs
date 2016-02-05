@@ -43,12 +43,12 @@
 
 // Alexandria stuff
 #include "gentop_core.h"
-#include "gentop_qgen.h"
 #include "moldip.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "mymol.h"
+#include "qgen_eem.h"
 #include "stringutil.h"
 
 static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,

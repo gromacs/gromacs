@@ -48,7 +48,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 
-#include "gmx_resp_atom.h"
+#include "qgen_resp_atom.h"
 #include "molprop.h"
 #include "poldata.h"
 
@@ -58,12 +58,12 @@ struct t_symtab;
 
 namespace alexandria
 {
-class Resp
+class QgenResp
 {
     public:
-        Resp();
+        QgenResp();
 
-        ~Resp();
+        ~QgenResp();
         
         ChargeDistributionModel chargeDistributionModel()
         { return _iDistributionModel; }
@@ -158,7 +158,7 @@ class Resp
                       matrix box, 
                       rvec   x[]);
 
-        void copyGrid(Resp &src);
+        void copyGrid(QgenResp &src);
 
         void calcRms();
 
@@ -179,7 +179,7 @@ class Resp
         void writeRho(const std::string &fn, 
                       const std::string &title);
 
-        void writeDiffCube(Resp                   &src,
+        void writeDiffCube(QgenResp                   &src,
                            const std::string      &cubeFn, 
                            const std::string      &histFn,
                            const std::string      &title, 
@@ -190,9 +190,7 @@ class Resp
                         const std::string      &title,
                         const gmx_output_env_t *oenv);
 
-        int  optimizeCharges(FILE *fp,  
-                             int   maxiter,
-                             real  toler,
+        int  optimizeCharges(int   maxiter,
                              real *rms);
 
         void potcomp(const std::string &potcomp,

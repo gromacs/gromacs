@@ -62,14 +62,14 @@
 
 #include "gauss_io.h"
 #include "gentop_core.h"
-#include "gentop_qgen.h"
 #include "gentop_vsite.h"
-#include "gmx_resp.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+#include "qgen_eem.h"
+#include "qgen_resp.h"
 #include "stringutil.h"
 
 static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)

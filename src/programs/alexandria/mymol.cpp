@@ -1098,7 +1098,7 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
                        static_cast<int>(gr_.nEsp()));
             }
             real chi2    = 0;
-            gr_.optimizeCharges(debug, maxiter, tolerance, &chi2);
+            gr_.optimizeCharges(maxiter, &chi2);
             for(int i = 0; i < topology_->atoms.nr; i++)
             {
                 topology_->atoms.atom[i].q = 
@@ -1897,9 +1897,9 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
     if ((NULL  != potfn) || (NULL != hisfn) || (NULL != rhofn) ||
         ((NULL != difffn) && (NULL != reffn)))
     {
-        char buf[256];
-        char *gentop_version = (char *)"v0.99b";
-        Resp  grref;
+        char      buf[256];
+        char     *gentop_version = (char *)"v0.99b";
+        QgenResp  grref;
         
         gr_.potcomp(pcfn, pdbdifffn, oenv);
     

@@ -945,9 +945,7 @@ void MolDip::CalcDeviation()
             mymol->chieq = chieq;
             if (eQ != eQGEN_OK)
             {
-                char buf[STRLEN];
-                qgen.message(STRLEN, buf, mymol->gr_);
-                fprintf(stderr, "%s\n", buf);
+                fprintf(stderr, "%s\n", qgen.message());
             }
             else
             {

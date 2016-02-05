@@ -82,7 +82,6 @@
 
 // alexandria stuff
 #include "gentop_core.h"
-#include "gentop_qgen.h"
 #include "gmx_simple_comm.h"
 #include "moldip.h"
 #include "molprop.h"
@@ -91,8 +90,8 @@
 #include "molselect.h"
 #include "mymol.h"
 #include "poldata.h"
-#include "poldata-low.h"
 #include "poldata_xml.h"
+#include "qgen_eem.h"
 #include "stringutil.h"
 
 /*! \brief Write a csv file containing molecule names and bond energy

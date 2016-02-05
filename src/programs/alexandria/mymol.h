@@ -48,12 +48,12 @@
 
 #include "gauss_io.h"
 #include "gentop_core.h"
-#include "gentop_qgen.h"
 #include "gentop_vsite.h"
-#include "gmx_resp.h"
 #include "molprop.h"
 #include "molselect.h"
 #include "poldata.h"
+#include "qgen_eem.h"
+#include "qgen_resp.h"
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
@@ -149,7 +149,7 @@ class MyMol
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
         gmx_enerdata_t           *enerd_;
-        Resp                      gr_;
+        QgenResp                  gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;
 

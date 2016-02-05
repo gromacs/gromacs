@@ -46,19 +46,18 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/topology/topology.h"
 #include "programs/alexandria/gauss_io.h"
-#include "programs/alexandria/gmx_resp.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
+#include "programs/alexandria/qgen_resp.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
-class EemTest : public gmx::test::CommandLineTestBase
+class RespTest : public gmx::test::CommandLineTestBase
 {
     protected:
         gmx::test::TestReferenceChecker checker_;
@@ -67,7 +66,7 @@ class EemTest : public gmx::test::CommandLineTestBase
         gmx_atomprop_t                  aps_;
 
         //init set tolecrance
-        EemTest () : checker_(this->rootChecker())
+        RespTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
             aps_ = gmx_atomprop_init();
@@ -102,7 +101,7 @@ class EemTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testEem(ChargeDistributionModel model)
+    void testResp(ChargeDistributionModel model, bool fitZeta)
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
@@ -113,22 +112,26 @@ class EemTest : public gmx::test::CommandLineTestBase
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, edih);
 
+            mp_.gr_.setOptions(model, 1993,
+                               fitZeta, 5, 100, 5, false,
+                               mp_.molProp()->getCharge(),
+                               -2, 2, false, 0);
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;
             char       *symm_string = (char *)"";
 
-            mp_.GenerateCharges(pd_, aps_, model, eqgEEM,
+            mp_.GenerateCharges(pd_, aps_, model, eqgRESP,
                                 hfac, epsr, lot, true, symm_string);
 
             std::vector<double> qtotValues;
-            for(int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
+            for (size_t atom = 0; atom < mp_.gr_.nAtom(); atom++)
             {
-                qtotValues.push_back(mp_.topology_->atoms.atom[atom].q);
+                qtotValues.push_back(mp_.gr_.getAtomCharge(atom));
             }
             char buf[256];
-            snprintf(buf, sizeof(buf), "qtotValuesEqdAlgorithm_%d",
-                     static_cast<int>(ChargeGenerationAlgorithm()));
+            snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
+                     static_cast<int>(mp_.gr_.chargeDistributionModel()));
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }
@@ -139,35 +142,28 @@ class EemTest : public gmx::test::CommandLineTestBase
 
 };
 
-TEST_F (EemTest, Bultinck)
+TEST_F (RespTest, AXpValues)
 {
-    testEem(eqdBultinck);
+    testResp(eqdAXp, false);
 }
 
-TEST_F (EemTest, Rappe)
+TEST_F (RespTest, AXgValues)
 {
-    testEem(eqdRappe);
+    testResp(eqdAXg, false);
 }
 
-TEST_F (EemTest, Yang)
+TEST_F (RespTest, AXgZetaValues)
 {
-    testEem(eqdYang);
+    testResp(eqdAXg, true);
 }
 
-// The tests below are outcommented since we do not have a parameters for the AX? methods.
-/*
-TEST_F (EemTest, AXp)
-{
-    testEem(eqdAXp);
-}
+//TEST_F (RespTest, AXsValues)
+//{
+//   testResp(eqdAXs, false);
+//}
 
-TEST_F (EemTest, AXg)
-{
-    testEem(eqdAXg);
-}
+//TEST_F (RespTest, AXsVZetaalues)
+//{
+//   testResp(eqdAXs, true);
+//}
 
-TEST_F (EemTest, AXs)
-{
-    testEem(eqdAXs);
-}
-*/

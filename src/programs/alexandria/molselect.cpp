@@ -26,11 +26,6 @@ const char *iMolSelectName(iMolSelect ims)
 namespace alexandria
 {
 
-static bool IMolSelectComp(const IMolSelect &a, const IMolSelect &b)
-{
-    return a.iupac().compare(b.iupac());
-}
-
 void MolSelect::read(const char *fn)
 {
     gmx::TextReader tr(fn);
@@ -71,7 +66,10 @@ void MolSelect::read(const char *fn)
         }
     }
     /* Sort the molecules for faster searching down below */
-    std::sort(ims_.begin(), ims_.end(), IMolSelectComp);
+    std::sort(ims_.begin(), ims_.end(), 
+              [](const IMolSelect &a, 
+                 const IMolSelect &b)
+              { return a.iupac() == b.iupac(); });
 }
 
 iMolSelect MolSelect::status(const std::string &iupac) const

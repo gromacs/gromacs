@@ -4,9 +4,9 @@
  */
 #include "gmxpre.h"
 
-#include "gentop_qgen.h"
+#include "qgen_eem.h"
 
-#include <ctype.h>
+#include <cctype>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -26,10 +26,9 @@
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/txtdump.h"
 
-#include "gmx_resp.h"
+#include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
-#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {
@@ -145,65 +144,6 @@ QgenEem::QgenEem(const Poldata &pd,
 QgenEem::~QgenEem()
 {
     sfree(_x);
-}
-
-void QgenEem::saveParams(Resp &gr)
-{
-    int i, j;
-    if (!_bAllocSave)
-    {
-        _qsave.resize(_natom);
-        _zetasave.resize(_natom);
-    }
-    for (i = 0; (i < _natom); i++)
-    {
-        if (!_bAllocSave)
-        {
-            _qsave[i].resize(_nZeta[i], 0);
-            _zetasave[i].resize(_nZeta[i], 0);
-        }
-        for (j = 0; (j < _nZeta[i]); j++)
-        {
-            if (gr.nAtom() > 0)
-            {
-                _q[i][j]    = (double)gr.getCharge(i, j);
-                _zeta[i][j] = gr.getZeta(i, j);
-                if (j == _nZeta[i]-1)
-                {
-                    _q[i][j] = gr.getAtomCharge(i);
-                }
-            }
-            _qsave[i][j]    = _q[i][j];
-            _zetasave[i][j] = _zeta[i][j];
-        }
-    }
-    _bAllocSave = true;
-}
-
-void QgenEem::restoreParams(Resp &gr)
-{
-    int i, j;
-
-    if (_bAllocSave)
-    {
-        for (i = 0; (i < _natom); i++)
-        {
-            for (j = 0; (j < _nZeta[i]); j++)
-            {
-                _q[i][j]    = _qsave[i][j];
-                _zeta[i][j] = _zetasave[i][j];
-                if (static_cast<int>(gr.nAtom()) == _natom)
-                {
-                    gr.setCharge(i, j, _q[i][j]);
-                    gr.setZeta(i, j, _zeta[i][j]);
-                }
-            }
-        }
-    }
-    else
-    {
-        fprintf(stderr, "WARNING: no ESP charges generated.\n");
-    }
 }
 
 int QgenEem::getNzeta( int atom)
@@ -707,32 +647,21 @@ void QgenEem::print(FILE *fp, t_atoms *atoms)
     }
 }
 
-void QgenEem::message( int len, char buf[], Resp &gr)
+const char *QgenEem::message() const
 {
     switch (_eQGEN)
     {
         case eQGEN_OK:
-            if (gr.nAtom() > 0)
-            {
-                gr.calcPot();
-                gr.calcRms();
-                gr.statistics( len, buf);
-            }
-            else
-            {
-                sprintf(buf, "Charge generation finished correctly.\n");
-            }
-            break;
+            return "Charge generation finished correctly";
         case eQGEN_NOTCONVERGED:
-            sprintf(buf, "Charge generation did not converge.\n");
-            break;
+            return "Charge generation did not converge.";
         case eQGEN_NOSUPPORT:
-            sprintf(buf, "No charge generation support for (some of) the atomtypes.\n");
-            break;
+            return "No charge generation support for (some of) the atomtypes.";
         case eQGEN_ERROR:
         default:
-            sprintf(buf, "Unknown status %d in charge generation.\n", _eQGEN);
+            return "Unknown status %d in charge generation";
     }
+    return nullptr;
 }
 
 void QgenEem::checkSupport(const Poldata &pd)

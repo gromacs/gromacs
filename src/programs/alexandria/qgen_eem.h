@@ -2,13 +2,16 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#ifndef GENTOP_QGEN_H
-#define GENTOP_QGEN_H
+#ifndef QGEN_EEM_H
+#define QGEN_EEM_H
 
-#include <stdio.h>
+#include <cstdio>
 
-#include "gmx_resp.h"
+#include "gromacs/math/vectypes.h"
+
 #include "poldata.h"
+
+struct t_atoms;
 
 enum {
     eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR
@@ -48,8 +51,8 @@ class QgenEem
                             t_atoms *atoms,
                             double tol, int maxiter);
 
-        void message(int len, char buf[],
-                     Resp &gr);
+        const char *message() const;
+        
         gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
 
         /* The routines below return NOTSET if something is out of the ordinary */
@@ -111,10 +114,6 @@ class QgenEem
         int generateChargesBultinck(FILE *fp,
                                     const Poldata &pd,
                                     t_atoms *atoms);
-        void saveParams(Resp &gr);
-
-        void restoreParams(Resp &gr);
-
         void calcRhs();
 };
 }

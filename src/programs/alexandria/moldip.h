@@ -7,7 +7,6 @@
 
 #include "gromacs/utility/real.h"
 
-#include "gentop_qgen.h"
 #include "mymol.h"
 
 typedef struct {

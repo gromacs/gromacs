@@ -39,10 +39,10 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-    gmx_respTest.cpp
     molpropTest.cpp
     poldataTest.cpp	
-    eem_qgenTest.cpp
+    qgen_eemTest.cpp
+    qgen_respTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>
     )

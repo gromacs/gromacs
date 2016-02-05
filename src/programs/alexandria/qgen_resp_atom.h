@@ -66,24 +66,34 @@ class RespAtom
      : atomnumber_(atomnumber), atype_(atype), q_(q), x_(x) 
     { qindex_ = -1; }
 
+    //! Return the atom type
         int atype() const { return atype_; }
 
+        //! Set the atom type
         void setAtype(int i) { atype_ = i; }
 
+        //! Return the atomic number
         int atomnumber() const { return atomnumber_; }
 
+        //! Set the atomic number
         void setAtomnumber(int i) { atomnumber_ = i; }
 
+        //! Return the charge
         double charge() const { return q_; }
 
+        //! Set the charge
         void setCharge(double value) { q_ = value; }
         
+        //! Return the coordinates
         const gmx::RVec &x() const { return x_; }
     
+        //! Set the coordinates
         void setX(const gmx::RVec &x) { x_ = x; }
         
+        //! Return the charge index in parameterization array
         int qIndex() const { return qindex_; }
         
+        //! Set the charge index
         void setQindex(int qi) { qindex_ = qi; }
     private:
         //! Atomic number

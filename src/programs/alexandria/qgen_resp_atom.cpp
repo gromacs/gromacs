@@ -2,13 +2,12 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmx_resp_atom.h"
+#include "qgen_resp_atom.h"
 
 #include "gromacs/topology/atoms.h"
 
-#include "gentop_qgen.h"
-#include "gmx_resp.h"
 #include "poldata.h"
+#include "qgen_resp.h"
 #include "stringutil.h"
 
 namespace alexandria

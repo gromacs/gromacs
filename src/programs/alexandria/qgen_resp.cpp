@@ -4,7 +4,7 @@
  */
 #include "gmxpre.h"
 
-#include "gmx_resp.h"
+#include "qgen_resp.h"
 
 #include <cctype>
 #include <cstdio>
@@ -39,15 +39,15 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/txtdump.h"
 
-#include "gentop_qgen.h"
+#include "coulombintegrals/coulombintegrals.h"
 #include "nmsimplex.h"
 #include "poldata.h"
+#include "qgen_eem.h"
 #include "stringutil.h"
-#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {
-Resp::Resp() 
+QgenResp::QgenResp() 
 {
     rnd_                = nullptr; 
     setOptions(eqdAXp, 0, false, 5, 100, -1, false,
@@ -61,18 +61,18 @@ Resp::Resp()
     _rDecrZeta          = true;
 }
 
-void Resp::setOptions(ChargeDistributionModel c,
-                      unsigned int            seed,
-                      bool                    fitZeta, 
-                      real                    zetaMin,
-                      real                    zetaMax,
-                      real                    deltaZeta,
-                      bool                    randomZeta,
-                      real                    qtot,
-                      real                    qmin,
-                      real                    qmax,
-                      bool                    randomQ,
-                      real                    watoms)
+void QgenResp::setOptions(ChargeDistributionModel c,
+                          unsigned int            seed,
+                          bool                    fitZeta, 
+                          real                    zetaMin,
+                          real                    zetaMax,
+                          real                    deltaZeta,
+                          bool                    randomZeta,
+                          real                    qtot,
+                          real                    qmin,
+                          real                    qmax,
+                          bool                    randomQ,
+                          real                    watoms)
 {
     _iDistributionModel = c;
     _bFitZeta           = fitZeta && (c != eqdAXp);
@@ -98,14 +98,14 @@ void Resp::setOptions(ChargeDistributionModel c,
     rnd_ = gmx_rng_init(seed);
 }
 
-Resp::~Resp()
+QgenResp::~QgenResp()
 {
     gmx_rng_destroy(rnd_);
 }
 
-void Resp::setAtomInfo(t_atoms                   *atoms, 
-                       const alexandria::Poldata &pd,
-                       const rvec                 x[])
+void QgenResp::setAtomInfo(t_atoms                   *atoms, 
+                           const alexandria::Poldata &pd,
+                           const rvec                 x[])
 {
     for (int i = 0; (i < atoms->nr); i++)
     {
@@ -132,8 +132,8 @@ void Resp::setAtomInfo(t_atoms                   *atoms,
     }
 }
 
-void Resp::summary(FILE             *fp,
-                   std::vector<int> &symmetricAtoms)
+void QgenResp::summary(FILE             *fp,
+                       std::vector<int> &symmetricAtoms)
 {
     if (NULL != fp)
     {
@@ -149,7 +149,7 @@ void Resp::summary(FILE             *fp,
     }
 }
 
-int Resp::addParam(size_t aindex, eParm eparm, size_t zz)
+int QgenResp::addParam(size_t aindex, eParm eparm, size_t zz)
 {
     int iParam = -1;
     if (eparm == eparmQ)
@@ -192,7 +192,7 @@ int Resp::addParam(size_t aindex, eParm eparm, size_t zz)
     return iParam;
 }
 
-void Resp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
+void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
 {
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
@@ -277,9 +277,9 @@ void Resp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
            static_cast<int>(nParam()), static_cast<int>(nAtom()));
 }
 
-void Resp::writeHisto(const std::string &fn,
-                      const std::string &title,
-                      const gmx_output_env_t *oenv)
+void QgenResp::writeHisto(const std::string &fn,
+                          const std::string &title,
+                          const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     gmx_stats_t gs;
@@ -309,12 +309,12 @@ void Resp::writeHisto(const std::string &fn,
     gmx_stats_free(gs);
 }
 
-void Resp::writeDiffCube(Resp              &src, 
-                         const std::string &cubeFn,
-                         const std::string &histFn, 
-                         const std::string &title, 
-                         const gmx_output_env_t *oenv,
-                         int rho)
+void QgenResp::writeDiffCube(QgenResp              &src, 
+                             const std::string &cubeFn,
+                             const std::string &histFn, 
+                             const std::string &title, 
+                             const gmx_output_env_t *oenv,
+                             int rho)
 {
     FILE       *fp;
     int         i, m, ix, iy, iz;
@@ -437,19 +437,19 @@ void Resp::writeDiffCube(Resp              &src,
     }
 }
 
-void Resp::writeCube(const std::string &fn, const std::string &title)
+void QgenResp::writeCube(const std::string &fn, const std::string &title)
 {
-    Resp dummy;
+    QgenResp dummy;
     writeDiffCube(dummy,  fn, NULL, title, NULL, 0);
 }
 
-void Resp::writeRho(const std::string &fn, const std::string &title)
+void QgenResp::writeRho(const std::string &fn, const std::string &title)
 {
-    Resp dummy;
+    QgenResp dummy;
     writeDiffCube(dummy,  fn, NULL, title, NULL, 1);
 }
 
-void Resp::readCube(const std::string &fn, bool bESPonly)
+void QgenResp::readCube(const std::string &fn, bool bESPonly)
 {
     int    natom, nxyz[DIM] = { 0, 0, 0 };
     double space[DIM] = { 0, 0, 0 };
@@ -572,7 +572,7 @@ void Resp::readCube(const std::string &fn, bool bESPonly)
     }
 }
 
-void Resp::copyGrid(Resp &src)
+void QgenResp::copyGrid(QgenResp &src)
 {
     int m;
 
@@ -592,7 +592,7 @@ void Resp::copyGrid(Resp &src)
     }
 }
 
-void Resp::makeGrid(real spacing, matrix box, rvec x[])
+void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
 {
     if (0 != nEsp())
     {
@@ -631,7 +631,7 @@ void Resp::makeGrid(real spacing, matrix box, rvec x[])
     }
 }
 
-void Resp::calcRho()
+void QgenResp::calcRho()
 {
     double pi32 = pow(M_PI, -1.5);
     if (_rho.size() < nEsp())
@@ -688,7 +688,7 @@ void Resp::calcRho()
     }
 }
 
-void Resp::calcPot()
+void QgenResp::calcPot()
 {
     std::fill(_potCalc.begin(), _potCalc.end(), 0.0);
     int nthreads = gmx_omp_get_max_threads();
@@ -753,13 +753,13 @@ void Resp::calcPot()
     }
 }
 
-void Resp::warning(const std::string fn, int line)
+void QgenResp::warning(const std::string fn, int line)
 {
     fprintf(stderr, "WARNING: It seems like you have two sets of ESP data in your file\n         %s\n", fn.c_str());
     fprintf(stderr, "         using the second set, starting at line %d\n", line);
 }
 
-void Resp::setVector(double *params)
+void QgenResp::setVector(double *params)
 {
     size_t n = 0;
 
@@ -810,7 +810,7 @@ void Resp::setVector(double *params)
     }
 }
 
-void Resp::getVector(double *params)
+void QgenResp::getVector(double *params)
 {
     double qtot = 0;
     for(auto &ra : ra_)
@@ -844,8 +844,8 @@ void Resp::getVector(double *params)
     }
 }
 
-void Resp::addEspPoint(double x, double y,
-                       double z, double V)
+void QgenResp::addEspPoint(double x, double y,
+                           double z, double V)
 {
     rvec e;
     e[XX] = x;
@@ -857,7 +857,7 @@ void Resp::addEspPoint(double x, double y,
     _potCalc.push_back(0);
 }
 
-real Resp::myWeight(size_t iatom) const
+real QgenResp::myWeight(size_t iatom) const
 {
     if (iatom < nAtom())
     {
@@ -869,7 +869,7 @@ real Resp::myWeight(size_t iatom) const
     }
 }
 
-void Resp::potLsq( gmx_stats_t lsq)
+void QgenResp::potLsq(gmx_stats_t lsq)
 {
     for(size_t i = 0; (i < nEsp()); i++)
     {
@@ -883,7 +883,7 @@ void Resp::potLsq( gmx_stats_t lsq)
     }
 }
 
-void Resp::calcRms()
+void QgenResp::calcRms()
 {
     double pot2, s2, sum2, w, wtot, entropy;
     char   buf[STRLEN];
@@ -923,7 +923,7 @@ void Resp::calcRms()
     _rrms = sqrt(sum2/pot2);
 }
 
-real Resp::getRms(real *wtot, real *rrms)
+real QgenResp::getRms(real *wtot, real *rrms)
 {
     calcRms();
     *wtot = _wtot;
@@ -938,7 +938,7 @@ real Resp::getRms(real *wtot, real *rrms)
     }
 }
 
-double Resp::calcPenalty()
+double QgenResp::calcPenalty()
 {
     double p, b2;
 
@@ -984,7 +984,7 @@ double Resp::calcPenalty()
 // Writen in C style, needed as an function argument
 double chargeFunction(void *gr, double v[])
 {
-    Resp *resp = (Resp *)gr;
+    QgenResp *resp = (QgenResp *)gr;
     real  rrms, rms  = 0;
     real  wtot;
 
@@ -996,7 +996,7 @@ double chargeFunction(void *gr, double v[])
     return rms + penalty;
 }
 
-void Resp::statistics( int len, char buf[])
+void QgenResp::statistics(int len, char buf[])
 {
     if (len >= 100)
     {
@@ -1159,8 +1159,7 @@ void LeastSquaresFit(int      ncolumn,
     free_matrix(aTa);
 }
 
-int Resp::optimizeCharges(FILE *fp,  int maxiter,
-                          real toler, real *rms)
+int QgenResp::optimizeCharges(int maxiter, real *rms)
 {
     if (_bFitZeta)
     {
@@ -1208,7 +1207,25 @@ int Resp::optimizeCharges(FILE *fp,  int maxiter,
     }
     else
     {
-        double **a = alloc_matrix(1+nEsp(), 1+nAtom());
+        int nrow      = nEsp();
+        // Increase number of rows for the symmetric atoms. E.g. 
+        // if we know that atoms 2, 3 and 4 have the same charge we
+        // add two equation q2 - q3 = 0 and q2 - q4 = 0.
+        // An extra row is needed to fix the total charge but this
+        // is taken into account in raparam_ already, that is it has
+        // at least one less charge parameter than there are atoms.
+        int nqparm = std::count_if(raparam_.begin(), raparam_.end(),
+                                   [](RespParam const &rp)
+                                   { return (rp.eParam() == eparmQ); });
+        nrow    += nAtom() - nqparm;
+        int ncolumn  = 1+nAtom();
+        int j0       = 0;
+        if (_watoms == 0)
+        {
+            j0    = nAtom();
+            nrow -= nAtom();
+        }
+        double **a = alloc_matrix(nrow, ncolumn);
         double  *x;
         std::vector<double> rhs = _pot;
         
@@ -1219,7 +1236,7 @@ int Resp::optimizeCharges(FILE *fp,  int maxiter,
             int                  atype = ra_[i].atype();
             RespAtomTypeIterator rat   = findRAT(atype);
             RVec                 rx    = ra_[i].x();
-            for(size_t j = 0; j < nEsp(); j++)
+            for(size_t j = j0; j < nEsp(); j++)
             {
                 double r2 = 0;
                 for(int m = 0; m < DIM; m++)
@@ -1255,15 +1272,17 @@ int Resp::optimizeCharges(FILE *fp,  int maxiter,
                     }
                     else
                     {
-                        a[j][i] += pot*ONE_4PI_EPS0;
+                        a[j-j0][i] += pot*ONE_4PI_EPS0;
                     }
                 }
             }
         }
+        
+        // Use the last row for the total charge
         double qtot = 0;
         for(size_t i = 0; i < nAtom(); i++)
         {
-            a[nEsp()][i] = -1;
+            a[nrow-1][i] = -1;
             int                  atype = ra_[i].atype();
             RespAtomTypeIterator rat   = findRAT(atype);
             for(auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
@@ -1271,12 +1290,12 @@ int Resp::optimizeCharges(FILE *fp,  int maxiter,
                 qtot += k->q();
             }
         }
-        for(size_t j = 0; j < nEsp(); j++)
+        for(size_t j = j0; j < nEsp(); j++)
         {
-            a[j][nAtom()] = 1;
+            a[j-j0][nAtom()] = 1;
         }
-        rhs.push_back(_qtot-qtot);
-        LeastSquaresFit(1+nAtom(), 1+nEsp(), a, x, rhs.data());
+        rhs.push_back(-(_qtot-qtot));
+        LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
         for(size_t i = 0; i < nAtom(); i++)
         {
             ra_[i].setCharge(x[i]);
@@ -1284,14 +1303,18 @@ int Resp::optimizeCharges(FILE *fp,  int maxiter,
         sfree(x);
         
         free_matrix(a);
+        calcPot();
+        real rrms, wtot;
+        real rms = getRms(&wtot, &rrms);
+        printf("RESP: RMS %g RRMS %g\n", rms , rrms);
         
         return eQGEN_OK;
     }
 }
 
-void Resp::potcomp(const std::string &potcomp,
-                   const std::string &pdbdiff,
-                   const gmx_output_env_t *oenv)
+void QgenResp::potcomp(const std::string &potcomp,
+                       const std::string &pdbdiff,
+                       const gmx_output_env_t *oenv)
 {
     double  pp, exp, eem;
     FILE   *fp;
@@ -1335,7 +1358,7 @@ void Resp::potcomp(const std::string &potcomp,
     }
 }
 
-double Resp::getAtomCharge(int atom) const
+double QgenResp::getAtomCharge(int atom) const
 {
     range_check(atom, 0, nAtom());
     double                    q     = ra_[atom].charge();
@@ -1348,7 +1371,7 @@ double Resp::getAtomCharge(int atom) const
     return q;
 }
 
-double Resp::getCharge(int atom, size_t zz) const
+double QgenResp::getCharge(int atom, size_t zz) const
 {
     range_check(atom, 0, nAtom());
     double                    q     = ra_[atom].charge();
@@ -1361,7 +1384,7 @@ double Resp::getCharge(int atom, size_t zz) const
     return q;
 }
 
-double Resp::getZeta(int atom, int zz) const
+double QgenResp::getZeta(int atom, int zz) const
 {
     range_check(atom, 0, nAtom());
     int atype = ra_[atom].atype();
@@ -1371,7 +1394,7 @@ double Resp::getZeta(int atom, int zz) const
     return (rat->beginRZ()+zz)->zeta();
 }
 
-void Resp::setCharge(int atom, int zz, double q)
+void QgenResp::setCharge(int atom, int zz, double q)
 {
     range_check(atom, 0, nAtom());
     int atype = ra_[atom].atype();
@@ -1380,7 +1403,7 @@ void Resp::setCharge(int atom, int zz, double q)
     (rat->beginRZ()+zz)->setQ(q);
 }
 
-void Resp::setZeta(int atom, int zz, double zeta)
+void QgenResp::setZeta(int atom, int zz, double zeta)
 {
     range_check(atom, 0, nAtom());
     int atype = ra_[atom].atype();
