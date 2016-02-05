@@ -366,17 +366,9 @@ compilation of OpenCL kernels, but they are also used in device selection.
         the same will happen with the OpenCL version soon)
 
 ``GMX_OCL_DUMP_LOG``
-        If defined, the OpenCL build log is always written to file.
-        The file is saved in the current directory with the name
-        ``OpenCL_kernel_file_name.build_status`` where
-        ``OpenCL_kernel_file_name`` is the name of the file containing the
-        OpenCL source code (usually ``nbnxn_ocl_kernels.cl``) and
-        build_status can be either SUCCEEDED or FAILED. If this
-        environment variable is not defined, the default behavior is
-        the following:
-
-           - Debug build: build log is always written to file
-	   - Release build: build log is written to file only in case of errors.
+        If defined, the OpenCL build log is always written to the
+        mdrun log file. Otherwise, the build log is written to the
+        log file only when an error occurs.
 
 ``GMX_OCL_VERBOSE``
         If defined, it enables verbose mode for OpenCL kernel build.

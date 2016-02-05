@@ -336,7 +336,7 @@ void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
     cl_error = clEnqueueWaitForEvents(stream, 1, ocl_event);
 #endif
 
-    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error));
+    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
 
     /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
     cl_error = clReleaseEvent(*ocl_event);
