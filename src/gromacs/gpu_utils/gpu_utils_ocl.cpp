@@ -142,7 +142,7 @@ static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
  *  \param[in] vendor_name String with OpenCL vendor name.
  *  \returns               ocl_vendor_id_t value for the input vendor_name
  */
-ocl_vendor_id_t get_vendor_id(char *vendor_name)
+static ocl_vendor_id_t get_vendor_id(char *vendor_name)
 {
     if (vendor_name)
     {
