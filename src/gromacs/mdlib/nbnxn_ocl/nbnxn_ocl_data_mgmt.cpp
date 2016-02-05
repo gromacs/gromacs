@@ -595,7 +595,7 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s:\n OpenCL error %d: %s",
                   rank,
                   devInfo->device_name,
-                  cl_error, ocl_get_error_string(cl_error));
+                  cl_error, ocl_get_error_string(cl_error).c_str());
         return;
     }
 
@@ -648,10 +648,10 @@ nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_lj));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_el));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
-    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error));
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 
     cl_error = clEnqueueNDRangeKernel(ls, zero_e_fshift, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error));
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
