@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1079,10 +1079,10 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
               t_bond_atomtype bat, char *line,
               warninp_t wi)
 {
-    const char  *formal = "%s%s%s%s%s%s%s%s";
+    const char  *formal = "%s%s%s%s%s%s%s%s%n";
 
     int          i, j, ft, ftype, nn, nrfp, nrfpA, nrfpB;
-    int          start;
+    int          start, nchar_consumed;
     int          nxcmap, nycmap, ncmap, read_cmap, sl, nct;
     char         s[20], alc[MAXATOMLIST+2][20];
     t_param      p;
@@ -1093,24 +1093,16 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     read_cmap = 0;
     start     = 0;
 
-    if ((nn = sscanf(line, formal, alc[0], alc[1], alc[2], alc[3], alc[4], alc[5], alc[6], alc[7])) != nral+3)
+    assert(nral == 5);
+
+    /* Here we can only check for < 8 */
+    if ((nn = sscanf(line, formal, alc[0], alc[1], alc[2], alc[3], alc[4], alc[5], alc[6], alc[7], &nchar_consumed)) < nral+3)
     {
         sprintf(errbuf, "Incorrect number of atomtypes for cmap (%d instead of 5)", nn-1);
         warning_error(wi, errbuf);
         return;
     }
-
-    /* Compute an offset for each line where the cmap parameters start
-     * ie. where the atom types and grid spacing information ends
-     */
-    for (i = 0; i < nn; i++)
-    {
-        start += (int)strlen(alc[i]);
-    }
-
-    /* There are nn-1 spaces between the atom types and the grid spacing info in the cmap.itp file */
-    /* start is the position on the line where we start to read the actual cmap grid data from the itp file */
-    start = start + nn -1;
+    start += nchar_consumed;
 
     ft     = strtol(alc[nral], NULL, 10);
     nxcmap = strtol(alc[nral+1], NULL, 10);
