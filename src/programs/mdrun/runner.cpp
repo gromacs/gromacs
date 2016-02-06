@@ -540,7 +540,9 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   gmx_bool                        bUseGPU)
 {
     /* For NVE simulations, we will retain the initial list buffer */
-    if (ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
+    if (EI_DYNAMICS(ir->eI) &&
+        ir->verletbuf_tol > 0 &&
+        !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
