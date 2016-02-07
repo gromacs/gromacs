@@ -75,6 +75,15 @@ static gmx_bool is_lp(t_atoms *atoms, int ai)
     return ((*(atoms->atomname[ai]))[0] == 'L');
 }
 
+static gmx_bool is_real_atom(t_atoms *atoms, int ai)
+{
+    gmx_bool    bReal;
+    /* Return true if it is not a Drude or LP, i.e. an actual atom */
+    /* bReal = atoms->atom[ai].ptype == eptAtom; */
+    bReal = !is_d(atoms, ai) && !is_lp(atoms, ai); 
+    return bReal;
+}
+
 #define DIHEDRAL_WAS_SET_IN_RTP 0
 static gmx_bool was_dihedral_set_in_rtp(t_param *dih)
 {
@@ -82,6 +91,28 @@ static gmx_bool was_dihedral_set_in_rtp(t_param *dih)
 }
 
 typedef gmx_bool (*peq)(t_param *p1, t_param *p2);
+
+
+typedef struct {
+    int ai, aj;
+} sortable;
+
+static int bond_sort (const void *a, const void *b)
+{
+    sortable *sa, *sb;
+
+    sa = (sortable *) a;
+    sb = (sortable *) b;
+
+    if (sa->ai == sb->ai)
+    {
+        return (sa->aj-sb->aj);
+    }
+    else
+    {
+        return (sa->ai-sb->ai);
+    }
+}
 
 static int acomp(const void *a1, const void *a2)
 {
@@ -462,51 +493,6 @@ static void clean_ang(t_param *ang, int *nang, t_atoms *atoms)
     sfree(index);
 }
 
-/* Clean up pairs - only really necessary for Drude FF */
-static void clean_pairs(t_param *pai, int *npai, t_atoms *atoms)
-{
-
-    int i, j;
-    int *index, nind;
-
-    /* construct list of pair indices */
-    snew(index, *npai+1);
-    nind = *npai;
-    for (i = 0; i < nind; i++)
-    {
-        index[i] = i;
-    }
-    index[nind] = *npai;
-
-    /* loop over pairs and remove any we don't want to keep,
-     * i.e. those with a Drude or LP at atom ai or aj */
-    j = 0;
-    for (i = 0; i < nind; i++)
-    {
-        gmx_bool    bKeep = TRUE;
-
-        if (is_d(atoms, pai[index[i]].ai()) || is_d(atoms, pai[index[i]].aj()) ||
-            is_lp(atoms, pai[index[i]].ai()) || is_lp(atoms, pai[index[i]].aj()))
-        {
-            bKeep = FALSE;
-        }
-
-        if (bKeep)
-        {
-            cpparam(&pai[j], &pai[index[i]]);
-            j++;
-        }
-    }
-
-    for (i = j; i < *npai; i++)
-    {
-        strcpy(pai[i].s, "");
-    }
-    *npai = j;
-
-    sfree(index);
-}
-
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper,
@@ -830,7 +816,434 @@ static void get_atomnames_min(int n, char **anm,
     }
 }
 
-static void add_drude_ssbonds_excl(t_atoms *atoms, t_excls *excls,
+/* Generate exclusions for Drudes and LP based on the two input atoms
+ * that are identified as real atoms in gen_pad() */
+static void gen_drude_lp_excl(t_atoms *atoms, t_excls *excls, int ai, int aj)
+{
+    int i, j;
+
+    /* In the loops used in the decision structure, we assume the following:
+     *  Atom order is Atom-Drude-LP1-LP2
+     *  There are no more than 2 LP carrying charge on a given atom
+     *  In DNA and RNA, sugars have 3 LP on O4' for anisotropy, but one is a dummy
+     *  so we only need to consider 1 LP (N) or 2 LP (O=)
+     */
+
+    /* In this block we always check against atoms->nr to make sure the atom is in bounds.
+     * Doing so avoids seg faults if (aj+i) > atoms->nr, e.g. the last atom is H or otherwise
+     * not polarizable (i.e. no Drudes or LP
+     */
+
+    /* Build H - LP/D excl */
+    if (is_hydro(atoms, ai) && !is_hydro(atoms, aj))
+    {
+        /* i = 0 is the parent atom itself, so start with i = 1 */
+        for (i = 1; i <= 3; i++)
+        {
+            if ((aj+i) < atoms->nr)
+            {
+                if (is_d(atoms, (aj+i)))
+                {
+                    srenew(excls[ai].e, excls[ai].nr+1);
+                    excls[ai].e[excls[ai].nr] = (aj+i);
+                    excls[ai].nr++;
+                }
+                else if (is_lp(atoms, (aj+i)))
+                {
+                    srenew(excls[ai].e, excls[ai].nr+1);
+                    excls[ai].e[excls[ai].nr] = (aj+i);
+                    excls[ai].nr++;
+                    /* exclude second LP from first LP, Drude, and parent atom */
+                    /* if a LP is at position i = 3, then there must be a preceding Drude and LP */
+                    if (i == 3)
+                    {
+                        /* LP2 - Atom */
+                        srenew(excls[aj].e, excls[aj].nr+1);
+                        excls[aj].e[excls[aj].nr] = (aj+i);
+                        excls[aj].nr++;
+                        /* LP2 - Drude */
+                        srenew(excls[aj+1].e, excls[aj+1].nr+1);
+                        excls[aj+1].e[excls[aj+1].nr] = (aj+i);
+                        excls[aj+1].nr++;
+                        /* LP2 - LP1 */
+                        srenew(excls[aj+2].e, excls[aj+2].nr+1);
+                        excls[aj+2].e[excls[aj+2].nr] = (aj+i);
+                        excls[aj+2].nr++;
+                    }
+                    /* Some atoms (like N) have only one LP, so we build LP-atom and LP-Drude exclusions here */
+                    if (i == 2)
+                    {
+                        /* LP1 - Atom */
+                        srenew(excls[aj].e, excls[aj].nr+1);
+                        excls[aj].e[excls[aj].nr] = (aj+i);
+                        excls[aj].nr++;
+                        /* LP1 - Drude */
+                        srenew(excls[aj+1].e, excls[aj+1].nr+1);
+                        excls[aj+1].e[excls[aj+1].nr] = (aj+i);
+                        excls[aj+1].nr++;
+                    }
+                }
+            }
+        }
+    }
+    /* Build LP/D - H excl */
+    else if (!is_hydro(atoms, ai) && is_hydro(atoms, aj))
+    {
+        for (i = 1; i <= 3; i++)
+        {
+            /* This check shouldn't be necessary as ai < aj due to number swap in
+             * construct_drude_lp(), but just in case */
+            if ((ai+i) < atoms->nr)
+            {
+                if (is_d(atoms, (ai+i)))
+                {
+                    srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                    excls[ai+i].e[excls[ai+i].nr] = aj;
+                    excls[ai+i].nr++;
+                }
+                else if (is_lp(atoms, (ai+i)))
+                {
+                    srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                    excls[ai+i].e[excls[ai+i].nr] = aj;
+                    excls[ai+i].nr++;
+                    /* same as above */
+                    if (i == 3)
+                    {
+                        /* to guard against bizarre cases, check identities */
+                        /* LP2 - Atom */
+                        srenew(excls[ai].e, excls[ai].nr+1);
+                        excls[ai].e[excls[ai].nr] = (ai+i);
+                        excls[ai].nr++;
+                        /* LP2 - Drude */
+                        if (is_d(atoms, (ai+1)))
+                        {
+                            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+                            excls[ai+1].e[excls[ai+1].nr] = (ai+i);
+                            excls[ai+1].nr++;
+                        }
+                        /* LP2 - LP1 */
+                        if (is_lp(atoms, (ai+2)))
+                        {
+                            srenew(excls[ai+2].e, excls[ai+2].nr+1);
+                            excls[ai+2].e[excls[ai+2].nr] = (ai+i);
+                            excls[ai+2].nr++;
+                        }
+                    }
+                    /* same as above */
+                    if (i == 2)
+                    {
+                        /* LP1 - Atom */
+                        srenew(excls[ai].e, excls[ai].nr+1);
+                        excls[ai].e[excls[ai].nr] = (ai+i);
+                        excls[ai].nr++;
+                        /* LP1 - Drude */
+                        if (is_d(atoms, (ai+1)))
+                        {
+                            srenew(excls[ai+1].e, excls[ai+1].nr+1);
+                            excls[ai+1].e[excls[ai+1].nr] = (ai+i);
+                            excls[ai+1].nr++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /* Build heavy atom/LP/D - heavy atom/LP/D excl */
+    else if (!is_hydro(atoms, ai) && !is_hydro(atoms, aj))
+    {
+        /* Loop over all possible combinations of atom/D/LP. Duplicates are cleaned up
+         * after sorting in construct_drude_lp() */
+        for (i = 0; i <= 3; i++)
+        {
+            for (j = 0; j <= 3; j++)
+            {
+                /* check both atoms */
+                if (((ai+i) < atoms->nr) && ((aj+j) < atoms->nr))
+                {
+                    if (is_real_atom(atoms, (ai+i)) && (!is_hydro(atoms, (ai+i))))
+                    {
+                        if (is_d(atoms, (aj+j)))
+                        {
+                            /* atom - Drude */
+                            srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                            excls[ai+i].e[excls[ai+i].nr] = (aj+j);
+                            excls[ai+i].nr++;
+                        }
+                    }
+                    else if (is_d(atoms, (ai+i)))
+                    {
+                        /* We already know ai and aj are real (here, non-hydrogen) atoms, so
+                         * the decisions here are to generate Drude-Drude and Drude-atom 
+                         * exclusions and decide if there are Drude-LP to be built */
+                        /* Use !is_hydro() here because this part of the function should
+                         * only be generating LP/Drude-heavy atom or heavy atom-Drude/LP exclusions */
+                        if ((is_real_atom(atoms, (aj+j)) && !is_hydro(atoms, (aj+j))) || is_d(atoms, (aj+j)))
+                        {
+                            /* Drude - atom or Drude - Drude */
+                            srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                            excls[ai+i].e[excls[ai+i].nr] = (aj+j);
+                            excls[ai+i].nr++;
+                        }
+                        if (is_lp(atoms, (aj+j)))
+                        {
+                            /* atom - LP */
+                            srenew(excls[ai].e, excls[ai].nr+1);
+                            excls[ai].e[excls[ai].nr] = (aj+j);
+                            excls[ai].nr++;
+                            /* Drude - LP */
+                            srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                            excls[ai+i].e[excls[ai+i].nr] = (aj+j);
+                            excls[ai+i].nr++;
+                            if (j == 3)
+                            {
+                                /* to guard against bizarre cases, check atom identities */
+                                /* LP2 - atom */
+                                srenew(excls[aj].e, excls[aj].nr+1);
+                                excls[aj].e[excls[aj].nr] = (aj+j);
+                                excls[aj].nr++;
+                                /* LP2 - Drude */
+                                if (is_d(atoms, (aj+1)))
+                                {
+                                    srenew(excls[aj+1].e, excls[aj+1].nr+1);
+                                    excls[aj+1].e[excls[aj+1].nr] = (aj+j);
+                                    excls[aj+1].nr++;
+                                }
+                                /* LP2 - LP1 */
+                                if (is_lp(atoms, (aj+2)))
+                                {
+                                    srenew(excls[aj+2].e, excls[aj+2].nr+1);
+                                    excls[aj+2].e[excls[aj+2].nr] = (aj+j);
+                                    excls[aj+2].nr++;
+                                }
+                            }
+                            if (j == 2)
+                            {
+                                /* LP1 - atom */
+                                srenew(excls[aj].e, excls[aj].nr+1);
+                                excls[aj].e[excls[aj].nr] = (aj+j);
+                                excls[aj].nr++;
+                                /* LP1 - Drude */
+                                if (is_d(atoms, (aj+1)))
+                                {
+                                    srenew(excls[aj+1].e, excls[aj+1].nr+1);
+                                    excls[aj+1].e[excls[aj+1].nr] = (aj+j);
+                                    excls[aj+1].nr++;
+                                }
+                            }
+                        }
+                    }
+                    else if (is_lp(atoms, ai+i))
+                    {
+                        if (is_real_atom(atoms, (aj+j)) || is_d(atoms, (aj+j)))
+                        {
+                            /* LP - atom or LP - Drude */
+                            srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                            excls[ai+i].e[excls[ai+i].nr] = (aj+j);
+                            excls[ai+i].nr++;
+                        }
+                        if (is_lp(atoms, (aj+j)))
+                        {
+                            /* LP - LP */
+                            srenew(excls[ai+i].e, excls[ai+i].nr+1);
+                            excls[ai+i].e[excls[ai+i].nr] = (aj+j);
+                            excls[ai+i].nr++;
+                        }
+                        if (i == 3)
+                        {
+                            /* LP2 - atom */
+                            srenew(excls[ai].e, excls[ai].nr+1);
+                            excls[ai].e[excls[ai].nr] = (ai+i);
+                            excls[ai].nr++;
+                            /* LP2 - Drude */
+                            if (is_d(atoms, (ai+1)))
+                            {
+                                srenew(excls[ai+1].e, excls[ai+1].nr+1);
+                                excls[ai+1].e[excls[ai+1].nr] = (ai+i);
+                                excls[ai+1].nr++;
+                            }
+                            /* LP2 - LP1 */
+                            if (is_lp(atoms, (ai+2)))
+                            {
+                                srenew(excls[ai+2].e, excls[ai+2].nr+1);
+                                excls[ai+2].e[excls[ai+2].nr] = (ai+i);
+                                excls[ai+2].nr++;
+                            }
+                        }
+                        if (i == 2)
+                        {
+                            /* LP1 - atom */
+                            srenew(excls[ai].e, excls[ai].nr+1);
+                            excls[ai].e[excls[ai].nr] = (ai+i);
+                            excls[ai].nr++;
+                            /* LP1 - Drude */
+                            if (is_d(atoms, (ai+1)))
+                            {
+                                srenew(excls[ai+1].e, excls[ai+1].nr+1);
+                                excls[ai+1].e[excls[ai+1].nr] = (ai+i);
+                                excls[ai+1].nr++;
+                            }
+                        }
+                    }
+                    /* should never happen, but just in case */
+                    else
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        /* H - H, nothing to do */
+        return;
+    }
+}
+
+/* Uses the nnb structure to generate bonded exclusions, and subsequently
+ * calls gen_drude_lp_excl to update t_excls */
+void construct_drude_lp_excl(t_nextnb *nnb, t_atoms *atoms, t_excls *excls)
+{
+    int i, j, i1, i2, itmp;
+
+    int nre, nrs, nrx;  /* counters */
+    int j_index;        /* just a counter */
+    int nex;            /* total number of exclusions */
+    sortable *s;
+
+    /* sort and remove duplicates using nnb */
+    for (i = 0; i < nnb->nr; i++)
+    {
+        nex = 0;
+        /* start with j=1 because we don't care about self exclusions */
+        for (j = 1; j < nnb->nrex; j++)
+        {
+            nex += nnb->nrexcl[i][j];
+        }    
+
+        if (debug)
+        {
+            fprintf(debug, "Total nr of excl on atom %d: %d\n", (i+1), nex);
+        }
+        snew(s, nex);
+
+        nrs = 0;
+        /* Again, starting with non-self exclusions */
+        for (nre = 1; nre < nnb->nrex; nre++)
+        {
+            for (nrx = 0; nrx < nnb->nrexcl[i][nre]; nrx++)
+            {
+                s[nrs].ai = i;
+                s[nrs].aj = nnb->a[i][nre][nrx];
+                nrs++;
+            }
+        }
+
+        /* sort */
+        if (nrs != nex)
+        {
+            gmx_incons("Generating exclusions for Drudes");
+        }
+        if (nex > 1)
+        {
+            qsort ((void *)s, nex, (size_t)sizeof(s[0]), bond_sort);
+        }
+
+        /* remove duplicates */
+        j_index = 0;
+        if (nex > 0)
+        {
+            for (j = 1; j < nex; j++)
+            {
+                if ((s[j].ai != s[j-1].ai) || (s[j].aj != s[j-1].aj))
+                {
+                    s[j_index++] = s[j-1];
+                }
+            }
+            s[j_index++] = s[j-1];
+        }
+        nex = j_index;
+
+        /* resize after removal of duplicates */
+        excls[i].nr = nex;
+        srenew(excls[i].e, nex);
+        /* put the cleaned exclusions into the array */
+        for (nrs = 0; nrs < nex; nrs++)
+        {
+            excls[i].e[nrs] = s[nrs].aj;
+        }
+    }
+
+    /* Now, we are ready to generate the Drude and LP exclusions, which are
+     * the same as those of the parent atoms */
+    for (i = 0; i < atoms->nr; i++)
+    {
+        /* loop over the exclusions for each atom */
+        for (j = 0; j < excls[i].nr; j++)
+        {
+            i1 = i;
+            i2 = excls[i].e[j];
+
+            if (i1 > i2)
+            {
+                itmp = i1;
+                i1   = i2;
+                i2   = itmp;
+            }
+            if (is_real_atom(atoms, i1) && is_real_atom(atoms, i2))
+            {
+                gen_drude_lp_excl(atoms, excls, i1, i2);
+            }
+        }
+    }
+
+    /* sort and remove duplicates now that Drude and LP exclusions have been built */
+    for (i = 0; i < atoms->nr; i++)
+    {           
+        nex = 0;
+        nrs = 0;
+        if (excls[i].nr > 1)
+        {
+            nex = excls[i].nr;
+            qsort(excls[i].e, excls[i].nr, (size_t)sizeof(int), int_comp);
+
+            /* remove duplicates, as above */
+            snew(s, nex);
+            for (j = 0; j < nex; j++)
+            {
+                s[j].ai = i;
+                s[j].aj = excls[i].e[j];
+                nrs++;
+            }
+            if (nrs != nex)
+            {
+                gmx_incons("Sorting and cleaning Drude exclusions");
+            }
+            j_index = 0;
+            if (nex > 0)
+            {
+                for (j = 1; j < nex; j++)
+                {
+                    if ((s[j].ai != s[j-1].ai) || (s[j].aj != s[j-1].aj))
+                    {
+                        s[j_index++] = s[j-1];
+                    }
+                }
+                s[j_index++] = s[j-1];
+            }
+            nex = j_index;
+            /* resize excls and finish */
+            excls[i].nr = nex;
+            srenew(excls[i].e, nex);
+            for (nrs = 0; nrs < nex; nrs++)
+            {
+                excls[i].e[nrs] = s[nrs].aj;
+            }
+        }
+    }  
+}
+
+static void gen_drude_ssbonds_excl(t_atoms *atoms, t_excls *excls,
                                    int nssbonds, t_ssbond *ssbonds, 
                                    gmx_bool bAllowMissing)
 {
@@ -1077,9 +1490,13 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
                         i1   = i2;
                         i2   = itmp;
                     }
-                    srenew(excls[i1].e, excls[i1].nr+1);
-                    excls[i1].e[excls[i1].nr] = i2;
-                    excls[i1].nr++;
+                    /* Consider only atoms here, do Drudes and LP below in a separate function - cleaner! */
+                    if (is_real_atom(atoms, i1) && is_real_atom(atoms, i2))
+                    {
+                        srenew(excls[i1].e, excls[i1].nr+1);
+                        excls[i1].e[excls[i1].nr] = i2;
+                        excls[i1].nr++;
+                    }
                 }
             }
 
@@ -1087,10 +1504,12 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
+    /* Consider moving, may be unnecessary in light of gen_drude_lp_excl(), which
+     * should cover -S-S- bridges */
     /* special Drude exclusions in case of disulfides */
     if (bDrude)
     {
-        add_drude_ssbonds_excl(atoms, excls, nssbonds, ssbonds, bAllowMissing);
+        gen_drude_ssbonds_excl(atoms, excls, nssbonds, ssbonds, bAllowMissing);
     }
 
     for (a = 0; a < atoms->nr; a++)
@@ -1481,12 +1900,119 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 maxpai += ninc;
                                                 srenew(pai, maxpai);
                                             }
-                                            pai[npai].ai() = i1;
-                                            pai[npai].aj() = i2;
-                                            pai[npai].c0() = NOTSET;
-                                            pai[npai].c1() = NOTSET;
-                                            set_p_string(&(pai[npai]), "");
-                                            npai++;
+                                            /* Prevent Drudes and LP being counted in 1-4. We deal with those separately below
+                                             * and only in the case of a polarizable system (e.g. bDrude == TRUE) */
+                                            if (is_real_atom(atoms, i1) && is_real_atom(atoms, i2))
+                                            {
+                                                if (debug)
+                                                {
+                                                    fprintf(debug, "In gen_pad: found real atoms %d and %d for pair.\n", (i1+1), (i2+1));
+                                                }
+                                                pai[npai].ai() = i1;
+                                                pai[npai].aj() = i2;
+                                                pai[npai].c0() = NOTSET;
+                                                pai[npai].c1() = NOTSET;
+                                                set_p_string(&(pai[npai]), "");
+                                                npai++;
+
+                                                /* Drudes and LP have the same pairs as the parent atom */
+                                                /* Through this block, we check against atoms->nr to avoid
+                                                 * a seg fault if we simply assume that i2+1/+2/etc. exist */
+                                                if (bDrude)
+                                                {
+                                                    /* Drude */
+                                                    if ((i1+1) < atoms->nr)
+                                                    {
+                                                        if (is_d(atoms, (i1+1)))
+                                                        {
+                                                            pai[npai].ai() = i1+1;
+                                                            pai[npai].aj() = i2;
+                                                            pai[npai].c0() = NOTSET;
+                                                            pai[npai].c1() = NOTSET;
+                                                            set_p_string(&(pai[npai]), "");
+                                                            npai++;
+                                                            /* Drude-atom above, atom-Drude below, do Drude-Drude here */
+                                                            if ((i2+1) < atoms->nr)
+                                                            {
+                                                                if (is_d(atoms, (i2+1)))
+                                                                {
+                                                                    pai[npai].ai() = i1+1;
+                                                                    pai[npai].aj() = i2+1;
+                                                                    pai[npai].c0() = NOTSET;
+                                                                    pai[npai].c1() = NOTSET;
+                                                                    set_p_string(&(pai[npai]), "");
+                                                                    npai++;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    /* Lone pairs, which can be i1+2 or i1+3 (atom-Drude-LP1-LP2) */
+                                                    if ((i1+2) < atoms->nr)
+                                                    {
+                                                        if ((is_lp(atoms, (i1+2))) && (is_d(atoms, (i1+1))))
+                                                        {
+                                                            pai[npai].ai() = i1+2;
+                                                            pai[npai].aj() = i2;
+                                                            pai[npai].c0() = NOTSET;
+                                                            pai[npai].c1() = NOTSET;
+                                                            set_p_string(&(pai[npai]), "");
+                                                            npai++;
+                                                        }
+                                                    }
+                                                    if ((i1+3) < atoms->nr)
+                                                    {
+                                                        if ((is_lp(atoms, (i1+3))) && (is_d(atoms, (i1+1))))
+                                                        {
+                                                            pai[npai].ai() = i1+3;
+                                                            pai[npai].aj() = i2;
+                                                            pai[npai].c0() = NOTSET;
+                                                            pai[npai].c1() = NOTSET;
+                                                            set_p_string(&(pai[npai]), "");
+                                                            npai++;
+                                                        }
+                                                    }
+                                                    if (!(is_hydro(atoms, i2)) && (i2 < atoms->nr))
+                                                    {
+                                                        if ((i2+1) < atoms->nr)
+                                                        {
+                                                            if (is_d(atoms, (i2+1)))
+                                                            {
+                                                                pai[npai].ai() = i1;
+                                                                pai[npai].aj() = i2+1;
+                                                                pai[npai].c0() = NOTSET;
+                                                                pai[npai].c1() = NOTSET;
+                                                                set_p_string(&(pai[npai]), "");
+                                                                npai++;
+                                                            }
+                                                        }
+                                                        /* Lone pairs, which can be i1+2 or i1+3 (atom-Drude-LP1-LP2) */
+                                                        if ((i2+2) < atoms->nr)
+                                                        {
+                                                            if ((is_lp(atoms, (i2+2))) && (is_d(atoms, (i2+1))))
+                                                            {
+                                                                pai[npai].ai() = i1;
+                                                                pai[npai].aj() = i2+2;
+                                                                pai[npai].c0() = NOTSET;
+                                                                pai[npai].c1() = NOTSET;
+                                                                set_p_string(&(pai[npai]), "");
+                                                                npai++;
+                                                            }
+                                                        }
+                                                        if ((i2+3) < atoms->nr)
+                                                        {
+                                                            if ((is_lp(atoms, (i2+3))) && (is_d(atoms, (i2+1))))
+                                                            {
+                                                                pai[npai].ai() = i1;
+                                                                pai[npai].aj() = i2+3;
+                                                                pai[npai].c0() = NOTSET;
+                                                                pai[npai].c1() = NOTSET;
+                                                                set_p_string(&(pai[npai]), "");
+                                                                npai++;
+                                                            }
+                                                        }
+                                                    }
+                                                } /* end if bDrude */
+                                            }
                                         }
                                     }
                                 }
@@ -1625,9 +2151,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
          */
         fprintf(stderr, "Before cleaning: %d pairs\n", npai);
         rm2par(pai, &npai, preq);
-
-        /* removes pairs with Drudes or LP */
-        clean_pairs(pai, &npai, atoms);
     }
 
     /* Get the impropers from the database */

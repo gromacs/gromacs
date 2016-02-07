@@ -52,4 +52,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              int nssbonds, t_ssbond *ssbonds,
              gmx_bool bAllowMissing, gmx_bool bDrude);
 
+void construct_drude_lp_excl(t_nextnb *nnb, t_atoms *atoms, t_excls *excls);
+
 #endif
