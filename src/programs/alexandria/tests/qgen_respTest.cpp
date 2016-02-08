@@ -96,7 +96,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.molProp()->Merge(vmp.begin());
             
             gmx::test::FloatingPointTolerance tolerance(
-                                                        gmx::test::relativeToleranceAsUlp(1.0, 8));
+                                                        gmx::test::relativeToleranceAsUlp(1.0, 200));
             checker_.setDefaultTolerance(tolerance);
         }
 
