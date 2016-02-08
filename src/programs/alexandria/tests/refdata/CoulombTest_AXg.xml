@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Potential-AXg">
+    <Int Name="Length">9</Int>
+    <Real>4.5124405204298945</Real>
+    <Real>3.8478476121097196</Real>
+    <Real>3.0932057022495667</Real>
+    <Real>2.4588442166382323</Real>
+    <Real>1.9945671066745825</Real>
+    <Real>1.6661317011349743</Real>
+    <Real>1.4285328537601487</Real>
+    <Real>1.2499979867832083</Real>
+    <Real>1.1111110356612084</Real>
+  </Sequence>
+  <Sequence Name="Force-AXg">
+    <Int Name="Length">9</Int>
+    <Real>-5.1534400668324736</Real>
+    <Real>-7.5848787971435208</Real>
+    <Real>-7.1482617975793303</Real>
+    <Real>-5.4732757103663685</Real>
+    <Real>-3.8822374068403711</Real>
+    <Real>-2.7645564277309895</Real>
+    <Real>-2.0397402171798173</Real>
+    <Real>-1.5624372408853127</Real>
+    <Real>-1.2345652970033372</Real>
+  </Sequence>
+  <Sequence Name="NuclearPotential-AXg">
+    <Int Name="Length">9</Int>
+    <Real>5.2049987781304647</Real>
+    <Real>4.2135039647485737</Real>
+    <Real>3.2203504882510354</Real>
+    <Real>2.4883056625473818</Real>
+    <Real>1.99918609596511</Real>
+    <Real>1.6666298491716689</Real>
+    <Real>1.4285703670023251</Real>
+    <Real>1.2499999807284274</Real>
+    <Real>1.1111111108926488</Real>
+  </Sequence>
+  <Sequence Name="NuclearForce-AXg">
+    <Int Name="Length">9</Int>
+    <Real>-8.110858834532408</Real>
+    <Real>-10.689832388227998</Real>
+    <Real>-8.7523301404429628</Real>
+    <Real>-5.962426839442303</Real>
+    <Real>-3.9765893496266931</Real>
+    <Real>-2.7765559731865581</Real>
+    <Real>-2.0407762426691973</Real>
+    <Real>-1.5624991822708671</Real>
+    <Real>-1.2345678909290214</Real>
+  </Sequence>
+</ReferenceData>

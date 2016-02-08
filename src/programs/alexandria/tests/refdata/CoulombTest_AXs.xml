@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Potential-AXs">
+    <Int Name="Length">9</Int>
+    <Real>5.7637290944563961</Real>
+    <Real>4.4082920261291347</Real>
+    <Real>3.2527904190300774</Real>
+    <Real>2.4900220448218486</Real>
+    <Real>1.9988575793189236</Real>
+    <Real>1.6665432961109734</Real>
+    <Real>1.4285586589699764</Real>
+    <Real>1.2499987182759762</Real>
+    <Real>1.1111109853120129</Real>
+  </Sequence>
+  <Sequence Name="Force-AXs">
+    <Int Name="Length">9</Int>
+    <Real>11.923441295874945</Real>
+    <Real>13.452309451631193</Real>
+    <Real>9.4663222539996585</Real>
+    <Real>6.0373270025288361</Real>
+    <Real>3.9748718186099019</Real>
+    <Real>2.7750029285451241</Real>
+    <Real>2.0405245252838706</Real>
+    <Real>1.5624703764417118</Real>
+    <Real>1.2345649696778096</Real>
+  </Sequence>
+  <Sequence Name="NuclearPotential-AXs">
+    <Int Name="Length">9</Int>
+    <Real>8.0042050276329242</Real>
+    <Real>4.8600943001666597</Real>
+    <Real>3.3218856842715576</Real>
+    <Real>2.4990179333208826</Real>
+    <Real>1.9999139810270534</Real>
+    <Real>1.6666590489982867</Real>
+    <Real>1.4285707495515048</Real>
+    <Real>1.2499999392198418</Real>
+    <Real>1.1111111056550567</Real>
+  </Sequence>
+  <Sequence Name="NuclearForce-AXs">
+    <Int Name="Length">9</Int>
+    <Real>43.029125334248945</Real>
+    <Real>21.436519527774326</Real>
+    <Real>10.82807213575764</Real>
+    <Real>6.2260070950981152</Real>
+    <Real>3.9979109677998683</Real>
+    <Real>2.7775934054300762</Real>
+    <Real>2.0407999268579209</Real>
+    <Real>1.5624985341087332</Real>
+    <Real>1.2345677697755104</Real>
+  </Sequence>
+</ReferenceData>

@@ -39,6 +39,7 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    coulombTest.cpp
     molpropTest.cpp
     poldataTest.cpp	
     qgen_eemTest.cpp
