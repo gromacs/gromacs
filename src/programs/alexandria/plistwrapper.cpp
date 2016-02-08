@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <algorithm>
 #include <vector>
 
 #include "gromacs/topology/ifunc.h"
@@ -17,24 +18,18 @@
 namespace alexandria
 {
 
-std::vector<PlistWrapper>::iterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
+PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
-    std::vector<PlistWrapper>::iterator pw;
-    for (pw = plist.begin(); (pw < plist.end() && pw->getFtype() != ftype); ++pw)
-    {
-        ;
-    }
-    return pw;
+    return std::find_if(plist.begin(), plist.end(),
+                        [ftype](PlistWrapper &p) 
+                        { return p.getFtype() == ftype; });
 }
 
 unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
-    std::vector<PlistWrapper>::iterator pw = SearchPlist(plist, ftype);
-    if (plist.end() != pw)
-    {
-        return pw->nParam();
-    }
-    return 0;
+    return std::count_if(plist.begin(), plist.end(),
+                         [ftype](PlistWrapper &p) 
+                         { return p.getFtype() == ftype; });
 }
 
 void delete_params(std::vector<PlistWrapper> &plist_,

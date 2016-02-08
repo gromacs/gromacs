@@ -1225,14 +1225,12 @@ int QgenResp::optimizeCharges(int maxiter, real *rms)
             nrow -= nAtom();
         }
         double **a = alloc_matrix(nrow, ncolumn);
-        double  *x;
         std::vector<double> rhs;
         
         for(size_t j = j0; j < nEsp(); j++)
         {
             rhs.push_back(_pot[j]);
         }
-        snew(x, ncolumn);
         
         for(size_t i = 0; i < nAtom(); i++)
         {
@@ -1309,7 +1307,7 @@ int QgenResp::optimizeCharges(int maxiter, real *rms)
             a[nrow-1][i] = factor;
             int                  atype = ra_[i].atype();
             RespAtomTypeIterator rat   = findRAT(atype);
-            for(auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+            for(auto k = rat->beginRZ(); k < rat->endRZ() -1; ++k)
             {
                 qtot += k->q();
             }
@@ -1331,6 +1329,8 @@ int QgenResp::optimizeCharges(int maxiter, real *rms)
                 fprintf(debug, "  %8g\n", rhs[i]);
             }
         }
+        double  *x;
+        snew(x, ncolumn);
         LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
         for(size_t i = 0; i < nAtom(); i++)
         {

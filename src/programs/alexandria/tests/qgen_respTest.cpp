@@ -115,7 +115,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             mp_.gr_.setOptions(model, 1993,
                                fitZeta, 5, 100, 5, false,
                                mp_.molProp()->getCharge(),
-                               -2, 2, false, 0);
+                               -3, 3, false, 0);
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;

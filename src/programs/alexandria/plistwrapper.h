@@ -18,22 +18,37 @@ typedef std::vector<t_param>::iterator ParamIterator;
 class PlistWrapper
 {
     private:
+    //! Function type
         int                  ftype_;
+        //! Array of parameters
         std::vector<t_param> p_;
     public:
-        PlistWrapper(int ftype) { setFtype(ftype); }
-        ~PlistWrapper() {};
+        //! Constructor
+        PlistWrapper(int ftype) :ftype_(ftype) {}
+       
+        //! Add one parameter
         void addParam(t_param p) { p_.push_back(p); }
+        
+        //! Return the function type
         int getFtype() { return ftype_; }
-        void setFtype(int ftype) { ftype_ = ftype; }
+
+        //! Loop over parameters        
         ParamIterator beginParam() { return p_.begin(); }
+        
+        //! Loop over parameters        
         ParamIterator endParam() { return p_.end(); }
+        
+        //! Remove one parameter from the array and return array for next
         ParamIterator eraseParam(ParamIterator p) { return p_.erase(p); }
-        ParamIterator eraseParams() { return p_.erase(p_.begin(), p_.end()); }
+
+        //! Remove all parameters
+        void eraseParams() { p_.clear(); }
+        
+        //! Return number of parameters
         unsigned int nParam() { return p_.size(); }
 };
 
-//! Another utility
+//! Another utility typedef for a looper
 typedef std::vector<PlistWrapper>::iterator PlistWrapperIterator;
 
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype);

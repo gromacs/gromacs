@@ -142,7 +142,7 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
 void MyMol::getForceConstants(const Poldata &pd)
 {
     int         n;
-    double      xx, sx, bo;
+    double      xx, sx;
     std::string params;
 
     for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
@@ -158,6 +158,7 @@ void MyMol::getForceConstants(const Poldata &pd)
                         pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj))
                     {
                         int ntrain;
+                        double bo = 0;
                         if (!pd.searchBond(cai, caj,
                                            &xx, &sx, &ntrain, &bo, params))
                         {
@@ -340,6 +341,15 @@ static void cp_plist(t_params plist[], int ftype,
         PlistWrapper pw(ftype);
         for (int i = 0; (i < plist[ftype].nr); i++)
         {
+            // Clean up potentially not initialized values.
+            for(int j = interaction_function[ftype].nratoms; j < MAXATOMLIST; j++)
+            {
+                plist[ftype].param[i].a[j] = 0;
+            }
+            for(int j = interaction_function[ftype].nrfpA; j < MAXFORCEPARAM; j++)
+            {
+                plist[ftype].param[i].c[j] = NOTSET;
+            }
             pw.addParam(plist[ftype].param[i]);
         }
         plist_.push_back(pw);
@@ -354,17 +364,24 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     std::vector<PlistWrapper>::iterator pw;
 
     init_plist(plist);
-    for (pw = plist_.begin(); (pw < plist_.end()); ++pw)
+    for (auto &pw : plist_)
     {
-        if (F_BONDS == pw->getFtype())
+        if (F_BONDS == pw.getFtype())
         {
-            pr_alloc(pw->nParam(), &plist[F_BONDS]);
+            pr_alloc(pw.nParam(), &(plist[F_BONDS]));
             int i = 0;
-            for (ParamIterator pi = pw->beginParam();
-                 (pi < pw->endParam()); ++pi)
+            for (auto pi = pw.beginParam(); (pi < pw.endParam()); ++pi)
             {
-                t_param *src = &(*pi);
-                cp_param(&(plist[F_BONDS].param[i]), src);
+                //t_param *src = &(*pi);
+                //cp_param(&(plist[F_BONDS].param[i]), pi);
+                for(int j = 0; j < MAXATOMLIST; j++)
+                {
+                    plist[F_BONDS].param[i].a[j] = pi->a[j];
+                }
+                for(int j = 0; j < MAXFORCEPARAM; j++)
+                {
+                    plist[F_BONDS].param[i].c[j] = pi->c[j];
+                }
                 i++;
             }
             plist[F_BONDS].nr = i;
@@ -382,36 +399,40 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl = nexcl_;
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
+    
+    t_blocka *EXCL;
+    snew(EXCL, 1);
+    generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
+    for (int i = 0; (i < EXCL->nr); i++)
     {
-        t_blocka *EXCL;
-        snew(EXCL, 1);
-        generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
-        for (int i = 0; (i < EXCL->nr); i++)
+        int ne = EXCL->index[i+1]-EXCL->index[i];
+        srenew(excls_[i].e, ne);
+        excls_[i].nr = 0;
+        for (int j = EXCL->index[i]; (j < EXCL->index[i+1]); j++)
         {
-            int ne = EXCL->index[i+1]-EXCL->index[i];
-            srenew(excls_[i].e, ne);
-            excls_[i].nr = 0;
-            for (int j = EXCL->index[i]; (j < EXCL->index[i+1]); j++)
+            if (EXCL->a[j] != i)
             {
-                if (EXCL->a[j] != i)
-                {
-                    excls_[i].e[excls_[i].nr++] = EXCL->a[j];
-                }
+                excls_[i].e[excls_[i].nr++] = EXCL->a[j];
             }
         }
-        done_blocka(EXCL);
-        sfree(EXCL);
-        if (NULL != debug)
+        // Set the rest of the memory to zero
+        for(int j = excls_[i].nr; j < ne; j++)
         {
-            for (int i = 0; (i < topology_->atoms.nr); i++)
+            excls_[i].e[j] = 0;
+        }
+    }
+    done_blocka(EXCL);
+    sfree(EXCL);
+    if (NULL != debug)
+    {
+        for (int i = 0; (i < topology_->atoms.nr); i++)
+        {
+            fprintf(debug, "excl %d", i);
+            for (int j = 0; (j < excls_[i].nr); j++)
             {
-                fprintf(debug, "excl %d", i);
-                for (int j = 0; (j < excls_[i].nr); j++)
-                {
-                    fprintf(debug, "  %2d", excls_[i].e[j]);
-                }
-                fprintf(debug, "\n");
+                fprintf(debug, "  %2d", excls_[i].e[j]);
             }
+            fprintf(debug, "\n");
         }
     }
     done_nnb(&nnb);
@@ -477,6 +498,91 @@ static void generate_nbparam(int ftype, int comb, double ci[], double cj[],
     }
 }
 
+static std::vector<double> getDoubles(const std::string &s)
+{
+    std::vector<double> d;
+    
+    for(auto &ss : gmx::splitString(s))
+    {
+        d.push_back(atof(ss.c_str()));
+    } 
+    return d;
+}
+
+static void getLjParams(const Poldata     &pd, 
+                        const std::string &ai, 
+                        const std::string &aj,
+                        double            *c6, 
+                        double            *cn)
+{
+    auto fai = pd.findAtype(ai);
+    auto faj = pd.findAtype(aj);
+    GMX_RELEASE_ASSERT(fai != pd.getAtypeEnd() && faj != pd.getAtypeEnd(),
+                       "Can not find atom types");
+    std::vector<double> vdwi = getDoubles(fai->getVdwparams());
+    std::vector<double> vdwj = getDoubles(faj->getVdwparams());
+    GMX_RELEASE_ASSERT(vdwi.size() == 2 && vdwj.size() == 2, "Inconsistent number of parameters for Van der Waals");
+    
+    switch(pd.getCombRule())
+    {
+    case eCOMB_GEOMETRIC:
+        *c6 = std::sqrt((vdwi[0]) * (vdwj[0]));
+        *cn = std::sqrt((vdwi[1]) * (vdwj[1]));
+        break;
+    case eCOMB_ARITHMETIC:
+        {
+            double sig  = 0.5 * ((vdwi[0]) + (vdwj[0]));
+            double eps  = std::sqrt((vdwi[1]) + (vdwj[1]));
+            double sig6 = std::pow(sig, 6.0);
+            *c6 = 4*eps*sig6;
+            *cn = *c6 * sig6;
+        }
+        break;
+    case eCOMB_GEOM_SIG_EPS: 
+        {
+            double sig  = std::sqrt((vdwi[0]) * (vdwj[0]));
+            double eps  = std::sqrt((vdwi[1]) * (vdwj[1]));
+            double sig6 = std::pow(sig, 6.0);
+            *c6 = 4*eps*sig6;
+            *cn = *c6 * sig6;
+        }
+        break;
+    case eCOMB_NONE:
+    case eCOMB_NR:
+        gmx_fatal(FARGS, "Unsupported combination rule for Lennard Jones");
+    }
+}
+
+static void getBhamParams(const Poldata     &pd, 
+                          const std::string &ai, 
+                          const std::string &aj,
+                          double            *a, 
+                          double            *b, 
+                          double            *c)
+{
+    auto fai = pd.findAtype(ai);
+    auto faj = pd.findAtype(aj);
+    GMX_RELEASE_ASSERT(fai != pd.getAtypeEnd() && faj != pd.getAtypeEnd(),
+                       "Can not find atom types");
+    std::vector<double> vdwi = getDoubles(fai->getVdwparams());
+    std::vector<double> vdwj = getDoubles(faj->getVdwparams());
+    GMX_RELEASE_ASSERT(vdwi.size() == 3 && vdwj.size() == 3, "Inconsistent number of parameters for Van der Waals");
+    
+    switch(pd.getCombRule())
+    {
+    case eCOMB_GEOMETRIC:
+        *a = std::sqrt((vdwi[0]) * (vdwj[0]));
+        *b = std::sqrt((vdwi[1]) * (vdwj[1]));
+        *c = std::sqrt((vdwi[2]) * (vdwj[2]));
+        break;
+    case eCOMB_ARITHMETIC:
+    case eCOMB_GEOM_SIG_EPS: 
+    case eCOMB_NONE:
+    case eCOMB_NR:
+        gmx_fatal(FARGS, "Unsupported combination rule for Buckingham");
+    }
+}
+
 static void do_init_mtop(const Poldata &pd,
                          gmx_mtop_t    *mtop_,
                          char         **molname,
@@ -493,6 +599,9 @@ static void do_init_mtop(const Poldata &pd,
     mtop_->molblock[0].type        = 0;
     mtop_->molblock[0].natoms_mol  = atoms->nr;
     mtop_->groups.grps[egcENER].nr = 1;
+    
+    mtop_->natoms = atoms->nr;
+    init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
 
     //! Count the number of types in this molecule, at least 1 assuming there is one atom
     int ntype = 1;
@@ -527,15 +636,27 @@ static void do_init_mtop(const Poldata &pd,
             switch (vdw_type)
             {
                 case F_LJ:
-                    //! NOTE  get the real parameters from the pd here
-                    //! May need to set the atomtypes properly too.
-                    mtop_->ffparams.iparams[idx].lj.c6  = 0;
-                    mtop_->ffparams.iparams[idx].lj.c12 = 0;
+                    {
+                        double c6, c12;
+                        getLjParams(pd, 
+                                    *(atoms->atomtype[i]), 
+                                    *(atoms->atomtype[j]), 
+                                    &c6, &c12);
+                        mtop_->ffparams.iparams[idx].lj.c6  = c6;
+                        mtop_->ffparams.iparams[idx].lj.c12 = c12;
+                    }
                     break;
-                case F_BHAM:
-                    mtop_->ffparams.iparams[idx].bham.a = 0;
-                    mtop_->ffparams.iparams[idx].bham.b = 0;
-                    mtop_->ffparams.iparams[idx].bham.c = 0;
+            case F_BHAM:
+                    {
+                        double a, b, c;
+                        getBhamParams(pd, 
+                                      *(atoms->atomtype[i]),
+                                      *(atoms->atomtype[j]),
+                                      &a, &b, &c);
+                        mtop_->ffparams.iparams[idx].bham.a = a;
+                        mtop_->ffparams.iparams[idx].bham.b = b;
+                        mtop_->ffparams.iparams[idx].bham.c = c;
+                    }
                     break;
                 default:
                     fprintf(stderr, "Invalid van der waals type %s\n",
@@ -547,8 +668,6 @@ static void do_init_mtop(const Poldata &pd,
     /* Create a charge group block */
     stupid_fill_block(&(mtop_->moltype[0].cgs), atoms->nr, FALSE);
 
-    mtop_->natoms = atoms->nr;
-    init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
 }
 
 static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
@@ -558,6 +677,10 @@ static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     if (blocka->nr < natom)
     {
         srenew(blocka->index, natom+1);
+        for(int i = blocka->nr; i < natom+1; i++)
+        {
+            blocka->index[i] = 0;
+        }
     }
     nra = 0;
     for (i = 0; (i < natom); i++)
@@ -592,28 +715,32 @@ static void plist_to_mtop(const Poldata             &pd,
     fudgeLJ = pd.getFudgeLJ();
 
     int nfptot = mtop_->ffparams.ntypes;
-    for (std::vector<PlistWrapper>::iterator pw = plist.begin();
-         (pw < plist.end()); ++pw)
+    for (auto &pw : plist)
     {
-        nfptot += pw->nParam()*NRFPA(pw->getFtype());
+        nfptot += pw.nParam()*NRFPA(pw.getFtype());
     }
     srenew(mtop_->ffparams.functype, nfptot);
     srenew(mtop_->ffparams.iparams, nfptot);
-
-    for (std::vector<PlistWrapper>::iterator pw = plist.begin();
-         (pw < plist.end()); ++pw)
+    for(int i = mtop_->ffparams.ntypes; i < nfptot; i++)
     {
-        int nra    = NRAL(pw->getFtype());
-        int nrfp   = NRFPA(pw->getFtype());
-        int nratot = pw->nParam()*(1+nra);
-        snew(mtop_->moltype[0].ilist[pw->getFtype()].iatoms, nratot);
+        mtop_->ffparams.functype[i] = 0;
+        memset(&mtop_->ffparams.iparams[i], 0, sizeof(mtop_->ffparams.iparams[i]));
+    }
+
+    for (auto & pw : plist)
+    {
+        int nra    = NRAL(pw.getFtype());
+        int nrfp   = NRFPA(pw.getFtype());
+        int nratot = pw.nParam()*(1+nra);
+        snew(mtop_->moltype[0].ilist[pw.getFtype()].iatoms, nratot);
         int k = 0;
-        for (ParamIterator j = pw->beginParam();
-             (j < pw->endParam()); ++j)
+        for (ParamIterator j = pw.beginParam();
+             (j < pw.endParam()); ++j)
         {
-            real c[MAXFORCEPARAM];
+            std::vector<real> c;
+            c.resize(MAXFORCEPARAM, 0);
             int  l = 0;
-            if (pw->getFtype() == F_LJ14)
+            if (pw.getFtype() == F_LJ14)
             {
                 int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
                 int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
@@ -636,14 +763,14 @@ static void plist_to_mtop(const Poldata             &pd,
             {
                 c[l] = 0;
             }
-            n = enter_params(&mtop_->ffparams, pw->getFtype(), c, 0, reppow, n, TRUE);
-            mtop_->moltype[0].ilist[pw->getFtype()].iatoms[k++] = n;
+            n = enter_params(&mtop_->ffparams, pw.getFtype(), c.data(), 0, reppow, n, TRUE);
+            mtop_->moltype[0].ilist[pw.getFtype()].iatoms[k++] = n;
             for (l = 0; (l < nra); l++)
             {
-                mtop_->moltype[0].ilist[pw->getFtype()].iatoms[k++] = j->a[l];
+                mtop_->moltype[0].ilist[pw.getFtype()].iatoms[k++] = j->a[l];
             }
         }
-        mtop_->moltype[0].ilist[pw->getFtype()].nr = k;
+        mtop_->moltype[0].ilist[pw.getFtype()].nr = k;
     }
 }
 
@@ -781,10 +908,9 @@ MyMol::~MyMol()
         sfree(inputrec_);
         inputrec_ = NULL;
     }
-    for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
-         (pw < plist_.end()); ++pw)
+    for (auto &pw : plist_)
     {
-        pw->eraseParams();
+        pw.eraseParams();
     }
     if (NULL != symtab_)
     {
