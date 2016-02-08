@@ -162,7 +162,7 @@ TEST_F (RespTest, AXsValues)
     testResp(eqdAXs, false);
 }
 
-//TEST_F (RespTest, AXsVZetaalues)
+//TEST_F (RespTest, AXsZetaValues)
 //{
 //   testResp(eqdAXs, true);
 //}
