@@ -94,6 +94,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
+            
+            gmx::test::FloatingPointTolerance tolerance(
+                 gmx::test::defaultRealTolerance());
+            checker_.setDefaultTolerance(tolerance);
         }
 
         // Static initiation, only run once every test.
