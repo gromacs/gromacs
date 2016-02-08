@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,9 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 
-#include "qgen_resp_atom.h"
 #include "molprop.h"
 #include "poldata.h"
+#include "qgen_resp_atom.h"
 
 struct gmx_output_env_t;
 struct t_atoms;
@@ -64,7 +64,7 @@ class QgenResp
         QgenResp();
 
         ~QgenResp();
-        
+
         ChargeDistributionModel chargeDistributionModel()
         { return _iDistributionModel; }
 
@@ -85,7 +85,7 @@ class QgenResp
          */
         void setOptions(ChargeDistributionModel c,
                         unsigned int            seed,
-                        bool                    fitZeta, 
+                        bool                    fitZeta,
                         real                    zetaMin,
                         real                    zetaMax,
                         real                    deltaZeta,
@@ -94,39 +94,39 @@ class QgenResp
                         real                    qmin,
                         real                    qmax,
                         bool                    randomQ,
-                        real                    watoms);     
-                       
+                        real                    watoms);
+
         void setBAXpRESP(bool bAXpRESP) { _bAXpRESP = bAXpRESP; }
 
         void setRDecrZeta(real rDecrZeta) { _rDecrZeta = rDecrZeta; }
 
         void setBEntropy(bool bEntropy) { _bEntropy  = bEntropy; }
-        
+
         real getMolecularCharge() const { return _qtot; }
-        
+
         // int atomicnumber2row(int elem);
 
         size_t nAtom() const { return ra_.size(); }
-        
+
         size_t nAtomType() const { return ratype_.size(); }
-        
+
         size_t nEsp() const { return _esp.size(); }
-        
+
         size_t nParam() const { return raparam_.size(); }
-        
+
         void statistics(int len, char buf[]);
 
         void summary(FILE *gp);
 
         RespAtomTypeIterator beginRAT() { return ratype_.begin(); }
-        
+
         RespAtomTypeIterator endRAT() { return ratype_.end(); }
-        
+
         RespAtomTypeConstIterator beginRAT() const { return ratype_.begin(); }
-        
+
         RespAtomTypeConstIterator endRAT() const { return ratype_.end(); }
-        
-        RespAtomTypeIterator findRAT(int atype) 
+
+        RespAtomTypeIterator findRAT(int atype)
         {
             return std::find_if(ratype_.begin(), ratype_.end(),
                                 [atype](RespAtomType const &rat)
@@ -148,13 +148,13 @@ class QgenResp
 
         void setAtomSymmetry(const std::vector<int> &symmetricAtoms);
 
-        void addEspPoint(double x, 
+        void addEspPoint(double x,
                          double y,
-                         double z, 
+                         double z,
                          double V);
 
-        void makeGrid(real   spacing, 
-                      matrix box, 
+        void makeGrid(real   spacing,
+                      matrix box,
                       rvec   x[]);
 
         void copyGrid(QgenResp &src);
@@ -169,21 +169,21 @@ class QgenResp
 
         void calcPot();
 
-        void readCube(const std::string &fn, 
+        void readCube(const std::string &fn,
                       bool               bESPonly);
 
-        void writeCube(const std::string &fn, 
+        void writeCube(const std::string &fn,
                        const std::string &title);
 
-        void writeRho(const std::string &fn, 
+        void writeRho(const std::string &fn,
                       const std::string &title);
 
         void writeDiffCube(QgenResp                   &src,
-                           const std::string      &cubeFn, 
-                           const std::string      &histFn,
-                           const std::string      &title, 
-                           const gmx_output_env_t *oenv, 
-                           int                     rho);
+                           const std::string          &cubeFn,
+                           const std::string          &histFn,
+                           const std::string          &title,
+                           const gmx_output_env_t     *oenv,
+                           int                         rho);
 
         void writeHisto(const std::string      &fn,
                         const std::string      &title,
@@ -192,8 +192,8 @@ class QgenResp
         int  optimizeCharges(int   maxiter,
                              real *rms);
 
-        void potcomp(const std::string &potcomp,
-                     const std::string &pdbdiff,
+        void potcomp(const std::string      &potcomp,
+                     const std::string      &pdbdiff,
                      const gmx_output_env_t *oenv);
 
         //! Return the net charge for an atom
@@ -209,12 +209,12 @@ class QgenResp
         void setZeta(int atom, int zz, double zeta);
 
         double calcPenalty();
-        
+
         void getVector(double *params);
-        
+
     private:
         void setVector(double *params);
-        
+
         ChargeDistributionModel   _iDistributionModel;
         double                    _qtot, _watoms;
         double                    _rms, _rrms, _penalty, _pfac, _entropy, _wtot;

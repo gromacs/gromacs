@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -26,20 +60,20 @@
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/txtdump.h"
 
-#include "coulombintegrals/coulombintegrals.h"
 #include "molprop.h"
 #include "poldata.h"
+#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {
 
-QgenEem::QgenEem(const Poldata &pd, 
-                       t_atoms *atoms, 
-                       rvec *x,
-                       ChargeDistributionModel   iChargeDistributionModel,
-                       double hfac, 
-                       int  qtotal, 
-                       double epsr)
+QgenEem::QgenEem(const Poldata            &pd,
+                 t_atoms                  *atoms,
+                 rvec                     *x,
+                 ChargeDistributionModel   iChargeDistributionModel,
+                 double                    hfac,
+                 int                       qtotal,
+                 double                    epsr)
 {
     _bWarned    = false;
     _bAllocSave = false;
@@ -96,7 +130,7 @@ QgenEem::QgenEem(const Poldata &pd,
             if (!pd.haveEemSupport(_iChargeDistributionModel, atp, TRUE))
             {
                 fprintf(stderr, "No charge distribution support for atom %s, model %s\n",
-                        *atoms->atomtype[j], 
+                        *atoms->atomtype[j],
                         getEemtypeName(_iChargeDistributionModel));
                 bSupport = false;
             }
@@ -116,7 +150,7 @@ QgenEem::QgenEem(const Poldata &pd,
                     _row[j][k]  = pd.getRow(_iChargeDistributionModel, atp, k);
                     char buf[256];
                     snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
-                             atp.c_str(), _q[j][k], _zeta[j][k], _row[j][k], 
+                             atp.c_str(), _q[j][k], _zeta[j][k], _row[j][k],
                              getEemtypeName(_iChargeDistributionModel));
                     GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp ||
                                        _row[j][k] != 0, buf);
@@ -194,13 +228,13 @@ double CoulombNN(double r)
 }
 
 double QgenEem::calcJab(ChargeDistributionModel iChargeDistributionModel,
-                         rvec xi, rvec xj,
-                         int nZi, int nZj,
-                         std::vector<double> zetaI, std::vector<double> zetaJ,
-                         std::vector<int> rowI, std::vector<int> rowJ)
+                        rvec xi, rvec xj,
+                        int nZi, int nZj,
+                        std::vector<double> zetaI, std::vector<double> zetaJ,
+                        std::vector<int> rowI, std::vector<int> rowJ)
 {
-    int  i, j;
-    rvec dx;
+    int    i, j;
+    rvec   dx;
     double r;
     double eTot = 0;
 
@@ -368,8 +402,8 @@ void QgenEem::debugFun(FILE *fp)
 double QgenEem::calcSij(int i, int j)
 {
     double dist, dism, Sij = 1.0;
-    rvec dx;
-    int  l, m, tag;
+    rvec   dx;
+    int    l, m, tag;
 
     rvec_sub(_x[i], _x[j], dx);
     dist = norm(dx);
@@ -489,8 +523,8 @@ void QgenEem::calcJab()
 
 void QgenEem::calcRhs()
 {
-    int    i, j, k, l;
-    rvec   dx;
+    int      i, j, k, l;
+    rvec     dx;
     double   r, j1, j1q, qcore;
 
     /* This right hand side is for all models */
@@ -590,7 +624,7 @@ int atomicnumber2rowXX(int elem)
 void QgenEem::copyChargesToAtoms(t_atoms *atoms)
 {
     int j;
-    for (int i = j= 0; (i < atoms->nr); i++)
+    for (int i = j = 0; (i < atoms->nr); i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
@@ -603,7 +637,7 @@ void QgenEem::copyChargesToAtoms(t_atoms *atoms)
             j++;
         }
     }
-} 
+}
 
 void QgenEem::print(FILE *fp, t_atoms *atoms)
 {
@@ -710,15 +744,15 @@ void QgenEem::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
     }
 }
 
-int QgenEem::generateChargesSm(FILE *fp,
-                                  const Poldata &pd,
-                                  t_atoms *atoms,
-                                  double tol, 
-                                  int maxiter, 
-                                  double *chieq)
+int QgenEem::generateChargesSm(FILE          *fp,
+                               const Poldata &pd,
+                               t_atoms       *atoms,
+                               double         tol,
+                               int            maxiter,
+                               double        *chieq)
 {
     std::vector<double>       qq;
-    int                     i, j, iter;
+    int                       i, j, iter;
     double                    rms;
 
     checkSupport(pd);
@@ -796,9 +830,9 @@ int QgenEem::generateChargesSm(FILE *fp,
     return _eQGEN;
 }
 
-int QgenEem::generateChargesBultinck(FILE *fp,
+int QgenEem::generateChargesBultinck(FILE          *fp,
                                      const Poldata &pd,
-                                     t_atoms *atoms)
+                                     t_atoms       *atoms)
 {
     checkSupport(pd);
     if (eQGEN_OK == _eQGEN)
@@ -817,7 +851,7 @@ int QgenEem::generateChargesBultinck(FILE *fp,
 }
 
 int QgenEem::generateCharges(FILE              *fp,
-                             const std::string  molname, 
+                             const std::string  molname,
                              const Poldata     &pd,
                              t_atoms           *atoms,
                              double             tol,
@@ -828,7 +862,7 @@ int QgenEem::generateCharges(FILE              *fp,
     if (fp)
     {
         fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                molname.c_str(), 
+                molname.c_str(),
                 getEemtypeName(_iChargeDistributionModel));
     }
     if (_iChargeDistributionModel == eqdBultinck)
@@ -840,7 +874,7 @@ int QgenEem::generateCharges(FILE              *fp,
         (void) generateChargesSm(fp, pd, atoms, tol, maxiter, &chieq);
     }
     copyChargesToAtoms(atoms);
-    
+
     return _eQGEN;
 }
 

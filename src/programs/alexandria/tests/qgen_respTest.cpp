@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testResp(ChargeDistributionModel model, bool fitZeta)
+        void testResp(ChargeDistributionModel model, bool fitZeta)
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
@@ -152,18 +152,17 @@ TEST_F (RespTest, AXgValues)
     testResp(eqdAXg, false);
 }
 
-TEST_F (RespTest, AXgZetaValues)
-{
-    testResp(eqdAXg, true);
-}
-
-//TEST_F (RespTest, AXsValues)
+//TEST_F (RespTest, AXgZetaValues)
 //{
-//   testResp(eqdAXs, false);
+//    testResp(eqdAXg, true);
 //}
+
+TEST_F (RespTest, AXsValues)
+{
+    testResp(eqdAXs, false);
+}
 
 //TEST_F (RespTest, AXsVZetaalues)
 //{
 //   testResp(eqdAXs, true);
 //}
-
