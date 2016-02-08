@@ -2138,9 +2138,12 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     {
         /* add exclusions for Drudes and LP */
         fprintf(stderr, "Generating Drude and lone pair exclusions...\n");
-        construct_drude_lp_excl(&nnb, atoms, excls);
+        construct_drude_lp_excl(&nnb, plist, atoms, excls);
         /* special case of disulfide Thole screening factors */
-        add_drude_ssbonds_thole(atoms, nssbonds, ssbonds, &(plist[F_THOLE_POL]), bAllowMissing);
+        if (nssbonds > 0)
+        {
+            add_drude_ssbonds_thole(atoms, nssbonds, ssbonds, &(plist[F_THOLE_POL]), bAllowMissing);
+        }
         /* Duplicates can happen when merging tdb and rtp, so since the
          * tdb are read and stored first, their terminus-specific values
          * will override what is stored in the rtp */
