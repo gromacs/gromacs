@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,10 +84,10 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          const t_inputrec *ir, gmx_mtop_t *top_global,
                          const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
-    gmx_mdoutf_t  of;
-    char          filemode[3];
-    gmx_bool      bAppendFiles, bCiteTng = FALSE;
-    int           i;
+    gmx_mdoutf_t   of;
+    const char    *appendMode = "a+", *writeMode = "w+", *filemode;
+    gmx_bool       bAppendFiles, bCiteTng = FALSE;
+    int            i;
 
     snew(of, 1);
 
@@ -113,7 +113,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 
         of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
 
-        sprintf(filemode, bAppendFiles ? "a+" : "w+");
+        filemode = bAppendFiles ? appendMode : writeMode;
 
         if (EI_DYNAMICS(ir->eI) &&
             ir->nstxout_compressed > 0)

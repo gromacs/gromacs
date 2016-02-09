@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,12 +59,13 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/external/*.cu
         ${CMAKE_SOURCE_DIR}/src/gromacs/selection/scanner.cpp
         ${CMAKE_SOURCE_DIR}/src/gromacs/selection/parser.cpp
+        ${CMAKE_SOURCE_DIR}/src/gromacs/gpu_utils/ocl_compiler.cpp
         )
     list(REMOVE_ITEM _inputfiles ${_files_to_ignore})
 
     # Set flags for cppcheck
     set(_outputext txt)
-    set(_outputopt --template=gcc)
+    set(_outputopt "--template={file}:{line}:{id}: {severity}: {message}")
     if (CPPCHECK_XML_OUTPUT)
         set(_outputext xml)
         set(_outputopt --xml --xml-version=2)
@@ -92,6 +93,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
         --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
+        --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu
         ) 
     set(_cxx_flags
         -D__cplusplus
@@ -101,7 +103,8 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf_libc #seems only important for security on non-std libc
         --suppress=invalidscanf      #same as last (style and portability checker have the same warning)
         --suppress=passedByValue:src/gromacs/simd/tests/*
-        --suppress=redundantAssignment:src/gromacs/simd/simd_math.h #sees to be a bug in cppcheck
+        --suppress=redundantAssignment:src/gromacs/simd/simd_math.h #seems to be a bug in cppcheck
+        --suppress=noExplicitConstructor # can't be selective about this, see http://sourceforge.net/p/cppcheck/discussion/general/thread/db1e4ba7/
         )
 
     # This list will hold the list of all files with cppcheck errors

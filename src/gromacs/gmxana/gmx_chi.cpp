@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -562,7 +562,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                         bBfac  = bBfac  && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
                         bOccup = bOccup && (atoms->pdbinfo[index[n]].occup == 1);
                     }
-                    if (bOccup && ((bfac_max <= 0) || ((bfac_max > 0) && bBfac)))
+                    if (bOccup && ((bfac_max <= 0) || bBfac))
                     {
                         hindex = static_cast<int>(((dih[j][0]+M_PI)*nbin)/(2*M_PI));
                         range_check(hindex, 0, nbin);

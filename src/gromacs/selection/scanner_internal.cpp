@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -396,9 +396,13 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     gmx_sel_lexer_t *state = new gmx_sel_lexer_t;
 
+    // cppcheck-suppress uninitdata
     state->sc        = sc;
+    // cppcheck-suppress uninitdata
     state->bGroups   = bGroups;
+    // cppcheck-suppress uninitdata
     state->grps      = grps;
+    // cppcheck-suppress uninitdata
     state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
     state->statusWriter = statusWriter;

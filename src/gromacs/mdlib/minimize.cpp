@@ -1126,7 +1126,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
      * we either converge or reach the max number of steps.
      */
     converged = FALSE;
-    for (step = 0; (number_steps < 0 || (number_steps >= 0 && step <= number_steps)) && !converged; step++)
+    for (step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
     {
 
         /* start taking steps in a new direction
@@ -1886,7 +1886,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     /* Set the gradient from the force */
     converged = FALSE;
-    for (step = 0; (number_steps < 0 || (number_steps >= 0 && step <= number_steps)) && !converged; step++)
+    for (step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
     {
 
         /* Write coordinates if necessary */

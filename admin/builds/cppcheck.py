@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,7 @@ def do_build(context):
     # TODO: Make the XMLs go directly to the desired folder.
     # xml_dir = context.workspace.get_log_dir(category='cppcheck')
     cmake_opts = {
-            'CPPCHECK_EXECUTABLE': context.env.get_cppcheck_command(version='1.67'),
+            'CPPCHECK_EXECUTABLE': context.env.get_cppcheck_command(version='1.72'),
             'CPPCHECK_XML_OUTPUT': 'ON',
             'GMX_SIMD': 'Reference'
         }

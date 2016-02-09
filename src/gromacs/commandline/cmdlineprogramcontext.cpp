@@ -328,9 +328,8 @@ CommandLineProgramContext::Impl::Impl()
 
 CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
                                       ExecutableEnvironmentPointer env)
-    : executableEnv_(std::move(env)), bSourceLayout_(false)
+    : executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
 {
-    invokedName_ = (argc != 0 ? argv[0] : "");
     programName_ = Path::getFilename(invokedName_);
     programName_ = stripSuffixIfPresent(programName_, ".exe");
 
