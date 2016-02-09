@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -622,9 +622,9 @@ _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
         case '/': sel->u.arith.type = ARITH_DIV;  break;
         case '^': sel->u.arith.type = ARITH_EXP;  break;
     }
-    char               buf[2];
-    buf[0] = op;
-    buf[1] = 0;
+    char               buf[2] {
+        op, 0
+    };
     sel->setName(buf);
     sel->u.arith.opstr = gmx_strdup(buf);
     sel->child         = left;
@@ -923,16 +923,15 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
 SelectionTreeElementPointer
 _gmx_sel_init_const_position(real x, real y, real z, yyscan_t scanner)
 {
-    rvec                        pos;
+    rvec                        pos {
+        x, y, z
+    };
 
     SelectionTreeElementPointer sel(
             new SelectionTreeElement(
                     SEL_CONST, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_vtype(sel, POS_VALUE);
     _gmx_selvalue_reserve(&sel->v, 1);
-    pos[XX] = x;
-    pos[YY] = y;
-    pos[ZZ] = z;
     gmx_ana_pos_init_const(sel->v.u.p, pos);
     return sel;
 }

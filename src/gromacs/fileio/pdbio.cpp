@@ -59,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 
 typedef struct {
     int ai, aj;
@@ -522,7 +523,7 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
         std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
         bool atomNumberSet = false;
         len        = strlen(anm);
-        if ((anm[0] != ' ') && ((len <= 2) || ((len > 2) && !std::isdigit(anm[2]))))
+        if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
             if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
@@ -1088,7 +1089,7 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
         {
             start_name_in_col13 = (std::strlen(atom_name) >= 4);
         }
-        sprintf(tmp_atomname, start_name_in_col13 ? "" : " ");
+        snprintf(tmp_atomname, sizeof(tmp_atomname), start_name_in_col13 ? "" : " ");
         std::strncat(tmp_atomname, atom_name, 4);
         tmp_atomname[5] = '\0';
     }

@@ -226,10 +226,10 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, int flags,
     {
         fprintf(debug, "PP rank %d sending to PME rank %d: %d%s%s%s%s\n",
                 cr->sim_nodeid, dd->pme_nodeid, n,
-                flags & PP_PME_CHARGE ? " charges" : "",
-                flags & PP_PME_SQRTC6 ? " sqrtC6" : "",
-                flags & PP_PME_SIGMA  ? " sigma" : "",
-                flags & PP_PME_COORD  ? " coordinates" : "");
+                (flags & PP_PME_CHARGE) ? " charges" : "",
+                (flags & PP_PME_SQRTC6) ? " sqrtC6" : "",
+                (flags & PP_PME_SIGMA)  ? " sigma" : "",
+                (flags & PP_PME_COORD)  ? " coordinates" : "");
     }
 
 #ifdef GMX_PME_DELAYED_WAIT

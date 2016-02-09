@@ -947,7 +947,7 @@ static void print_localdata(const t_complex* lin, const char* txt, int s, fft5d_
     int  xs[3], xl[3], xc[3], NG[3];
     int  ll = (plan->flags&FFT5D_REALCOMPLEX) ? 1 : 2;
     compute_offsets(plan, xs, xl, xc, NG, s);
-    fprintf(debug, txt, coor[0], coor[1], s);
+    fprintf(debug, txt, coor[0], coor[1]);
     /*printf("xs: %d %d %d, xl: %d %d %d\n",xs[0],xs[1],xs[2],xl[0],xl[1],xl[2]);*/
     for (z = 0; z < xl[2]; z++)
     {

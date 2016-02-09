@@ -314,16 +314,13 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
                              int nval, int *nptr, real **v,
                              FILE *list, int erealtype)
 {
-    bool_t  res = 0;
-#if !GMX_DOUBLE
-    int     dtc = xdr_datatype_float;
-#else
-    int     dtc = xdr_datatype_double;
-#endif
-    real   *vp, *va = NULL;
-    float  *vf;
-    double *vd;
-    int     nf, dt, i;
+    bool_t     res       = 0;
+    const bool useDouble = GMX_DOUBLE;
+    int        dtc       = useDouble ? xdr_datatype_double : xdr_datatype_float;
+    real      *vp, *va = NULL;
+    float     *vf;
+    double    *vd;
+    int        nf, dt, i;
 
     if (list == NULL)
     {
@@ -386,7 +383,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
     }
     if (dt == xdr_datatype_float)
     {
-        if (dtc == xdr_datatype_float)
+        if (!useDouble)
         {
             vf = reinterpret_cast<float *>(vp);
         }
@@ -400,7 +397,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
         {
             return -1;
         }
-        if (dtc != xdr_datatype_float)
+        if (useDouble)
         {
             for (i = 0; i < nf; i++)
             {
@@ -411,7 +408,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
     }
     else
     {
-        if (dtc == xdr_datatype_double)
+        if (useDouble)
         {
             /* cppcheck-suppress invalidPointerCast
              * Only executed if real is anyhow double */
@@ -427,7 +424,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
         {
             return -1;
         }
-        if (dtc != xdr_datatype_double)
+        if (!useDouble)
         {
             for (i = 0; i < nf; i++)
             {
@@ -2357,12 +2354,20 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
 
     ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE,
-                       outputfiles != NULL ? outputfiles : &files_loc,
-                       outputfiles != NULL ? nfiles : &nfiles_loc,
+                       &files_loc,
+                       &nfiles_loc,
                        NULL, file_version);
-    if (files_loc != NULL)
+    if (outputfiles != nullptr)
+    {
+        *outputfiles = files_loc;
+    }
+    else
     {
         sfree(files_loc);
+    }
+    if (nfiles != nullptr)
+    {
+        *nfiles = nfiles_loc;
     }
 
     if (ret)

@@ -226,12 +226,13 @@ convert_array_to_real_array(void       *from,
                             const int   nValues,
                             const char  datatype)
 {
-    int i, j;
+    int        i, j;
 
+    const bool useDouble = GMX_DOUBLE;
     switch (datatype)
     {
         case TNG_FLOAT_DATA:
-            if (sizeof(real) == sizeof(float))
+            if (!useDouble)
             {
                 if (fact == 1)
                 {

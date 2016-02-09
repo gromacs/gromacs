@@ -407,11 +407,11 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
     {
         if (mb >= 0)
         {
-            /* cppcheck-suppress nullPointer #6330*/
+            /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
             if (atoms->nres <= mtop->maxres_renum)
             {
                 /* Single residue molecule, keep counting */
-                /* cppcheck-suppress nullPointer #6330*/
+                /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
                 maxresnr += mtop->molblock[mb].nmol*atoms->nres;
             }
         }
