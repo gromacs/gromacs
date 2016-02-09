@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,25 +157,31 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
                              const char ***       p_typenames,
                              int *                ntypes)
 {
-    int            i, n;
-    const char **  my_typename;
+    int          n           = 0;
+    const char **my_typename = NULL;
 
-    n           = 0;
-    my_typename = NULL;
-    for (i = 0; i < rt->n; i++)
+    if (rt->n > 0)
     {
-        const char *const p      = rt->restype[i];
-        bool              bFound = false;
-        for (int j = 0; j < n && !bFound; j++)
+        int         i = 0;
+        const char *p = rt->restype[i];
+        snew(my_typename, n+1);
+        my_typename[n] = p;
+        n              = 1;
+
+        for (i = 1; i < rt->n; i++)
         {
-            assert(my_typename != NULL);
-            bFound = !gmx_strcasecmp(p, my_typename[j]);
-        }
-        if (!bFound)
-        {
-            srenew(my_typename, n+1);
-            my_typename[n] = p;
-            n++;
+            p = rt->restype[i];
+            bool bFound = false;
+            for (int j = 0; j < n && !bFound; j++)
+            {
+                bFound = !gmx_strcasecmp(p, my_typename[j]);
+            }
+            if (!bFound)
+            {
+                srenew(my_typename, n+1);
+                my_typename[n] = p;
+                n++;
+            }
         }
     }
     *ntypes      = n;

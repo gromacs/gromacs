@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2004 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,10 +89,7 @@ F77_FUNC(dstqrb, DSTQRB) (int *      n,
 
     if (*n == 1)
     {
-        if (icompz == 2)
-        {
-            z__[1] = 1.;
-        }
+        z__[1] = 1.;
         return;
     }
 
@@ -106,16 +103,13 @@ F77_FUNC(dstqrb, DSTQRB) (int *      n,
     ssfmax = std::sqrt(safmax) / 3.;
     ssfmin = std::sqrt(safmin) / eps2;
 
-    if (icompz == 2)
+    i__1 = *n - 1;
+    for (j = 1; j <= i__1; ++j)
     {
-        i__1 = *n - 1;
-        for (j = 1; j <= i__1; ++j)
-        {
-            z__[j] = 0.;
+        z__[j] = 0.;
 
-        }
-        z__[*n] = 1.;
     }
+    z__[*n] = 1.;
 
     nmaxit = *n * 30;
     jtot   = 0;
@@ -2958,10 +2952,7 @@ F77_FUNC(sstqrb, SSTQRB) (int *      n,
 
     if (*n == 1)
     {
-        if (icompz == 2)
-        {
-            z__[1] = 1.;
-        }
+        z__[1] = 1.;
         return;
     }
 
@@ -2975,16 +2966,13 @@ F77_FUNC(sstqrb, SSTQRB) (int *      n,
     ssfmax = std::sqrt(safmax) / 3.;
     ssfmin = std::sqrt(safmin) / eps2;
 
-    if (icompz == 2)
+    i__1 = *n - 1;
+    for (j = 1; j <= i__1; ++j)
     {
-        i__1 = *n - 1;
-        for (j = 1; j <= i__1; ++j)
-        {
-            z__[j] = 0.;
+        z__[j] = 0.;
 
-        }
-        z__[*n] = 1.;
     }
+    z__[*n] = 1.;
 
     nmaxit = *n * 30;
     jtot   = 0;

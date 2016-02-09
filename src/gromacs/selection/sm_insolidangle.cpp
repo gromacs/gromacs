@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -374,17 +374,27 @@ static void *
 init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
+    // cppcheck-suppress uninitdata
     data->angcut        = 5.0;
+    // cppcheck-suppress uninitdata
     data->cfrac         = 0.0;
 
+    // cppcheck-suppress uninitdata
     data->distccut      = 0.0;
+    // cppcheck-suppress uninitdata
     data->targetbinsize = 0.0;
 
+    // cppcheck-suppress uninitdata
     data->ntbins        = 0;
+    // cppcheck-suppress uninitdata
     data->tbinsize      = 0.0;
+    // cppcheck-suppress uninitdata
     data->tbin          = NULL;
+    // cppcheck-suppress uninitdata
     data->maxbins       = 0;
+    // cppcheck-suppress uninitdata
     data->nbins         = 0;
+    // cppcheck-suppress uninitdata
     data->bin           = NULL;
 
     param[0].val.u.p = &data->center;

@@ -1144,13 +1144,19 @@ int gmx_pme_error(int argc, char *argv[])
     create_info(&info);
     info.fourier_sp[0] = fs;
 
-    /* Read in the tpr file and open logfile for reading */
     if (MASTER(cr))
     {
+        /* Read in the tpr file */
         snew(ir, 1);
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
-
+        /* Open logfile for reading */
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");
+
+        /* Determine the volume of the simulation box */
+        info.volume = det(state.box);
+        calc_recipbox(state.box, info.recipbox);
+        info.natoms = mtop.natoms;
+        info.bTUNE  = bTUNE;
     }
 
     /* Check consistency if the user provided fourierspacing */
@@ -1169,15 +1175,6 @@ int gmx_pme_error(int argc, char *argv[])
     }
 
     /* Estimate (S)PME force error */
-
-    /* Determine the volume of the simulation box */
-    if (MASTER(cr))
-    {
-        info.volume = det(state.box);
-        calc_recipbox(state.box, info.recipbox);
-        info.natoms = mtop.natoms;
-        info.bTUNE  = bTUNE;
-    }
 
     if (PAR(cr))
     {

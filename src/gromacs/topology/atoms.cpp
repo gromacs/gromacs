@@ -249,7 +249,7 @@ static void pr_atom(FILE *fp, int indent, const char *title, const t_atom *atom,
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
+            fprintf(fp, "%s[%6d]={type=%3u, typeB=%3u, ptype=%8s, m=%12.5e, "
                     "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
                     title, i, atom[i].type, atom[i].typeB, ptype_str[atom[i].ptype],
                     atom[i].m, atom[i].q, atom[i].mB, atom[i].qB,

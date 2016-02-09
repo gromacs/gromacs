@@ -101,7 +101,7 @@ F77_FUNC(slasv2,SLASV2)(float *f,
 		if (std::abs(l)<GMX_FLOAT_MIN) {
 		    t = ( (ft>0) ? 2.0 : -2.0) * ( (gt>0) ? 1.0 : -1.0);
 		} else {
-		    t = gt / ( (ft>0) ? d__ : d__) + m / t;
+		    t = gt / ( (ft>0) ? d__ : -d__) + m / t;
 		}
 	    } else {
 		t = (m / (s + t) + m / (r__ + l)) * (a + 1.);
