@@ -865,9 +865,12 @@ static void gen_drude_lp_excl(t_params plist[], t_atoms *atoms, t_excls *excls, 
                         /* Drude - LP */
                         if ((ai+1) < atoms->nr)
                         {
-                            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-                            excls[ai+1].e[excls[ai+1].nr] = plist[f].param[i].ai();
-                            excls[ai+1].nr++;
+                            if (is_d(atoms, (ai+1)))
+                            {
+                                srenew(excls[ai+1].e, excls[ai+1].nr+1);
+                                excls[ai+1].e[excls[ai+1].nr] = plist[f].param[i].ai();
+                                excls[ai+1].nr++;
+                            }
                         }
                         /* LP with Drude on host atom */
                         if ((aj+1) < atoms->nr)
@@ -945,9 +948,12 @@ static void gen_drude_lp_excl(t_params plist[], t_atoms *atoms, t_excls *excls, 
                         /* LP - Drude */
                         if ((aj+1) < atoms->nr)
                         {
-                            srenew(excls[aj+1].e, excls[aj+1].nr+1);
-                            excls[aj+1].e[excls[aj+1].nr] = plist[f].param[i].ai();
-                            excls[aj+1].nr++;
+                            if (is_d(atoms, (aj+1)))
+                            {
+                                srenew(excls[aj+1].e, excls[aj+1].nr+1);
+                                excls[aj+1].e[excls[aj+1].nr] = plist[f].param[i].ai();
+                                excls[aj+1].nr++;
+                            }
                         }
                         /* LP with Drude on host atom */
                         if ((ai+1) < atoms->nr)
