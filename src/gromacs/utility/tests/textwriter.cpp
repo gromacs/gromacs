@@ -118,4 +118,24 @@ TEST_F(TextWriterTest, WritesLinesInPartsWithWrapper)
     checkOutput();
 }
 
+TEST_F(TextWriterTest, TracksNewlines)
+{
+    writer_.ensureLineBreak();
+    writer_.ensureEmptyLine();
+    writer_.writeString("First line");
+    writer_.ensureLineBreak();
+    writer_.ensureLineBreak();
+    writer_.writeString("Second line");
+    writer_.ensureEmptyLine();
+    writer_.writeLine("Third line");
+    writer_.ensureEmptyLine();
+    writer_.writeString(std::string("Fourth line\n"));
+    writer_.ensureLineBreak();
+    writer_.writeString(std::string("Fifth line\n\n"));
+    writer_.ensureEmptyLine();
+    writer_.writeString(std::string("Sixth line"));
+    writer_.ensureEmptyLine();
+    checkOutput();
+}
+
 } // namespace

@@ -55,7 +55,7 @@ const char *gmx_version_git_central_base_hash()
     return _gmx_central_base_hash;
 }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 void gmx_is_double_precision()
 {
 }

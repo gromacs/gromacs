@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -48,15 +50,12 @@
 #include <limits>
 #endif
 
-#include <cuda.h>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 
@@ -71,50 +70,17 @@ texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
-/* Convenience defines */
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
-/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
- * warp-pairs per block.
- *
- * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
- * blocks/multiproc, is the fastest even though this setup gives low occupancy.
- * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
- * per multiprocessor is reduced proportionally to get the original number of max
- * threads in flight (and slightly lower performance).
- * - On CC 3.7 there are enough registers to double the number of threads; using
- * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
- * with low-register use).
- *
- * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
- * shuffle-based reduction, hence CC >= 3.0.
- */
+/***** The kernel declarations/definitions come here *****/
 
-/* Kernel launch bounds as function of NTHREAD_Z.
- * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
- */
-#if __CUDA_ARCH__ == 370
-#define NTHREAD_Z           (2)
-#define MIN_BLOCKS_PER_MP   (16)
-#else
-#define NTHREAD_Z           (1)
-#define MIN_BLOCKS_PER_MP   (16)
-#endif
-#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
-
-
-/***** The kernels come here *****/
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
-
-/* Top-level kernel generation: will generate through multiple inclusion the
- * following flavors for all kernels:
+/* Top-level kernel declaration generation: will generate through multiple
+ * inclusion the following flavors for all kernel declarations:
  * - force-only output;
  * - force and energy output;
  * - force-only with pair list pruning;
  * - force and energy output with pair list pruning.
  */
+#define FUNCTION_DECLARATION_ONLY
 /** Force only **/
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
@@ -131,6 +97,24 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
+#undef FUNCTION_DECLARATION_ONLY
+
+/* Now generate the function definitions if we are using a single compilation unit. */
+#if GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_noprune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_F_prune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_noprune.cu"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_VF_prune.cu"
+#else
+/* Prevent compilation in multiple compilation unit mode for CC 2.x. Although we have
+ * build-time checks to prevent this, the user could manually tweaks nvcc flags
+ * which would lead to buggy kernels getting compiled.
+ */
+#if GMX_PTX_ARCH > 0 && GMX_PTX_ARCH <= 210
+#error Due to an CUDA compiler bug, the CUDA non-bonded module can not be compiled with multiple compilation units for CC 2.x devices. If you have changed the nvcc flags manually, either use the GMX_CUDA_TARGET_* variables instead or set GMX_CUDA_NB_SINGLE_COMPILATION_UNIT=ON CMake option.
+#endif
+#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
+
 
 
 /*! Nonbonded kernel function pointer type */
@@ -140,6 +124,11 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
                                      bool);
 
 /*********************************/
+
+/* XXX switch between chevron and cudaLaunch (supported only in CUDA >=7.0)
+   -- only for benchmarking purposes */
+static const bool bUseCudaLaunchKernel =
+    (GMX_CUDA_VERSION >= 7000) && (getenv("GMX_DISABLE_CUDALAUNCH") == NULL);
 
 /* XXX always/never run the energy/pruning kernels -- only for benchmarking purposes */
 static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
@@ -275,7 +264,7 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
     /* i-atom x+q in shared memory */
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
     /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    shmem += num_threads_z * 2 * nbnxn_gpu_jgroup_size * sizeof(int);
     if (dinfo->prop.major >= 3)
     {
         /* i-atom types in shared memory */
@@ -436,7 +425,22 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                 shmem);
     }
 
-    nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
+    if (bUseCudaLaunchKernel)
+    {
+        gmx_unused void* kernel_args[4];
+        kernel_args[0] = adat;
+        kernel_args[1] = nbp;
+        kernel_args[2] = plist;
+        kernel_args[3] = &bCalcFshift;
+
+#if GMX_CUDA_VERSION >= 7000
+        cudaLaunchKernel((void *)nb_kernel, dim_grid, dim_block, kernel_args, shmem, stream);
+#endif
+    }
+    else
+    {
+        nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
+    }
     CU_LAUNCH_ERR("k_calc_nb");
 
     if (bDoTime)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,12 +189,12 @@ const char *getFftDescriptionString()
 {
 // Define the FFT description string
 #if GMX_FFT_FFTW3
-#  ifdef GMX_NATIVE_WINDOWS
+#  if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";
 #  else
     // Use the version string provided by libfftw3
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     return fftw_version;
 #    else
     return fftwf_version;
@@ -223,21 +223,21 @@ void gmx_print_version_info(FILE *fp)
         fprintf(fp, "Branched from:      %s\n", base_hash);
     }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     fprintf(fp, "Precision:          double\n");
 #else
     fprintf(fp, "Precision:          single\n");
 #endif
     fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
 
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
-#elif defined(GMX_MPI)
+#elif GMX_MPI
     fprintf(fp, "MPI library:        MPI\n");
 #else
     fprintf(fp, "MPI library:        none\n");
 #endif
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     fprintf(fp, "OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)\n", GMX_OPENMP_MAX_THREADS);
 #else
     fprintf(fp, "OpenMP support:     disabled\n");
@@ -320,7 +320,7 @@ void printBinaryInformation(FILE                            *fp,
     const char *prefix          = settings.prefix_;
     const char *suffix          = settings.suffix_;
     const char *precisionString = "";
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
     const char *const name = programContext.displayName();
@@ -348,7 +348,7 @@ void printBinaryInformation(FILE                            *fp,
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
+        fprintf(fp, "%sGROMACS:      %s, version %s%s%s\n", prefix, name,
                 gmx_version(), precisionString, suffix);
     }
     const char *const binaryPath = programContext.fullBinaryPath();

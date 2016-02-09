@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,9 +59,9 @@ macro(gmx_set_build_information)
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
     if(GMX_X86_GCC_INLINE_ASM)
-        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM")
+        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=1")
     else()
-        set(GCC_INLINE_ASM_DEFINE "")
+        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=0")
     endif()
 
     message(STATUS "Setting build user/date/host/cpu information")

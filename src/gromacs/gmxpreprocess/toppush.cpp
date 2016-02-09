@@ -1428,11 +1428,11 @@ void push_molt(t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
         warning_error(wi, "Expected a molecule type name and nrexcl");
     }
 
-    /* Test if this atomtype overwrites another */
-    i = 0;
+    /* Test if this moleculetype overwrites another */
+    i    = 0;
     while (i < *nmol)
     {
-        if (gmx_strcasecmp(*((*mol)[i].name), type) == 0)
+        if (strcmp(*((*mol)[i].name), type) == 0)
         {
             gmx_fatal(FARGS, "moleculetype %s is redefined", type);
         }
@@ -2333,30 +2333,59 @@ void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
               int *nrcopies,
               warninp_t wi)
 {
-    int  i, copies;
     char type[STRLEN];
 
-    *nrcopies = 0;
-    if (sscanf(pline, "%s%d", type, &copies) != 2)
+    if (sscanf(pline, "%s%d", type, nrcopies) != 2)
     {
         too_few(wi);
         return;
     }
 
-    /* search moleculename */
-    for (i = 0; ((i < nrmols) && gmx_strcasecmp(type, *(mols[i].name))); i++)
+    /* Search moleculename.
+     * Here we originally only did case insensitive matching. But because
+     * some PDB files can have many chains and use case to generate more
+     * chain-identifiers, which in turn end up in our moleculetype name,
+     * we added support for case-sensitivity.
+     */
+    int nrcs    = 0;
+    int nrci    = 0;
+    int matchci = -1;
+    int matchcs = -1;
+    for (int i = 0; i < nrmols; i++)
     {
-        ;
+        if (strcmp(type, *(mols[i].name)) == 0)
+        {
+            nrcs++;
+            matchcs = i;
+        }
+        if (gmx_strcasecmp(type, *(mols[i].name)) == 0)
+        {
+            nrci++;
+            matchci = i;
+        }
     }
 
-    if (i < nrmols)
+    if (nrcs == 1)
     {
-        *nrcopies        = copies;
-        *whichmol        = i;
+        // select the case sensitive match
+        *whichmol = matchcs;
     }
     else
     {
-        gmx_fatal(FARGS, "No such moleculetype %s", type);
+        // avoid matching case-insensitive when we have multiple matches
+        if (nrci > 1)
+        {
+            gmx_fatal(FARGS, "For moleculetype '%s' in [ system ] %d case insensitive matches, but %d case sensitive matches were found. Check the case of the characters in the moleculetypes.", type, nrci, nrcs);
+        }
+        if (nrci == 1)
+        {
+            // select the unique case insensitive match
+            *whichmol = matchci;
+        }
+        else
+        {
+            gmx_fatal(FARGS, "No such moleculetype %s", type);
+        }
     }
 }
 

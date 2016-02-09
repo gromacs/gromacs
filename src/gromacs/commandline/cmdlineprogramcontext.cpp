@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ std::string findFullBinaryPath(const std::string            &invokedName,
     std::string searchName = invokedName;
     // On Windows & Cygwin we need to add the .exe extension,
     // or we wont be able to detect that the file exists.
-#if (defined GMX_NATIVE_WINDOWS || defined GMX_CYGWIN)
+#if GMX_NATIVE_WINDOWS || GMX_CYGWIN
     if (!endsWith(searchName, ".exe"))
     {
         searchName.append(".exe");
@@ -203,7 +203,7 @@ bool isAcceptableLibraryPathPrefix(const std::string &path)
  */
 std::string findFallbackInstallationPrefixPath()
 {
-#ifndef GMX_NATIVE_WINDOWS
+#if !GMX_NATIVE_WINDOWS
     if (!isAcceptableLibraryPathPrefix(CMAKE_INSTALL_PREFIX))
     {
         if (isAcceptableLibraryPathPrefix("/usr/local"))

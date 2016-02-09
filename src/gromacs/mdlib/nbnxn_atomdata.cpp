@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "thread_mpi/atomic.h"
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -490,7 +491,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      * are of equal size.
      */
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE*simd_width;
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     snew_aligned(nbat->simd_exclusion_filter64, simd_excl_size,   NBNXN_MEM_ALIGN);
 #else
     snew_aligned(nbat->simd_exclusion_filter, simd_excl_size,   NBNXN_MEM_ALIGN);
@@ -499,7 +500,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
     for (int j = 0; j < simd_excl_size; j++)
     {
         /* Set the consecutive bits for masking pair exclusions */
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
         nbat->simd_exclusion_filter64[j]     = (1U << j);
 #else
         nbat->simd_exclusion_filter[j]       = (1U << j);
@@ -1009,7 +1010,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t    *nbat,
         }
         else
         {
-            nsubc = GPU_NSUBCELL;
+            nsubc = gpu_ncluster_per_cell;
         }
 
         int c_offset = grid->cell0*grid->na_sc;

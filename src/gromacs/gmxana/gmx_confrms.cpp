@@ -50,6 +50,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"

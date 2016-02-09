@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,8 @@
 
 #include <cstdio>
 #include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
@@ -160,6 +162,18 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
     {
         atoms->pdbinfo = NULL;
     }
+}
+
+void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
+{
+    pdbinfo->type         = epdbATOM;
+    pdbinfo->atomnr       = 0;
+    pdbinfo->altloc       = ' ';
+    pdbinfo->atomnm[0]    = '\0';
+    pdbinfo->occup        = 1.0;
+    pdbinfo->bfac         = 0.0;
+    pdbinfo->bAnisotropic = FALSE;
+    std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
 }
 
 t_atoms *copy_t_atoms(t_atoms *src)

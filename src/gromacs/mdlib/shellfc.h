@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 #define GMX_MDLIB_SHELLFC_H
 
 #include <cstdio>
+#include <cstdint>
 
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
@@ -62,34 +63,36 @@ typedef struct {
 } gmx_shell_thread_t;
 
 typedef struct gmx_shellfc {
-    int                 nshell_gl;              /* The number of shells in the system       */
-    t_shell            *shell_gl;               /* All the shells (for DD only)             */
-    int                *shell_index_gl;         /* Global shell index (for DD only)         */
-    int                 nshell;                 /* The number of local shells               */
-    t_shell            *shell;                  /* The local shells                         */
-    int                 shell_nalloc;           /* The allocation size of shell             */
-    gmx_bool            bPredict;               /* Predict shell positions                  */
-    gmx_bool            bRequireInit;           /* Require initialization of shell positions  */
-    int                 nflexcon;               /* The number of flexible constraints       */
-    rvec               *x[2];                   /* Array for iterative minimization         */
-    rvec               *f[2];                   /* Array for iterative minimization         */
-    int                 x_nalloc;               /* The allocation size of x and f           */
-    rvec               *acc_dir;                /* Acceleration direction for flexcon       */
-    rvec               *x_old;                  /* Old coordinates for flexcon              */
-    int                 flex_nalloc;            /* The allocation size of acc_dir and x_old */
-    rvec               *adir_xnold;             /* Work space for init_adir                 */
-    rvec               *adir_xnew;              /* Work space for init_adir                 */
-    int                 adir_nalloc;            /* Work space for init_adir                 */
-    gmx_bool            bInterCG;               /* Are there inter charge-group shells?     */
-    int                 n_intercg_shells;       /* inter-charge group shells                */
-    int                 nshell_pbc_molt;        /* The array size of shell_pbc_molt         */
-    int              ***shell_pbc_molt;         /* The pbc atoms for intercg shells         */
-    int               **shell_pbc_loc;          /* The local pbc atoms                      */
-    int                *shell_pbc_loc_nalloc;   /* Sizes of shell_pbc_loc                   */
-    int                 nthreads;               /* Number of threads used for shells        */
-    gmx_shell_thread_t *tdata;                  /* Thread local shells and work structs     */
-    int                *th_ind;                 /* Work array                               */
-    int                 th_ind_nalloc;          /* Size of th_ind                           */
+    int                 nshell_gl;                  /* The number of shells in the system       */
+    t_shell            *shell_gl;                   /* All the shells (for DD only)             */
+    int                *shell_index_gl;             /* Global shell index (for DD only)         */
+    int                 nshell;                     /* The number of local shells               */
+    t_shell            *shell;                      /* The local shells                         */
+    int                 shell_nalloc;               /* The allocation size of shell             */
+    gmx_bool            bPredict;                   /* Predict shell positions                  */
+    gmx_bool            bRequireInit;               /* Require initialization of shell positions  */
+    int                 nflexcon;                   /* The number of flexible constraints       */
+    rvec               *x[2];                       /* Array for iterative minimization         */
+    rvec               *f[2];                       /* Array for iterative minimization         */
+    int                 x_nalloc;                   /* The allocation size of x and f           */
+    rvec               *acc_dir;                    /* Acceleration direction for flexcon       */
+    rvec               *x_old;                      /* Old coordinates for flexcon              */
+    int                 flex_nalloc;                /* The allocation size of acc_dir and x_old */
+    rvec               *adir_xnold;                 /* Work space for init_adir                 */
+    rvec               *adir_xnew;                  /* Work space for init_adir                 */
+    int                 adir_nalloc;                /* Work space for init_adir                 */
+    gmx_bool            bInterCG;                   /* Are there inter charge-group shells?     */
+    int                 n_intercg_shells;           /* inter-charge group shells                */
+    int                 nshell_pbc_molt;            /* The array size of shell_pbc_molt         */
+    int              ***shell_pbc_molt;             /* The pbc atoms for intercg shells         */
+    int               **shell_pbc_loc;              /* The local pbc atoms                      */
+    int                *shell_pbc_loc_nalloc;       /* Sizes of shell_pbc_loc                   */
+    int                 nthreads;                   /* Number of threads used for shells        */
+    gmx_shell_thread_t *tdata;                      /* Thread local shells and work structs     */
+    int                *th_ind;                     /* Work array                               */
+    int                 th_ind_nalloc;              /* Size of th_ind                           */
+    std::int64_t        numForceEvaluations;        /* Total number of force evaluations         */
+    int                 numConvergedIterations;     /* Total number of iterations that converged */
 } t_gmx_shellfc;
 
 /* Abstract type for shells */
@@ -107,11 +110,11 @@ struct t_inputrec;
 struct t_state;
 
 /* Initialization function, also predicts the initial shell postions.
- * If x!=NULL, the shells are predict for the global coordinates x.
  */
 void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                         gmx_mtop_t *mtop, int nflexcon,
-                        rvec *x);
+                        int nstcalcenergy,
+                        bool usingDomainDecomposition);
 
 /* Get the local shell with domain decomposition */
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
@@ -134,10 +137,8 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         t_forcerec *fr,
                         gmx_bool bBornRadii,
                         double t, rvec mu_tot,
-                        gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
-                        FILE *fp_field,
-                        int *count);
+                        FILE *fp_field);
 
 /* functions for DD */
 void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], rvec f[]);
@@ -172,5 +173,8 @@ void split_shells_over_threads(const t_ilist   *ilist,
 
 void set_shell_top(gmx_shellfc_t shfc, gmx_localtop_t *top, t_mdatoms *md,
                    t_commrec *cr);
+
+/* Print some final output */
+void done_shellfc(FILE *fplog, gmx_shellfc_t shellfc, gmx_int64_t numSteps);
 
 #endif

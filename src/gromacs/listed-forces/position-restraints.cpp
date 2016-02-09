@@ -54,6 +54,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"

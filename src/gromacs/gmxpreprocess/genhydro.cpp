@@ -49,6 +49,7 @@
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/ter_db.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"

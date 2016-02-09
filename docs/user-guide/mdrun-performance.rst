@@ -556,11 +556,11 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
 - Using more than one GPU on a node is supported only with thread MPI
 - Sharing a GPU between multiple PP ranks is not supported
 - No Intel devices (CPUs, GPUs or Xeon Phi) are supported
-- Due to blocking behavior of clEnqueue functions in the NVIDIA driver, there is
-  almost no performance gain when using NVIDIA GPUs. A bug report has already
-  been filed about this issue. A possible workaround would be to have a
-  separate thread for issuing GPU commands. However this hasn't been implemented
-  yet.
+- Due to blocking behavior of some asynchronous task enqueuing functions
+  in the NVIDIA OpenCL runtime, with the affected driver versions there is
+  almost no performance gain when using NVIDIA GPUs.
+  The issue affects NVIDIA driver versions up to 349 series, but it
+  known to be fixed 352 and later driver releases.
 
 Limitations of interest to |Gromacs| developers:
 

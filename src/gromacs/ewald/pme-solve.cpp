@@ -42,6 +42,8 @@
 #include <cmath>
 
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"

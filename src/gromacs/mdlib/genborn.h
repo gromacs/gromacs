@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_GENBORN_H
 #define GMX_MDLIB_GENBORN_H
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vectypes.h"
 
 struct gmx_genborn_t;

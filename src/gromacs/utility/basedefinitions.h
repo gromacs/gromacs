@@ -155,22 +155,6 @@ typedef uint64_t gmx_uint64_t;
  */
 #define gmx_restrict __restrict
 
-/*! \def gmx_cxx_const
- * \brief
- * Keyword to work around C/C++ differences in possible const keyword usage.
- *
- * Some functions that do not modify their input parameters cannot declare
- * those parameters as `const` and compile warning/error-free on both C and C++
- * compilers because of differences in `const` semantics.  This macro can be
- * used in cases where C++ allows `const`, but C does not like it, to make the
- * same declaration work for both.
- */
-#ifdef __cplusplus
-#define gmx_cxx_const const
-#else
-#define gmx_cxx_const
-#endif
-
 /*! \def GMX_CXX11_COMPILATION
  * \brief
  * Defined to 1 when compiling as C++11.

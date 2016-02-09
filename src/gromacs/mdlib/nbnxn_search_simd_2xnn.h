@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,11 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 static gmx_inline void
 icell_set_x_simd_2xnn(int ci,
                       real shx, real shy, real shz,
-                      int gmx_unused na_c,
                       int gmx_unused stride, const real *x,
                       nbnxn_list_work_t *work)
 {
     int   ia;
-    real *x_ci_simd = work->x_ci_simd;;
+    real *x_ci_simd = work->x_ci_simd;
 
     ia = X_IND_CI_SIMD_2XNN(ci);
 

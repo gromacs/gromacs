@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "buildinfo.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -75,20 +75,11 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     }
 
     std::fprintf(fp, "\n-------------------------------------------------------\n");
-    std::fprintf(fp, "Program:     %s, %s\n", programName, gmx_version());
+    std::fprintf(fp, "Program:     %s, version %s\n", programName, gmx_version());
     if (file != NULL)
     {
-        // TODO: Check whether this works on Windows. If it doesn't, perhaps
-        // add Path::startsWith().
-        if (startsWith(file, CMAKE_SOURCE_DIR))
-        {
-            file += std::strlen(CMAKE_SOURCE_DIR);
-            if (file[0] == '/' || file[0] == '\\')
-            {
-                ++file;
-            }
-        }
-        std::fprintf(fp, "Source file: %s (line %d)\n", file, line);
+        std::fprintf(fp, "Source file: %s (line %d)\n",
+                     Path::stripSourcePrefix(file), line);
     }
     if (func != NULL)
     {

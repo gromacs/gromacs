@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,25 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
+
+/* With GPU kernels the i and j cluster size is 8 atoms */
+static const int nbnxn_gpu_cluster_size = 8;
+
+/* The number of clusters in a super-cluster, used for GPU */
+static const int nbnxn_gpu_ncluster_per_supercluster = 8;
+
+/* With GPU kernels we group cluster pairs in 4 to optimize memory usage
+ * of integers containing 32 bits.
+ */
+static const int nbnxn_gpu_jgroup_size = 32/nbnxn_gpu_ncluster_per_supercluster;
+
+/* In CUDA the number of threads in a warp is 32 and we have cluster pairs
+ * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves.
+ */
+static const int nbnxn_gpu_clusterpair_split = 2;
+
+/* The fixed size of the exclusion mask array for a half cluster pair */
+static const int nbnxn_gpu_excl_size = nbnxn_gpu_cluster_size*nbnxn_gpu_cluster_size/nbnxn_gpu_clusterpair_split;
 
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
@@ -116,14 +135,14 @@ typedef struct {
 } nbnxn_im_ei_t;
 
 typedef struct {
-    int           cj[4];   /* The 4 j-clusters                            */
-    nbnxn_im_ei_t imei[2]; /* The i-cluster mask data       for 2 warps   */
+    int           cj[nbnxn_gpu_jgroup_size];         /* The 4 j-clusters */
+    nbnxn_im_ei_t imei[nbnxn_gpu_clusterpair_split]; /* The i-cluster mask data       for 2 warps   */
 } nbnxn_cj4_t;
 
 typedef struct {
-    unsigned int pair[32]; /* Topology exclusion interaction bits for one warp,
-                            * each unsigned has bitS for 4*8 i clusters
-                            */
+    unsigned int pair[nbnxn_gpu_excl_size]; /* Topology exclusion interaction bits for one warp,
+                                             * each unsigned has bitS for 4*8 i clusters
+                                             */
 } nbnxn_excl_t;
 
 typedef struct nbnxn_pairlist_t {
@@ -196,7 +215,7 @@ typedef struct {
  * but too small will result in overhead.
  * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
  */
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define NBNXN_BUFFERFLAG_SIZE   8
 #else
 #define NBNXN_BUFFERFLAG_SIZE  16

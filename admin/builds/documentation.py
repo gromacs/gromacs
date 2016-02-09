@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,19 +34,28 @@
 
 import os
 import re
+import shutil
 
 build_out_of_source = True
+
+extra_options = {
+    'source-md5': Option.string
+}
 
 def do_build(context):
     cmake_opts = {
             'GMX_BUILD_HELP': 'ON',
             'GMX_BUILD_MANUAL': 'ON',
+            'SOURCE_MD5SUM': context.opts.source_md5,
             'CMAKE_BUILD_TYPE': 'Debug',
             'GMX_GPU': 'OFF',
             'GMX_OPENMP': 'OFF',
             'GMX_SIMD': 'None'
         }
-    if context.job_type == JobType.GERRIT:
+    release = (context.job_type == JobType.RELEASE)
+    if release:
+        cmake_opts['GMX_BUILD_TARBALL'] = 'ON'
+    elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
         doxygen_version='1.8.5', sphinx_version='1.2.3'))
@@ -66,8 +75,9 @@ def do_build(context):
 
     context.build_target(target='doxygen-all', parallel=False,
             target_descr='Doxygen documentation', continue_on_failure=True)
-    context.build_target(target='check-source', parallel=False,
-            failure_string='check-source failed to run', continue_on_failure=True)
+    if not release:
+        context.build_target(target='check-source', parallel=False,
+                failure_string='check-source failed to run', continue_on_failure=True)
     logs = []
     for target in ('check-source', 'doxygen-xml', 'doxygen-user',
             'doxygen-lib', 'doxygen-full'):
@@ -88,11 +98,12 @@ def do_build(context):
     if context.failed:
         return
 
-    sphinx_targets = (
-            ('webpage-sphinx', 'html', 'HTML'),
-            ('man', 'man', 'man page'),
-            ('install-guide', 'install', 'install-guide')
-        )
+    sphinx_targets = [ ('webpage-sphinx', 'html', 'HTML') ]
+    if not release:
+        sphinx_targets.extend((
+                ('man', 'man', 'man page'),
+                ('install-guide', 'install', 'install-guide')
+            ))
     logs = []
     for target, log, descr in sphinx_targets:
         context.build_target(target=target, parallel=False,
@@ -115,4 +126,13 @@ def do_build(context):
             context.workspace.get_project_dir(Project.GROMACS) + '/docs/linkcheckerrc']
     for url in ignore_urls:
         cmd.extend(['--ignore-url', url])
+    # TODO: Actually check the linkchecker results
     context.run_cmd(cmd, ignore_failure=True)
+
+    if release:
+        version_info = context.read_cmake_variable_file('VersionInfo.cmake')
+        version = version_info['GMX_VERSION_STRING']
+        package_name = 'website-' + version
+        shutil.move('docs/html', package_name)
+        context.make_archive(package_name, root_dir=package_name)
+        shutil.move(package_name, 'docs/html')

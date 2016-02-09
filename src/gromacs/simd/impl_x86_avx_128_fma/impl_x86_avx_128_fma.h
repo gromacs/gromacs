@@ -36,9 +36,13 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 
+#include "impl_x86_avx_128_fma_definitions.h"
+#include "impl_x86_avx_128_fma_general.h"
 #include "impl_x86_avx_128_fma_simd4_double.h"
+#include "impl_x86_avx_128_fma_simd4_float.h"
 #include "impl_x86_avx_128_fma_simd_double.h"
 #include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include "impl_x86_avx_128_fma_util_double.h"
+#include "impl_x86_avx_128_fma_util_float.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_H

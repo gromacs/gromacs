@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@
 
 void gmx_fill_commrec_from_mpi(t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
 #else
     if (!gmx_mpi_initialized())
@@ -82,7 +82,7 @@ t_commrec *init_commrec()
 
     snew(cr, 1);
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
 #else
     cr->mpi_comm_mysim   = NULL;
@@ -95,7 +95,7 @@ t_commrec *init_commrec()
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
 
-#if defined GMX_MPI && !defined MPI_IN_PLACE_EXISTS
+#if GMX_MPI && !MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(cr->mpb, 1);
     cr->mpb->ibuf        = NULL;
@@ -113,7 +113,7 @@ t_commrec *init_commrec()
 
 t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 {
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
     t_commrec *cr;
 
     /* make a thread-specific commrec */
@@ -152,8 +152,8 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc = &cr->nc;
 
     nc->bUse = FALSE;
-#ifndef GMX_THREAD_MPI
-#ifdef GMX_MPI
+#if !GMX_THREAD_MPI
+#if GMX_MPI
     int n, rank;
 
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
@@ -228,7 +228,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
     int nrank_intranode, rank_intranode;
     int nrank_pp_intranode, rank_pp_intranode;
     /* thread-MPI is not initialized when not running in parallel */
-#if defined GMX_MPI && !defined GMX_THREAD_MPI
+#if GMX_MPI && !GMX_THREAD_MPI
     int nrank_world, rank_world;
     int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
 
@@ -312,7 +312,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
 
 void gmx_barrier(const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_barrier");
 #else
     MPI_Barrier(cr->mpi_comm_mygroup);
@@ -321,7 +321,7 @@ void gmx_barrier(const t_commrec gmx_unused *cr)
 
 void gmx_bcast(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_bast");
 #else
     MPI_Bcast(b, nbytes, MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mygroup);
@@ -330,7 +330,7 @@ void gmx_bcast(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_un
 
 void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_bast");
 #else
     MPI_Bcast(b, nbytes, MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mysim);
@@ -339,10 +339,10 @@ void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused *b, const t_commrec gm
 
 void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumd");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         if (cr->nc.rank_intra == 0)
@@ -402,10 +402,10 @@ void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unus
 
 void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumf");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         /* Use two step summing.  */
@@ -464,10 +464,10 @@ void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unuse
 
 void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumi");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         /* Use two step summing */
@@ -522,10 +522,10 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
 
 void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gmx_unused *cr)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumli");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     if (cr->nc.bUse)
     {
         /* Use two step summing */
@@ -585,10 +585,10 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
 
 
 
-#ifdef GMX_MPI
+#if GMX_MPI
 static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -608,10 +608,10 @@ static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 }
 #endif
 
-#ifdef GMX_MPI
+#if GMX_MPI
 static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -633,7 +633,7 @@ static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 
 void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumd_sim");
 #else
     gmx_sumd_comm(nr, r, ms->mpi_comm_masters);
@@ -642,7 +642,7 @@ void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t
 
 void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumf_sim");
 #else
     gmx_sumf_comm(nr, r, ms->mpi_comm_masters);
@@ -651,10 +651,10 @@ void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t 
 
 void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumi_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
 #else
     /* this is thread-unsafe, but it will do for now: */
@@ -676,10 +676,10 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 
 void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
 {
-#ifndef GMX_MPI
+#if !GMX_MPI
     gmx_call("gmx_sumli_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS)
+#if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM,
                   ms->mpi_comm_masters);
 #else
@@ -713,7 +713,7 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
 {
     va_list  ap;
     gmx_bool bFinalize;
-#ifdef GMX_MPI
+#if GMX_MPI
     int      result;
     /* Check if we are calling on all processes in MPI_COMM_WORLD */
     MPI_Comm_compare(comm, MPI_COMM_WORLD, &result);

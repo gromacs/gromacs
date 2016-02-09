@@ -95,7 +95,7 @@ struct ener_file
 static void enxsubblock_init(t_enxsubblock *sb)
 {
     sb->nr = 0;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     sb->type = xdr_datatype_double;
 #else
     sb->type = xdr_datatype_float;
@@ -446,7 +446,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
     gmx_bool     bRead      = gmx_fio_getread(ef->fio);
     int          ndisre     = 0;
     int          startb     = 0;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     xdr_datatype dtreal = xdr_datatype_float;
 #else
     xdr_datatype dtreal = xdr_datatype_double;

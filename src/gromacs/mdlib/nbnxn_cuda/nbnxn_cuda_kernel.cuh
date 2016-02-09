@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_mdlib
  */
+
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -50,7 +52,7 @@
  * code that is in double precision.
  */
 
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 /* Note: convenience macros, need to be undef-ed at the end of the file. */
 #define REDUCE_SHUFFLE
 /* On Kepler pre-loading i-atom types to shmem gives a few %,
@@ -89,43 +91,71 @@
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
 
-/* Kernel launch bounds as function of NTHREAD_Z.
- * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
+/**@{*/
+/*! \brief Compute capability dependent definition of kernel launch configuration parameters.
  *
- * Note: convenience macros, need to be undef-ed at the end of the file.
+ * NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+ * warp-pairs per block.
+ *
+ * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
+ * blocks/multiproc, is the fastest even though this setup gives low occupancy.
+ * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
+ * per multiprocessor is reduced proportionally to get the original number of max
+ * threads in flight (and slightly lower performance).
+ * - On CC 3.7 there are enough registers to double the number of threads; using
+ * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
+ * with low-register use).
+ *
+ * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
+ * shuffle-based reduction, hence CC >= 3.0.
  */
-#if __CUDA_ARCH__ == 370
-#define NTHREAD_Z           (2)
-#define MIN_BLOCKS_PER_MP   (16)
+
+/* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
+ * determines the number of threads per block and it is chosen such that
+ * 16 blocks/multiprocessor can be kept in flight.
+ * - CC 2.x, 3.0, 3.5, 5.x: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
+ */
+#if GMX_PTX_ARCH == 370
+    #define NTHREAD_Z           (2)
+    #define MIN_BLOCKS_PER_MP   (16)
 #else
-#define NTHREAD_Z           (1)
-#define MIN_BLOCKS_PER_MP   (16)
-#endif
+    #define NTHREAD_Z           (1)
+    #define MIN_BLOCKS_PER_MP   (16)
+#endif /* GMX_PTX_ARCH == 370 */
 #define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
 
-#if __CUDA_ARCH__ >= 350
+
+#if GMX_PTX_ARCH >= 350
+#if (GMX_PTX_ARCH <= 210) && (NTHREAD_Z > 1)
+    #error NTHREAD_Z > 1 will give incorrect results on CC 2.x
+#endif
+/**@}*/
+
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #else
 __launch_bounds__(THREADS_PER_BLOCK)
-#endif
+#endif /* GMX_PTX_ARCH >= 350 */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
 #else
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
-#endif
+#endif /* CALC_ENERGIES */
 #else
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
 #else
 __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
-#endif
-#endif
+#endif /* CALC_ENERGIES */
+#endif /* PRUNE_NBL */
 (const cu_atomdata_t atdat,
  const cu_nbparam_t nbparam,
  const cu_plist_t plist,
  bool bCalcFshift)
+#ifdef FUNCTION_DECLARATION_ONLY
+;     /* Only do function declaration, omit the function body. */
+#else
 {
     /* convenience variables */
     const nbnxn_sci_t *pl_sci       = plist.sci;
@@ -182,7 +212,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     unsigned int tidxz  = threadIdx.z;
 #endif
     unsigned int bidx   = blockIdx.x;
-    unsigned int widx   = tidx / WARP_SIZE; /* warp index */
+    unsigned int widx   = tidx / warp_size; /* warp index */
 
     int          sci, ci, cj, ci_offset,
                  ai, aj,
@@ -209,10 +239,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
     /* shmem buffer for cj, for each warp separately */
-    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * NBNXN_GPU_JGROUP_SIZE;
+    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * nbnxn_gpu_jgroup_size;
 #ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
-    int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE;
+    int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size;
 #endif
 
 #ifndef REDUCE_SHUFFLE
@@ -220,7 +250,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef IATYPE_SHMEM
     float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
 #else
-    float *f_buf = (float *)(cjs + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE);
+    float *f_buf = (float *)(cjs + NTHREAD_Z * 2 * nbnxn_gpu_jgroup_size);
 #endif
 #endif
 
@@ -309,26 +339,26 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     {
         wexcl_idx   = pl_cj4[j4].imei[widx].excl_ind;
         imask       = pl_cj4[j4].imei[widx].imask;
-        wexcl       = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
+        wexcl       = excl[wexcl_idx].pair[(tidx) & (warp_size - 1)];
 
 #ifndef PRUNE_NBL
         if (imask)
 #endif
         {
             /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            if ((tidxj == 0 || tidxj == 4) && tidxi < nbnxn_gpu_jgroup_size)
             {
-                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+                cjs[tidxi + tidxj * nbnxn_gpu_jgroup_size / 4] = pl_cj4[j4].cj[tidxi];
             }
 
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler is much slower;
                Tested with nvcc 3.2 - 5.0.7 */
-#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300
+#if !defined PRUNE_NBL && GMX_PTX_ARCH < 300
 #pragma unroll 4
 #endif
-            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
+            for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
                 /* ((1U << NCL_PER_SUPERCL) - 1U) is the i-cluster interaction
                  * mask for a super-cluster with all NCL_PER_SUPERCL bits set.
@@ -337,7 +367,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
+                    cj      = cjs[jm + (tidxj & 4) * nbnxn_gpu_jgroup_size / 4];
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
@@ -587,10 +617,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* flush the energies to shmem and reduce them */
     f_buf[              tidx] = E_lj;
     f_buf[FBUF_STRIDE + tidx] = E_el;
-    reduce_energy_pow2(f_buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
+    reduce_energy_pow2(f_buf + (tidx & warp_size), e_lj, e_el, tidx & ~warp_size);
 #endif
 #endif
 }
+#endif /* FUNCTION_DECLARATION_ONLY */
 
 #undef REDUCE_SHUFFLE
 #undef IATYPE_SHMEM

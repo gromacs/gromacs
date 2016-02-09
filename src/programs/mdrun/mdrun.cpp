@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -286,8 +286,8 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_int64_t       nsteps        = -2;   /* the value -2 means that the mdp option will be used */
     int               imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
 
-    rvec              realddxyz          = {0, 0, 0};
-    const char       *ddno_opt[ddnoNR+1] =
+    rvec              realddxyz                   = {0, 0, 0};
+    const char       *ddrank_opt[ddrankorderNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
     const char       *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
@@ -316,7 +316,7 @@ int gmx_mdrun(int argc, char *argv[])
 
         { "-dd",      FALSE, etRVEC, {&realddxyz},
           "Domain decomposition grid, 0 is optimize" },
-        { "-ddorder", FALSE, etENUM, {ddno_opt},
+        { "-ddorder", FALSE, etENUM, {ddrank_opt},
           "DD rank order" },
         { "-npme",    FALSE, etINT, {&npme},
           "Number of separate ranks to be used for PME, -1 is guess" },
@@ -414,7 +414,7 @@ int gmx_mdrun(int argc, char *argv[])
     };
     unsigned long   Flags;
     ivec            ddxyz;
-    int             dd_node_order;
+    int             dd_rank_order;
     gmx_bool        bDoAppendFiles, bStartFromCpt;
     FILE           *fplog;
     int             rc;
@@ -451,12 +451,7 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
 
-    /* we set these early because they might be used in init_multisystem()
-       Note that there is the potential for npme>nnodes until the number of
-       threads is set later on, if there's thread parallelization. That shouldn't
-       lead to problems. */
-    dd_node_order = nenum(ddno_opt);
-    cr->npmenodes = npme;
+    dd_rank_order = nenum(ddrank_opt);
 
     hw_opt.thread_affinity = nenum(thread_aff_opt);
 
@@ -483,7 +478,7 @@ int gmx_mdrun(int argc, char *argv[])
 
     if (nmultisim >= 1)
     {
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
         gmx_bool bParFn = (multidir == NULL);
         init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
@@ -530,7 +525,7 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
-                       nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
+                       nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                        nbpu_opt[0], nstlist,
                        nsteps, nstepout, resetstep,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,8 +160,8 @@ class SelectionCollection::Impl
         std::string             rpost_;
         //! Default output position type for selections.
         std::string             spost_;
-        //! Largest atom index needed by the selections for evaluation.
-        int                     maxAtomIndex_;
+        //! Atoms needed for evaluating the selections.
+        gmx_ana_index_t         requiredAtoms_;
         /*! \brief
          * Debugging level for the collection.
          *

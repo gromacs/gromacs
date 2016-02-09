@@ -36,21 +36,47 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H
 
+#include "config.h"
+
 #include <immintrin.h>
 
-#include "impl_x86_avx2_256_common.h"
-#include "impl_x86_avx2_256_simd_float.h"
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd4_float.h"
 
-/****************************************************
- *      SIMD4 SINGLE PRECISION IMPLEMENTATION       *
- ****************************************************/
-#undef  simd4FmaddF
-#define simd4FmaddF          _mm_fmadd_ps
-#undef  simd4FmsubF
-#define simd4FmsubF          _mm_fmsub_ps
-#undef  simd4FnmaddF
-#define simd4FnmaddF         _mm_fnmadd_ps
-#undef  simd4FnmsubF
-#define simd4FnmsubF         _mm_fnmsub_ps
+namespace gmx
+{
 
-#endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H */
+static inline Simd4Float gmx_simdcall
+fma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H

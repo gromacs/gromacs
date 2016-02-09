@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,21 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
     endif()
 endmacro()
 
+# Issue a fatal error with an appropriate message, when the toolchain
+# was not able to compile code for SIMD support.
+#
+# Inputs:
+#  SIMD_STRING              A string describing the kind of SIMD support that didn't work.
+#  ALTERNATIVE_SUGGESTION   A string describing anything the user could try other than getting a new compiler.
+#  SUGGEST_BINUTILS_UPDATE  True when there's information that the compiler was OK, but something else was not.
+function(gmx_give_fatal_error_when_simd_support_not_found SIMD_STRING ALTERNATIVE_SUGGESTION SUGGEST_BINUTILS_UPDATE)
+    if(SUGGEST_BINUTILS_UPDATE)
+        set(_msg "Found a compiler flag for ${SIMD_STRING} support, but some other problem exists. Update your assembler and/or linker, e.g. in the binutils package of your distribution.")
+    else()
+        set(_msg "Cannot find ${SIMD_STRING} compiler flag. Use a newer compiler, or ${ALTERNATIVE_SUGGESTION}.")
+    endif()
+    message(FATAL_ERROR ${_msg})
+endfunction()
 
 macro(gmx_manage_simd)
 
@@ -103,7 +118,7 @@ elseif(GMX_SIMD STREQUAL "SSE2")
                                 "-msse2" "/arch:SSE2" "-hgnu")
 
     if(NOT CFLAGS_SSE2 OR NOT CXXFLAGS_SSE2)
-        message(FATAL_ERROR "Cannot find SSE2 compiler flag. Use a newer compiler, or disable SIMD (slower).")
+        gmx_give_fatal_error_when_simd_support_not_found("SSE2" "disable SIMD support (slow)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(GMX_SIMD_X86_SSE2 1)
@@ -124,8 +139,7 @@ elseif(GMX_SIMD STREQUAL "SSE4.1")
                                 "-msse4.1" "/arch:SSE4.1" "/arch:SSE2" "-hgnu")
 
     if(NOT CFLAGS_SSE4_1 OR NOT CXXFLAGS_SSE4_1)
-        message(FATAL_ERROR "Cannot find SSE4.1 compiler flag. "
-                            "Use a newer compiler, or choose SSE2 SIMD (slower).")
+        gmx_give_fatal_error_when_simd_support_not_found("SSE4.1" "choose SSE2 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_EQUAL "11.1")
@@ -184,7 +198,7 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return _mm_movemask_ps
 
     # We only need to check the last (FMA) test; that will always fail if the basic AVX128 test failed
     if(NOT CFLAGS_AVX_128_FMA OR NOT CXXFLAGS_AVX_128_FMA)
-        message(FATAL_ERROR "Cannot find compiler flags for 128 bit AVX with FMA support. Use a newer compiler, or choose SSE4.1 SIMD (slower).")
+        gmx_give_fatal_error_when_simd_support_not_found("128-bit AVX with FMA support" "choose SSE4.1 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     ### STAGE 3: Optional: Find the XOP instruction flag (No point in yelling if this does not work)
@@ -244,7 +258,7 @@ elseif(GMX_SIMD STREQUAL "AVX_256")
                                 "-mavx" "/arch:AVX" "-hgnu")
 
     if(NOT CFLAGS_AVX OR NOT CXXFLAGS_AVX)
-        message(FATAL_ERROR "Cannot find AVX compiler flag. Use a newer compiler, or choose SSE4.1 SIMD (slower).")
+        gmx_give_fatal_error_when_simd_support_not_found("AVX" "choose SSE4.1 SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
@@ -268,7 +282,7 @@ elseif(GMX_SIMD STREQUAL "AVX2_256")
                                 "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
 
     if(NOT CFLAGS_AVX2 OR NOT CXXFLAGS_AVX2)
-        message(FATAL_ERROR "Cannot find AVX2 compiler flag. Use a newer compiler, or choose AVX SIMD (slower).")
+        gmx_give_fatal_error_when_simd_support_not_found("AVX2" "choose AVX SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     # No need to test for Maskload bug - it was fixed before gcc added AVX2 support
@@ -298,7 +312,7 @@ elseif(GMX_SIMD STREQUAL "AVX_512F")
                                 "-xMIC-AVX512" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
 
     if(NOT CFLAGS_AVX_512F OR NOT CXXFLAGS_AVX_512F)
-        message(FATAL_ERROR "Cannot find AVX 512F compiler flag. Use a newer compiler, or choose a lower level of SIMD")
+        gmx_give_fatal_error_when_simd_support_not_found("AVX 512F" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(GMX_SIMD_X86_AVX_512F 1)
@@ -320,7 +334,7 @@ elseif(GMX_SIMD STREQUAL "AVX_512ER")
                                 "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
 
     if(NOT CFLAGS_AVX_512ER OR NOT CXXFLAGS_AVX_512ER)
-        message(FATAL_ERROR "Cannot find AVX 512ER compiler flag. Use a newer compiler, or choose a lower level of SIMD")
+        gmx_give_fatal_error_when_simd_support_not_found("AVX 512ER" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(GMX_SIMD_X86_AVX_512ER 1)
@@ -328,45 +342,39 @@ elseif(GMX_SIMD STREQUAL "AVX_512ER")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
-    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler ARM NEON flag"
                               "#include<arm_neon.h>
                               int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                               SIMD_C_FLAGS
-                              "-mfpu=neon" "")
-    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler 32-bit ARM NEON flag"
+                              "-mfpu=neon-vfpv4" "-mfpu=neon" "")
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler ARM NEON flag"
                                 "#include<arm_neon.h>
                                 int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                                 SIMD_CXX_FLAGS
-                                "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
+                                "-mfpu=neon-vfpv4" "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
 
     if(NOT CFLAGS_ARM_NEON OR NOT CXXFLAGS_ARM_NEON)
-        message(FATAL_ERROR "Cannot find ARM 32-bit NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
+        gmx_give_fatal_error_when_simd_support_not_found("ARM NEON" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(GMX_SIMD_ARM_NEON 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON_ASIMD")
-    # Gcc-4.8.1 appears to have a bug where the c++ compiler requires
-    # -D__STDC_CONSTANT_MACROS if we include arm_neon.h
 
     gmx_find_cflag_for_source(CFLAGS_ARM_NEON_ASIMD "C compiler ARM NEON Advanced SIMD flag"
                               "#include<arm_neon.h>
-                              int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                               int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                               SIMD_C_FLAGS
                               "")
     gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON_ASIMD "C++ compiler ARM NEON Advanced SIMD flag"
                                 "#include<arm_neon.h>
-                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                                 SIMD_CXX_FLAGS
-                                "-D__STDC_CONSTANT_MACROS" "")
+                                "")
 
     if(NOT CFLAGS_ARM_NEON_ASIMD OR NOT CXXFLAGS_ARM_NEON_ASIMD)
-        message(FATAL_ERROR "Cannot find ARM (AArch64) NEON Advanced SIMD compiler flag. Use a newer compiler, or disable SIMD.")
-    endif()
-
-    if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9")
-        message(WARNING "At least gcc-4.8.1 has many bugs for ARM (AArch64) NEON Advanced SIMD compilation. You might need gcc version 4.9 or later.")
+        gmx_give_fatal_error_when_simd_support_not_found("ARM (AArch64) NEON Advanced SIMD" "particularly gcc version 4.9 or later, or disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.4")
@@ -387,7 +395,7 @@ elseif(GMX_SIMD STREQUAL "IBM_QPX")
         set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions")
 
     else()
-        message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
+        gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
 elseif(GMX_SIMD STREQUAL "IBM_VMX")
@@ -404,7 +412,7 @@ elseif(GMX_SIMD STREQUAL "IBM_VMX")
                                 "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
 
     if(NOT CFLAGS_IBM_VMX OR NOT CXXFLAGS_IBM_VMX)
-        message(FATAL_ERROR "Cannot find IBM VMX SIMD compiler flag. Use a newer compiler, or disable VMX SIMD.")
+        gmx_give_fatal_error_when_simd_support_not_found("IBM VMX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(GMX_SIMD_IBM_VMX 1)
@@ -412,10 +420,23 @@ elseif(GMX_SIMD STREQUAL "IBM_VMX")
 
 elseif(GMX_SIMD STREQUAL "IBM_VSX")
 
-    # Altivec was originally single-only, and it took a while for compilers
-    # to support the double-precision features in VSX. 
-    if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+        # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
+        # By putting these flags here rather than in the general compiler flags file we can safely assume
+        # that we are at least on Power7 since that is when VSX appeared.
+        if(BUILD_CPU_BRAND MATCHES "POWER7")
+            gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" SIMD_CXX_FLAGS)
+        else()
+            # Enable power8 vector extensions on all platforms except old Power7.
+            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" SIMD_CXX_FLAGS)
+        endif()
+        # Altivec was originally single-only, and it took a while for compilers
+        # to support the double-precision features in VSX.
+        if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+        endif()
     endif()
 
     gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
@@ -430,7 +451,7 @@ elseif(GMX_SIMD STREQUAL "IBM_VSX")
                                 "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
 
     if(NOT CFLAGS_IBM_VSX OR NOT CXXFLAGS_IBM_VSX)
-        message(FATAL_ERROR "Cannot find IBM VSX SIMD compiler flag. Use a newer compiler, or disable VSX SIMD.")
+        gmx_give_fatal_error_when_simd_support_not_found("IBM VSX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     set(GMX_SIMD_IBM_VSX 1)
@@ -486,7 +507,9 @@ endif()
 # when using the reference build.
 # 
 if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
+    if(GMX_TARGET_BGQ)
+        set(CALLCONV_LIST " ")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
         set(CALLCONV_LIST __regcall " ")
     else()
         set(CALLCONV_LIST __vectorcall __regcall " ")

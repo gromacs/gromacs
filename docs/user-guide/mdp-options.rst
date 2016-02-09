@@ -101,13 +101,6 @@ Run control
       twice as fast as with a Berendsen thermostat with the same
       :mdp:`tau-t`.
 
-   .. mdp-value:: sd2
-
-      This used to be the default sd integrator, but is now
-      deprecated. Four Gaussian random numbers are required per
-      coordinate per step. With constraints, the temperature will be
-      slightly too high.
-
    .. mdp-value:: bd
 
       An Euler integrator for Brownian or position Langevin dynamics,
@@ -1652,7 +1645,12 @@ applicable pulling coordinate.
 
    .. mdp-value:: flat-bottom
 
-      At distances beyond :mdp:`pull-coord1-init` a harmonic potential
+      At distances above :mdp:`pull-coord1-init` a harmonic potential
+      is applied, otherwise no potential is applied.
+
+   .. mdp-value:: flat-bottom-high
+
+      At distances below :mdp:`pull-coord1-init` a harmonic potential
       is applied, otherwise no potential is applied.
 
 .. mdp:: pull-coord1-geometry

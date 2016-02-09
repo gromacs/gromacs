@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@ const char *enum_name(int index, int max_index, const char *names[])
 {
     if (index < 0 || index >= max_index)
     {
-        static const char *undef = "UNDEFINED";
+        static const char *undef = "no name defined";
         return undef;
     }
     else
@@ -65,7 +65,7 @@ const char *ens_names[ensNR+1] =
 
 const char *ei_names[eiNR+1] =
 {
-    "md", "steep", "cg", "bd", "sd2", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", nullptr
+    "md", "steep", "cg", "bd", "sd2 - removed", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", nullptr
 };
 
 const char *ecutscheme_names[ecutsNR+1] = {
@@ -206,7 +206,7 @@ const char *ewt_names[ewtNR+1] = {
 };
 
 const char *epull_names[epullNR+1] = {
-    "umbrella", "constraint", "constant-force", "flat-bottom", nullptr
+    "umbrella", "constraint", "constant-force", "flat-bottom", "flat-bottom-high", nullptr
 };
 
 const char *epullg_names[epullgNR+1] = {

@@ -1405,7 +1405,7 @@ t_forcetable *make_tables(FILE *out,
     else
     {
         // No tables are read
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         table->scale = 2000.0;
 #else
         table->scale = 500.0;

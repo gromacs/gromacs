@@ -51,6 +51,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/arraysize.h"

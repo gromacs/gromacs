@@ -3284,7 +3284,7 @@ sinCosSingleAccuracy(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
     m2      = m2 && m3;
     mask    = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdDouble(GMX_DOUBLE_NEGZERO), one, mask);
+    csign   = csign * blend(SimdDouble(-1.0), one, mask);
 #endif
     x       = fnma(y, argred0, x);
     x       = fnma(y, argred1, x);
@@ -3400,7 +3400,7 @@ tanSingleAccuracy(SimdDouble x)
     w       = fnma(y, argred2, w);
 
     w       = blend(w, -w, mask);
-    x       = w * copysign( SimdFloat(1.0), x );
+    x       = w * copysign( SimdDouble(1.0), x );
 #endif
     x2      = x * x;
     p       = fma(CT6, x2, CT5);

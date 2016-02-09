@@ -3244,7 +3244,7 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 warning_error(wi, "Invalid value for mdp option tau-t. tau-t should only consist of real numbers separated by spaces.");
             }
-            if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
+            if ((ir->eI == eiBD) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
                 warning_error(wi, warn_buf);
@@ -3271,14 +3271,21 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 gmx_fatal(FARGS, "Cannot do Nose-Hoover temperature with Berendsen pressure control with md-vv; use either vrescale temperature with berendsen pressure or Nose-Hoover temperature with MTTK pressure");
             }
-            if ((ir->epc == epcMTTK) && (ir->etc > etcNO))
+            if (ir->epc == epcMTTK)
             {
-                if (ir->nstpcouple != ir->nsttcouple)
+                if (ir->etc != etcNOSEHOOVER)
                 {
-                    int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
-                    ir->nstpcouple = ir->nsttcouple = mincouple;
-                    sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
-                    warning_note(wi, warn_buf);
+                    gmx_fatal(FARGS, "Cannot do MTTK pressure coupling without Nose-Hoover temperature control");
+                }
+                else
+                {
+                    if (ir->nstpcouple != ir->nsttcouple)
+                    {
+                        int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
+                        ir->nstpcouple = ir->nsttcouple = mincouple;
+                        sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
+                        warning_note(wi, warn_buf);
+                    }
                 }
             }
         }
@@ -4175,15 +4182,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                 " ref-t for temperature coupling should be > 0",
                 eel_names[eelGRF]);
         CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
-    }
-
-    if (ir->eI == eiSD2)
-    {
-        sprintf(warn_buf, "The stochastic dynamics integrator %s is deprecated, since\n"
-                "it is slower than integrator %s and is slightly less accurate\n"
-                "with constraints. Use the %s integrator.",
-                ei_names[ir->eI], ei_names[eiSD1], ei_names[eiSD1]);
-        warning_note(wi, warn_buf);
     }
 
     bAcc = FALSE;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -1637,7 +1638,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * In single precision, this is faster on Bulldozer.
          */
 #if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || GMX_SIMD_IBM_QPX
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -2217,7 +2218,7 @@ static void init_nb_verlet(FILE                *fp,
          * texture objects are used), but as this is initialization code, there
          * is no point in complicating things.
          */
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
         if (PAR(cr))
         {
             gmx_barrier(cr);
@@ -2840,6 +2841,7 @@ void init_forcerec(FILE              *fp,
     }
 
     fr->eDispCorr = ir->eDispCorr;
+    fr->numAtomsForDispersionCorrection = mtop->natoms;
     if (ir->eDispCorr != edispcNO)
     {
         set_avcsixtwelve(fp, fr, mtop);
@@ -2888,7 +2890,7 @@ void init_forcerec(FILE              *fp,
     /* Generate the GB table if needed */
     if (fr->bGB)
     {
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         fr->gbtabscale = 2000;
 #else
         fr->gbtabscale = 500;
@@ -3257,7 +3259,7 @@ void free_gpu_resources(const t_forcerec     *fr,
          * Note: as only PP ranks need to free GPU resources, so it is safe to
          * not call the barrier on PME ranks.
          */
-#ifdef GMX_THREAD_MPI
+#if GMX_THREAD_MPI
         if (PAR(cr))
         {
             gmx_barrier(cr);

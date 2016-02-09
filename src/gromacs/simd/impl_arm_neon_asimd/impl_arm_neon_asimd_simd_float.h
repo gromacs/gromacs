@@ -36,70 +36,92 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
 #define GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
 
-#include <math.h>
+#include "config.h"
 
 #include <arm_neon.h>
 
-#include "impl_arm_neon_asimd_common.h"
+#include "gromacs/simd/impl_arm_neon/impl_arm_neon_simd_float.h"
 
-/* NEON ASIMD always has FMA support, so make sure we use that for single too. */
-#undef  simdFmaddF
-#define simdFmaddF(a, b, c)  vfmaq_f32(c, b, a)
-#undef  simdFmsubF
-#define simdFmsubF(a, b, c)  vnegq_f32(vfmsq_f32(c, b, a))
-#undef  simdFnmaddF
-#define simdFnmaddF(a, b, c) vfmsq_f32(c, b, a)
-#undef  simdFnmsubF
-#define simdFnmsubF(a, b, c) vnegq_f32(vfmaq_f32(c, b, a))
-
-/* The rounding instructions were actually added already in ARMv8, but most
- * compilers did not add intrinsics for them. Make sure we use them for single
- * precision too when enabling NEON Advanced SIMD.
- */
-#undef  simdRoundF
-#define simdRoundF(x)        vrndnq_f32(x)
-#undef  simdTruncF
-#define simdTruncF(x)        vrndq_f32(x)
-
-/* NEON Advanced SIMD has a real rounding conversion instruction */
-#undef  simdCvtF2I
-#define simdCvtF2I(x)        vcvtnq_s32_f32(x)
-
-/* Since we redefine rounding/conversion-with-rounding, make
- * sure we use the new operations by redefining the routine
- * to set the exponent too.
- */
-#undef  simdSetExponentF
-#define simdSetExponentF    simdSetExponentF_arm_neon_asimd
-
-/* We can do more efficient reduce with vector pairwise arithmetic */
-#undef  simdReduceF
-#define simdReduceF(a)       simdReduceF_arm_neon_asimd(a)
-
-/* Pick the largest unsigned integer as a shortcut for any-true */
-#undef  simdAnyTrueFB
-#define simdAnyTrueFB(x)     (vmaxvq_u32(x) != 0)
-#undef  simdAnyTrueFIB
-#define simdAnyTrueFIB(x)    (vmaxvq_u32(x) != 0)
-
-/****************************************************
- * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- ****************************************************/
-static inline SimdFloat
-simdSetExponentF_arm_neon_asimd(SimdFloat x)
+namespace gmx
 {
-    int32x4_t  iexp = vcvtnq_s32_f32(x);
 
-    iexp = vshlq_n_s32(vaddq_s32(iexp, vdupq_n_s32(127)), 23);
-    return vreinterpretq_f32_s32(iexp);
+static inline SimdFloat gmx_simdcall
+fma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
 }
 
-static inline float
-simdReduceF_arm_neon_asimd(SimdFloat a)
+static inline SimdFloat gmx_simdcall
+fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    a = vpaddq_f32(a, a);
-    a = vpaddq_f32(a, a);
-    return vgetq_lane_f32(a, 0);
+    return {
+               vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H */
+static inline SimdFloat gmx_simdcall
+fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+round(SimdFloat x)
+{
+    return {
+               vrndnq_f32(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+trunc(SimdFloat x)
+{
+    return {
+               vrndq_f32(x.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+cvtR2I(SimdFloat a)
+{
+    return {
+               vcvtnq_s32_f32(a.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFBool a)
+{
+    return (vmaxvq_u32(a.simdInternal_) != 0);
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFIBool a)
+{
+    return (vmaxvq_u32(a.simdInternal_) != 0);
+}
+
+static inline float gmx_simdcall
+reduce(SimdFloat a)
+{
+    float32x4_t b = a.simdInternal_;
+    b = vpaddq_f32(b, b);
+    b = vpaddq_f32(b, b);
+    return vgetq_lane_f32(b, 0);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H

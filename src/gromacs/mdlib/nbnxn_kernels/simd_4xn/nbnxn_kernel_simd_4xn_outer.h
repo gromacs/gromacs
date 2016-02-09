@@ -75,7 +75,7 @@
     SimdBool  diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
 #endif
 
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     std::uint64_t       *exclusion_filter;
 #else
     std::uint32_t       *exclusion_filter;
@@ -212,7 +212,7 @@
 #endif
 #endif
 
-#if defined GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
+#if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     exclusion_filter = nbat->simd_exclusion_filter64;
 #else
     exclusion_filter = nbat->simd_exclusion_filter;

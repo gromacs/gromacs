@@ -70,8 +70,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/real.h"
+
+struct t_inputrec;
 
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;

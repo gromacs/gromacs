@@ -229,7 +229,7 @@ void ewald_LRcorrection(int start, int end,
                                     ewcdr    = ewc_q*dr;
                                     vc       = qqA*std::erf(ewcdr)*rinv;
                                     Vexcl_q += vc;
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
                                     /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
 #define       R_ERF_R_INACC 0.006
 #else

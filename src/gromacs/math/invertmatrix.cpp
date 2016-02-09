@@ -32,14 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Routines to invert 3x3 matrices
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_math
+ */
 #include "gmxpre.h"
+
+#include "invertmatrix.h"
 
 #include <cmath>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
-void m_inv_ur0(gmx_cxx_const matrix src, matrix dest)
+namespace gmx
+{
+
+void invertBoxMatrix(const matrix src, matrix dest)
 {
     double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
     if (std::fabs(tmp) <= 100*GMX_REAL_MIN)
@@ -59,7 +71,7 @@ void m_inv_ur0(gmx_cxx_const matrix src, matrix dest)
     dest[YY][ZZ] = 0.0;
 }
 
-void m_inv(gmx_cxx_const matrix src, matrix dest)
+void invertMatrix(const matrix src, matrix dest)
 {
     const real smallreal = (real)1.0e-24;
     const real largereal = (real)1.0e24;
@@ -72,6 +84,7 @@ void m_inv(gmx_cxx_const matrix src, matrix dest)
     {
         gmx_fatal(FARGS, "Can not invert matrix, determinant = %e", determinant);
     }
+    GMX_ASSERT(dest != src, "Cannot do in-place inversion of matrix");
 
     dest[XX][XX] = c*(src[YY][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[YY][ZZ]);
     dest[XX][YY] = -c*(src[XX][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[XX][ZZ]);
@@ -83,3 +96,5 @@ void m_inv(gmx_cxx_const matrix src, matrix dest)
     dest[ZZ][YY] = -c*(src[XX][XX]*src[ZZ][YY]-src[ZZ][XX]*src[XX][YY]);
     dest[ZZ][ZZ] = c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
 }
+
+} // namespace

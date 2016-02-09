@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/random/random.h"
@@ -3392,7 +3393,7 @@ int gmx_wham(int argc, char *argv[])
     static int               nthreads = -1;
 
     t_pargs                  pa[] = {
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
         { "-nt", FALSE, etINT, {&nthreads},
           "Number of threads used by gmx wham (if -1, all threads will be used or what is specified by the environment variable OMP_NUM_THREADS)"},
 #endif

@@ -33,32 +33,58 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *  \brief
+ *  Utility constant and function declaration for the CUDA non-bonded kernels.
+ *  This header should be included once at the top level, just before the
+ *  kernels are included (has to be preceded by nbnxn_cuda_types.h).
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+#include "config.h"
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
+
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
+
+#include "nbnxn_cuda_types.h"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
-
-#if __CUDA_ARCH__ >= 300
+/* Use texture objects if supported by the target hardware. */
+#if GMX_PTX_ARCH >= 300
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define USE_TEXOBJ
 #endif
 
-#define WARP_SIZE_POW2_EXPONENT     (5)
-#define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
-#define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
-#define FBUF_STRIDE                 (CL_SIZE_SQ)
+#define CL_SIZE_LOG2 (3)  /* change this together with CL_SIZE !*/
+#define CL_SIZE_SQ   (CL_SIZE * CL_SIZE)
+#define FBUF_STRIDE  (CL_SIZE_SQ)
 
 #define ONE_SIXTH_F     0.16666667f
 #define ONE_TWELVETH_F  0.08333333f
 
+/* With multiple compilation units this ensures that texture refs are available
+   in the the kernels' compilation units. */
+#if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+/*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
+extern texture<float, 1, cudaReadModeElementType> nbfp_texref;
+
+/*! Texture reference for LJ-PME parameters; bound to cu_nbparam_t.nbfp_comb */
+extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
+
+/*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
+extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
+#endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
 /*! Apply force switch,  force + energy version. */
-static inline __device__
+static __forceinline__ __device__
 void calculate_force_switch_F(const  cu_nbparam_t nbparam,
                               float               c6,
                               float               c12,
@@ -84,7 +110,7 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
 }
 
 /*! Apply force switch, force-only version. */
-static inline __device__
+static __forceinline__ __device__
 void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
                                 float               c6,
                                 float               c12,
@@ -119,7 +145,7 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 }
 
 /*! Apply potential switch, force-only version. */
-static inline __device__
+static __forceinline__ __device__
 void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
                                   float               c6,
                                   float               c12,
@@ -153,7 +179,7 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
 }
 
 /*! Apply potential switch, force + energy version. */
-static inline __device__
+static __forceinline__ __device__
 void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
                                     float               c6,
                                     float               c12,
@@ -188,7 +214,7 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
  */
-static inline __device__
+static __forceinline__ __device__
 void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
                                     int                typei,
                                     int                typej,
@@ -219,7 +245,7 @@ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
 /*! Calculate LJ-PME grid force + energy contribution with
  *  geometric combination rule.
  */
-static inline __device__
+static __forceinline__ __device__
 void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
                                       int                typei,
                                       int                typej,
@@ -258,7 +284,7 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
  *  We use a single F+E kernel with conditional because the performance impact
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
-static inline __device__
+static __forceinline__ __device__
 void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
                                     int                typei,
                                     int                typej,
@@ -306,7 +332,7 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: from the OpenMM project
  */
-static inline __device__
+static __forceinline__ __device__
 float interpolate_coulomb_force_r(float r, float scale)
 {
     float   normalized = scale * r;
@@ -318,7 +344,7 @@ float interpolate_coulomb_force_r(float r, float scale)
            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
-static inline __device__
+static __forceinline__ __device__
 float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
 {
@@ -332,7 +358,7 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
 }
 
 /*! Calculate analytical Ewald correction term. */
-static inline __device__
+static __forceinline__ __device__
 float pmecorrF(float z2)
 {
     const float FN6 = -1.7357322914161492954e-8f;
@@ -374,7 +400,7 @@ float pmecorrF(float z2)
 /*! Final j-force reduction; this generic implementation works with
  *  arbitrary array sizes.
  */
-static inline __device__
+static __forceinline__ __device__
 void reduce_force_j_generic(float *f_buf, float3 *fout,
                             int tidxi, int tidxj, int aidx)
 {
@@ -393,8 +419,8 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 /*! Final j-force reduction; this implementation only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
-static inline __device__
+#if GMX_PTX_ARCH >= 300
+static __forceinline__ __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
 {
@@ -428,7 +454,7 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
  *  arbitrary array sizes.
  * TODO: add the tidxi < 3 trick
  */
-static inline __device__
+static __forceinline__ __device__
 void reduce_force_i_generic(float *f_buf, float3 *fout,
                             float *fshift_buf, bool bCalcFshift,
                             int tidxi, int tidxj, int aidx)
@@ -453,7 +479,7 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes.
  */
-static inline __device__
+static __forceinline__ __device__
 void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
                          float *fshift_buf, bool bCalcFshift,
                          int tidxi, int tidxj, int aidx)
@@ -466,8 +492,8 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
      * Can't just use i as loop variable because than nvcc refuses to unroll.
      */
     i = CL_SIZE/2;
-    # pragma unroll 5
-    for (j = CL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+#pragma unroll 5
+    for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
@@ -499,7 +525,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
 /*! Final i-force reduction wrapper; calls the generic or pow2 reduction depending
  *  on whether the size of the array to be reduced is power of two or not.
  */
-static inline __device__
+static __forceinline__ __device__
 void reduce_force_i(float *f_buf, float3 *f,
                     float *fshift_buf, bool bCalcFshift,
                     int tidxi, int tidxj, int ai)
@@ -517,8 +543,8 @@ void reduce_force_i(float *f_buf, float3 *f,
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
-static inline __device__
+#if GMX_PTX_ARCH >= 300
+static __forceinline__ __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
                               int tidxj, int aidx)
@@ -556,7 +582,7 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes.
  */
-static inline __device__
+static __forceinline__ __device__
 void reduce_energy_pow2(volatile float *buf,
                         float *e_lj, float *e_el,
                         unsigned int tidx)
@@ -564,11 +590,11 @@ void reduce_energy_pow2(volatile float *buf,
     int     i, j;
     float   e1, e2;
 
-    i = WARP_SIZE/2;
+    i = warp_size/2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
-# pragma unroll 10
-    for (j = WARP_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+#pragma unroll 10
+    for (j = warp_size_log2 - 1; j > 0; j--)
     {
         if (tidx < i)
         {
@@ -594,8 +620,8 @@ void reduce_energy_pow2(volatile float *buf,
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
-static inline __device__
+#if GMX_PTX_ARCH >= 300
+static __forceinline__ __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
                              int tidx)
@@ -612,13 +638,13 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
     }
 
     /* The first thread in the warp writes the reduced energies */
-    if (tidx == 0 || tidx == WARP_SIZE)
+    if (tidx == 0 || tidx == warp_size)
     {
         atomicAdd(e_lj, E_lj);
         atomicAdd(e_el, E_el);
     }
 }
-#endif /* __CUDA_ARCH__ */
+#endif /* GMX_PTX_ARCH */
 
 #undef USE_TEXOBJ
 

@@ -36,7 +36,13 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_H
 #define GMX_SIMD_IMPL_ARM_NEON_H
 
+#include "impl_arm_neon_definitions.h"
+#include "impl_arm_neon_general.h"
+// Arm/Neon cannot do double precision SIMD4
 #include "impl_arm_neon_simd4_float.h"
+// Arm/Neon cannot do double precision SIMD
 #include "impl_arm_neon_simd_float.h"
+// Arm/Neon cannot do double precision SIMD utilities
+#include "impl_arm_neon_util_float.h"
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_H */
+#endif // GMX_SIMD_IMPL_ARM_NEON_H

@@ -989,7 +989,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             bCouple = (opts->couple_moltype != NULL &&
                                        (gmx_strcasecmp("system", opts->couple_moltype) == 0 ||
-                                        gmx_strcasecmp(*(mi0->name), opts->couple_moltype) == 0));
+                                        strcmp(*(mi0->name), opts->couple_moltype) == 0));
                             if (bCouple)
                             {
                                 nmol_couple += nrcopies;

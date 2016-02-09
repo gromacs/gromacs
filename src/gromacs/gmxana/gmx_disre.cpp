@@ -61,6 +61,7 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -746,7 +747,7 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE, NULL, NULL);
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
     snew(xtop, header.natoms);
     read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, &mtop);
     bPDB = opt2bSet("-q", NFILE, fnm);

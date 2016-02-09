@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -290,19 +290,19 @@ switch function. The corresponding shifted potential function then reads:
 V_s(r) =  \int^{\infty}_r~F_s(x)\, dx
 \eeq
 
-The {\gromacs} force switch function should be smooth at the boundaries, therefore
+The {\gromacs} {\bf force switch} function $S_F(r)$ should be smooth at the boundaries, therefore
 the following boundary conditions are imposed on the switch function:
 \beq
 \begin{array}{rcl}
-S(r_1)          &=&0            \\
-S'(r_1)         &=&0            \\
-S(r_c)          &=&-F_\alpha(r_c)       \\
-S'(r_c)         &=&-F_\alpha'(r_c)
+S_F(r_1)          &=&0            \\
+S_F'(r_1)         &=&0            \\
+S_F(r_c)          &=&-F_\alpha(r_c)       \\
+S_F'(r_c)         &=&-F_\alpha'(r_c)
 \end{array}
 \eeq
 A 3$^{rd}$ degree polynomial of the form
 \beq
-S(r) = A(r-r_1)^2 + B(r-r_1)^3
+S_F(r) = A(r-r_1)^2 + B(r-r_1)^3
 \eeq
 fulfills these requirements. The constants A and B are given by the
 boundary condition at $r_c$: 
@@ -327,6 +327,33 @@ where
 \beq
 C =  \frac{1}{r_c^\alpha} - \frac{A}{3} (r_c-r_1)^3 - \frac{B}{4} (r_c-r_1)^4
 \eeq
+
+The {\gromacs} {\bf potential-switch} function $S_V(r)$ scales the potential between
+$r_1$ and $r_c$, and has similar boundary conditions, intended to produce
+smoothly-varying potential and forces:
+\beq
+\begin{array}{rcl}
+S_V(r_1)          &=&1 \\
+S_V'(r_1)         &=&0 \\
+S_V''(r_1)        &=&0 \\
+S_V(r_c)          &=&0 \\
+S_V'(r_c)         &=&0 \\
+S_V''(r_c)        &=&0
+\end{array}
+\eeq
+
+The fifth-degree polynomial that has these properties is
+\beq
+S_V(r; r_1, r_c) = \frac{1 - 10(r-r_1)^3(r_c-r_1)^2 + 15(r-r_1)^4(r_c-r_1) - 6(r-r_1)}{(r_c-r_1)^5}
+\eeq
+
+This implementation is found in several other simulation
+packages,\cite{Ohmine1988,Kitchen1990,Guenot1993} but differs from
+that in CHARMM.\cite{Steinbach1994} Switching the potential leads to
+artificially large forces in the switching region, therefore it is not
+recommended to switch Coulomb interactions using this
+function,\cite{Spoel2006a} but switching Lennard-Jones interactions
+using this function produces acceptable results.
 
 \subsection{Modified short-range interactions with Ewald summation}
 When Ewald summation\index{Ewald sum} or \seeindex{particle-mesh

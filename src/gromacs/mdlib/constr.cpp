@@ -52,11 +52,13 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/splitter.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -660,11 +662,11 @@ real *constr_rmsd_data(struct gmx_constr *constr)
     }
 }
 
-real constr_rmsd(struct gmx_constr *constr, gmx_bool bSD2)
+real constr_rmsd(struct gmx_constr *constr)
 {
     if (constr->lincsd)
     {
-        return lincs_rmsd(constr->lincsd, bSD2);
+        return lincs_rmsd(constr->lincsd);
     }
     else
     {

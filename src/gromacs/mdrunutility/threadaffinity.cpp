@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
 #include <cstdio>
 #include <cstring>
 
-#ifdef HAVE_SCHED_AFFINITY
+#if HAVE_SCHED_AFFINITY
 #  include <sched.h>
 #  include <sys/syscall.h>
 #endif
@@ -247,7 +247,7 @@ gmx_set_thread_affinity(FILE                *fplog,
     /* map the current process to cores */
     thread0_id_node = 0;
     nthread_node    = nthread_local;
-#ifdef GMX_MPI
+#if GMX_MPI
     if (PAR(cr) || MULTISIM(cr))
     {
         /* We need to determine a scan of the thread counts in this
@@ -367,8 +367,8 @@ gmx_set_thread_affinity(FILE                *fplog,
             /* Only add rank info if we have more than one rank. */
             if (cr->nnodes > 1)
             {
-#ifdef GMX_MPI
-#ifdef GMX_THREAD_MPI
+#if GMX_MPI
+#if GMX_THREAD_MPI
                 sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
 #else           /* GMX_LIB_MPI */
                 sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
@@ -433,12 +433,12 @@ gmx_check_thread_affinity_set(FILE            *fplog,
         {
             return;
         }
-#ifndef GMX_THREAD_MPI
+#if !GMX_THREAD_MPI
         return;
 #endif
     }
 
-#ifdef HAVE_SCHED_AFFINITY
+#if HAVE_SCHED_AFFINITY
     int       ret;
     cpu_set_t mask_current;
 
@@ -480,7 +480,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     gmx_bool  bAllSet_All;
 
     MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);

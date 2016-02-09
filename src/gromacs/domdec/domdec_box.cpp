@@ -52,6 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 

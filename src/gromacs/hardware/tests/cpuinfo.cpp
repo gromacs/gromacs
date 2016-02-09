@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ TEST(CpuInfoTest, SupportLevel)
     EXPECT_GT(c.supportLevel(), gmx::CpuInfo::SupportLevel::None)
     << "No CPU information at all could be detected. " << commonMsg << std::endl;
 
-#if defined __powerpc__ || defined __ppc__ || defined __PPC__  || defined __arm__ || defined __arm || defined GMX_TARGET_X86
+#if defined __powerpc__ || defined __ppc__ || defined __PPC__  || defined __arm__ || defined __arm || GMX_TARGET_X86
     EXPECT_GE(c.supportLevel(), gmx::CpuInfo::SupportLevel::Features)
     << "No CPU features could be detected. " << commonMsg << std::endl;
 #endif

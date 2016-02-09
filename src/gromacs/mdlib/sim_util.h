@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,6 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -48,6 +47,7 @@
 struct gmx_constr;
 struct gmx_localtop_t;
 struct gmx_output_env_t;
+struct gmx_update_t;
 struct nonbonded_verlet_t;
 struct t_graph;
 struct t_mdatoms;
@@ -83,16 +83,16 @@ gmx_global_stat_t global_stat_init(t_inputrec *ir);
 
 void global_stat_destroy(gmx_global_stat_t gs);
 
-void global_stat(FILE *log, gmx_global_stat_t gs,
+void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
                  gmx_constr *constr, t_vcm *vcm,
                  int nsig, real *sig,
-                 gmx_mtop_t *top_global, t_state *state_local,
+                 int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
-/* Communicate statistics over cr->mpi_comm_mysim */
+/* All-reduce energy-like quantities over cr->mpi_comm_mysim */
 
 int do_per_step(gmx_int64_t step, gmx_int64_t nstep);
 /* Return TRUE if io should be done */
@@ -127,7 +127,6 @@ void finish_run(FILE *log, t_commrec *cr,
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
 void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
-                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr);
 
@@ -143,7 +142,7 @@ void init_md(FILE *fplog,
              double *t, double *t0,
              real *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
-             gmx_update_t *upd,
+             gmx_update_t **upd,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,

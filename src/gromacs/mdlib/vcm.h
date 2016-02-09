@@ -40,12 +40,12 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_groups_t;
+struct t_inputrec;
 
 typedef struct {
     int        nr;             /* Number of groups                    */

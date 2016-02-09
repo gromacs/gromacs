@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -376,7 +377,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t, gmx_int64_t step)
             gmx_fatal(FARGS, "%s MPI buffer overflow, please report this error.", RotStr);
         }
 
-#ifdef GMX_MPI
+#if GMX_MPI
         MPI_Reduce(er->mpi_inbuf, er->mpi_outbuf, count, GMX_MPI_REAL, MPI_SUM, MASTERRANK(cr), cr->mpi_comm_mygroup);
 #endif
 
@@ -3520,7 +3521,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
             get_center(xdum, erg->mc, rotg->nat, erg->xc_center);
             sfree(xdum);
         }
-#ifdef GMX_MPI
+#if GMX_MPI
         if (PAR(cr))
         {
             gmx_bcast(sizeof(erg->xc_center), erg->xc_center, cr);
@@ -3555,7 +3556,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
                 copy_correct_pbc_image(x[ii], erg->xc_old[i], xref, box, 3);
             }
         }
-#ifdef GMX_MPI
+#if GMX_MPI
         if (PAR(cr))
         {
             gmx_bcast(rotg->nat*sizeof(erg->xc_old[0]), erg->xc_old, cr);
@@ -3725,7 +3726,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
         snew(x_pbc, mtop->natoms);
-        m_rveccopy(mtop->natoms, x, x_pbc);
+        copy_rvecn(x, x_pbc, 0, mtop->natoms);
         do_pbc_first_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule

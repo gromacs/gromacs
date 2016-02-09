@@ -50,6 +50,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/groupcoord.h"
@@ -57,6 +58,7 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
@@ -2704,7 +2706,7 @@ void init_edsam(const gmx_mtop_t *mtop,
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
             snew(x_pbc, mtop->natoms);
-            m_rveccopy(mtop->natoms, x, x_pbc);
+            copy_rvecn(x, x_pbc, 0, mtop->natoms);
             do_pbc_first_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
@@ -3021,13 +3023,6 @@ void do_edsam(const t_inputrec *ir,
     if (ed->eEDtype == eEDnone)
     {
         return;
-    }
-
-    /* Suppress output on first call of do_edsam if
-     * two-step sd2 integrator is used */
-    if ( (ir->eI == eiSD2) && (v != NULL) )
-    {
-        bSuppress = TRUE;
     }
 
     dt_1 = 1.0/ir->delta_t;

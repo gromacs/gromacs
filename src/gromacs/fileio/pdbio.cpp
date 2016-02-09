@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
 
     if (norm2(box[YY])*norm2(box[ZZ]) != 0)
     {
-        alpha = RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ]));
+        alpha = RAD2DEG*gmx_angle(box[YY], box[ZZ]);
     }
     else
     {
@@ -142,7 +142,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
     }
     if (norm2(box[XX])*norm2(box[ZZ]) != 0)
     {
-        beta  = RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ]));
+        beta  = RAD2DEG*gmx_angle(box[XX], box[ZZ]);
     }
     else
     {
@@ -150,7 +150,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
     }
     if (norm2(box[XX])*norm2(box[YY]) != 0)
     {
-        gamma = RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY]));
+        gamma = RAD2DEG*gmx_angle(box[XX], box[YY]);
     }
     else
     {
@@ -356,24 +356,23 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         {
             resnr = resnr % 10000;
         }
-        if (atoms->pdbinfo)
+        t_pdbinfo pdbinfo;
+        if (atoms->pdbinfo != nullptr)
         {
-            type   = static_cast<enum PDB_record>(atoms->pdbinfo[i].type);
-            altloc = atoms->pdbinfo[i].altloc;
-            if (!isalnum(altloc))
-            {
-                altloc = ' ';
-            }
-            occup = bOccup ? 1.0 : atoms->pdbinfo[i].occup;
-            bfac  = atoms->pdbinfo[i].bfac;
+            pdbinfo = atoms->pdbinfo[i];
         }
         else
         {
-            type   = epdbATOM;
-            occup  = 1.0;
-            bfac   = 0.0;
+            gmx_pdbinfo_init_default(&pdbinfo);
+        }
+        type   = static_cast<enum PDB_record>(pdbinfo.type);
+        altloc = pdbinfo.altloc;
+        if (!isalnum(altloc))
+        {
             altloc = ' ';
         }
+        occup = bOccup ? 1.0 : pdbinfo.occup;
+        bfac  = pdbinfo.bfac;
 
         gmx_fprintf_pdb_atomline(out,
                                  type,

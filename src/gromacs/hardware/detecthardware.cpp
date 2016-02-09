@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 /* For sysconf */
 #include <unistd.h>
 #endif
-#ifdef GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
 #include <windows.h>
 #endif
 
@@ -98,12 +98,7 @@ static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
  * one real MPI rank on the same node (it segfaults when you try).
  */
 static const bool multiGpuSupport[] = {
-    false, true,
-#ifdef GMX_THREAD_MPI
-    true,
-#else
-    false, /* Real MPI and no MPI */
-#endif
+    false, true, GMX_THREAD_MPI
 };
 static const bool bMultiGpuPerNodeSupported = multiGpuSupport[GMX_GPU];
 
@@ -175,7 +170,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 
     ngpu = gpu_info->n_dev;
 
-#if defined GMX_MPI && !defined GMX_THREAD_MPI
+#if GMX_LIB_MPI
     /* We only print the detection on one, of possibly multiple, nodes */
     std::strncpy(onhost, " on host ", 10);
     gmx_gethostname(onhost + 9, HOSTNAMELEN);
@@ -348,11 +343,11 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         return;
     }
 
-#if defined(GMX_THREAD_MPI)
+#if GMX_THREAD_MPI
     bMPI          = FALSE;
     btMPI         = TRUE;
     bNthreadsAuto = (hw_opt->nthreads_tmpi < 1);
-#elif defined(GMX_LIB_MPI)
+#elif GMX_LIB_MPI
     bMPI          = TRUE;
     btMPI         = FALSE;
     bNthreadsAuto = FALSE;
@@ -531,7 +526,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         }
     }
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (PAR(cr))
     {
         /* Avoid other ranks to continue after
@@ -687,7 +682,7 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
         fprintf(debug, "Detected %d hardware threads to use.\n", ret);
     }
 
-#ifdef GMX_OPENMP
+#if GMX_OPENMP
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
@@ -702,7 +697,7 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
 
 static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     int              rank_world;
     MPI_Comm         physicalnode_comm;
 #endif
@@ -716,7 +711,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
      * TODO: We should also do CPU hardware detection only once on each
      * physical node and broadcast it, instead of do it on every MPI rank.
      */
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     /* A split of MPI_COMM_WORLD over physical nodes is only required here,
      * so we create and destroy it locally.
      */
@@ -752,7 +747,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
         }
     }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     /* Broadcast the GPU info to the other ranks within this node */
     MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalnode_comm);
 
@@ -779,7 +774,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 
 static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 {
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     int  rank_id;
     int  nrank, rank, ncore, nhwthread, ngpu, i;
     int  gpu_hash;
@@ -1037,7 +1032,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         }
     }
 
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
     char host[HOSTNAMELEN];
     int  rank;
 
@@ -1302,7 +1297,7 @@ static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
                           nrank, gpu_opt->n_dev_compatible);
             }
 
-#ifdef GMX_MPI
+#if GMX_MPI
             /* We use a global barrier to prevent ranks from continuing with
              * an invalid setup.
              */

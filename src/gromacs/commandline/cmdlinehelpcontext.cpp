@@ -74,9 +74,9 @@ class CommandLineHelpContext::Impl
 {
     public:
         //! Creates the implementation class and the low-level context.
-        Impl(TextOutputStream *stream, HelpOutputFormat format,
+        Impl(TextWriter *writer, HelpOutputFormat format,
              const HelpLinks *links)
-            : writerContext_(stream, format, links), moduleDisplayName_("gmx"),
+            : writerContext_(writer, format, links), moduleDisplayName_("gmx"),
               completionWriter_(NULL), bHidden_(false)
         {
         }
@@ -98,9 +98,9 @@ class CommandLineHelpContext::Impl
 };
 
 CommandLineHelpContext::CommandLineHelpContext(
-        TextOutputStream *stream, HelpOutputFormat format,
+        TextWriter *writer, HelpOutputFormat format,
         const HelpLinks *links, const std::string &programName)
-    : impl_(new Impl(stream, format, links))
+    : impl_(new Impl(writer, format, links))
 {
     impl_->writerContext_.setReplacement("[PROGRAM]", programName);
 }
@@ -113,7 +113,7 @@ CommandLineHelpContext::CommandLineHelpContext(
 
 CommandLineHelpContext::CommandLineHelpContext(
         ShellCompletionWriter *writer)
-    : impl_(new Impl(&writer->outputStream(), eHelpOutputFormat_Other, NULL))
+    : impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Other, NULL))
 {
     impl_->completionWriter_ = writer;
 }

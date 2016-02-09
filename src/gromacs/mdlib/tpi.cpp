@@ -76,6 +76,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
@@ -686,7 +687,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             bNS           = FALSE;
 
             /* Calculate long range corrections to pressure and energy */
-            calc_dispcorr(inputrec, fr, top_global->natoms, state_global->box,
+            calc_dispcorr(inputrec, fr, state_global->box,
                           lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
             /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
             enerd->term[F_DISPCORR]  = enercorr;

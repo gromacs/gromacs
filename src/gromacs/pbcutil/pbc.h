@@ -40,11 +40,11 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -155,6 +155,9 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
  */
 const char *check_box(int ePBC, const matrix box);
+
+/*! \brief Creates box matrix from edge lengths and angles. */
+void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees);
 
 /*! \brief Compute the maximum cutoff for the box
 

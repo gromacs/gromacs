@@ -115,7 +115,7 @@ void initOptionsBasic(gmx::IOptionsContainer                 *options,
         "for testing [THISMODULE]."
     };
     settings->setHelpText(desc);
-    options->addOption(gmx::IntegerOption("int"));
+    options->addOption(gmx::IntegerOption("int").description("Integer option"));
 }
 
 TEST_F(CommandLineHelpModuleTest, ExportsHelp)

@@ -150,7 +150,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
  * larger than the float/double precision.
  */
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define bRmod(a, b, c) bRmod_fd(a, b, c, TRUE)
 #else
 #define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)

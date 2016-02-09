@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,10 @@
 #                     The compiler is chosen based on the extension of this file
 # FLAGSVAR            Variable (string) to which we should add the correct flag
 # Args 5 through N    Multiple strings with optimization flags to test
+#
+# If a compile flag is found, but the project in check_c_source_compiles
+# fails to build, sets SUGGEST_BINUTILS_UPDATE in parent scope to suggest
+# that the calling code tell the user about this issue if needed.
 FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
     IF(NOT DEFINED ${VARIABLE})
         # Insert a blank element last in the list (try without any flags too)
@@ -55,9 +59,13 @@ FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
             check_c_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
 
             if(${COMPILE_FLAG_VARIABLE})
-                # Check that we can compile SIMD source (this does not catch warnings)
+                # Check that we can compile SIMD source (this does not catch compiler warnings)
                 check_c_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
-            endif(${COMPILE_FLAG_VARIABLE})
+                if(NOT ${COMPILE_SIMD_VARIABLE})
+                    message(STATUS "Compiler flag was valid, but executable did not build - perhaps update the binutils package")
+                    set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
+                endif()
+            endif()
 
             if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
@@ -82,6 +90,10 @@ ENDFUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
 #                     The compiler is chosen based on the extension of this file
 # FLAGSVAR            Variable (string) to which we should add the correct flag
 # Args 5 through N    Multiple strings with optimization flags to test
+#
+# If a compile flag is found, but the project in check_cxx_source_compiles
+# fails to build, sets SUGGEST_BINUTILS_UPDATE in parent scope to suggest
+# that the calling code tell the user about this issue if needed.
 FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
 
     IF(NOT DEFINED ${VARIABLE})
@@ -99,9 +111,13 @@ FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
             check_cxx_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
 
             if(${COMPILE_FLAG_VARIABLE})
-                # Check that we can compile SIMD source (this does not catch warnings)
+                # Check that we can compile SIMD source (this does not catch compiler warnings)
                 check_cxx_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
-            endif(${COMPILE_FLAG_VARIABLE})
+                if(NOT ${COMPILE_SIMD_VARIABLE})
+                    message(STATUS "Compiler flag was valid, but executable did not build - perhaps update the binutils package")
+                    set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
+                endif()
+            endif()
 
             if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
                 set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")

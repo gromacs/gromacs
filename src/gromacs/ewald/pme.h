@@ -53,7 +53,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -61,6 +60,7 @@
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
+struct t_inputrec;
 
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD

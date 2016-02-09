@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,9 @@ function(gmx_suggest_simd _suggested_simd)
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
     if(GMX_X86_GCC_INLINE_ASM)
-        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM")
+        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=1")
     else()
-        set(GCC_INLINE_ASM_DEFINE "")
+        set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=0")
     endif()
 
     message(STATUS "Detecting best SIMD instructions for this CPU")
@@ -118,10 +118,10 @@ function(gmx_suggest_simd _suggested_simd)
                 set(OUTPUT_SIMD "IBM_VMX")
             elseif(OUTPUT_TMP MATCHES " qpx ")
                 set(OUTPUT_SIMD "IBM_QPX")
-            elseif(OUTPUT_TMP MATCHES " neon ")
-                set(OUTPUT_SIMD "ARM_NEON")
             elseif(OUTPUT_TMP MATCHES " neon_asimd ")
                 set(OUTPUT_SIMD "ARM_NEON_ASIMD")
+            elseif(OUTPUT_TMP MATCHES " neon ")
+                set(OUTPUT_SIMD "ARM_NEON")
             endif()
         endif()
 

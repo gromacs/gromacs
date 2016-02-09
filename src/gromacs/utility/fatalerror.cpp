@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 
-#ifdef GMX_MPI
+#if GMX_MPI
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #endif
@@ -218,7 +218,7 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
     std::fflush(stdout);
     std::fflush(stderr);
 
-#ifdef GMX_MPI
+#if GMX_MPI
     if (gmx_mpi_initialized())
     {
         switch (exitType)
@@ -227,7 +227,7 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
                 MPI_Finalize();
                 break;
             case ExitType_Abort:
-#ifdef GMX_LIB_MPI
+#if GMX_LIB_MPI
                 gmx_abort(returnValue);
 #endif
                 break;

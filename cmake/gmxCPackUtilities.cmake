@@ -102,7 +102,6 @@ function (gmx_cpack_write_config)
         "GROMACS - a toolkit for high-performance molecular simulation")
     # Set version info.
     set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
-    set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
     set(CPACK_PACKAGE_VERSION_PATCH ${GMX_VERSION_PATCH})
     set(CPACK_PACKAGE_VERSION       ${GMX_VERSION_STRING})
     # Add various text resources for some installers.
@@ -117,6 +116,7 @@ function (gmx_cpack_write_config)
     set(CPACK_PROJECT_CONFIG_FILE "${PROJECT_SOURCE_DIR}/CPackInit.cmake")
 
     # Settings specific to source packages.
+    set(CPACK_SOURCE_GENERATOR TGZ)
     set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
     set(CPACK_SOURCE_IGNORE_FILES
         "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$;\\\\.gitattributes;")

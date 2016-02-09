@@ -17,6 +17,12 @@ EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
+EXCLUDE_PATTERNS       = @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_x86* \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_intel* \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_ibm* \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_arm* \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_sparc* \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/simd/impl_none
 EXCLUDE_SYMBOLS        = YY* yy* _gmx_sel_yy*
 EXCLUDE_SYMBOLS       += __STDC*
 EXCLUDE_SYMBOLS       += TEST TEST_F TEST_P TYPED_TEST_CASE TYPED_TEST INSTANTIATE_TEST_CASE_P

@@ -132,6 +132,10 @@ Performance and Run Control
         to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
         Cannot be set simultaneously with ``GMX_NO_CUDA_STREAMSYNC``.
 
+``GMX_DISABLE_CUDALAUNCH``
+        disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
+        Should only be used for benchmarking purposes.
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
@@ -159,11 +163,6 @@ Performance and Run Control
 
 ``GMX_DD_RECORD_LOAD``
         record DD load statistics for reporting at end of the run (default 1, meaning on)
-
-``GMX_DD_NST_SORT_CHARGE_GROUPS``
-        number of steps that elapse between re-sorting of the charge
-        groups (default 1). This only takes effect during domain decomposition, so should typically
-        be 0 (never), 1 (to mean at every domain decomposition), or a multiple of :mdp:`nstlist`.
 
 ``GMX_DETAILED_PERF_STATS``
         when set, print slightly more detailed performance information

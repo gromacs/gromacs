@@ -180,14 +180,8 @@ void init_gaussian(t_QMrec *qm)
             out = fopen("LJ.dat", "w");
             for (i = 0; i < qm->nrQMatoms; i++)
             {
-
-#ifdef GMX_DOUBLE
-                fprintf(out, "%3d  %10.7lf  %10.7lf\n",
-                        qm->atomicnumberQM[i], qm->c6[i], qm->c12[i]);
-#else
                 fprintf(out, "%3d  %10.7f  %10.7f\n",
                         qm->atomicnumberQM[i], qm->c6[i], qm->c12[i]);
-#endif
             }
             fclose(out);
         }
@@ -413,19 +407,11 @@ void write_gaussian_SH_input(int step, gmx_bool swap,
     fprintf(out, "%2d%2d\n", qm->QMcharge, qm->multiplicity);
     for (i = 0; i < qm->nrQMatoms; i++)
     {
-#ifdef GMX_DOUBLE
-        fprintf(out, "%3d %10.7lf  %10.7lf  %10.7lf\n",
-                qm->atomicnumberQM[i],
-                qm->xQM[i][XX]/BOHR2NM,
-                qm->xQM[i][YY]/BOHR2NM,
-                qm->xQM[i][ZZ]/BOHR2NM);
-#else
         fprintf(out, "%3d %10.7f  %10.7f  %10.7f\n",
                 qm->atomicnumberQM[i],
                 qm->xQM[i][XX]/BOHR2NM,
                 qm->xQM[i][YY]/BOHR2NM,
                 qm->xQM[i][ZZ]/BOHR2NM);
-#endif
     }
     /* MM point charge data */
     if (QMMMrec->QMMMscheme != eQMMMschemeoniom && mm->nrMMatoms)
@@ -433,32 +419,18 @@ void write_gaussian_SH_input(int step, gmx_bool swap,
         fprintf(out, "\n");
         for (i = 0; i < mm->nrMMatoms; i++)
         {
-#ifdef GMX_DOUBLE
-            fprintf(out, "%10.7lf  %10.7lf  %10.7lf %8.4lf\n",
-                    mm->xMM[i][XX]/BOHR2NM,
-                    mm->xMM[i][YY]/BOHR2NM,
-                    mm->xMM[i][ZZ]/BOHR2NM,
-                    mm->MMcharges[i]);
-#else
             fprintf(out, "%10.7f  %10.7f  %10.7f %8.4f\n",
                     mm->xMM[i][XX]/BOHR2NM,
                     mm->xMM[i][YY]/BOHR2NM,
                     mm->xMM[i][ZZ]/BOHR2NM,
                     mm->MMcharges[i]);
-#endif
         }
     }
     if (bSA) /* put the SA coefficients at the end of the file */
     {
-#ifdef GMX_DOUBLE
-        fprintf(out, "\n%10.8lf %10.8lf\n",
-                qm->SAstep*0.5/qm->SAsteps,
-                1-qm->SAstep*0.5/qm->SAsteps);
-#else
         fprintf(out, "\n%10.8f %10.8f\n",
                 qm->SAstep*0.5/qm->SAsteps,
                 1-qm->SAstep*0.5/qm->SAsteps);
-#endif
         fprintf(stderr, "State Averaging level = %d/%d\n", qm->SAstep, qm->SAsteps);
     }
     fprintf(out, "\n");
@@ -574,19 +546,11 @@ void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fprintf(out, "%2d%2d\n", qm->QMcharge, qm->multiplicity);
     for (i = 0; i < qm->nrQMatoms; i++)
     {
-#ifdef GMX_DOUBLE
-        fprintf(out, "%3d %10.7lf  %10.7lf  %10.7lf\n",
-                qm->atomicnumberQM[i],
-                qm->xQM[i][XX]/BOHR2NM,
-                qm->xQM[i][YY]/BOHR2NM,
-                qm->xQM[i][ZZ]/BOHR2NM);
-#else
         fprintf(out, "%3d %10.7f  %10.7f  %10.7f\n",
                 qm->atomicnumberQM[i],
                 qm->xQM[i][XX]/BOHR2NM,
                 qm->xQM[i][YY]/BOHR2NM,
                 qm->xQM[i][ZZ]/BOHR2NM);
-#endif
     }
 
     /* Pseudo Potential and ECP are included here if selected (MEthod suffix LAN) */
@@ -646,21 +610,12 @@ void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
              */
             for (i = 0; i < mm->nrMMatoms; i++)
             {
-#ifdef GMX_DOUBLE
-                fprintf(out, "%10.7lf  %10.7lf  %10.7lf %8.4lf 0.0 %10.7lf %10.7lf\n",
-                        mm->xMM[i][XX]/BOHR2NM,
-                        mm->xMM[i][YY]/BOHR2NM,
-                        mm->xMM[i][ZZ]/BOHR2NM,
-                        mm->MMcharges[i],
-                        mm->c6[i], mm->c12[i]);
-#else
                 fprintf(out, "%10.7f  %10.7f  %10.7f %8.4f 0.0 %10.7f %10.7f\n",
                         mm->xMM[i][XX]/BOHR2NM,
                         mm->xMM[i][YY]/BOHR2NM,
                         mm->xMM[i][ZZ]/BOHR2NM,
                         mm->MMcharges[i],
                         mm->c6[i], mm->c12[i]);
-#endif
             }
             fprintf(out, "\n");
         }
@@ -668,19 +623,11 @@ void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         {
             for (i = 0; i < mm->nrMMatoms; i++)
             {
-#ifdef GMX_DOUBLE
-                fprintf(out, "%10.7lf  %10.7lf  %10.7lf %8.4lf\n",
-                        mm->xMM[i][XX]/BOHR2NM,
-                        mm->xMM[i][YY]/BOHR2NM,
-                        mm->xMM[i][ZZ]/BOHR2NM,
-                        mm->MMcharges[i]);
-#else
                 fprintf(out, "%10.7f  %10.7f  %10.7f %8.4f\n",
                         mm->xMM[i][XX]/BOHR2NM,
                         mm->xMM[i][YY]/BOHR2NM,
                         mm->xMM[i][ZZ]/BOHR2NM,
                         mm->MMcharges[i]);
-#endif
             }
         }
     }
@@ -719,7 +666,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
                 gmx_fatal(FARGS, "Error reading Gaussian output - not enough atom lines?");
             }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
             sscanf(buf, "%d %lf %lf %lf\n",
                    &atnum,
                    &qm->xQM[i][XX],
@@ -746,7 +693,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
         gmx_fatal(FARGS, "Error reading Gaussian output");
     }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     sscanf(buf, "%lf\n", &QMener);
 #else
     sscanf(buf, "%f\n", &QMener);
@@ -758,7 +705,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         sscanf(buf, "%lf %lf %lf\n",
                &QMgrad[i][XX],
                &QMgrad[i][YY],
@@ -779,7 +726,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm
             {
                 gmx_fatal(FARGS, "Error reading Gaussian output");
             }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
             sscanf(buf, "%lf %lf %lf\n",
                    &MMgrad[i][XX],
                    &MMgrad[i][YY],
@@ -816,7 +763,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
         gmx_fatal(FARGS, "Error reading Gaussian output");
     }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     sscanf(buf, "%lf %lf\n", &QMener, &DeltaE);
 #else
     sscanf(buf, "%f %f\n",  &QMener, &DeltaE);
@@ -849,7 +796,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         sscanf(buf, "%lf %lf %lf\n",
                &QMgrad[i][XX],
                &QMgrad[i][YY],
@@ -869,7 +816,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         sscanf(buf, "%lf %lf %lf\n",
                &MMgrad[i][XX],
                &MMgrad[i][YY],
@@ -913,7 +860,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         sscanf(buf, "%lf\n", &qm->CIvec1[i]);
 #else
         sscanf(buf, "%f\n", &qm->CIvec1[i]);
@@ -926,7 +873,7 @@ real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm
         {
             gmx_fatal(FARGS, "Error reading Gaussian output");
         }
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
         sscanf(buf, "%lf\n", &qm->CIvec2[i]);
 #else
         sscanf(buf, "%f\n", &qm->CIvec2[i]);

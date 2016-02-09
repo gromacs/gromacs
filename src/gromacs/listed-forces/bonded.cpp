@@ -54,6 +54,7 @@
 #include <algorithm>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -1193,8 +1194,8 @@ angles_noener_simd(int nbonds,
     GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
     GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
     GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  coeff[2*GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  f_buf[6*GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[2*GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   f_buf[6*GMX_SIMD_REAL_WIDTH];
     SimdReal             xi_S, yi_S, zi_S;
     SimdReal             xj_S, yj_S, zj_S;
     SimdReal             xk_S, yk_S, zk_S;
@@ -1245,7 +1246,6 @@ angles_noener_simd(int nbonds,
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi_S, &yi_S, &zi_S);
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj_S, &yj_S, &zj_S);
         gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ak, &xk_S, &yk_S, &zk_S);
-
         rijx_S = xi_S - xj_S;
         rijy_S = yi_S - yj_S;
         rijz_S = zi_S - zj_S;
@@ -1327,7 +1327,7 @@ angles_noener_simd(int nbonds,
     }
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif // GMX_SIMD_HAVE_REAL
 
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -1676,7 +1676,6 @@ dih_angle_simd(const rvec *x,
     gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj_S, &yj_S, &zj_S);
     gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ak, &xk_S, &yk_S, &zk_S);
     gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), al, &xl_S, &yl_S, &zl_S);
-
     rijx_S = xi_S - xj_S;
     rijy_S = yi_S - yj_S;
     rijz_S = zi_S - zj_S;
@@ -1750,7 +1749,6 @@ dih_angle_simd(const rvec *x,
 }
 
 #endif // GMX_SIMD_HAVE_REAL
-
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,

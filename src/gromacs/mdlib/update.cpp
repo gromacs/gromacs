@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -80,20 +81,11 @@
 /*#define STARTFROMDT2*/
 
 typedef struct {
-    double gdt;
-    double eph;
-    double emh;
     double em;
-    double b;
-    double c;
-    double d;
 } gmx_sd_const_t;
 
 typedef struct {
     real V;
-    real X;
-    real Yv;
-    real Yx;
 } gmx_sd_sigma_t;
 
 typedef struct {
@@ -102,14 +94,12 @@ typedef struct {
     /* SD stuff */
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sdsig;
-    rvec           *sd_V;
-    int             sd_V_nalloc;
     /* andersen temperature control stuff */
     gmx_bool       *randomize_group;
     real           *boltzfac;
 } gmx_stochd_t;
 
-typedef struct gmx_update
+struct gmx_update_t
 {
     gmx_stochd_t *sd;
     /* xprime for constraint algorithms */
@@ -119,7 +109,7 @@ typedef struct gmx_update
     /* Variables for the deform algorithm */
     gmx_int64_t     deformref_step;
     matrix          deformref_box;
-} t_gmx_update;
+};
 
 
 static void do_update_md(int start, int nrend, double dt,
@@ -281,7 +271,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     {
         g        = 0.25*dt*veta*alpha;
         mv1      = exp(-g);
-        mv2      = series_sinhx(g);
+        mv2      = gmx::series_sinhx(g);
     }
     else
     {
@@ -341,7 +331,7 @@ static void do_update_vv_pos(int start, int nrend, double dt,
     {
         g        = 0.5*dt*veta;
         mr1      = exp(g);
-        mr2      = series_sinhx(g);
+        mr2      = gmx::series_sinhx(g);
     }
     else
     {
@@ -483,16 +473,14 @@ static void do_update_visc(int start, int nrend, double dt,
     }
 }
 
-static gmx_stochd_t *init_stochd(t_inputrec *ir)
+static gmx_stochd_t *init_stochd(const t_inputrec *ir)
 {
     gmx_stochd_t   *sd;
-    gmx_sd_const_t *sdc;
-    int             ngtc, n;
-    real            y;
 
     snew(sd, 1);
 
-    ngtc = ir->opts.ngtc;
+    const t_grpopts *opts = &ir->opts;
+    int              ngtc = opts->ngtc;
 
     if (ir->eI == eiBD)
     {
@@ -503,81 +491,80 @@ static gmx_stochd_t *init_stochd(t_inputrec *ir)
         snew(sd->sdc, ngtc);
         snew(sd->sdsig, ngtc);
 
-        sdc = sd->sdc;
-        for (n = 0; n < ngtc; n++)
+        gmx_sd_const_t *sdc = sd->sdc;
+
+        for (int gt = 0; gt < ngtc; gt++)
         {
-            if (ir->opts.tau_t[n] > 0)
+            if (opts->tau_t[gt] > 0)
             {
-                sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
-                sdc[n].eph = exp(sdc[n].gdt/2);
-                sdc[n].emh = exp(-sdc[n].gdt/2);
-                sdc[n].em  = exp(-sdc[n].gdt);
+                sdc[gt].em  = exp(-ir->delta_t/opts->tau_t[gt]);
             }
             else
             {
                 /* No friction and noise on this group */
-                sdc[n].gdt = 0;
-                sdc[n].eph = 1;
-                sdc[n].emh = 1;
-                sdc[n].em  = 1;
-            }
-            if (sdc[n].gdt >= 0.05)
-            {
-                sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1)
-                    - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
-                sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
-                sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
-            }
-            else
-            {
-                y = sdc[n].gdt/2;
-                /* Seventh order expansions for small y */
-                sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
-                sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
-                sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
-            }
-            if (debug)
-            {
-                fprintf(debug, "SD const tc-grp %d: b %g  c %g  d %g\n",
-                        n, sdc[n].b, sdc[n].c, sdc[n].d);
+                sdc[gt].em  = 1;
             }
         }
     }
     else if (ETC_ANDERSEN(ir->etc))
     {
-        int        ngtc;
-        t_grpopts *opts;
-        real       reft;
-
-        opts = &ir->opts;
-        ngtc = opts->ngtc;
-
         snew(sd->randomize_group, ngtc);
         snew(sd->boltzfac, ngtc);
 
         /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
         /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
 
-        for (n = 0; n < ngtc; n++)
+        for (int gt = 0; gt < ngtc; gt++)
         {
-            reft = std::max<real>(0, opts->ref_t[n]);
-            if ((opts->tau_t[n] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+            real reft = std::max<real>(0, opts->ref_t[gt]);
+            if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
             {
-                sd->randomize_group[n] = TRUE;
-                sd->boltzfac[n]        = BOLTZ*opts->ref_t[n];
+                sd->randomize_group[gt] = TRUE;
+                sd->boltzfac[gt]        = BOLTZ*opts->ref_t[gt];
             }
             else
             {
-                sd->randomize_group[n] = FALSE;
+                sd->randomize_group[gt] = FALSE;
             }
         }
     }
+
     return sd;
 }
 
-gmx_update_t init_update(t_inputrec *ir)
+void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
 {
-    t_gmx_update *upd;
+    if (ir->eI == eiBD)
+    {
+        if (ir->bd_fric != 0)
+        {
+            for (int gt = 0; gt < ir->opts.ngtc; gt++)
+            {
+                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]/(ir->bd_fric*ir->delta_t));
+            }
+        }
+        else
+        {
+            for (int gt = 0; gt < ir->opts.ngtc; gt++)
+            {
+                upd->sd->bd_rf[gt] = std::sqrt(2.0*BOLTZ*ir->opts.ref_t[gt]);
+            }
+        }
+    }
+    if (ir->eI == eiSD1)
+    {
+        for (int gt = 0; gt < ir->opts.ngtc; gt++)
+        {
+            real kT = BOLTZ*ir->opts.ref_t[gt];
+            /* The mass is accounted for later, since this differs per atom */
+            upd->sd->sdsig[gt].V  = std::sqrt(kT*(1 - upd->sd->sdc[gt].em*upd->sd->sdc[gt].em));
+        }
+    }
+}
+
+gmx_update_t *init_update(const t_inputrec *ir)
+{
+    gmx_update_t *upd;
 
     snew(upd, 1);
 
@@ -585,6 +572,8 @@ gmx_update_t init_update(t_inputrec *ir)
     {
         upd->sd    = init_stochd(ir);
     }
+
+    update_temperature_constants(upd, ir);
 
     upd->xp        = NULL;
     upd->xp_nalloc = 0;
@@ -599,27 +588,18 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          int ngtc, real ref_t[],
                           gmx_bool bDoConstr,
                           gmx_bool bFirstHalfConstr,
                           gmx_int64_t step, int seed, int* gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
-    real            kT;
     int             gf = 0, ga = 0, gt = 0;
     real            ism;
     int             n, d;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
-
-    for (n = 0; n < ngtc; n++)
-    {
-        kT = BOLTZ*ref_t[n];
-        /* The mass is encounted for later, since this differs per atom */
-        sig[n].V  = std::sqrt(kT*(1 - sdc[n].em*sdc[n].em));
-    }
 
     if (!bDoConstr)
     {
@@ -736,167 +716,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
                     }
                 }
             }
-        }
-    }
-}
-
-static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
-{
-    if (nrend > sd->sd_V_nalloc)
-    {
-        sd->sd_V_nalloc = over_alloc_dd(nrend);
-        srenew(sd->sd_V, sd->sd_V_nalloc);
-    }
-}
-
-static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
-                                  int           ngtc,
-                                  const real    tau_t[],
-                                  const real    ref_t[])
-{
-    /* This is separated from the update below, because it is single threaded */
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sig;
-    int             gt;
-    real            kT;
-
-    sdc = sd->sdc;
-    sig = sd->sdsig;
-
-    for (gt = 0; gt < ngtc; gt++)
-    {
-        kT = BOLTZ*ref_t[gt];
-        /* The mass is encounted for later, since this differs per atom */
-        sig[gt].V  = std::sqrt(kT*(1-sdc[gt].em));
-        sig[gt].X  = std::sqrt(kT*gmx::square(tau_t[gt])*sdc[gt].c);
-        sig[gt].Yv = std::sqrt(kT*sdc[gt].b/sdc[gt].c);
-        sig[gt].Yx = std::sqrt(kT*gmx::square(tau_t[gt])*sdc[gt].b/(1-sdc[gt].em));
-    }
-}
-
-static void do_update_sd2(gmx_stochd_t *sd,
-                          gmx_bool bInitStep,
-                          int start, int nrend,
-                          rvec accel[], ivec nFreeze[],
-                          real invmass[], unsigned short ptype[],
-                          unsigned short cFREEZE[], unsigned short cACC[],
-                          unsigned short cTC[],
-                          rvec x[], rvec xprime[], rvec v[], rvec f[],
-                          rvec sd_X[],
-                          const real tau_t[],
-                          gmx_bool bFirstHalf, gmx_int64_t step, int seed,
-                          int* gatindex)
-{
-    gmx_sd_const_t *sdc;
-    gmx_sd_sigma_t *sig;
-    /* The random part of the velocity update, generated in the first
-     * half of the update, needs to be remembered for the second half.
-     */
-    rvec  *sd_V;
-    int    gf = 0, ga = 0, gt = 0;
-    real   vn = 0, Vmh, Xmh;
-    real   ism;
-    int    n, d, ng;
-
-    sdc  = sd->sdc;
-    sig  = sd->sdsig;
-    sd_V = sd->sd_V;
-
-    for (n = start; n < nrend; n++)
-    {
-        real rnd[6], rndi[3];
-        ng  = gatindex ? gatindex[n] : n;
-        ism = std::sqrt(invmass[n]);
-        if (cFREEZE)
-        {
-            gf  = cFREEZE[n];
-        }
-        if (cACC)
-        {
-            ga  = cACC[n];
-        }
-        if (cTC)
-        {
-            gt  = cTC[n];
-        }
-
-        gmx_rng_cycle_6gaussian_table(step*2+(bFirstHalf ? 1 : 2), ng, seed, RND_SEED_UPDATE, rnd);
-        if (bInitStep)
-        {
-            gmx_rng_cycle_3gaussian_table(step*2, ng, seed, RND_SEED_UPDATE, rndi);
-        }
-        for (d = 0; d < DIM; d++)
-        {
-            if (bFirstHalf)
-            {
-                vn             = v[n][d];
-            }
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
-            {
-                if (bFirstHalf)
-                {
-                    if (bInitStep)
-                    {
-                        sd_X[n][d] = ism*sig[gt].X*rndi[d];
-                    }
-                    Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c)
-                        + ism*sig[gt].Yv*rnd[d*2];
-                    sd_V[n][d] = ism*sig[gt].V*rnd[d*2+1];
-
-                    v[n][d] = vn*sdc[gt].em
-                        + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                        + sd_V[n][d] - sdc[gt].em*Vmh;
-
-                    xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh);
-                }
-                else
-                {
-                    /* Correct the velocities for the constraints.
-                     * This operation introduces some inaccuracy,
-                     * since the velocity is determined from differences in coordinates.
-                     */
-                    v[n][d] =
-                        (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));
-
-                    Xmh = sd_V[n][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1)
-                        + ism*sig[gt].Yx*rnd[d*2];
-                    sd_X[n][d] = ism*sig[gt].X*rnd[d*2+1];
-
-                    xprime[n][d] += sd_X[n][d] - Xmh;
-
-                }
-            }
-            else
-            {
-                if (bFirstHalf)
-                {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
-                }
-            }
-        }
-    }
-}
-
-static void do_update_bd_Tconsts(double dt, real friction_coefficient,
-                                 int ngtc, const real ref_t[],
-                                 real *rf)
-{
-    /* This is separated from the update below, because it is single threaded */
-    int gt;
-
-    if (friction_coefficient != 0)
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]/(friction_coefficient*dt));
-        }
-    }
-    else
-    {
-        for (gt = 0; gt < ngtc; gt++)
-        {
-            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]);
         }
     }
 }
@@ -1302,13 +1121,13 @@ void restore_ekinstate_from_state(t_commrec *cr,
     }
 }
 
-void set_deform_reference_box(gmx_update_t upd, gmx_int64_t step, matrix box)
+void set_deform_reference_box(gmx_update_t *upd, gmx_int64_t step, matrix box)
 {
     upd->deformref_step = step;
     copy_mat(box, upd->deformref_box);
 }
 
-static void deform(gmx_update_t upd,
+static void deform(gmx_update_t *upd,
                    int start, int homenr, rvec x[], matrix box,
                    const t_inputrec *ir, gmx_int64_t step)
 {
@@ -1347,7 +1166,7 @@ static void deform(gmx_update_t upd,
             }
         }
     }
-    m_inv_ur0(box, invbox);
+    gmx::invertBoxMatrix(box, invbox);
     copy_mat(bnew, box);
     mmul_ur0(box, invbox, mu);
 
@@ -1486,7 +1305,7 @@ void update_pcouple(FILE             *fplog,
     }
 }
 
-static rvec *get_xprime(const t_state *state, gmx_update_t upd)
+static rvec *get_xprime(const t_state *state, gmx_update_t *upd)
 {
     if (state->nalloc > upd->xp_nalloc)
     {
@@ -1514,14 +1333,14 @@ void update_constraints(FILE             *fplog,
                         t_commrec        *cr,
                         t_nrnb           *nrnb,
                         gmx_wallcycle_t   wcycle,
-                        gmx_update_t      upd,
+                        gmx_update_t     *upd,
                         gmx_constr_t      constr,
                         gmx_bool          bFirstHalf,
                         gmx_bool          bCalcVir)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
-    int                  start, homenr, nrend, i, m;
+    int                  start, homenr, nrend, i;
     tensor               vir_con;
     rvec                *xprime = NULL;
     int                  nth, th;
@@ -1594,24 +1413,7 @@ void update_constraints(FILE             *fplog,
 
         if (bCalcVir)
         {
-            if (inputrec->eI == eiSD2)
-            {
-                /* A correction factor eph is needed for the SD constraint force */
-                /* Here we can, unfortunately, not have proper corrections
-                 * for different friction constants, so we use the first one.
-                 */
-                for (i = 0; i < DIM; i++)
-                {
-                    for (m = 0; m < DIM; m++)
-                    {
-                        vir_part[i][m] += upd->sd->sdc[0].eph*vir_con[i][m];
-                    }
-                }
-            }
-            else
-            {
-                m_add(vir_part, vir_con, vir_part);
-            }
+            m_add(vir_part, vir_con, vir_part);
             if (debug)
             {
                 pr_rvecs(debug, 0, "constraint virial", vir_part, DIM);
@@ -1645,7 +1447,6 @@ void update_constraints(FILE             *fplog,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.ref_t,
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
                               DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -1670,54 +1471,6 @@ void update_constraints(FILE             *fplog,
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
-
-    if ((inputrec->eI == eiSD2) && !(bFirstHalf))
-    {
-        wallcycle_start(wcycle, ewcUPDATE);
-        xprime = get_xprime(state, upd);
-
-        nth = gmx_omp_nthreads_get(emntUpdate);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-        for (th = 0; th < nth; th++)
-        {
-            try
-            {
-                int start_th, end_th;
-
-                start_th = start + ((nrend-start)* th   )/nth;
-                end_th   = start + ((nrend-start)*(th+1))/nth;
-
-                /* The second part of the SD integration */
-                do_update_sd2(upd->sd,
-                              FALSE, start_th, end_th,
-                              inputrec->opts.acc, inputrec->opts.nFreeze,
-                              md->invmass, md->ptype,
-                              md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force, state->sd_X,
-                              inputrec->opts.tau_t,
-                              FALSE, step, inputrec->ld_seed,
-                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
-        inc_nrnb(nrnb, eNR_UPDATE, homenr);
-        wallcycle_stop(wcycle, ewcUPDATE);
-
-        if (bDoConstr)
-        {
-            /* Constrain the coordinates xprime */
-            wallcycle_start(wcycle, ewcCONSTR);
-            constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, cr, step, 1, 1.0, md,
-                      state->x, xprime, NULL,
-                      bMolPBC, state->box,
-                      state->lambda[efptBONDED], dvdlambda,
-                      NULL, NULL, nrnb, econqCoord);
-            wallcycle_stop(wcycle, ewcCONSTR);
-        }
-    }
-
 
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
@@ -1772,7 +1525,7 @@ void update_box(FILE             *fplog,
                 rvec              force[],   /* forces on home particles */
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
-                gmx_update_t      upd)
+                gmx_update_t     *upd)
 {
     double               dt;
     int                  start, homenr, i, n, m;
@@ -1868,8 +1621,7 @@ void update_coords(FILE             *fplog,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
-                   gmx_update_t      upd,
-                   gmx_bool          bInitStep,
+                   gmx_update_t     *upd,
                    int               UpdatePart,
                    t_commrec        *cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr_t      constr)
@@ -1915,22 +1667,6 @@ void update_coords(FILE             *fplog,
     where();
     dump_it_all(fplog, "Before update",
                 state->natoms, state->x, xprime, state->v, f);
-
-    if (inputrec->eI == eiSD2)
-    {
-        check_sd2_work_data_allocation(upd->sd, nrend);
-
-        do_update_sd2_Tconsts(upd->sd,
-                              inputrec->opts.ngtc,
-                              inputrec->opts.tau_t,
-                              inputrec->opts.ref_t);
-    }
-    if (inputrec->eI == eiBD)
-    {
-        do_update_bd_Tconsts(dt, inputrec->bd_fric,
-                             inputrec->opts.ngtc, inputrec->opts.ref_t,
-                             upd->sd->bd_rf);
-    }
 
     nth = gmx_omp_nthreads_get(emntUpdate);
 
@@ -1978,23 +1714,8 @@ void update_coords(FILE             *fplog,
                                   md->invmass, md->ptype,
                                   md->cFREEZE, md->cACC, md->cTC,
                                   state->x, xprime, state->v, f,
-                                  inputrec->opts.ngtc, inputrec->opts.ref_t,
                                   bDoConstr, TRUE,
                                   step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                    break;
-                case (eiSD2):
-                    /* The SD2 update is always done in 2 parts,
-                     * because an extra constraint step is needed
-                     */
-                    do_update_sd2(upd->sd,
-                                  bInitStep, start_th, end_th,
-                                  inputrec->opts.acc, inputrec->opts.nFreeze,
-                                  md->invmass, md->ptype,
-                                  md->cFREEZE, md->cACC, md->cTC,
-                                  state->x, xprime, state->v, f, state->sd_X,
-                                  inputrec->opts.tau_t,
-                                  TRUE, step, inputrec->ld_seed,
-                                  DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                     break;
                 case (eiBD):
                     do_update_bd(start_th, end_th, dt,
@@ -2094,7 +1815,7 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
 }
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr,
-                                            t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr)
+                                            t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr_t constr)
 {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];

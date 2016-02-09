@@ -541,7 +541,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  * \hideinitializer
  */
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
     EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance)
 #define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \

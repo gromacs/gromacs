@@ -132,18 +132,6 @@ struct gmx_reverse_top_t
     /* Work data structures for multi-threading */
     int         nthread;
     thread_work_t *th_work;           /**< Thread work array for local topology generation */
-    t_idef     *idef_thread;
-    int      ***vsite_pbc;
-    int       **vsite_pbc_nalloc;
-    int      ***shell_pbc;
-    int       **shell_pbc_nalloc; 
-    int        *nbonded_thread;
-    t_blocka   *excl_thread;
-    int        *excl_count_thread;
-
-    /* Pointers only used for an error message */
-    gmx_mtop_t     *err_top_global; /**< Pointer to the global top, only used for error reporting */
-    gmx_localtop_t *err_top_local;  /**< Pointer to the local top, only used for error reporting */
     //! @endcond
 };
 
@@ -176,7 +164,7 @@ static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck,
 }
 
 /*! \brief Print a header on error messages */
-static void print_error_header(FILE *fplog, char *moltypename, int nprint)
+static void print_error_header(FILE *fplog, const char *moltypename, int nprint)
 {
     fprintf(fplog, "\nMolecule type '%s'\n", moltypename);
     fprintf(stderr, "\nMolecule type '%s'\n", moltypename);
@@ -190,47 +178,41 @@ static void print_error_header(FILE *fplog, char *moltypename, int nprint)
 
 /*! \brief Help print error output when interactions are missing */
 static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
-                                          gmx_reverse_top_t *rt,
-                                          char *moltypename,
-                                          reverse_ilist_t *ril,
+                                          const gmx_reverse_top_t *rt,
+                                          const char *moltypename,
+                                          const reverse_ilist_t *ril,
                                           int a_start, int a_end,
                                           int nat_mol, int nmol,
-                                          t_idef *idef)
+                                          const t_idef *idef)
 {
-    int      nril_mol, *assigned, *gatindex;
-    int      ftype, ftype_j, nral, i, j_mol, j, a0, a0_mol, mol, a;
-    int      nprint;
-    t_ilist *il;
-    t_iatom *ia;
-    gmx_bool bFound;
-
-    nril_mol = ril->index[nat_mol];
+    int *assigned;
+    int  nril_mol = ril->index[nat_mol];
     snew(assigned, nmol*nril_mol);
 
-    gatindex = cr->dd->gatindex;
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    int *gatindex = cr->dd->gatindex;
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (dd_check_ftype(ftype, rt->bBCheck, rt->bConstr, rt->bSettle))
         {
-            nral = NRAL(ftype);
-            il   = &idef->il[ftype];
-            ia   = il->iatoms;
-            for (i = 0; i < il->nr; i += 1+nral)
+            int            nral = NRAL(ftype);
+            const t_ilist *il   = &idef->il[ftype];
+            const t_iatom *ia   = il->iatoms;
+            for (int i = 0; i < il->nr; i += 1+nral)
             {
-                a0     = gatindex[ia[1]];
+                int a0 = gatindex[ia[1]];
                 /* Check if this interaction is in
                  * the currently checked molblock.
                  */
                 if (a0 >= a_start && a0 < a_end)
                 {
-                    mol    = (a0 - a_start)/nat_mol;
-                    a0_mol = (a0 - a_start) - mol*nat_mol;
-                    j_mol  = ril->index[a0_mol];
-                    bFound = FALSE;
-                    while (j_mol < ril->index[a0_mol+1] && !bFound)
+                    int  mol    = (a0 - a_start)/nat_mol;
+                    int  a0_mol = (a0 - a_start) - mol*nat_mol;
+                    int  j_mol  = ril->index[a0_mol];
+                    bool found  = false;
+                    while (j_mol < ril->index[a0_mol+1] && !found)
                     {
-                        j       = mol*nril_mol + j_mol;
-                        ftype_j = ril->il[j_mol];
+                        int j       = mol*nril_mol + j_mol;
+                        int ftype_j = ril->il[j_mol];
                         /* Here we need to check if this interaction has
                          * not already been assigned, since we could have
                          * multiply defined interactions.
@@ -239,23 +221,23 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                             assigned[j] == 0)
                         {
                             /* Check the atoms */
-                            bFound = TRUE;
-                            for (a = 0; a < nral; a++)
+                            found = true;
+                            for (int a = 0; a < nral; a++)
                             {
                                 if (gatindex[ia[1+a]] !=
                                     a_start + mol*nat_mol + ril->il[j_mol+2+a])
                                 {
-                                    bFound = FALSE;
+                                    found = false;
                                 }
                             }
-                            if (bFound)
+                            if (found)
                             {
                                 assigned[j] = 1;
                             }
                         }
                         j_mol += 2 + nral_rt(ftype_j);
                     }
-                    if (!bFound)
+                    if (!found)
                     {
                         gmx_incons("Some interactions seem to be assigned multiple times");
                     }
@@ -267,16 +249,16 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
 
     gmx_sumi(nmol*nril_mol, assigned, cr);
 
-    nprint = 10;
-    i      = 0;
-    for (mol = 0; mol < nmol; mol++)
+    int nprint = 10;
+    int i      = 0;
+    for (int mol = 0; mol < nmol; mol++)
     {
-        j_mol = 0;
+        int j_mol = 0;
         while (j_mol < nril_mol)
         {
-            ftype = ril->il[j_mol];
-            nral  = NRAL(ftype);
-            j     = mol*nril_mol + j_mol;
+            int ftype = ril->il[j_mol];
+            int nral  = NRAL(ftype);
+            int j     = mol*nril_mol + j_mol;
             if (assigned[j] == 0 &&
                 !(interaction_function[ftype].flags & IF_VSITE))
             {
@@ -290,6 +272,7 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
                             interaction_function[ftype].longname);
                     fprintf(stderr, "%20s atoms",
                             interaction_function[ftype].longname);
+                    int a;
                     for (a = 0; a < nral; a++)
                     {
                         fprintf(fplog, "%5d", ril->il[j_mol+2+a]+1);
@@ -328,11 +311,12 @@ static void print_missing_interactions_mb(FILE *fplog, t_commrec *cr,
 
 /*! \brief Help print error output when interactions are missing */
 static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
-                                             gmx_mtop_t *mtop, t_idef *idef)
+                                             const gmx_mtop_t *mtop,
+                                             const t_idef *idef)
 {
-    int                mb, a_start, a_end;
-    gmx_molblock_t    *molb;
-    gmx_reverse_top_t *rt;
+    int                      mb, a_start, a_end;
+    const gmx_molblock_t    *molb;
+    const gmx_reverse_top_t *rt;
 
     rt = cr->dd->reverse_top;
 
@@ -353,19 +337,18 @@ static void print_missing_interactions_atoms(FILE *fplog, t_commrec *cr,
     }
 }
 
-void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count,  gmx_mtop_t *top_global, t_state *state_local)
+void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
+                                   int local_count,
+                                   const gmx_mtop_t *top_global,
+                                   const gmx_localtop_t *top_local,
+                                   t_state *state_local)
 {
     int             ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int             ftype, nral;
     char            buf[STRLEN];
     gmx_domdec_t   *dd;
-    gmx_mtop_t     *err_top_global;
-    gmx_localtop_t *err_top_local;
 
     dd = cr->dd;
-
-    err_top_global = dd->reverse_top->err_top_global;
-    err_top_local  = dd->reverse_top->err_top_local;
 
     if (fplog)
     {
@@ -378,7 +361,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         nral      = NRAL(ftype);
-        cl[ftype] = err_top_local->idef.il[ftype].nr/(1+nral);
+        cl[ftype] = top_local->idef.il[ftype].nr/(1+nral);
     }
 
     gmx_sumi(F_NRE, cl, cr);
@@ -404,10 +387,10 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
-                n    = gmx_mtop_ftype_count(err_top_global, ftype);
+                n    = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
                 {
-                    n += gmx_mtop_ftype_count(err_top_global, F_CONSTRNC);
+                    n += gmx_mtop_ftype_count(top_global, F_CONSTRNC);
                 }
                 ndiff = cl[ftype] - n;
                 if (ndiff != 0)
@@ -438,8 +421,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr, int local_count, 
         }
     }
 
-    print_missing_interactions_atoms(fplog, cr, err_top_global,
-                                     &err_top_local->idef);
+    print_missing_interactions_atoms(fplog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
                  -1, state_local->x, state_local->box);
 
@@ -526,9 +508,8 @@ static void count_excls(const t_block *cgs, const t_blocka *excls,
 }
 
 /*! \brief Run the reverse ilist generation and store it when \p bAssign = TRUE */
-static int low_make_reverse_ilist(const t_ilist *il_mt,
-                                  const t_atom *atom,
-                                  int **vsite_pbc, /* should be const */
+static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
+                                  const int * const * vsite_pbc,
                                   int *count,
                                   gmx_bool bConstr, gmx_bool bSettle,
                                   gmx_bool bBCheck,
@@ -538,7 +519,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt,
 {
     int            ftype, nral, i, j, nlink, link;
     const t_ilist *il;
-    t_iatom       *ia;
+    const t_iatom *ia;
     int            a;
     int            nint;
     gmx_bool       bVSite;
@@ -632,7 +613,7 @@ static int low_make_reverse_ilist(const t_ilist *il_mt,
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
 static int make_reverse_ilist(const t_ilist *ilist,
                               const t_atoms *atoms,
-                              int **vsite_pbc, /* should be const (C issue) */
+                              const int * const * vsite_pbc,
                               gmx_bool bConstr, gmx_bool bSettle,
                               gmx_bool bBCheck,
                               gmx_bool bLinkToAllAtoms,
@@ -678,8 +659,9 @@ static void destroy_reverse_ilist(reverse_ilist_t *ril)
 }
 
 /*! \brief Generate the reverse topology */
-static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
-                                           int ***vsite_pbc_molt, int gmx_unused ***shell_pbc_molt,
+static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
+                                           const int * const * const * vsite_pbc_molt,
+                                           const int * const * const * shell_pbc_molt,
                                            gmx_bool bConstr, gmx_bool bSettle,
                                            gmx_bool bBCheck, int *nint)
 {
@@ -784,27 +766,21 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
     /* TODO: check */
     if (shell_pbc_molt != NULL)
     {
-        snew(rt->shell_pbc, rt->nthread);
-        snew(rt->shell_pbc_nalloc, rt->nthread);
         for (thread = 0; thread < rt->nthread; thread++)
         {
-            snew(rt->shell_pbc[thread], F_ANHARM_POL-F_POLARIZATION+2);
-            snew(rt->shell_pbc_nalloc[thread], F_ANHARM_POL-F_POLARIZATION+2);
+            snew(rt->th_work[thread].shell_pbc, F_ANHARM_POL-F_POLARIZATION+2);
+            snew(rt->th_work[thread].shell_pbc_nalloc, F_ANHARM_POL-F_POLARIZATION+2);
         }
     }
-
-    snew(rt->nbonded_thread, rt->nthread);
-    snew(rt->excl_thread, rt->nthread);
-    snew(rt->excl_count_thread, rt->nthread);
 
     return rt;
 }
 
 /* WIP: jal */
 void dd_make_reverse_top(FILE *fplog,
-                         gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                         gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
-                         t_inputrec *ir, gmx_bool bBCheck)
+                         gmx_domdec_t *dd, const gmx_mtop_t *mtop,
+                         const gmx_vsite_t *vsite, gmx_shellfc_t shellfc,
+                         const t_inputrec *ir, gmx_bool bBCheck)
 {
     if (fplog)
     {
@@ -2214,7 +2190,7 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        rvec *cgcm_or_x,
                        gmx_vsite_t *vsite,
                        gmx_shellfc_t shellfc,
-                       gmx_mtop_t *mtop, gmx_localtop_t *ltop)
+                       const gmx_mtop_t *mtop, gmx_localtop_t *ltop)
 {
     gmx_bool bRCheckMB, bRCheck2B;
     real     rc = -1;
@@ -2304,13 +2280,9 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     }
 
     ltop->atomtypes  = mtop->atomtypes;
-
-    /* For an error message only */
-    dd->reverse_top->err_top_global = mtop;
-    dd->reverse_top->err_top_local  = ltop;
 }
 
-void dd_sort_local_top(gmx_domdec_t *dd, t_mdatoms *mdatoms,
+void dd_sort_local_top(gmx_domdec_t *dd, const t_mdatoms *mdatoms,
                        gmx_localtop_t *ltop)
 {
     if (dd->reverse_top->ilsort == ilsortNO_FE)
@@ -2323,7 +2295,7 @@ void dd_sort_local_top(gmx_domdec_t *dd, t_mdatoms *mdatoms,
     }
 }
 
-gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
+gmx_localtop_t *dd_init_local_top(const gmx_mtop_t *top_global)
 {
     gmx_localtop_t *top;
     int             i;
@@ -2413,7 +2385,7 @@ static int *make_at2cg(t_block *cgs)
     return at2cg;
 }
 
-t_blocka *make_charge_group_links(gmx_mtop_t *mtop, gmx_domdec_t *dd,
+t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                   cginfo_mb_t *cginfo_mb)
 {
     gmx_bool            bExclRequired;
@@ -2678,7 +2650,7 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt, int *at2cg,
 /*! \brief Set the distance, function type and atom indices for the longest atom distance involved in intermolecular interactions for two-body and multi-body bonded interactions */
 static void bonded_distance_intermol(const t_ilist *ilists_intermol,
                                      gmx_bool bBCheck,
-                                     rvec *x, int ePBC, matrix box,
+                                     const rvec *x, int ePBC, matrix box,
                                      bonded_distance_t *bd_2b,
                                      bonded_distance_t *bd_mb)
 {
@@ -2724,10 +2696,11 @@ static void bonded_distance_intermol(const t_ilist *ilists_intermol,
 }
 
 //! Compute charge group centers of mass for molecule \p molt
-static void get_cgcm_mol(gmx_moltype_t *molt, gmx_ffparams_t *ffparams,
+static void get_cgcm_mol(const gmx_moltype_t *molt,
+                         const gmx_ffparams_t *ffparams,
                          int ePBC, t_graph *graph, matrix box,
-                         gmx_vsite_t *vsite,
-                         rvec *x, rvec *xs, rvec *cg_cm)
+                         const gmx_vsite_t *vsite,
+                         const rvec *x, rvec *xs, rvec *cg_cm)
 {
     int n, i;
 
@@ -2786,8 +2759,9 @@ static int have_vsite_molt(gmx_moltype_t *molt)
 }
 
 void dd_bonded_cg_distance(FILE *fplog,
-                           gmx_mtop_t *mtop,
-                           t_inputrec *ir, rvec *x, matrix box,
+                           const gmx_mtop_t *mtop,
+                           const t_inputrec *ir,
+                           const rvec *x, matrix box,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb)
 {

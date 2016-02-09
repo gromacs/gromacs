@@ -38,7 +38,6 @@
 #define GMX_FILEIO_ENXIO_H
 
 #include "gromacs/fileio/xdr_datatype.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/trajectory/energy.h"
 
@@ -48,6 +47,7 @@ extern "C" {
 
 struct gmx_groups_t;
 struct t_fileio;
+struct t_inputrec;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -188,7 +188,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
 void get_enx_state(const char *fn, real t,
-                   struct gmx_groups_t *groups, t_inputrec *ir,
+                   gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state);
 /*
  * Reads state variables from enx file fn at time t.

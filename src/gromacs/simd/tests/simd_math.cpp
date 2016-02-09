@@ -43,6 +43,7 @@
 
 #include <vector>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/simd/simd.h"
 
@@ -103,7 +104,7 @@ SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simd
     int                          i, iter;
     int                          niter   = s_nPoints/GMX_SIMD_REAL_WIDTH;
     int                          npoints = niter*GMX_SIMD_REAL_WIDTH;
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     union {
         double r; std::int64_t i;
     } conv0, conv1;
@@ -461,7 +462,7 @@ refPmeForceCorrection(real x)
 TEST_F(SimdMathTest, pmeForceCorrection)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     setUlpTol(std::int64_t(5e-10/GMX_REAL_EPS));
 #else
     setUlpTol(std::int64_t(5e-6/GMX_REAL_EPS));
@@ -484,7 +485,7 @@ refPmePotentialCorrection(real x)
 TEST_F(SimdMathTest, pmePotentialCorrection)
 {
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     setUlpTol(std::int64_t(5e-10/GMX_REAL_EPS));
 #else
     setUlpTol(std::int64_t(5e-6/GMX_REAL_EPS));

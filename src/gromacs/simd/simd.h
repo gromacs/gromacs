@@ -60,7 +60,7 @@
  *
  * The defines in this top-level file will set default Gromacs real precision
  * operations to either single or double precision based on whether
- * GMX_DOUBLE is defined. The actual implementation - including e.g.
+ * GMX_DOUBLE is 1. The actual implementation - including e.g.
  * conversion operations specifically between single and double - is documented
  * in impl_reference.h.
  *
@@ -95,14 +95,35 @@
  *  \{
  */
 
-#if (GMX_SIMD_REFERENCE || defined DOXYGEN)
-// Plain C SIMD reference implementation, also serves as documentation.
-#    include "impl_reference/impl_reference.h"
+#if GMX_SIMD_X86_SSE2
+#    include "impl_x86_sse2/impl_x86_sse2.h"
+#elif GMX_SIMD_X86_SSE4_1
+#    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
+#elif GMX_SIMD_X86_AVX_128_FMA
+#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#elif GMX_SIMD_X86_AVX_256
+#    include "impl_x86_avx_256/impl_x86_avx_256.h"
+#elif GMX_SIMD_X86_AVX2_256
+#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
+#elif GMX_SIMD_X86_MIC
+#    include "impl_x86_mic/impl_x86_mic.h"
+#elif GMX_SIMD_ARM_NEON
+#    include "impl_arm_neon/impl_arm_neon.h"
+#elif GMX_SIMD_ARM_NEON_ASIMD
+#    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
+#elif GMX_SIMD_IBM_QPX
+#    include "impl_ibm_qpx/impl_ibm_qpx.h"
+#elif GMX_SIMD_IBM_VMX
+#    include "impl_ibm_vmx/impl_ibm_vmx.h"
+#elif GMX_SIMD_IBM_VSX
+#    include "impl_ibm_vsx/impl_ibm_vsx.h"
+#elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
+#    include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
 #    include "impl_none/impl_none.h"
 #endif
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 #    define GMX_SIMD_HAVE_REAL                                     GMX_SIMD_HAVE_DOUBLE
 #    define GMX_SIMD_REAL_WIDTH                                    GMX_SIMD_DOUBLE_WIDTH
 #    define GMX_SIMD_HAVE_INT32_EXTRACT                            GMX_SIMD_HAVE_DINT32_EXTRACT
@@ -115,54 +136,54 @@
 
 /*! \brief 1 if SimdReal is available, otherwise 0.
  *
- *  \ref GMX_SIMD_HAVE_DOUBLE if GMX_DOUBLE is set, otherwise \ref GMX_SIMD_HAVE_FLOAT.
+ *  \ref GMX_SIMD_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_HAVE_FLOAT.
  */
 #    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_FLOAT
 
 /*! \brief Width of SimdReal.
  *
- *  \ref GMX_SIMD_DOUBLE_WIDTH if GMX_DOUBLE is set, otherwise \ref GMX_SIMD_FLOAT_WIDTH.
+ *  \ref GMX_SIMD_DOUBLE_WIDTH if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_FLOAT_WIDTH.
  */
 #    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_FLOAT_WIDTH
 
 /*! \brief 1 if support is available for extracting elements from SimdInt32, otherwise 0
  *
- *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
  */
 #    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_FINT32_EXTRACT
 
 /*! \brief 1 if logical ops are supported on SimdInt32, otherwise 0.
  *
- *  \ref GMX_SIMD_HAVE_DINT32_LOGICAL if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_DINT32_LOGICAL if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_LOGICAL.
  */
 #    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_FINT32_LOGICAL
 
 /*! \brief 1 if arithmetic ops are supported on SimdInt32, otherwise 0.
  *
- *  \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS.
  */
 #    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_FINT32_ARITHMETICS
 
 /*! \brief 1 if gmx::simdGatherLoadUBySimdIntTranspose is present, otherwise 0
  *
- *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT.
  */
 #    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
 
 /*! \brief 1 if real half-register load/store/reduce utils present, otherwise 0
  *
- *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT.
  */
 #    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL    GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
 
 /*! \brief 1 if Simd4Real is available, otherwise 0.
  *
- *  \ref GMX_SIMD4_HAVE_DOUBLE if GMX_DOUBLE is set, otherwise \ref GMX_SIMD4_HAVE_FLOAT.
+ *  \ref GMX_SIMD4_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD4_HAVE_FLOAT.
  */
 #    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_FLOAT
 
@@ -187,14 +208,14 @@ namespace gmx
  *
  * This type is only available if \ref GMX_SIMD_HAVE_REAL is 1.
  *
- * \ref SimdDouble if GMX_DOUBLE is set, otherwise \ref SimdFloat.
+ * \ref SimdDouble if GMX_DOUBLE is 1, otherwise \ref SimdFloat.
  *
  * \note This variable cannot be placed inside other structures or classes, since
  *       some compilers (including at least clang-3.7) appear to lose the
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 typedef SimdDouble               SimdReal;
 #    else
 typedef SimdFloat                SimdReal;
@@ -205,7 +226,7 @@ typedef SimdFloat                SimdReal;
  *
  * This type is only available if \ref GMX_SIMD_HAVE_REAL is 1.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref SimdDBool
+ * If GMX_DOUBLE is 1, this will be set to \ref SimdDBool
  * internally, otherwise \ref SimdFBool. This is necessary since some
  * SIMD implementations use bitpatterns for marking truth, so single-
  * vs. double precision booleans are not necessarily exchangable.
@@ -218,7 +239,7 @@ typedef SimdFloat                SimdReal;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 typedef SimdDBool                SimdBool;
 #    else
 typedef SimdFBool                SimdBool;
@@ -227,7 +248,7 @@ typedef SimdFBool                SimdBool;
 
 /*! \brief 32-bit integer SIMD type.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref SimdDInt32
+ * If GMX_DOUBLE is 1, this will be set to \ref SimdDInt32
  * internally, otherwise \ref SimdFInt32. This might seem a strange
  * implementation detail, but it is because some SIMD implementations use
  * different types/widths of integers registers when converting from
@@ -239,7 +260,7 @@ typedef SimdFBool                SimdBool;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 typedef SimdDInt32               SimdInt32;
 #    else
 typedef SimdFInt32               SimdInt32;
@@ -248,9 +269,9 @@ typedef SimdFInt32               SimdInt32;
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 /*! \brief Boolean SIMD type for usage with \ref SimdInt32.
  *
- * This type is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS is 1.
+ * This type is only available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref SimdDIBool
+ * If GMX_DOUBLE is 1, this will be set to \ref SimdDIBool
  * internally, otherwise \ref SimdFIBool. This is necessary since some
  * SIMD implementations use bitpatterns for marking truth, so single-
  * vs. double precision booleans are not necessarily exchangable, and while
@@ -269,7 +290,7 @@ typedef SimdFInt32               SimdInt32;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 typedef SimdDIBool               SimdIBool;
 #    else
 typedef SimdFIBool               SimdIBool;
@@ -277,7 +298,7 @@ typedef SimdFIBool               SimdIBool;
 #endif  // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
 const int c_simdBestPairAlignment = c_simdBestPairAlignmentDouble;
 #else
 const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
@@ -290,14 +311,14 @@ const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
  *
  * This type is only available if \ref GMX_SIMD4_HAVE_REAL is 1.
  *
- * \ref Simd4Double if GMX_DOUBLE is set, otherwise \ref Simd4Float.
+ * \ref Simd4Double if GMX_DOUBLE is 1, otherwise \ref Simd4Float.
  *
  * \note This variable cannot be placed inside other structures or classes, since
  *       some compilers (including at least clang-3.7) appear to lose the
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 typedef Simd4Double               Simd4Real;
 #    else
 typedef Simd4Float                Simd4Real;
@@ -308,7 +329,7 @@ typedef Simd4Float                Simd4Real;
  *
  * This type is only available if \ref GMX_SIMD4_HAVE_REAL is 1.
  *
- * If GMX_DOUBLE is defined, this will be set to \ref Simd4DBool
+ * If GMX_DOUBLE is 1, this will be set to \ref Simd4DBool
  * internally, otherwise \ref Simd4FBool. This is necessary since some
  * SIMD implementations use bitpatterns for marking truth, so single-
  * vs. double precision booleans are not necessarily exchangable.
@@ -319,7 +340,7 @@ typedef Simd4Float                Simd4Real;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
 typedef Simd4DBool                Simd4Bool;
 #    else
 typedef Simd4FBool                Simd4Bool;
@@ -365,7 +386,7 @@ class SimdLoadIProxyInternal
         //! \brief Private constructor can only be called from load()
         SimdLoadIProxyInternal(const std::int32_t *m) : m_(m) {}
 
-        friend const SimdLoadIProxyInternal
+        friend const SimdLoadIProxyInternal gmx_simdcall
         load(const std::int32_t *m);
 
         const std::int32_t * const m_; //!< The pointer used to load memory
@@ -396,7 +417,7 @@ loadU(const std::int32_t *m);
 
 /*! \libinternal \brief Proxy object to enable loadU() for SimdFInt32 & SImdDInt32
  *
- * \copydetails SimdLoadIProxy
+ * \copydetails SimdLoadIProxyInternal
  */
 class SimdLoadUIProxyInternal
 {
@@ -413,7 +434,7 @@ class SimdLoadUIProxyInternal
         //! \brief Private constructor can only be called from loadU()
         SimdLoadUIProxyInternal(const std::int32_t *m) : m_(m) {}
 
-        friend const SimdLoadUIProxyInternal
+        friend const SimdLoadUIProxyInternal gmx_simdcall
         loadU(const std::int32_t *m);
 
         const std::int32_t * const m_; //!< The pointer used to load memory
@@ -476,7 +497,7 @@ class SimdSetZeroProxyInternal
         //! \brief Private constructor can only be called from setZero()
         SimdSetZeroProxyInternal() {}
 
-        friend const SimdSetZeroProxyInternal
+        friend const SimdSetZeroProxyInternal gmx_simdcall
         setZero();
 
         GMX_DISALLOW_COPY_AND_ASSIGN(SimdSetZeroProxyInternal);
@@ -497,7 +518,6 @@ setZero()
 
 
 #endif // GMX_SIMD_HAVE_REAL
-
 
 }      // namespace gmx
 

@@ -36,93 +36,460 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD_FLOAT_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD_FLOAT_H
 
-#include <math.h>
+#include "config.h"
+
+// Assert is buggy on xlc with high optimization, so we skip it for QPX
+#include <cstddef>
+#include <cstdint>
+
 #ifdef __clang__
 #include <qpxmath.h>
 #endif
 
-#include "impl_ibm_qpx_common.h"
+#include "gromacs/utility/basedefinitions.h"
 
-/****************************************************
- *      SINGLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#define SimdFloat          vector4double
+namespace gmx
+{
+
+class SimdFloat
+{
+    public:
+        SimdFloat() {}
+
+        SimdFloat(float f) : simdInternal_(vec_splats(f)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFloat(vector4double simd) : simdInternal_(simd) {}
+
+        vector4double  simdInternal_;
+};
+
+class SimdFInt32
+{
+    public:
+        SimdFInt32() {}
+
+        SimdFInt32(std::int32_t i)
+        {
+            GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
+            idata[0]      = i;
+            simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
+        }
+
+        // Internal utility constructor to simplify return statements
+        SimdFInt32(vector4double simd) : simdInternal_(simd) {}
+
+        vector4double  simdInternal_;
+};
+
+class SimdFBool
+{
+    public:
+        SimdFBool() {}
+
+        SimdFBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFBool(vector4double simd) : simdInternal_(simd) {}
+
+        vector4double  simdInternal_;
+};
+
+static inline SimdFloat gmx_simdcall
+load(const float *m)
+{
 #ifdef NDEBUG
-#    define simdLoadF(m)    vec_ld(0, (float *)(m))
-#    define simdStoreF(m, a) vec_st(a, 0, (float *)(m))
+    return {
+               vec_ld(0, const_cast<float *>(m))
+    };
 #else
-#    define simdLoadF(m)    vec_lda(0, (float *)(m))
-#    define simdStoreF(m, a) vec_sta(a, 0, (float *)(m))
+    return {
+               vec_lda(0, const_cast<float *>(m))
+    };
 #endif
-#    define simdLoad1F(m)   vec_lds(0, (float *)(m))
-#define simdSet1F(x)        vec_splats(x)
-/* No support for unaligned load/store */
-#define simdSetZeroF        simdSetZeroIbm_qpx
-#define simdAddF(a, b)       vec_add(a, b)
-#define simdSubF(a, b)       vec_sub(a, b)
-#define simdMulF(a, b)       vec_mul(a, b)
-#define simdFmaddF(a, b, c)   vec_madd(a, b, c)
-#define simdFmsubF(a, b, c)   vec_msub(a, b, c)
-/* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
-#define simdFnmaddF(a, b, c)  vec_nmsub(a, b, c)
-/* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
-#define simdFnmsubF(a, b, c)  vec_nmadd(a, b, c)
-/* simdAndF not supported - no bitwise logical ops */
-/* simdAndNotF not supported - no bitwise logical ops */
-/* simdOrF not supported - no bitwise logical ops */
-/* simdXorF not supported - no bitwise logical ops */
-#define simdRsqrtF(a)       vec_rsqrte(a)
-#define simdRcpF(a)         vec_re(a)
-#define simdAbsF(a)        vec_abs(a)
-#define simdNegF           gmx_simd_fneg_ibm_qpx
-#define simdMaxF(a, b)       vec_sel(b, a, vec_sub(a, b))
-#define simdMinF(a, b)       vec_sel(b, a, vec_sub(b, a))
-/* Note: It is critical to use vec_cfid(vec_ctid(a)) for the implementation
- * of simdRoundF(), since vec_round() does not adhere to the FP control
- * word rounding scheme. We rely on float-to-float and float-to-integer
- * rounding being the same for half-way values in a few algorithms.
- */
-#define simdRoundF(a)       vec_cfid(vec_ctid(a))
-#define simdTruncF(a)       vec_trunc(a)
-#define simdFractionF(x)    vec_sub(x, vec_trunc(x))
-#define simdGetExponentF(a) gmx_simd_get_exponent_ibm_qpx(a)
-#define simdGetMantissaF(a) gmx_simd_get_mantissa_ibm_qpx(a)
-#define simdSetExponentF(a) gmx_simd_set_exponent_ibm_qpx(a)
-/* integer datatype corresponding to float: SimdFInt32 */
-#define SimdFInt32         vector4double
+}
+
+static inline void gmx_simdcall
+store(float *m, SimdFloat a)
+{
 #ifdef NDEBUG
-#    define simdLoadFI(m)   vec_ldia(0, (int *)(m))
+    vec_st(a.simdInternal_, 0, m);
 #else
-#    define simdLoadFI(m)   vec_ldiaa(0, (int *)(m))
+    vec_sta(a.simdInternal_, 0, m);
 #endif
-#define simdSet1FI(i)       simdSet1Int_ibm_qpx(i)
-#define simdStoreFI(m, x)    vec_st(x, 0, (int *)(m))
-#define simdSetZeroFI       simdSetZeroIbm_qpx
-#define simdCvtF2I(a)       vec_ctiw(a)
-#define simdCvttF2I(a)      vec_ctiwz(a)
-#define simdCvtI2F(a)       vec_cfid(a)
-/* Integer simd extract not available */
-/* Integer logical ops on SimdFInt32 not supported */
-/* Integer arithmetic ops on SimdFInt32 not supported */
-/* Boolean & comparison operations on SimdFloat */
-#define SimdFBool          vector4double
-#define simdCmpEqF(a, b)     vec_cmpeq(a, b)
-#define simdCmpLtF(a, b)     vec_cmplt((a), (b))
-#define simdCmpLeF(a, b)     simdOrFB(vec_cmpeq(a, b), vec_cmplt(a, b))
-#define simdAndFB(a, b)      vec_and(a, b)
-#define simdOrFB(a, b)       vec_or(a, b)
-#define simdAnyTrueFB(a)    simdAnyTrueBool_ibm_qpx(a)
-#define simdMaskF(a, sel) vec_sel(vec_splats(0.0), a, sel)
-#define simdMaskNotF(a, sel) vec_sel(a, vec_splats(0.0), sel)
-#define simdBlendF(a, b, sel)  vec_sel(a, b, sel)
-#define simdReduceF(a)       gmx_simd_reduce_ibm_qpx(a)
+}
 
+static inline SimdFloat gmx_simdcall
+setZeroF()
+{
+    return {
+               vec_splats(0.0)
+    };
+}
 
-/* Boolean & comparison operations on SimdFInt32 not supported */
-/* Conversions between different booleans not supported */
+static inline SimdFInt32 gmx_simdcall
+loadFI(const std::int32_t * m)
+{
+#ifdef NDEBUG
+    return {
+               vec_ldia(0, const_cast<int *>(m))
+    };
+#else
+    return {
+               vec_ldiaa(0, const_cast<int *>(m))
+    };
+#endif
+}
 
-/* Note: Since QPX registers are always double internally, the single
- * precision defines use several double precision helper functions.
- */
+static inline void gmx_simdcall
+store(std::int32_t * m, SimdFInt32 a)
+{
+    vec_st(a.simdInternal_, 0, m);
+}
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD_FLOAT_H */
+static inline SimdFInt32 gmx_simdcall
+setZeroFI()
+{
+    return {
+               vec_splats(0.0)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator+(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator-(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator-(SimdFloat x)
+{
+    return {
+               vec_neg(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator*(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_mul(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fms(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_msub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_nmadd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+rsqrt(SimdFloat x)
+{
+    return {
+               vec_rsqrte(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+rcp(SimdFloat x)
+{
+    return {
+               vec_re(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    return {
+               vec_add(a.simdInternal_, vec_sel(vec_splats(0.0), b.simdInternal_, m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    return {
+               vec_sel(vec_splats(0.0), vec_mul(a.simdInternal_, b.simdInternal_), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat
+maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
+{
+    return {
+               vec_sel(vec_splats(0.0), vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat
+maskzRsqrt(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
+#endif
+    return {
+               vec_sel(vec_splats(0.0), vec_rsqrte(x.simdInternal_), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat
+maskzRcp(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
+#endif
+    return {
+               vec_sel(vec_splats(0.0), vec_re(x.simdInternal_), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+abs(SimdFloat x)
+{
+    return {
+               vec_abs( x.simdInternal_ )
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+max(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+min(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(b.simdInternal_, a.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+round(SimdFloat x)
+{
+    // Note: It is critical to use vec_cfid(vec_ctid(a)) for the implementation
+    // here, since vec_round() does not adhere to the FP control
+    // word rounding scheme. We rely on float-to-float and float-to-integer
+    // rounding being the same for half-way values in a few algorithms.
+    return {
+               vec_cfid(vec_ctid(x.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+trunc(SimdFloat x)
+{
+    return {
+               vec_trunc(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat
+frexp(SimdFloat value, SimdFInt32 * exponent)
+{
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+
+    vec_st(value.simdInternal_, 0, rdata);
+
+    for (std::size_t i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        rdata[i] = std::frexp(rdata[i], idata + i);
+    }
+
+    exponent->simdInternal_ = vec_ldia(0, idata);
+    value.simdInternal_     = vec_ld(0, rdata);
+
+    return value;
+}
+
+static inline SimdFloat
+ldexp(SimdFloat value, SimdFInt32 exponent)
+{
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+
+    vec_st(value.simdInternal_,    0, rdata);
+    vec_st(exponent.simdInternal_, 0, idata);
+
+    for (std::size_t i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        rdata[i] = std::ldexp(rdata[i], idata[i]);
+    }
+
+    value.simdInternal_     = vec_ld(0, rdata);
+
+    return value;
+}
+
+static inline float gmx_simdcall
+reduce(SimdFloat x)
+{
+    vector4double y = vec_sldw(x.simdInternal_, x.simdInternal_, 2);
+    vector4double z;
+
+    y = vec_add(y, x.simdInternal_);
+    z = vec_sldw(y, y, 1);
+    y = vec_add(y, z);
+    return vec_extract(y, 0);
+}
+
+static inline SimdFBool gmx_simdcall
+operator==(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator!=(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_not(vec_cmpeq(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator<(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator<=(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_or(vec_cmplt(a.simdInternal_, b.simdInternal_), vec_cmpeq(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator&&(SimdFBool a, SimdFBool b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator||(SimdFBool a, SimdFBool b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFBool a)
+{
+    vector4double b = vec_sldw(a.simdInternal_, a.simdInternal_, 2);
+
+    a.simdInternal_ = vec_or(a.simdInternal_, b);
+    b               = vec_sldw(a.simdInternal_, a.simdInternal_, 1);
+    b               = vec_or(a.simdInternal_, b);
+    return (vec_extract(b, 0) > 0);
+}
+
+static inline SimdFloat gmx_simdcall
+selectByMask(SimdFloat a, SimdFBool m)
+{
+    return {
+               vec_sel(vec_splats(0.0), a.simdInternal_, m.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+selectByNotMask(SimdFloat a, SimdFBool m)
+{
+    return {
+               vec_sel(a.simdInternal_, vec_splats(0.0), m.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+cvtR2I(SimdFloat a)
+{
+    return {
+               vec_ctiw(a.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+cvttR2I(SimdFloat a)
+{
+    return {
+               vec_ctiwz(a.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+cvtI2R(SimdFInt32 a)
+{
+    return {
+               vec_cfid(a.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+copysign(SimdFloat x, SimdFloat y)
+{
+    return {
+               vec_cpsgn(y.simdInternal_, x.simdInternal_)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD_FLOAT_H

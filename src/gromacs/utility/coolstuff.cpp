@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -726,6 +726,12 @@ std::string getCoolQuote()
         { "A program that has not been tested does not work.", "Bjarne Stroustrup" },
         { "You could give Aristotle a tutorial. And you could thrill him to the core of his being. Such is the privilege of living after Newton, Darwin, Einstein, Planck, Watson, Crick and their colleagues.", "Richard Dawkins" },
         { "A robot will be truly autonomous when you instruct it to go to work and it decides to go to the beach instead.", "Brad Templeton" },
+        { "If you want to destroy my sweater, hold this thread as I walk away.", "Weezer" },
+        { "To survive science you have to become science.", "Gerrit Groenhof" },
+        { "Contemplating answers that could break my bonds.", "Peter Hammill" },
+        { "I always think there is something foreign about jolly phrases at breakfast.", "Mr. Carson in Downtown Abbey" },
+        { "According to my computations we're overdue for a transformation.", "Jackson Browne" },
+        { "Therefore, things must be learned only to be unlearned again or, more likely, to be corrected.", "Richard Feynman" }
     };
 
     if (beCool())

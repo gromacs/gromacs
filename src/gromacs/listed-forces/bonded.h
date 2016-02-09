@@ -165,7 +165,7 @@ void
                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                        int gmx_unused *global_atom_index);
 
-#endif
+#endif // GMX_SIMD_HAVE_REAL
 
 //! \endcond
 

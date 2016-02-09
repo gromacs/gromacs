@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -265,10 +265,10 @@ TEST_F(Simd4FloatingpointTest, anyTrue)
      * since that part of the data will not be used if simd width is 1.
      */
     eq = (rSimd4_5_7_9 == setSimd4RealFrom3R(5, 0, 0));
-    EXPECT_NE(0, anyTrue(eq));
+    EXPECT_TRUE(anyTrue(eq));
 
     eq = (rSimd4_1_2_3 == rSimd4_4_5_6);
-    EXPECT_EQ(0, anyTrue(eq));
+    EXPECT_FALSE(anyTrue(eq));
 }
 
 TEST_F(Simd4FloatingpointTest, blend)
@@ -297,7 +297,7 @@ TEST_F(Simd4FloatingpointTest, dotProduct)
 {
     Simd4Real v1 = setSimd4RealFrom3R(1, 4, 5);
     Simd4Real v2 = setSimd4RealFrom3R(3, 8, 2);
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     EXPECT_DOUBLE_EQ(45.0, dotProduct(v1, v2));
 #    else
     EXPECT_FLOAT_EQ(45.0, dotProduct(v1, v2));

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,8 +83,6 @@ TEST_F(ImdTest, ImdCanRun)
     EXPECT_EQ(0, runner_.callGrompp());
 
     ::gmx::test::CommandLine imdCaller;
-    imdCaller.append("mdrun");
-
     imdCaller.addOption("-imdport", 0); // automatically assign a free port
     imdCaller.append("-imdpull");
     imdCaller.append("-noimdwait");     // cannot use -imdwait: then mdrun would not return control ...

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,9 @@
 
 #include <string.h>
 
+#include <algorithm>
+#include <string>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
@@ -54,7 +57,9 @@
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptionbehavior.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -81,6 +86,7 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
 
         void initTopology(bool required);
         void initFirstFrame();
+        void initFrameIndexGroup();
         void finishTrajectory();
 
         // From ITopologyProvider
@@ -93,6 +99,10 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         {
             if (!topInfo_.hasTopology())
             {
+                if (trajectoryGroup_.isValid())
+                {
+                    GMX_THROW(InconsistentInputError("-fgroup is only supported when -s is also specified"));
+                }
                 // Read the first frame if we don't know the maximum number of
                 // atoms otherwise.
                 initFirstFrame();
@@ -108,6 +118,7 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         std::string                 trjfile_;
         //! Name of the topology file (empty if no topology provided).
         std::string                 topfile_;
+        Selection                   trajectoryGroup_;
         double                      startTime_;
         double                      endTime_;
         double                      deltaTime_;
@@ -137,15 +148,16 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
 TrajectoryAnalysisRunnerCommon::Impl::~Impl()
 {
     finishTrajectory();
-    if (fr)
+    if (fr != nullptr)
     {
         // There doesn't seem to be a function for freeing frame data
         sfree(fr->x);
         sfree(fr->v);
         sfree(fr->f);
+        sfree(fr->index);
         sfree(fr);
     }
-    if (oenv_ != NULL)
+    if (oenv_ != nullptr)
     {
         output_env_done(oenv_);
     }
@@ -229,7 +241,6 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         {
             GMX_THROW(InvalidInputError("Forces cannot be read from a topology"));
         }
-        fr->flags  = frflags;
         fr->natoms = topInfo_.topology()->atoms.nr;
         fr->bX     = TRUE;
         snew(fr->x, fr->natoms);
@@ -245,6 +256,30 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         gpbc_ = gmx_rmpbc_init(&topInfo_.topology()->idef, topInfo_.ePBC(),
                                fr->natoms);
     }
+}
+
+void
+TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
+{
+    if (!trajectoryGroup_.isValid())
+    {
+        return;
+    }
+    GMX_RELEASE_ASSERT(bTrajOpen_,
+                       "Trajectory index only makes sense with a real trajectory");
+    if (trajectoryGroup_.atomCount() != fr->natoms)
+    {
+        const std::string message = formatString(
+                    "Selection specified with -fgroup has %d atoms, but "
+                    "the trajectory (-f) has %d atoms.",
+                    trajectoryGroup_.atomCount(), fr->natoms);
+        GMX_THROW(InconsistentInputError(message));
+    }
+    fr->bIndex = TRUE;
+    snew(fr->index, trajectoryGroup_.atomCount());
+    std::copy(trajectoryGroup_.atomIndices().begin(),
+              trajectoryGroup_.atomIndices().end(),
+              fr->index);
 }
 
 void
@@ -322,6 +357,12 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
     timeUnitBehavior->addTimeUnitOption(options, "tu");
     timeUnitBehavior->setTimeUnitStore(&impl_->settings_.impl_->timeUnit);
 
+    options->addOption(SelectionOption("fgroup")
+                           .store(&impl_->trajectoryGroup_)
+                           .onlySortedAtoms().onlyStatic()
+                           .description("Atoms stored in the trajectory file "
+                                        "(if not set, assume first N atoms)"));
+
     // Add plot options.
     settings.impl_->plotSettings.initOptions(options);
 
@@ -342,12 +383,17 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
 void
 TrajectoryAnalysisRunnerCommon::optionsFinished()
 {
-    impl_->settings_.impl_->plotSettings.setTimeUnit(impl_->settings_.timeUnit());
-
     if (impl_->trjfile_.empty() && impl_->topfile_.empty())
     {
         GMX_THROW(InconsistentInputError("No trajectory or topology provided, nothing to do!"));
     }
+
+    if (impl_->trajectoryGroup_.isValid() && impl_->trjfile_.empty())
+    {
+        GMX_THROW(InconsistentInputError("-fgroup only makes sense together with a trajectory (-f)"));
+    }
+
+    impl_->settings_.impl_->plotSettings.setTimeUnit(impl_->settings_.timeUnit());
 
     if (impl_->bStartTimeSet_)
     {
@@ -377,6 +423,13 @@ void
 TrajectoryAnalysisRunnerCommon::initFirstFrame()
 {
     impl_->initFirstFrame();
+}
+
+
+void
+TrajectoryAnalysisRunnerCommon::initFrameIndexGroup()
+{
+    impl_->initFrameIndexGroup();
 }
 
 

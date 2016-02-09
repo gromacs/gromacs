@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 #include "tng/tng_io.h"
 #endif
 
@@ -60,7 +60,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                              const int               *index,
                              const char              *indexGroupName)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     /* FIXME after 5.0: Currently only standard block types are read */
     const int           defaultNumIds              = 5;
     static gmx_int64_t  fallbackIds[defaultNumIds] =
@@ -82,7 +82,7 @@ void gmx_prepare_tng_writing(const char              *filename,
                                                                      const char*,
                                                                      const char,
                                                                      const char);
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_double_set;
 #else
     set_writing_interval_func_pointer set_writing_interval = tng_util_generic_write_interval_set;
@@ -190,7 +190,7 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
                                  t_trxframe             *frame,
                                  int                     natoms)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     if (frame->step > 0)
     {
         double timePerFrame = frame->time * PICO / frame->step;
@@ -217,7 +217,7 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
 #endif
 }
 
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
 static void
 convert_array_to_real_array(void       *from,
                             real       *to,
@@ -334,7 +334,7 @@ void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
                                  const int       *ind,
                                  const char      *name)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_int64_t              nAtoms, cnt, nMols;
     tng_molecule_t           mol, iterMol;
     tng_chain_t              chain;
@@ -431,7 +431,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
                                  gmx_int64_t                *requestedIds,
                                  int                         numRequestedIds)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_bool                bOK = TRUE;
     tng_function_status     stat;
     gmx_int64_t             numberOfAtoms = -1, frameNumber = -1;
@@ -637,7 +637,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
 void gmx_print_tng_molecule_system(tng_trajectory_t input,
                                    FILE            *stream)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     gmx_int64_t        nMolecules, nChains, nResidues, nAtoms, *molCntList;
     tng_molecule_t     molecule;
     tng_chain_t        chain;
@@ -744,7 +744,7 @@ gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t     input,
                                                     gmx_int64_t         *nBlocks,
                                                     gmx_int64_t        **blockIds)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     tng_function_status stat;
 
     stat = tng_util_trajectory_next_frame_present_data_blocks_find(input, frame,
@@ -785,7 +785,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
                                                    int                  maxLen,
                                                    gmx_bool            *bOK)
 {
-#ifdef GMX_USE_TNG
+#if GMX_USE_TNG
     tng_function_status stat;
     char                datatype = -1;
     gmx_int64_t         codecId;

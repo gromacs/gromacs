@@ -160,7 +160,7 @@ NBK_FUNC_NAME(_VgrpF)
 #ifdef CALC_ENERGIES
     real       halfsp;
 #endif
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     const real            *tab_coul_FDV0;
 #else
     const real            *tab_coul_F;
@@ -203,7 +203,7 @@ NBK_FUNC_NAME(_VgrpF)
     halfsp = 0.5/ic->tabq_scale;
 #endif
 
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
     tab_coul_FDV0 = ic->tabq_coul_FDV0;
 #else
     tab_coul_F    = ic->tabq_coul_F;
@@ -294,7 +294,7 @@ NBK_FUNC_NAME(_VgrpF)
             Vc_sub_self = 0.5*c_rf;
 #endif
 #ifdef CALC_COUL_TAB
-#ifdef GMX_DOUBLE
+#if GMX_DOUBLE
             Vc_sub_self = 0.5*tab_coul_V[0];
 #else
             Vc_sub_self = 0.5*tab_coul_FDV0[2];

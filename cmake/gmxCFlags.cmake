@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -110,9 +110,7 @@ macro (gmx_c_flags)
         if (GMX_COMPILER_WARNINGS)
             GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith" GMXC_CFLAGS)
-            if(NOT GMX_USE_CUDA) #TODO: Fix that CUDA code has warnings
-                GMX_TEST_CFLAG(CFLAGS_WARN_UNDEF "-Wundef" GMXC_CFLAGS)
-            endif()
+            GMX_TEST_CFLAG(CFLAGS_WARN_UNDEF "-Wundef" GMXC_CFLAGS)
             # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
             # the warnings are OK.
             GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
@@ -136,9 +134,7 @@ macro (gmx_c_flags)
             # Problematic with CUDA
             # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
-            if(NOT GMX_USE_CUDA)
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
-            endif()
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
             GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         endif()
         # new in gcc 4.5

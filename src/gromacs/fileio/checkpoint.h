@@ -80,7 +80,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * support file locking.
  */
 void load_checkpoint(const char *fn, FILE **fplog,
-                     t_commrec *cr, ivec dd_nc,
+                     const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
                      gmx_bool bAppend, gmx_bool bForceAppend);

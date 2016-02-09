@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,6 +68,12 @@ namespace test
  *
  * Any method in this class may throw std::bad_alloc if out of memory.
  *
+ * By default, the convenience methods callGrompp() and callMdrun()
+ * just prepare and run a default call to mdrun. If there is a need to
+ * customize the command-line for grompp or mdrun (e.g. to invoke
+ * -maxwarn n, or -reprod), then make a CommandLine object with the
+ * appropriate flags and pass that into the routines that accept such.
+ *
  * \ingroup module_mdrun_integration_tests
  */
 class SimulationRunner
@@ -89,9 +95,13 @@ class SimulationRunner
         void useTopGroAndNdxFromDatabase(const char *name);
         //! Use a standard .gro file as input to grompp
         void useGroFromDatabase(const char *name);
-        //! Calls grompp (on rank 0) to prepare for the mdrun test
+        //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
+        int callGrompp(const CommandLine &callerRef);
+        //! Convenience wrapper for a default call to \c callGrompp
         int callGrompp();
-        //! Calls grompp (on this rank) to prepare for the mdrun test
+        //! Calls grompp (on this rank, with a customized command line) to prepare for the mdrun test
+        int callGromppOnThisRank(const CommandLine &callerRef);
+        //! Convenience wrapper for a default call to \c callGromppOnThisRank
         int callGromppOnThisRank();
         //! Calls mdrun for testing with a customized command line
         int callMdrun(const CommandLine &callerRef);

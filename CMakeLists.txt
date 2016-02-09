@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -343,14 +343,22 @@ if(GMX_SIMD STREQUAL "AVX_256"
     # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
 endif()
 
-
+# Implement double-precision option. This is complicated because we
+# need installed headers to use the precision mode of the build that
+# produced the library, but cannot use config.h in that case. We also
+# want such variables to always have a definition, because #if is more
+# robust than #ifdef. So, we put this value on the compiler command
+# line in all cases.
+#
+# GMX_RELAXED_DOUBLE_PRECISION does not need to be handled here,
+# because no installed header needs it
 if(GMX_DOUBLE)
-    add_definitions(-DGMX_DOUBLE)
-    list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE")
-    if(GMX_RELAXED_DOUBLE_PRECISION)
-        add_definitions(-DGMX_RELAXED_DOUBLE_PRECISION)
-    endif()
+    set(GMX_DOUBLE_VALUE 1)
+else()
+    set(GMX_DOUBLE_VALUE 0)
 endif()
+add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
+list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
 if(WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
@@ -521,10 +529,8 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
-if(GMX_GPU)
-    # now that we have detected the dependencies, do the second configure pass
-    gmx_gpu_setup()
-endif()
+# now that we have detected the dependencies, do the second GPU configure pass
+gmx_gpu_setup()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)

@@ -1566,8 +1566,7 @@ static int *atom2cg(t_block *cgs)
     return a2cg;
 }
 
-static int count_intercg_vsite(const gmx_mtop_t *mtop,
-                               gmx_bool         *bHaveChargeGroups)
+int count_intercg_vsites(const gmx_mtop_t *mtop)
 {
     int             mb, ftype, nral, i, cg, a;
     gmx_molblock_t *molb;
@@ -1577,18 +1576,11 @@ static int count_intercg_vsite(const gmx_mtop_t *mtop,
     t_iatom        *ia;
     int             n_intercg_vsite;
 
-    *bHaveChargeGroups = FALSE;
-
     n_intercg_vsite = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
         molt = &mtop->moltype[molb->type];
-
-        if (molt->cgs.nr < molt->atoms.nr)
-        {
-            *bHaveChargeGroups = TRUE;
-        }
 
         a2cg = atom2cg(&molt->cgs);
         for (ftype = 0; ftype < F_NRE; ftype++)
@@ -1786,8 +1778,9 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
 
     snew(vsite, 1);
 
-    vsite->n_intercg_vsite = count_intercg_vsite(mtop,
-                                                 &vsite->bHaveChargeGroups);
+    vsite->n_intercg_vsite   = count_intercg_vsites(mtop);
+
+    vsite->bHaveChargeGroups = (ncg_mtop(mtop) < mtop->natoms);
 
     /* If we don't have charge groups, the vsite follows its own pbc */
     if (!bSerial_NoPBC &&

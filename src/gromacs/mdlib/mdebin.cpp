@@ -167,14 +167,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         if (ncon > 0 && ir->eConstrAlg == econtLINCS)
         {
-            if (ir->eI == eiSD2)
-            {
-                md->nCrmsd = 2;
-            }
-            else
-            {
-                md->nCrmsd = 1;
-            }
+            md->nCrmsd = 1;
         }
         md->bConstrVir = (getenv("GMX_CONSTRAINTVIR") != NULL);
     }
@@ -947,11 +940,7 @@ void upd_mdebin(t_mdebin       *md,
     add_ebin(md->ebin, md->ie, md->f_nre, ecopy, bSum);
     if (md->nCrmsd)
     {
-        crmsd[0] = constr_rmsd(constr, FALSE);
-        if (md->nCrmsd > 1)
-        {
-            crmsd[1] = constr_rmsd(constr, TRUE);
-        }
+        crmsd[0] = constr_rmsd(constr);
         add_ebin(md->ebin, md->iconrmsd, md->nCrmsd, crmsd, FALSE);
     }
     if (md->bDynBox)
@@ -1334,7 +1323,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     add_subblocks_enxblock(&(fr.block[b]), 1);
                     fr.block[b].id        = id[b];
                     fr.block[b].sub[0].nr = nr[b];
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                     fr.block[b].sub[0].type = xdr_datatype_float;
                     fr.block[b].sub[0].fval = block[b];
 #else
@@ -1354,7 +1343,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     fr.block[db].id        = enxDISRE;
                     fr.block[db].sub[0].nr = ndisre;
                     fr.block[db].sub[1].nr = ndisre;
-#ifndef GMX_DOUBLE
+#if !GMX_DOUBLE
                     fr.block[db].sub[0].type = xdr_datatype_float;
                     fr.block[db].sub[1].type = xdr_datatype_float;
                     fr.block[db].sub[0].fval = disre_rt;

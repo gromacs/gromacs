@@ -52,7 +52,6 @@ namespace gmx
 {
 
 class TextLineWrapperSettings;
-class TextOutputStream;
 class TextWriter;
 
 /*! \cond libapi */
@@ -133,13 +132,13 @@ class HelpWriterContext
 {
     public:
         /*! \brief
-         * Initializes a context with the given output stream and format.
+         * Initializes a context with the given output writer and format.
          *
          * \throws std::bad_alloc if out of memory.
          */
-        HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format);
+        HelpWriterContext(TextWriter *writer, HelpOutputFormat format);
         /*! \brief
-         * Initializes a context with the given output stream, format and links.
+         * Initializes a context with the given output writer, format and links.
          *
          * \throws std::bad_alloc if out of memory.
          *
@@ -147,7 +146,7 @@ class HelpWriterContext
          * is destructed.  The caller is responsible for ensuring that the
          * links object remains valid long enough.
          */
-        HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format,
+        HelpWriterContext(TextWriter *writer, HelpOutputFormat format,
                           const HelpLinks *links);
         //! Creates a copy of the context.
         HelpWriterContext(const HelpWriterContext &other);
@@ -253,6 +252,15 @@ class HelpWriterContext
          * and writes the result directly to the output file.
          */
         void writeTextBlock(const std::string &text) const;
+        /*! \brief
+         * Ensures a paragraph break (empty line) in the output.
+         *
+         * Calls at the beginning and end of output do not produce extra empty
+         * lines, and consencutive calls only result in a single empty line.
+         * This allows calling the method before and after all output that
+         * needs to appear separated as empty lines.
+         */
+        void paragraphBreak() const;
         /*! \brief
          * Starts writing a list of options.
          *

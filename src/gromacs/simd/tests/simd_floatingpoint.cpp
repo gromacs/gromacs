@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -243,7 +243,7 @@ TEST_F(SimdFloatingpointTest, frexp)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);
 
 
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     fraction = frexp(rSimd_ExpDouble, &exponent);
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.6206306194761728178832527,
@@ -262,7 +262,7 @@ TEST_F(SimdFloatingpointTest, ldexp)
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
                             ldexp(one, setSimdIntFrom3I(60, -41, 54)));
-#if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
                             ldexp(one, setSimdIntFrom3I(587, -462, 672)));
 #endif
@@ -414,10 +414,10 @@ TEST_F(SimdFloatingpointTest, anyTrueB)
      * since that part of the data will not be used if simd width is 1.
      */
     eq = rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0);
-    EXPECT_NE(0, anyTrue(eq));
+    EXPECT_TRUE(anyTrue(eq));
 
     eq = rSimd_1_2_3 == rSimd_4_5_6;
-    EXPECT_EQ(0, anyTrue(eq));
+    EXPECT_FALSE(anyTrue(eq));
 }
 
 TEST_F(SimdFloatingpointTest, blend)

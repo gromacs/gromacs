@@ -57,6 +57,7 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/mtop_util.h"
@@ -81,7 +82,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     gmx_groups_t *groups;
     t_topology    top;
 
-    read_tpxheader(fn, &tpx, TRUE, NULL, NULL);
+    read_tpxheader(fn, &tpx, TRUE);
 
     read_tpx_state(fn,
                    tpx.bIr  ? &ir : NULL,

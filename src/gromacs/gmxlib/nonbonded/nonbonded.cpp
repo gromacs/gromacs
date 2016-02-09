@@ -71,31 +71,31 @@
 /* Different default (c) and SIMD instructions interaction-specific kernels */
 #include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
 
-#if GMX_SIMD_X86_SSE2 && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
 #endif
-#if GMX_SIMD_X86_SSE4_1 && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
 #endif
-#if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
 #endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
 #endif
-#if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
+#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #endif
-#if GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE
+#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
 #endif
-#if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
+#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
 #endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
-#if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
+#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
 #    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
 
@@ -121,32 +121,32 @@ gmx_nonbonded_setup(t_forcerec *   fr,
             {
                 /* Add interaction-specific kernels for different architectures */
                 /* Single precision */
-#if GMX_SIMD_X86_SSE2 && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse2_single, kernellist_sse2_single_size);
 #endif
-#if GMX_SIMD_X86_SSE4_1 && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse4_1_single, kernellist_sse4_1_single_size);
 #endif
-#if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_single, kernellist_avx_128_fma_single_size);
 #endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_single, kernellist_avx_256_single_size);
 #endif
                 /* Double precision */
-#if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
+#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse2_double, kernellist_sse2_double_size);
 #endif
-#if GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE
+#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse4_1_double, kernellist_sse4_1_double_size);
 #endif
-#if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
+#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_128_fma_double, kernellist_avx_128_fma_double_size);
 #endif
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
 #endif
-#if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
+#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double, kernellist_sparc64_hpc_ace_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
@@ -180,38 +180,38 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     arch_and_padding[] =
     {
         /* Single precision */
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !(defined GMX_DOUBLE)
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
         { "avx_256_single", 8 },
 #endif
-#if GMX_SIMD_X86_AVX_128_FMA && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
         { "avx_128_fma_single", 4 },
 #endif
-#if GMX_SIMD_X86_SSE4_1 && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
         { "sse4_1_single", 4 },
 #endif
-#if GMX_SIMD_X86_SSE2 && !(defined GMX_DOUBLE)
+#if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
         { "sse2_single", 4 },
 #endif
         /* Double precision */
-#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && defined GMX_DOUBLE
+#if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
         { "avx_256_double", 4 },
 #endif
-#if GMX_SIMD_X86_AVX_128_FMA && defined GMX_DOUBLE
+#if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
         /* Sic. Double precision 2-way SIMD does not require neighbor list padding,
          * since the kernels execute a loop unrolled a factor 2, followed by
          * a possible single odd-element epilogue.
          */
         { "avx_128_fma_double", 1 },
 #endif
-#if GMX_SIMD_X86_SSE2 && defined GMX_DOUBLE
+#if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
         /* No padding - see comment above */
         { "sse2_double", 1 },
 #endif
-#if GMX_SIMD_X86_SSE4_1 && defined GMX_DOUBLE
+#if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
         /* No padding - see comment above */
         { "sse4_1_double", 1 },
 #endif
-#if GMX_SIMD_SPARC64_HPC_ACE && defined GMX_DOUBLE
+#if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
         /* No padding - see comment above */
         { "sparc64_hpc_ace_double", 1 },
 #endif

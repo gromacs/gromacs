@@ -103,7 +103,7 @@ Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *si
     int                          i, iter;
     int                          niter   = s_nPoints/GMX_SIMD4_WIDTH;
     int                          npoints = niter*GMX_SIMD4_WIDTH;
-#    ifdef GMX_DOUBLE
+#    if GMX_DOUBLE
     union {
         double r; std::int64_t i;
     } conv0, conv1;
