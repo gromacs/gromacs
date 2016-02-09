@@ -309,8 +309,7 @@ static std::array<int, eptNR> countPtypes(FILE       *fplog,
 void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                         t_inputrec *ir,
                         gmx_mtop_t *mtop, int nflexcon,
-                        int nstcalcenergy,
-                        bool usingDomainDecomposition)
+                        int nstcalcenergy)
 {
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
@@ -343,10 +342,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
     if (nstcalcenergy != 1)
     {
         gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combination with shell particles.\nPlease make a new tpr file.", nstcalcenergy);
-    }
-    if (usingDomainDecomposition)
-    {
-        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
     }
 
     if (nshell == 0)

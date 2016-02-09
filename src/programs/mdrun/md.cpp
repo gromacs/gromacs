@@ -363,7 +363,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     init_shell_flexcon(fplog, shellfc, ir, 
                        top_global, n_flexible_constraints(constr),
-                       ir->nstcalcenergy, DOMAINDECOMP(cr));
+                       ir->nstcalcenergy);
 
     if (vsite && ir->eI == eiNM)
     {

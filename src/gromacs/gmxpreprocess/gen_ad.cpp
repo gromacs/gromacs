@@ -2029,6 +2029,15 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 /* This function works much like gen_drude_lp_excl(), except for pairs */
                                                 if (bDrude)
                                                 {
+                                                    /* The largest number of pairs that can be added for any atom-atom combination 
+                                                     * is 9, so increase allocation before even entering the function. This is a bit
+                                                     * of a hack, but calling srenew() within gen_drude_lp_pairs() did not always work
+                                                     * with different versions of gcc, the reason for which was not clear to me. */
+                                                    if (npai >= (maxpai-10))
+                                                    {
+                                                        maxpai += ninc;
+                                                        srenew(pai, maxpai);
+                                                    }
                                                     gen_drude_lp_pairs(plist, atoms, pai, &npai, i1, i2);
                                                 }
                                             }
@@ -2212,4 +2221,12 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     sfree(dih);
     sfree(improper);
     sfree(pai);
+
+    if (bDrude)
+    {
+        sfree(thole);
+        sfree(aniso);
+        sfree(pol);
+        sfree(vsites);
+    }
 }

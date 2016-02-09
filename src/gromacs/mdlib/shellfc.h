@@ -113,8 +113,7 @@ struct t_state;
  */
 void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc, t_inputrec *ir,
                         gmx_mtop_t *mtop, int nflexcon,
-                        int nstcalcenergy,
-                        bool usingDomainDecomposition);
+                        int nstcalcenergy);
 
 /* Get the local shell with domain decomposition */
 void make_local_shells(t_commrec *cr, t_mdatoms *md,

@@ -2813,8 +2813,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     init_shell_flexcon(stdout, shellfc, inputrec,
                        top_global,
                        n_flexible_constraints(constr),
-                       inputrec->nstcalcenergy,
-                       DOMAINDECOMP(cr));
+                       inputrec->nstcalcenergy);
 
     if (shellfc)
     {
