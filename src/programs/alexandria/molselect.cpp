@@ -65,11 +65,6 @@ void MolSelect::read(const char *fn)
             ims_.push_back(IMolSelect(ptr[0], ii, index++));
         }
     }
-    /* Sort the molecules for faster searching down below */
-    std::sort(ims_.begin(), ims_.end(), 
-              [](const IMolSelect &a, 
-                 const IMolSelect &b)
-              { return a.iupac() == b.iupac(); });
 }
 
 iMolSelect MolSelect::status(const std::string &iupac) const
