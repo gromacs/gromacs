@@ -1063,6 +1063,7 @@ void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_
         {
             excls[i].e[nrs] = s[nrs].aj;
         }
+        sfree(s);
     }
 
     /* Now, we are ready to generate the Drude and LP exclusions, which are
@@ -1133,10 +1134,9 @@ void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_
             {
                 excls[i].e[nrs] = s[nrs].aj;
             }
+            sfree(s);
         }
     }  
-
-    sfree(s);
 }
 
 static void gen_drude_ssbonds_excl(t_atoms *atoms, t_excls *excls,
