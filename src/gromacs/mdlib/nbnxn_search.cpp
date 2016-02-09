@@ -4124,7 +4124,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         nbs->search_count++;
     }
     if (nbs->print_cycles &&
-        (!nbs->DomDec || (nbs->DomDec && !LOCAL_I(iloc))) &&
+        (!nbs->DomDec || !LOCAL_I(iloc)) &&
         nbs->search_count % 100 == 0)
     {
         nbs_cycle_print(stderr, nbs);

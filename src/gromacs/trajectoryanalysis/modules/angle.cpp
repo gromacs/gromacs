@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -766,14 +766,20 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     rvec dx[3];
                     if (pbc)
                     {
+                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[0], x[1], dx[0]);
+                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[2], x[1], dx[1]);
+                        // cppcheck-suppress uninitvar
                         pbc_dx(pbc, x[2], x[3], dx[2]);
                     }
                     else
                     {
+                        // cppcheck-suppress uninitvar
                         rvec_sub(x[0], x[1], dx[0]);
+                        // cppcheck-suppress uninitvar
                         rvec_sub(x[2], x[1], dx[1]);
+                        // cppcheck-suppress uninitvar
                         rvec_sub(x[2], x[3], dx[2]);
                     }
                     cprod(dx[0], dx[1], v1);

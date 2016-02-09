@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -292,7 +292,7 @@ void gmx_espresso_read_conf(const char *infile,
                         }
                     }
                     /* Generate an atom name from the particle type */
-                    sprintf(buf, "T%d", atoms->atom[i].type);
+                    sprintf(buf, "T%u", atoms->atom[i].type);
                     atoms->atomname[i] = put_symtab(&top->symtab, buf);
                     if (bMol)
                     {
@@ -449,7 +449,7 @@ void write_espresso_conf_indexed(FILE *out, const char *title,
         {
             j = i;
         }
-        fprintf(out, "\t{%d %f %f %f %d %g",
+        fprintf(out, "\t{%d %f %f %f %u %g",
                 j, x[j][XX], x[j][YY], x[j][ZZ],
                 atoms->atom[j].type, atoms->atom[j].q);
         if (v)

@@ -1321,7 +1321,7 @@ static int is_hbond(t_hbdata *hb, int grpd, int grpa, int d, int a,
             rha2 = iprod(r_ha, r_ha);
         }
 
-        if (bDA || (!bDA && (rha2 <= rc2)))
+        if (bDA || (rha2 <= rc2))
         {
             rvec_sub(x[d], x[hh], r_dh);
             if (bBox)
@@ -1344,7 +1344,7 @@ static int is_hbond(t_hbdata *hb, int grpd, int grpa, int d, int a,
             }
         }
     }
-    if (bDA || (!bDA && HAinrange))
+    if (bDA || HAinrange)
     {
         return hbDist;
     }
@@ -1443,7 +1443,7 @@ static void merge_hb(t_hbdata *hb, gmx_bool bTwo, gmx_bool bContact)
             ia = hb->a.acc[j];
             jj = hb->d.dptr[ia];
             if ((id != ia) && (ii != NOTSET) && (jj != NOTSET) &&
-                (!bTwo || (bTwo && (hb->d.grp[i] != hb->a.grp[j]))))
+                (!bTwo || (hb->d.grp[i] != hb->a.grp[j])))
             {
                 hb0 = hb->hbmap[i][j];
                 hb1 = hb->hbmap[jj][ii];

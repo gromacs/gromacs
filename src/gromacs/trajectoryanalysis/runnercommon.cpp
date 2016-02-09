@@ -79,7 +79,7 @@ namespace gmx
 class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
 {
     public:
-        Impl(TrajectoryAnalysisSettings *settings);
+        explicit Impl(TrajectoryAnalysisSettings *settings);
         ~Impl();
 
         bool hasTrajectory() const { return !trjfile_.empty(); }

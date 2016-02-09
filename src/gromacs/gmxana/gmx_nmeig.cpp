@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -443,6 +444,7 @@ int gmx_nmeig(int argc, char *argv[])
     }
     else
     {
+        assert(sparse_hessian);
         /* Sparse memory storage, allocate memory for eigenvectors */
         snew(eigenvectors, ncol*end);
         nma_sparse_hessian(sparse_hessian, bM, &top, atom_index, end, eigenvalues, eigenvectors);
