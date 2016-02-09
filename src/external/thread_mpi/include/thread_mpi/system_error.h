@@ -64,7 +64,7 @@ class system_error : public std::runtime_error
         //system_error(error_code ec, const std::string& what_arg);
         //system_error(error_code ec, const char* what_arg);
         /*! \brief Constuctor that takes an system error number */
-        system_error(error_code ec);
+        explicit system_error(error_code ec);
 
         /*! \brief Returns the error code */
         const error_code &code() const

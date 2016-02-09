@@ -3603,15 +3603,12 @@ static void distribute_cg(FILE *fplog,
 
     ma = dd->ma;
 
-    if (tmp_ind == NULL)
+    snew(tmp_nalloc, dd->nnodes);
+    snew(tmp_ind, dd->nnodes);
+    for (i = 0; i < dd->nnodes; i++)
     {
-        snew(tmp_nalloc, dd->nnodes);
-        snew(tmp_ind, dd->nnodes);
-        for (i = 0; i < dd->nnodes; i++)
-        {
-            tmp_nalloc[i] = over_alloc_large(cgs->nr/dd->nnodes+1);
-            snew(tmp_ind[i], tmp_nalloc[i]);
-        }
+        tmp_nalloc[i] = over_alloc_large(cgs->nr/dd->nnodes+1);
+        snew(tmp_ind[i], tmp_nalloc[i]);
     }
 
     /* Clear the count */
