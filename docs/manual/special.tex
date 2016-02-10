@@ -326,9 +326,19 @@ Since the potential now depends on the coordinates of two additional groups defi
 \label{fig:pulldirrel} 
 \end{figure}   
 
-\subsubsection{Definition of the angle pull geometry}
-Four pull groups are required for {\tt pull-coord?-geometry = angle}. E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4}
-defines the angle between the vector from group 1 to 2 and the vector from group 2 to 4. The angle takes values in the closed interval [0, 180] deg.
+\subsubsection{Definition of the angle and dihedral pull geometries}
+Four pull groups are required for {\tt pull-coord?-geometry = angle}. In the same way as for geometries with two groups, each consecutive pair of groups
+$i$ and $i+1$ define a vector connecting the COMs of groups $i$ and $i+1$. The angle is defined as the angle between the two resulting vectors.
+E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4} defines the angle between the vector from the COM of group 1 to the COM of group 2
+and the vector from the COM of group 2 to the COM of group 4.
+The angle takes values in the closed interval [0, 180] deg.
+The dihedral geometry requires six pull groups. These pair up in the same way as described above and so define three vectors. The dihedral angle is defined as the angle between the two
+planes spanned by the two first and the two last vectors. Equivalently, the dihedral angle can be seen as the angle between the first and the third
+vector when these vectors are projected onto a plane normal to the second vector (the axis vector).
+As an example, consider a dihedral angle involving four groups: 1, 5, 8 and 9. Here, the {\tt .mdp} option
+{\tt pull-coord?-groups = 8 1 1 5 5 9} specifies the three vectors that define the dihedral angle:
+the first vector is the COM distance vector from group 8 to 1, the second vector is the COM distance vector from group 1 to 5, and the third vector is the COM distance vector from group 5 to 9.
+The dihedral angle takes values in the interval (-180, 180] deg and has periodic boundaries.
 
 \subsubsection{Limitations}
 There is one theoretical limitation:
