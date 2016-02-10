@@ -72,12 +72,6 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
    which might increase the number of home atoms). */
 void update_realloc(gmx_update_t *upd, int state_nalloc);
 
-/* Store the random state from sd in state */
-void get_stochd_state(gmx_update_t sd, t_state *state);
-
-/* Set the random in sd from state */
-void set_stochd_state(gmx_update_t sd, t_state *state);
-
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
  */
