@@ -1730,6 +1730,8 @@ int gmx_grompp(int argc, char *argv[])
             }
         }
 
+        /* TODO: not implemented */
+#if 0
         if (ir->drude->nbtholecut == 0.0)
         {
             warning_note(wi, "nbtholecut set to zero; may be unstable for highly charged systems!");
@@ -1740,6 +1742,7 @@ int gmx_grompp(int argc, char *argv[])
             gmx_fatal(FARGS, "nbtholecut = %.3f > rlist or rcoulomb = %.3f\n", ir->drude->nbtholecut,
                         ir->rlist > ir->rcoulomb ? ir->rlist : ir->rcoulomb); 
         }
+#endif
 
         if (ir->drude->bHardWall)
         {

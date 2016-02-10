@@ -313,7 +313,7 @@ static int *atom2cg(t_block *cgs)
     return a2cg;
 }
 
-static int count_intercg_shells(gmx_mtop_t *mtop,
+static int count_intercg_shells(const gmx_mtop_t *mtop,
                                 gmx_bool   *bHaveChargeGroups)
 {
     int             mb, ftype, nral, i, cg, a;
@@ -512,7 +512,7 @@ static int **get_shell_pbc(t_ilist *ilist,
     return shell_pbc;
 }
 
-gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
+gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
                          gmx_bool bSerial_NoPBC)
 {
     int            nshell, nshellmol, i;

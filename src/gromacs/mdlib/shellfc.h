@@ -162,7 +162,7 @@ void spread_shell_f(gmx_shellfc_t shell,
                     int ePBC, gmx_bool bMolPBC, t_graph *g, matrix box,
                     t_commrec *cr);
 
-gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
+gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
                          gmx_bool bSerial_NoPBC);
 
 void split_shells_over_threads(const t_ilist   *ilist,

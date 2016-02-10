@@ -145,6 +145,10 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
                     iparams->wpol.al_x, iparams->wpol.al_y, iparams->wpol.al_z,
                     iparams->wpol.rOH, iparams->wpol.rHH, iparams->wpol.rOD);
             break;
+        case F_ANISO_POL:
+            fprintf(fp, "a11=%15.8e, a22=%15.8e, a33=%15.8e\n", iparams->daniso.a11,
+                    iparams->daniso.a22, iparams->daniso.a33);
+            break;
         case F_LJ:
             fprintf(fp, "c6=%15.8e, c12=%15.8e\n", iparams->lj.c6, iparams->lj.c12);
             break;
