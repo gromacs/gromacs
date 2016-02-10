@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -206,8 +206,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
     RTYPE("pull-cylinder-r",  pull->cylinder_r, 1.5);
     RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
-    EETYPE("pull-print-com1", pull->bPrintCOM1, yesno_names);
-    EETYPE("pull-print-com2", pull->bPrintCOM2, yesno_names);
+    EETYPE("pull-print-com", pull->bPrintCOM, yesno_names);
     EETYPE("pull-print-ref-value", pull->bPrintRefValue, yesno_names);
     EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 50);
