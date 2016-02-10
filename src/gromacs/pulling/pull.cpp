@@ -141,7 +141,11 @@ static void pull_print_x(FILE *out, struct pull_t *pull, double t)
 
         pcrd = &pull->coord[c];
 
-        if (pull->params.bPrintCOM1)
+        pull_print_coord_dr(out, pcrd,
+                            pull->params.bPrintRefValue,
+                            pull->params.bPrintComp);
+
+        if (pull->params.bPrintCOM)
         {
             if (pcrd->params.eGeom == epullgCYL)
             {
@@ -152,15 +156,11 @@ static void pull_print_x(FILE *out, struct pull_t *pull, double t)
                 pull_print_group_x(out, pcrd->params.dim,
                                    &pull->group[pcrd->params.group[0]]);
             }
+            for (int g = 1; g < pcrd->params.ngroup; g++)
+            {
+                pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[g]]);
+            }
         }
-        if (pull->params.bPrintCOM2)
-        {
-            pull_print_group_x(out, pcrd->params.dim,
-                               &pull->group[pcrd->params.group[1]]);
-        }
-        pull_print_coord_dr(out, pcrd,
-                            pull->params.bPrintRefValue,
-                            pull->params.bPrintComp);
     }
     fprintf(out, "\n");
 }
@@ -197,7 +197,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
 {
     FILE  *fp;
     int    nsets, c, m;
-    char **setname, buf[10];
+    char **setname, buf[50];
 
     if (Flags & MD_APPENDFILES)
     {
@@ -217,11 +217,13 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                         exvggtXNY, oenv);
         }
 
-        /* With default mdp options only the actual distance is printed,
-         * but optionally 2 COMs, the reference distance and distance
-         * components can also be printed.
+        /* With default mdp options only the actual coordinate value is printed (1),
+         * but optionally the reference value (1),
+         * the group COMs for all the groups (ngroups_max*DIM)
+         * and the components of the distance vectors can be printed ((ngroups_max/2)*DIM).
          */
-        snew(setname, pull->ncoord*(DIM + DIM + 1 + 1 + DIM));
+        snew(setname, pull->ncoord*(1 + 1 + PULL_COORD_NGROUP_MAX*DIM + PULL_COORD_NGROUP_MAX/2*DIM));
+
         nsets = 0;
         for (c = 0; c < pull->ncoord; c++)
         {
@@ -231,39 +233,13 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                  * the data in print_pull_x above.
                  */
 
-                if (pull->params.bPrintCOM1)
-                {
-                    /* Legend for reference group position */
-                    for (m = 0; m < DIM; m++)
-                    {
-                        if (pull->coord[c].params.dim[m])
-                        {
-                            sprintf(buf, "%d %s%d%c", c+1, "c", 1, 'X'+m);
-                            setname[nsets] = gmx_strdup(buf);
-                            nsets++;
-                        }
-                    }
-                }
-                if (pull->params.bPrintCOM2)
-                {
-                    /* Legend for reference group position */
-                    for (m = 0; m < DIM; m++)
-                    {
-                        if (pull->coord[c].params.dim[m])
-                        {
-                            sprintf(buf, "%d %s%d%c", c+1, "c", 2, 'X'+m);
-                            setname[nsets] = gmx_strdup(buf);
-                            nsets++;
-                        }
-                    }
-                }
                 /* The pull coord distance */
                 sprintf(buf, "%d", c+1);
                 setname[nsets] = gmx_strdup(buf);
                 nsets++;
                 if (pull->params.bPrintRefValue)
                 {
-                    sprintf(buf, "%c%d", 'r', c+1);
+                    sprintf(buf, "%d %s", c+1, "ref");
                     setname[nsets] = gmx_strdup(buf);
                     nsets++;
                 }
@@ -277,6 +253,22 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                             sprintf(buf, "%d %s%c", c+1, "d", 'X'+m);
                             setname[nsets] = gmx_strdup(buf);
                             nsets++;
+                        }
+                    }
+                }
+                if (pull->params.bPrintCOM)
+                {
+                    for (int g = 0; g < pull->coord[c].params.ngroup; g++)
+                    {
+                        /* Legend for reference group position */
+                        for (m = 0; m < DIM; m++)
+                        {
+                            if (pull->coord[c].params.dim[m])
+                            {
+                                sprintf(buf, "%d %s%d %c", c+1, "g", g + 1, 'X'+m);
+                                setname[nsets] = gmx_strdup(buf);
+                                nsets++;
+                            }
                         }
                     }
                 }

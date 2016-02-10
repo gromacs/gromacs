@@ -1526,25 +1526,15 @@ applicable pulling coordinate.
    (1e-6)
    the relative constraint tolerance for constraint pulling
 
-.. mdp:: pull-print-com1
+.. mdp:: pull-print-com
 
    .. mdp-value:: no
 
-      do not print the COM of the first group in each pull coordinate
+      do not print the COM for any group
 
    .. mdp-value:: yes
 
-      print the COM of the first group in each pull coordinate
-
-.. mdp:: pull-print-com2
-
-   .. mdp-value:: no
-
-      do not print the COM of the second group in each pull coordinate
-
-   .. mdp-value:: yes
-
-      print the COM of the second group in each pull coordinate
+      print the COM of all groups for all pull coordinates
 
 .. mdp:: pull-print-ref-value
 
