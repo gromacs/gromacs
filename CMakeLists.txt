@@ -465,6 +465,8 @@ find_package(ZLIB QUIET)
 include(gmxTestZLib)
 gmx_test_zlib(HAVE_ZLIB)
 
+find_package(Threads)
+
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that

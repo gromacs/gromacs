@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,9 @@ function(GMX_TEST_LIBXML2 VARIABLE)
     if(HAVE_ZLIB)
         set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES};${ZLIB_LIBRARIES}" PARENT_SCOPE) #not needed for dynamic but does not hurt
     endif()
+
+    #not needed for dynamic or if libxml is without threads but does not hurt
+    set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES};${CMAKE_THREAD_LIBS_INIT}")
 
     string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
     if(${_cmake_build_type} STREQUAL "MSAN")
