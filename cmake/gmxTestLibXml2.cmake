@@ -54,6 +54,9 @@ function(GMX_TEST_LIBXML2 VARIABLE)
         set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES};${ZLIB_LIBRARIES}" PARENT_SCOPE) #not needed for dynamic but does not hurt
     endif()
 
+    #not needed for dynamic or if libxml is without threads but does not hurt
+    set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES};${CMAKE_THREAD_LIBS_INIT}")
+
     string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
     if(${_cmake_build_type} STREQUAL "MSAN")
         # Linking MSan-enabled libxml2 and zlib in a way that can be
