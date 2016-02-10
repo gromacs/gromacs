@@ -2156,6 +2156,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
             case epullgDIR:
             case epullgDIRPBC:
             case epullgANGLE:
+            case epullgDIHEDRAL:
                 header->umbInitDist[i] = header->init_dist[i];
                 break;
             default:
