@@ -55,6 +55,10 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc-simd.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
+#include "gromacs/simd/vector_operations.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -62,11 +66,10 @@
 
 #include "listed-internal.h"
 
-namespace
-{
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /*! \brief Issue a warning if a listed interaction is beyond a table limit */
-void
+static void
 warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
 {
     gmx_warning("Listed nonbonded interaction between particles %d and %d\n"
@@ -333,17 +336,16 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
     return fscal;
 }
 
-} // namespace
-
-real
-do_pairs(int ftype, int nbonds,
-         const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec4 f[], rvec fshift[],
-         const struct t_pbc *pbc, const struct t_graph *g,
-         real *lambda, real *dvdl,
-         const t_mdatoms *md,
-         const t_forcerec *fr, gmx_grppairener_t *grppener,
-         int *global_atom_index)
+/*! \brief Calculate pair interactions, supports all types and conditions. */
+static real
+do_pairs_general(int ftype, int nbonds,
+                 const t_iatom iatoms[], const t_iparams iparams[],
+                 const rvec x[], rvec4 f[], rvec fshift[],
+                 const struct t_pbc *pbc, const struct t_graph *g,
+                 real *lambda, real *dvdl,
+                 const t_mdatoms *md,
+                 const t_forcerec *fr, gmx_grppairener_t *grppener,
+                 int *global_atom_index)
 {
     real             qq, c6, c12;
     rvec             dx;
@@ -523,4 +525,169 @@ do_pairs(int ftype, int nbonds,
         }
     }
     return 0.0;
+}
+
+/*! \brief Calculate pairs, only for plain-LJ + plain Coulomb normal type.
+ *
+ * This function is templated for real/SimdReal and for optimization.
+ */
+template<typename T, int pack_size,
+         typename pbc_type>
+static void
+do_pairs_simple(int nbonds,
+                const t_iatom iatoms[], const t_iparams iparams[],
+                const rvec x[], rvec4 f[],
+                const pbc_type pbc,
+                const t_mdatoms *md,
+                const real scale_factor)
+{
+    const int nfa1 = 1 + 2;
+
+    T         six(6);
+    T         twelve(12);
+    T         ef(scale_factor);
+
+    const int align = 16;
+    GMX_ASSERT(pack_size <= align, "align should be increased");
+    GMX_ALIGNED(int,  align)  ai[pack_size];
+    GMX_ALIGNED(int,  align)  aj[pack_size];
+    GMX_ALIGNED(real, align)  coeff[3*pack_size];
+
+    /* nbonds is #pairs*nfa1, here we step pack_size pairs */
+    for (int i = 0; i < nbonds; i += pack_size*nfa1)
+    {
+        /* Collect atoms for pack_size pairs.
+         * iu indexes into iatoms, we should not let iu go beyond nbonds.
+         */
+        int iu = i;
+        for (int s = 0; s < pack_size; s++)
+        {
+            int itype = iatoms[iu];
+            ai[s]     = iatoms[iu + 1];
+            aj[s]     = iatoms[iu + 2];
+
+            if (i + s*nfa1 < nbonds)
+            {
+                coeff[0*pack_size + s] = iparams[itype].lj14.c6A;
+                coeff[1*pack_size + s] = iparams[itype].lj14.c12A;
+                coeff[2*pack_size + s] = md->chargeA[ai[s]]*md->chargeA[aj[s]];
+
+                /* Avoid indexing the iatoms array out of bounds.
+                 * We pad the coordinate indices with the last atom pair.
+                 */
+                if (iu + nfa1 < nbonds)
+                {
+                    iu += nfa1;
+                }
+            }
+            else
+            {
+                /* Pad the coefficient arrays with zeros to get zero forces */
+                coeff[0*pack_size + s] = 0;
+                coeff[1*pack_size + s] = 0;
+                coeff[2*pack_size + s] = 0;
+            }
+        }
+
+        /* Load the coordinates */
+        T xi[DIM], xj[DIM];
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi[XX], &xi[YY], &xi[ZZ]);
+        gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj[XX], &xj[YY], &xj[ZZ]);
+
+        T c6    = load(coeff + 0*pack_size);
+        T c12   = load(coeff + 1*pack_size);
+        T qq    = load(coeff + 2*pack_size);
+
+        /* We could save these operations by storing 6*C6,12*C12 */
+        c6             = six*c6;
+        c12            = twelve*c12;
+
+        T dr[DIM];
+        pbc_dx_aiuc(pbc, xi, xj, dr);
+
+        T rsq   = dr[XX]*dr[XX] + dr[YY]*dr[YY] + dr[ZZ]*dr[ZZ];
+        T rinv  = invsqrt(rsq);
+        T rinv2 = rinv*rinv;
+        T rinv6 = rinv2*rinv2*rinv2;
+
+        /* Calculate the Coulomb force * r */
+        T cfr   = ef*qq*rinv;
+
+        /* Calculate the LJ force * r and add it to the Coulomb part */
+        T fr    = gmx::fma(fms(c12, rinv6, c6), rinv6, cfr);
+
+        T finvr = fr*rinv2;
+        T fx    = finvr*dr[XX];
+        T fy    = finvr*dr[YY];
+        T fz    = finvr*dr[ZZ];
+
+        /* Add the pair forces to the force array.
+         * Note that here we might add multiple force components for some atoms
+         * due to the SIMD padding. But the extra force components are zero.
+         */
+        transposeScatterIncrU<4>(reinterpret_cast<real *>(f), ai, fx, fy, fz);
+        transposeScatterDecrU<4>(reinterpret_cast<real *>(f), aj, fx, fy, fz);
+    }
+}
+
+/*! \brief Calculate all listed pair interactions */
+void
+do_pairs(int ftype, int nbonds,
+         const t_iatom iatoms[], const t_iparams iparams[],
+         const rvec x[], rvec4 f[], rvec fshift[],
+         const struct t_pbc *pbc, const struct t_graph *g,
+         real *lambda, real *dvdl,
+         const t_mdatoms *md,
+         const t_forcerec *fr,
+         gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
+         int *global_atom_index)
+{
+    if (ftype == F_LJ14 &&
+        fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype) &&
+        !bCalcEnergyAndVirial && fr->efep == efepNO)
+    {
+        /* We use a fast code-path for plain LJ 1-4 without FEP.
+         *
+         * TODO: Add support for energies (straightforward) and virial
+         * in the SIMD template. For the virial it's inconvenient to store
+         * the force sums for the shifts and we should directly calculate
+         * and sum the virial for the shifts. But we should do this
+         * at once for the angles and dihedrals as well.
+         */
+#if GMX_SIMD
+        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9*GMX_SIMD_REAL_WIDTH];
+        set_pbc_simd(pbc, pbc_simd);
+
+        do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,
+                        const real *>(nbonds, iatoms, iparams,
+                                      x, f, pbc_simd,
+                                      md, fr->epsfac*fr->fudgeQQ);
+#else
+        /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
+        t_pbc        pbc_no;
+        const t_pbc *pbc_nonnull;
+
+        if (pbc != NULL)
+        {
+            pbc_nonnull   = pbc;
+        }
+        else
+        {
+            set_pbc(&pbc_no, epbcNONE, NULL);
+            pbc_nonnull   = &pbc_no;
+        }
+
+        do_pairs_simple<real, 1,
+                        const t_pbc *>(nbonds, iatoms, iparams,
+                                       x, f, pbc_nonnull,
+                                       md, fr->epsfac*fr->fudgeQQ);
+#endif
+    }
+    else
+    {
+        do_pairs_general(ftype, nbonds, iatoms, iparams,
+                         x, f, fshift, pbc, g,
+                         lambda, dvdl,
+                         md, fr, grppener, global_atom_index);
+    }
 }
