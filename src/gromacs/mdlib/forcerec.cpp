@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1556,15 +1556,6 @@ gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
          * implementation would), and issue a note in the .log
          * file. Users can re-run if they want the information. */
         md_print_warn(cr, fplog, "Rerun with energy groups is not implemented for GPUs, falling back to the CPU\n");
-        return FALSE;
-    }
-
-    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
-    {
-        /* LJ PME with LB combination rule does 7 mesh operations.
-         * This so slow that we don't compile GPU non-bonded kernels for that.
-         */
-        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with GPUs, falling back to CPU only\n");
         return FALSE;
     }
 
