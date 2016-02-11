@@ -243,6 +243,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     case F_ANGLES:
                     case F_PDIHS:
                     case F_RBDIHS:
+                    case F_LJ14:
                         nd_c    =      nonsimd_step_frac *(NRAL(ftype) - 1);
                         nd_simd = (1 - nonsimd_step_frac)*(NRAL(ftype) - 1);
                         break;
