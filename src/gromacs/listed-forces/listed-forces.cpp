@@ -366,8 +366,10 @@ calc_one_bond(int thread,
         /* TODO The execution time for pairs might be nice to account
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
-        v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
-                     pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
+        do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
+                 pbc, g, lambda, dvdl, md, fr,
+                 bCalcEnerVir, grpp, global_atom_index);
+        v = 0;
     }
 
     if (thread == 0)
