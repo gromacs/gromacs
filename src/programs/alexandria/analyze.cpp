@@ -192,14 +192,10 @@ static void write_corr_xvg(const char *fn,
                            const alexandria::MolSelect &gms,
                            char *exp_type)
 {
-    FILE                       *fp;
-    int    i, k, nout;
-    iMolSelect                  ims;
-    char   lbuf[256];
-    double exp_val, qm_val, diff, qm_error;
+    FILE *fp;
 
     fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
-    for (i = 0; (i < qmc->n); i++)
+    for (int i = 0; (i < qmc->n); i++)
     {
         fprintf(fp, "@s%d legend \"%s/%s-%s\"\n", i, qmc->method[i], qmc->basis[i],
                 qmc->type[i]);
@@ -209,48 +205,52 @@ static void write_corr_xvg(const char *fn,
         fprintf(fp, "@s%d symbol fill color %d\n", i, i+1);
         fprintf(fp, "@s%d symbol fill pattern 1\n", i);
     }
-    for (i = 0; (i < qmc->n); i++)
+    for (int i = 0; (i < qmc->n); i++)
     {
-        fprintf(fp, "@type xydy\n");
-        sprintf(lbuf, "%s/%s", qmc->method[i], qmc->basis[i]);
+        char LevelOfTheory[256];
+        snprintf(LevelOfTheory, sizeof(LevelOfTheory), "%s/%s", qmc->method[i], qmc->basis[i]);
         if (debug)
         {
-            fprintf(debug, "QM: %s\n", qmc->lot[i]);
+            fprintf(debug, "QM: %s LoT: %s\n", qmc->lot[i], LevelOfTheory);
         }
-        nout = 0;
+        int nout = 0;
+        fprintf(fp, "@type xydy\n");
         for (auto &mpi : mp)
         {
-            ims = gms.status(mpi.getIupac());
+            if (mpi.getMolname().compare("water") == 0)
+            {
+                printf("%s\n", mpi.getMolname().c_str());
+            }
+            double exp_val, exp_error;
+            double Texp    = -1;
+            bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
+                                      exp_type,
+                                      &exp_val, &exp_error, &Texp);
+            iMolSelect ims = gms.status(mpi.getIupac());
             if ((ims == imsTrain) || (ims == imsTest))
             {
-                for (k = 0; (k < qmc->nconf); k++)
+                double Tqm  = -1;
+                double qm_val, qm_error;
+                bool   bQM  = mpi.getProp(mpo, iqmQM, LevelOfTheory, NULL, //qmc->conf[k],
+                                          qmc->type[i],
+                                          &qm_val, &qm_error, &Tqm);
+                if (bExp && bQM) // && (strcmp(exp_type, qmc->type[i]) == 0))
                 {
-                    double Texp = -1;
-                    bool   bExp = mpi.getProp(mpo, iqmExp, NULL, NULL,
-                                               exp_type,
-                                               &exp_val, NULL, &Texp);
-                    double Tqm  = Texp;
-                    bool   bQM  = mpi.getProp(mpo, iqmQM, lbuf, qmc->conf[k],
-                                               qmc->type[i],
-                                               &qm_val, &qm_error, &Tqm);
-                    if (bExp && bQM && (strcmp(exp_type, qmc->type[i]) == 0))
+                    fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
+                    double diff = fabs(qm_val-exp_val);
+                    if (debug &&
+                        (((atoler > 0) && (diff >= atoler)) ||
+                         ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
                     {
-                        fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
-                        diff = fabs(qm_val-exp_val);
-                        if (debug &&
-                            (((atoler > 0) && (diff >= atoler)) ||
-                             ((exp_val != 0) && (fabs(diff/exp_val) > rtoler))))
-                        {
-                            fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g\n",
-                                    mpi.getIupac().c_str(), exp_val, qm_val, qm_error);
-                            nout++;
-                        }
+                        fprintf(debug, "OUTLIER: %s Exp: %g, Calc: %g +/- %g\n",
+                                mpi.getIupac().c_str(), exp_val, qm_val, qm_error);
+                        nout++;
                     }
-                    else if (NULL != debug)
-                    {
-                        fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(),
-                                bQM ? 1 : 0, bExp ? 1 : 0);
-                    }
+                }
+                else if (NULL != debug)
+                {
+                    fprintf(debug, "%s bQM = %d bExp = %d\n", mpi.getMolname().c_str(),
+                            bQM ? 1 : 0, bExp ? 1 : 0);
                 }
             }
         }

@@ -22,6 +22,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "categories.h"
 #include "composition.h"
@@ -242,8 +243,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
 
     stats_header(lt, mpo, qmc, ims);
 
-    for (CategoryListElementIterator i = cList.beginCategories();
-         (i < cList.endCategories()); ++i)
+    for (auto i = cList.beginCategories(); (i < cList.endCategories()); ++i)
     {
         std::string catbuf;
         char        lot[256];
@@ -255,8 +255,8 @@ void gmx_molprop_stats_table(FILE                 *fp,
         {
             snprintf(lot, sizeof(lot), "%s/%s", qmc->method[k], qmc->basis[k]);
             lsq = gmx_stats_init();
-            if (strcmp(exp_type, qmc->type[k]) == 0)
-            {
+            //if (strcmp(exp_type, qmc->type[k]) == 0)
+            //{
                 for (auto &mpi : mp)
                 {
                     if ((i->hasMolecule(mpi.getIupac())) &&
@@ -264,14 +264,15 @@ void gmx_molprop_stats_table(FILE                 *fp,
                     {
                         double exp_err = 0;
                         double Texp    = -1;
+                        bool   bQM     = false;
                         bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
                                                      exp_type, &exp_val, &exp_err, &Texp);
                         if (bExp)
                         {
                             double qm_err = 0;
-                            double Tqm    = Texp;
-                            bool   bQM    = mpi.getProp(mpo, iqmQM, lot, NULL,
-                                                        qmc->type[k], &qm_val, &qm_err, &Tqm);
+                            double Tqm    = -1;
+                            bQM    = mpi.getProp(mpo, iqmQM, lot, NULL,
+                                                 qmc->type[k], &qm_val, &qm_err, &Tqm);
                             //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                             if (bQM)
                             {
@@ -285,9 +286,15 @@ void gmx_molprop_stats_table(FILE                 *fp,
                                 nexpres = 1;
                             }
                         }
+                        if (debug)
+                        {
+                            fprintf(debug, "STATSTAB: bQM %s bExp %s mol %s\n",
+                                    gmx::boolToString(bQM), gmx::boolToString(bExp),
+                                    mpi.getMolname().c_str());
+                        }
                     }
                 }
-            }
+                //}
             if (outlier > 0)
             {
                 gmx_stats_remove_outliers(lsq, outlier);

@@ -329,7 +329,7 @@ static int decompose_frag(FILE *fplog,
             {
                 const char *atomname = ani->getAtom().c_str();
                 std::string ptype;
-                if (pd.atypeToPtype(atomname, ptype))
+                if (!pd.atypeToPtype(atomname, ptype))
                 {
                     if (NULL != fplog)
                     {

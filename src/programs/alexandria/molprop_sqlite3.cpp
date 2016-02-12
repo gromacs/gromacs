@@ -43,6 +43,10 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <algorithm>
+#include <vector>
+
 #ifdef HAVE_LIBSQLITE3
 #include <sqlite3.h>
 #endif
@@ -55,18 +59,36 @@
 
 #include "stringutil.h"
 
-typedef struct {
-    const char *molname, *iupac;
-} t_synonym;
-
-int syn_comp(const void *a, const void *b)
+class Synonym 
 {
-    t_synonym *sa, *sb;
-    sa = (t_synonym *)a;
-    sb = (t_synonym *)b;
+private:
+    std::string molname_;
+    std::string iupac_;
+public:
+    Synonym(const std::string molname,
+            const std::string iupac) : molname_(molname), iupac_(iupac) {}
+            
+    const std::string &iupac() const { return iupac_; }
+    
+    const std::string &molname() const { return molname_; }
+};
 
-    return strcmp(sa->molname, sb->molname);
-}
+class Classes 
+{
+private:
+    std::string              iupac_;
+    std::vector<std::string> classes_;
+public:
+    Classes(const std::string iupac) : iupac_(iupac) {}
+            
+    void addClass(const std::string &klas) { classes_.push_back(klas); }
+    
+    const std::string &iupac() const { return iupac_; }
+    
+    const std::vector<std::string>::iterator classBegin() { return classes_.begin(); }
+    
+    const std::vector<std::string>::iterator classEnd() { return classes_.end(); }
+};
 
 #ifdef HAVE_LIBSQLITE3
 static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
@@ -90,21 +112,121 @@ static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
 }
 #endif
 
+void getSynonyms(sqlite3              *db,
+                 std::vector<Synonym> &syn,
+                 int                   nMol)
+{
+    sqlite3_stmt *stmt2 = NULL;
+    char          sql_str[1024];
+    int           rc;
+    
+    /* Make renaming table */
+    snprintf(sql_str, sizeof(sql_str),
+             "SELECT syn.name,mol.iupac FROM molecules as mol,synonyms as syn WHERE syn.molid=mol.molid ORDER by syn.name");
+             
+    if (NULL != debug)
+    {
+        fprintf(debug, "sql_str = '%s'\n", sql_str);
+    }
+
+    check_sqlite3(db, "Preparing statement",
+                  sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt2, NULL));
+    do
+    {
+        rc = sqlite3_step(stmt2);
+        if (SQLITE_ROW == rc)
+        {
+            syn.push_back(Synonym((char *)sqlite3_column_text(stmt2, 0),
+                                  (char *)sqlite3_column_text(stmt2, 1)));
+        }
+        else if (SQLITE_DONE != rc)
+        {
+            check_sqlite3(db, "Stepping", rc);
+        }
+        else
+        {
+            printf("There are %d synonyms for %d molecules.\n", 
+                   static_cast<int>(syn.size()), nMol);
+        }
+    }
+    while (SQLITE_ROW == rc);
+    check_sqlite3(db, "Resetting sqlite3 statement",
+                  sqlite3_reset(stmt2));
+    check_sqlite3(db, "Finalizing sqlite3 statement",
+                  sqlite3_finalize(stmt2));
+}
+
+void getClasses(sqlite3              *db,
+                std::vector<Classes> &classes,
+                int                   nMol)
+{
+    sqlite3_stmt *stmt2 = NULL;
+    char          sql_str[1024];
+    int           rc;
+    
+    /* Make renaming table */
+    snprintf(sql_str, sizeof(sql_str),
+             "SELECT mol.iupac,class.class FROM molecules as mol,classification as class,link_mol_class as lmc WHERE (lmc.molid=mol.molid) and (lmc.classid=class.classid) ORDER by mol.iupac");
+             
+    if (NULL != debug)
+    {
+        fprintf(debug, "sql_str = '%s'\n", sql_str);
+    }
+
+    check_sqlite3(db, "Preparing statement",
+                  sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt2, NULL));
+    do
+    {
+        rc = sqlite3_step(stmt2);
+        if (SQLITE_ROW == rc)
+        {
+            const char *iupac = (char *)sqlite3_column_text(stmt2, 0);
+            const char *klass = (char *)sqlite3_column_text(stmt2, 1);
+            auto s = std::find_if(classes.begin(), classes.end(),
+                                  [iupac](Classes const &c)
+                                  { return c.iupac().compare(iupac) == 0; });
+            if (s == classes.end()) 
+            {
+                std::string i(iupac);
+                classes.push_back(i);
+                classes.back().addClass(klass);
+            }
+            else
+            {
+                s->addClass(klass);
+            }
+        }
+        else if (SQLITE_DONE != rc)
+        {
+            check_sqlite3(db, "Stepping", rc);
+        }
+        else
+        {
+            printf("There are %d classes for %d molecules.\n", 
+                   static_cast<int>(classes.size()), nMol);
+        }
+    }
+    while (SQLITE_ROW == rc);
+    check_sqlite3(db, "Resetting sqlite3 statement",
+                  sqlite3_reset(stmt2));
+    check_sqlite3(db, "Finalizing sqlite3 statement",
+                  sqlite3_finalize(stmt2));
+}
+
 void ReadSqlite3(const char                       *sqlite_file,
                  std::vector<alexandria::MolProp> &mp)
 {
 #ifdef HAVE_LIBSQLITE3
-    alexandria::MolPropIterator mpi;
-    std::string                 cas2, csid2, iupac2;
+    std::string                 cas2, csid2;
 
     sqlite3                    *db   = NULL;
-    sqlite3_stmt               *stmt = NULL, *stmt2 = NULL;
+    sqlite3_stmt               *stmt = NULL;
     char sql_str[1024];
-    const char                 *iupac, *cas, *csid, *prop, *unit, *source;
+    const char                 *cas, *csid, *prop, *unit, *source;
     double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop, theory;
-    t_synonym                  *syn  = NULL, key, *keyptr;
-    int                         nsyn = 0, maxsyn = 0;
+    std::vector<Synonym>        synonyms;
+    std::vector<Classes>        classes;
 
     if (NULL == sqlite_file)
     {
@@ -120,47 +242,12 @@ void ReadSqlite3(const char                       *sqlite_file,
     /* Now database is open and everything is Hunky Dory */
     printf("Opened SQLite3 database %s\n", sqlite_file);
 
-    /* Make renaming table */
-    sprintf(sql_str, "SELECT syn.name,mol.iupac FROM molecules as mol,synonyms as syn WHERE syn.molid=mol.molid ORDER by syn.name");
-    if (NULL != debug)
-    {
-        fprintf(debug, "sql_str = '%s'\n", sql_str);
-    }
-
-    check_sqlite3(db, "Preparing statement",
-                  sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt2, NULL));
-    do
-    {
-        rc = sqlite3_step(stmt2);
-        if (SQLITE_ROW == rc)
-        {
-            cidx   = 0;
-            if (nsyn >= maxsyn)
-            {
-                maxsyn += 1000;
-                srenew(syn, maxsyn);
-            }
-            syn[nsyn].molname = strdup((char *)sqlite3_column_text(stmt2, cidx));
-            cidx++;
-            syn[nsyn].iupac   = strdup((char *)sqlite3_column_text(stmt2, cidx));
-            cidx++;
-            nsyn++;
-        }
-        else if (SQLITE_DONE != rc)
-        {
-            check_sqlite3(db, "Stepping", rc);
-        }
-        else
-        {
-            printf("There are %d synonyms for %d molecules.\n", nsyn, (int)mp.size());
-        }
-    }
-    while (SQLITE_ROW == rc);
-    check_sqlite3(db, "Resetting sqlite3 statement",
-                  sqlite3_reset(stmt2));
-    check_sqlite3(db, "Finalizing sqlite3 statement",
-                  sqlite3_finalize(stmt2));
-
+    // First get the synonyms out.
+    getSynonyms(db, synonyms, mp.size());
+    
+    // Now get the classes out.
+    getClasses(db, classes, mp.size());
+    
     /* Now present a query statement */
     nexp_prop = 0;
     sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
@@ -174,163 +261,151 @@ void ReadSqlite3(const char                       *sqlite_file,
         nbind = sqlite3_bind_parameter_count(stmt);
         fprintf(debug, "%d binding parameter(s) in the statement\n%s\n", nbind, sql_str);
     }
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        key.molname = mpi->getMolname().c_str();
-        key.iupac   = mpi->getIupac().c_str();
-        keyptr      = (t_synonym *) bsearch((const void *)&key,
-                                            (const void *)syn,
-                                            nsyn, sizeof(syn[0]), syn_comp);
-        if (NULL == keyptr)
+        const std::string molname = mpi->getMolname();
+        auto keyptr = std::find_if(synonyms.begin(), synonyms.end(),
+                                   [molname](Synonym const &s)
+                                   { return molname.compare(s.molname()) == 0; });
+
+        if (synonyms.end() == keyptr)
         {
-            fprintf(stderr, "Warning: missing iupac for %s. Will be ignored.\n",
-                    key.molname);
+            fprintf(stderr, "Warning: missing iupac for %s (%s). Will be ignored.\n",
+                    molname.c_str(), mpi->formula().c_str());
         }
         else
         {
-            if ((NULL == key.iupac) || (strcmp(key.iupac, keyptr->iupac) != 0))
+            if (NULL != debug)
             {
-                if (NULL != debug)
-                {
-                    fprintf(debug, "Warning: incorrect iupac %s for %s - changing to %s\n",
-                            key.iupac, key.molname, keyptr->iupac);
-                }
-                mpi->SetIupac(keyptr->iupac);
+                fprintf(debug, "Going to query for '%s'\n", keyptr->iupac().c_str());
             }
-            iupac = keyptr->iupac;
-            if (NULL != iupac)
+            check_sqlite3(db, "Binding text",
+                          sqlite3_bind_text(stmt, 1, keyptr->iupac().c_str(), -1, SQLITE_STATIC));
+            do
             {
-                if (NULL != debug)
+                rc = sqlite3_step(stmt);
+                if (SQLITE_ROW == rc)
                 {
-                    fprintf(debug, "Going to query for '%s'\n", iupac);
-                }
-                check_sqlite3(db, "Binding text",
-                              sqlite3_bind_text(stmt, 1, iupac, -1, SQLITE_STATIC));
-                do
-                {
-                    rc = sqlite3_step(stmt);
-                    if (SQLITE_ROW == rc)
+                    /* printf("Found a row\n"); */
+                    cidx   = 0;
+                    const char *iupac2 = (char *)sqlite3_column_text(stmt, cidx++);
+                    if (strcasecmp(keyptr->iupac().c_str(), iupac2) != 0)
                     {
-                        /* printf("Found a row\n"); */
-                        cidx   = 0;
-                        iupac2 = (char *)sqlite3_column_text(stmt, cidx++);
-                        if (strcasecmp(iupac, iupac2.c_str()) != 0)
+                        gmx_fatal(FARGS, "Selected '%s' from database but got '%s'. WTF?!",
+                                  keyptr->iupac().c_str(), iupac2);
+                    }
+                    cas            = (char *)sqlite3_column_text(stmt, cidx++);
+                    csid           = (char *)sqlite3_column_text(stmt, cidx++);
+                    prop           = (char *)sqlite3_column_text(stmt, cidx++);
+                    unit           = (char *)sqlite3_column_text(stmt, cidx++);
+                    temperature    = sqlite3_column_double(stmt, cidx++);
+                    value          = sqlite3_column_double(stmt, cidx++);
+                    error          = sqlite3_column_double(stmt, cidx++);
+                    theory         = sqlite3_column_int(stmt, cidx++);
+                    source         = (char *)sqlite3_column_text(stmt, cidx++);
+                    
+                    bool bExp = (0 == theory);
+                    if (bExp)
+                    {
+                        nexp_prop++;
+                    }
+                    //printf("source = %s prop = %s value = %10g bExp = %d\n",
+                    //      source, prop, value, (int) bExp);
+                    if (bExp)
+                    {
+                        alexandria::Experiment exper("unknown", "minimum");
+                        if (strcasecmp(prop, "Polarizability") == 0)
                         {
-                            gmx_fatal(FARGS, "Selected '%s' from database but got '%s'. WTF?!",
-                                      iupac, iupac2.c_str());
+                            exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
+                            
                         }
-                        cas            = (char *)sqlite3_column_text(stmt, cidx++);
-                        csid           = (char *)sqlite3_column_text(stmt, cidx++);
-                        prop           = (char *)sqlite3_column_text(stmt, cidx++);
-                        unit           = (char *)sqlite3_column_text(stmt, cidx++);
-                        temperature    = sqlite3_column_double(stmt, cidx++);
-                        value          = sqlite3_column_double(stmt, cidx++);
-                        error          = sqlite3_column_double(stmt, cidx++);
-                        theory         = sqlite3_column_int(stmt, cidx++);
-                        source         = (char *)sqlite3_column_text(stmt, cidx++);
-
-                        bool bExp = (0 == theory);
-                        if (bExp)
+                        else if (strcasecmp(prop, "dipole") == 0)
                         {
-                            nexp_prop++;
+                            exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                         }
-                        //printf("source = %s prop = %s value = %10g bExp = %d\n",
-                        //      source, prop, value, (int) bExp);
-                        if (bExp)
+                        else if ((strcasecmp(prop, "DeltaHform") == 0) ||
+                                 (strcasecmp(prop, "DeltaGform") == 0) ||
+                                 (strcasecmp(prop, "DeltaSform") == 0) ||
+                                 (strcasecmp(prop, "S0") == 0) ||
+                                 (strcasecmp(prop, "cp") == 0) ||
+                                 (strcasecmp(prop, "cv") == 0))
                         {
-                            alexandria::Experiment exper("unknown", "minimum");
-                            if (strcasecmp(prop, "Polarizability") == 0)
-                            {
-                                exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
-
-                            }
-                            else if (strcasecmp(prop, "dipole") == 0)
-                            {
-                                exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
-                            }
-                            else if ((strcasecmp(prop, "DeltaHform") == 0) ||
-                                     (strcasecmp(prop, "DeltaGform") == 0) ||
-                                     (strcasecmp(prop, "DeltaSform") == 0) ||
-                                     (strcasecmp(prop, "S0") == 0) ||
-                                     (strcasecmp(prop, "cp") == 0) ||
-                                     (strcasecmp(prop, "cv") == 0))
-                            {
-                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
-                            }
-                            mpi->AddExperiment(exper);
+                            exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                         }
-                        else
+                        mpi->AddExperiment(exper);
+                    }
+                    else
+                    {
+                        alexandria::Experiment calc("gentop", source,
+                                                    "-", "unknown", "minimum",
+                                                    "unknown" );
+                        if (strcasecmp(prop, "Polarizability") == 0)
                         {
-                            alexandria::Experiment calc("gentop", source,
-                                                        "-", "unknown", "minimum",
-                                                        "unknown" );
-                            if (strcasecmp(prop, "Polarizability") == 0)
-                            {
-                                alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);
-                                calc.AddPolar(mp);
-                            }
-                            else if (strcasecmp(prop, "dipole") == 0)
-                            {
-                                calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
-                            }
-                            else if ((strcasecmp(prop, "DeltaHform") == 0) ||
-                                     (strcasecmp(prop, "DeltaGform") == 0) ||
-                                     (strcasecmp(prop, "DeltaSform") == 0) ||
-                                     (strcasecmp(prop, "S0") == 0) ||
-                                     (strcasecmp(prop, "cp") == 0) ||
-                                     (strcasecmp(prop, "cv") == 0))
-
-                            {
-                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
-                            }
-                            mpi->AddExperiment(calc);
+                            alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);
+                            calc.AddPolar(mp);
                         }
-                        //mpi->Stats();
-                        /*
-                           if (0 && (strlen(classification) > 0))
-                           {
-                            std::vector<std::string> class_ptr = split(classification, ';');
-                            for (std::vector<std::string>::iterator cp = class_ptr.begin();
-                                 cp < class_ptr.end(); ++cp)
-                            {
-                                mpi->AddCategory(cp->c_str());
-                            }
-                            }*/
-                        if (strlen(cas) > 0)
+                        else if (strcasecmp(prop, "dipole") == 0)
                         {
-                            cas2 = mpi->getCas();
-                            if ((cas2.length() > 0) &&
-                                (strcmp(cas, cas2.c_str()) != 0))
-                            {
-                                fprintf(stderr, "cas in molprop %s not the same as database %s for %s\n", cas2.c_str(), cas, iupac);
-                            }
-                            mpi->SetCas(cas);
+                            calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                         }
-                        if (strlen(csid) > 0)
+                        else if ((strcasecmp(prop, "DeltaHform") == 0) ||
+                                 (strcasecmp(prop, "DeltaGform") == 0) ||
+                                 (strcasecmp(prop, "DeltaSform") == 0) ||
+                                 (strcasecmp(prop, "S0") == 0) ||
+                                 (strcasecmp(prop, "cp") == 0) ||
+                                 (strcasecmp(prop, "cv") == 0))
+                            
                         {
-                            csid2 = mpi->getCid();
-                            if ((csid2.length() > 0) &&
-                                (strcmp(csid, csid2.c_str()) != 0))
-                            {
-                                fprintf(stderr, "csid in molprop %s not the same as database %s for %s\n", csid2.c_str(), csid, iupac);
-                            }
-                            mpi->SetCid(csid);
+                            calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
+                        }
+                        mpi->AddExperiment(calc);
+                    }
+                    // Add classes to molprop from database
+                    const char *iupac = keyptr->iupac().c_str();
+                    auto cptr = std::find_if(classes.begin(), classes.end(),
+                                             [iupac](Classes const &c)
+                                             { return c.iupac().compare(iupac) == 0; });
+                    if (cptr != classes.end())
+                    {
+                        for(auto c = cptr->classBegin(); c < cptr->classEnd(); ++c)
+                        {
+                            mpi->AddCategory(*c);
                         }
                     }
-                    else if (SQLITE_DONE != rc)
+                    if (strlen(cas) > 0)
                     {
-                        check_sqlite3(db, "Stepping", rc);
+                        cas2 = mpi->getCas();
+                        if ((cas2.length() > 0) &&
+                            (strcmp(cas, cas2.c_str()) != 0))
+                        {
+                            fprintf(stderr, "cas in molprop %s not the same as database %s for %s\n", cas2.c_str(), cas, iupac);
+                        }
+                        mpi->SetCas(cas);
                     }
-                    else if (NULL != debug)
+                    if (strlen(csid) > 0)
                     {
-                        fprintf(debug, "Done finding rows for %s\n", iupac);
+                        csid2 = mpi->getCid();
+                        if ((csid2.length() > 0) &&
+                            (strcmp(csid, csid2.c_str()) != 0))
+                        {
+                            fprintf(stderr, "csid in molprop %s not the same as database %s for %s\n", csid2.c_str(), csid, iupac);
+                        }
+                        mpi->SetCid(csid);
                     }
                 }
-                while (SQLITE_ROW == rc);
-                sqlite3_clear_bindings(stmt);
-                check_sqlite3(db, "Resetting sqlite3 statement",
-                              sqlite3_reset(stmt));
+                else if (SQLITE_DONE != rc)
+                {
+                    check_sqlite3(db, "Stepping", rc);
+                }
+                else if (NULL != debug)
+                {
+                    fprintf(debug, "Done finding rows for %s\n", keyptr->iupac().c_str());
+                }
             }
+            while (SQLITE_ROW == rc);
+            sqlite3_clear_bindings(stmt);
+            check_sqlite3(db, "Resetting sqlite3 statement",
+                          sqlite3_reset(stmt));
         }
     }
     check_sqlite3(db, "Finalizing sqlite3 statement",

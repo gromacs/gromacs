@@ -363,13 +363,13 @@ bool Poldata::ptypeToBosque(const std::string &ptype,
 bool Poldata::atypeToPtype(const std::string &atype,
                            std::string       &ptype) const
 {
-    for (const auto &i : _alexandria)
+    auto ai = std::find_if(_alexandria.begin(), _alexandria.end(),
+                           [atype](Ffatype const &fa)
+                           { return fa.getType().compare(atype) == 0; });
+    if (ai != _alexandria.end())
     {
-        if (i.getType().compare(atype) == 0)
-        {
-            ptype = i.getPtype();
-            return true;
-        }
+        ptype = ai->getPtype();
+        return true;
     }
     return false;
 }

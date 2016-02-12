@@ -377,7 +377,7 @@ bool MolProp::SearchCategory(const std::string &catname) const
 {
     for (auto &i : category_)
     {
-        if (i.compare(catname) == 0)
+        if (strcasecmp(i.c_str(),catname.c_str()) == 0)
         {
             return true;
         }
@@ -922,7 +922,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
     {
         case MPO_ENERGY:
         case MPO_ENTROPY:
-            for (MolecularEnergyIterator mei = BeginEnergy(); !done && (mei < EndEnergy()); mei++)
+            for (auto mei = BeginEnergy(); !done && (mei < EndEnergy()); ++mei)
             {
                 if (((NULL == type) || (strcasecmp(mei->getType().c_str(), type) == 0)) &&
                     bCheckTemperature(Told, mei->getTemperature()))
@@ -934,7 +934,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
             }
             break;
         case MPO_DIPOLE:
-            for (MolecularDipoleIterator mdp = BeginDipole(); !done && (mdp < EndDipole()); mdp++)
+            for (auto mdp = BeginDipole(); !done && (mdp < EndDipole()); ++mdp)
             {
                 if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))  &&
                     bCheckTemperature(Told, mdp->getTemperature()))
@@ -949,7 +949,8 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
             }
             break;
         case MPO_POLARIZABILITY:
-            for (MolecularPolarizabilityIterator mdp = BeginPolar(); !done && (mdp < EndPolar()); mdp++)
+            {
+            for (auto mdp = BeginPolar(); !done && (mdp < EndPolar()); ++mdp)
             {
                 if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0)) &&
                     bCheckTemperature(Told, mdp->getTemperature()))
@@ -969,9 +970,10 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
                     done               = true;
                 }
             }
+            }
             break;
         case MPO_QUADRUPOLE:
-            for (MolecularQuadrupoleIterator mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); mqi++)
+            for (auto mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); ++mqi)
             {
                 if (((NULL == type) || (strcasecmp(mqi->getType().c_str(), type) == 0)) &&
                     bCheckTemperature(Told, mqi->getTemperature()))
@@ -1012,9 +1014,9 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
     bool   done = false;
     double Told = *T;
 
-    if ((iQM == iqmExp) || (iQM == iqmBoth))
+    if (iQM == iqmExp || iQM == iqmBoth)
     {
-        for (alexandria::ExperimentIterator ei = BeginExperiment(); (ei < EndExperiment()); ++ei)
+        for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
         {
             if ((NULL == conf) || (strcasecmp(conf, ei->getConformation().c_str()) == 0))
             {
@@ -1030,9 +1032,9 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
         }
     }
 
-    if ((!done) && ((iQM == iqmBoth) || (iQM == iqmQM)))
+    if (iQM == iqmBoth || iQM == iqmQM)
     {
-        for (alexandria::ExperimentIterator ci = BeginExperiment(); (ci < EndExperiment()); ++ci)
+        for (auto ci = BeginExperiment(); !done && (ci < EndExperiment()); ++ci)
         {
             if (dsExperiment == ci->dataSource())
             {
