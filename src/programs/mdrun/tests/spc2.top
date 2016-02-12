@@ -1,4 +1,21 @@
-#include "oplsaa.ff/forcefield.itp"
+; Prepare only the subset of OPLS/AA needed for tip3p
+#define _FF_OPLS
+#define _FF_OPLSAA
+
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+1		3		yes		0.5	0.5
+
+[ atomtypes ]
+; full atom descriptions are available in ffoplsaa.atp
+; name  bond_type    mass    charge   ptype          sigma      epsilon
+#ifdef HEAVY_H
+ opls_111   OW	8      9.95140    -0.834       A    3.15061e-01  6.36386e-01
+ opls_112   HW	1      4.03200     0.417       A    0.00000e+00  0.00000e+00
+#else
+ opls_111   OW	8     15.99940    -0.834       A    3.15061e-01  6.36386e-01
+ opls_112   HW	1      1.00800     0.417       A    0.00000e+00  0.00000e+00
+#endif
 
 ; Include water topology
 #include "oplsaa.ff/tip3p.itp"
