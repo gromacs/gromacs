@@ -412,7 +412,7 @@ std::string getCoolQuote()
         { "I'll Match Your DNA", "Red Hot Chili Peppers" },
         { "All I Ever Wanted Was Your Life", "Red Hot Chili Peppers" },
         { "Just a Minute While I Reinvent Myself", "Red Hot Chili Peppers" },
-        { "There's Still Time to Change the Rope You're On", "Led Zeppelin" },
+        { "There's Still Time to Change the Road You're On", "Led Zeppelin" },
         { "Baby, It Aint Over Till It's Over", "Lenny Kravitz" },
         { "It Just Tastes Better", "Burger King" },
         { "'Nay. We are but men.' Rock!", "Tenacious D" },
