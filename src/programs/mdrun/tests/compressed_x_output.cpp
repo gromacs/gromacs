@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,18 +57,22 @@ namespace
 {
 
 //! Test fixture for mdrun -x
-class CompressedXOutputTest : public gmx::test::MdrunTestFixture,
-                              public testing::WithParamInterface<const char*>
+class MdrunCompressedXOutputTest : public gmx::test::MdrunTestFixture,
+                                   public testing::WithParamInterface<const char*>
 {
 };
 
-/* Among other things, this test ensures mdrun can write a compressed trajectory. */
-TEST_P(CompressedXOutputTest, ExitsNormally)
+//! Helper typedef for naming test cases like sentences
+typedef MdrunCompressedXOutputTest MdrunCompressedXOutput;
+
+/* This test tests a few ways that mdrun can write a compressed trajectory. */
+TEST_P(MdrunCompressedXOutput, ExitsNormally)
 {
     std::string mdpFile("cutoff-scheme = Group\n"
                         "nsteps = 1\n"
                         "nstxout-compressed = 1\n");
-    mdpFile += GetParam();
+    std::string compressedXGrpsLine = GetParam();
+    mdpFile += compressedXGrpsLine;
     runner_.useStringAsMdpFile(mdpFile.c_str());
     runner_.useTopGroAndNdxFromDatabase("spc2");
     ASSERT_EQ(0, runner_.callGrompp());
@@ -82,16 +86,7 @@ TEST_P(CompressedXOutputTest, ExitsNormally)
     ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 
-#ifdef __INTEL_COMPILER
-/* If we learn why this invocation triggers the "declared but not
-   referenced" warning with ICC 12 on Windows and the case in
-   gromacs/fft/tests/fft.cpp does not, then we can consider a more
-   general solution. The pragma works also on MSVC, but so far is not
-   required. */
-#pragma warning( disable : 177 )
-#endif
-
-INSTANTIATE_TEST_CASE_P(WithDifferentMdpOptions, CompressedXOutputTest,
+INSTANTIATE_TEST_CASE_P(WithDifferentOutputGroupSettings, MdrunCompressedXOutput,
                             ::testing::Values
                             ( // Test writing the whole system via
                               // the default behaviour
