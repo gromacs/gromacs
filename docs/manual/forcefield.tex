@@ -2523,33 +2523,9 @@ It is recommended to optimize the parameters for calculation of
 electrostatic interaction such as PME grid dimensions and cut-off radii.
 This is particularly relevant to do before launching long production runs.
 
-{\gromacs} includes a special tool, {\tt g_tune_pme}, which automates the 
-process of selecting the optimal size of the grid and number of PME-only
-notes.
-
-%
-% Temporarily removed since I am not sure about the state of the testlr
-% program...
-%
-%It is possible to test the accuracy of your settings using the program
-%{\tt\normindex{testlr}} in the {\tt src/gmxlib} dir. This program computes
-%forces and potentials using PPPM and an Ewald implementation and gives the
-%absolute and RMS errors in both:
-%\begin{verbatim}
-%ERROR ANALYSIS
-%Error:         Max Abs         RMS
-%Force            1.132       0.251
-%Potential        0.113       0.035
-%\end{verbatim}
-%{\bf Note:} these numbers were generated using a grid spacing of
-%0.058 nm and $r_c$ = 1.0 nm.
-%
-%You can see what the accuracy is without optimizing the
-%$\hat{G}(k)$ function, if you pass the {\tt -ghat} option to {\tt
-%testlr}. Try it if you think the {\tt mk_ghat} procedure is a waste
-%of time.
-%} % Brace matches ifthenelse test for gmxlite
-
+{\tt gmx mdrun} will automatically do a lot of PME optimization, and
+{\gromacs} also includes a special tool, {\tt gmx tune_pme}, which
+automates the process of selecting the number of PME-only ranks.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
