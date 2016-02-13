@@ -396,14 +396,15 @@ static int **get_shell_pbc(t_ilist *ilist,
 
     /* There are several possible interactions for shells/Drudes, including
      * F_BONDS, which is why we allocate an extra +2 here instead of +1 
-     *(F_BONDS plus everything from F_POLARIZATION..F_ANHARM_POL, inclusive) */
-    snew(shell_pbc, F_ANHARM_POL-F_POLARIZATION+2);
+     *(F_BONDS plus everything from F_POLARIZATION..F_HYPER_POL, inclusive) */
+    snew(shell_pbc, F_HYPER_POL-F_POLARIZATION+2);
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         /* TODO: it would probably be useful to have an IF_SHELL flag or something... */
         if (ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_ANISO_POL ||
-            ftype == F_WATER_POL || ftype == F_THOLE_POL || ftype == F_ANHARM_POL)
+            ftype == F_WATER_POL || ftype == F_THOLE_POL || ftype == F_ANHARM_POL ||
+            ftype == F_HYPER_POL)
         {
             nral = NRAL(ftype);
             il   = &ilist[ftype];
@@ -583,8 +584,8 @@ gmx_shellfc_t init_shell(const gmx_mtop_t *mtop, t_commrec *cr,
             sfree(a2cg);
         }
 
-        snew(shfc->shell_pbc_loc_nalloc, (F_ANHARM_POL-F_POLARIZATION+2));
-        snew(shfc->shell_pbc_loc, (F_ANHARM_POL-F_POLARIZATION+2));
+        snew(shfc->shell_pbc_loc_nalloc, (F_HYPER_POL-F_POLARIZATION+2));
+        snew(shfc->shell_pbc_loc, (F_HYPER_POL-F_POLARIZATION+2));
     }
 
     if (bSerial_NoPBC)

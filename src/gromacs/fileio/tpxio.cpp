@@ -214,7 +214,8 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
-    { tpxv_DrudeExtendedLagrangian, F_ANISO_POL         }
+    { tpxv_DrudeExtendedLagrangian, F_ANISO_POL },
+    { tpxv_DrudeExtendedLagrangian, F_HYPER_POL }
 };
 #define NFTUPD asize(ftupd)
 
@@ -2090,6 +2091,11 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
         case F_POLARIZATION:
             gmx_fio_do_real(fio, iparams->polarize.alpha);
             break;
+        case F_HYPER_POL:
+            gmx_fio_do_real(fio, iparams->hyperpol.k);
+            gmx_fio_do_real(fio, iparams->hyperpol.rhyp);
+            gmx_fio_do_real(fio, iparams->hyperpol.khyp);
+            gmx_fio_do_int(fio, iparams->hyperpol.pow);
         case F_ANHARM_POL:
             gmx_fio_do_real(fio, iparams->anharm_polarize.alpha);
             gmx_fio_do_real(fio, iparams->anharm_polarize.drcut);

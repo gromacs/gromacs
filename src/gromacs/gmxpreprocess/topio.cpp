@@ -950,6 +950,7 @@ static char **read_topol(const char *infile, const char *outfile,
                         case d_dihedral_restraints:
                         case d_dihedrals:
                         case d_polarization:
+                        case d_hyperpolarization:
                         case d_aniso_polarization:
                         case d_water_polarization:
                         case d_thole_polarization:

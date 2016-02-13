@@ -1051,7 +1051,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        );
 
         /* Do not re-relax the shells if we are doing a rerun! */
-        if (ir->bDrude && ir->drude->drudemode == edrudeSCF && !bRerunMD)
+        if (ir->bDrude && (ir->drude->drudemode == edrudeSCF) && !bRerunMD)
         {
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, bVerbose, step,
@@ -1076,12 +1076,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-        }
-
-        /* additional restraining force, if requested */
-        if (ir->bDrude && ir->drude->bHyper && shellfc)
-        {
-            add_quartic_restraint_force(ir, shellfc, state->x, f);
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)

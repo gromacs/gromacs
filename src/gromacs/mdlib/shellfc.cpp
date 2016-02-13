@@ -72,45 +72,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* TODO: check */
-#if 0
-typedef struct {
-    int     nnucl;
-    int     shell;               /* The shell id				*/
-    int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
-    /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
-    real    k;                   /* force constant		        */
-    real    k_1;                 /* 1 over force constant		*/
-    rvec    xold;
-    rvec    fold;
-    rvec    step;
-} t_shell;
-
-struct gmx_shellfc_t {
-    int          nshell_gl;              /* The number of shells in the system        */
-    t_shell     *shell_gl;               /* All the shells (for DD only)              */
-    int         *shell_index_gl;         /* Global shell index (for DD only)          */
-    gmx_bool     bInterCG;               /* Are there inter charge-group shells?      */
-    int          nshell;                 /* The number of local shells                */
-    t_shell     *shell;                  /* The local shells                          */
-    int          shell_nalloc;           /* The allocation size of shell              */
-    gmx_bool     bPredict;               /* Predict shell positions                   */
-    gmx_bool     bRequireInit;           /* Require initialization of shell positions */
-    int          nflexcon;               /* The number of flexible constraints        */
-    rvec        *x[2];                   /* Array for iterative minimization          */
-    rvec        *f[2];                   /* Array for iterative minimization          */
-    int          x_nalloc;               /* The allocation size of x and f            */
-    rvec        *acc_dir;                /* Acceleration direction for flexcon        */
-    rvec        *x_old;                  /* Old coordinates for flexcon               */
-    int          flex_nalloc;            /* The allocation size of acc_dir and x_old  */
-    rvec        *adir_xnold;             /* Work space for init_adir                  */
-    rvec        *adir_xnew;              /* Work space for init_adir                  */
-    int          adir_nalloc;            /* Work space for init_adir                  */
-    std::int64_t numForceEvaluations;    /* Total number of force evaluations         */
-    int          numConvergedIterations; /* Total number of iterations that converged */
-};
-#endif
-
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
 {
     int i;
@@ -319,7 +280,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
     int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
-    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_ANISO_POL, F_WATER_POL };
+    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_HYPER_POL, F_ANHARM_POL, F_ANISO_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
     gmx_mtop_atomloop_all_t   aloop;
@@ -425,6 +386,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                         case F_HARMONIC:
                         case F_CUBICBONDS:
                         case F_POLARIZATION:
+                        case F_HYPER_POL:
                         case F_ANHARM_POL:
                             if (atom[ia[1]].ptype == eptShell)
                             {
@@ -510,29 +472,17 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                                 shell[nsi].k    += ffparams->iparams[type].cubic.kb;
                                 break;
                             case F_POLARIZATION:
+                            case F_HYPER_POL:
+                                /* Hyperpolarization restraint only needs harmonic k value,
+                                 * additional restraint provided in listed-forces/bonded.cpp */
+                                shell[nsi].k    += ffparams->iparams[type].hyperpol.k;
+                                break;
                             case F_ANHARM_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
                                 }
-                                /* Assume CHARMM if we are using extended Lagrangian */
-                                if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
-                                {
-                                    /* In principle, k can be re-calculated from alpha, but for some reason it 
-                                     * is not exactly matching CHARMM, so we turn to .mdp settings instead */
-                                    /* shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0_CHARMM/ffparams->iparams[type].polarize.alpha; */
-                                    /* TODO: This is really ugly, so in reality this should be a harmonic interaction
-                                     * defined above. To do this requires modification to toppush.c */
-                                    shell[nsi].k    += ir->drude->drude_khyp;
-                                    if (debug)
-                                    {
-                                        fprintf(debug, "INIT SHELL POL: Setting k for bond to Drude %d to %f\n", nsi, shell[nsi].k);
-                                    }
-                                }
-                                else
-                                {
-                                    shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/ffparams->iparams[type].polarize.alpha;
-                                }
+                                shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/ffparams->iparams[type].polarize.alpha;
                                 break;
                             case F_ANISO_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
@@ -1342,54 +1292,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
 } 
 
-/* Drude quartic restraint (hyperpolarizability)
- *
- * Since the hardwall cannot be used with SCF (no velocities on Drudes),
- * an alternative (and older) method for avoiding polarization catastrophe
- * is to apply a quartic restraining force on the Drudes.  This algorithm is
- * less stable for dynamics than the hardwall, so it should generally be
- * disfavored during MD, but it can be VERY useful during EM and when running
- * MD+SCF.
- */
-void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], rvec f[])
-{
-    int     d, i;
-    int     ns;
-    int     power;
-    int     s, n;   /* Drude (shell) and atom (nucleus) */
-    rvec    dx;
-    real    dx2;
-    real    du;
-    real    k, r, rbond;
-
-    k = ir->drude->drude_khyp;
-    r = ir->drude->drude_r;
-    power = ir->drude->drude_hyp_power;
-
-    ns = shfc->nshell;
-
-    for (i=0; i<ns; i++)
-    {
-        s = shfc->shell[i].shell;
-        n = shfc->shell[i].nucl1;
-
-        /* Drude-atom bond length */
-        rvec_sub(x[s], x[s], dx);
-        dx2 = norm(dx);
-        rbond = sqrt(dx2);
-
-        if (rbond > r)
-        {
-            du = k*power*(pow((rbond - r),(power-2)));
-            for (d=0; d<DIM; d++)
-            {
-                f[s][d] -= du*dx[d];
-                f[n][d] += du*dx[d];
-            }
-        }
-    }
-}
-
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
@@ -1539,11 +1441,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
-    if (inputrec->drude->bHyper)
-    {
-        add_quartic_restraint_force(inputrec, shfc, state->x, force[Min]);
-    }
-
     /* Now, update shell/Drude positions. There are two methods to do this:
      *  1. The energy minimization/SCF approach - done here
      *  2. Extended Lagrangian to integrate positions - done with md.cpp
@@ -1610,9 +1507,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
          * low enough even without minimization.
          */
         bConverged = (df[Min] < ftol);
-        /* for (*count = 1; (!(*bConverged) && (*count < number_steps)); *count++) */
-        count = 1;
-        while (!bConverged && (count < number_steps))
+
+        for (count = 1; !((bConverged) && (count < number_steps)); count++)
         {
             if (vsite)
             {
@@ -1653,11 +1549,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                      md, enerd, fcd, state->lambda, graph,
                      fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                      force_flags);
-
-            if (inputrec->drude->bHyper)
-            {
-                add_quartic_restraint_force(inputrec, shfc, state->x, force[Try]);
-            }
 
             if (gmx_debug_at)
             {
@@ -1731,7 +1622,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             {
                 decrease_step_size(nshell, shell);
             }
-            count++;
         }
         shfc->numForceEvaluations += count;
         if (bConverged)

@@ -115,7 +115,7 @@ t_ifunc restrangles;
 t_ifunc pdihs, idihs, rbdihs;
 t_ifunc restrdihs, cbtdihs;
 t_ifunc tab_bonds, tab_angles, tab_dihs;
-t_ifunc polarize, anharm_polarize, water_pol, aniso_pol, thole_pol, angres, angresz, dihres, unimplemented;
+t_ifunc polarize, hyperpolarize, anharm_polarize, water_pol, aniso_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
 /* As pdihs(), but without calculating energies and shift forces */
 void

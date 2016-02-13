@@ -107,7 +107,7 @@ enum
     eNR_POSRES,               eNR_FBPOSRES,
     eNR_ANGRES,               eNR_ANGRESZ,
     eNR_MORSE,                eNR_CUBICBONDS,           eNR_WALLS,
-    eNR_POLARIZE,             eNR_ANHARM_POL,           eNR_ANISOPOL,
+    eNR_POLARIZE,             eNR_HYPER_POL,            eNR_ANHARM_POL,           eNR_ANISOPOL,
     eNR_WPOL,                 eNR_THOLE,                eNR_VIRIAL,
     eNR_UPDATE,               eNR_EXTUPDATE,            eNR_STOPCM,
     eNR_PCOUPL,               eNR_EKIN,                 eNR_LINCS,

@@ -733,6 +733,7 @@ void write_top(FILE *out, char *pr, char *molname,
         print_bondeds(out, at->nr, d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist, FALSE);
         print_bondeds(out, at->nr, d_cmap,       F_CMAP,     bts[ebtsCMAP],  plist, FALSE);
         print_bondeds(out, at->nr, d_polarization, F_POLARIZATION,   0,       plist, FALSE);
+        print_bondeds(out, at->nr, d_hyperpolarization, F_HYPER_POL, 0,       plist, FALSE);
         print_bondeds(out, at->nr, d_aniso_polarization, F_ANISO_POL, 0,      plist, FALSE);
         print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0, plist, FALSE);
         print_bondeds(out, at->nr, d_vsites2,    F_VSITE2,   0,              plist, bDrude);

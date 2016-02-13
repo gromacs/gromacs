@@ -413,6 +413,86 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
     }
 }
 
+static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
+{
+    t_atom         *atom;
+    gmx_moltype_t  *moltype;
+    int             i, j, k, ai, aj, molt, ftype, nrhyper, nrbond, last;
+    real            rhyp, khyp, kb;
+    int             pow;
+    gmx_bool       *bRemoveHarm;
+
+    rhyp = ir->drude->drude_r;
+    khyp = ir->drude->drude_khyp;
+    pow  = ir->drude->drude_hyp_power;
+
+    /* loop over bonded interactions of all molecules
+     * and add F_HYPER_POL entries if there are bonds to Drudes */
+    for (molt = 0; molt < mtop->nmoltype; molt++)
+    {
+        nrhyper = mols[molt].plist[F_HYPER_POL].nr;
+        moltype = &mtop->moltype[molt];
+        atom    = moltype->atoms.atom;
+
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if ((ftype == F_BONDS) || (ftype == F_HARMONIC))
+            {
+                nrbond = mols[molt].plist[ftype].nr;
+                pr_alloc(nrbond, &(mols[molt].plist[F_HYPER_POL]));
+                snew(bRemoveHarm, nrbond);
+
+                for (i = 0; (i < nrbond); i++)
+                {
+                    ai = mols[molt].plist[ftype].param[i].ai();
+                    aj = mols[molt].plist[ftype].param[i].aj();
+                    /* If the bond involves a Drude, add it to hyperpolarization list */
+                    if ((atom[ai].ptype == eptShell) || (atom[aj].ptype == eptShell))
+                    {
+                        /* don't need the bond length, just k */
+                        kb = mols[molt].plist[ftype].param[i].c[1];
+                        mols[molt].plist[F_HYPER_POL].param[nrhyper].a[0] = ai;
+                        mols[molt].plist[F_HYPER_POL].param[nrhyper].a[1] = aj;
+                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[0] = kb;
+                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[1] = rhyp;
+                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[2] = khyp;
+                        mols[molt].plist[F_HYPER_POL].param[nrhyper].c[3] = pow;
+                        nrhyper++;
+                        bRemoveHarm[i] = TRUE;
+                    }
+                }
+                mols[molt].plist[F_HYPER_POL].nr = nrhyper;
+
+                /* Remove harmonic bonds */
+                for (j = last = 0; (j < nrbond); j++)
+                {
+                    if (!bRemoveHarm[j])
+                    {
+                        /* copy it */
+                        for (k = 0; (k < MAXATOMLIST); k++)
+                        {
+                            mols[molt].plist[ftype].param[last].a[k] =
+                                mols[molt].plist[ftype].param[j].a[k];
+                        }
+                        for (k = 0; (k < MAXFORCEPARAM); k++)
+                        {
+                            mols[molt].plist[ftype].param[last].c[k] =
+                                mols[molt].plist[ftype].param[j].c[k];
+                        }
+                        last++;
+                    }
+                }
+                sfree(bRemoveHarm);
+                if (nrbond > 0)
+                {
+                    fprintf(stderr, "Added %d out of %d bonds to the hyperpolarization list for mol %d\n", nrhyper, nrbond, molt);
+                }
+                mols[molt].plist[ftype].nr = last;
+            }
+        }
+    }
+}
+
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
 static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
@@ -1760,7 +1840,7 @@ int gmx_grompp(int argc, char *argv[])
             /* Hard wall and quartic restraint are mutually exclusive */
             if (ir->drude->bHyper)
             {
-                gmx_fatal(FARGS, "Cannot apply hard wall and quartic restraint. Please turn off one or the other");
+                gmx_fatal(FARGS, "Cannot apply hard wall and hyperpolarization restraint. Please turn off one or the other");
             }
         }
         else
@@ -1772,12 +1852,18 @@ int gmx_grompp(int argc, char *argv[])
             }
         }
 
+        if (ir->drude->bHyper)
+        {
+            fprintf(stderr, "Constructing hyperpolarization list...\n");
+            add_hyperpol(sys, mi, ir);
+        }
+
         if (ir->drude->drudemode == edrudeSCF)
         {
             /* Advise that the quartic restraint should be used with SCF */
             if (!(ir->drude->bHyper))
             {
-                warning_note(wi, "Quartic restraint not set, could be unstable!");
+                warning_note(wi, "Hyperpolarization restraint not set, could be unstable!");
             }
 
             /* nstcalcenergy requirement */
@@ -1790,7 +1876,7 @@ int gmx_grompp(int argc, char *argv[])
             {
                 if (ir->drude->drude_hyp_power != 4)
                 {
-                    warning_note(wi, "Quartic restraint set with power not equal to 4. Consider using the normal value; nothing else is tested!");
+                    warning_note(wi, "Hyperpolarization restraint set with power not equal to 4. Consider using the normal value; nothing else is tested!");
                 }
             }
         }

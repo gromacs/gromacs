@@ -74,6 +74,7 @@ static const char *directive_names[d_maxdir+1] = {
     "constraints",
     "settles",
     "polarization",
+    "hyperpolarization",
     "anisotropic_polarization",
     "water_polarization",
     "thole_polarization",
@@ -272,6 +273,8 @@ int ifunc_index(directive d, int type)
                     gmx_fatal(FARGS, "Invalid polarization type %d", type);
             }
             break;
+        case d_hyperpolarization:
+            return F_HYPER_POL;
         case d_thole_polarization:
             return F_THOLE_POL;
         case d_aniso_polarization:
@@ -384,6 +387,7 @@ void DS_Init(DirStack **DS)
         set_nec(&(necessary[d_pairs_nb]), d_atoms, d_none);
         set_nec(&(necessary[d_angles]), d_atoms, d_none);
         set_nec(&(necessary[d_polarization]), d_atoms, d_none);
+        set_nec(&(necessary[d_hyperpolarization]), d_atoms, d_none);
         set_nec(&(necessary[d_aniso_polarization]), d_atoms, d_none);
         set_nec(&(necessary[d_water_polarization]), d_atoms, d_none);
         set_nec(&(necessary[d_thole_polarization]), d_atoms, d_none);

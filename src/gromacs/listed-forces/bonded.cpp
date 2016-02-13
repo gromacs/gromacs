@@ -64,6 +64,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
@@ -573,6 +574,82 @@ real polarize(int nbonds,
             fshift[CENTRAL][m] -= fij;
         }
     }               /* 59 TOTAL	*/
+    return vtot;
+}
+
+real hyperpolarize(int nbonds,
+                   const t_iatom forceatoms[], const t_iparams forceparams[],
+                   const rvec x[], rvec f[], rvec fshift[],
+                   const t_pbc *pbc, const t_graph *g,
+                   real lambda, real *dvdlambda,
+                   const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+                   int gmx_unused *global_atom_index)
+{
+    int  i, m, ki, ai, aj, atmp, exp, type;
+    real dr, dr2, fbond, vbond, fij, vtot, kb, khyp, rhyp, ddr;
+    rvec dx;
+    ivec dt;
+
+    vtot = 0.0;
+    for (i = 0; (i < nbonds); )
+    {
+        type  = forceatoms[i++];
+        ai    = forceatoms[i++];
+        aj    = forceatoms[i++];    /* This SHOULD always be the Drude, but need to verify */
+        /* verify atom order */
+        if (!(md->ptype[aj] == eptShell))
+        {
+            /* swap */
+            atmp = ai;
+            ai   = aj;
+            aj   = atmp;
+        }
+        kb    = forceparams[type].hyperpol.k;
+        khyp  = forceparams[type].hyperpol.khyp;
+        rhyp  = forceparams[type].hyperpol.rhyp;
+        exp   = forceparams[type].hyperpol.pow;
+        if (debug)
+        {
+            fprintf(debug, "HYPERPOL: local ai = %d (%.3f) aj = %d (%.3f)\n", ai, md->massT[ai], aj, md->massT[aj]);
+            fprintf(debug, "HYPERPOL: kb = %.3f rhyp = %.3f khyp = %.3f pow = %d\n", kb, rhyp, khyp, exp);
+        }
+
+        ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                         /*   3      */
+        dr2  = iprod(dx, dx);                                               /*   5      */
+        dr   = dr2*gmx::invsqrt(dr2);                                       /*  10      */
+
+        /* Get normal harmonic contribution */
+        /* Bonds have been removed and replaced by F_HYPER_POL by grompp to avoid double-counting */
+        *dvdlambda += harmonic(kb, kb, 0, 0, dr, lambda, &vbond, &fbond); /*  19  */
+
+        if (dr2 == 0.0)
+        {
+            continue;
+        }
+
+        if (dr > rhyp)
+        {
+            ddr    = dr-rhyp;   /* 1 */
+            fbond -= (khyp*exp*(pow(ddr, (exp-2))));  /* 6 */
+            vbond += khyp*(pow(ddr, exp));      /* 6 */
+        }
+        fbond *= gmx::invsqrt(dr2); /* 6 */
+        vtot  += vbond;             /* 1 */
+
+        if (g)
+        {
+            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
+            ki = IVEC2IS(dt);
+        }
+        for (m = 0; (m < DIM); m++)     /* 15 */
+        {
+            fij                 = fbond*dx[m];
+            f[ai][m]           += fij;
+            f[aj][m]           -= fij;
+            fshift[ki][m]      += fij;
+            fshift[CENTRAL][m] -= fij;
+        }
+    }   /* 72 TOTAL */
     return vtot;
 }
 

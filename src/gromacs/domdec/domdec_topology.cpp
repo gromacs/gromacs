@@ -768,8 +768,8 @@ static gmx_reverse_top_t *make_reverse_top(const gmx_mtop_t *mtop, gmx_bool bFE,
     {
         for (thread = 0; thread < rt->nthread; thread++)
         {
-            snew(rt->th_work[thread].shell_pbc, F_ANHARM_POL-F_POLARIZATION+2);
-            snew(rt->th_work[thread].shell_pbc_nalloc, F_ANHARM_POL-F_POLARIZATION+2);
+            snew(rt->th_work[thread].shell_pbc, F_HYPER_POL-F_POLARIZATION+2);
+            snew(rt->th_work[thread].shell_pbc_nalloc, F_HYPER_POL-F_POLARIZATION+2);
         }
     }
 
@@ -1271,8 +1271,8 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             /* TODO: check */
             gmx_bool spbc;
             spbc = ((ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_THOLE_POL ||
-                    ftype == F_ANISO_POL || ftype == F_WATER_POL || ftype == F_ANHARM_POL)
-                    && shellfc->shell_pbc_loc != NULL);
+                    ftype == F_ANISO_POL || ftype == F_WATER_POL || ftype == F_ANHARM_POL ||
+                    ftype == F_HYPER_POL) && shellfc->shell_pbc_loc != NULL);
             if (spbc)
             {
                 nral1 = 1 + NRAL(ftype);
