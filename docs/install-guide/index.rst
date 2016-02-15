@@ -327,10 +327,11 @@ Optional build components
 * The built-in |Gromacs| trajectory viewer ``gmx view`` requires X11 and
   Motif/Lesstif libraries and header files. You may prefer to use
   third-party software for visualization, such as VMD_ or PyMol_.
+* An external TinyXML-2 library may be used for building the test
+  binaries, but by default a version bundled internally is used.
 * An external TNG library for trajectory-file handling can be used,
   but TNG 1.7.6 is bundled in the |Gromacs| source already
 * zlib is used by TNG for compressing some kinds of trajectory data
-* Running the |Gromacs| test suite requires libxml2
 * Building the |Gromacs| documentation requires ImageMagick, pdflatex,
   bibtex, doxygen, python 2.7, sphinx and pygments.
 * The |Gromacs| utility programs often write data files in formats

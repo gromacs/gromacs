@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,8 @@ function(GMX_TEST_LIBXML2 VARIABLE)
     endif()
 
     if(HAVE_ZLIB)
+        # TODO Does adding ZLIB_LIBRARIES here break the call to
+        # check_library_exists below?
         set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES};${ZLIB_LIBRARIES}" PARENT_SCOPE) #not needed for dynamic but does not hurt
     endif()
 
@@ -68,6 +70,13 @@ function(GMX_TEST_LIBXML2 VARIABLE)
     if(_do_libxml2_recompile)
         unset(LIBXML2_LINKS_OK CACHE)
     endif()
+    # TODO If libxml2 support becomes required e.g. for reading
+    # databases of files, then the following check needs to become
+    # more robust, e.g. by detecting whether libxml2 defines a symbol
+    # that means that linking with zlib will be required. If so, then
+    # CMAKE_REQUIRED_LIBRARIES should be used to do that job (and
+    # tested in all cases of shared vs static libraries present &
+    # required).
     check_library_exists("${LIBXML2_LIBRARIES}" "xmlTextWriterEndAttribute" "" LIBXML2_LINKS_OK)
     if(LIBXML2_LINKS_OK)
         #check that xml headers can be included

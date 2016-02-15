@@ -367,6 +367,9 @@
 /* Define if we have zlib */
 #cmakedefine01 HAVE_ZLIB
 
+/* Define if we have TinyXML-2 */
+#cmakedefine01 HAVE_TINYXML2
+
 /*! \endcond */
 
 #endif

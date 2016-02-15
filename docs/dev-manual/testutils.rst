@@ -22,7 +22,7 @@ Shared code used to implement the tests is in ``src/external/gmock-1.7.0/`` and
 ``src/testutils/`` (see below).
 
 The tests are built if ``BUILD_TESTING=ON`` (the default) and
-``GMX_BUILD_UNITTESTS=ON`` (the default if ``libxml2`` is available) in CMake.
+``GMX_BUILD_UNITTESTS=ON`` (the default) in CMake.
 Each module produces a separate unit test binary (:file:`{module}-test`) under
 ``bin/``, which can execute all the tests for that module.
 

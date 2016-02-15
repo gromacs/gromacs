@@ -139,8 +139,8 @@ Persistence
 ===========
 
 The reference data is stored in XML files under
-`src/gromacs/`<em>module</em>`/tests/refdata/` in the source tree.
-This part of the framework depends on `libxml2`.
+`src/gromacs/`<em>module</em>`/tests/refdata/` in the source tree. This part
+of the framework depends on `TinyXML-2`, which is bundled in `src/external`.
 One file is produced per test that uses reference data.  If you rename tests or
 otherwise change the reference data, you currently need to manually manage the
 files with `git`.
