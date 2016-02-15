@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,17 +37,22 @@
  * Implements reference data XML persistence.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
 #include "gmxpre.h"
 
 #include "refdata-xml.h"
 
-#include <libxml/parser.h>
-#include <libxml/xmlmemory.h>
+#include "config.h"
+
+#if HAVE_TINYXML2
+#  include <tinyxml2>
+#else
+#  include "external/tinyxml2/tinyxml2.h"
+#endif
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/scoped_cptr.h"
 
 #include "testutils/refdata-impl.h"
 #include "testutils/testexceptions.h"
@@ -60,67 +65,14 @@ namespace test
 namespace
 {
 
-//! XML version used for writing the reference data.
-const xmlChar *const cXmlVersion =
-    reinterpret_cast<const xmlChar *>("1.0");
-//! Name of the XML processing instruction used for XSLT reference.
-const xmlChar *const cXmlStyleSheetNodeName =
-    reinterpret_cast<const xmlChar *>("xml-stylesheet");
-//! XSLT reference written to the reference data XML files.
-const xmlChar *const cXmlStyleSheetContent =
-    reinterpret_cast<const xmlChar *>("type=\"text/xsl\" href=\"referencedata.xsl\"");
+//! XML version declaration used when writing the reference data.
+const char *const c_VersionDeclarationString = "xml version=\"1.0\"";
+//! XML stylesheet declaration used for writing the reference data.
+const char *const c_StyleSheetDeclarationString = "xml-stylesheet type=\"text/xsl\" href=\"referencedata.xsl\"";
 //! Name of the root element in reference data XML files.
-const xmlChar *const cRootNodeName =
-    reinterpret_cast<const xmlChar *>("ReferenceData");
+const char *const c_RootNodeName = "ReferenceData";
 //! Name of the XML attribute used to store identifying strings for reference data elements.
-const xmlChar *const cIdAttrName =
-    reinterpret_cast<const xmlChar *>("Name");
-
-/********************************************************************
- * Generic helper functions and classes
- */
-
-//! Helper function to convert strings to xmlChars.
-const xmlChar *toXmlString(const std::string &str)
-{
-    // TODO: Consider asserting that str is ASCII.
-    return reinterpret_cast<const xmlChar *>(str.c_str());
-}
-
-//! Helper function to convert strings from xmlChars.
-const char *fromXmlString(const xmlChar *str)
-{
-    // TODO: Consider asserting that str is ASCII.
-    return reinterpret_cast<const char *>(str);
-}
-
-class XmlString
-{
-    public:
-        explicit XmlString(xmlChar *str) : str_(str) {}
-        ~XmlString()
-        {
-            if (str_ != NULL)
-            {
-                xmlFree(str_);
-            }
-        }
-
-        std::string toString() const
-        {
-            if (str_ == NULL)
-            {
-                return std::string();
-            }
-            return std::string(fromXmlString(str_));
-        }
-
-    private:
-        xmlChar *str_;
-};
-
-//! C++ wrapper for xmlDocPtr for exception safety.
-typedef scoped_cptr<xmlDoc, xmlFreeDoc> XmlDocumentPointer;
+const char *const c_IdAttrName = "Name";
 
 }       // namespace
 
@@ -134,85 +86,96 @@ namespace
 //! \name Helper functions for XML reading
 //! \{
 
-void readEntry(xmlNodePtr node, ReferenceDataEntry *entry);
+typedef tinyxml2::XMLDocument *XMLDocumentPtr;
+typedef tinyxml2::XMLNode *XMLNodePtr;
+typedef tinyxml2::XMLElement *XMLElementPtr;
+typedef tinyxml2::XMLText *XMLTextPtr;
 
-xmlNodePtr getCDataChildNode(xmlNodePtr node)
+void readEntry(XMLNodePtr node, ReferenceDataEntry *entry);
+
+XMLTextPtr getTextChildNode(XMLNodePtr node)
 {
-    xmlNodePtr cdata = node->children;
-    while (cdata != NULL && cdata->type != XML_CDATA_SECTION_NODE)
+    // Note that when reading, we don't have to care if it is in a
+    // CDATA section, or not.
+    XMLNodePtr textNode = node->FirstChild();
+    if (textNode == nullptr)
     {
-        cdata = cdata->next;
+        return nullptr;
+    }
+    while (textNode->ToText() == nullptr)
+    {
+        textNode = textNode->NextSibling();
+        if (textNode == nullptr)
+        {
+            return nullptr;
+        }
     }
     // TODO: Consider checking that there is no more than one CDATA section.
-    return cdata;
+    return textNode->ToText();
 }
 
-bool hasCDataContent(xmlNodePtr node)
+bool hasTextContent(XMLNodePtr node)
 {
-    return getCDataChildNode(node) != NULL;
+    return getTextChildNode(node) != nullptr;
 }
 
-xmlNodePtr findContentNode(xmlNodePtr node)
+std::string getValueFromLeafElement(XMLNodePtr node)
 {
-    xmlNodePtr cdata = getCDataChildNode(node);
-    return cdata != NULL ? cdata : node;
-}
-
-std::string getValueFromLeafElement(xmlNodePtr node)
-{
-    xmlNodePtr  contentNode = findContentNode(node);
-    XmlString   content(xmlNodeGetContent(contentNode));
-    std::string value(content.toString());
-    if (hasCDataContent(node))
+    std::string value;
+    if (hasTextContent(node))
     {
-        if (value.empty() || value[0] != '\n')
+        XMLTextPtr contentNode = getTextChildNode(node);
+        value = std::string(contentNode->Value());
+        if (value.empty())
         {
-            GMX_THROW(TestException("Invalid CDATA string block in reference data"));
+            GMX_THROW(TestException("Invalid string block in reference data"));
         }
-        value.erase(0, 1);
+        if (value[0] == '\n')
+        {
+            value.erase(0, 1);
+        }
     }
     return value;
 }
 
-ReferenceDataEntry::EntryPointer createEntry(xmlNodePtr element)
+ReferenceDataEntry::EntryPointer createEntry(XMLElementPtr element)
 {
-    XmlString id(xmlGetProp(element, cIdAttrName));
-    ReferenceDataEntry::EntryPointer entry(
-            new ReferenceDataEntry(fromXmlString(element->name),
-                                   id.toString().c_str()));
+    const char *id = element->Attribute(c_IdAttrName);
+    ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(element->Value(), id));
     return entry;
 }
 
-void readChildEntries(xmlNodePtr parentElement, ReferenceDataEntry *entry)
+void readChildEntries(XMLNodePtr parentElement, ReferenceDataEntry *entry)
 {
-    xmlNodePtr childElement = xmlFirstElementChild(parentElement);
-    while (childElement != NULL)
+    XMLElementPtr childElement = parentElement->FirstChildElement();
+    while (childElement != nullptr)
     {
         ReferenceDataEntry::EntryPointer child(createEntry(childElement));
         readEntry(childElement, child.get());
         entry->addChild(move(child));
-        childElement = xmlNextElementSibling(childElement);
+        childElement = childElement->NextSiblingElement();
     }
 }
 
-bool isCompoundElement(xmlNodePtr node)
+bool isCompoundElement(XMLNodePtr node)
 {
-    return xmlFirstElementChild(node) != NULL;
+    return node->FirstChildElement() != nullptr;
 }
 
-void readEntry(xmlNodePtr element, ReferenceDataEntry *entry)
+
+void readEntry(XMLNodePtr element, ReferenceDataEntry *entry)
 {
     if (isCompoundElement(element))
     {
         readChildEntries(element, entry);
     }
-    else if (hasCDataContent(element))
+    else if (hasTextContent(element))
     {
         entry->setTextBlockValue(getValueFromLeafElement(element));
     }
     else
     {
-        entry->setValue(getValueFromLeafElement(element));
+        entry->setValue("");
     }
 }
 
@@ -224,17 +187,21 @@ void readEntry(xmlNodePtr element, ReferenceDataEntry *entry)
 ReferenceDataEntry::EntryPointer
 readReferenceDataFile(const std::string &path)
 {
-    XmlDocumentPointer document(xmlParseFile(path.c_str()));
-    if (!document)
+    tinyxml2::XMLDocument document;
+    document.LoadFile(path.c_str());
+    if (document.Error())
     {
-        GMX_THROW(TestException("Reference data not parsed successfully: " + path));
+        std::string errorString("Error was ");
+        errorString += document.GetErrorStr1();
+        errorString += document.GetErrorStr2();
+        GMX_THROW(TestException("Reference data not parsed successfully: " + path + "\n." + errorString + "\n"));
     }
-    xmlNodePtr rootNode = xmlDocGetRootElement(document.get());
-    if (rootNode == NULL)
+    XMLElementPtr rootNode = document.RootElement();
+    if (rootNode == nullptr)
     {
         GMX_THROW(TestException("Reference data is empty: " + path));
     }
-    if (xmlStrcmp(rootNode->name, cRootNodeName) != 0)
+    if (std::strcmp(rootNode->Value(), c_RootNodeName) != 0)
     {
         GMX_THROW(TestException("Invalid root node type in " + path));
     }
@@ -255,86 +222,86 @@ namespace
 //! \name Helper functions for XML writing
 //! \{
 
-void createElementAndContents(xmlNodePtr                parentNode,
+void createElementAndContents(XMLElementPtr             parentElement,
                               const ReferenceDataEntry &entry);
 
-void setIdAttribute(xmlNodePtr node, const std::string &id)
+void setIdAttribute(XMLElementPtr element, const std::string &id)
 {
     if (!id.empty())
     {
-        const xmlChar *xmlId = toXmlString(id);
-        xmlAttrPtr     prop  = xmlNewProp(node, cIdAttrName, xmlId);
-        if (prop == NULL)
-        {
-            GMX_THROW(TestException("XML attribute creation failed"));
-        }
+        element->SetAttribute(c_IdAttrName, id.c_str()); // If this fails, it throws std::bad_alloc
     }
 }
 
-xmlNodePtr createElement(xmlNodePtr parentNode, const ReferenceDataEntry &entry)
+XMLElementPtr createElement(XMLElementPtr parentElement, const ReferenceDataEntry &entry)
 {
-    xmlNodePtr node = xmlNewTextChild(parentNode, NULL, toXmlString(entry.type()), NULL);
-    if (node == NULL)
+    XMLElementPtr element = parentElement->GetDocument()->NewElement(entry.type().c_str());
+    if (element == nullptr)
     {
         GMX_THROW(TestException("XML element creation failed"));
     }
-    setIdAttribute(node, entry.id());
-    return node;
+    parentElement->InsertEndChild(element);
+    setIdAttribute(element, entry.id()); // If this fails, it throws std::bad_alloc
+    return element;
 }
 
-void createChildElements(xmlNodePtr parentNode, const ReferenceDataEntry &entry)
+void createChildElements(XMLElementPtr parentElement, const ReferenceDataEntry &entry)
 {
     const ReferenceDataEntry::ChildList &children(entry.children());
     ReferenceDataEntry::ChildIterator    child;
     for (child = children.begin(); child != children.end(); ++child)
     {
-        createElementAndContents(parentNode, **child);
+        createElementAndContents(parentElement, **child);
     }
 }
 
-void createElementContents(xmlNodePtr node, const ReferenceDataEntry &entry)
+void createElementContents(XMLElementPtr element, const ReferenceDataEntry &entry)
 {
     if (entry.isCompound())
     {
-        createChildElements(node, entry);
+        createChildElements(element, entry);
     }
     else if (entry.isTextBlock())
     {
         // An extra newline is written in the beginning to make lines align
-        // in the output xml (otherwise, the first line would be off by the length
-        // of the starting CDATA tag).
+        // in the output xml
         const std::string adjustedValue = "\n" + entry.value();
         // TODO: Figure out if \r and \r\n can be handled without them changing
         // to \n in the roundtrip
-        xmlNodePtr cdata
-            = xmlNewCDataBlock(node->doc, toXmlString(adjustedValue),
-                               static_cast<int>(adjustedValue.length()));
-        xmlAddChild(node, cdata);
+        XMLTextPtr textNode = element->GetDocument()->NewText(adjustedValue.c_str());
+        if (textNode == nullptr)
+        {
+            GMX_THROW(TestException("Could not create text node for " + entry.value()));
+        }
+        textNode->SetCData(true);
+        element->InsertEndChild(textNode);
     }
     else
     {
-        xmlNodeAddContent(node, toXmlString(entry.value()));
+        XMLTextPtr textNode = element->GetDocument()->NewText(entry.value().c_str());
+        if (textNode == nullptr)
+        {
+            GMX_THROW(TestException("Could not create text node for " + entry.value()));
+        }
+        element->InsertEndChild(textNode);
     }
 }
 
-void createElementAndContents(xmlNodePtr parentNode, const ReferenceDataEntry &entry)
+void createElementAndContents(XMLElementPtr parentElement, const ReferenceDataEntry &entry)
 {
-    xmlNodePtr node = createElement(parentNode, entry);
-    createElementContents(node, entry);
+    XMLElementPtr element = createElement(parentElement, entry);
+    createElementContents(element, entry);
 }
 
-xmlNodePtr createRootElement(xmlDocPtr document)
+XMLElementPtr createRootElement(XMLDocumentPtr document)
 {
-    xmlNodePtr rootElement = xmlNewDocNode(document, NULL, cRootNodeName, NULL);
-    xmlDocSetRootElement(document, rootElement);
+    XMLElementPtr rootElement = document->NewElement(c_RootNodeName);
+    if (rootElement == nullptr)
+    {
+        GMX_THROW(TestException("Could not create root element"));
+    }
+    document->InsertEndChild(rootElement);
     return rootElement;
-}
-
-void createXsltReference(xmlDocPtr document, xmlNodePtr rootElement)
-{
-    xmlNodePtr xslNode = xmlNewDocPI(document, cXmlStyleSheetNodeName,
-                                     cXmlStyleSheetContent);
-    xmlAddPrevSibling(rootElement, xslNode);
 }
 
 //! \}
@@ -346,26 +313,29 @@ void writeReferenceDataFile(const std::string        &path,
                             const ReferenceDataEntry &rootEntry)
 {
     // TODO: Error checking
-    XmlDocumentPointer  document(xmlNewDoc(cXmlVersion));
-    xmlNodePtr          rootElement = createRootElement(document.get());
-    createXsltReference(document.get(), rootElement);
+    tinyxml2::XMLDocument     document;
+
+    tinyxml2::XMLDeclaration *declaration = document.NewDeclaration(c_VersionDeclarationString);
+    if (declaration == nullptr)
+    {
+        GMX_THROW(TestException("Could not create XML declaration"));
+    }
+    document.InsertEndChild(declaration);
+
+    declaration = document.NewDeclaration(c_StyleSheetDeclarationString);
+    if (declaration == nullptr)
+    {
+        GMX_THROW(TestException("Could not create XML declaration"));
+    }
+    document.InsertEndChild(declaration);
+
+    XMLElementPtr rootElement = createRootElement(&document);
     createChildElements(rootElement, rootEntry);
 
-    if (xmlSaveFormatFile(path.c_str(), document.get(), 1) == -1)
+    if (document.SaveFile(path.c_str()) != tinyxml2::XML_NO_ERROR)
     {
         GMX_THROW(TestException("Reference data saving failed in " + path));
     }
-}
-//! \endcond
-
-/********************************************************************
- * Cleanup
- */
-
-//! \cond internal
-void cleanupReferenceData()
-{
-    xmlCleanupParser();
 }
 //! \endcond
 

@@ -353,11 +353,10 @@ Variables affecting special targets
 
    If ``ON``, test binaries using Google Test are built (either as the separate
    ``tests`` targer, or also as part of the ``all`` target, depending on
-   :cmake:`GMX_DEVELOPER_BUILD`).  :file:`libxml2` is required for building the
-   tests, but other prerequisites (Google Test and Google Mock frameworks) are
+   :cmake:`GMX_DEVELOPER_BUILD`).  All dependencies required for building the
+   tests (Google Test and Google Mock frameworks, and tinyxml2) are
    included in :file:`src/external/`.
-   Defaults to ``ON`` if :file:`libxml2` is found and :cmake:`BUILD_TESTING` is
-   ``ON``.
+   Defaults to ``ON`` if :cmake:`BUILD_TESTING` is ``ON``.
 
 .. cmake:: GMX_COMPACT_DOXYGEN
 
