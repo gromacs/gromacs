@@ -223,9 +223,10 @@ Performance and Run Control
 ``GMX_NB_MIN_CI``
         neighbor list balancing parameter used when running on GPU. Sets the
         target minimum number pair-lists in order to improve multi-processor load-balance for better
-        performance with small simulation systems. Must be set to a positive integer, the default value
-        is optimized for NVIDIA Fermi and Kepler GPUs, therefore changing it is not necessary for
-        normal usage, but it can be useful on future architectures.
+        performance with small simulation systems. Must be set to a non-negative integer,
+        the 0 value disables list splitting.
+        The default value is optimized for supported GPUs (NVIDIA Fermi to Maxwell),
+        therefore changing it is not necessary for normal usage, but it can be useful on future architectures.
 
 ``GMX_NBLISTCG``
         use neighbor list and kernels based on charge groups.
