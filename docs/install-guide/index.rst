@@ -335,7 +335,6 @@ Optional build components
 * An external TNG library for trajectory-file handling can be used,
   but TNG 1.7.6 is bundled in the |Gromacs| source already
 * zlib is used by TNG for compressing some kinds of trajectory data
-* Running the |Gromacs| test suite requires libxml2
 * Building the |Gromacs| documentation requires ImageMagick, pdflatex,
   bibtex, doxygen, python 2.7, sphinx and pygments.
 * The |Gromacs| utility programs often write data files in formats
