@@ -48,6 +48,9 @@
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
 
+#include "testutils/testasserts.h"
+#include "testutils/testexceptions.h"
+
 namespace
 {
 
@@ -263,15 +266,16 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("\"<'>\n \r &\\/;", "string");
-        // Note that '\r' is not handled correctly in stringblock (see
-        // the TODO in createElementContents), so don't try to test it
+        // Note that '\r' is not handled correctly in string or
+        // stringblock (see the TODO in createElementContents), so
+        // don't try to test it
+        checker.checkString("\"<'>\n&\\/;", "string");
         checker.checkTextBlock("\"<'>\n&\\/;", "stringblock");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("\"<'>\n \r &\\/;", "string");
+        checker.checkString("\"<'>\n&\\/;", "string");
         checker.checkTextBlock("\"<'>\n&\\/;", "stringblock");
     }
 }
@@ -283,7 +287,11 @@ TEST(ReferenceDataTest, HandlesEmptyStrings)
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("", "Empty");
-        checker.checkString("\n", "EmptyLine");
+        // GROMACS cannot use an empty line in a reference data String
+        // until https://github.com/leethomason/tinyxml2/issues/432 is
+        // resolved.
+        // TODO Find out why an expect on the exception does not work.
+        //EXPECT_THROW_GMX(checker.checkString("\n", "EmptyLine"), gmx::test::TestException);
         checker.checkTextBlock("", "EmptyBlock");
         checker.checkTextBlock("\n", "EmptyLineBlock");
     }
@@ -291,7 +299,7 @@ TEST(ReferenceDataTest, HandlesEmptyStrings)
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("", "Empty");
-        checker.checkString("\n", "EmptyLine");
+        //checker.checkString("\n", "EmptyLine");
         checker.checkTextBlock("", "EmptyBlock");
         checker.checkTextBlock("\n", "EmptyLineBlock");
     }
