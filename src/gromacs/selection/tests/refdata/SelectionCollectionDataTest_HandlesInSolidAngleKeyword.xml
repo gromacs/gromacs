@@ -14,8 +14,8 @@
     </ParsedSelection>
   </ParsedSelections>
   <CompiledSelections Name="Compiled">
-    <Selection Name="Selection1"/>
-    <Selection Name="Selection2"/>
+    <Selection Name="Selection1"></Selection>
+    <Selection Name="Selection2"></Selection>
   </CompiledSelections>
   <EvaluatedSelections Name="Frame1">
     <Selection Name="Selection1">
