@@ -358,10 +358,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
             for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
-                /* ((1U << c_numClPerSupercl) - 1U) is the i-cluster interaction
-                 * mask for a super-cluster with all c_numClPerSupercl bits set.
-                 */
-                if (imask & (((1U << c_numClPerSupercl) - 1U) << (jm * c_numClPerSupercl)))
+                if (imask & (c_superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
 
@@ -383,10 +380,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     {
                         if (imask & mask_ji)
                         {
-                            ci_offset   = i;                     /* i force buffer offset */
+                            ci_offset   = i;                       /* i force buffer offset */
 
                             ci      = sci * c_numClPerSupercl + i; /* i cluster index */
-                            ai      = ci * c_clSize + tidxi;      /* i atom index */
+                            ai      = ci * c_clSize + tidxi;       /* i atom index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
                             xqbuf   = xqib[i * c_clSize + tidxi];

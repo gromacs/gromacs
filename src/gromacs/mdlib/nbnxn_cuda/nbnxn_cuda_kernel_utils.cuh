@@ -78,6 +78,9 @@ static const int    c_fbufStride   = c_clSizeSq;
 static const float  c_oneSixth    = 0.16666667f;
 static const float  c_oneTwelveth = 0.08333333f;
 
+/*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
+static const unsigned c_superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
+
 /* With multiple compilation units this ensures that texture refs are available
    in the the kernels' compilation units. */
 #if !GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
