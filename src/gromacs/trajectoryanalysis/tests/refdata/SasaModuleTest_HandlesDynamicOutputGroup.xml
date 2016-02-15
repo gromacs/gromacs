@@ -1088,8 +1088,8 @@
     </AnalysisData>
   </OutputData>
   <OutputFiles Name="Files">
-    <File Name="-o"/>
-    <File Name="-or"/>
-    <File Name="-oa"/>
+    <File Name="-o"></File>
+    <File Name="-or"></File>
+    <File Name="-oa"></File>
   </OutputFiles>
 </ReferenceData>

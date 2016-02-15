@@ -33,7 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-include_directories(SYSTEM ${LIBXML2_INCLUDE_DIR})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     integrationtests.cpp
@@ -48,13 +47,15 @@ set(TESTUTILS_SOURCES
     testinit.cpp
     testoptions.cpp
     textblockmatchers.cpp
-    xvgtest.cpp)
+    xvgtest.cpp
+    ../external/tinyxml2/tinyxml2.cpp
+    )
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils)
 set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 set_property(TARGET testutils APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES} ${LIBXML2_LIBRARIES})
+target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES})
 
 set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
