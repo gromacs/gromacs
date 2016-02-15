@@ -2230,9 +2230,9 @@ static void init_nb_verlet(FILE                *fp,
             char *end;
 
             nbv->min_ci_balanced = strtol(env, &end, 10);
-            if (!end || (*end != 0) || nbv->min_ci_balanced <= 0)
+            if (!end || (*end != 0) || nbv->min_ci_balanced < 0)
             {
-                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, positive integer required", env);
+                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
             }
 
             if (debug)
