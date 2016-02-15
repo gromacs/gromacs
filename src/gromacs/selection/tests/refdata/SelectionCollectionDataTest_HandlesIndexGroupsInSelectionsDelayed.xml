@@ -4,19 +4,19 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">group "GrpA"</String>
-      <String Name="Name"/>
+      <String Name="Name"></String>
       <String Name="Text">group "GrpA"</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">GrpB</String>
-      <String Name="Name"/>
+      <String Name="Name"></String>
       <String Name="Text">GrpB</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection3">
       <String Name="Input">1</String>
-      <String Name="Name"/>
+      <String Name="Name"></String>
       <String Name="Text">1</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

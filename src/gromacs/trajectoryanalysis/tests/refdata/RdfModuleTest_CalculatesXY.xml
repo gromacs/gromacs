@@ -257,6 +257,6 @@
     </AnalysisData>
   </OutputData>
   <OutputFiles Name="Files">
-    <File Name="-o"/>
+    <File Name="-o"></File>
   </OutputFiles>
 </ReferenceData>

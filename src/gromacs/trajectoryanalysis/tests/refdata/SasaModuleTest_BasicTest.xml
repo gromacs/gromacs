@@ -1166,7 +1166,7 @@ s0 legend "Total"
 s1 legend "name N CA C O H"
 ]]></String>
       </XvgLegend>
-      <XvgData Name="Data"/>
+      <XvgData Name="Data"></XvgData>
     </File>
     <File Name="-or">
       <XvgLegend Name="Legend">
@@ -2527,7 +2527,7 @@ s0 legend "Volume (nm\S3\N)"
 s1 legend "Density (g/l)"
 ]]></String>
       </XvgLegend>
-      <XvgData Name="Data"/>
+      <XvgData Name="Data"></XvgData>
     </File>
   </OutputFiles>
 </ReferenceData>
