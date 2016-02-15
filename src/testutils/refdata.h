@@ -540,6 +540,17 @@ class TestReferenceChecker
         friend class TestReferenceData;
 };
 
+namespace internal
+{
+
+/*! \brief Helper function for checking that we don't inadvertently
+ * use a part of TinyXML2 that doesn't work like we want.
+ *
+ * Exposed only to permit testing. */
+void throwIfNonEmptyAndOnlyWhitespace(const std::string &s, const char *id);
+
+}
+
 } // namespace test
 } // namespace gmx
 
