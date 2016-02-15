@@ -3980,7 +3980,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
          * and ensures that the total number of blocks end up equal to
          * that with of equally sized blocks of size nsp_target_av.
          */
-        nsp_max = nsp_target_av*nsp_tot_est*3/(2*(nsp_est + nsp_tot_est));
+        nsp_max = nsp_target_av*3*(nsp_tot_est/(2*(nsp_est + nsp_tot_est)));
     }
     else
     {
