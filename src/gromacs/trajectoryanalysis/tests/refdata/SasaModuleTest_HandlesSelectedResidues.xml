@@ -252,7 +252,7 @@ TYPE xy
 s0 legend "Total"
 ]]></String>
       </XvgLegend>
-      <XvgData Name="Data"/>
+      <XvgData Name="Data"></XvgData>
     </File>
     <File Name="-or">
       <XvgLegend Name="Legend">
