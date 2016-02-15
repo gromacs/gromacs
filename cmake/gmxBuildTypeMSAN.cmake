@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 # be preprended to preprocessor and linker search paths. The MSAN
 # build type is highly unlikely to work usefully without this variable
 # set appropriately, and the dependencies installed there. In
-# particular, suitable zlib and libxml2 need to be installed there.
+# particular, suitable zlib needs to be installed there.
 #
 # Where GROMACS can optionally use bundled dependency code, such as
 # fftpack and XDR, only the bundled code is supported. MSAN build type
