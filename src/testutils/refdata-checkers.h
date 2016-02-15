@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,8 +106,8 @@ class ExactStringChecker : public IReferenceDataEntryChecker
             }
             return ::testing::AssertionFailure()
                    << "  In item: " << fullId << std::endl
-                   << "   Actual: " << value_ << std::endl
-                   << "Reference: " << entry.value();
+                   << "   Actual: '" << value_ << "'" << std::endl
+                   << "Reference: '" << entry.value() << "'";
         }
 
     private:
@@ -135,8 +135,8 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
             }
             return ::testing::AssertionFailure()
                    << "  In item: " << fullId << std::endl
-                   << "   Actual: " << value_ << std::endl
-                   << "Reference: " << entry.value();
+                   << "   Actual: '" << value_ << "'" << std::endl
+                   << "Reference: '" << entry.value() << "'";
         }
 
     private:
