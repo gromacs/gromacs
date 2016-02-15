@@ -358,10 +358,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
             for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
-                /* ((1U << c_numClPerSupercl) - 1U) is the i-cluster interaction
-                 * mask for a super-cluster with all c_numClPerSupercl bits set.
-                 */
-                if (imask & (((1U << c_numClPerSupercl) - 1U) << (jm * c_numClPerSupercl)))
+                if (imask & (c_superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
                     mask_ji = (1U << (jm * c_numClPerSupercl));
 
