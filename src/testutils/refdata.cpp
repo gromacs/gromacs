@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,10 +195,9 @@ class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
             }
         }
 
-        // Frees internal buffers allocated by libxml2.
         virtual void OnTestProgramEnd(const ::testing::UnitTest &)
         {
-            cleanupReferenceData();
+            // Could be used e.g. to free internal buffers allocated by an XML parsing library
         }
 };
 
@@ -575,8 +574,8 @@ TestReferenceChecker::Impl::processItem(const char *type, const char *id,
         ReferenceDataEntry expected(type, id);
         checker.fillEntry(&expected);
         result << std::endl
-        << "String value: " << expected.value() << std::endl
-        << " Ref. string: " << entry->value();
+        << "String value: '" << expected.value() << "'" << std::endl
+        << " Ref. string: '" << entry->value() << "'";
     }
     return result;
 }
@@ -735,6 +734,39 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
 }
 
 
+void throwIfNonEmptyAndOnlyWhitespace(const std::string &s, const std::string &id)
+{
+    // If the string to write is non-empty and has only whitespace,
+    // TinyXML2 can't read it correctly, so throw an exception for
+    // this case, so that we can't accidentally use it and run into
+    // mysterious problems.
+    //
+    // TODO Eliminate this limitation of TinyXML2. See
+    // e.g. https://github.com/leethomason/tinyxml2/issues/432
+    bool isOnlyWhitespace = !s.empty();
+    if (!isOnlyWhitespace)
+    {
+        return;
+    }
+    for (auto it = s.cbegin(); it != s.cend(); ++it)
+    {
+        if (!std::isspace(*it))
+        {
+            isOnlyWhitespace = false;
+            break;
+        }
+    }
+    if (isOnlyWhitespace)
+    {
+        std::string message("String '" + s + "' with ");
+        message += id.empty() ? "null id" : "id " + id;
+        message += " cannot be handled. We must refuse to write a refdata String"
+            "field for a non-empty string that contains only whitespace, "
+            "because it will not be read correctly by TinyXML2.";
+        GMX_THROW(TestException(message));
+    }
+}
+
 void TestReferenceChecker::checkBoolean(bool value, const char *id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cBooleanNodeName, id,
@@ -744,6 +776,7 @@ void TestReferenceChecker::checkBoolean(bool value, const char *id)
 
 void TestReferenceChecker::checkString(const char *value, const char *id)
 {
+    throwIfNonEmptyAndOnlyWhitespace(value, id);
     EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
                                     ExactStringChecker(value)));
 }
@@ -751,6 +784,7 @@ void TestReferenceChecker::checkString(const char *value, const char *id)
 
 void TestReferenceChecker::checkString(const std::string &value, const char *id)
 {
+    throwIfNonEmptyAndOnlyWhitespace(value, id);
     EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
                                     ExactStringChecker(value)));
 }
