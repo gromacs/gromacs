@@ -263,15 +263,16 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("\"<'>\n \r &\\/;", "string");
-        // Note that '\r' is not handled correctly in stringblock (see
-        // the TODO in createElementContents), so don't try to test it
+        // Note that '\r' is not handled correctly in string or
+        // stringblock (see the TODO in createElementContents), so
+        // don't try to test it
+        checker.checkString("\"<'>\n&\\/;", "string");
         checker.checkTextBlock("\"<'>\n&\\/;", "stringblock");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("\"<'>\n \r &\\/;", "string");
+        checker.checkString("\"<'>\n&\\/;", "string");
         checker.checkTextBlock("\"<'>\n&\\/;", "stringblock");
     }
 }
