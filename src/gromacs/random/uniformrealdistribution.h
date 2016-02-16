@@ -105,14 +105,14 @@ RealType
 generateCanonical(Rng &g)
 {
     // No point in using more bits than fit in RealType
-    const gmx_uint64_t digits   = std::numeric_limits<RealType>::digits;
-    const gmx_uint64_t realBits = std::min(digits, static_cast<gmx_uint64_t>(Bits));
-    const gmx_uint64_t range    = Rng::max() - Rng::min() + gmx_uint64_t(1);
-    gmx_uint64_t       log2R    = (range == 0) ? std::numeric_limits<gmx_uint64_t>::digits : log2I(range);
-    gmx_uint64_t       k        = realBits / log2R + (realBits % log2R != 0) + (realBits == 0);
-    RealType           r        = Rng::max() - Rng::min() + RealType(1);
-    RealType           s        = g() - Rng::min();
-    RealType           base     = r;
+    constexpr gmx_uint64_t digits   = std::numeric_limits<RealType>::digits;
+    constexpr gmx_uint64_t range    = Rng::max() - Rng::min() + gmx_uint64_t(1);
+    constexpr gmx_uint64_t log2R    = (range == 0) ? std::numeric_limits<gmx_uint64_t>::digits : log2I(range);
+    constexpr RealType     r        = RealType(Rng::max()) - RealType(Rng::min()) + RealType(1);
+    gmx_uint64_t           realBits = std::min(digits, static_cast<gmx_uint64_t>(Bits));
+    gmx_uint64_t           k        = realBits / log2R + (realBits % log2R != 0) + (realBits == 0);
+    RealType               s        = g() - Rng::min();
+    RealType               base     = r;
     RealType           result;
 
     for (gmx_uint64_t i = 1; i < k; ++i)
