@@ -107,7 +107,7 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
      * Turn this on when we have multiple acceleration groups
      * or one accelerated group.
      */
-    ekind->bNEMD = (opts->ngacc > 1 || norm(opts->acc[0]) > 0);
+    ekind->bNEMD = (opts->ngacc > 1 || norm2(opts->acc[0]) > 0);
 
     ekind->ngtc = opts->ngtc;
     snew(ekind->tcstat, opts->ngtc);
