@@ -79,7 +79,7 @@ static const float  one_sixth    = 0.16666667f;
 static const float  one_twelveth = 0.08333333f;
 
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
-static const unsigned supercl_interaction_mask = ((1U << ncl_per_supercl) - 1U);
+static const unsigned c_superClInteractionMask = ((1U << ncl_per_supercl) - 1U);
 
 /* With multiple compilation units this ensures that texture refs are available
    in the the kernels' compilation units. */

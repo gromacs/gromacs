@@ -358,7 +358,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
             for (jm = 0; jm < nbnxn_gpu_jgroup_size; jm++)
             {
-                if (imask & (supercl_interaction_mask << (jm * ncl_per_supercl)))
+                if (imask & (c_superClInteractionMask << (jm * ncl_per_supercl)))
                 {
                     mask_ji = (1U << (jm * ncl_per_supercl));
 
