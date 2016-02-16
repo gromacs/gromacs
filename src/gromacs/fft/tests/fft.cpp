@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "gromacs/fft/fft.h"
 
+#include <algorithm>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -59,8 +60,15 @@
 namespace
 {
 
-//! Input data for FFT tests.
-const real inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
+/*! \brief Input data for FFT tests.
+ *
+ * TODO If we require compilers that all support C++11 user literals,
+ * then this array could be of type real, initialized with e.g. -3.5_r
+ * that does not suffer from implicit narrowing with brace
+ * initializers, and we would not have to do so much useless copying
+ * during the unit tests below.
+ */
+const double inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
     -3.5, 6.3, 1.2, 0.3, 1.1, -5.7, 5.8, -1.9, -6.3, -1.4, 7.4, 2.4, -9.9, -7.2, 5.4, 6.1, -1.9, -7.6, 1.4, -3.5, 0.7, 5.6, -4.2, -1.1, -4.4,
     -6.3, -7.2, 4.6, -3.0, -0.9, 7.2, 2.5, -3.6, 6.1, -3.2, -2.1, 6.5, -0.4, -9.0, 2.3, 8.4, 4.0, -5.2, -9.0, 4.7, -3.7, -2.0, -9.5, -3.9, -3.6,
     7.1, 0.8, -0.6, 5.2, -9.3, -4.5, 5.9, 2.2, -5.8, 5.0, 1.2, -0.1, 2.2, 0.2, -7.7, 1.9, -8.4, 4.4, 2.3, -2.9, 6.7, 2.7, 5.8, -3.6, 8.9,
@@ -167,9 +175,10 @@ class FFFTest3D : public BaseFFTTest
 TEST_P(FFTTest1D, Complex)
 {
     const int nx = GetParam();
-    ASSERT_LE(nx*2, static_cast<int>(sizeof(inputdata)/sizeof(real)));
+    ASSERT_LE(nx*2, static_cast<int>(sizeof(inputdata)/sizeof(inputdata[0])));
 
-    in_  = std::vector<real>(inputdata, inputdata+nx*2);
+    in_  = std::vector<real>(nx*2);
+    std::copy(inputdata, inputdata+nx*2, in_.begin());
     out_ = std::vector<real>(nx*2);
     real* in  = &in_[0];
     real* out = &out_[0];
@@ -186,9 +195,10 @@ TEST_P(FFTTest1D, Real)
 {
     const int rx = GetParam();
     const int cx = (rx/2+1);
-    ASSERT_LE(cx*2, static_cast<int>(sizeof(inputdata)/sizeof(real)));
+    ASSERT_LE(cx*2, static_cast<int>(sizeof(inputdata)/sizeof(inputdata[0])));
 
-    in_  = std::vector<real>(inputdata, inputdata+cx*2);
+    in_  = std::vector<real>(cx*2);
+    std::copy(inputdata, inputdata+cx*2, in_.begin());
     out_ = std::vector<real>(cx*2);
     real* in  = &in_[0];
     real* out = &out_[0];
@@ -210,7 +220,8 @@ TEST_F(ManyFFTTest, Complex1DLength48Multi5Test)
     const int nx = 48;
     const int N  = 5;
 
-    in_  = std::vector<real>(inputdata, inputdata+nx*2*N);
+    in_  = std::vector<real>(nx*2*N);
+    std::copy(inputdata, inputdata+nx*2*N, in_.begin());
     out_ = std::vector<real>(nx*2*N);
     real* in  = &in_[0];
     real* out = &out_[0];
@@ -229,7 +240,8 @@ TEST_F(ManyFFTTest, Real1DLength48Multi5Test)
     const int cx = (rx/2+1);
     const int N  = 5;
 
-    in_  = std::vector<real>(inputdata, inputdata+cx*2*N);
+    in_  = std::vector<real>(cx*2*N);
+    std::copy(inputdata, inputdata+cx*2*N, in_.begin());
     out_ = std::vector<real>(cx*2*N);
     real* in  = &in_[0];
     real* out = &out_[0];
@@ -248,7 +260,8 @@ TEST_F(FFTTest, Real2DLength18_15Test)
     const int cx = (rx/2+1);
     const int ny = 15;
 
-    in_  = std::vector<real>(inputdata, inputdata+cx*2*ny);
+    in_  = std::vector<real>(cx*2*ny);
+    std::copy(inputdata, inputdata+cx*2*ny, in_.begin());
     out_ = std::vector<real>(cx*2*ny);
     real* in  = &in_[0];
     real* out = &out_[0];
@@ -279,15 +292,24 @@ TEST_F(FFFTest3D, Real5_6_9)
                                       local_ndata, offset, csize);
     checker_.checkVector(rsize, "rsize");
     checker_.checkVector(csize, "csize");
-    int size = csize[0]*csize[1]*csize[2];
+    int size        = csize[0]*csize[1]*csize[2];
+    int sizeInBytes = size*sizeof(t_complex);
+    int sizeInReals = sizeInBytes/sizeof(real);
 
-    memcpy(rdata, inputdata, size*sizeof(t_complex));
+    in_  = std::vector<real>(sizeInReals);
+    // Use std::copy to convert from double to real easily
+    std::copy(inputdata, inputdata+sizeInReals, in_.begin());
+    // Use memcpy to convert to t_complex easily
+    memcpy(rdata, in_.data(), sizeInBytes);
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, NULL);
     //TODO use std::complex and add checkComplex for it
     checker_.checkSequenceArray(size*2,
                                 reinterpret_cast<real*>(cdata), "forward");
 
-    memcpy(cdata, inputdata, size*sizeof(t_complex));
+    // Use std::copy to convert from double to real easily
+    std::copy(inputdata, inputdata+sizeInReals, in_.begin());
+    // Use memcpy to convert to t_complex easily
+    memcpy(cdata, in_.data(), sizeInBytes);
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, NULL);
     for (int i = 0; i < ndata[0]*ndata[1]; i++) //check sequence but skip unused data
     {
