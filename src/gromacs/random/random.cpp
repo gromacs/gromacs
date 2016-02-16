@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -380,8 +380,8 @@ gmx_rng_uniform_real(gmx_rng_t rng)
      * we are limited to an accuracy of 1e-7.
      */
 }
-real
 
+real
 gmx_rng_gaussian_table(gmx_rng_t rng)
 {
     unsigned int i;
