@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,17 +80,17 @@ TEST(InvertMatrixTest, IdentityIsImpotent)
 
 TEST(InvertMatrixTest, ComputesInverse)
 {
-    matrix in = {{1, 2, 3}, {-1, 2.5, 1}, {10, -2, 1.2}};
+    matrix in = {{1, 2, 3}, {-1, real(2.5), 1}, {10, -2, real(1.2)}};
     matrix out;
-    matrix expected = {{-0.12019230769230768,
-                        0.20192307692307693,
-                        0.13221153846153844},
-                       {-0.26923076923076916,
-                        0.69230769230769229,
-                        0.096153846153846145},
-                       {0.55288461538461531,
-                        -0.52884615384615374,
-                        -0.10817307692307691}};
+    matrix expected = {{real(-0.12019230769230768),
+                        real(0.20192307692307693),
+                        real(0.13221153846153844)},
+                       {real(-0.26923076923076916),
+                        real(0.69230769230769229),
+                        real(0.096153846153846145)},
+                       {real(0.55288461538461531),
+                        real(-0.52884615384615374),
+                        real(-0.10817307692307691)}};
 
     invertMatrix(in, out);
 
@@ -124,10 +124,10 @@ TEST(InvertBoxMatrixTest, IdentityIsImpotent)
 
 TEST(InvertBoxMatrixTest, ComputesInverseInPlace)
 {
-    matrix in       = {{1, 0, 0}, {-1, 2.5, 0}, {10, -2, 1.2}};
+    matrix in       = {{1, 0, 0}, {-1, real(2.5), 0}, {10, -2, real(1.2)}};
     matrix expected = {{1, 0, 0},
-                       {0.4, 0.4, 0},
-                       {-23.0/3.0, 2.0/3.0, 5.0/6.0}};
+                       {real(0.4), real(0.4), 0},
+                       {real(-23.0/3.0), real(2.0/3.0), real(5.0/6.0)}};
 
     invertBoxMatrix(in, in);
 
