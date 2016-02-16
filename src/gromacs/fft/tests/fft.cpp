@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "gromacs/fft/fft.h"
 
+#include <algorithm>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -60,7 +61,7 @@ namespace
 {
 
 //! Input data for FFT tests.
-const real inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
+const double inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
     -3.5, 6.3, 1.2, 0.3, 1.1, -5.7, 5.8, -1.9, -6.3, -1.4, 7.4, 2.4, -9.9, -7.2, 5.4, 6.1, -1.9, -7.6, 1.4, -3.5, 0.7, 5.6, -4.2, -1.1, -4.4,
     -6.3, -7.2, 4.6, -3.0, -0.9, 7.2, 2.5, -3.6, 6.1, -3.2, -2.1, 6.5, -0.4, -9.0, 2.3, 8.4, 4.0, -5.2, -9.0, 4.7, -3.7, -2.0, -9.5, -3.9, -3.6,
     7.1, 0.8, -0.6, 5.2, -9.3, -4.5, 5.9, 2.2, -5.8, 5.0, 1.2, -0.1, 2.2, 0.2, -7.7, 1.9, -8.4, 4.4, 2.3, -2.9, 6.7, 2.7, 5.8, -3.6, 8.9,
@@ -169,7 +170,8 @@ TEST_P(FFTTest1D, Complex)
     const int nx = GetParam();
     ASSERT_LE(nx*2, static_cast<int>(sizeof(inputdata)/sizeof(real)));
 
-    in_  = std::vector<real>(inputdata, inputdata+nx*2);
+    in_  = std::vector<real>(nx*2);
+    std::copy(inputdata, inputdata+nx*2, in_.begin());
     out_ = std::vector<real>(nx*2);
     real* in  = &in_[0];
     real* out = &out_[0];
