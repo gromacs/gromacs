@@ -377,7 +377,7 @@ bool MolProp::SearchCategory(const std::string &catname) const
 {
     for (auto &i : category_)
     {
-        if (strcasecmp(i.c_str(),catname.c_str()) == 0)
+        if (strcasecmp(i.c_str(), catname.c_str()) == 0)
         {
             return true;
         }
@@ -700,7 +700,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
 MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str)
 {
     return std::find_if(_mol_comp.begin(), _mol_comp.end(),
-                        [str](MolecularComposition const &mc) 
+                        [str](MolecularComposition const &mc)
                         { return (str.compare(mc.getCompName()) == 0); });
 }
 
@@ -949,7 +949,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
             }
             break;
         case MPO_POLARIZABILITY:
-            {
+        {
             for (auto mdp = BeginPolar(); !done && (mdp < EndPolar()); ++mdp)
             {
                 if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0)) &&
@@ -970,8 +970,8 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
                     done               = true;
                 }
             }
-            }
-            break;
+        }
+        break;
         case MPO_QUADRUPOLE:
             for (auto mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); ++mqi)
             {
@@ -1150,7 +1150,7 @@ ExperimentIterator MolProp::getLot(const char *lot)
     ExperimentIterator       ci;
 
     std::vector<std::string> ll = split(lot, '/');
-    if ((ll[0].length() > 0) && (ll[1].length() > 0))
+    if (ll.size() == 2 && (ll[0].length() > 0) && (ll[1].length() > 0))
     {
         bool done = false;
         for (ci = BeginExperiment(); (!done) && (ci < EndExperiment()); ci++)

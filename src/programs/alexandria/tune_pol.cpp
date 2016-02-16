@@ -216,7 +216,7 @@ static void dump_csv(const alexandria::Poldata        &pd,
                 if (pd.atypeToPtype(ani->getAtom(), ptype))
                 {
                     size_t i;
-                    for(i = 0; (i < ptypes.size()); i++)
+                    for (i = 0; (i < ptypes.size()); i++)
                     {
                         if (strcmp(ptype.c_str(), ptypes[i].name().c_str()) == 0)
                         {
@@ -257,7 +257,7 @@ static int decompose_frag(FILE *fplog,
                           alexandria::Poldata &pd,
                           std::vector<alexandria::MolProp> &mp,
                           gmx_bool bQM, char *lot,
-                          int mindata, 
+                          int mindata,
                           const alexandria::MolSelect &gms,
                           gmx_bool bZero, gmx_bool bForceFit,
                           int nBootStrap, real fractionBootStrap,
@@ -395,7 +395,7 @@ static int decompose_frag(FILE *fplog,
             pi->resetCopies();
 
             if ((1 == pd.getPtypePol( pi->name(),
-                                       &pol, &sig_pol)) &&
+                                      &pol, &sig_pol)) &&
                 ((pol == 0) || bForceFit))
             {
                 for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
@@ -628,7 +628,7 @@ int alex_tune_pol(int argc, char *argv[])
 {
     static const char                     *desc[] =
     {
-        "tune_pol optimes atomic polarizabilities that together build",
+        "tune_pol optimizes atomic polarizabilities that together build",
         "an additive model for polarization. The set of atomtypes used",
         "is determined by the input force field file ([TT]-di[tt] option). All",
         "atomtypes for which the polarizability is zero, and for which",
@@ -755,7 +755,7 @@ int alex_tune_pol(int argc, char *argv[])
             fprintf(debug, "\n");
         }
     }
-    alexandria::MolSelect gms;
+    alexandria::MolSelect    gms;
     gms.read(opt2fn("-sel", NFILE, fnm));
     FILE                    *fplog       = opt2FILE("-g", NFILE, fnm, "w");
     std::vector<std::string> zpol;

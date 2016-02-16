@@ -368,7 +368,7 @@ int alex_gentop(int argc, char *argv[])
     aps = gmx_atomprop_init();
 
     alexandria::Poldata pd;
-    try 
+    try
     {
         alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, aps);
     }
@@ -444,14 +444,14 @@ int alex_gentop(int argc, char *argv[])
     }
 
 
-    if ((immOK == imm)  && (eqgRESP == iChargeGenerationAlgorithm))
+    if ((immOK == imm)  && (eqgESP == iChargeGenerationAlgorithm))
     {
         mymol.gr_.setOptions(iChargeDistributionModel, seed,
                              bFitZeta, zmin, zmax, delta_z, bRandZeta,
                              mymol.molProp()->getCharge(), -3, 3, bRandQ, watoms);
         mymol.gr_.setBAXpRESP(bAXpRESP);
         mymol.gr_.setRDecrZeta(rDecrZeta);
-        mymol.gr_.setBEntropy(bEntropy); 
+        mymol.gr_.setBEntropy(bEntropy);
     }
 
     if (immOK == imm)

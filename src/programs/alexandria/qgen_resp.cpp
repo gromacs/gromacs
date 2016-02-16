@@ -116,6 +116,8 @@ void QgenResp::setOptions(ChargeDistributionModel c,
     _bRandZeta          = randomZeta;
     _rDecrZeta          = true;
 
+    uniqueQ_            = 0;
+    fitQ_               = 0;
     _qtot               = qtot;
     _qmin               = qmin;
     _qmax               = qmax; /* e */
@@ -141,28 +143,36 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
                            const rvec                 x[])
 {
+    // First add all the atom types
     for (int i = 0; (i < atoms->nr); i++)
     {
-        ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
-                               atoms->atom[i].type,
-                               0,
-                               x[i]));
+        // THIS is a hack
+        bool hasShell = ((i < atoms->nr-1) &&
+                         (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
+                         (atoms->atom[i].ptype == eptAtom) &&
+                         (atoms->atom[i+1].ptype == eptShell));
+
         if (findRAT(atoms->atom[i].type) == endRAT())
         {
             ratype_.push_back(RespAtomType(atoms->atom[i].type,
+                                           atoms->atom[i].ptype,
+                                           hasShell,
                                            *(atoms->atomtype[i]), pd,
                                            _iDistributionModel, _dzatoms));
         }
+    }
+    // Then add all the atoms
+    for (int i = 0; (i < atoms->nr); i++)
+    {
         // Now compute starting charge for atom, taking into account
         // the charges of the other "shells".
         RespAtomTypeIterator rat = findRAT(atoms->atom[i].type);
         GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
-        double               q = atoms->atom[i].q;
-        for (auto rz = rat->beginRZ(); rz < rat->endRZ(); ++rz)
-        {
-            q -= rz->q();
-        }
-        ra_.back().setCharge(q);
+        double               q = rat->beginRZ()->q();
+        ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
+                               atoms->atom[i].type,
+                               q,
+                               x[i]));
     }
 }
 
@@ -233,50 +243,51 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == nAtom(), "Please pass me a correct symmetric atoms vector");
 
     symmetricAtoms_ = symmetricAtoms;
-    /* Map the symmetric atoms */
+    uniqueQ_        = 0;
+    fitQ_           = 0;
     for (size_t i = 0; (i < nAtom()); i++)
     {
-        int                  atype = ra_[i].atype();
-        RespAtomTypeIterator rai   = findRAT(atype);
-        if (0 == i)
+        if (!ra_[i].fixedQ())
         {
-            /* The first charge is not a free variable, it follows from the
-             * total charge. Only add the zeta values here.
-             */
-            for (size_t zz = 0; (zz < rai->getNZeta()); zz++)
+            fitQ_ += 1;
+
+            if (symmetricAtoms_[i] == static_cast<int>(i))
             {
-                int iParam = addParam(atype, eparmZ, zz);
-                (rai->beginRZ()+zz)->setZindex(iParam);
+                uniqueQ_ += 1;
             }
         }
-        else if (symmetricAtoms[i] == static_cast<int>(i))
+    }
+    // TODO: warning:
+    if (0)
+    {
+        /* Map the symmetric atoms */
+        for (size_t i = 0; (i < nAtom()); i++)
         {
-            // We optimize at most 1 charge per atom, so use index 0
-            int iParam = addParam(i, eparmQ, 0);
-            ra_[i].setQindex(iParam);
-            // Check if we have this atype covered already
-            if (rai != ratype_.end())
+            int                  atype = ra_[i].atype();
+            RespAtomTypeIterator rai   = findRAT(atype);
+
+            if (symmetricAtoms[i] == static_cast<int>(i))
             {
-                // New atom type
-                for (size_t zz = 0; (zz < rai->getNZeta()); zz++)
+                // We optimize at most 1 charge per atom, so use index 0
+                if (!ra_[i].fixedQ())
                 {
-                    iParam = addParam(atype, eparmZ, zz);
-                    (rai->beginRZ()+zz)->setZindex(iParam);
+                    int iParam = addParam(i, eparmQ, 0);
+                    ra_[i].setQindex(iParam);
+                }
+                // Check if we have this atype covered already
+                if (rai != ratype_.end())
+                {
+                    // New atom type
+                    for (size_t zz = 0; (zz < rai->getNZeta()); zz++)
+                    {
+                        int iParam = addParam(atype, eparmZ, zz);
+                        (rai->beginRZ()+zz)->setZindex(iParam);
+                    }
                 }
             }
-        }
-        else if (symmetricAtoms[i] > static_cast<int>(i))
-        {
-            gmx_fatal(FARGS, "The symmetricAtoms array can not point to larger atom numbers");
-        }
-        else
-        {
-            // Symmetric atom
-            ra_[i].setQindex(ra_[symmetricAtoms[i]].qIndex());
-            if (debug)
+            else if (symmetricAtoms[i] > static_cast<int>(i))
             {
-                fprintf(debug, "Atom %d is a copy of atom %d\n",
-                        static_cast<int>(i+1), symmetricAtoms[i]+1);
+                gmx_fatal(FARGS, "The symmetricAtoms array can not point to larger atom numbers");
             }
         }
     }
@@ -292,23 +303,24 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
         }
 
         fprintf(debug, "GRQ: %3s %5s", "nr", "type");
-        fprintf(debug, " %8s %8s\n", "q", "zeta");
+        fprintf(debug, " %8s %8s %8s %8s\n", "q", "zeta", "q", "zeta");
         for (size_t i = 0; (i < nAtom()); i++)
         {
             int                  atype = ra_[i].atype();
             RespAtomTypeIterator rai   = findRAT(atype);
             fprintf(debug, "GRQ: %3d %5s", static_cast<int>(i+1),
                     rai->getAtomtype().c_str());
-            for (RowZetaQConstIterator zz = rai->beginRZ(); zz <  rai->endRZ(); ++zz)
+            for (auto zz = rai->beginRZ(); zz <  rai->endRZ(); ++zz)
             {
-                fprintf(debug, " %8.4f %8.4f\n",
-                        ra_[i].charge(), zz->zeta());
+                fprintf(debug, " %8.4f %8.4f", zz->q(), zz->zeta());
             }
             fprintf(debug, "\n");
         }
     }
-    printf("There are %d variables to optimize for %d atoms.\n",
-           static_cast<int>(nParam()), static_cast<int>(nAtom()));
+    fprintf(stderr, "There are %d variables to optimize for %d atoms. fitQ = %d uniqueQ = %d\n",
+            static_cast<int>(nParam()), static_cast<int>(nAtom()),
+            fitQ_, uniqueQ_);
+    GMX_RELEASE_ASSERT(fitQ_ > 0, "No charges to fit");
 }
 
 void QgenResp::writeHisto(const std::string      &fn,
@@ -698,7 +710,8 @@ void QgenResp::calcRho()
                     {
                         real z = k->zeta();
                         real q = k->q();
-                        if (k == rat->endRZ()-1)
+                        // TODO Check
+                        if (q == 0)
                         {
                             q = ra.charge();
                         }
@@ -748,7 +761,8 @@ void QgenResp::calcPot()
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
                     real q = k->q();
-                    if (k == rat->endRZ()-1)
+                    // TODO check
+                    if (q == 0)
                     {
                         q = ra.charge();
                     }
@@ -918,35 +932,30 @@ void QgenResp::potLsq(gmx_stats_t lsq)
 
 void QgenResp::calcRms()
 {
-    double pot2, s2, sum2, w, wtot, entropy;
-    char   buf[STRLEN];
+    double pot2, s2, sum2, entropy;
 
-    pot2 = sum2 = wtot = entropy = 0;
-    sprintf(buf, " - weight %g in fit", _watoms);
+    pot2 = sum2 = entropy = 0;
     for (size_t i = 0; (i < nEsp()); i++)
     {
-        w = myWeight(i);
         if ((NULL != debug) && (i < 4*nAtom()))
         {
-            fprintf(debug, "ESP %d QM: %g FIT: %g DIFF: %g%s\n",
+            fprintf(debug, "ESP %d QM: %g FIT: %g DIFF: %g\n",
                     static_cast<int>(i), _pot[i], _potCalc[i],
-                    _pot[i]-_potCalc[i],
-                    (i < nAtom())  ? buf : "");
+                    _pot[i]-_potCalc[i]);
         }
-        s2    = w*gmx::square(_pot[i]-_potCalc[i]);
+        s2    = gmx::square(_pot[i]-_potCalc[i]);
         if ((s2 > 0) && (_bEntropy))
         {
             entropy += s2*log(s2);
         }
         sum2 += s2;
-        pot2 += w*gmx::square(_pot[i]);
-        wtot += w;
+        pot2 += gmx::square(_pot[i]);
     }
-    _wtot = wtot;
-    if (wtot > 0)
+    _wtot = nEsp();
+    if (_wtot > 0)
     {
-        _rms     = gmx2convert(sqrt(sum2/wtot), eg2cHartree_e);
-        _entropy = gmx2convert(entropy/wtot, eg2cHartree_e);
+        _rms     = gmx2convert(sqrt(sum2/_wtot), eg2cHartree_e);
+        _entropy = gmx2convert(entropy/_wtot, eg2cHartree_e);
     }
     else
     {
@@ -982,7 +991,7 @@ double QgenResp::calcPenalty()
         real                 qi    = ra.charge();
         int                  atype = ra.atype();
         RespAtomTypeIterator rat   = findRAT(atype);
-        for (auto z = rat->beginRZ(); z < rat->endRZ()-1; ++z)
+        for (auto z = rat->beginRZ(); z < rat->endRZ(); ++z)
         {
             qi += z->q();
         }
@@ -1040,49 +1049,6 @@ void QgenResp::statistics(int len, char buf[])
     {
         fprintf(stderr, "buflen too small (%d) in gmx_resp_statistics\n", len);
     }
-}
-
-int my_mc(void                *data,
-          nm_target_func       func,
-          std::vector<double> &start,
-          int                  MAX_IT,
-          double              *chi2_final)
-{
-    gmx_rng_t           rnd      = gmx_rng_init(gmx_rng_make_seed());
-    real                chi2_min = func(data, start.data());
-    std::vector<double> best     = start;
-    real                chi2     = chi2_min;
-    real                beta     = 2;
-
-    for (int step = 0; step < MAX_IT; step++)
-    {
-        //printf("my_mc step %d chi2_min %g\n", step, chi2_min);
-        for (size_t np = 0; np < start.size(); np++)
-        {
-            real delta = 0.2*gmx_rng_uniform_real(rnd) - 0.1;
-            start[np] += delta;
-            real chi2_test = func(data, start.data());
-            if (chi2_test < chi2_min)
-            {
-                best     = start;
-                chi2     = chi2_test;
-                chi2_min = chi2_test;
-            }
-            else if (chi2_test < chi2 ||
-                     exp(-beta*(chi2_test/chi2-1)) < gmx_rng_uniform_real(rnd))
-            {
-                chi2 = chi2_test;
-            }
-            else
-            {
-                start[np] -= delta;
-            }
-        }
-    }
-    start       = best;
-    *chi2_final = chi2_min;
-
-    return true;
 }
 
 void LeastSquaresFit(int      ncolumn,
@@ -1192,198 +1158,195 @@ void LeastSquaresFit(int      ncolumn,
     free_matrix(aTa);
 }
 
-int QgenResp::optimizeCharges(int maxiter, real *rms)
+int QgenResp::optimizeZeta(int maxiter, real *rms)
 {
-    if (_bFitZeta)
+    std::vector<double> param;
+    double              ccc;
+    int                 bConv;
+    char                buf[STRLEN];
+
+    param.resize(nParam(), 0);
+    setVector(param.data());
+
+    // This has to be reimplemented in a way that the chargeFunction
+    // calls optimizeCharges to fit the charges, while the nmsimplex
+    // only tunes the zeta.
+    real toler = 1e-8;
+    bConv = nmsimplex(debug, (void *)this, chargeFunction,
+                      param.data(), nParam(),
+                      toler, 1, maxiter, &ccc);
+    if (bConv)
     {
-        std::vector<double> param;
-        double              ccc;
-        int                 bConv;
-        char                buf[STRLEN];
-
-        param.resize(nParam(), 0);
-        setVector(param.data());
-
-        //    bConv = nmsimplex(fp, (void *)this, chargeFunction,
-        //                param.data(), nParam(),
-        //                toler, 1, maxiter, &ccc);
-        bConv = my_mc((void *)this, chargeFunction,
-                      param, maxiter, &ccc);
-        if (bConv)
-        {
-            statistics(STRLEN-1, buf);
-        }
-        else
-        {
-            printf("NM Simplex did not converge\n\n");
-        }
-
-        if (_bEntropy)
-        {
-            *rms = _entropy;
-        }
-        else
-        {
-            *rms = _rms;
-        }
-
-        getVector(param.data());
-
-        if (bConv)
-        {
-            return eQGEN_OK;
-        }
-        else
-        {
-            return eQGEN_NOTCONVERGED;
-        }
+        statistics(STRLEN-1, buf);
     }
     else
     {
-        int nrow      = nEsp();
-        // Increase number of rows for the symmetric atoms. E.g.
-        // if we know that atoms 2, 3 and 4 have the same charge we
-        // add two equation q2 - q3 = 0 and q2 - q4 = 0.
-        // An extra row is needed to fix the total charge but this
-        // is taken into account in raparam_ already, that is it has
-        // at least one less charge parameter than there are atoms.
-        int nqparm = std::count_if(raparam_.begin(), raparam_.end(),
-                                   [](RespParam const &rp)
-                                   { return (rp.eParam() == eparmQ); });
-        nrow    += nAtom() - nqparm;
-        int ncolumn  = nAtom();
-        int j0       = 0;
-        if (_watoms == 0)
-        {
-            j0    = nAtom();
-            nrow -= nAtom();
-        }
-        double            **a = alloc_matrix(nrow, ncolumn);
-        std::vector<double> rhs;
+        printf("NM Simplex did not converge\n\n");
+    }
 
-        for (size_t j = j0; j < nEsp(); j++)
-        {
-            rhs.push_back(_pot[j]);
-        }
+    if (_bEntropy)
+    {
+        *rms = _entropy;
+    }
+    else
+    {
+        *rms = _rms;
+    }
 
-        for (size_t i = 0; i < nAtom(); i++)
-        {
-            int                  atype = ra_[i].atype();
-            RespAtomTypeIterator rat   = findRAT(atype);
-            RVec                 rx    = ra_[i].x();
+    getVector(param.data());
 
-            for (size_t j = j0; j < nEsp(); j++)
+    if (bConv)
+    {
+        return eQGEN_OK;
+    }
+    else
+    {
+        return eQGEN_NOTCONVERGED;
+    }
+}
+
+void QgenResp::optimizeCharges()
+{
+    // Increase number of rows for the symmetric atoms. E.g.
+    // if we know that atoms 2, 3 and 4 have the same charge we
+    // add two equation q2 - q3 = 0 and q2 - q4 = 0.
+    // An extra row is needed to fix the total charge.
+    int                 nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
+    int                 ncolumn  = fitQ_;
+
+    double            **a = alloc_matrix(nrow, ncolumn);
+    std::vector<double> rhs;
+
+    for (size_t j = 0; j < nEsp(); j++)
+    {
+        rhs.push_back(_pot[j]);
+    }
+
+    int i = 0;
+    for (size_t ii = 0; ii < nAtom(); ii++)
+    {
+        int                  atype = ra_[ii].atype();
+        RespAtomTypeIterator rat   = findRAT(atype);
+        RVec                 rx    = ra_[ii].x();
+
+        for (size_t j = 0; j < nEsp(); j++)
+        {
+            rvec dx;
+            for (int m = 0; m < DIM; m++)
             {
-                rvec dx;
-                for (int m = 0; m < DIM; m++)
+                dx[m] = _esp[j][m] - rx[m];
+            }
+            double r   = norm(dx);
+            double r_1 = 0;
+            if (r > 0)
+            {
+                r_1 = 1.0/r;
+            }
+            for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+            {
+                double pot = 0;
+                switch (_iDistributionModel)
                 {
-                    dx[m] = _esp[j][m] - rx[m];
+                    case eqdAXp:
+                        pot = r_1;
+                        break;
+                    case eqdAXg:
+                        pot = Nuclear_GG(r, k->zeta());
+                        break;
+                    case eqdAXs:
+                        pot = Nuclear_SS(r, k->row(), k->zeta());
+                        break;
+                    default:
+                        gmx_fatal(FARGS, "Go to jail. Don't go through start.");
                 }
-                double r   = norm(dx);
-                double r_1 = 0;
-                if (r > 0)
+                if (k->fixedQ())
                 {
-                    r_1 = 1.0/r;
+                    double q = k->q();
+                    rhs[j] -= q*pot*ONE_4PI_EPS0;
                 }
-                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
+                else
                 {
-                    double pot = 0;
-                    switch (_iDistributionModel)
-                    {
-                        case eqdAXp:
-                            pot = r_1;
-                            break;
-                        case eqdAXg:
-                            pot = Nuclear_GG(r, k->zeta());
-                            break;
-                        case eqdAXs:
-                            pot = Nuclear_SS(r, k->row(), k->zeta());
-                            break;
-                        default:
-                            gmx_fatal(FARGS, "Go to jail. Don't go throw start.");
-                    }
-                    if (k < rat->endRZ() - 1)
-                    {
-                        rhs[j-j0] -= k->q()*pot*ONE_4PI_EPS0;
-                    }
-                    else
-                    {
-                        a[j-j0][i] += pot*ONE_4PI_EPS0;
-                    }
+                    a[j][i] += pot*ONE_4PI_EPS0;
                 }
-                if (i == 0 && j < 4*nAtom() && debug)
-                {
-                    fprintf(debug, "j = %d r = %g AJI = %g dx = %g %g %g\n",
-                            static_cast<int>(j), r, a[j-j0][i], dx[XX], dx[YY], dx[ZZ]);
-                }
-
+            }
+            if (i == 0 && j < 4*nAtom() && debug)
+            {
+                fprintf(debug, "j = %d r = %g AJI = %g dx = %g %g %g\n",
+                        static_cast<int>(j), r, a[j][i], dx[XX], dx[YY], dx[ZZ]);
             }
         }
-        // Add the equations to assure symmetric charges
-        int    j1     = nEsp() - j0;
-        double factor = 1000000;
-        for (int i = 0; i < static_cast<int>(nAtom()); i++)
+        if (!ra_[ii].fixedQ())
         {
-            if (symmetricAtoms_[i] < i)
-            {
-                a[j1][i]                  =  factor;
-                a[j1][symmetricAtoms_[i]] = -factor;
-                rhs.push_back(0);
-                j1++;
-            }
+            i++;
         }
-        GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()), "Inconsistency adding equations for symmetric charges");
-        GMX_RELEASE_ASSERT(j1 == nrow-1, "Something fishy adding equations for symmetric charges");
-        // Use the last row for the total charge
-        double qtot = 0;
-        for (size_t i = 0; i < nAtom(); i++)
+    }
+    // Add the equations to ascertain symmetric charges
+    int    j1     = nEsp();
+    double factor = 1000.0;
+    for (int i = 0; i < static_cast<int>(nAtom()); i++)
+    {
+        if (symmetricAtoms_[i] < i)
         {
-            a[nrow-1][i] = factor;
-            int                  atype = ra_[i].atype();
-            RespAtomTypeIterator rat   = findRAT(atype);
-            for (auto k = rat->beginRZ(); k < rat->endRZ() -1; ++k)
-            {
-                qtot += k->q();
-            }
+            a[j1][i]                  =  factor;
+            a[j1][symmetricAtoms_[i]] = -factor;
+            rhs.push_back(0);
+            j1++;
         }
-        //        for(size_t j = j0; j < nEsp(); j++)
-        //{
-        //    a[j-j0][ncolumn-1] = -1;
-        //}
-        rhs.push_back(factor* (_qtot - qtot));
-        if (debug)
+    }
+    GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()),
+                       "Inconsistency adding equations for symmetric charges");
+    GMX_RELEASE_ASSERT(j1 == nrow-1,
+                       "Something fishy adding equations for symmetric charges");
+    // Use the last row for the total charge
+    double qtot = 0;
+    i           = 0;
+    for (size_t ii = 0; ii < nAtom(); ii++)
+    {
+        a[nrow-1][i] = factor;
+        int                  atype = ra_[ii].atype();
+        RespAtomTypeIterator rat   = findRAT(atype);
+        for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
         {
-            for (int i = 0; i < nrow; i++)
-            {
-                fprintf(debug, "ROW");
-                for (int j = 0; j < ncolumn; j++)
-                {
-                    fprintf(debug, "  %8g", a[i][j]);
-                }
-                fprintf(debug, "  %8g\n", rhs[i]);
-            }
+            qtot += k->q();
         }
-        double  *x;
-        snew(x, ncolumn);
-        LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
-        for (size_t i = 0; i < nAtom(); i++)
+        if (!ra_[ii].fixedQ())
         {
-            ra_[i].setCharge(x[i]);
+            i++;
+        }
+    }
+    rhs.push_back(factor * (_qtot - qtot));
+
+    if (debug)
+    {
+        for (int i = 0; i < nrow; i++)
+        {
+            fprintf(debug, "ROW");
+            for (int j = 0; j < ncolumn; j++)
+            {
+                fprintf(debug, "  %8g", a[i][j]);
+            }
+            fprintf(debug, "  %8g\n", rhs[i]);
+        }
+    }
+    double  *x;
+    snew(x, ncolumn);
+    LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
+    i = 0;
+    for (size_t ii = 0; ii < nAtom(); ii++)
+    {
+        if (!ra_[ii].fixedQ())
+        {
+            ra_[ii].setCharge(x[i]);
             if (debug)
             {
                 fprintf(debug, "Q[%d] = %g\n", static_cast<int>(i), x[i]);
             }
+            i++;
         }
-        sfree(x);
-
-        free_matrix(a);
-        calcPot();
-        real rrms, wtot;
-        real rms = getRms(&wtot, &rrms);
-        printf("RESP: RMS %g RRMS %g\n", rms, rrms);
-
-        return eQGEN_OK;
     }
+    sfree(x);
+
+    free_matrix(a);
 }
 
 void QgenResp::potcomp(const std::string      &potcomp,
@@ -1436,11 +1399,15 @@ double QgenResp::getAtomCharge(int atom) const
 {
     range_check(atom, 0, nAtom());
     double                    q     = ra_[atom].charge();
-    int                       atype = ra_[atom].atype();
-    RespAtomTypeConstIterator rat   = findRAT(atype);
-    for (auto z = rat->beginRZ(); z < rat->endRZ()-1; ++z)
+    // TODO Check
+    if (1)
     {
-        q += z->q();
+        int                       atype = ra_[atom].atype();
+        RespAtomTypeConstIterator rat   = findRAT(atype);
+        for (auto z = rat->beginRZ()+1; z < rat->endRZ(); ++z)
+        {
+            q += z->q();
+        }
     }
     return q;
 }
@@ -1451,7 +1418,7 @@ double QgenResp::getCharge(int atom, size_t zz) const
     double                    q     = ra_[atom].charge();
     int                       atype = ra_[atom].atype();
     RespAtomTypeConstIterator rat   = findRAT(atype);
-    if (zz < rat->getNZeta()-1)
+    if (zz < rat->getNZeta())
     {
         q = (rat->beginRZ()+zz)->q();
     }

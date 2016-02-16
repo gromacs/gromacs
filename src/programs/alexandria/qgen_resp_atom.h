@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -16,10 +50,12 @@ namespace alexandria
 class RespAtomType
 {
     public:
-        RespAtomType(int atype,
-                     const char *atomtype, 
-                     const Poldata &pd,
-                     ChargeDistributionModel iDistributionModel,
+        RespAtomType(int                             atype,
+                     int                             particleType,
+                     bool                            hasShell,
+                     const char                     *atomtype,
+                     const Poldata                  &pd,
+                     ChargeDistributionModel         iDistributionModel,
                      const std::vector<std::string> &dzatoms);
 
         size_t getNZeta() const { return rz_.size(); }
@@ -27,13 +63,13 @@ class RespAtomType
         const std::string &getAtomtype() const { return atomtype_; }
 
         void setAtomtype(const std::string &type) { atomtype_ = type; }
-        
+
         bool getBRestrained() const { return bRestrained_; }
 
         int getAtype() const { return atype_; }
 
         void setAtype(int i) { atype_ = i; }
-        
+
         RowZetaQIterator beginRZ() { return rz_.begin(); }
 
         RowZetaQIterator endRZ() { return rz_.end(); }
@@ -42,7 +78,7 @@ class RespAtomType
 
         RowZetaQConstIterator endRZ() const { return rz_.end(); }
 
- private:
+    private:
         //! Atom type index
         int                   atype_;
         //! Signify whether this charge should be restrained during fitting
@@ -62,11 +98,14 @@ typedef std::vector<RespAtomType>::const_iterator RespAtomTypeConstIterator;
 class RespAtom
 {
     public:
-    RespAtom(int atomnumber, int atype, double q, gmx::RVec x) 
-     : atomnumber_(atomnumber), atype_(atype), q_(q), x_(x) 
-    { qindex_ = -1; }
+        RespAtom(int atomnumber, int atype, double q, gmx::RVec x)
+            : atomnumber_(atomnumber), atype_(atype), q_(q), x_(x)
+        {
+            qindex_ = -1;
+            fixedQ_ = (q != 0);
+        }
 
-    //! Return the atom type
+        //! Return the atom type
         int atype() const { return atype_; }
 
         //! Set the atom type
@@ -78,21 +117,28 @@ class RespAtom
         //! Set the atomic number
         void setAtomnumber(int i) { atomnumber_ = i; }
 
+        //! Return whether this charge is fixed
+        bool fixedQ() const { return fixedQ_; }
+
         //! Return the charge
         double charge() const { return q_; }
 
         //! Set the charge
-        void setCharge(double value) { q_ = value; }
-        
+        void setCharge(double value)
+        {
+            GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
+            q_ = value;
+        }
+
         //! Return the coordinates
         const gmx::RVec &x() const { return x_; }
-    
+
         //! Set the coordinates
         void setX(const gmx::RVec &x) { x_ = x; }
-        
+
         //! Return the charge index in parameterization array
         int qIndex() const { return qindex_; }
-        
+
         //! Set the charge index
         void setQindex(int qi) { qindex_ = qi; }
     private:
@@ -106,6 +152,8 @@ class RespAtom
         gmx::RVec x_;
         //! Index in parameterization array
         int       qindex_;
+        //! Tells us whether this charge is fixed
+        bool      fixedQ_;
 };
 //! Let's loop over RespAtoms, shall we?
 typedef std::vector<RespAtom>::iterator RespAtomIterator;
@@ -116,30 +164,30 @@ typedef std::vector<RespAtom>::const_iterator RespAtomConstIterator;
 //! Optimizable entities
 enum eParm {
     //! Optimize charge
-    eparmQ, 
+    eparmQ,
     //! Optimize zeta
-    eparmZ 
+    eparmZ
 };
 
 class RespParam
 {
- public:
-    RespParam(eParm eparm, size_t aindex, size_t zindex) : 
-    eparm_(eparm), aindex_(aindex), zindex_(zindex) {}
- 
-    eParm eParam() const { return eparm_; }
-    
-    size_t aIndex() const { return aindex_; }
-    
-    size_t zIndex() const { return zindex_; }
-    
- private:
-    //! Type of parameter
-    eParm  eparm_;
-    //! Atom index (for charges) or atype index (for zeta)
-    size_t aindex_;
-    //! Zeta index (in the RespAtomType) in case we're optimizing zeta
-    size_t zindex_;
+    public:
+        RespParam(eParm eparm, size_t aindex, size_t zindex) :
+            eparm_(eparm), aindex_(aindex), zindex_(zindex) {}
+
+        eParm eParam() const { return eparm_; }
+
+        size_t aIndex() const { return aindex_; }
+
+        size_t zIndex() const { return zindex_; }
+
+    private:
+        //! Type of parameter
+        eParm  eparm_;
+        //! Atom index (for charges) or atype index (for zeta)
+        size_t aindex_;
+        //! Zeta index (in the RespAtomType) in case we're optimizing zeta
+        size_t zindex_;
 };
 
 //! Looking for the right Resp parameters? Here to help.

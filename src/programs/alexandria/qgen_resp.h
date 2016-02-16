@@ -189,8 +189,14 @@ class QgenResp
                         const std::string      &title,
                         const gmx_output_env_t *oenv);
 
-        int  optimizeCharges(int   maxiter,
-                             real *rms);
+        /*!  brief Do the ESP optimization
+         *
+         * Optimizes the charges using matrix inversion. No restraints are
+         * taken into account.
+         */
+        void optimizeCharges();
+
+        int optimizeZeta(int maxiter, real *rms);
 
         void potcomp(const std::string      &potcomp,
                      const std::string      &pdbdiff,
@@ -199,6 +205,14 @@ class QgenResp
         //! Return the net charge for an atom
         double getAtomCharge(int atom) const;
 
+        double calcPenalty();
+
+        void getVector(double *params);
+
+        real myWeight(size_t iatom) const;
+
+    private:
+        void setVector(double *params);
         //! Return the charge for one "shell" of an atom
         double getCharge(int atom, size_t zz) const;
 
@@ -207,13 +221,6 @@ class QgenResp
         void setCharge(int atom, int zz, double q);
 
         void setZeta(int atom, int zz, double zeta);
-
-        double calcPenalty();
-
-        void getVector(double *params);
-
-    private:
-        void setVector(double *params);
 
         ChargeDistributionModel   _iDistributionModel;
         double                    _qtot, _watoms;
@@ -225,6 +232,8 @@ class QgenResp
         ivec                      _nxyz;
         real                      _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
         gmx_rng_t                 rnd_;
+        int                       uniqueQ_;
+        int                       fitQ_;
 
         //! Total number of parameters
         std::vector<RespAtom>     ra_;
@@ -237,8 +246,6 @@ class QgenResp
         std::vector<int>          symmetricAtoms_;
 
         void warning(const std::string fn, int line);
-
-        real myWeight(size_t iatom) const;
 
         /*! \brief Adds a parameter to the optimization list
          *

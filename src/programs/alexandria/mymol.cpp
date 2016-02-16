@@ -157,7 +157,7 @@ void MyMol::getForceConstants(const Poldata &pd)
                     if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
                         pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj))
                     {
-                        int ntrain;
+                        int    ntrain;
                         double bo = 0;
                         if (!pd.searchBond(cai, caj,
                                            &xx, &sx, &ntrain, &bo, params))
@@ -342,11 +342,11 @@ static void cp_plist(t_params plist[], int ftype,
         for (int i = 0; (i < plist[ftype].nr); i++)
         {
             // Clean up potentially not initialized values.
-            for(int j = interaction_function[ftype].nratoms; j < MAXATOMLIST; j++)
+            for (int j = interaction_function[ftype].nratoms; j < MAXATOMLIST; j++)
             {
                 plist[ftype].param[i].a[j] = 0;
             }
-            for(int j = interaction_function[ftype].nrfpA; j < MAXFORCEPARAM; j++)
+            for (int j = interaction_function[ftype].nrfpA; j < MAXFORCEPARAM; j++)
             {
                 plist[ftype].param[i].c[j] = NOTSET;
             }
@@ -374,11 +374,11 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
             {
                 //t_param *src = &(*pi);
                 //cp_param(&(plist[F_BONDS].param[i]), pi);
-                for(int j = 0; j < MAXATOMLIST; j++)
+                for (int j = 0; j < MAXATOMLIST; j++)
                 {
                     plist[F_BONDS].param[i].a[j] = pi->a[j];
                 }
-                for(int j = 0; j < MAXFORCEPARAM; j++)
+                for (int j = 0; j < MAXFORCEPARAM; j++)
                 {
                     plist[F_BONDS].param[i].c[j] = pi->c[j];
                 }
@@ -399,7 +399,7 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl = nexcl_;
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
-    
+
     t_blocka *EXCL;
     snew(EXCL, 1);
     generate_excl(nexcl_, topology_->atoms.nr, plist, &nnb, EXCL);
@@ -416,7 +416,7 @@ void MyMol::MakeAngles(bool bPairs, bool bDihs)
             }
         }
         // Set the rest of the memory to zero
-        for(int j = excls_[i].nr; j < ne; j++)
+        for (int j = excls_[i].nr; j < ne; j++)
         {
             excls_[i].e[j] = 0;
         }
@@ -501,18 +501,18 @@ static void generate_nbparam(int ftype, int comb, double ci[], double cj[],
 static std::vector<double> getDoubles(const std::string &s)
 {
     std::vector<double> d;
-    
-    for(auto &ss : gmx::splitString(s))
+
+    for (auto &ss : gmx::splitString(s))
     {
         d.push_back(atof(ss.c_str()));
-    } 
+    }
     return d;
 }
 
-static void getLjParams(const Poldata     &pd, 
-                        const std::string &ai, 
+static void getLjParams(const Poldata     &pd,
+                        const std::string &ai,
                         const std::string &aj,
-                        double            *c6, 
+                        double            *c6,
                         double            *cn)
 {
     auto fai = pd.findAtype(ai);
@@ -522,14 +522,14 @@ static void getLjParams(const Poldata     &pd,
     std::vector<double> vdwi = getDoubles(fai->getVdwparams());
     std::vector<double> vdwj = getDoubles(faj->getVdwparams());
     GMX_RELEASE_ASSERT(vdwi.size() == 2 && vdwj.size() == 2, "Inconsistent number of parameters for Van der Waals");
-    
-    switch(pd.getCombRule())
+
+    switch (pd.getCombRule())
     {
-    case eCOMB_GEOMETRIC:
-        *c6 = std::sqrt((vdwi[0]) * (vdwj[0]));
-        *cn = std::sqrt((vdwi[1]) * (vdwj[1]));
-        break;
-    case eCOMB_ARITHMETIC:
+        case eCOMB_GEOMETRIC:
+            *c6 = std::sqrt((vdwi[0]) * (vdwj[0]));
+            *cn = std::sqrt((vdwi[1]) * (vdwj[1]));
+            break;
+        case eCOMB_ARITHMETIC:
         {
             double sig  = 0.5 * ((vdwi[0]) + (vdwj[0]));
             double eps  = std::sqrt((vdwi[1]) + (vdwj[1]));
@@ -538,7 +538,7 @@ static void getLjParams(const Poldata     &pd,
             *cn = *c6 * sig6;
         }
         break;
-    case eCOMB_GEOM_SIG_EPS: 
+        case eCOMB_GEOM_SIG_EPS:
         {
             double sig  = std::sqrt((vdwi[0]) * (vdwj[0]));
             double eps  = std::sqrt((vdwi[1]) * (vdwj[1]));
@@ -547,17 +547,17 @@ static void getLjParams(const Poldata     &pd,
             *cn = *c6 * sig6;
         }
         break;
-    case eCOMB_NONE:
-    case eCOMB_NR:
-        gmx_fatal(FARGS, "Unsupported combination rule for Lennard Jones");
+        case eCOMB_NONE:
+        case eCOMB_NR:
+            gmx_fatal(FARGS, "Unsupported combination rule for Lennard Jones");
     }
 }
 
-static void getBhamParams(const Poldata     &pd, 
-                          const std::string &ai, 
+static void getBhamParams(const Poldata     &pd,
+                          const std::string &ai,
                           const std::string &aj,
-                          double            *a, 
-                          double            *b, 
+                          double            *a,
+                          double            *b,
                           double            *c)
 {
     auto fai = pd.findAtype(ai);
@@ -567,19 +567,19 @@ static void getBhamParams(const Poldata     &pd,
     std::vector<double> vdwi = getDoubles(fai->getVdwparams());
     std::vector<double> vdwj = getDoubles(faj->getVdwparams());
     GMX_RELEASE_ASSERT(vdwi.size() == 3 && vdwj.size() == 3, "Inconsistent number of parameters for Van der Waals");
-    
-    switch(pd.getCombRule())
+
+    switch (pd.getCombRule())
     {
-    case eCOMB_GEOMETRIC:
-        *a = std::sqrt((vdwi[0]) * (vdwj[0]));
-        *b = std::sqrt((vdwi[1]) * (vdwj[1]));
-        *c = std::sqrt((vdwi[2]) * (vdwj[2]));
-        break;
-    case eCOMB_ARITHMETIC:
-    case eCOMB_GEOM_SIG_EPS: 
-    case eCOMB_NONE:
-    case eCOMB_NR:
-        gmx_fatal(FARGS, "Unsupported combination rule for Buckingham");
+        case eCOMB_GEOMETRIC:
+            *a = std::sqrt((vdwi[0]) * (vdwj[0]));
+            *b = std::sqrt((vdwi[1]) * (vdwj[1]));
+            *c = std::sqrt((vdwi[2]) * (vdwj[2]));
+            break;
+        case eCOMB_ARITHMETIC:
+        case eCOMB_GEOM_SIG_EPS:
+        case eCOMB_NONE:
+        case eCOMB_NR:
+            gmx_fatal(FARGS, "Unsupported combination rule for Buckingham");
     }
 }
 
@@ -599,7 +599,7 @@ static void do_init_mtop(const Poldata &pd,
     mtop_->molblock[0].type        = 0;
     mtop_->molblock[0].natoms_mol  = atoms->nr;
     mtop_->groups.grps[egcENER].nr = 1;
-    
+
     mtop_->natoms = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
 
@@ -636,28 +636,28 @@ static void do_init_mtop(const Poldata &pd,
             switch (vdw_type)
             {
                 case F_LJ:
-                    {
-                        double c6, c12;
-                        getLjParams(pd, 
-                                    *(atoms->atomtype[i]), 
-                                    *(atoms->atomtype[j]), 
-                                    &c6, &c12);
-                        mtop_->ffparams.iparams[idx].lj.c6  = c6;
-                        mtop_->ffparams.iparams[idx].lj.c12 = c12;
-                    }
-                    break;
-            case F_BHAM:
-                    {
-                        double a, b, c;
-                        getBhamParams(pd, 
-                                      *(atoms->atomtype[i]),
-                                      *(atoms->atomtype[j]),
-                                      &a, &b, &c);
-                        mtop_->ffparams.iparams[idx].bham.a = a;
-                        mtop_->ffparams.iparams[idx].bham.b = b;
-                        mtop_->ffparams.iparams[idx].bham.c = c;
-                    }
-                    break;
+                {
+                    double c6, c12;
+                    getLjParams(pd,
+                                *(atoms->atomtype[i]),
+                                *(atoms->atomtype[j]),
+                                &c6, &c12);
+                    mtop_->ffparams.iparams[idx].lj.c6  = c6;
+                    mtop_->ffparams.iparams[idx].lj.c12 = c12;
+                }
+                break;
+                case F_BHAM:
+                {
+                    double a, b, c;
+                    getBhamParams(pd,
+                                  *(atoms->atomtype[i]),
+                                  *(atoms->atomtype[j]),
+                                  &a, &b, &c);
+                    mtop_->ffparams.iparams[idx].bham.a = a;
+                    mtop_->ffparams.iparams[idx].bham.b = b;
+                    mtop_->ffparams.iparams[idx].bham.c = c;
+                }
+                break;
                 default:
                     fprintf(stderr, "Invalid van der waals type %s\n",
                             pd.getVdwFunction().c_str());
@@ -677,7 +677,7 @@ static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     if (blocka->nr < natom)
     {
         srenew(blocka->index, natom+1);
-        for(int i = blocka->nr; i < natom+1; i++)
+        for (int i = blocka->nr; i < natom+1; i++)
         {
             blocka->index[i] = 0;
         }
@@ -721,13 +721,13 @@ static void plist_to_mtop(const Poldata             &pd,
     }
     srenew(mtop_->ffparams.functype, nfptot);
     srenew(mtop_->ffparams.iparams, nfptot);
-    for(int i = mtop_->ffparams.ntypes; i < nfptot; i++)
+    for (int i = mtop_->ffparams.ntypes; i < nfptot; i++)
     {
         mtop_->ffparams.functype[i] = 0;
         memset(&mtop_->ffparams.iparams[i], 0, sizeof(mtop_->ffparams.iparams[i]));
     }
 
-    for (auto & pw : plist)
+    for (auto &pw : plist)
     {
         int nra    = NRAL(pw.getFtype());
         int nrfp   = NRFPA(pw.getFtype());
@@ -739,7 +739,7 @@ static void plist_to_mtop(const Poldata             &pd,
         {
             std::vector<real> c;
             c.resize(MAXFORCEPARAM, 0);
-            int  l = 0;
+            int               l = 0;
             if (pw.getFtype() == F_LJ14)
             {
                 int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
@@ -1020,14 +1020,14 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
 immStatus MyMol::checkAtoms(const Poldata &pd)
 {
     int nmissing = 0;
-    
-    for(int i = 0; i < topology_->atoms.nr; i++)
+
+    for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        const std::string atype(*topology_->atoms.atomtype[i]);
+        const std::string    atype(*topology_->atoms.atomtype[i]);
         FfatypeConstIterator fa = pd.findAtype(atype);
         if (fa == pd.getAtypeEnd())
         {
-            printf("Could not find a force field entry for atomtype %s atom %d\n", 
+            printf("Could not find a force field entry for atomtype %s atom %d\n",
                    *topology_->atoms.atomtype[i], i+1);
             nmissing++;
         }
@@ -1154,14 +1154,15 @@ void MyMol::CalcMultipoles()
     dip_calc = norm(mu);
 }
 
-immStatus MyMol::GenerateCharges(const Poldata &pd,
-                                 gmx_atomprop_t ap,
-                                 ChargeDistributionModel iChargeDistributionModel,
-                                 ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                                 real hfac, real epsr,
-                                 const char *lot,
-                                 bool bSymmetricCharges,
-                                 const char *symm_string)
+immStatus MyMol::GenerateCharges(const Poldata             &pd,
+                                 gmx_atomprop_t             ap,
+                                 ChargeDistributionModel    iChargeDistributionModel,
+                                 ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
+                                 real                       hfac,
+                                 real                       epsr,
+                                 const char                *lot,
+                                 bool                       bSymmetricCharges,
+                                 const char                *symm_string)
 {
     immStatus imm       = immOK;
     real      tolerance = 1e-8;
@@ -1182,14 +1183,14 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
     /* Check which algorithm to use for charge generation */
     switch (iChargeGenerationAlgorithm)
     {
-    case eqgNONE:
-        printf("Using zero charges!\n");
-        for (int i = 0; (i < topology_->atoms.nr); i++)
-        {
-            topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
-        }
-        return immOK;
-    case eqgRESP:
+        case eqgNONE:
+            printf("Using zero charges!\n");
+            for (int i = 0; (i < topology_->atoms.nr); i++)
+            {
+                topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
+            }
+            return immOK;
+        case eqgESP:
         {
             gr_.setAtomInfo(&topology_->atoms, pd, x_);
             gr_.setAtomSymmetry(symmetric_charges_);
@@ -1197,14 +1198,16 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
             /* Even if we get the right LoT it may still not have
              * the ESP
              */
-            ExperimentIterator ci = molProp()->getLotPropType(lot,
-                                                              MPO_POTENTIAL,
-                                                              NULL);
+            auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, NULL);
             if (ci != molProp()->EndExperiment())
             {
-                for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)
+                size_t iesp = 0;
+                for (auto epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi, ++iesp)
                 {
-                    /* Maybe not convert to gmx ? */
+                    if (gr_.myWeight(iesp) == 0)
+                    {
+                        continue;
+                    }
                     int xu = string2unit(epi->getXYZunit().c_str());
                     int vu = string2unit(epi->getVunit().c_str());
                     if (-1 == xu)
@@ -1223,25 +1226,29 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
                 printf("Added %d ESP points to the RESP structure.\n",
                        static_cast<int>(gr_.nEsp()));
             }
-            real chi2    = 0;
-            gr_.optimizeCharges(maxiter, &chi2);
-            for(int i = 0; i < topology_->atoms.nr; i++)
+            gr_.optimizeCharges();
+            gr_.calcPot();
+            real rrms, wtot;
+            real rms = gr_.getRms(&wtot, &rrms);
+            printf("RESP: RMS %g RRMS %g\n", rms, rrms);
+
+            for (int i = 0; i < topology_->atoms.nr; i++)
             {
-                topology_->atoms.atom[i].q = 
+                topology_->atoms.atom[i].q      =
                     topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
             }
 
         }
         break;
-    case eqgEEM:
+        case eqgEEM:
         {
             QgenEem qgen(pd, &topology_->atoms, x_,
                          iChargeDistributionModel,
                          hfac, molProp()->getCharge(), epsr);
-                            
+
             if (eQGEN_OK != qgen.generateCharges(NULL,
                                                  molProp()->getMolname().c_str(),
-                                                 pd, &topology_->atoms, 
+                                                 pd, &topology_->atoms,
                                                  tolerance,
                                                  maxiter))
             {
@@ -1249,10 +1256,10 @@ immStatus MyMol::GenerateCharges(const Poldata &pd,
             }
         }
         break;
-    case eqgESP:
-    default:
-        gmx_fatal(FARGS, "Not implemented ESP");
-        break;
+        case eqgRESP:
+        default:
+            gmx_fatal(FARGS, "Not implemented RESP");
+            break;
     }
 
     return imm;
@@ -2026,17 +2033,17 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
         char      buf[256];
         char     *gentop_version = (char *)"v0.99b";
         QgenResp  grref;
-        
+
         gr_.potcomp(pcfn, pdbdifffn, oenv);
-    
+
         /* This has to be done before the grid is f*cked up by
            writing a cube file */
         grref = gr_;
-        
+
         sprintf(buf, "Potential generated by %s based on %s charges",
                 gentop_version,
                 getEemtypeName(iChargeDistributionModel));
-        
+
         if (NULL != difffn)
         {
             grref.setAtomInfo(&topology_->atoms, pd, x_);
@@ -2071,7 +2078,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
             sprintf(buf, "Potential difference generated by %s based on %s charges",
                     gentop_version,
                     getEemtypeName(iChargeDistributionModel));
-            
+
             gr_.writeDiffCube(grref, difffn, diffhistfn, buf, oenv, 0);
         }
     }

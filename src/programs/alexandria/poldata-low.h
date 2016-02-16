@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -47,11 +81,11 @@ class Ptype
         double      sigPol_;
 
     public:
-        Ptype(const std::string &ptype, 
-              const std::string &miller, 
+        Ptype(const std::string &ptype,
+              const std::string &miller,
               const std::string &bosque,
               double             polarizability,
-              double             sigPol) : 
+              double             sigPol) :
             type_(ptype),
             miller_(miller),
             bosque_(bosque),
@@ -60,7 +94,7 @@ class Ptype
         {}
 
         const std::string &getType() const { return type_; }
-        
+
         const std::string &getMiller() const { return miller_; }
 
         const std::string &getBosque() const { return bosque_; }
@@ -101,7 +135,7 @@ class Ffatype
             vdwparams_(vdwparams),
             refEnthalpy_(refEnthalpy) {}
 
-            Ffatype() {}
+        Ffatype() {}
 
         const std::string &getDesc() const { return desc_; }
 
@@ -135,10 +169,10 @@ class GtBond
                const std::string params,
                const std::string elem1,
                const std::string elem2,
-               double      length,
-               double      sigma,
-               double      bondorder,
-               int         ntrain)
+               double            length,
+               double            sigma,
+               double            bondorder,
+               int               ntrain)
             :
               atom1_(atom1),
               atom2_(atom2),
@@ -151,7 +185,7 @@ class GtBond
               ntrain_(ntrain)
         {}
 
-              //GtBond() {}
+        //GtBond() {}
 
         const std::string &getAtom1() const { return atom1_; }
 
@@ -205,9 +239,9 @@ class GtAngle
                 const std::string &atom2,
                 const std::string &atom3,
                 const std::string &params,
-                double      angle,
-                double      sigma,
-                int         ntrain)
+                double             angle,
+                double             sigma,
+                int                ntrain)
             :
               atom1_(atom1),
               atom2_(atom2),
@@ -218,14 +252,14 @@ class GtAngle
               ntrain_(ntrain)
         {}
 
-              //GtAngle() {}
+        //GtAngle() {}
 
         const std::string &getAtom1() const { return atom1_; }
 
         const std::string &getAtom2() const { return atom2_; }
 
         const std::string &getAtom3() const { return atom3_; }
-        
+
         const std::string &getParams() const { return params_; }
 
         double getAngle() const { return angle_; }
@@ -260,9 +294,9 @@ class GtDihedral
                    const std::string &atom3,
                    const std::string &atom4,
                    const std::string &params,
-                   double      dihedral,
-                   double      sigma,
-                   int         ntrain)
+                   double             dihedral,
+                   double             sigma,
+                   int                ntrain)
             :
               atom1_(atom1),
               atom2_(atom2),
@@ -299,7 +333,7 @@ class GtDihedral
         double getSigma() const { return sigma_; }
 
         int getNtrain() const { return ntrain_; }
-        
+
         bool compare(const GtDihedral &gtB) const;
 
         void setParams(const std::string &params) { params_ = params; }
@@ -332,7 +366,7 @@ class Bosque
 class Miller
 {
     private:
-    //! Atom type name
+        //! Atom type name
         std::string miller_;
         //! Atomic number
         int         atomnumber_;
@@ -340,7 +374,7 @@ class Miller
         double      tauAhc_;
         //! Polarizability description alpha
         double      alphaAhp_;
-        //! Alexandria type 
+        //! Alexandria type
         std::string alexandria_equiv_;
     public:
         Miller(const std::string &miller,
@@ -349,11 +383,11 @@ class Miller
                double             alphaAhp,
                const std::string &alexandria_equiv)
             :
-        miller_(miller),
-            atomnumber_(atomnumber),
-            tauAhc_(tauAhc),
-            alphaAhp_(alphaAhp), 
-            alexandria_equiv_(alexandria_equiv) {}
+              miller_(miller),
+              atomnumber_(atomnumber),
+              tauAhc_(tauAhc),
+              alphaAhp_(alphaAhp),
+              alexandria_equiv_(alexandria_equiv) {}
 
         const std::string &getMiller() const { return miller_; }
 
@@ -398,7 +432,7 @@ class Epref
         Epref(ChargeDistributionModel  eqdModel,
               const std::string       &epref)
             : eqdModel_(eqdModel),
-            epref_(epref) {}
+              epref_(epref) {}
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
 
@@ -410,14 +444,14 @@ class Epref
 typedef std::vector<Epref>::iterator EprefIterator;
 //! Loop over EEMprop references
 typedef std::vector<Epref>::const_iterator EprefConstIterator;
- 
+
 class RowZetaQ
 {
- public:
- RowZetaQ(int row, double zeta, double q) : row_(row), zeta_(zeta), q_(q),
-        zetaRef_(zeta) 
-        { 
-            zindex_ = -1; 
+    public:
+        RowZetaQ(int row, double zeta, double q) : row_(row), zeta_(zeta), q_(q),
+                                                   zetaRef_(zeta)
+        {
+            zindex_ = -1;
             char buf[256];
             row_ = std::min(row_, SLATER_MAX);
             if (row_ < row && debug)
@@ -427,39 +461,48 @@ class RowZetaQ
             snprintf(buf, sizeof(buf), "Row (%d) in the periodic table must be > 0 and <= %d",
                      row_, SLATER_MAX);
             GMX_RELEASE_ASSERT(row_ > 0 && row_ <= SLATER_MAX, buf);
+            fixedQ_ = (q != 0);
         }
-    
-    int row() const { return row_; };
-    
-    void setRow(int row) { row_ = row; }
-    
-    double q() const { return q_; }
-    
-    void setQ(double q) { q_ = q; }
-    
-    double zeta() const { return zeta_; } 
-    
-    void setZeta(double z) { zeta_ = z; }
-    
-    double zetaRef() const { return zetaRef_; } 
-    
-    void setZetaRef(double z) { zetaRef_ = z; }
-    
-    int zIndex() const { return zindex_; }
-    
-    void setZindex(int zi) { zindex_ = zi; }
-    
- private:
-    //! The row in the periodic table for each of the charge components
-    int  row_;
-    //! Inverse screening length of each of the components
-    double zeta_;
-    //! Charge of each of the components
-    double q_;
-    //! Reference (starting) value for zeta
-    double zetaRef_;
-    //! Parameter optimization index
-    int  zindex_;
+
+        int row() const { return row_; };
+
+        void setRow(int row) { row_ = row; }
+
+        double q() const { return q_; }
+
+        void setQ(double q)
+        {
+            GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
+            q_ = q;
+        }
+
+        double zeta() const { return zeta_; }
+
+        void setZeta(double z) { zeta_ = z; }
+
+        double zetaRef() const { return zetaRef_; }
+
+        void setZetaRef(double z) { zetaRef_ = z; }
+
+        int zIndex() const { return zindex_; }
+
+        void setZindex(int zi) { zindex_ = zi; }
+
+        bool fixedQ() const { return fixedQ_; }
+
+    private:
+        //! The row in the periodic table for each of the charge components
+        int    row_;
+        //! Inverse screening length of each of the components
+        double zeta_;
+        //! Charge of each of the components
+        double q_;
+        //! Reference (starting) value for zeta
+        double zetaRef_;
+        //! Parameter optimization index
+        int    zindex_;
+        //! Determines whether a charge is fixed (not to be changed)
+        bool   fixedQ_;
 };
 //! Loop over RowZetaQ
 typedef std::vector<RowZetaQ>::iterator RowZetaQIterator;
