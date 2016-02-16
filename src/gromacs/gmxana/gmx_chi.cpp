@@ -453,6 +453,10 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           const gmx_output_env_t *oenv)
 {
     /* also gets 3J couplings and order parameters S2 */
+    // Avoid warnings about narrowing conversions from double to real
+#ifdef _MSC_VER
+#pragma warning disable C4838
+#endif
     t_karplus kkkphi[] = {
         { "J_NHa1",    6.51, -1.76,  1.6, -M_PI/3,   0.0,  0.0 },
         { "J_NHa2",    6.51, -1.76,  1.6,  M_PI/3,   0.0,  0.0 },
@@ -467,6 +471,9 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
         { "JHaHb2",       9.5, -1.6, 1.8, -M_PI/3, 0,  0.0 },
         { "JHaHb3",       9.5, -1.6, 1.8, 0, 0,  0.0 }
     };
+#ifdef _MSC_VER
+#pragma warning restore C4838
+#endif
 #define NKKKPHI asize(kkkphi)
 #define NKKKPSI asize(kkkpsi)
 #define NKKKCHI asize(kkkchi1)

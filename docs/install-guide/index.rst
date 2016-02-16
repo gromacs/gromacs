@@ -110,7 +110,7 @@ supported by the compiler. To select the C++ library version use:
 * For clang: ``CFLAGS=--gcc-toolchain=/path/to/gcc/folder
   CXXFLAGS=--gcc-toolchain=/path/to/gcc/folder``. This folder should
   contain ``include/c++``.
-* On Windows with e.g. Intel: at least MSVC 2013 is required. Load the
+* On Windows with e.g. Intel: at least MSVC 2015 is required. Load the
   enviroment with vcvarsall.bat.
 
 For best performance, the |Gromacs| team strongly recommends you get the
@@ -202,6 +202,11 @@ minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|.
 
 It is not possible to configure both CUDA and OpenCL support in the
 same version of |Gromacs|.
+
+Please note that MSVC 2015 is the earliest version of MSVC supported
+by |Gromacs|, but that requires at least CUDA 8 for an officially
+supported CUDA build. This will likely not occur before |Gromacs| 2016
+is released.
 
 .. _mpi-support:
 
@@ -1171,7 +1176,7 @@ is currently tested on x86 with gcc versions ranging from 4.6 through
 5.1, and versions 14 and 15 of the Intel compiler as well as Clang
 version 3.4 through 3.6. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Mac OS X and Windows.  Under
-Windows we test both MSVC and the Intel compiler. For details, you can
+Windows we test both MSVC 2015 and the Intel compiler. For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.
 
