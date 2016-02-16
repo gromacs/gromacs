@@ -193,9 +193,9 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
 # Decide on GPU settings based on user-settings and GPU/CUDA detection.
-# GCC 4.6 requires CUDA 5.0 and VS2013 requires CUDA 6.5
+# GCC 4.6 requires CUDA 5.0 and VS2015 requires CUDA 8.0
 if(MSVC)
-    set(REQUIRED_CUDA_VERSION 6.5)
+    set(REQUIRED_CUDA_VERSION 8.0)
 else()
     set(REQUIRED_CUDA_VERSION 5.0)
 endif()

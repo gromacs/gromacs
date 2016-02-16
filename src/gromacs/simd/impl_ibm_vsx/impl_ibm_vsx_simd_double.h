@@ -421,7 +421,6 @@ trunc(SimdDouble x)
 static inline SimdDouble
 frexp(SimdDouble value, SimdDInt32 * exponent)
 {
-    // Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds
     const __vector double     exponentMask = reinterpret_cast<__vector double>(vec_splats(0x7FF0000000000000ULL));
     const __vector signed int exponentBias = vec_splats(1022);
     const __vector double     half         = vec_splats(0.5);
