@@ -78,39 +78,37 @@ typedef int gmx_bool;
  * types from C99 headers `stdint.h` and `inttypes.h`.  These headers are also
  * there in C++11.  The types and macros from here should be used instead of
  * `int32_t` etc.
- * MSVC doesn't support these before Visual Studio 2013.
+ *
+ * (MSVC 2015 still doesn't support the format strings.)
  */
 /*! \{ */
+typedef int32_t gmx_int32_t;
+typedef int64_t gmx_int64_t;
+typedef uint32_t gmx_uint32_t;
+typedef uint64_t gmx_uint64_t;
+
 #ifdef _MSC_VER
-typedef __int32 gmx_int32_t;
 #define GMX_PRId32 "I32d"
 #define GMX_SCNd32 "I32d"
 
-typedef __int64 gmx_int64_t;
 #define GMX_PRId64 "I64d"
 #define GMX_SCNd64 "I64d"
 
-typedef unsigned __int32 gmx_uint32_t;
 #define GMX_PRIu32 "I32u"
 #define GMX_SCNu32 "I32u"
 
-typedef unsigned __int64 gmx_uint64_t;
 #define GMX_PRIu64 "I64u"
 #define GMX_SCNu64 "I64u"
 #else
-typedef int32_t gmx_int32_t;
 #define GMX_PRId32 PRId32
 #define GMX_SCNd32 SCNd32
 
-typedef int64_t gmx_int64_t;
 #define GMX_PRId64 PRId64
 #define GMX_SCNd64 SCNd64
 
-typedef uint32_t gmx_uint32_t;
 #define GMX_PRIu32 PRIu32
 #define GMX_SCNu32 SCNu32
 
-typedef uint64_t gmx_uint64_t;
 #define GMX_PRIu64 PRIu64
 #define GMX_SCNu64 SCNu64
 #endif
@@ -228,22 +226,6 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
-/*! \def gmx_constexpr
- * \brief C++11 constexpr everywhere except MSVC 2013, where it is empty.
- *
- * Support for constexpr was not added until MSVC 2015.
- * Since interacting with parts of libc++ and libstdc++ depend on it
- * (for instance the min/max calls in our random engines), we need to specify it
- * for other compilers.
- */
-#ifndef gmx_constexpr
-#if (!defined(_MSC_VER) || (defined(_MSC_FULL_VER) && _MSC_FULL_VER >= 190023026))
-#    define gmx_constexpr constexpr
-#else
-#    define gmx_constexpr
-#endif
-#endif
-
 /*! \def GMX_ALIGNED(type, alignment)
  * \brief
  * Declare variable with data alignment
@@ -257,10 +239,7 @@ typedef uint64_t gmx_uint64_t;
    \endcode
  */
 
-#if defined(_MSC_VER) && (_MSC_VER <= 1800) && !defined(__ICL)
-// For MSVC2013 and eariler we use a hack and assume an alignment of 128 bytes is sufficient in all cases
-#    define GMX_ALIGNED(type, alignment) __declspec(align(128)) type
-#elif defined(__GNUC__) || defined(__clang__) || defined(__ibmxl__) || defined(__xlC__) || defined(__PATHCC__)
+#if defined(__GNUC__) || defined(__clang__) || defined(__ibmxl__) || defined(__xlC__) || defined(__PATHCC__)
 // Gcc-4.6.4 does not support alignas, but both gcc, clang, pathscale and xlc
 // support the standard GNU alignment attributes. PGI also sets __GNUC__ now,
 // and mostly supports it.

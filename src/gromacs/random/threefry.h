@@ -426,11 +426,11 @@ class ThreeFry2x64General
 
     public:
         //! \brief Smallest value that can be returned from random engine.
-        static gmx_constexpr
+        static constexpr
         result_type min() { return std::numeric_limits<result_type>::min(); }
 
         //! \brief Largest value that can be returned from random engine.
-        static gmx_constexpr
+        static constexpr
         result_type max() { return std::numeric_limits<result_type>::max(); }
 
         /*! \brief Construct random engine with 2x64 key values

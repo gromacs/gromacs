@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,8 +76,8 @@ struct gmx_output_env_t
 
 /* read only time names */
 /* These must correspond to the time units type time_unit_t in oenv.h */
-static const real  timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
-static const real  timeinvfactors[] = { 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
+static const real  timefactors[] =   { real(0),  real(1e3),  real(1), real(1e-3), real(1e-6), real(1e-9), real(1e-12), real(0) };
+static const real  timeinvfactors[] = { real(0), real(1e-3),  real(1),  real(1e3),  real(1e6),  real(1e9),  real(1e12), real(0) };
 static const char *time_units_str[] = {
     NULL, "fs", "ps", "ns", "us",
     "\\mus", "ms", "s"

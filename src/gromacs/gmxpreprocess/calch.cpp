@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
 #define AA 0.081649
 #define BB 0.0
 #define CC 0.0577350
-    const  rvec   matrix1[6] = {
+    const  dvec   matrix1[6] = {
         { AA,     BB,     CC },
         { AA,     BB,     CC },
         { AA,     BB,     CC },
@@ -72,7 +72,7 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
         { -AA,    BB,     CC },
         { BB,     AA,    -CC }
     };
-    const  rvec   matrix2[6] = {
+    const  dvec   matrix2[6] = {
         { -AA,   BB,   CC },
         { BB,    AA,  -CC },
         { BB,   -AA,  -CC },
