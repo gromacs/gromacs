@@ -59,7 +59,7 @@ namespace test
 {
 
 //! Database of 51 water atom input positions (DIM reals per atom, taken from spc216.gro) for use as test inputs.
-const real g_positions[] = {
+const double g_positions[] = {
     .130, -.041, -.291,
     .120, -.056, -.192,
     .044, -.005, -.327,
@@ -114,7 +114,7 @@ const real g_positions[] = {
 };
 
 //! Simple cubic simulation box to use in tests
-matrix g_box = {{1.86206, 0, 0}, {0, 1.86206, 0}, {0, 0, 1.86206}};
+matrix g_box = {{real(1.86206), 0, 0}, {0, real(1.86206), 0}, {0, 0, real(1.86206)}};
 
 //! Convenience typedef
 typedef std::tuple<int, bool, bool, bool> SettleTestParameters;
@@ -248,6 +248,9 @@ TEST_P(SettleTest, SatisfiesConstraints)
     gmx_settledata_t settled = settle_init(mtop);
     settle_set_constraints(settled, &mtop->moltype[0].ilist[F_SETTLE], &mdatoms);
 
+    // Copy the original positions from the array of doubles to a vector of reals
+    std::vector<real> startingPositions(std::begin(g_positions), std::end(g_positions));
+
     // Run the test
     bool       errorOccured;
     tensor     virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
@@ -255,7 +258,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     const real reciprocalTimeStep = 1.0/0.002;
     csettle(settled, numThreads, threadIndex,
             usePbc ? &pbcXYZ_ : &pbcNone_,
-            std::begin(g_positions), updatedPositions_.data(), reciprocalTimeStep,
+            startingPositions.data(), updatedPositions_.data(), reciprocalTimeStep,
             useVelocities ? velocities_.data() : nullptr,
             calcVirial, virial, &errorOccured);
     EXPECT_FALSE(errorOccured) << testDescription;

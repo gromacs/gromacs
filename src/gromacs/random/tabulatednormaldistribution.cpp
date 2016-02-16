@@ -40,9 +40,10 @@
 namespace gmx
 {
 
-// MSVC does not handle extern template class members correctly even in MSVC 2015,
-// so in that case we have to instantiate in every object using it.
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+// MSVC does not handle extern template class members correctly even
+// in MSVC 2015, including when compiling with icc 16.0 so in those
+// cases we have to instantiate in every object using it.
+#if !defined(_MSC_VER)
 // This is by far the most common version of the normal distribution table,
 // so we use this as an extern template specialization to avoid instantiating
 // the table in all files using it, unless the user has requested a different
