@@ -358,7 +358,7 @@ class TabulatedNormalDistribution
 // so in that case we have to instantiate in every object using it. In addition,
 // doxygen is convinced this defines a function (which leads to crashes in our python
 // scripts), so to avoid confusion we hide it from doxygen too.
-#if (!defined(_MSC_VER) || defined(__INTEL_COMPILER)) && !defined(DOXYGEN)
+#if !defined(_MSC_VER) && !defined(DOXYGEN)
 // Declaration of template specialization
 template<>
 const std::vector<real> TabulatedNormalDistribution<real, 14>::c_table_;
