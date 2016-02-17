@@ -78,8 +78,8 @@
 
 /*! \brief Convenience constants */
 //@{
-static const int ncl_per_supercl = nbnxn_gpu_ncluster_per_supercluster;
-static const int cl_size         = nbnxn_gpu_cluster_size;
+static const int ncl_per_supercl = c_nbnxnGpuNumClusterPerSupercluster;
+static const int cl_size         = c_nbnxnGpuClusterSize;
 //@}
 
 /*! \brief Always/never run the energy/pruning kernels -- only for benchmarking purposes */
@@ -254,7 +254,7 @@ static inline int calc_shmem_required()
     /* i-atom x+q in shared memory */
     shmem  = ncl_per_supercl * cl_size * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately */
-    shmem += 2 * nbnxn_gpu_jgroup_size * sizeof(int);       /* cjs  */
+    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);       /* cjs  */
 #ifdef IATYPE_SHMEM
     /* FIXME: this should not be compile-time decided but rather at runtime.
      * This issue propagated from the CUDA code where due to the source to source

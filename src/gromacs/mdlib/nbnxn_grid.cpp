@@ -135,8 +135,8 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         {
             /* Approximately cubic sub cells */
             tlen   = std::cbrt(grid->na_c/atom_density);
-            tlen_x = tlen*gpu_ncluster_per_cell_x;
-            tlen_y = tlen*gpu_ncluster_per_cell_y;
+            tlen_x = tlen*c_gpuNumClusterPerCellX;
+            tlen_y = tlen*c_gpuNumClusterPerCellY;
         }
         /* We round ncx and ncy down, because we get less cell pairs
          * in the nbsist when the fixed cell dimensions (x,y) are
@@ -213,10 +213,10 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 #if NBNXN_BBXXXX
             int pbb_nalloc;
 
-            pbb_nalloc = grid->nc_nalloc*gpu_ncluster_per_cell/STRIDE_PBB*NNBSBB_XXXX;
+            pbb_nalloc = grid->nc_nalloc*c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX;
             snew_aligned(grid->pbb, pbb_nalloc, 16);
 #else
-            snew_aligned(grid->bb, grid->nc_nalloc*gpu_ncluster_per_cell, 16);
+            snew_aligned(grid->bb, grid->nc_nalloc*c_gpuNumClusterPerCell, 16);
 #endif
         }
 
@@ -451,20 +451,20 @@ static void calc_bounding_box_x_x4(int na, const real *x, nbnxn_bb_t *bb)
 {
     real xl, xh, yl, yh, zl, zh;
 
-    xl = x[XX*pack_x4];
-    xh = x[XX*pack_x4];
-    yl = x[YY*pack_x4];
-    yh = x[YY*pack_x4];
-    zl = x[ZZ*pack_x4];
-    zh = x[ZZ*pack_x4];
+    xl = x[XX*c_packX4];
+    xh = x[XX*c_packX4];
+    yl = x[YY*c_packX4];
+    yh = x[YY*c_packX4];
+    zl = x[ZZ*c_packX4];
+    zh = x[ZZ*c_packX4];
     for (int j = 1; j < na; j++)
     {
-        xl = std::min(xl, x[j+XX*pack_x4]);
-        xh = std::max(xh, x[j+XX*pack_x4]);
-        yl = std::min(yl, x[j+YY*pack_x4]);
-        yh = std::max(yh, x[j+YY*pack_x4]);
-        zl = std::min(zl, x[j+ZZ*pack_x4]);
-        zh = std::max(zh, x[j+ZZ*pack_x4]);
+        xl = std::min(xl, x[j+XX*c_packX4]);
+        xh = std::max(xh, x[j+XX*c_packX4]);
+        yl = std::min(yl, x[j+YY*c_packX4]);
+        yh = std::max(yh, x[j+YY*c_packX4]);
+        zl = std::min(zl, x[j+ZZ*c_packX4]);
+        zh = std::max(zh, x[j+ZZ*c_packX4]);
     }
     /* Note: possible double to float conversion here */
     bb->lower[BB_X] = R2F_D(xl);
@@ -480,20 +480,20 @@ static void calc_bounding_box_x_x8(int na, const real *x, nbnxn_bb_t *bb)
 {
     real xl, xh, yl, yh, zl, zh;
 
-    xl = x[XX*pack_x8];
-    xh = x[XX*pack_x8];
-    yl = x[YY*pack_x8];
-    yh = x[YY*pack_x8];
-    zl = x[ZZ*pack_x8];
-    zh = x[ZZ*pack_x8];
+    xl = x[XX*c_packX8];
+    xh = x[XX*c_packX8];
+    yl = x[YY*c_packX8];
+    yh = x[YY*c_packX8];
+    zl = x[ZZ*c_packX8];
+    zh = x[ZZ*c_packX8];
     for (int j = 1; j < na; j++)
     {
-        xl = std::min(xl, x[j+XX*pack_x8]);
-        xh = std::max(xh, x[j+XX*pack_x8]);
-        yl = std::min(yl, x[j+YY*pack_x8]);
-        yh = std::max(yh, x[j+YY*pack_x8]);
-        zl = std::min(zl, x[j+ZZ*pack_x8]);
-        zh = std::max(zh, x[j+ZZ*pack_x8]);
+        xl = std::min(xl, x[j+XX*c_packX8]);
+        xh = std::max(xh, x[j+XX*c_packX8]);
+        yl = std::min(yl, x[j+YY*c_packX8]);
+        yh = std::max(yh, x[j+YY*c_packX8]);
+        zl = std::min(zl, x[j+ZZ*c_packX8]);
+        zh = std::max(zh, x[j+ZZ*c_packX8]);
     }
     /* Note: possible double to float conversion here */
     bb->lower[BB_X] = R2F_D(xl);
@@ -515,7 +515,7 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
 
     if (na > 2)
     {
-        calc_bounding_box_x_x4(std::min(na-2, 2), x+(pack_x4>>1), bbj+1);
+        calc_bounding_box_x_x4(std::min(na-2, 2), x+(c_packX4>>1), bbj+1);
     }
     else
     {
@@ -715,7 +715,7 @@ static void print_bbsizes_supersub(FILE                *fp,
 #if NBNXN_BBXXXX
         for (int s = 0; s < grid->nsubc[c]; s += STRIDE_PBB)
         {
-            int cs_w = (c*gpu_ncluster_per_cell + s)/STRIDE_PBB;
+            int cs_w = (c*c_gpuNumClusterPerCell + s)/STRIDE_PBB;
             for (int i = 0; i < STRIDE_PBB; i++)
             {
                 for (int d = 0; d < DIM; d++)
@@ -729,7 +729,7 @@ static void print_bbsizes_supersub(FILE                *fp,
 #else
         for (int s = 0; s < grid->nsubc[c]; s++)
         {
-            int cs = c*gpu_ncluster_per_cell + s;
+            int cs = c*c_gpuNumClusterPerCell + s;
             for (int d = 0; d < DIM; d++)
             {
                 ba[d] += grid->bb[cs].upper[d] - grid->bb[cs].lower[d];
@@ -741,15 +741,15 @@ static void print_bbsizes_supersub(FILE                *fp,
     dsvmul(1.0/ns, ba, ba);
 
     fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            grid->sx/gpu_ncluster_per_cell_x,
-            grid->sy/gpu_ncluster_per_cell_y,
+            grid->sx/c_gpuNumClusterPerCellX,
+            grid->sy/c_gpuNumClusterPerCellY,
             grid->atom_density > 0 ?
-            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*gpu_ncluster_per_cell_z) : 0.0,
+            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*c_gpuNumClusterPerCellZ) : 0.0,
             ba[XX], ba[YY], ba[ZZ],
-            ba[XX]*gpu_ncluster_per_cell_x/grid->sx,
-            ba[YY]*gpu_ncluster_per_cell_y/grid->sy,
+            ba[XX]*c_gpuNumClusterPerCellX/grid->sx,
+            ba[YY]*c_gpuNumClusterPerCellY/grid->sy,
             grid->atom_density > 0 ?
-            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*gpu_ncluster_per_cell_z)) : 0.0);
+            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*c_gpuNumClusterPerCellZ)) : 0.0);
 }
 
 /* Set non-bonded interaction flags for the current cluster.
@@ -862,7 +862,7 @@ static void fill_cell(const nbnxn_search_t nbs,
         int c;
 
         /* The grid-local cluster/(sub-)cell index */
-        c            = (a0 >> grid->na_c_2log) - grid->cell0*(grid->bSimple ? 1 : gpu_ncluster_per_cell);
+        c            = (a0 >> grid->na_c_2log) - grid->cell0*(grid->bSimple ? 1 : c_gpuNumClusterPerCell);
         grid->fep[c] = 0;
         for (int at = a0; at < a1; at++)
         {
@@ -892,13 +892,13 @@ static void fill_cell(const nbnxn_search_t nbs,
 #if GMX_SIMD && GMX_SIMD_REAL_WIDTH == 2
         if (2*grid->na_cj == grid->na_c)
         {
-            calc_bounding_box_x_x4_halves(na, nbat->x + atom_to_x_index<pack_x4>(a0), bb_ptr,
+            calc_bounding_box_x_x4_halves(na, nbat->x + atom_to_x_index<c_packX4>(a0), bb_ptr,
                                           grid->bbj+offset*2);
         }
         else
 #endif
         {
-            calc_bounding_box_x_x4(na, nbat->x + atom_to_x_index<pack_x4>(a0), bb_ptr);
+            calc_bounding_box_x_x4(na, nbat->x + atom_to_x_index<c_packX4>(a0), bb_ptr);
         }
     }
     else if (nbat->XFormat == nbatX8)
@@ -907,7 +907,7 @@ static void fill_cell(const nbnxn_search_t nbs,
         offset = (a0 - grid->cell0*grid->na_sc) >> grid->na_c_2log;
         bb_ptr = grid->bb + offset;
 
-        calc_bounding_box_x_x8(na, nbat->x +  atom_to_x_index<pack_x8>(a0), bb_ptr);
+        calc_bounding_box_x_x8(na, nbat->x +  atom_to_x_index<c_packX8>(a0), bb_ptr);
     }
 #if NBNXN_BBXXXX
     else if (!grid->bSimple)
@@ -1060,8 +1060,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     }
 
     int subdiv_x = grid->na_c;
-    int subdiv_y = gpu_ncluster_per_cell_x*subdiv_x;
-    int subdiv_z = gpu_ncluster_per_cell_y*subdiv_y;
+    int subdiv_y = c_gpuNumClusterPerCellX*subdiv_x;
+    int subdiv_z = c_gpuNumClusterPerCellY*subdiv_y;
 
     /* Sort the atoms within each x,y column in 3 dimensions */
     for (int cxy = cxy_start; cxy < cxy_end; cxy++)
@@ -1081,29 +1081,29 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                    sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
-        for (int sub_z = 0; sub_z < ncz*gpu_ncluster_per_cell_z; sub_z++)
+        for (int sub_z = 0; sub_z < ncz*c_gpuNumClusterPerCellZ; sub_z++)
         {
             int ash_z = ash + sub_z*subdiv_z;
             int na_z  = std::min(subdiv_z, na - (ash_z - ash));
             int cz    = -1;
             /* We have already sorted on z */
 
-            if (sub_z % gpu_ncluster_per_cell_z == 0)
+            if (sub_z % c_gpuNumClusterPerCellZ == 0)
             {
-                cz = sub_z/gpu_ncluster_per_cell_z;
+                cz = sub_z/c_gpuNumClusterPerCellZ;
                 int c  = grid->cxy_ind[cxy] + cz;
 
                 /* The number of atoms in this supercell */
                 int na_c = std::min(grid->na_sc, na - (ash_z - ash));
 
-                grid->nsubc[c] = std::min(gpu_ncluster_per_cell, (na_c + grid->na_c - 1)/grid->na_c);
+                grid->nsubc[c] = std::min(c_gpuNumClusterPerCell, (na_c + grid->na_c - 1)/grid->na_c);
 
                 /* Store the z-boundaries of the super cell */
                 grid->bbcz[c*NNBSBB_D  ] = x[nbs->a[ash_z]][ZZ];
                 grid->bbcz[c*NNBSBB_D+1] = x[nbs->a[ash_z + na_c - 1]][ZZ];
             }
 
-            if (gpu_ncluster_per_cell_y > 1)
+            if (c_gpuNumClusterPerCellY > 1)
             {
                 /* Sort the atoms along y */
                 sort_atoms(YY, (sub_z & 1), dd_zone,
@@ -1113,30 +1113,30 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                            sort_work);
             }
 
-            for (int sub_y = 0; sub_y < gpu_ncluster_per_cell_y; sub_y++)
+            for (int sub_y = 0; sub_y < c_gpuNumClusterPerCellY; sub_y++)
             {
                 int ash_y = ash_z + sub_y*subdiv_y;
                 int na_y  = std::min(subdiv_y, na - (ash_y - ash));
 
-                if (gpu_ncluster_per_cell_x > 1)
+                if (c_gpuNumClusterPerCellX > 1)
                 {
                     /* Sort the atoms along x */
-                    sort_atoms(XX, ((cz*gpu_ncluster_per_cell_y + sub_y) & 1), dd_zone,
+                    sort_atoms(XX, ((cz*c_gpuNumClusterPerCellY + sub_y) & 1), dd_zone,
                                nbs->a + ash_y, na_y, x,
                                grid->c0[XX] + cx*grid->sx,
                                grid->inv_sx, subdiv_y,
                                sort_work);
                 }
 
-                for (int sub_x = 0; sub_x < gpu_ncluster_per_cell_x; sub_x++)
+                for (int sub_x = 0; sub_x < c_gpuNumClusterPerCellX; sub_x++)
                 {
                     int ash_x = ash_y + sub_x*subdiv_x;
                     int na_x  = std::min(subdiv_x, na - (ash_x - ash));
 
                     fill_cell(nbs, grid, nbat,
                               ash_x, ash_x + na_x, atinfo, x,
-                              grid->na_c*(cx*gpu_ncluster_per_cell_x + sub_x) + (dd_zone >> 2),
-                              grid->na_c*(cy*gpu_ncluster_per_cell_y + sub_y) + (dd_zone & 3),
+                              grid->na_c*(cx*c_gpuNumClusterPerCellX + sub_x) + (dd_zone >> 2),
+                              grid->na_c*(cy*c_gpuNumClusterPerCellY + sub_y) + (dd_zone & 3),
                               grid->na_c*sub_z,
                               bb_work_aligned);
                 }
@@ -1463,7 +1463,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     grid->na_c      = nbnxn_kernel_to_cluster_i_size(nb_kernel_type);
     grid->na_cj     = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
-    grid->na_sc     = (grid->bSimple ? 1 : gpu_ncluster_per_cell)*grid->na_c;
+    grid->na_sc     = (grid->bSimple ? 1 : c_gpuNumClusterPerCell)*grid->na_c;
     grid->na_c_2log = get_2log(grid->na_c);
 
     nbat->na_c = grid->na_c;
@@ -1645,13 +1645,13 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
                     switch (nbat->XFormat)
                     {
                         case nbatX4:
-                            /* pack_x4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
+                            /* c_packX4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
                             calc_bounding_box_x_x4(na, nbat->x+tx*STRIDE_P4,
                                                    bb+tx);
                             break;
                         case nbatX8:
-                            /* pack_x8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
-                            calc_bounding_box_x_x8(na, nbat->x + atom_to_x_index<pack_x8>(tx*NBNXN_CPU_CLUSTER_I_SIZE),
+                            /* c_packX8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
+                            calc_bounding_box_x_x8(na, nbat->x + atom_to_x_index<c_packX8>(tx*NBNXN_CPU_CLUSTER_I_SIZE),
                                                    bb+tx);
                             break;
                         default:

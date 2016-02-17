@@ -84,7 +84,7 @@ static gmx_inline int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
              * Any value should work for the pair-search and atomdata code.
              * The kernels, of course, might require a particular value.
              */
-            return nbnxn_gpu_cluster_size;
+            return c_nbnxnGpuClusterSize;
         default:
             gmx_incons("unknown kernel type");
     }

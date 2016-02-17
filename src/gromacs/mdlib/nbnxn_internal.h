@@ -49,26 +49,26 @@ struct gmx_domdec_zones_t;
 
 
 /* The number of clusters in a pair-search cell, used for GPU */
-static const int gpu_ncluster_per_cell_z = 2;
-static const int gpu_ncluster_per_cell_y = 2;
-static const int gpu_ncluster_per_cell_x = 2;
-static const int gpu_ncluster_per_cell   = gpu_ncluster_per_cell_z*gpu_ncluster_per_cell_y*gpu_ncluster_per_cell_x;
+static const int c_gpuNumClusterPerCellZ = 2;
+static const int c_gpuNumClusterPerCellY = 2;
+static const int c_gpuNumClusterPerCellX = 2;
+static const int c_gpuNumClusterPerCell   = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
 
 
 /* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
 #define STRIDE_XYZ         3
 #define STRIDE_XYZQ        4
 /* Size of packs of x, y or z with SIMD packed coords/forces */
-static const int pack_x4 = 4;
-static const int pack_x8 = 8;
+static const int c_packX4 = 4;
+static const int c_packX8 = 8;
 /* Strides for a pack of 4 and 8 coordinates/forces */
-#define STRIDE_P4         (DIM*pack_x4)
-#define STRIDE_P8         (DIM*pack_x8)
+#define STRIDE_P4         (DIM*c_packX4)
+#define STRIDE_P8         (DIM*c_packX8)
 
 /* Returns the index in a coordinate array corresponding to atom a */
-template<int pack_size> static gmx_inline int atom_to_x_index(int a)
+template<int packSize> static gmx_inline int atom_to_x_index(int a)
 {
-    return DIM*(a & ~(pack_size - 1)) + (a & (pack_size - 1));
+    return DIM*(a & ~(packSize - 1)) + (a & (packSize - 1));
 }
 
 
