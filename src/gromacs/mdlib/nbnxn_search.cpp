@@ -164,7 +164,7 @@ template<int cj_size> static gmx_inline int x_ind_ci(int ci)
     if (cj_size == 8)
     {
         /* Coordinates packed in 8, i-cluster size is half the packing width */
-        return (ci >> 1)*STRIDE_P8 + (ci & 1)*(pack_x8 >> 1);
+        return (ci >> 1)*STRIDE_P8 + (ci & 1)*(c_packX8 >> 1);
     }
     GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
     return -1;
@@ -176,7 +176,7 @@ template<int cj_size> static gmx_inline int x_ind_cj(int cj)
     if (cj_size == 2)
     {
         /* Coordinates are stored packed in groups of 4 */
-        return (cj >> 1)*STRIDE_P4 + (cj & 1)*(pack_x4 >> 1);
+        return (cj >> 1)*STRIDE_P4 + (cj & 1)*(c_packX4 >> 1);
     }
     if (cj_size <= 4)
     {
@@ -571,12 +571,12 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     const real *x_i = work->x_ci;
 
-    for (int i = 0; i < nbnxn_gpu_cluster_size; i++)
+    for (int i = 0; i < c_nbnxnGpuClusterSize; i++)
     {
-        int i0 = (si*nbnxn_gpu_cluster_size + i)*DIM;
-        for (int j = 0; j < nbnxn_gpu_cluster_size; j++)
+        int i0 = (si*c_nbnxnGpuClusterSize + i)*DIM;
+        for (int j = 0; j < c_nbnxnGpuClusterSize; j++)
         {
-            int  j0 = (csj*nbnxn_gpu_cluster_size + j)*stride;
+            int  j0 = (csj*c_nbnxnGpuClusterSize + j)*stride;
 
             real d2 = gmx::square(x_i[i0  ] - x_j[j0  ]) + gmx::square(x_i[i0+1] - x_j[j0+1]) + gmx::square(x_i[i0+2] - x_j[j0+2]);
 
@@ -596,13 +596,13 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
      * The coordinates x_i are stored as xxxxyyyy..., x_j is stored xyzxyz...
      * Using 8-wide AVX is not faster on Intel Sandy Bridge.
      */
-    assert(nbnxn_gpu_cluster_size == 8);
+    assert(c_nbnxnGpuClusterSize == 8);
 
     Simd4Real   rc2_S      = Simd4Real(rl2);
 
     const real *x_i        = work->x_ci_simd;
 
-    int         dim_stride = nbnxn_gpu_cluster_size*DIM;
+    int         dim_stride = c_nbnxnGpuClusterSize*DIM;
     Simd4Real   ix_S0      = load4(x_i + si*dim_stride + 0*GMX_SIMD4_WIDTH);
     Simd4Real   iy_S0      = load4(x_i + si*dim_stride + 1*GMX_SIMD4_WIDTH);
     Simd4Real   iz_S0      = load4(x_i + si*dim_stride + 2*GMX_SIMD4_WIDTH);
@@ -613,8 +613,8 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
      */
-    int j0 = csj*nbnxn_gpu_cluster_size;
-    int j1 = j0 + nbnxn_gpu_cluster_size - 1;
+    int j0 = csj*c_nbnxnGpuClusterSize;
+    int j1 = j0 + c_nbnxnGpuClusterSize - 1;
     while (j0 < j1)
     {
         Simd4Real jx0_S, jy0_S, jz0_S;
@@ -690,13 +690,13 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 /* Returns the j sub-cell for index cj_ind */
 static int nbl_cj(const nbnxn_pairlist_t *nbl, int cj_ind)
 {
-    return nbl->cj4[cj_ind/nbnxn_gpu_jgroup_size].cj[cj_ind & (nbnxn_gpu_jgroup_size - 1)];
+    return nbl->cj4[cj_ind/c_nbnxnGpuJgroupSize].cj[cj_ind & (c_nbnxnGpuJgroupSize - 1)];
 }
 
 /* Returns the i-interaction mask of the j sub-cell for index cj_ind */
 static unsigned int nbl_imask0(const nbnxn_pairlist_t *nbl, int cj_ind)
 {
-    return nbl->cj4[cj_ind/nbnxn_gpu_jgroup_size].imei[0].imask;
+    return nbl->cj4[cj_ind/c_nbnxnGpuJgroupSize].imei[0].imask;
 }
 
 /* Ensures there is enough space for extra extra exclusion masks */
@@ -736,11 +736,11 @@ static void check_cell_list_space_supersub(nbnxn_pairlist_t *nbl,
 {
     int ncj4_max, w;
 
-    /* We can have maximally nsupercell*gpu_ncluster_per_cell sj lists */
+    /* We can have maximally nsupercell*c_gpuNumClusterPerCell sj lists */
     /* We can store 4 j-subcell - i-supercell pairs in one struct.
      * since we round down, we need one extra entry.
      */
-    ncj4_max = ((nbl->work->cj_ind + ncell*gpu_ncluster_per_cell + nbnxn_gpu_jgroup_size - 1)/nbnxn_gpu_jgroup_size);
+    ncj4_max = ((nbl->work->cj_ind + ncell*c_gpuNumClusterPerCell + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize);
 
     if (ncj4_max > nbl->cj4_nalloc)
     {
@@ -756,7 +756,7 @@ static void check_cell_list_space_supersub(nbnxn_pairlist_t *nbl,
         for (int j4 = nbl->work->cj4_init; j4 < ncj4_max; j4++)
         {
             /* No i-subcells and no excl's in the list initially */
-            for (w = 0; w < nbnxn_gpu_clusterpair_split; w++)
+            for (w = 0; w < c_nbnxnGpuClusterpairSplit; w++)
             {
                 nbl->cj4[j4].imei[w].imask    = 0U;
                 nbl->cj4[j4].imei[w].excl_ind = 0;
@@ -770,7 +770,7 @@ static void check_cell_list_space_supersub(nbnxn_pairlist_t *nbl,
 /* Set all excl masks for one GPU warp no exclusions */
 static void set_no_excls(nbnxn_excl_t *excl)
 {
-    for (int t = 0; t < nbnxn_gpu_excl_size; t++)
+    for (int t = 0; t < c_nbnxnGpuExclSize; t++)
     {
         /* Turn all interaction bits on */
         excl->pair[t] = NBNXN_INTERACTION_MASK_ALL;
@@ -821,10 +821,10 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     if (!nbl->bSimple)
     {
-        GMX_ASSERT(nbnxn_gpu_ncluster_per_supercluster == gpu_ncluster_per_cell, "The search code assumes that the a super-cluster matches a search grid cell");
+        GMX_ASSERT(c_nbnxnGpuNumClusterPerSupercluster == c_gpuNumClusterPerCell, "The search code assumes that the a super-cluster matches a search grid cell");
 
-        GMX_ASSERT(sizeof(nbl->cj4[0].imei[0].imask)*8 >= nbnxn_gpu_jgroup_size*gpu_ncluster_per_cell, "The i super-cluster cluster interaction mask does not contain a sufficient number of bits");
-        GMX_ASSERT(sizeof(nbl->excl[0])*8 >= nbnxn_gpu_jgroup_size*gpu_ncluster_per_cell, "The GPU exclusion mask does not contain a sufficient number of bits");
+        GMX_ASSERT(sizeof(nbl->cj4[0].imei[0].imask)*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The i super-cluster cluster interaction mask does not contain a sufficient number of bits");
+        GMX_ASSERT(sizeof(nbl->excl[0])*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The GPU exclusion mask does not contain a sufficient number of bits");
 
         nbl->excl        = NULL;
         nbl->excl_nalloc = 0;
@@ -842,12 +842,12 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     else
     {
 #if NBNXN_BBXXXX
-        snew_aligned(nbl->work->pbb_ci, gpu_ncluster_per_cell/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
+        snew_aligned(nbl->work->pbb_ci, c_gpuNumClusterPerCell/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
 #else
-        snew_aligned(nbl->work->bb_ci, gpu_ncluster_per_cell, NBNXN_SEARCH_BB_MEM_ALIGN);
+        snew_aligned(nbl->work->bb_ci, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
 #endif
     }
-    int gpu_clusterpair_nc = gpu_ncluster_per_cell*nbnxn_gpu_cluster_size*DIM;
+    int gpu_clusterpair_nc = c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize*DIM;
     snew(nbl->work->x_ci, gpu_clusterpair_nc);
 #if GMX_SIMD
     snew_aligned(nbl->work->x_ci_simd,
@@ -855,7 +855,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
                           gpu_clusterpair_nc),
                  GMX_SIMD_REAL_WIDTH);
 #endif
-    snew_aligned(nbl->work->d2, gpu_ncluster_per_cell, NBNXN_SEARCH_BB_MEM_ALIGN);
+    snew_aligned(nbl->work->d2, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
 
     nbl->work->sort            = NULL;
     nbl->work->sort_nalloc     = 0;
@@ -966,7 +966,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
 {
     const nbnxn_grid_t *grid;
     int                 b;
-    int                 c[gpu_ncluster_per_cell + 1];
+    int                 c[c_gpuNumClusterPerCell + 1];
     double              sum_nsp, sum_nsp2;
     int                 nsp_max;
 
@@ -983,7 +983,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     sum_nsp  = 0;
     sum_nsp2 = 0;
     nsp_max  = 0;
-    for (int si = 0; si <= gpu_ncluster_per_cell; si++)
+    for (int si = 0; si <= c_gpuNumClusterPerCell; si++)
     {
         c[si] = 0;
     }
@@ -994,12 +994,12 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
         nsp = 0;
         for (int j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
-            for (int j = 0; j < nbnxn_gpu_jgroup_size; j++)
+            for (int j = 0; j < c_nbnxnGpuJgroupSize; j++)
             {
                 b = 0;
-                for (int si = 0; si < gpu_ncluster_per_cell; si++)
+                for (int si = 0; si < c_gpuNumClusterPerCell; si++)
                 {
-                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*gpu_ncluster_per_cell + si)))
+                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*c_gpuNumClusterPerCell + si)))
                     {
                         b++;
                     }
@@ -1022,11 +1022,11 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
 
     if (nbl->ncj4 > 0)
     {
-        for (b = 0; b <= gpu_ncluster_per_cell; b++)
+        for (b = 0; b <= c_gpuNumClusterPerCell; b++)
         {
             fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
                     b, c[b],
-                    100.0*c[b]/(double)(nbl->ncj4*nbnxn_gpu_jgroup_size));
+                    100.0*c[b]/(double)(nbl->ncj4*c_nbnxnGpuJgroupSize));
         }
     }
 }
@@ -1083,11 +1083,11 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
                                                int cj4_ind, int sj_offset,
                                                int i_cluster_in_cell)
 {
-    nbnxn_excl_t *excl[nbnxn_gpu_clusterpair_split];
+    nbnxn_excl_t *excl[c_nbnxnGpuClusterpairSplit];
 
     /* Here we only set the set self and double pair exclusions */
 
-    assert(nbnxn_gpu_clusterpair_split == 2);
+    assert(c_nbnxnGpuClusterpairSplit == 2);
 
     get_nbl_exclusions_2(nbl, cj4_ind, &excl[0], &excl[1]);
 
@@ -1097,8 +1097,8 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
         int w = (ej>>2);
         for (int ei = ej; ei < nbl->na_ci; ei++)
         {
-            excl[w]->pair[(ej & (nbnxn_gpu_jgroup_size-1))*nbl->na_ci + ei] &=
-                ~(1U << (sj_offset*gpu_ncluster_per_cell + i_cluster_in_cell));
+            excl[w]->pair[(ej & (c_nbnxnGpuJgroupSize-1))*nbl->na_ci + ei] &=
+                ~(1U << (sj_offset*c_gpuNumClusterPerCell + i_cluster_in_cell));
         }
     }
 }
@@ -1285,8 +1285,8 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
     const nbnxn_bb_t  *bb_ci  = work->bb_ci;
 #endif
 
-    assert(nbnxn_gpu_cluster_size == gridi->na_c);
-    assert(nbnxn_gpu_cluster_size == gridj->na_c);
+    assert(c_nbnxnGpuClusterSize == gridi->na_c);
+    assert(c_nbnxnGpuClusterSize == gridj->na_c);
 
     /* We generate the pairlist mainly based on bounding-box distances
      * and do atom pair distance based pruning on the GPU.
@@ -1304,13 +1304,13 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 
     for (int subc = 0; subc < gridj->nsubc[scj]; subc++)
     {
-        int          cj4_ind   = nbl->work->cj_ind/nbnxn_gpu_jgroup_size;
-        int          cj_offset = nbl->work->cj_ind - cj4_ind*nbnxn_gpu_jgroup_size;
+        int          cj4_ind   = nbl->work->cj_ind/c_nbnxnGpuJgroupSize;
+        int          cj_offset = nbl->work->cj_ind - cj4_ind*c_nbnxnGpuJgroupSize;
         nbnxn_cj4_t *cj4       = &nbl->cj4[cj4_ind];
 
-        int          cj        = scj*gpu_ncluster_per_cell + subc;
+        int          cj        = scj*c_gpuNumClusterPerCell + subc;
 
-        int          cj_gl     = gridj->cell0*gpu_ncluster_per_cell + cj;
+        int          cj_gl     = gridj->cell0*c_gpuNumClusterPerCell + cj;
 
         /* Initialize this j-subcell i-subcell list */
         cj4->cj[cj_offset] = cj_gl;
@@ -1329,13 +1329,13 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
         /* Determine all ci1 bb distances in one call with SIMD4 */
         subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
                                  ci1, pbb_ci, d2l);
-        *ndistc += nbnxn_gpu_cluster_size*2;
+        *ndistc += c_nbnxnGpuClusterSize*2;
 #endif
 
         int          npair = 0;
         unsigned int imask = 0;
         /* We use a fixed upper-bound instead of ci1 to help optimization */
-        for (int ci = 0; ci < gpu_ncluster_per_cell; ci++)
+        for (int ci = 0; ci < c_gpuNumClusterPerCell; ci++)
         {
             if (ci == ci1)
             {
@@ -1355,7 +1355,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
              * or within the cut-off and there is at least one atom pair
              * within the cut-off. This check is very costly.
              */
-            *ndistc += nbnxn_gpu_cluster_size*nbnxn_gpu_cluster_size;
+            *ndistc += c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize;
             if (d2 < rbb2 ||
                 (d2 < rl2 &&
                  clusterpair_in_range(work, ci, cj_gl, stride, x, rl2)))
@@ -1367,7 +1367,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 #endif
             {
                 /* Flag this i-subcell to be taken into account */
-                imask |= (1U << (cj_offset*gpu_ncluster_per_cell + ci));
+                imask |= (1U << (cj_offset*c_gpuNumClusterPerCell + ci));
 
 #if PRUNE_LIST_CPU_ONE
                 ci_last = ci;
@@ -1384,7 +1384,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
         if (npair == 1 && d2l[ci_last] >= rbb2 &&
             !clusterpair_in_range(work, ci_last, cj_gl, stride, x, rl2))
         {
-            imask &= ~(1U << (cj_offset*gpu_ncluster_per_cell + ci_last));
+            imask &= ~(1U << (cj_offset*c_gpuNumClusterPerCell + ci_last));
             npair--;
         }
 #endif
@@ -1403,7 +1403,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
             }
 
             /* Copy the cluster interaction mask to the list */
-            for (int w = 0; w < nbnxn_gpu_clusterpair_split; w++)
+            for (int w = 0; w < c_nbnxnGpuClusterpairSplit; w++)
             {
                 cj4->imei[w].imask |= imask;
             }
@@ -1415,7 +1415,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 
             /* Increase the closing index in i super-cell list */
             nbl->sci[nbl->nsci].cj4_ind_end =
-                (nbl->work->cj_ind + nbnxn_gpu_jgroup_size - 1)/nbnxn_gpu_jgroup_size;
+                (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
         }
     }
 }
@@ -1774,19 +1774,19 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 /* Return the index of atom a within a cluster */
 static gmx_inline int cj_mod_cj4(int cj)
 {
-    return cj & (nbnxn_gpu_jgroup_size - 1);
+    return cj & (c_nbnxnGpuJgroupSize - 1);
 }
 
 /* Convert a j-cluster to a cj4 group */
 static gmx_inline int cj_to_cj4(int cj)
 {
-    return cj/nbnxn_gpu_jgroup_size;
+    return cj/c_nbnxnGpuJgroupSize;
 }
 
 /* Return the index of an j-atom within a warp */
 static gmx_inline int a_mod_wj(int a)
 {
-    return a & (nbnxn_gpu_cluster_size/nbnxn_gpu_clusterpair_split - 1);
+    return a & (c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit - 1);
 }
 
 /* As make_fep_list above, but for super/sub lists. */
@@ -1824,13 +1824,13 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     cj4_ind_end   = nbl_sci->cj4_ind_end;
 
     /* Here we process one super-cell, max #atoms na_sc, versus a list
-     * cj4 entries, each with max nbnxn_gpu_jgroup_size cj's, each
+     * cj4 entries, each with max c_nbnxnGpuJgroupSize cj's, each
      * of size na_cj atoms.
      * On the GPU we don't support energy groups (yet).
      * So for each of the na_sc i-atoms, we need max one FEP list
      * for each max_nrj_fep j-atoms.
      */
-    nri_max = nbl->na_sc*nbl->na_cj*(1 + ((cj4_ind_end - cj4_ind_start)*nbnxn_gpu_jgroup_size)/max_nrj_fep);
+    nri_max = nbl->na_sc*nbl->na_cj*(1 + ((cj4_ind_end - cj4_ind_start)*c_nbnxnGpuJgroupSize)/max_nrj_fep);
     if (nlist->nri + nri_max > nlist->maxnri)
     {
         nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
@@ -1838,9 +1838,9 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     }
 
     /* Loop over the atoms in the i super-cluster */
-    for (int c = 0; c < gpu_ncluster_per_cell; c++)
+    for (int c = 0; c < c_gpuNumClusterPerCell; c++)
     {
-        c_abs = sci*gpu_ncluster_per_cell + c;
+        c_abs = sci*c_gpuNumClusterPerCell + c;
 
         for (int i = 0; i < nbl->na_ci; i++)
         {
@@ -1855,15 +1855,15 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                 nlist->gid[nri]      = 0;
                 nlist->shift[nri]    = nbl_sci->shift & NBNXN_CI_SHIFT;
 
-                bFEP_i = (gridi->fep[c_abs - gridi->cell0*gpu_ncluster_per_cell] & (1 << i));
+                bFEP_i = (gridi->fep[c_abs - gridi->cell0*c_gpuNumClusterPerCell] & (1 << i));
 
                 xi = nbat->x[ind_i*nbat->xstride+XX] + shx;
                 yi = nbat->x[ind_i*nbat->xstride+YY] + shy;
                 zi = nbat->x[ind_i*nbat->xstride+ZZ] + shz;
 
-                if ((nlist->nrj + cj4_ind_end - cj4_ind_start)*nbnxn_gpu_jgroup_size*nbl->na_cj > nlist->maxnrj)
+                if ((nlist->nrj + cj4_ind_end - cj4_ind_start)*c_nbnxnGpuJgroupSize*nbl->na_cj > nlist->maxnrj)
                 {
-                    nlist->maxnrj = over_alloc_small((nlist->nrj + cj4_ind_end - cj4_ind_start)*nbnxn_gpu_jgroup_size*nbl->na_cj);
+                    nlist->maxnrj = over_alloc_small((nlist->nrj + cj4_ind_end - cj4_ind_start)*c_nbnxnGpuJgroupSize*nbl->na_cj);
                     srenew(nlist->jjnr,     nlist->maxnrj);
                     srenew(nlist->excl_fep, nlist->maxnrj);
                 }
@@ -1872,17 +1872,17 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                 {
                     cj4 = &nbl->cj4[cj4_ind];
 
-                    for (int gcj = 0; gcj < nbnxn_gpu_jgroup_size; gcj++)
+                    for (int gcj = 0; gcj < c_nbnxnGpuJgroupSize; gcj++)
                     {
                         unsigned int fep_cj;
 
-                        if ((cj4->imei[0].imask & (1U << (gcj*gpu_ncluster_per_cell + c))) == 0)
+                        if ((cj4->imei[0].imask & (1U << (gcj*c_gpuNumClusterPerCell + c))) == 0)
                         {
                             /* Skip this ci for this cj */
                             continue;
                         }
 
-                        cjr = cj4->cj[gcj] - gridj->cell0*gpu_ncluster_per_cell;
+                        cjr = cj4->cj[gcj] - gridj->cell0*c_gpuNumClusterPerCell;
 
                         fep_cj = gridj->fep[cjr];
 
@@ -1891,7 +1891,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                             for (int j = 0; j < nbl->na_cj; j++)
                             {
                                 /* Is this interaction perturbed and not excluded? */
-                                ind_j = (gridj->cell0*gpu_ncluster_per_cell + cjr)*nbl->na_cj + j;
+                                ind_j = (gridj->cell0*c_gpuNumClusterPerCell + cjr)*nbl->na_cj + j;
                                 aj    = nbs->a[ind_j];
                                 if (aj >= 0 &&
                                     (bFEP_i || (fep_cj & (1 << j))) &&
@@ -1905,7 +1905,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                                     get_nbl_exclusions_1(nbl, cj4_ind, j>>2, &excl);
 
                                     excl_pair = a_mod_wj(j)*nbl->na_ci + i;
-                                    excl_bit  = (1U << (gcj*gpu_ncluster_per_cell + c));
+                                    excl_bit  = (1U << (gcj*c_gpuNumClusterPerCell + c));
 
                                     dx = nbat->x[ind_j*nbat->xstride+XX] - xi;
                                     dy = nbat->x[ind_j*nbat->xstride+YY] - yi;
@@ -1996,7 +1996,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
 
     sci = nbl_sci->sci;
 
-    cj_ind_first = nbl_sci->cj4_ind_start*nbnxn_gpu_jgroup_size;
+    cj_ind_first = nbl_sci->cj4_ind_start*c_nbnxnGpuJgroupSize;
     cj_ind_last  = nbl->work->cj_ind - 1;
 
     cj_first = nbl->cj4[nbl_sci->cj4_ind_start].cj[0];
@@ -2008,7 +2008,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
      */
     ndirect = 0;
     while (cj_ind_first + ndirect <= cj_ind_last &&
-           nbl_cj(nbl, cj_ind_first+ndirect) == sci*gpu_ncluster_per_cell + ndirect)
+           nbl_cj(nbl, cj_ind_first+ndirect) == sci*c_gpuNumClusterPerCell + ndirect)
     {
         ndirect++;
     }
@@ -2083,14 +2083,14 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
                         inner_i = i  - si*na_c;
                         inner_e = ge - se*na_c;
 
-                        if (nbl_imask0(nbl, found) & (1U << (cj_mod_cj4(found)*gpu_ncluster_per_cell + si)))
+                        if (nbl_imask0(nbl, found) & (1U << (cj_mod_cj4(found)*c_gpuNumClusterPerCell + si)))
                         {
                             w       = (inner_e >> 2);
 
                             get_nbl_exclusions_1(nbl, cj_to_cj4(found), w, &nbl_excl);
 
                             nbl_excl->pair[a_mod_wj(inner_e)*nbl->na_ci+inner_i] &=
-                                ~(1U << (cj_mod_cj4(found)*gpu_ncluster_per_cell + si));
+                                ~(1U << (cj_mod_cj4(found)*c_gpuNumClusterPerCell + si));
                         }
                     }
                 }
@@ -2261,13 +2261,13 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
      * which lead to load imbalance), not an average, we add half the
      * number of pairs in a cj4 block to get the average about right.
      */
-    nsp_max += gpu_ncluster_per_cell*nbnxn_gpu_jgroup_size/2;
+    nsp_max += c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize/2;
 
     cj4_start = nbl->sci[nbl->nsci-1].cj4_ind_start;
     cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
     j4len     = cj4_end - cj4_start;
 
-    if (j4len > 1 && j4len*gpu_ncluster_per_cell*nbnxn_gpu_jgroup_size > nsp_max)
+    if (j4len > 1 && j4len*c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize > nsp_max)
     {
         /* Remove the last ci entry and process the cj4's again */
         nbl->nsci -= 1;
@@ -2282,7 +2282,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
             nsp_cj4_p = nsp_cj4;
             /* Count the number of cluster pairs in this cj4 group */
             nsp_cj4   = 0;
-            for (int p = 0; p < gpu_ncluster_per_cell*nbnxn_gpu_jgroup_size; p++)
+            for (int p = 0; p < c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize; p++)
             {
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
@@ -2340,8 +2340,8 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
         /* We can only have complete blocks of 4 j-entries in a list,
          * so round the count up before closing.
          */
-        nbl->ncj4         = (nbl->work->cj_ind + nbnxn_gpu_jgroup_size - 1)/nbnxn_gpu_jgroup_size;
-        nbl->work->cj_ind = nbl->ncj4*nbnxn_gpu_jgroup_size;
+        nbl->ncj4         = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
+        nbl->work->cj_ind = nbl->ncj4*c_nbnxnGpuJgroupSize;
 
         nbl->nsci++;
 
@@ -2359,7 +2359,7 @@ static void sync_work(nbnxn_pairlist_t *nbl)
 {
     if (!nbl->bSimple)
     {
-        nbl->work->cj_ind   = nbl->ncj4*nbnxn_gpu_jgroup_size;
+        nbl->work->cj_ind   = nbl->ncj4*c_nbnxnGpuJgroupSize;
         nbl->work->cj4_init = nbl->ncj4;
     }
 }
@@ -2409,8 +2409,8 @@ static void set_icell_bbxxxx_supersub(const float *bb, int ci,
                                       real shx, real shy, real shz,
                                       float *bb_ci)
 {
-    int ia = ci*(gpu_ncluster_per_cell >> STRIDE_PBB_2LOG)*NNBSBB_XXXX;
-    for (int m = 0; m < (gpu_ncluster_per_cell >> STRIDE_PBB_2LOG)*NNBSBB_XXXX; m += NNBSBB_XXXX)
+    int ia = ci*(c_gpuNumClusterPerCell >> STRIDE_PBB_2LOG)*NNBSBB_XXXX;
+    for (int m = 0; m < (c_gpuNumClusterPerCell >> STRIDE_PBB_2LOG)*NNBSBB_XXXX; m += NNBSBB_XXXX)
     {
         for (int i = 0; i < STRIDE_PBB; i++)
         {
@@ -2430,9 +2430,9 @@ static void set_icell_bb_supersub(const nbnxn_bb_t *bb, int ci,
                                   real shx, real shy, real shz,
                                   nbnxn_bb_t *bb_ci)
 {
-    for (int i = 0; i < gpu_ncluster_per_cell; i++)
+    for (int i = 0; i < c_gpuNumClusterPerCell; i++)
     {
-        set_icell_bb_simple(bb, ci*gpu_ncluster_per_cell+i,
+        set_icell_bb_simple(bb, ci*c_gpuNumClusterPerCell+i,
                             shx, shy, shz,
                             &bb_ci[i]);
     }
@@ -2464,8 +2464,8 @@ static void icell_set_x_supersub(int ci,
 
     real * x_ci = work->x_ci;
 
-    int    ia = ci*gpu_ncluster_per_cell*nbnxn_gpu_cluster_size;
-    for (int i = 0; i < gpu_ncluster_per_cell*nbnxn_gpu_cluster_size; i++)
+    int    ia = ci*c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize;
+    for (int i = 0; i < c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize; i++)
     {
         x_ci[i*DIM + XX] = x[(ia+i)*stride + XX] + shx;
         x_ci[i*DIM + YY] = x[(ia+i)*stride + YY] + shy;
@@ -2476,12 +2476,12 @@ static void icell_set_x_supersub(int ci,
 
     real * x_ci = work->x_ci_simd;
 
-    for (int si = 0; si < gpu_ncluster_per_cell; si++)
+    for (int si = 0; si < c_gpuNumClusterPerCell; si++)
     {
-        for (int i = 0; i < nbnxn_gpu_cluster_size; i += GMX_SIMD4_WIDTH)
+        for (int i = 0; i < c_nbnxnGpuClusterSize; i += GMX_SIMD4_WIDTH)
         {
-            int io = si*nbnxn_gpu_cluster_size + i;
-            int ia = ci*gpu_ncluster_per_cell*nbnxn_gpu_cluster_size + io;
+            int io = si*c_nbnxnGpuClusterSize + i;
+            int ia = ci*c_gpuNumClusterPerCell*c_nbnxnGpuClusterSize + io;
             for (int j = 0; j < GMX_SIMD4_WIDTH; j++)
             {
                 x_ci[io*DIM + j + XX*GMX_SIMD4_WIDTH] = x[(ia + j)*stride + XX] + shx;
@@ -2502,8 +2502,8 @@ static real minimum_subgrid_size_xy(const nbnxn_grid_t *grid)
     }
     else
     {
-        return std::min(grid->sx/gpu_ncluster_per_cell_x,
-                        grid->sy/gpu_ncluster_per_cell_y);
+        return std::min(grid->sx/c_gpuNumClusterPerCellX,
+                        grid->sy/c_gpuNumClusterPerCellY);
     }
 }
 
@@ -2629,8 +2629,8 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         return;
     }
 
-    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*gpu_ncluster_per_cell_x);
-    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*gpu_ncluster_per_cell_y);
+    ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*c_gpuNumClusterPerCellX);
+    ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*c_gpuNumClusterPerCellY);
     ls[ZZ] = grid->na_c/(grid->atom_density*ls[XX]*ls[YY]);
 
     /* The average squared length of the diagonal of a sub cell */
@@ -2736,14 +2736,14 @@ static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
         int ncp = 0;
         for (int j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
-            for (int j = 0; j < nbnxn_gpu_jgroup_size; j++)
+            for (int j = 0; j < c_nbnxnGpuJgroupSize; j++)
             {
                 fprintf(fp, "  sj %5d  imask %x\n",
                         nbl->cj4[j4].cj[j],
                         nbl->cj4[j4].imei[0].imask);
-                for (int si = 0; si < gpu_ncluster_per_cell; si++)
+                for (int si = 0; si < c_gpuNumClusterPerCell; si++)
                 {
-                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*gpu_ncluster_per_cell + si)))
+                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*c_gpuNumClusterPerCell + si)))
                     {
                         ncp++;
                     }
@@ -3043,8 +3043,8 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
     bby = 0.5*(gridi->sy + gridj->sy);
     if (!simple)
     {
-        bbx /= gpu_ncluster_per_cell_x;
-        bby /= gpu_ncluster_per_cell_y;
+        bbx /= c_gpuNumClusterPerCellX;
+        bby /= c_gpuNumClusterPerCellY;
     }
 
     rbb2 = std::max(0.0, rlist - 0.5*std::sqrt(bbx*bbx + bby*bby));
