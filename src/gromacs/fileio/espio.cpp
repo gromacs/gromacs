@@ -292,7 +292,7 @@ void gmx_espresso_read_conf(const char *infile,
                         }
                     }
                     /* Generate an atom name from the particle type */
-                    sprintf(buf, "T%u", atoms->atom[i].type);
+                    sprintf(buf, "T%hu", atoms->atom[i].type);
                     atoms->atomname[i] = put_symtab(&top->symtab, buf);
                     if (bMol)
                     {
@@ -449,7 +449,7 @@ void write_espresso_conf_indexed(FILE *out, const char *title,
         {
             j = i;
         }
-        fprintf(out, "\t{%d %f %f %f %u %g",
+        fprintf(out, "\t{%d %f %f %f %hu %g",
                 j, x[j][XX], x[j][YY], x[j][ZZ],
                 atoms->atom[j].type, atoms->atom[j].q);
         if (v)
