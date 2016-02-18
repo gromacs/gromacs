@@ -167,9 +167,9 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Polarization",                  59  },
     { "Hyperpolariz.",                 72  },
     { "Anharmonic Polarization",       72  },
-    { "Aniso Pol.",                    62  },   /* jal - check */
+    { "Aniso Pol.",                    137 },
     { "Water Pol.",                    62  },
-    { "Thole Pol.",                    299 },
+    { "Thole Pol.",                    301 },
     { "Virial",                        18  },
     { "Update",                        31  },
     { "Ext.ens. Update",               54  },

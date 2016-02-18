@@ -741,13 +741,14 @@ real aniso_pol(int nbonds,
     int         i, m, type, ki;
     /* following CHARMM naming here for ease of transferring the code */
     int         ai, aj, al, am, an;
-    real        vtot, qD;
+    real        vtot;
     real        r_u1, r_u2;         /* vector lengths */
     real        dpar, dperp;        /* Drude displacement vector lengths */
-    real        dr2;                
+    real        dr2;
     rvec        kk;                 /* force constants */
     rvec        u1, u2;             /* unit vectors */
     rvec        dr;                 /* Drude displacement vector */
+    rvec        fj, fl, fm;         /* change in force on given atoms */
     ivec        dt;
 
     /* Mapping within forceatoms[]
@@ -770,22 +771,20 @@ real aniso_pol(int nbonds,
             am   = forceatoms[i+4];
             an   = forceatoms[i+5];
 
-            qD      = md->chargeA[aj];
-
             if (debug)
             {
-                fprintf(debug, "ANISOPOL: Drude: %d Atom: %d, qD = %f\n", aj+1, ai+1, qD);
+                fprintf(debug, "ANISOPOL: Drude: %d Atom: %d\n", aj+1, ai+1);
             }
 
             /* we can get the force constants from ffpararms or just re-calculate */
             /* These are multiplied by 2 in CHARMM, but we do not need to do that here because
-               we will store K values directly, not K/2 */
+             * we will store K values directly, not K/2. */
             /* KISO0 aka K33 */
-            kk[ZZ] = (kdrude/forceparams[type].daniso.a33) - kdrude;
+            kk[ZZ] = (kdrude/forceparams[type].daniso.a33) - kdrude;            /* 2 */
             /* KPAR0 aka K11 */
-            kk[XX] = (kdrude/forceparams[type].daniso.a11) - kdrude - kk[ZZ];
+            kk[XX] = (kdrude/forceparams[type].daniso.a11) - kdrude - kk[ZZ];   /* 3 */
             /* KPERP0 aka K22 */
-            kk[YY] = (kdrude/forceparams[type].daniso.a22) - kdrude - kk[ZZ];
+            kk[YY] = (kdrude/forceparams[type].daniso.a22) - kdrude - kk[ZZ];   /* 3 */
 
             if (debug)
             {
@@ -793,26 +792,25 @@ real aniso_pol(int nbonds,
             }
 
             /* set up parallel and perpendicular vectors */
-            pbc_rvec_sub(pbc, x[ai], x[al], u1);    /* parallel */
-            pbc_rvec_sub(pbc, x[am], x[an], u2);    /* perpendicular */
+            pbc_rvec_sub(pbc, x[ai], x[al], u1);    /* parallel */              /* 3 */
+            pbc_rvec_sub(pbc, x[am], x[an], u2);    /* perpendicular */         /* 3 */
 
             /* get u1 and u2 vector lengths */
-            r_u1 = sqrt(iprod(u1, u1));
-            r_u2 = sqrt(iprod(u2, u2));
+            r_u1 = sqrt(iprod(u1, u1));     /* 6 */
+            r_u2 = sqrt(iprod(u2, u2));     /* 6 */
 
             /* normalize vectors */
-            svmul((1.0/r_u1), u1, u1);
-            svmul((1.0/r_u2), u2, u2);
+            svmul((1.0/r_u1), u1, u1);  /* 4 */
+            svmul((1.0/r_u2), u2, u2);  /* 4 */
 
             if (debug)
             {
-                fprintf(debug, "ANISOPOL: r_u1 = %f, r_u2 = %f\n", r_u1, r_u2);
-                fprintf(debug, "ANISOPOL: u1 after scale = %f %f %f => %f\n", u1[XX], u1[YY], u1[ZZ], sqrt(iprod(u1, u1)));
-                fprintf(debug, "ANISOPOL: u2 after scale = %f %f %f => %f\n", u2[XX], u2[YY], u2[ZZ], sqrt(iprod(u2, u2)));
+                fprintf(debug, "ANISOPOL: u1 after scale = %f %f %f, r_u1 = %f\n", u1[XX], u1[YY], u1[ZZ], r_u1); 
+                fprintf(debug, "ANISOPOL: u2 after scale = %f %f %f, r_u2 = %f\n", u2[XX], u2[YY], u2[ZZ], r_u2); 
             }
 
             /* calculate Drude displacement vector */
-            ki = pbc_rvec_sub(pbc, x[aj], x[ai], dr);
+            ki = pbc_rvec_sub(pbc, x[aj], x[ai], dr);   /* 3 */
 
             if (debug)
             {
@@ -821,9 +819,9 @@ real aniso_pol(int nbonds,
             }
 
             /* perpendicular and parallel Drude displacement vectors */
-            dpar    = iprod(dr, u1);
-            dperp   = iprod(dr, u2);
-            dr2     = iprod(dr, dr);
+            dpar    = iprod(dr, u1);    /* 5 */
+            dperp   = iprod(dr, u2);    /* 5 */
+            dr2     = iprod(dr, dr);    /* 5 */
 
             if (debug)
             {
@@ -831,7 +829,7 @@ real aniso_pol(int nbonds,
             }
 
             /* calculate anisotropic energy, note use of 0.5 multiplier */
-            vtot += 0.5*kk[XX]*dpar*dpar + 0.5*kk[YY]*dperp*dperp + 0.5*kk[ZZ]*dr2;
+            vtot += 0.5*kk[XX]*dpar*dpar + 0.5*kk[YY]*dperp*dperp + 0.5*kk[ZZ]*dr2; /* 10 */
 
             if (g)
             {
@@ -854,33 +852,30 @@ real aniso_pol(int nbonds,
                 fprintf(debug, "ANISOPOL:  f[an] = %f %f %f\n", f[an][XX], f[an][YY], f[an][ZZ]);
             }
 
+            /* Calculate forces */
+            for (m=0; m<DIM; m++)
+            {
+                fj[m] = -kk[ZZ]*dr[m] - kk[XX]*dpar*u1[m] - kk[YY]*dperp*u2[m];                 /* 8 */
+                fl[m] = kk[XX]*dpar*(1.0/r_u1)*dr[m] - kk[XX]*dpar*dpar*(1.0/r_u1)*u1[m];       /* 10 */
+                fm[m] = kk[YY]*dperp*dperp*(1.0/r_u2)*u2[m] - kk[YY]*dperp*(1.0/r_u2)*dr[m];    /* 9 */
+            }
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: fj iso   = %f %f %f\n", -kk[ZZ]*dr[XX], -kk[ZZ]*dr[YY], -kk[ZZ]*dr[ZZ]);
+                fprintf(debug, "ANISOPOL: fj added = %f %f %f\n", fj[XX], fj[YY], fj[ZZ]);
+                fprintf(debug, "ANISOPOL: fl added = %f %f %f\n", fl[XX], fl[YY], fl[ZZ]);
+                fprintf(debug, "ANISOPOL: fm added = %f %f %f\n", fm[XX], fm[YY], fm[ZZ]);
+            }
+
             /* Update forces */
             for (m=0; m<DIM; m++)
             {
-                /* isotropic spring force - updated forces on Drude and heavy atom to which it is attached */
-                f[ai][m] -= kk[ZZ]*dr[m];
-                f[aj][m] += kk[ZZ]*dr[m];
-
-                /* forces acting parallel and perpendicular */
-                /* heavy atom */
-                f[ai][m] += kk[XX]*dpar*((-1.0*u1[m]) + (dr[m]-u1[m]*(iprod(dr,u1)))/r_u1) - (kk[YY]*dperp*u2[m]);
-
-                /* Drude */
-                f[aj][m] += kk[XX]*dpar*u1[m] + kk[YY]*dperp*u2[m];
-
-                /* other control atoms */
-                f[al][m] += kk[XX]*dpar*((-1.0*dr[m]) + u1[m]*(iprod(dr,u1)))/r_u1;
-                f[am][m] += kk[YY]*dperp*(dr[m] - u2[m]*(iprod(dr,u2)))/r_u2;
-                f[an][m] += kk[YY]*dperp*((-1.0*dr[m]) + u2[m]*(iprod(dr,u2)))/r_u2;
-
-                if (debug)
-                {
-                    fprintf(debug, "ANISOPOL: f[ai][%d] = %f\n", m, f[ai][m]);
-                    fprintf(debug, "ANISOPOL: f[aj][%d] = %f\n", m, f[aj][m]);
-                    fprintf(debug, "ANISOPOL: f[al][%d] = %f\n", m, f[al][m]);
-                    fprintf(debug, "ANISOPOL: f[am][%d] = %f\n", m, f[am][m]);
-                    fprintf(debug, "ANISOPOL: f[an][%d] = %f\n", m, f[an][m]);
-                }
+                f[ai][m] -= (fj[m] + fl[m]);    /* atom */
+                f[aj][m] += fj[m];              /* Drude */
+                f[al][m] += fl[m];              /* parallel atom */
+                f[am][m] += fm[m];              /* perpendicular atom 1 */
+                f[an][m] -= fm[m];              /* perpendicular atom 2 */
 
                 fshift[ki][m]       += f[ai][m];
                 fshift[ki][m]       += f[aj][m];
@@ -893,6 +888,16 @@ real aniso_pol(int nbonds,
                 fshift[CENTRAL][m]  -= f[al][m];
                 fshift[CENTRAL][m]  -= f[am][m];
                 fshift[CENTRAL][m]  -= f[an][m];
+            }   /* 48 */
+
+            if (debug)
+            {
+                fprintf(debug, "ANISOPOL: after f update\n");
+                fprintf(debug, "ANISOPOL:  f[ai] = %f %f %f\n", f[ai][XX], f[ai][YY], f[ai][ZZ]);
+                fprintf(debug, "ANISOPOL:  f[aj] = %f %f %f\n", f[aj][XX], f[aj][YY], f[aj][ZZ]);
+                fprintf(debug, "ANISOPOL:  f[al] = %f %f %f\n", f[al][XX], f[al][YY], f[al][ZZ]);
+                fprintf(debug, "ANISOPOL:  f[am] = %f %f %f\n", f[am][XX], f[am][YY], f[am][ZZ]);
+                fprintf(debug, "ANISOPOL:  f[an] = %f %f %f\n", f[an][XX], f[an][YY], f[an][ZZ]);
             }
         }
     }
@@ -1070,11 +1075,11 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     v0     = qq*ONE_4PI_EPS0*r12_1;                               /*  2 */
     ebar   = std::exp(-r12bar*NM2A);                              /*  6 */
     v1     = (1-(1+0.5*r12bar*NM2A)*ebar);                        /*  5 */
-    fscal  = (v0/r12sq)*(((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1);   /* 10 */
+    fscal  = ((v0/r12sq)/(NM2A*NM2A))*(((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1);   /* 12 */
     if (debug)
     {
         fprintf(debug, "THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.3f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
-        fprintf(debug, "THOLE: qq/r^3 = %.5f polau = %.5f\n", (v0/r12sq), (((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1));
+        fprintf(debug, "THOLE: qq/r^3 = %.5f polau = %.5f\n", ((v0/r12sq)/(NM2A*NM2A)), (((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1));
     }
 
     for (m = 0; (m < DIM); m++)
@@ -1092,7 +1097,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     }
 
     return v0*v1; /* 1 */
-    /* 57 */
+    /* 59 */
 }
 
 real thole_pol(int nbonds,

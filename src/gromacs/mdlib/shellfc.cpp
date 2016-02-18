@@ -489,7 +489,6 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
                                 }
-                                /* TODO: review this */ 
                                 shell[nsi].k    += ffparams->iparams[type].harmonic.krA;
                                 shell[nsi].k11  += shell[nsi].k/(ffparams->iparams[type].daniso.a11);
                                 shell[nsi].k22  += shell[nsi].k/(ffparams->iparams[type].daniso.a22);
