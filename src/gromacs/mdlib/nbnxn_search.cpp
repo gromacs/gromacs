@@ -141,16 +141,19 @@ template<int cj_size> static gmx_inline int ci_to_cj(int ci)
     {
         return ci << 1;
     }
-    if (cj_size == 4)
+    else if (cj_size == 4)
     {
         return ci;
     }
-    if (cj_size == 8)
+    else if (cj_size == 8)
     {
         return ci >> 1;
     }
-    GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
-    return -1;
+    else
+    {
+        GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
+        return -1;
+    }
 }
 
 /* Returns the index in the coordinate array corresponding to the i-cluster index */
@@ -161,13 +164,16 @@ template<int cj_size> static gmx_inline int x_ind_ci(int ci)
         /* Coordinates are stored packed in groups of 4 */
         return ci*STRIDE_P4;
     }
-    if (cj_size == 8)
+    else if (cj_size == 8)
     {
         /* Coordinates packed in 8, i-cluster size is half the packing width */
         return (ci >> 1)*STRIDE_P8 + (ci & 1)*(c_packX8 >> 1);
     }
-    GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
-    return -1;
+    else
+    {
+        GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
+        return -1;
+    }
 }
 
 /* Returns the index in the coordinate array corresponding to the j-cluster index */
@@ -178,18 +184,21 @@ template<int cj_size> static gmx_inline int x_ind_cj(int cj)
         /* Coordinates are stored packed in groups of 4 */
         return (cj >> 1)*STRIDE_P4 + (cj & 1)*(c_packX4 >> 1);
     }
-    if (cj_size <= 4)
+    else if (cj_size <= 4)
     {
         /* Coordinates are stored packed in groups of 4 */
         return cj*STRIDE_P4;
     }
-    if (cj_size == 8)
+    else if (cj_size == 8)
     {
         /* Coordinates are stored packed in groups of 8 */
         return cj*STRIDE_P8;
     }
-    GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
-    return -1;
+    else
+    {
+        GMX_ASSERT(false, "Only j-cluster sizes 2, 4, 8 are implemented");
+        return -1;
+    }
 }
 
 /* The 6 functions below are only introduced to make the code more readable */
