@@ -95,10 +95,6 @@ extern "C" {
 #define DEBYE2ENM        (1e-15/(SPEED_OF_LIGHT*E_CHARGE))
 #define ENM2DEBYE        (1.0/DEBYE2ENM)
 
-/* CHARMM uses slightly different constants for electrostatics (jal, Feb 2014) */
-#define FACELCHARMM  (332.0716*CAL2JOULE)    
-#define ONE_4PI_EPS0_CHARMM (FACELCHARMM*0.1)
-
 /* to convert from a acceleration in (e V)/(amu nm) */
 /* FIELDFAC is also Faraday's constant and E_CHARGE/(1e6 AMU) */
 #define FIELDFAC         (FARADAY/KILO)

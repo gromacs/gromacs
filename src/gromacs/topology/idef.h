@@ -213,7 +213,7 @@ typedef union t_iparams
         real a11, a22, a33;
     } daniso;
     struct {
-        real a, alpha1, alpha2, rfac;
+        real a, alpha1, alpha2;
     } thole;
     struct {
         real c6, c12;

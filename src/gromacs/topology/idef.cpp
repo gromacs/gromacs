@@ -142,9 +142,8 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
                     iparams->anharm_polarize.khyp);
             break;
         case F_THOLE_POL:
-            fprintf(fp, "a=%15.8e, alpha1=%15.8e, alpha2=%15.8e, rfac=%15.8e\n",
-                    iparams->thole.a, iparams->thole.alpha1, iparams->thole.alpha2,
-                    iparams->thole.rfac);
+            fprintf(fp, "a=%15.8e, alpha1=%15.8e, alpha2=%15.8e\n",
+                    iparams->thole.a, iparams->thole.alpha1, iparams->thole.alpha2);
             break;
         case F_WATER_POL:
             fprintf(fp, "al_x=%15.8e, al_y=%15.8e, al_z=%15.8e, rOH=%9.6f, rHH=%9.6f, rOD=%9.6f\n",

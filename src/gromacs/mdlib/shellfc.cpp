@@ -1488,7 +1488,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
         if (bVerbose && MASTER(cr))
         {
-            count = 0;
             print_epot(stdout, mdstep, count, Epot[Min], df[Min], nflexcon, sf_dir);
         }
 
@@ -1508,7 +1507,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
          */
         bConverged = (df[Min] < ftol);
 
-        for (count = 1; !((bConverged) && (count < number_steps)); count++)
+        for (count = 1; (!(bConverged) && (count < number_steps)); count++)
         {
             if (vsite)
             {

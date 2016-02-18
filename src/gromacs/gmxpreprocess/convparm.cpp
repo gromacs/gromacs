@@ -265,17 +265,14 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->wpol.rOD    = old[5];
             break;
         case F_THOLE_POL:
-            newparam->thole.alpha1 = old[0];
-            newparam->thole.alpha2 = old[1];
+            /* Note that polarization has always been listed in nm^3,
+             * but Thole values are presented as unitless in basically
+             * all the literature, but they are actually in Angstrom. So, here
+             * convert everything back to Angstrom to have a unitless scaling
+             * factor. */
+            newparam->thole.alpha1 = old[0] * 1000;
+            newparam->thole.alpha2 = old[1] * 1000;
             newparam->thole.a      = old[2] + old[3];
-            if ((old[0] > 0) && (old[1] > 0))
-            {
-                newparam->thole.rfac = (old[0]*old[1])*gmx::invsixthroot(old[2]+old[3]);
-            }
-            else
-            {
-                newparam->thole.rfac = 1;
-            }
             break;
         case F_BHAM:
             newparam->bham.a = old[0];

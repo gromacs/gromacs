@@ -630,7 +630,7 @@ real hyperpolarize(int nbonds,
         if (dr > rhyp)
         {
             ddr    = dr-rhyp;   /* 1 */
-            fbond -= (khyp*exp*(pow(ddr, (exp-2))));  /* 6 */
+            fbond -= (khyp*exp*(pow(ddr, (exp-1))));  /* 6 */
             vbond += khyp*(pow(ddr, exp));      /* 6 */
         }
         fbond *= gmx::invsqrt(dr2); /* 6 */
@@ -1049,14 +1049,17 @@ real water_pol(int nbonds,
     return 0.5*vtot;
 }
 
+/* NOTE: original functions, modified to use Angstrom. It seems that
+ * the CHARMM Thole function and all published equations only work when
+ * assuming distances are in Angstrom. They are totally wrong if using
+ * units of nm. So all unitless values are transformed to A, but the
+ * final forces are calculated using nm. */
 static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
                        const t_pbc *pbc, real qq,
                        rvec fshift[], real afac)
 {
     rvec r12;
     real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;
-    real polyau1, polyau2;
-    real r;
     int  m, t;
 
     t      = pbc_rvec_sub(pbc, xi, xj, r12);                      /*  3 */
@@ -1064,19 +1067,14 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     r12sq  = iprod(r12, r12);                                     /*  5 */
     r12_1  = gmx::invsqrt(r12sq);                                 /*  5 */
     r12bar = afac/r12_1;                                          /*  5 */
-    v0     = qq*ONE_4PI_EPS0_CHARMM*r12_1;                        /*  2 */
-    ebar   = exp(-r12bar);                                        /*  5 */
-    v1     = (1-(1+0.5*r12bar)*ebar);                             /*  4 */
-    /* previous method for calculating fscal led to massive forces;
-     * present code is the way CHARMM does it - jal */
-    polyau1 = 1.0 + (0.5*r12bar);
-    polyau2 = 1.0 + (r12bar*(polyau1));
-    r = 1.0/r12_1;
-    fscal = (qq/pow(r, 3.0))*(polyau2*ebar);
-
+    v0     = qq*ONE_4PI_EPS0*r12_1;                               /*  2 */
+    ebar   = std::exp(-r12bar*NM2A);                              /*  6 */
+    v1     = (1-(1+0.5*r12bar*NM2A)*ebar);                        /*  5 */
+    fscal  = (v0/r12sq)*(((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1);   /* 10 */
     if (debug)
     {
-        fprintf(debug, "THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.8f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
+        fprintf(debug, "THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.3f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
+        fprintf(debug, "THOLE: qq/r^3 = %.5f polau = %.5f\n", (v0/r12sq), (((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1));
     }
 
     for (m = 0; (m < DIM); m++)
@@ -1088,8 +1086,14 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
         fshift[CENTRAL][m] -= fff;
     }             /* 15 */
 
+    /* TODO: this calculation looks right, but something is weird... */
+    if (debug)
+    {
+        fprintf(debug, "THOLE: returning %f for Thole\n", (v0*v1));
+    }
+
     return v0*v1; /* 1 */
-    /* 54 - no idea if this flop count is correct any more - jal */
+    /* 57 */
 }
 
 real thole_pol(int nbonds,
@@ -1100,9 +1104,9 @@ real thole_pol(int nbonds,
                const t_mdatoms *md, t_fcdata gmx_unused *fcd,
                int gmx_unused *global_atom_index)
 {
-    /* Screened interaction between two particles */
+    /* Interaction between two pairs of particles with opposite charge */
     int        i, type, a1, da1, a2, da2;
-    real       q1, qd1, q2, qd2, qq, a, al1, al2, afac;
+    real       q1, q2, qq, a, al1, al2, afac;
     real       V = 0;
 
     for (i = 0; (i < nbonds); )
@@ -1112,14 +1116,13 @@ real thole_pol(int nbonds,
         da1   = forceatoms[i++];
         a2    = forceatoms[i++];
         da2   = forceatoms[i++];
-        q1    = md->chargeA[a1];
-        qd1   = md->chargeA[da1];
-        q2    = md->chargeA[a2];
-        qd2   = md->chargeA[da2];
+        q1    = md->chargeA[da1];
+        q2    = md->chargeA[da2];
         a     = forceparams[type].thole.a;
         al1   = forceparams[type].thole.alpha1;
         al2   = forceparams[type].thole.alpha2;
-        afac  = forceparams[type].thole.rfac;
+        qq    = q1*q2;
+        afac  = a*gmx::invsixthroot(al1*al2);
 
         if (debug)
         {
@@ -1127,20 +1130,13 @@ real thole_pol(int nbonds,
             fprintf(debug, "THOLE: a = %f, al1 = %f, al2 = %f, afac = %f\n", a, al1, al2, afac);
         }
 
-        /* atom 1 - atom 2 */
-        qq    = q1*q2;
+        /* Atom1 - Atom2 */
         V    += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
-
-        /* atom 2 - Drude 1 */
-        qq    = q2*qd1;
-        V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, qq, fshift, afac);
-
-        /* atom 1 - Drude 2 */
-        qq    = q1*qd2;
-        V    += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, qq, fshift, afac);
-
-        /* Drude 1 - Drude 2 */
-        qq    = qd1*qd2;
+        /* Drude1 - Atom2 */
+        V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
+        /* Atom1 - Drude2 */
+        V    += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, -qq, fshift, afac);
+        /* Drude1 - Drude2 */
         V    += do_1_thole(x[da1], x[da2], f[da1], f[da2], pbc, qq, fshift, afac);
     }
     /* 290 flops */
