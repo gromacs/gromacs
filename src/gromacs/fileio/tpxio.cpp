@@ -2121,7 +2121,6 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->thole.a);
             gmx_fio_do_real(fio, iparams->thole.alpha1);
             gmx_fio_do_real(fio, iparams->thole.alpha2);
-            gmx_fio_do_real(fio, iparams->thole.rfac);
             break;
         case F_LJ:
             gmx_fio_do_real(fio, iparams->lj.c6);
