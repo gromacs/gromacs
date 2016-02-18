@@ -1086,7 +1086,6 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
         fshift[CENTRAL][m] -= fff;
     }             /* 15 */
 
-    /* TODO: this calculation looks right, but something is weird... */
     if (debug)
     {
         fprintf(debug, "THOLE: returning %f for Thole\n", (v0*v1));
