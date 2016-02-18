@@ -2354,6 +2354,30 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
     }
 }
 
+/*! \brief Clost the current "simple" or hierarchical list entry.
+ */
+static void close_ci_entry(nbnxn_pairlist_t *nbl,
+                           int               nsp_max_av,
+                           bool              progBal,
+                           int               nsp_tot_est,
+                           int               thread,
+                           int               nthread)
+{
+
+    /* Close this ci list */
+    if (nbl->bSimple)
+    {
+        close_ci_entry_simple(nbl);
+    }
+    else
+    {
+        close_ci_entry_supersub(nbl,
+                                nsubpair_max,
+                                progBal, nsubpair_tot_est,
+                                thread, nthread);
+    }
+}
+
 /* Syncs the working array before adding another grid pair to the list */
 static void sync_work(nbnxn_pairlist_t *nbl)
 {
@@ -2602,11 +2626,13 @@ static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, rvec ls, real 
     return vol2_est_tot;
 }
 
-/* Estimates the average size of a full j-list for super/sub setup */
+/*! \brief Estimates the average size of a full j-list for super/sub setup.
+ */
 static void get_nsubpair_target(const nbnxn_search_t  nbs,
                                 int                   iloc,
                                 real                  rlist,
                                 int                   min_ci_balanced,
+                                bool                  bSimpleList,
                                 int                  *nsubpair_target,
                                 int                  *nsubpair_tot_est)
 {
@@ -2620,9 +2646,14 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
 
     grid = &nbs->grid[0];
 
-    if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
+    /* We don't need to balance the list sizes when:
+     * - building "simple" lists (non-GPU case)
+     * - min_ci target is <=0, i.e. list tuning is disabled
+     * - we have more grid cells than the requested target or the current grid is empty.
+     */
+    if (bSimpleList || min_ci_balanced <= 0 ||
+        grid->nc >= min_ci_balanced || grid->nc == 0)
     {
-        /* We don't need to balance the list sizes */
         *nsubpair_target  = 0;
         *nsubpair_tot_est = 0;
 
@@ -3686,18 +3717,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         }
                     }
 
-                    /* Close this ci list */
-                    if (nbl->bSimple)
-                    {
-                        close_ci_entry_simple(nbl);
-                    }
-                    else
-                    {
-                        close_ci_entry_supersub(nbl,
-                                                nsubpair_max,
-                                                progBal, nsubpair_tot_est,
-                                                th, nth);
-                    }
+                    close_ci_entry(nbl,
+                                   nsubpair_max,
+                                   progBal, nsubpair_tot_est,
+                                   th, nth);
                 }
             }
         }
@@ -3954,16 +3977,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         nzi = nbs->zones->nizone;
     }
 
-    if (!nbl_list->bSimple && min_ci_balanced > 0)
-    {
-        get_nsubpair_target(nbs, iloc, rlist, min_ci_balanced,
-                            &nsubpair_target, &nsubpair_tot_est);
-    }
-    else
-    {
-        nsubpair_target  = 0;
-        nsubpair_tot_est = 0;
-    }
+
+    get_nsubpair_target(nbs, iloc, rlist, min_ci_balanced,
+                        nbl_list->bSimple,
+                        &nsubpair_target, &nsubpair_tot_est);
+
 
     /* Clear all pair-lists */
     for (int th = 0; th < nnbl; th++)
