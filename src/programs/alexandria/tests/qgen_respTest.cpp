@@ -94,9 +94,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
-            
+
             gmx::test::FloatingPointTolerance tolerance(
-                                                        gmx::test::relativeToleranceAsUlp(1.0, 200));
+                    gmx::test::relativeToleranceAsUlp(1.0, 200));
             checker_.setDefaultTolerance(tolerance);
         }
 
@@ -105,13 +105,14 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testResp(ChargeDistributionModel model, bool fitZeta, bool bPolar)
+        void testResp(ChargeDistributionModel model, bool bPolar)
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
             int                       nexcl       = 2;
             const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
             eDih                      edih        = (eDih) get_option(dihopt);
+            bool                      fitZeta     = false;
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, edih);
@@ -148,25 +149,25 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp(eqdAXp, false, false);
+    testResp(eqdAXp, false);
 }
 
 TEST_F (RespTest, AXgValues)
 {
-    testResp(eqdAXg, false, false);
+    testResp(eqdAXg, false);
 }
 
 TEST_F (RespTest, AXgPolarValues)
 {
-    testResp(eqdAXg, false, true);
+    testResp(eqdAXg, true);
 }
 
 TEST_F (RespTest, AXsValues)
 {
-    testResp(eqdAXs, false, false);
+    testResp(eqdAXs, false);
 }
 
-//TEST_F (RespTest, AXsZetaValues)
-//{
-//   testResp(eqdAXs, true);
-//}
+TEST_F (RespTest, AXsPolarValues)
+{
+    testResp(eqdAXs, true);
+}
