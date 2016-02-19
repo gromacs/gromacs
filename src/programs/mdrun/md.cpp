@@ -99,6 +99,7 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -196,7 +197,6 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -213,7 +213,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   gmx_edsam_t ed, t_forcerec *fr,
-                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t *membed,
+                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                   real cpt_period, real max_hours,
                   int imdport,
                   unsigned long Flags,
@@ -280,6 +280,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
+    gmx_membed_t     *membed   = NULL;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -330,6 +331,39 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         ir->nstxout_compressed = 0;
     }
     groups = &top_global->groups;
+
+    if (opt2bSet("-membed", nfile, fnm))
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "Initializing membed");
+        }
+        /* Note that membed cannot work in parallel because mtop is
+         * changed here. Fix this if we ever want to make it run with
+         * multiple ranks. */
+        membed = init_membed(fplog, nfile, fnm, top_global, ir, state, cr, &cpt_period);
+    }
+    if (ir->bPull)
+    {
+        /* Initialize pull code */
+        ir->pull_work = init_pull(fplog, ir->pull, ir, nfile, fnm,
+                                  top_global, cr, oenv, ir->fepvals->init_lambda,
+                                  EI_DYNAMICS(ir->eI) && MASTER(cr), Flags);
+    }
+
+    if (ir->bRot)
+    {
+        /* Initialize enforced rotation code */
+        init_rot(fplog, ir, nfile, fnm, cr, state_global->x, state_global->box, top_global, oenv,
+                 bVerbose, Flags);
+    }
+
+    if (ir->eSwapCoords != eswapNO)
+    {
+        /* Initialize ion swapping code */
+        init_swapcoords(fplog, bVerbose, ir, opt2fn_master("-swap", nfile, fnm, cr),
+                        top_global, state_global->x, state_global->box, &state_global->swapstate, cr, oenv, Flags);
+    }
 
     /* Initial values */
     init_md(fplog, cr, ir, oenv, &t, &t0, state_global->lambda,
@@ -1795,6 +1829,23 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     if (repl_ex_nst > 0 && MASTER(cr))
     {
         print_replica_exchange_statistics(fplog, repl_ex);
+    }
+
+    // TODO clean up swapcoords
+
+    if (ir->bRot)
+    {
+        finish_rot(ir->rot);
+    }
+
+    if (ir->bPull)
+    {
+        finish_pull(ir->pull_work);
+    }
+
+    if (membed != nullptr)
+    {
+        free_membed(membed);
     }
 
     /* IMD cleanup, if bIMD is TRUE. */

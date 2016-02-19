@@ -89,13 +89,11 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pulling/pull.h"
-#include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -109,7 +107,6 @@
 
 #include "deform.h"
 #include "md.h"
-#include "membed.h"
 #include "repl_ex.h"
 #include "resource-division.h"
 
@@ -698,7 +695,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
     int                       nthreads_pme = 1;
-    gmx_membed_t             *membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
     gmx_bool                  bUseGPU            = FALSE;
@@ -845,18 +841,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
     /* END OF CAUTION: cr is now reliable */
-
-    /* g_membed initialisation *
-     * Because we change the mtop, init_membed is called before the init_parallel *
-     * (in case we ever want to make it run in parallel) */
-    if (opt2bSet("-membed", nfile, fnm))
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "Initializing membed");
-        }
-        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, state, cr, &cpt_period);
-    }
 
     if (PAR(cr))
     {
@@ -1012,6 +996,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bcast(sizeof(box), box, cr);
     }
 
+    // TODO This should move to do_md(), because it only makes sense
+    // with dynamical integrators, but there is no test coverage and
+    // it interacts with constraints, somehow.
     /* Essential dynamics */
     if (opt2bSet("-ei", nfile, fnm))
     {
@@ -1278,29 +1265,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Assumes uniform use of the number of OpenMP threads */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
 
-        if (inputrec->bPull)
-        {
-            /* Initialize pull code */
-            inputrec->pull_work =
-                init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
-                          mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
-        }
-
-        if (inputrec->bRot)
-        {
-            /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, state->x, box, mtop, oenv,
-                     bVerbose, Flags);
-        }
-
-        if (inputrec->eSwapCoords != eswapNO)
-        {
-            /* Initialize ion swapping code */
-            init_swapcoords(fplog, bVerbose, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
-                            mtop, state->x, state->box, &state->swapstate, cr, oenv, Flags);
-        }
-
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
 
         if (DOMAINDECOMP(cr))
@@ -1322,22 +1286,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      fcd, state,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                                     membed,
                                      cpt_period, max_hours,
                                      imdport,
                                      Flags,
                                      walltime_accounting);
-
-        if (inputrec->bPull)
-        {
-            finish_pull(inputrec->pull_work);
-        }
-
-        if (inputrec->bRot)
-        {
-            finish_rot(inputrec->rot);
-        }
-
     }
     else
     {
@@ -1360,11 +1312,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
-
-    if (membed != nullptr)
-    {
-        free_membed(membed);
-    }
 
     gmx_hardware_info_free(hwinfo);
 
