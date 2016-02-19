@@ -731,7 +731,7 @@ this will never cause problems.
 force constants in kJ/mol/rad$^2$.
 
 \begin{figure}
-\centerline{\includegraphics[width=8cm]{plots/f-imps}}
+\centerline{\includegraphics[width=10cm]{plots/f-imps.pdf}}
 \caption{Improper dihedral potential.}
 \label{fig:imps}
 \end{figure}
@@ -1932,7 +1932,7 @@ rather than using soft-core interactions, which should be less
 statistically noisy in most cases. This behavior can be overwritten
 by using the mdp option {\tt sc-coul} to {\tt yes}. Note that the {\tt sc-coul}
 is only taken into account when lambda states are used, not with
-{\tt couple-lambda0/couple-lambda1}, and you can still turn off soft-core
+{\tt couple-lambda0}~/ {\tt couple-lambda1}, and you can still turn off soft-core
 interactions by setting {\tt sc-alpha=0}. Additionally, the soft-core
 interaction potential is only applied when either the A or B
 state has zero interaction potential. If both A and B states have
@@ -2488,33 +2488,9 @@ It is recommended to optimize the parameters for calculation of
 electrostatic interaction such as PME grid dimensions and cut-off radii.
 This is particularly relevant to do before launching long production runs.
 
-{\gromacs} includes a special tool, {\tt g_tune_pme}, which automates the 
-process of selecting the optimal size of the grid and number of PME-only
-notes.
-
-%
-% Temporarily removed since I am not sure about the state of the testlr
-% program...
-%
-%It is possible to test the accuracy of your settings using the program
-%{\tt\normindex{testlr}} in the {\tt src/gmxlib} dir. This program computes
-%forces and potentials using PPPM and an Ewald implementation and gives the
-%absolute and RMS errors in both:
-%\begin{verbatim}
-%ERROR ANALYSIS
-%Error:         Max Abs         RMS
-%Force            1.132       0.251
-%Potential        0.113       0.035
-%\end{verbatim}
-%{\bf Note:} these numbers were generated using a grid spacing of
-%0.058 nm and $r_c$ = 1.0 nm.
-%
-%You can see what the accuracy is without optimizing the
-%$\hat{G}(k)$ function, if you pass the {\tt -ghat} option to {\tt
-%testlr}. Try it if you think the {\tt mk_ghat} procedure is a waste
-%of time.
-%} % Brace matches ifthenelse test for gmxlite
-
+{\tt gmx mdrun} will automatically do a lot of PME optimization, and
+{\gromacs} also includes a special tool, {\tt gmx tune_pme}, which
+automates the process of selecting the optimal number of PME-only ranks.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
