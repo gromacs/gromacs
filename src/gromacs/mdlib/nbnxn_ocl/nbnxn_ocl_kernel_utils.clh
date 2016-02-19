@@ -402,7 +402,8 @@ interpolate_coulomb_force_r(__constant float *coulomb_tab_climg2d,
     float   fract1     = 1.0f - fract2;
 
     /* sigma and epsilon are scaled to give 6*C6 */
-    return coulomb_tab_climg2d[index]*coulomb_tab_climg2d[index];
+    return fract1 * coulomb_tab_climg2d[index] +
+           fract2 * coulomb_tab_climg2d[index+1];
 }
 
 /*! Calculate analytical Ewald correction term. */
