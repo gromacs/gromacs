@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +142,6 @@ namespace gmx
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -162,7 +161,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               gmx_edsam_t gmx_unused ed,
               t_forcerec *fr,
               int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
-              gmx_membed_t *membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               int gmx_unused imdport,
               unsigned long gmx_unused Flags,
@@ -200,7 +198,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     gmx_bool        bEnergyOutOfBounds;
     const char     *tpid_leg[2] = {"direct", "reweighted"};
 
-    GMX_UNUSED_VALUE(membed);
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.
      */
