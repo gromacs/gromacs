@@ -723,7 +723,7 @@ real aniso_pol(int nbonds,
                const rvec x[], rvec f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
-               const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                int gmx_unused *global_atom_index)
 {
     /* This routine implements generic anisotropic polarizibility */
@@ -877,17 +877,17 @@ real aniso_pol(int nbonds,
                 f[am][m] += fm[m];              /* perpendicular atom 1 */
                 f[an][m] -= fm[m];              /* perpendicular atom 2 */
 
-                fshift[ki][m]       += f[ai][m];
+                fshift[ki][m]       -= f[ai][m];
                 fshift[ki][m]       += f[aj][m];
                 fshift[ki][m]       += f[al][m];
                 fshift[ki][m]       += f[am][m];
-                fshift[ki][m]       += f[an][m];
+                fshift[ki][m]       -= f[an][m];
 
-                fshift[CENTRAL][m]  -= f[ai][m];
+                fshift[CENTRAL][m]  += f[ai][m];
                 fshift[CENTRAL][m]  -= f[aj][m];
                 fshift[CENTRAL][m]  -= f[al][m];
                 fshift[CENTRAL][m]  -= f[am][m];
-                fshift[CENTRAL][m]  -= f[an][m];
+                fshift[CENTRAL][m]  += f[an][m];
             }   /* 48 */
 
             if (debug)
