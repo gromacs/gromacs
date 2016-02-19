@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -145,7 +145,8 @@ rst_epilog += """
 .. |Gromacs| replace:: GROMACS
 .. _gmx-manual: manual-{gmx_version_string}.pdf
 .. _gmx-manual-parent-dir: ../manual-{gmx_version_string}.pdf
-.. |gmx-source-package| replace:: ftp://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
+.. |gmx-source-package-ftp| replace:: As ftp ftp://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
+.. |gmx-source-package-http| replace:: As http http://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-regressiontests-package| replace:: http://gerrit.gromacs.org/download/regressiontests-{regressiontest_version}.tar.gz
 .. _up-to-date installation instructions: http://www.gromacs.org/Documentation/Installation_Instructions
 .. _CUDA: http://www.nvidia.com/object/cuda_home_new.html

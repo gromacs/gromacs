@@ -2237,10 +2237,9 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
  */
 static void split_sci_entry(nbnxn_pairlist_t *nbl,
                             int nsp_target_av,
-                            gmx_bool progBal, int nsp_tot_est,
+                            gmx_bool progBal, float nsp_tot_est,
                             int thread, int nthread)
 {
-    int nsp_est;
     int nsp_max;
     int cj4_start, cj4_end, j4len;
     int sci;
@@ -2248,6 +2247,8 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
 
     if (progBal)
     {
+        float nsp_est;
+
         /* Estimate the total numbers of ci's of the nblist combined
          * over all threads using the target number of ci's.
          */
@@ -2257,9 +2258,9 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
          * The last ci blocks should be smaller, to improve load balancing.
          * The factor 3/2 makes the first block 3/2 times the target average
          * and ensures that the total number of blocks end up equal to
-         * that with of equally sized blocks of size nsp_target_av.
+         * that of equally sized blocks of size nsp_target_av.
          */
-        nsp_max = nsp_target_av*nsp_tot_est*3/(2*(nsp_est + nsp_tot_est));
+        nsp_max = (int)(nsp_target_av*(nsp_tot_est*1.5/(nsp_est + nsp_tot_est)));
     }
     else
     {
@@ -2337,7 +2338,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
 /* Clost this super/sub list i entry */
 static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
                                     int nsp_max_av,
-                                    gmx_bool progBal, int nsp_tot_est,
+                                    gmx_bool progBal, float nsp_tot_est,
                                     int thread, int nthread)
 {
     /* All content of the new ci entry have already been filled correctly,
@@ -2617,7 +2618,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
                                 real                  rlist,
                                 int                   min_ci_balanced,
                                 int                  *nsubpair_target,
-                                int                  *nsubpair_tot_est)
+                                float                *nsubpair_tot_est)
 {
     /* The target value of 36 seems to be the optimum for Kepler.
      * Maxwell is less sensitive to the exact value.
@@ -2629,9 +2630,15 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
 
     grid = &nbs->grid[0];
 
+    /* We don't need to balance list sizes if:
+     * - We didn't request balancing.
+     * - The number of grid cells >= the number of lists requested,
+     *   since we will always generate at least #cells lists.
+     * - We don't have any cells, since then there won't be any lists.
+     */
     if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
     {
-        /* We don't need to balance the list sizes */
+        /* nsubpair_target==0 signals no balancing */
         *nsubpair_target  = 0;
         *nsubpair_tot_est = 0;
 
@@ -3130,7 +3137,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      gmx_bool bFBufferFlag,
                                      int nsubpair_max,
                                      gmx_bool progBal,
-                                     int nsubpair_tot_est,
+                                     float nsubpair_tot_est,
                                      int th, int nth,
                                      nbnxn_pairlist_t *nbl,
                                      t_nblist *nbl_fep)
@@ -3895,7 +3902,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     nbnxn_grid_t      *gridi, *gridj;
     gmx_bool           bGPUCPU;
     int                nzi, zj0, zj1;
-    int                nsubpair_target, nsubpair_tot_est;
+    int                nsubpair_target;
+    float              nsubpair_tot_est;
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                ci_block;

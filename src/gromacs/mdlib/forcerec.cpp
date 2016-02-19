@@ -1535,15 +1535,6 @@ gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
         return FALSE;
     }
 
-    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
-    {
-        /* LJ PME with LB combination rule does 7 mesh operations.
-         * This so slow that we don't compile GPU non-bonded kernels for that.
-         */
-        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with GPUs, falling back to CPU only\n");
-        return FALSE;
-    }
-
     return TRUE;
 }
 
