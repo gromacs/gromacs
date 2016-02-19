@@ -98,8 +98,8 @@ typedef std::vector<RespAtomType>::const_iterator RespAtomTypeConstIterator;
 class RespAtom
 {
     public:
-        RespAtom(int atomnumber, int atype, double q, gmx::RVec x)
-            : atomnumber_(atomnumber), atype_(atype), q_(q), x_(x)
+ RespAtom(int atomnumber, int atype, double q, double qref, gmx::RVec x)
+     : atomnumber_(atomnumber), atype_(atype), q_(q), qref_(qref), x_(x)
         {
             qindex_ = -1;
             fixedQ_ = (q != 0);
@@ -121,14 +121,17 @@ class RespAtom
         bool fixedQ() const { return fixedQ_; }
 
         //! Return the charge
-        double charge() const { return q_; }
+        double q() const { return q_; }
 
         //! Set the charge
-        void setCharge(double value)
+        void setQ(double value)
         {
             GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
             q_ = value;
         }
+        
+        //! Return the reference charge (the non-flexible part)
+        double qRef() const { return qref_; }
 
         //! Return the coordinates
         const gmx::RVec &x() const { return x_; }
@@ -148,6 +151,8 @@ class RespAtom
         int       atype_;
         //! Total charge of the atom (which is optimized in resp)
         double    q_;
+        //! Reference charge
+        double    qref_;
         //! Coordinates for this atom
         gmx::RVec x_;
         //! Index in parameterization array

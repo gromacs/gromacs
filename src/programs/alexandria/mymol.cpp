@@ -1831,7 +1831,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void MyMol::AddShells(const Poldata &pd, ePolar epol, ChargeDistributionModel iModel)
+void MyMol::AddShells(const Poldata &pd, bool bPolar, ChargeDistributionModel iModel)
 {
     int              i, j, k, iat, shell, ns = 0;
     std::vector<int> renum, inv_renum;
@@ -1843,7 +1843,7 @@ void MyMol::AddShells(const Poldata &pd, ePolar epol, ChargeDistributionModel iM
     rvec            *newx;
     double           pol, sigpol;
 
-    if (epol == epolNo)
+    if (!bPolar)
     {
         return;
     }

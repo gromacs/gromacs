@@ -164,9 +164,9 @@ int alex_gentop(int argc, char *argv[])
     static int                       maxiter        = 25000, maxcycle = 1;
     static int                       nmol           = 1;
     static real                      rDecrZeta      = -1;
-    static gmx_bool                  bRemoveDih     = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
+    static gmx_bool                  bPolar         = FALSE;
+    static gmx_bool                  bRemoveDih     = FALSE, bQsym = FALSE, bZatype = TRUE, bFitCube = FALSE;
     static gmx_bool                  bParam         = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
-    static const char               *polaropt[]     = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
     static gmx_bool                  bPairs         = FALSE, bPBC = TRUE;
     static gmx_bool                  bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
     static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = FALSE, bEntropy = FALSE;
@@ -277,8 +277,8 @@ int alex_gentop(int argc, char *argv[])
           "Algorithm used for charge generation" },
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Charge distribution used" },
-        { "-polar",  FALSE, etENUM, {&polaropt},
-          "Add polarizable particles to the topology by specifying AllAtom or UnitedAtom (every atom except H)" },
+        { "-polar",  FALSE, etBOOL, {&bPolar},
+          "Add polarizable particles to the topology" },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
         { "-maxiter", FALSE, etINT, {&maxiter},
@@ -356,7 +356,6 @@ int alex_gentop(int argc, char *argv[])
     /* Check command line options of type enum */
     eDih                      edih = (eDih) get_option(dihopt);
     eChargeGroup              ecg  = (eChargeGroup) get_option(cgopt);
-    ePolar                    epol = (ePolar) get_option(polaropt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
     if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
@@ -428,8 +427,6 @@ int alex_gentop(int argc, char *argv[])
         mpi = mps.begin();
     }
 
-    bQsym = bQsym || (opt2parg_bSet("-symm", sizeof(pa)/sizeof(pa[0]), pa));
-
     mymol.molProp()->Merge(mpi);
     mymol.SetForceField(forcefield);
 
@@ -440,7 +437,7 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        mymol.AddShells(pd, epol, iChargeDistributionModel);
+        mymol.AddShells(pd, bPolar, iChargeDistributionModel);
     }
 
 
@@ -460,7 +457,7 @@ int alex_gentop(int argc, char *argv[])
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     hfac, epsr,
-                                    lot, TRUE, symm_string);
+                                    lot, bQsym, symm_string);
     }
     if (immOK == imm)
     {

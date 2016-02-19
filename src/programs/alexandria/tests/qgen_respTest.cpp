@@ -105,7 +105,7 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        void testResp(ChargeDistributionModel model, bool fitZeta)
+    void testResp(ChargeDistributionModel model, bool fitZeta, bool bPolar)
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
@@ -115,7 +115,7 @@ class RespTest : public gmx::test::CommandLineTestBase
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, edih);
-
+            mp_.AddShells(pd_, bPolar, model);
             mp_.gr_.setOptions(model, 1993,
                                fitZeta, 5, 100, 5, false,
                                mp_.molProp()->getCharge(),
@@ -125,8 +125,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             real        epsr        = 1;
             char       *symm_string = (char *)"";
 
-            mp_.GenerateCharges(pd_, aps_, model, eqgRESP,
-                                hfac, epsr, lot, true, symm_string);
+            mp_.GenerateCharges(pd_, aps_, model, eqgESP,
+                                hfac, epsr, lot, false, symm_string);
 
             std::vector<double> qtotValues;
             for (size_t atom = 0; atom < mp_.gr_.nAtom(); atom++)
@@ -148,22 +148,22 @@ class RespTest : public gmx::test::CommandLineTestBase
 
 TEST_F (RespTest, AXpValues)
 {
-    testResp(eqdAXp, false);
+    testResp(eqdAXp, false, false);
 }
 
 TEST_F (RespTest, AXgValues)
 {
-    testResp(eqdAXg, false);
+    testResp(eqdAXg, false, false);
 }
 
-//TEST_F (RespTest, AXgZetaValues)
-//{
-//    testResp(eqdAXg, true);
-//}
+TEST_F (RespTest, AXgPolarValues)
+{
+    testResp(eqdAXg, false, true);
+}
 
 TEST_F (RespTest, AXsValues)
 {
-    testResp(eqdAXs, false);
+    testResp(eqdAXs, false, false);
 }
 
 //TEST_F (RespTest, AXsZetaValues)

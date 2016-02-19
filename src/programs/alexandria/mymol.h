@@ -75,10 +75,6 @@ enum eDih {
     edihNo, edihOne, edihAll, edihNR
 };
 
-enum ePolar {
-    epolNo, epolAllAtom, epolUnited, epolNR
-};
-
 enum eSupport {
     eSupportNo, eSupportLocal, eSupportRemote, eSupportNR
 };
@@ -210,7 +206,7 @@ class MyMol
 
         void CalcMultipoles();
 
-        void AddShells(const Poldata &pd, ePolar epol, ChargeDistributionModel iModel);
+        void AddShells(const Poldata &pd, bool bPolar, ChargeDistributionModel iModel);
 
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 

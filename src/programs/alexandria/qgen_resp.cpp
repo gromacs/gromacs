@@ -143,6 +143,8 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
                            const rvec                 x[])
 {
+    nAtom_ = 0;
+    nShell_ = 0;
     // First add all the atom types
     for (int i = 0; (i < atoms->nr); i++)
     {
@@ -151,7 +153,17 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                          (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
                          (atoms->atom[i].ptype == eptAtom) &&
                          (atoms->atom[i+1].ptype == eptShell));
-
+        switch(atoms->atom[i].ptype) 
+        {
+        case eptAtom:
+            nAtom_ += 1;
+            break;
+        case eptShell:
+            nShell_ += 1;
+            break;
+        default:
+            fprintf(stderr, "Oh dear, particle %d is a %s\n", i, ptype_str[atoms->atom[i].ptype]);
+        }
         if (findRAT(atoms->atom[i].type) == endRAT())
         {
             ratype_.push_back(RespAtomType(atoms->atom[i].type,
@@ -164,15 +176,44 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     // Then add all the atoms
     for (int i = 0; (i < atoms->nr); i++)
     {
+        // THIS is a hack
+        bool hasShell = ((i < atoms->nr-1) &&
+                         (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
+                         (atoms->atom[i].ptype == eptAtom) &&
+                         (atoms->atom[i+1].ptype == eptShell));
         // Now compute starting charge for atom, taking into account
         // the charges of the other "shells".
-        RespAtomTypeIterator rat = findRAT(atoms->atom[i].type);
+        auto rat = findRAT(atoms->atom[i].type);
         GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
-        double               q = rat->beginRZ()->q();
+        double q    = rat->beginRZ()->q();
+        // q is the variable charge. For precision we determine what the
+        // "rest" of the charge on a particle is such that we fit charges to 
+        // the residual electrostatic potential only.
+        double qref = 0;
+        if (hasShell)
+        {
+            // The reference charge is the charge of the shell times -1
+            auto ratp = findRAT(atoms->atom[i+1].type);
+            GMX_RELEASE_ASSERT(ratp != endRAT(), "Inconsistency setting atom info");
+            qref -= ratp->beginRZ()->q();
+        }
+        else
+        {
+            for(auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
+            {
+                qref -= ra->q();
+            }
+        }
         ra_.push_back(RespAtom(atoms->atom[i].atomnumber,
                                atoms->atom[i].type,
                                q,
+                               qref,
                                x[i]));
+        if (debug)
+        {
+            fprintf(debug, "Atom %d hasShell %s q = %g qref = %g\n",
+                    i, gmx::boolToString(hasShell), q, qref);
+        }
     }
 }
 
@@ -240,9 +281,21 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
     GMX_RELEASE_ASSERT(nParam() == 0, "There are parameters already in the Resp structure");
-    GMX_RELEASE_ASSERT(symmetricAtoms.size() == nAtom(), "Please pass me a correct symmetric atoms vector");
+    GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 || 
+                       symmetricAtoms.size() == nAtom(), 
+                       "Please pass me a correct symmetric atoms vector");
 
-    symmetricAtoms_ = symmetricAtoms;
+    if (symmetricAtoms.size() == 0)
+    {
+        for(size_t i = 0; i < nAtom(); i++)
+        {
+            symmetricAtoms_.push_back(i);
+        }
+    }
+    else
+    {
+        symmetricAtoms_ = symmetricAtoms;
+    }
     uniqueQ_        = 0;
     fitQ_           = 0;
     for (size_t i = 0; (i < nAtom()); i++)
@@ -339,7 +392,7 @@ void QgenResp::writeHisto(const std::string      &fn,
     gs = gmx_stats_init();
     for (size_t i = 0; (i < nEsp()); i++)
     {
-        gmx_stats_add_point(gs, i, gmx2convert(_potCalc[i], eg2cHartree_e), 0, 0);
+        gmx_stats_add_point(gs, i, gmx2convert(ep_[i].vCalc(), eg2cHartree_e), 0, 0);
     }
 
     gmx_stats_make_histogram(gs, 0, &nbin, ehistoY, 1, &x, &y);
@@ -391,7 +444,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
 
         for (size_t m = 0; (m < nAtom()); m++)
         {
-            q = ra_[m].charge();
+            q = ra_[m].q();
             fprintf(fp, "%5d%12.6f%12.6f%12.6f%12.6f\n",
                     ra_[m].atomnumber(), q,
                     gmx2convert(ra_[m].x()[XX], eg2cBohr),
@@ -407,23 +460,23 @@ void QgenResp::writeDiffCube(QgenResp               &src,
                 {
                     if (src.nEsp() > 0)
                     {
-                        pp = _potCalc[m] - src._pot[m];
+                        pp = ep_[m].vCalc() - src.ep_[m].v();
                         if (NULL != ppcorr)
                         {
                             gmx_stats_add_point(ppcorr,
-                                                gmx2convert(src._pot[m], eg2cHartree_e),
-                                                gmx2convert(_potCalc[m], eg2cHartree_e), 0, 0);
+                                                gmx2convert(src.ep_[m].v(), eg2cHartree_e),
+                                                gmx2convert(ep_[m].vCalc(), eg2cHartree_e), 0, 0);
                         }
                     }
                     else
                     {
                         if (rho == 0)
                         {
-                            pp = gmx2convert(_potCalc[m], eg2cHartree_e);
+                            pp = gmx2convert(ep_[m].vCalc(), eg2cHartree_e);
                         }
                         else
                         {
-                            pp = _rho[m]*pow(BOHR2NM, 3);
+                            pp = ep_[m].rho()*pow(BOHR2NM, 3);
                         }
                     }
                     fprintf(fp, "%13.5e", pp);
@@ -438,7 +491,7 @@ void QgenResp::writeDiffCube(QgenResp               &src,
                         for (RespAtomIterator i = ra_.begin(); i < ra_.end(); ++i)
                         {
                             gmx::RVec dx;
-                            rvec_sub(i->x(), _esp[m], dx);
+                            rvec_sub(i->x(), ep_[m].esp(), dx);
                             r = norm(dx);
                             if (r < rmin)
                             {
@@ -497,13 +550,14 @@ void QgenResp::writeRho(const std::string &fn, const std::string &title)
 
 void QgenResp::readCube(const std::string &fn, bool bESPonly)
 {
-    int             natom, nxyz[DIM] = { 0, 0, 0 };
-    double          space[DIM] = { 0, 0, 0 };
-
-    gmx::TextReader tr(fn);
-    std::string     tmp;
-    int             line = 0;
-    bool            bOK  = true;
+    int                 natom, nxyz[DIM] = { 0, 0, 0 };
+    double              space[DIM] = { 0, 0, 0 };
+    std::vector<double> pot;
+    
+    gmx::TextReader     tr(fn);
+    std::string         tmp;
+    int                 line = 0;
+    bool                bOK  = true;
     while (bOK && tr.readLine(&tmp))
     {
         while (!tmp.empty() && tmp[tmp.length()-1] == '\n')
@@ -557,7 +611,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
                     _space[m]  = convert2gmx(_space[m], eg2cBohr);
                 }
             }
-            _pot.clear();
+            pot.clear();
         }
         else if (line >= 6 && line < 6+natom)
         {
@@ -570,7 +624,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
                 if (!bESPonly)
                 {
                     ra_[m].setAtomnumber(anr);
-                    ra_[m].setCharge(qq);
+                    ra_[m].setQ(qq);
                 }
                 RVec xx;
                 xx[XX] = convert2gmx(lx, eg2cBohr);
@@ -584,7 +638,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
             std::vector<std::string> ss = gmx::splitString(tmp);
             for (const auto &s : ss)
             {
-                _pot.push_back(convert2gmx(atof(s.c_str()), eg2cHartree_e));
+                pot.push_back(convert2gmx(atof(s.c_str()), eg2cHartree_e));
             }
         }
 
@@ -592,28 +646,28 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     }
     if (bOK)
     {
-        _esp.clear();
+        ep_.clear();
+        int m = 0;
         for (int ix = 0; ix < _nxyz[XX]; ix++)
         {
             for (int iy = 0; iy < _nxyz[YY]; iy++)
             {
-                for (int iz = 0; iz < _nxyz[ZZ]; iz++)
+                for (int iz = 0; iz < _nxyz[ZZ]; iz++, m++)
                 {
-                    rvec e;
+                    gmx::RVec e;
                     e[XX] = _origin[XX] + ix*_space[XX];
                     e[YY] = _origin[YY] + iy*_space[YY];
                     e[ZZ] = _origin[ZZ] + iz*_space[ZZ];
 
-                    _esp.push_back(e);
+                    ep_.push_back(EspPoint(e, pot[m]));
                 }
             }
         }
     }
-    bOK = bOK && (_esp.size() == _pot.size());
     if (!bOK)
     {
         gmx_fatal(FARGS, "Error reading %s. Found %d potential values, %d coordinates and %d atoms",
-                  fn.c_str(), static_cast<int>(_pot.size()), static_cast<int>(_esp.size()),
+                  fn.c_str(), static_cast<int>(pot.size()), static_cast<int>(ep_.size()),
                   static_cast<int>(ra_.size()));
     }
 }
@@ -629,12 +683,10 @@ void QgenResp::copyGrid(QgenResp &src)
         _nxyz[m]   = src._nxyz[m];
     }
     int nesp = src.nEsp();
-    _esp.clear();
-    _pot.resize(nesp, 0);
-    _potCalc.resize(nesp, 0);
+    ep_.clear();
     for (m = 0; (m < nesp); m++)
     {
-        _esp.push_back(src._esp[m]);
+        ep_.push_back(src.ep_[m]);
     }
 }
 
@@ -658,11 +710,10 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
         _nxyz[m]  = 1+(int) (box[m][m]/spacing);
         _space[m] = box[m][m]/_nxyz[m];
     }
-    _esp.clear();
-    _potCalc.clear();
+    ep_.clear();
     for (int i = 0; (i < _nxyz[XX]); i++)
     {
-        rvec xyz;
+        gmx::RVec xyz;
         xyz[XX] = (i-0.5*_nxyz[XX])*_space[XX];
         for (int j = 0; (j < _nxyz[YY]); j++)
         {
@@ -670,8 +721,7 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
             for (int k = 0; (k < _nxyz[ZZ]); k++)
             {
                 xyz[ZZ] = (k-0.5*_nxyz[ZZ])*_space[ZZ];
-                _esp.push_back(xyz);
-                _potCalc.push_back(0);
+                ep_.push_back(EspPoint(xyz, 0));
             }
         }
     }
@@ -680,18 +730,14 @@ void QgenResp::makeGrid(real spacing, matrix box, rvec x[])
 void QgenResp::calcRho()
 {
     double pi32 = pow(M_PI, -1.5);
-    if (_rho.size() < nEsp())
-    {
-        _rho.resize(nEsp(), 0);
-    }
-    for (size_t i = 0; (i < _rho.size()); i++)
+    for (size_t i = 0; (i < nEsp()); i++)
     {
         double V = 0;
         for (const auto &ra : ra_)
         {
             double               vv = 0;
             gmx::RVec            dx;
-            rvec_sub(_esp[i], ra.x(), dx);
+            rvec_sub(ep_[i].esp(), ra.x(), dx);
             double               r     = norm(dx);
             int                  atype = ra.atype();
             RespAtomTypeIterator rat   = findRAT(atype);
@@ -700,9 +746,9 @@ void QgenResp::calcRho()
             {
                 case eqdYang:
                 case eqdRappe:
-                    vv = ra.charge()*Nuclear_SS(r,
-                                                rat->beginRZ()->row(),
-                                                rat->beginRZ()->zeta());
+                    vv = ra.q()*Nuclear_SS(r,
+                                           rat->beginRZ()->row(),
+                                           rat->beginRZ()->zeta());
                     break;
                 case eqdAXg:
                     vv = 0;
@@ -713,7 +759,7 @@ void QgenResp::calcRho()
                         // TODO Check
                         if (q == 0)
                         {
-                            q = ra.charge();
+                            q = ra.q();
                         }
                         if (z > 0 && q != 0)
                         {
@@ -731,13 +777,16 @@ void QgenResp::calcRho()
             }
             V  += vv;
         }
-        _rho[i] = V;
+        ep_[i].setRho(V);
     }
 }
 
 void QgenResp::calcPot()
 {
-    std::fill(_potCalc.begin(), _potCalc.end(), 0.0);
+    for(auto &ep : ep_)
+    {
+        ep.setVCalc(0);
+    }
     int nthreads = gmx_omp_get_max_threads();
     for (auto &ra : ra_)
     {
@@ -754,7 +803,7 @@ void QgenResp::calcPot()
                 double r2 = 0;
                 for (int m = 0; m < DIM; m++)
                 {
-                    r2 += gmx::square(_esp[i][m] - rax[m]);
+                    r2 += gmx::square(ep_[i].esp()[m] - rax[m]);
                 }
                 double r  = std::sqrt(r2);
                 double vv = 0;
@@ -764,7 +813,7 @@ void QgenResp::calcPot()
                     // TODO check
                     if (q == 0)
                     {
-                        q = ra.charge();
+                        q = ra.q();
                     }
                     switch (_iDistributionModel)
                     {
@@ -794,7 +843,7 @@ void QgenResp::calcPot()
                                       getEemtypeName(_iDistributionModel));
                     }
                 }
-                _potCalc[i] += vv*ONE_4PI_EPS0;
+                ep_[i].setVCalc(ep_[i].vCalc() + vv*ONE_4PI_EPS0);
             }
         }
     }
@@ -816,7 +865,7 @@ void QgenResp::setVector(double *params)
         {
             /* First do charges */
             int atom = rp.aIndex();
-            params[n] = ra_[atom].charge();
+            params[n] = ra_[atom].q();
             if (_bRandQ)
             {
                 params[n] += 0.2*(gmx_rng_uniform_real(rnd_)-0.5);
@@ -866,7 +915,7 @@ void QgenResp::getVector(double *params)
         int qi = ra.qIndex();
         if (qi >= 0)
         {
-            ra.setCharge(params[qi]);
+            ra.setQ(params[qi]);
             qtot += params[qi];
         }
         // Make sure to add the charges for nuclei to qtot
@@ -876,7 +925,7 @@ void QgenResp::getVector(double *params)
             qtot += rz->q();
         }
     }
-    ra_[0].setCharge(_qtot-qtot);
+    ra_[0].setQ(_qtot-qtot);
 
     for (auto &rat : ratype_)
     {
@@ -894,19 +943,13 @@ void QgenResp::getVector(double *params)
 void QgenResp::addEspPoint(double x, double y,
                            double z, double V)
 {
-    rvec e;
-    e[XX] = x;
-    e[YY] = y;
-    e[ZZ] = z;
-
-    _esp.push_back(e);
-    _pot.push_back(V);
-    _potCalc.push_back(0);
+    gmx::RVec rv(x, y, z);
+    ep_.push_back(EspPoint(rv, V));
 }
 
-real QgenResp::myWeight(size_t iatom) const
+real QgenResp::myWeight(int iatom) const
 {
-    if (iatom < nAtom())
+    if (iatom < nAtom_)
     {
         return _watoms;
     }
@@ -920,13 +963,9 @@ void QgenResp::potLsq(gmx_stats_t lsq)
 {
     for (size_t i = 0; (i < nEsp()); i++)
     {
-        double w = myWeight( i);
-        if (w > 0)
-        {
-            gmx_stats_add_point(lsq,
-                                gmx2convert(_pot[i], eg2cHartree_e),
-                                gmx2convert(_potCalc[i], eg2cHartree_e), 0, 0);
-        }
+        gmx_stats_add_point(lsq,
+                            gmx2convert(ep_[i].v(), eg2cHartree_e),
+                            gmx2convert(ep_[i].vCalc(), eg2cHartree_e), 0, 0);
     }
 }
 
@@ -937,19 +976,20 @@ void QgenResp::calcRms()
     pot2 = sum2 = entropy = 0;
     for (size_t i = 0; (i < nEsp()); i++)
     {
+        double diff = ep_[i].v() - ep_[i].vCalc();
         if ((NULL != debug) && (i < 4*nAtom()))
         {
             fprintf(debug, "ESP %d QM: %g FIT: %g DIFF: %g\n",
-                    static_cast<int>(i), _pot[i], _potCalc[i],
-                    _pot[i]-_potCalc[i]);
+                    static_cast<int>(i), ep_[i].v(), ep_[i].vCalc(),
+                    diff);
         }
-        s2    = gmx::square(_pot[i]-_potCalc[i]);
+        s2    = gmx::square(diff);
         if ((s2 > 0) && (_bEntropy))
         {
             entropy += s2*log(s2);
         }
         sum2 += s2;
-        pot2 += gmx::square(_pot[i]);
+        pot2 += gmx::square(ep_[i].v());
     }
     _wtot = nEsp();
     if (_wtot > 0)
@@ -988,7 +1028,7 @@ double QgenResp::calcPenalty()
     /* Check for excessive charges */
     for (auto &ra : ra_)
     {
-        real                 qi    = ra.charge();
+        real                 qi    = ra.q();
         int                  atype = ra.atype();
         RespAtomTypeIterator rat   = findRAT(atype);
         for (auto z = rat->beginRZ(); z < rat->endRZ(); ++z)
@@ -1014,7 +1054,7 @@ double QgenResp::calcPenalty()
         b2 = gmx::square(_bHyper);
         for (size_t i = 0; (i < nAtom()); i++)
         {
-            p += sqrt(gmx::square(ra_[i].charge()) + b2) - _bHyper;
+            p += sqrt(gmx::square(ra_[i].q()) + b2) - _bHyper;
         }
         p = (_qfac * p);
     }
@@ -1219,9 +1259,15 @@ void QgenResp::optimizeCharges()
 
     for (size_t j = 0; j < nEsp(); j++)
     {
-        rhs.push_back(_pot[j]);
+        rhs.push_back(ep_[j].v());
     }
-
+    if (debug)
+    {
+        for (size_t j = 0; j < nAtom(); j++)
+        {
+            fprintf(debug, "rhs[%2d] = %10.3f\n", static_cast<int>(j), rhs[j]);
+        }
+    }
     int i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
@@ -1234,7 +1280,7 @@ void QgenResp::optimizeCharges()
             rvec dx;
             for (int m = 0; m < DIM; m++)
             {
-                dx[m] = _esp[j][m] - rx[m];
+                dx[m] = ep_[j].esp()[m] - rx[m];
             }
             double r   = norm(dx);
             double r_1 = 0;
@@ -1259,14 +1305,15 @@ void QgenResp::optimizeCharges()
                     default:
                         gmx_fatal(FARGS, "Go to jail. Don't go through start.");
                 }
+                pot = pot*ONE_4PI_EPS0;
                 if (k->fixedQ())
                 {
-                    double q = k->q();
-                    rhs[j] -= q*pot*ONE_4PI_EPS0;
+                    rhs[j] -= k->q()*pot;
                 }
                 else
                 {
-                    a[j][i] += pot*ONE_4PI_EPS0;
+                    rhs[j]  -= ra_[ii].qRef()*pot;
+                    a[j][i] += pot;
                 }
             }
             if (i == 0 && j < 4*nAtom() && debug)
@@ -1278,6 +1325,15 @@ void QgenResp::optimizeCharges()
         if (!ra_[ii].fixedQ())
         {
             i++;
+        }
+    }
+    if (debug)
+    {
+        for (size_t j = 0; j < nAtom(); j++)
+        {
+            fprintf(debug, "rhs[%2d] = %10.3f  a[%d] = %10.3f  %10.3f  %10.3f\n", 
+                    static_cast<int>(j), rhs[j], 
+                    static_cast<int>(j), a[j][0], a[j][1], a[j][2]);
         }
     }
     // Add the equations to ascertain symmetric charges
@@ -1304,6 +1360,7 @@ void QgenResp::optimizeCharges()
     {
         a[nrow-1][i] = factor;
         int                  atype = ra_[ii].atype();
+        qtot += ra_[ii].qRef();
         RespAtomTypeIterator rat   = findRAT(atype);
         for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
         {
@@ -1315,7 +1372,6 @@ void QgenResp::optimizeCharges()
         }
     }
     rhs.push_back(factor * (_qtot - qtot));
-
     if (debug)
     {
         for (int i = 0; i < nrow; i++)
@@ -1329,6 +1385,7 @@ void QgenResp::optimizeCharges()
         }
     }
     double  *x;
+    printf("ncolumn = %d nrow = %d\n", ncolumn, nrow);
     snew(x, ncolumn);
     LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
     i = 0;
@@ -1336,7 +1393,12 @@ void QgenResp::optimizeCharges()
     {
         if (!ra_[ii].fixedQ())
         {
-            ra_[ii].setCharge(x[i]);
+            if (debug)
+            {
+                fprintf(debug, "x[%2d] = %10.3f\n", i, x[i]);
+            }
+            x[i] += ra_[ii].qRef();
+            ra_[ii].setQ(x[i]);
             if (debug)
             {
                 fprintf(debug, "Q[%d] = %g\n", static_cast<int>(i), x[i]);
@@ -1366,8 +1428,8 @@ void QgenResp::potcomp(const std::string      &potcomp,
         for (size_t i = 0; (i < nEsp()); i++)
         {
             /* Conversion may or may not be in vain depending on unit */
-            exp = gmx2convert(_pot[i], unit);
-            eem = gmx2convert(_potCalc[i], unit);
+            exp = gmx2convert(ep_[i].v(), unit);
+            eem = gmx2convert(ep_[i].vCalc(), unit);
             if (i == nAtom())
             {
                 fprintf(fp, "&\n");
@@ -1384,12 +1446,13 @@ void QgenResp::potcomp(const std::string      &potcomp,
         fprintf(fp, "REMARK All distances are scaled by a factor of two.\n");
         for (size_t i = 0; (i < nEsp()); i++)
         {
-            exp = gmx2convert(_pot[i], eg2cHartree_e);
-            eem = gmx2convert(_potCalc[i], eg2cHartree_e);
-            pp  = _pot[i]-_potCalc[i];
+            exp = gmx2convert(ep_[i].v(), eg2cHartree_e);
+            eem = gmx2convert(ep_[i].vCalc(), eg2cHartree_e);
+            pp  = ep_[i].v()-ep_[i].vCalc();
+            const gmx::RVec esp = ep_[i].esp();
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "ATOM", 1, "HE", "HE", ' ', static_cast<int>(i+1),
-                    ' ', 20*_esp[i][XX], 20*_esp[i][YY], 20*_esp[i][ZZ], 0.0, pp);
+                    ' ', 20*esp[XX], 20*esp[YY], 20*esp[ZZ], 0.0, pp);
         }
         fclose(fp);
     }
@@ -1398,7 +1461,7 @@ void QgenResp::potcomp(const std::string      &potcomp,
 double QgenResp::getAtomCharge(int atom) const
 {
     range_check(atom, 0, nAtom());
-    double                    q     = ra_[atom].charge();
+    double                    q     = ra_[atom].q();
     // TODO Check
     if (1)
     {
@@ -1415,7 +1478,7 @@ double QgenResp::getAtomCharge(int atom) const
 double QgenResp::getCharge(int atom, size_t zz) const
 {
     range_check(atom, 0, nAtom());
-    double                    q     = ra_[atom].charge();
+    double                    q     = ra_[atom].q();
     int                       atype = ra_[atom].atype();
     RespAtomTypeConstIterator rat   = findRAT(atype);
     if (zz < rat->getNZeta())

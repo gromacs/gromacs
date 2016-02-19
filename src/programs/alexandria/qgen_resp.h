@@ -58,6 +58,39 @@ struct t_symtab;
 
 namespace alexandria
 {
+class EspPoint
+{
+ public:
+ EspPoint(gmx::RVec esp, double v) : esp_(esp), v_(v) 
+    {
+        vCalc_ = 0;
+        rho_ = 0;
+    }
+    const gmx::RVec &esp() const { return esp_; }
+    
+    double v() const { return v_; }
+    
+    void setV(double v) { v_ = v; }
+    
+    double vCalc() const { return vCalc_; }
+    
+    void setVCalc(double vcalc) { vCalc_ = vcalc; }
+    
+    double rho() const { return rho_; }
+    
+    void setRho(double rho) { rho_ = rho; }
+    
+ private:
+    //! The coordinates of a point
+    gmx::RVec esp_;
+    //! The measured potential
+    double v_;
+    //! The calculated potential
+    double vCalc_;
+    //! The electron density in the point
+    double rho_;
+};
+
 class QgenResp
 {
     public:
@@ -110,7 +143,7 @@ class QgenResp
 
         size_t nAtomType() const { return ratype_.size(); }
 
-        size_t nEsp() const { return _esp.size(); }
+        size_t nEsp() const { return ep_.size(); }
 
         size_t nParam() const { return raparam_.size(); }
 
@@ -209,7 +242,7 @@ class QgenResp
 
         void getVector(double *params);
 
-        real myWeight(size_t iatom) const;
+        real myWeight(int iatom) const;
 
     private:
         void setVector(double *params);
@@ -234,6 +267,8 @@ class QgenResp
         gmx_rng_t                 rnd_;
         int                       uniqueQ_;
         int                       fitQ_;
+        int                       nAtom_;
+        int                       nShell_;
 
         //! Total number of parameters
         std::vector<RespAtom>     ra_;
@@ -241,8 +276,7 @@ class QgenResp
         std::vector<RespParam>    raparam_;
         std::vector<std::string>  _dzatoms;
         std::string               _stoichiometry;
-        std::vector<double>       _pot, _potCalc, _rho;
-        std::vector<gmx::RVec>    _esp;
+        std::vector<EspPoint>     ep_;
         std::vector<int>          symmetricAtoms_;
 
         void warning(const std::string fn, int line);

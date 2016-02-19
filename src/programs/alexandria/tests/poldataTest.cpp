@@ -101,7 +101,7 @@ std::vector<std::string> PoldataTest::atomNames;
 std::string              PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
-    alexandria::FfatypeIterator aType =  pd_.getAtypeBegin();
+    alexandria::FfatypeIterator aType =  pd_.findAtype("h1");
 
     checker_.checkString(aType->getElem(), "elem");
     checker_.checkString(aType->getDesc(), "desc");
@@ -110,19 +110,6 @@ TEST_F (PoldataTest, getAtype){
     checker_.checkString(aType->getBtype(), "btype");
     checker_.checkString(aType->getVdwparams(), "vdwparams");
     checker_.checkString(aType->getRefEnthalpy(), "refEnthalpy");
-}
-
-TEST_F(PoldataTest, searchAtype){
-    alexandria::Ffatype type;
-    if (pd_.searchAtype(atomName, type))
-    {
-        checker_.checkString(type.getElem(), "elem");
-        checker_.checkString(type.getDesc(), "desc");
-        checker_.checkString(type.getPtype(), "ptype");
-        checker_.checkString(type.getBtype(), "btype");
-        checker_.checkString(type.getVdwparams(), "vdwparams");
-        checker_.checkBoolean(type.getType().compare(atomName) == 0, "Same type");
-    }
 }
 
 TEST_F(PoldataTest, addAtype){
@@ -150,15 +137,16 @@ TEST_F(PoldataTest, addAtype){
                  vdwparams,
                  ref_enthalpy);
 
-    if (pd_.searchAtype(atype, fatype))
+    auto fa = pd_.findAtype(atype);
+    if (fa != pd_.getAtypeEnd())
     {
         // Test if the extractions where correct
-        checker_.checkBoolean(fatype.getElem().compare(elem) == 0, "elem");
-        checker_.checkBoolean(fatype.getDesc().compare(desc) == 0, "desc");
-        checker_.checkBoolean(fatype.getType().compare(atype) == 0, "atype");
-        checker_.checkBoolean(fatype.getPtype().compare(ptype) == 0, "ptype");
-        checker_.checkBoolean(fatype.getBtype().compare(btype) == 0, "btype");
-        checker_.checkBoolean(fatype.getVdwparams().compare(vdwparams) == 0, "vdwparams" );
+        checker_.checkBoolean(fa->getElem().compare(elem) == 0, "elem");
+        checker_.checkBoolean(fa->getDesc().compare(desc) == 0, "desc");
+        checker_.checkBoolean(fa->getType().compare(atype) == 0, "atype");
+        checker_.checkBoolean(fa->getPtype().compare(ptype) == 0, "ptype");
+        checker_.checkBoolean(fa->getBtype().compare(btype) == 0, "btype");
+        checker_.checkBoolean(fa->getVdwparams().compare(vdwparams) == 0, "vdwparams" );
     }
 }
 
@@ -210,7 +198,7 @@ TEST_F (PoldataTest, row){
     {
         for (int model = 0; model <  numModels; model++)
         {
-            rows.push_back(pd_.getRow((ChargeDistributionModel)model, atomName, atomNr));
+            rows.push_back(pd_.getRow((ChargeDistributionModel)model, atomName, 0));
         }
     }
     checker_.checkSequence(rows.begin(), rows.end(), "row");
@@ -226,7 +214,10 @@ TEST_F (PoldataTest, zeta)
     {
         for (int model = 0; model <  numModels; model++)
         {
-            zetas.push_back(pd_.getZeta((ChargeDistributionModel)model, atomName, atomNr));
+            for(int z = 0; z < pd_.getNzeta((ChargeDistributionModel)model, atomName); z++)
+            {
+                zetas.push_back(pd_.getZeta((ChargeDistributionModel)model, atomName, z));
+            }
         }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");

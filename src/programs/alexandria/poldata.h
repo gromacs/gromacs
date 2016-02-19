@@ -194,21 +194,6 @@ class Poldata
         bool atypeToBtype(const std::string &atype,
                           std::string       &btype) const;
         
-        /* Return true if OK, false if not found */
-        bool searchAtype(const std::string &key,
-                         Ffatype           &type)
-        {
-            for(FfatypeIterator fi = _alexandria.begin(); fi < _alexandria.end(); ++fi)
-            {
-                if (key.compare(fi->getType()) == 0)
-                {
-                    type = *fi;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         /* Return 1 if OK, 0 if not found */
         bool getPtypePol(  const std::string &ptype,
                            double *polarizability, double *sigPol) const;

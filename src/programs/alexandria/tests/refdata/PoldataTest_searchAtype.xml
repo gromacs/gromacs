@@ -5,6 +5,6 @@
   <String Name="desc">other hydrogen e.g. on aromatic C</String>
   <String Name="ptype">ha</String>
   <String Name="btype">h1</String>
-  <String Name="vdwparams">2.47135e-01 6.56888e-02</String>
+  <String Name="vdwparams">0 0</String>
   <Bool Name="Same type">true</Bool>
 </ReferenceData>
