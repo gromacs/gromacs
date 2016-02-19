@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016 by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -402,7 +402,8 @@ interpolate_coulomb_force_r(__constant float *coulomb_tab_climg2d,
     float   fract1     = 1.0f - fract2;
 
     /* sigma and epsilon are scaled to give 6*C6 */
-    return coulomb_tab_climg2d[index]*coulomb_tab_climg2d[index];
+    return fract1 * coulomb_tab_climg2d[index] +
+           fract2 * coulomb_tab_climg2d[index+1];
 }
 
 /*! Calculate analytical Ewald correction term. */
