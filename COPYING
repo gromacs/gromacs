@@ -1,5 +1,8 @@
 GROMACS is free software, distributed under the GNU Lesser General
-Public License (LGPL) Version 2.1. See section 1 for details. GROMACS
+Public License (LGPL) Version 2.1.  You can redistribute it and/or
+modify it under the terms of the LGPL as published by the Free 
+Software Foundation; either version 2.1 of the License, or (at your
+option) any later version.  See section 1 for details.  GROMACS
 includes optional code covered by several different licences as
 described below.  The GROMACS package in its entirety may be copied,
 modified or distributed according to the conditions described in
