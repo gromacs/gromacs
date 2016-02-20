@@ -622,6 +622,10 @@ real hyperpolarize(int nbonds,
         /* Bonds have been removed and replaced by F_HYPER_POL by grompp to avoid double-counting */
         *dvdlambda += harmonic(kb, kb, 0, 0, dr, lambda, &vbond, &fbond); /*  19  */
 
+        /* scaling here to emulate original CHARMM implementation
+         * separate contributions from harmonic and quartic regions */
+        fbond *= gmx::invsqrt(dr2); /* 6 */
+
         if (dr2 == 0.0)
         {
             continue;
@@ -629,12 +633,11 @@ real hyperpolarize(int nbonds,
 
         if (dr > rhyp)
         {
-            ddr    = dr-rhyp;   /* 1 */
-            fbond -= (khyp*exp*(pow(ddr, (exp-1))));  /* 6 */
-            vbond += khyp*(pow(ddr, exp));      /* 6 */
+            ddr    = dr-rhyp;                               /* 1 */
+            fbond -= (khyp*exp*(pow(ddr, (exp-1))))/ddr;    /* 7 */
+            vbond += khyp*(pow(ddr, exp));                  /* 6 */
         }
-        fbond *= gmx::invsqrt(dr2); /* 6 */
-        vtot  += vbond;             /* 1 */
+        vtot  += vbond;                                     /* 1 */
 
         if (g)
         {
@@ -649,7 +652,7 @@ real hyperpolarize(int nbonds,
             fshift[ki][m]      += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }   /* 72 TOTAL */
+    }   /* 73 TOTAL */
     return vtot;
 }
 
@@ -1065,26 +1068,31 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
 {
     rvec r12;
     real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;
+    real polyau;
     int  m, t;
 
-    t      = pbc_rvec_sub(pbc, xi, xj, r12);                      /*  3 */
+    t      = pbc_rvec_sub(pbc, xi, xj, r12);                      /* 3 */
 
-    r12sq  = iprod(r12, r12);                                     /*  5 */
-    r12_1  = gmx::invsqrt(r12sq);                                 /*  5 */
-    r12bar = afac/r12_1;                                          /*  5 */
-    v0     = qq*ONE_4PI_EPS0*r12_1;                               /*  2 */
-    ebar   = std::exp(-r12bar*NM2A);                              /*  6 */
-    v1     = (1-(1+0.5*r12bar*NM2A)*ebar);                        /*  5 */
-    fscal  = ((v0/r12sq)/(NM2A*NM2A))*(((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1);   /* 12 */
+    r12sq  = iprod(r12, r12);                                     /* 5 */
+    r12_1  = gmx::invsqrt(r12sq);                                 /* 5 */
+    r12bar = afac/r12_1*NM2A;                                     /* 5 */
+    v0     = qq*ONE_4PI_EPS0*r12_1;                               /* 2 */
+    ebar   = std::exp(-r12bar);                                   /* 6 */
+    v1     = (1-(1+0.5*r12bar)*ebar);                             /* 5 */
+    polyau = 1+((1+0.5*r12bar)*(r12bar));                         /* 4 */
+    fscal  = (v0/r12wq)*(polyau*ebar - 1);                        /* 4 */
+
     if (debug)
     {
-        fprintf(debug, "THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.3f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
-        fprintf(debug, "THOLE: qq/r^3 = %.5f polau = %.5f\n", ((v0/r12sq)/(NM2A*NM2A)), (((1+(r12bar*NM2A*(1+0.5*r12bar*NM2A)))*ebar)-1));
+        fprintf(debug, "THOLE: v0 = %.5f v1 = %.5f r12= % .5f r12bar = %.5f fscal = %.5f  ebar = %.5f\n", v0, v1, 1/r12_1, r12bar, fscal, ebar);
+        fprintf(debug, "THOLE: au = %.5f\n", (1+0.5*r12bar));
+        fprintf(debug, "THOLE: qq/r = %.5f\n", (qq*ONE_4PI_EPS0*r12_1));
+        fprintf(debug, "THOLE: qq/r^3 = %.5f polyau = %.5f\n", (v0/r12sq), polyau);
     }
 
     for (m = 0; (m < DIM); m++)
     {
-        fff                 = fscal*r12[m];
+        fff                 = -fscal*r12[m];
         fi[m]              += fff;
         fj[m]              -= fff;
         fshift[t][m]       += fff;
@@ -1097,7 +1105,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     }
 
     return v0*v1; /* 1 */
-    /* 59 */
+    /* 55 */
 }
 
 real thole_pol(int nbonds,
@@ -1136,14 +1144,14 @@ real thole_pol(int nbonds,
 
         /* Atom1 - Atom2 */
         V    += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
-        /* Drude1 - Atom2 */
-        V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
         /* Atom1 - Drude2 */
         V    += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, -qq, fshift, afac);
+        /* Drude1 - Atom2 */
+        V    += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
         /* Drude1 - Drude2 */
         V    += do_1_thole(x[da1], x[da2], f[da1], f[da2], pbc, qq, fshift, afac);
     }
-    /* 290 flops */
+    /* 291 flops */
     return V;
 }
 
