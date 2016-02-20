@@ -1080,7 +1080,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     ebar   = std::exp(-r12bar);                                   /* 6 */
     v1     = (1-(1+0.5*r12bar)*ebar);                             /* 5 */
     polyau = 1+((1+0.5*r12bar)*(r12bar));                         /* 4 */
-    fscal  = (v0/r12wq)*(polyau*ebar - 1);                        /* 4 */
+    fscal  = (v0/r12sq)*(polyau*ebar - 1);                        /* 4 */
 
     if (debug)
     {
