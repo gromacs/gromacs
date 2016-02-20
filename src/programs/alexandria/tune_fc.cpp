@@ -990,16 +990,7 @@ double OptParam::CalcDeviation()
             debug  = NULL;
             if (mymol.shellfc_)
             {
-                (void)
-                relax_shell_flexcon(debug, _cr, FALSE, 0,
-                                    mymol.inputrec_, TRUE, flags,
-                                    mymol.ltop_, NULL, mymol.enerd_,
-                                    NULL, mymol.state_,
-                                    mymol.f_, force_vir, mymol.md_,
-                                    &my_nrnb, wcycle, NULL,
-                                    &(mymol.mtop_->groups),
-                                    mymol.shellfc_, mymol.fr_, FALSE, t, mu_tot,
-                                    NULL, NULL);
+                mymol.relaxShells(_cr);
             }
             else
             {

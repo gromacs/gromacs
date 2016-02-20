@@ -1385,7 +1385,10 @@ void QgenResp::optimizeCharges()
         }
     }
     double  *x;
-    printf("ncolumn = %d nrow = %d\n", ncolumn, nrow);
+    if (debug)
+    {
+        fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
+    }
     snew(x, ncolumn);
     LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
     i = 0;

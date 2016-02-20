@@ -50,10 +50,10 @@
     <atomtype elem="O" description="O in carboxylic group with a single bond without hydrogen" atype="on" ptype="o" btype="on" vdwparams="0 0" ref_enthalpy="249.173"/>
     <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="o" btype="os" vdwparams="0 0" ref_enthalpy="249.173"/>
     <atomtype elem="F" description="general fluorine" atype="f" ptype="f" btype="f" vdwparams="0 0" ref_enthalpy="79.39"/>
-    <atomtype elem="F" description="fluoride ion" atype="F-" ptype="F-" btype="" vdwparams="0 0" ref_enthalpy="-255.079"/>
-    <atomtype elem="Na" description="sodium ion" atype="Na+" ptype="Na+" btype="" vdwparams="0 0" ref_enthalpy="609.343"/>
-    <atomtype elem="Mg" description="magnesium ion" atype="Mg2+" ptype="Mg2+" btype="" vdwparams="0 0" ref_enthalpy="2341.747"/>
-    <atomtype elem="Al" description="aluminum ion" atype="Al3+" ptype="Al3+" btype="" vdwparams="0 0" ref_enthalpy="5474.213"/>
+    <atomtype elem="F" description="fluoride ion" atype="F" ptype="F-" btype="" vdwparams="0 0" ref_enthalpy="-255.079"/>
+    <atomtype elem="Na" description="sodium ion" atype="Na" ptype="Na+" btype="" vdwparams="0 0" ref_enthalpy="609.343"/>
+    <atomtype elem="Mg" description="magnesium ion" atype="Mg" ptype="Mg2+" btype="" vdwparams="0 0" ref_enthalpy="2341.747"/>
+    <atomtype elem="Al" description="aluminum ion" atype="Al" ptype="Al3+" btype="" vdwparams="0 0" ref_enthalpy="5474.213"/>
     <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p" btype="p2" vdwparams="0 0" ref_enthalpy="316.39"/>
     <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p" btype="p3" vdwparams="0 0" ref_enthalpy="316.39"/>
     <atomtype elem="P" description="hypervalent P" atype="p4" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
@@ -76,10 +76,10 @@
     <atomtype elem="K" description="potassium ion" atype="K+" ptype="K+" btype="" vdwparams="0 0" ref_enthalpy="514.007"/>
     <atomtype elem="Ca" description="calcium ion" atype="Ca2+" ptype="Ca2+" btype="" vdwparams="0 0" ref_enthalpy="1919.228"/>
     <atomtype elem="Br" description="general bromine" atype="br" ptype="br" btype="br" vdwparams="0 0" ref_enthalpy="111.86"/>
-    <atomtype elem="Br" description="bromide ion" atype="Br-" ptype="Br-" btype="" vdwparams="0 0" ref_enthalpy="-219.008"/>
-    <atomtype elem="Rb" description="rubidium ion" atype="Rb+" ptype="Rb+" btype="" vdwparams="0 0" ref_enthalpy="490.129"/>
-    <atomtype elem="I" description="general iodine" atype="I" ptype="i" btype="i" vdwparams="0 0" ref_enthalpy="106.762"/>
-    <atomtype elem="I" description="iodide ion" atype="I-" ptype="I-" btype="" vdwparams="0 0" ref_enthalpy="-194.591"/>
+    <atomtype elem="Br" description="bromide ion" atype="Br" ptype="Br-" btype="" vdwparams="0 0" ref_enthalpy="-219.008"/>
+    <atomtype elem="Rb" description="rubidium ion" atype="Rb" ptype="Rb+" btype="" vdwparams="0 0" ref_enthalpy="490.129"/>
+    <atomtype elem="I" description="general iodine" atype="i" ptype="i" btype="i" vdwparams="0 0" ref_enthalpy="106.762"/>
+    <atomtype elem="I" description="iodide ion" atype="I" ptype="I-" btype="" vdwparams="0 0" ref_enthalpy="-194.591"/>
   </atomtypes>
   <poltypes polarizability_unit="A3" reference="Maaren2014a">
     <poltype ptype="hp" miller="H" bosque="H" polarizability="0" sigma_pol="0"/>
@@ -211,10 +211,10 @@
     <eemprop model="AXp" name="on" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="os" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="f" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="F-" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="Na+" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="Mg2+" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="Al3+" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="F" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="Na" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="Mg" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="Al" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="p2" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="p3" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="p4" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
@@ -237,10 +237,10 @@
     <eemprop model="AXp" name="K+" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="Ca2+" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="br" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="Br-" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="Rb+" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="Br" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="Rb" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="i" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="I" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
-    <eemprop model="AXp" name="I-" jaa="24.9083" chi="7.49112" zeta="0" charge="0" row="1"/>
     <eemprop model="AXg" name="h1" jaa="23.2258" chi="7.49112" zeta="23.7726 23.7726" charge="0  -1" row="1 1"/>
     <eemprop model="AXg" name="h2" jaa="23.2258" chi="7.49112" zeta="23.7726 23.7726" charge="0  -1" row="1 1"/>
     <eemprop model="AXg" name="h3" jaa="23.2258" chi="7.49112" zeta="23.7726 23.7726" charge="0  -1" row="1 1"/>
@@ -289,10 +289,10 @@
     <eemprop model="AXg" name="on" jaa="10.9091" chi="7.49112" zeta="18.6098 18.6098" charge="0  -2" row="2 1"/>
     <eemprop model="AXg" name="os" jaa="10.9091" chi="7.49112" zeta="18.6098 18.6098" charge="0  -2" row="2 1"/>
     <eemprop model="AXg" name="f" jaa="12.6316" chi="7.49112" zeta="21.5482 21.5482" charge="0  -2" row="2 1"/>
-    <eemprop model="AXg" name="F-" jaa="6.05042" chi="7.49112" zeta="10.3214 10.3214" charge="0  -2" row="2 1"/>
-    <eemprop model="AXg" name="Na+" jaa="6.2069" chi="7.49112" zeta="14.8237 14.8237" charge="0  -2" row="3 1"/>
-    <eemprop model="AXg" name="Mg2+" jaa="8.37209" chi="7.49112" zeta="19.9948 19.9948" charge="0  -2" row="3 1"/>
-    <eemprop model="AXg" name="Al3+" jaa="10.7463" chi="7.49112" zeta="25.6649 25.6649" charge="0  -2" row="3 1"/>
+    <eemprop model="AXg" name="F" jaa="6.05042" chi="7.49112" zeta="10.3214 10.3214" charge="0  -2" row="2 1"/>
+    <eemprop model="AXg" name="Na" jaa="6.2069" chi="7.49112" zeta="14.8237 14.8237" charge="0  -2" row="3 1"/>
+    <eemprop model="AXg" name="Mg" jaa="8.37209" chi="7.49112" zeta="19.9948 19.9948" charge="0  -2" row="3 1"/>
+    <eemprop model="AXg" name="Al" jaa="10.7463" chi="7.49112" zeta="25.6649 25.6649" charge="0  -2" row="3 1"/>
     <eemprop model="AXg" name="p2" jaa="6.72897" chi="7.49112" zeta="16.0706 16.0706" charge="0  -2" row="3 1"/>
     <eemprop model="AXg" name="p3" jaa="6.72897" chi="7.49112" zeta="16.0706 16.0706" charge="0  -2" row="3 1"/>
     <eemprop model="AXg" name="p4" jaa="6.72897" chi="7.49112" zeta="16.0706 16.0706" charge="0  -2" row="3 1"/>
@@ -315,10 +315,10 @@
     <eemprop model="AXg" name="K+" jaa="4.73684" chi="7.49112" zeta="14.5451 14.5451" charge="0  -2" row="4 1"/>
     <eemprop model="AXg" name="Ca2+" jaa="6.31579" chi="7.49112" zeta="19.3934 19.3934" charge="0  -2" row="4 1"/>
     <eemprop model="AXg" name="br" jaa="6" chi="7.49112" zeta="18.4238 18.4238" charge="0  -2" row="4 1"/>
-    <eemprop model="AXg" name="Br-" jaa="3.95604" chi="7.49112" zeta="12.1475 12.1475" charge="0  -2" row="4 1"/>
-    <eemprop model="AXg" name="Rb+" jaa="4.33735" chi="7.49112" zeta="16.278 16.278" charge="0  -2" row="5 1"/>
-    <eemprop model="AXg" name="I" jaa="5.17986" chi="7.49112" zeta="19.4399 19.4399" charge="0  -2" row="5 1"/>
-    <eemprop model="AXg" name="I-" jaa="3.49515" chi="7.49112" zeta="13.1172 13.1172" charge="0  -2" row="5 1"/>
+    <eemprop model="AXg" name="Br" jaa="3.95604" chi="7.49112" zeta="12.1475 12.1475" charge="0  -2" row="4 1"/>
+    <eemprop model="AXg" name="Rb" jaa="4.33735" chi="7.49112" zeta="16.278 16.278" charge="0  -2" row="5 1"/>
+    <eemprop model="AXg" name="i" jaa="5.17986" chi="7.49112" zeta="19.4399 19.4399" charge="0  -2" row="5 1"/>
+    <eemprop model="AXg" name="I" jaa="3.49515" chi="7.49112" zeta="13.1172 13.1172" charge="0  -2" row="5 1"/>
     <eemprop model="AXs" name="h1" jaa="23.2258" chi="7.49112" zeta="23.7726 23.7726" charge="0  -1" row="1 1"/>
     <eemprop model="AXs" name="h2" jaa="23.2258" chi="7.49112" zeta="23.7726 23.7726" charge="0  -1" row="1 1"/>
     <eemprop model="AXs" name="h3" jaa="23.2258" chi="7.49112" zeta="23.7726 23.7726" charge="0  -1" row="1 1"/>
@@ -367,10 +367,10 @@
     <eemprop model="AXs" name="on" jaa="10.9091" chi="7.49112" zeta="18.6098 18.6098" charge="0  -2" row="2 1"/>
     <eemprop model="AXs" name="os" jaa="10.9091" chi="7.49112" zeta="18.6098 18.6098" charge="0  -2" row="2 1"/>
     <eemprop model="AXs" name="f" jaa="12.6316" chi="7.49112" zeta="21.5482 21.5482" charge="0  -2" row="2 1"/>
-    <eemprop model="AXs" name="F-" jaa="6.05042" chi="7.49112" zeta="10.3214 10.3214" charge="0  -2" row="2 1"/>
-    <eemprop model="AXs" name="Na+" jaa="6.2069" chi="7.49112" zeta="14.8237 14.8237" charge="0  -2" row="3 1"/>
-    <eemprop model="AXs" name="Mg2+" jaa="8.37209" chi="7.49112" zeta="19.9948 19.9948" charge="0  -2" row="3 1"/>
-    <eemprop model="AXs" name="Al3+" jaa="10.7463" chi="7.49112" zeta="25.6649 25.6649" charge="0  -2" row="3 1"/>
+    <eemprop model="AXs" name="F" jaa="6.05042" chi="7.49112" zeta="10.3214 10.3214" charge="0  -2" row="2 1"/>
+    <eemprop model="AXs" name="Na" jaa="6.2069" chi="7.49112" zeta="14.8237 14.8237" charge="0  -2" row="3 1"/>
+    <eemprop model="AXs" name="Mg" jaa="8.37209" chi="7.49112" zeta="19.9948 19.9948" charge="0  -2" row="3 1"/>
+    <eemprop model="AXs" name="Al" jaa="10.7463" chi="7.49112" zeta="25.6649 25.6649" charge="0  -2" row="3 1"/>
     <eemprop model="AXs" name="p2" jaa="6.72897" chi="7.49112" zeta="16.0706 16.0706" charge="0  -2" row="3 1"/>
     <eemprop model="AXs" name="p3" jaa="6.72897" chi="7.49112" zeta="16.0706 16.0706" charge="0  -2" row="3 1"/>
     <eemprop model="AXs" name="p4" jaa="6.72897" chi="7.49112" zeta="16.0706 16.0706" charge="0  -2" row="3 1"/>
@@ -393,10 +393,10 @@
     <eemprop model="AXs" name="K+" jaa="4.73684" chi="7.49112" zeta="14.5451 14.5451" charge="0  -2" row="4 1"/>
     <eemprop model="AXs" name="Ca2+" jaa="6.31579" chi="7.49112" zeta="19.3934 19.3934" charge="0  -2" row="4 1"/>
     <eemprop model="AXs" name="br" jaa="6" chi="7.49112" zeta="18.4238 18.4238" charge="0  -2" row="4 1"/>
-    <eemprop model="AXs" name="Br-" jaa="3.95604" chi="7.49112" zeta="12.1475 12.1475" charge="0  -2" row="4 1"/>
-    <eemprop model="AXs" name="Rb+" jaa="4.33735" chi="7.49112" zeta="16.278 16.278" charge="0  -2" row="5 1"/>
-    <eemprop model="AXs" name="I" jaa="5.17986" chi="7.49112" zeta="19.4399 19.4399" charge="0  -2" row="5 1"/>
-    <eemprop model="AXs" name="I-" jaa="3.49515" chi="7.49112" zeta="13.1172 13.1172" charge="0  -2" row="5 1"/>
+    <eemprop model="AXs" name="Br" jaa="3.95604" chi="7.49112" zeta="12.1475 12.1475" charge="0  -2" row="4 1"/>
+    <eemprop model="AXs" name="Rb" jaa="4.33735" chi="7.49112" zeta="16.278 16.278" charge="0  -2" row="5 1"/>
+    <eemprop model="AXs" name="i" jaa="5.17986" chi="7.49112" zeta="19.4399 19.4399" charge="0  -2" row="5 1"/>
+    <eemprop model="AXs" name="I" jaa="3.49515" chi="7.49112" zeta="13.1172 13.1172" charge="0  -2" row="5 1"/>
     <eemprop model="Yang" name="H" jaa="13.8904" chi="4.498" zeta="19.8639" charge="0" row="1"/>
     <eemprop model="Yang" name="LI" jaa="4.772" chi="3.006" zeta="7.88857" charge="0" row="2"/>
     <eemprop model="Yang" name="C" jaa="10.126" chi="5.723" zeta="16.1825" charge="0" row="2"/>

@@ -63,6 +63,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -987,7 +988,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             // First set the atomtype
             topology_->atoms.atomtype[natom]      =
                 topology_->atoms.atomtypeB[natom] = put_symtab(symtab_, cai->getObtype().c_str());
-
+            
             natom++;
         }
         for (int i = 0; (i < natom); i++)
@@ -1111,7 +1112,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         excls_to_blocka(topology_->atoms.nr, excls_,
                         &(mtop_->moltype[0].excls));
 
-        ltop_ = gmx_mtop_generate_local_top(mtop_, inputrec_);
+        ltop_ = gmx_mtop_generate_local_top(mtop_, false);
     }
 
     return imm;
@@ -1152,6 +1153,27 @@ void MyMol::CalcMultipoles()
     GMX_RELEASE_ASSERT(i == topology_->atoms.nr, "Inconsistency 1 in mymol.cpp");
     copy_rvec(mu, mu_calc);
     dip_calc = norm(mu);
+}
+
+void MyMol::relaxShells(t_commrec *cr)
+{
+    rvec            mu_tot;
+    tensor          force_vir;
+    t_nrnb          my_nrnb;
+    gmx_wallcycle_t wcycle = wallcycle_init(debug, 0, cr);
+    double          t = 0;
+    
+    init_nrnb(&my_nrnb);
+    clear_mat (force_vir);
+    relax_shell_flexcon(debug, cr, FALSE, 0,
+                        inputrec_, TRUE, ~0,
+                        ltop_, NULL, enerd_,
+                        NULL, state_,
+                        f_, force_vir, md_,
+                        &my_nrnb, wcycle, NULL,
+                        &(mtop_->groups),
+                        shellfc_, fr_, FALSE, t, mu_tot,
+                        NULL, NULL);
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
@@ -1226,18 +1248,29 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 printf("Added %d ESP points to the RESP structure.\n",
                        static_cast<int>(gr_.nEsp()));
             }
-            gr_.optimizeCharges();
-            gr_.calcPot();
-            real rrms, wtot;
-            real rms = gr_.getRms(&wtot, &rrms);
-            printf("RESP: RMS %g RRMS %g\n", rms, rrms);
-
-            for (int i = 0; i < topology_->atoms.nr; i++)
+            bool   converged = false;
+            double chi2[2] = { 1e8, 1e8 };
+            real   rrms, wtot;
+            int    cur = 0;
+            do
             {
-                topology_->atoms.atom[i].q      =
-                    topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
+                gr_.optimizeCharges();
+                for (int i = 0; i < topology_->atoms.nr; i++)
+                {
+                    topology_->atoms.atom[i].q      =
+                        topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
+                }
+                if (nullptr != shellfc_)
+                {
+                    relaxShells(NULL);
+                }
+                gr_.calcPot();
+                chi2[cur] = gr_.getRms(&wtot, &rrms);
+                printf("RESP: RMS %g RRMS %g\n", chi2[cur], rrms);
+                converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-3);
+                cur = 1-cur;
             }
-
+            while (!converged);
         }
         break;
         case eqgEEM:
@@ -1831,7 +1864,8 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void MyMol::AddShells(const Poldata &pd, bool bPolar, ChargeDistributionModel iModel)
+void MyMol::AddShells(const Poldata &pd, bool bPolar, 
+                      ChargeDistributionModel iModel)
 {
     int              i, j, k, iat, shell, ns = 0;
     std::vector<int> renum, inv_renum;
@@ -1992,6 +2026,8 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar, ChargeDistributionModel iM
         bHaveShells_ = true;
     }
     sfree(shell_atom);
+    
+    shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
 }
 
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)

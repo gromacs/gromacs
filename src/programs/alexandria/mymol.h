@@ -57,6 +57,7 @@
 
 struct gmx_enerdata_t;
 struct gmx_shellfc_t;
+struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_state;
@@ -188,11 +189,11 @@ class MyMol
                            const Poldata          &pd,
                            gmx_atomprop_t          aps);
 
-
-
         //! Compute/derive global info about the molecule
         void CalcQPol(const Poldata &pd);
 
+        //! Relax the shells (if any) in the molecule
+        void relaxShells(t_commrec *cr);
 
         //! Set the force field
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
