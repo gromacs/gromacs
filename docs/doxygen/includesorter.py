@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,7 @@ class GroupedSorter(object):
             'functional', 'iomanip', 'ios', 'iosfwd', 'iostream', 'istream', 'iterator',
             'limits', 'list', 'map', 'memory', 'new', 'numeric', 'ostream', 'random',
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
-            'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
+            'tuple', 'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
 
     def __init__(self, style='pub-priv', absolute=False):
         """Initialize a sorted with the given style."""
