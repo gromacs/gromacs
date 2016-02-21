@@ -463,6 +463,30 @@ class InconsistentInputError : public UserInputError
 };
 
 /*! \brief
+ * Exception class when a specified tolerance cannot be achieved.
+ *
+ * \inpublicapi
+ */
+class ToleranceError : public GromacsException
+{
+    public:
+        /*! \brief
+         * Creates an exception object with the provided initializer/reason.
+         *
+         * \param[in] details  Initializer for the exception.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * It is possible to call this constructor either with an explicit
+         * ExceptionInitializer object (useful for more complex cases), or
+         * a simple string if only a reason string needs to be provided.
+         */
+        explicit ToleranceError(const ExceptionInitializer &details)
+            : GromacsException(details) {}
+
+        virtual int errorCode() const;
+};
+
+/*! \brief
  * Exception class for simulation instabilities.
  *
  * \inpublicapi
@@ -508,6 +532,21 @@ class APIError : public GromacsException
 };
 
 /*! \brief
+ * Exception class for out-of-range values or indices
+ *
+ * \inpublicapi
+ */
+class RangeError : public GromacsException
+{
+    public:
+        //! \copydoc FileIOError::FileIOError()
+        explicit RangeError(const ExceptionInitializer &details)
+            : GromacsException(details) {}
+
+        virtual int errorCode() const;
+};
+
+/*! \brief
  * Exception class for use of an unimplemented feature.
  *
  * \inpublicapi
@@ -521,7 +560,6 @@ class NotImplementedError : public APIError
 
         virtual int errorCode() const;
 };
-
 
 /*! \brief
  * Macro for throwing an exception.

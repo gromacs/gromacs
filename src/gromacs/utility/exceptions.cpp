@@ -245,6 +245,11 @@ int InconsistentInputError::errorCode() const
     return eeInconsistentInput;
 }
 
+int ToleranceError::errorCode() const
+{
+    return eeTolerance;
+}
+
 int SimulationInstabilityError::errorCode() const
 {
     return eeInstability;
@@ -258,6 +263,11 @@ int InternalError::errorCode() const
 int APIError::errorCode() const
 {
     return eeAPIError;
+}
+
+int RangeError::errorCode() const
+{
+    return eeRange;
 }
 
 int NotImplementedError::errorCode() const
