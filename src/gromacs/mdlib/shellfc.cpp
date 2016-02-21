@@ -984,7 +984,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     rvec    vecab, tmpvecab;        /* vector between drude and heavy atom */
     rvec    xa, xb;                 /* coordinates of heavy atom and drude, respectively */
     rvec    vinita, vinitb;         /* original velocities of heavy atom and drude, respectively */
-    rvec    vnewa, vnewb;           /* new velocities on heavy atom and drude, respectively */
     rvec    va, vb;                 /* velocities of heavy atom and drude, respectively */
     rvec    vb1, vp1;               /* Bond and particle velocities for heavy atom */ 
     rvec    vb2, vp2;               /* Bond and particle velocities for Drude */ 
@@ -1235,46 +1234,13 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 rvec_add(vb1, vp1, va);
                 rvec_add(vb2, vp2, vb);
 
-                /* copy new positions back */
-                copy_rvec(xa, state->x[ia]);
-                copy_rvec(xb, state->x[ib]);
-
-                if (debug)
-                {
-                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
-                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xa[ZZ]);
-                }
-
-                /* copy new velocities back */
-                copy_rvec(va, vnewa);
-                copy_rvec(vb, vnewb);
-
-                if (debug)
-                {
-                    fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
-                    fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
-                }
-
-                copy_rvec(va, state->v[ia]);
-                copy_rvec(vb, state->v[ib]);
-
-                /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
-
-                /* Update virial for corrections made to heavy atom */
-                rvec_sub(vnewa, vinita, dva);
+                /* virial corrections due to heavy atom */
+                rvec_sub(va, vinita, dva);
                 fac = ma*(1.0/(dt*0.5));
                 svmul(fac, dva, dfa);
 
-                for (m=0; m<DIM; m++)
-                {
-                    for (n=0; n<DIM; n++)
-                    {
-                        force_vir[m][n] += state->x[ia][m]*dfa[n];
-                    }
-                }
-
-                /* Update virial for corrections made to Drude */
-                rvec_sub(vnewb, vinitb, dvb);
+                /* virial corrections due to Drude */
+                rvec_sub(vb, vinitb, dvb);
                 fac = mb*(1.0/(dt*0.5));
                 svmul(fac, dvb, dfb);
 
@@ -1282,9 +1248,28 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 {
                     for (n=0; n<DIM; n++)
                     {
+                        force_vir[m][n] += state->x[ia][m]*dfa[n];
                         force_vir[m][n] += state->x[ib][m]*dfb[n];
                     }
                 }
+
+                if (debug)
+                {
+                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
+                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xa[ZZ]);
+                    fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
+                    fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
+                }
+
+                /* copy new positions back */
+                copy_rvec(xa, state->x[ia]);
+                copy_rvec(xb, state->x[ib]);
+
+                /* copy new velocities back */
+                copy_rvec(va, state->v[ia]);
+                copy_rvec(vb, state->v[ib]);
+
+                /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
 
             } /* end loop over j within iatoms */
 
