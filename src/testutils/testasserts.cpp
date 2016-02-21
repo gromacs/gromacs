@@ -271,6 +271,7 @@ bool FloatingPointTolerance::isWithin(
     // a reasonable thing to do...
     const double relativeTolerance
         = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
+
     if (difference.asAbsolute() <= relativeTolerance * difference.termMagnitude())
     {
         return true;
