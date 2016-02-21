@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,61 +32,46 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Implements functions in errorcodes.h.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
- */
-#include "gmxpre.h"
 
-#include "errorcodes.h"
+/*! \libinternal \file
+ * \brief
+ * Declares structures for analytical or numerical input data to construct tables
+ *
+ * \inlibraryapi
+ * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \ingroup module_tables
+ */
+
+#ifndef GMX_TABLES_TABLEINPUT_H
+#define GMX_TABLES_TABLEINPUT_H
+
+#include <functional>
+#include <vector>
 
 namespace gmx
 {
 
-namespace
+//! \libinternal \brief Specification for analytical table function (name, function, derivative)
+struct
+AnalyticalSplineTableInput
 {
-
-/*! \brief
- * Strings corresponding to gmx::ErrorCode values.
- *
- * This has to match the enum in errorcodes.h!
- *
- * \ingroup module_utility
- */
-const char *const error_names[] =
-{
-    "No error",
-    "Out of memory",
-    "File not found",
-    "System I/O error",
-    "Error in user input",
-    "Inconsistency in user input",
-    "Requested tolerance cannot be achieved",
-    "Simulation instability detected",
-
-    "Feature not implemented",
-    "Invalid value (bug)",
-    "Invalid call (bug)",
-    "Internal error (bug)",
-    "API error (bug)",
-    "Range checking error (possible bug)",
-    "Communication (parallel processing) problem",
-
-    "Unknown error",
+    const std::string                    &desc;        //!< Brief description of function
+    std::function<double(double)>         function;    //!< Analytical form of function
+    std::function<double(double)>         derivative;  //!< Analytical derivative
 };
 
-}   // namespace
-
-const char *getErrorCodeString(int errorcode)
+//! \libinternal \brief Specification for vector table function (name, function, derivative, spacing)
+struct
+NumericalSplineTableInput
 {
-    if (errorcode < 0 || errorcode >= eeUnknownError)
-    {
-        errorcode = eeUnknownError;
-    }
-    return error_names[errorcode];
-}
+    const std::string                    &desc;        //!< Brief description of function
+    const std::vector<double>            &function;    //!< Vector with function values
+    const std::vector<double>            &derivative;  //!< Vector with derivative values
+    double                                spacing;     //!< Distance between data points
+};
+
 
 } // namespace gmx
+
+
+#endif // GMX_TABLES_TABLEINPUT_H
