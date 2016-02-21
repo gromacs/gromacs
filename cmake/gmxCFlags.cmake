@@ -157,6 +157,7 @@ macro (gmx_c_flags)
             endif()
             if (GMX_COMPILER_WARNINGS)
 # 177: function/variable ".." was declared but never referenced
+# 411: class defines no constructor to initialize the following (incorrect for struct, initializer list works)
 # 593: variable ".." was set but never used
 # 981: operands are evaluated in unspecified order
 #1418: external function definition with no prior declaration
@@ -170,7 +171,7 @@ macro (gmx_c_flags)
 #3280: declaration hides member ".."
 #11074: Inlining inhibited by limit max-size(/max-total-size)
 #11076: To get full report use -opt-report=3 -opt-report-phase ipo (shown for previous remark)
-                GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd593 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd11074 -wd11076" GMXC_CFLAGS)
+                GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd411 -wd593 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd11074 -wd11076" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14 -static-intel" GMXC_CFLAGS_RELEASE)
@@ -181,7 +182,7 @@ macro (gmx_c_flags)
                 GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
             endif()
             if (GMX_COMPILER_WARNINGS)
-                GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd593 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280" GMXC_CFLAGS)
+GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280" GMXC_CFLAGS)
             endif()
             GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
@@ -206,7 +207,7 @@ macro (gmx_c_flags)
 # 383: value copied to temporary, reference to temporary used
 # 444: destructor for base class ".." is not virtual
 #2282: unrecognized GCC pragma
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd383 -wd411 -wd444 -wd981 -wd1418 -wd1572 -wd1599 -wd2259 -wd3280 -wd11074 -wd11076 -wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias -no-prec-div -fimf-domain-exclusion=14 -static-intel" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
@@ -216,7 +217,7 @@ macro (gmx_c_flags)
                 GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd3180" GMXC_CFLAGS)
             endif()
             if (GMX_COMPILER_WARNINGS)
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd383 /wd444 /wd981 /wd1418 /wd1572 /wd1599 /wd2259 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
+GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd383 /wd411 /wd444 /wd981 /wd1418 /wd1572 /wd1599 /wd2259 /wd3280 /wd11074 /wd11076 /wd2282" GMXC_CXXFLAGS)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
