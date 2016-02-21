@@ -1404,16 +1404,16 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            if (ir->bDrude && ir->drude->bHardWall)
-            {
-                apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
-            }
-
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                fr->bMolPBC, graph, f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
+
+            if (ir->bDrude && ir->drude->bHardWall)
+            {
+                apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
+            }
 
             if (ir->eI == eiVVAK)
             {
@@ -1434,11 +1434,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                               ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                if (ir->bDrude && ir->drude->bHardWall)
-                {
-                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
-                }
-
                 /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
                 /* are the small terms in the shake_vir here due
                  * to numerical errors, or are they important
@@ -1449,6 +1444,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, NULL,
                                    FALSE, bCalcVir);
+
+                if (ir->bDrude && ir->drude->bHardWall)
+                {
+                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
+                }
+
             }
             if (EI_VV(ir->eI))
             {

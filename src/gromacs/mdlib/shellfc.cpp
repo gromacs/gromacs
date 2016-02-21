@@ -300,7 +300,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
 
     shfc->nflexcon = nflexcon;
 
-    if (nstcalcenergy != 1)
+    if ((nstcalcenergy != 1) && (ir->drude->drudemode==edrudeSCF))
     {
         gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combination with shell particles.\nPlease make a new tpr file.", nstcalcenergy);
     }
@@ -1229,12 +1229,15 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 svmul(tmp_dprod_vr1, vecab, vb1); 
                 svmul(tmp_dprod_vr2, vecab, vb2);
 
-                rvec_inc(va, vb1);
-                rvec_inc(vb, vb2);
+                /* update velocities */
+                clear_rvec(va);
+                clear_rvec(vb);
+                rvec_add(vb1, vp1, va);
+                rvec_add(vb2, vp2, vb);
 
                 /* copy new positions back */
                 copy_rvec(xa, state->x[ia]);
-                copy_rvec(xa, state->x[ib]);
+                copy_rvec(xb, state->x[ib]);
 
                 if (debug)
                 {
