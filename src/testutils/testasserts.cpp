@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -252,6 +252,8 @@ bool FloatingPointTolerance::isWithin(
     {
         return true;
     }
+    printf("UlpTol=%lld     diffAsUlp=%lld\n", ulpTolerance, difference.asUlps());
+
     return false;
 }
 
@@ -293,7 +295,7 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
 FloatingPointTolerance
 relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
 {
-    const double absoluteTolerance = magnitude * tolerance;
+    const double absoluteTolerance = std::abs(magnitude) * tolerance;
     return FloatingPointTolerance(absoluteTolerance, absoluteTolerance,
                                   relativeToleranceToUlp<float>(tolerance),
                                   relativeToleranceToUlp<double>(tolerance),
