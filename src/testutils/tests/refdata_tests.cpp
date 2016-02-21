@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -264,14 +264,38 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
-        // \r is not handled correctly
-        checker.checkTextBlock("\"<'>\n ]]> &\\/;", "stringblock");
+        // Note that '\r' is not handled correctly in stringblock (see
+        // the TODO in createElementContents), so don't try to test it
+        checker.checkTextBlock("\"<'>\n&\\/;", "stringblock");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
-        checker.checkTextBlock("\"<'>\n ]]> &\\/;", "stringblock");
+        checker.checkTextBlock("\"<'>\n&\\/;", "stringblock");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesEmbeddedCdataEndTagInTextBlock)
+{
+    /* stringblocks are implemented as CDATA fields, and the first
+       appearance of "]]>" always terminates the CDATA field. If a
+       string to be stored in a stringblock would contain such text,
+       then a quality XML writer would escape the text somehow, and
+       read it back in a matching way. This test verifies that the
+       overall implementation copes with this issue. (GROMACS tests
+       don't actually depend on this behaviour, but it might be nice
+       to have / know about.) */
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkTextBlock(" ]]> ", "stringblock");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkTextBlock(" ]]> ", "stringblock");
     }
 }
 
