@@ -334,7 +334,8 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
-static void cp_plist(t_params plist[], int ftype,
+static void cp_plist(t_params                   plist[], 
+                     int                        ftype,
                      std::vector<PlistWrapper> &plist_)
 {
     if (plist[ftype].nr > 0)
@@ -357,7 +358,9 @@ static void cp_plist(t_params plist[], int ftype,
     }
 }
 
-void MyMol::MakeAngles(bool bPairs, bool bDihs)
+void MyMol::MakeAngles(const Poldata &pd,
+                       bool           bPairs,
+                       bool           bDihs)
 {
     t_nextnb nnb;
     t_restp  rtp;
@@ -516,13 +519,26 @@ static void getLjParams(const Poldata     &pd,
                         double            *c6,
                         double            *cn)
 {
+    std::vector<double> vdwi, vdwj;
+    
     auto fai = pd.findAtype(ai);
+    if (fai != pd.getAtypeEnd())
+    {
+        vdwi  = getDoubles(fai->getVdwparams());
+    }
+    else
+    {
+        vdwi.resize(2, 0.0);
+    }
     auto faj = pd.findAtype(aj);
-    GMX_RELEASE_ASSERT(fai != pd.getAtypeEnd() && faj != pd.getAtypeEnd(),
-                       "Can not find atom types");
-    std::vector<double> vdwi = getDoubles(fai->getVdwparams());
-    std::vector<double> vdwj = getDoubles(faj->getVdwparams());
-    GMX_RELEASE_ASSERT(vdwi.size() == 2 && vdwj.size() == 2, "Inconsistent number of parameters for Van der Waals");
+    if (faj != pd.getAtypeEnd())
+    {
+        vdwj  = getDoubles(faj->getVdwparams());
+    }
+    else
+    {
+        vdwj.resize(2, 0.0);
+    }
 
     switch (pd.getCombRule())
     {
@@ -561,13 +577,26 @@ static void getBhamParams(const Poldata     &pd,
                           double            *b,
                           double            *c)
 {
+    std::vector<double> vdwi, vdwj;
+    
     auto fai = pd.findAtype(ai);
+    if (fai != pd.getAtypeEnd())
+    {
+        vdwi  = getDoubles(fai->getVdwparams());
+    }
+    else
+    {
+        vdwi.resize(3, 0.0);
+    }
     auto faj = pd.findAtype(aj);
-    GMX_RELEASE_ASSERT(fai != pd.getAtypeEnd() && faj != pd.getAtypeEnd(),
-                       "Can not find atom types");
-    std::vector<double> vdwi = getDoubles(fai->getVdwparams());
-    std::vector<double> vdwj = getDoubles(faj->getVdwparams());
-    GMX_RELEASE_ASSERT(vdwi.size() == 3 && vdwj.size() == 3, "Inconsistent number of parameters for Van der Waals");
+    if (faj != pd.getAtypeEnd())
+    {
+        vdwj  = getDoubles(faj->getVdwparams());
+    }
+    else
+    {
+        vdwj.resize(3, 0.0);
+    }
 
     switch (pd.getCombRule())
     {
@@ -1094,7 +1123,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (immOK == imm)
     {
         /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
-        MakeAngles(bPairs, bDih);
+        MakeAngles(pd, bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
         MakeSpecialInteractions(bUseVsites);
@@ -1864,6 +1893,54 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
+void topology_to_mtop(t_topology *top, gmx_mtop_t *mtop)
+{
+    // Primitive routine copying the whole t_topology into
+    // one molecule in mtop
+    mtop->symtab    = top->symtab;
+    mtop->name      = top->name;
+    mtop->atomtypes = top->atomtypes;
+    
+    // ffparams
+    mtop->ffparams.ntypes    = top->idef.ntypes;
+    mtop->ffparams.atnr      = top->idef.atnr;
+    mtop->ffparams.functype  = top->idef.functype;
+    mtop->ffparams.iparams   = top->idef.iparams;
+    mtop->ffparams.reppow    = 12;
+    mtop->ffparams.fudgeQQ   = top->idef.fudgeQQ;
+    mtop->ffparams.cmap_grid = top->idef.cmap_grid;
+    
+    // moltype
+    sfree(mtop->moltype);
+    mtop->nmoltype = 1;
+    snew(mtop->moltype, 1);
+    mtop->moltype[0].name  = put_symtab(&mtop->symtab, "MOL");
+    mtop->moltype[0].atoms = top->atoms;
+    for(int i = 0; i < F_NRE; i++)
+    {
+        mtop->moltype[0].ilist[i] = top->idef.il[i];
+    }
+    mtop->moltype[0].cgs   = top->cgs;
+    mtop->moltype[0].excls = top->excls;
+    
+    // Molblock
+    sfree(mtop->molblock);
+    mtop->nmolblock = 1;
+    snew(mtop->molblock, 1);
+    mtop->molblock[0].type = 0;
+    mtop->molblock[0].nmol = 1;
+    mtop->molblock[0].natoms_mol = top->atoms.nr;
+    
+    
+    // Other stuff
+    mtop->bIntermolecularInteractions = FALSE;
+    mtop->intermolecular_ilist = NULL;
+    mtop->natoms = top->atoms.nr;
+    mtop->maxres_renum = 1;
+    mtop->maxresnr = 1;
+    stupid_fill_block(&mtop->mols, mtop->natoms, TRUE);
+}
+
 void MyMol::AddShells(const Poldata &pd, bool bPolar, 
                       ChargeDistributionModel iModel)
 {
@@ -1871,7 +1948,6 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
     std::vector<int> renum, inv_renum;
     char             buf[32], **newname;
     t_param          p;
-    t_atom          *shell_atom;
     t_atoms         *newa;
     t_excls         *newexcls;
     rvec            *newx;
@@ -1883,8 +1959,6 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
     }
     int      maxatom = topology_->atoms.nr*2+2;
     srenew(x_, maxatom);
-    snew(shell_atom, 1);
-    shell_atom->ptype = eptShell;
     memset(&p, 0, sizeof(p));
     inv_renum.reserve(topology_->atoms.nr*2);
     for (i = 0; (i < topology_->atoms.nr*2); i++)
@@ -1909,6 +1983,10 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
     printf("added %d shells\n", ns);
     if (ns > 0)
     {
+        t_atom          *shell_atom;
+        snew(shell_atom, 1);
+        shell_atom->ptype = eptShell;
+
         /* Make new atoms and x arrays */
         snew(newa, 1);
         init_t_atoms(newa, topology_->atoms.nr+ns, TRUE);
@@ -2008,13 +2086,11 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
         sfree(excls_);
         excls_ = newexcls;
 
-        for (PlistWrapperIterator i = plist_.begin();
-             (i < plist_.end()); ++i)
+        for (auto i = plist_.begin(); (i < plist_.end()); ++i)
         {
             if (i->getFtype() != F_POLARIZATION)
             {
-                for (ParamIterator j = i->beginParam();
-                     (j < i->endParam()); ++j)
+                for (auto j = i->beginParam(); (j < i->endParam()); ++j)
                 {
                     for (k = 0; (k < NRAL(i->getFtype())); k++)
                     {
@@ -2024,8 +2100,11 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
             }
         }
         bHaveShells_ = true;
+        sfree(shell_atom);
     }
-    sfree(shell_atom);
+    
+    do_init_mtop(pd, mtop_, topology_->name, &topology_->atoms);
+    //topology_to_mtop(topology_, mtop_);
     
     shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
 }

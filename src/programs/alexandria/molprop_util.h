@@ -71,13 +71,6 @@ namespace alexandria
     void generate_formula(std::vector<MolProp> &mp, 
                           gmx_atomprop_t ap);
 
-    /* Return number of atoms, 0 means failure */
-    bool molprop_2_topology2(MolProp mp, gmx_atomprop_t ap,
-                             t_symtab *tab, const char *lot,
-                             t_topology **top, const char *q_algorithm,
-                             rvec **x, t_params plist[F_NRE],
-                             int nexcl, t_excls **excls);
-
     int merge_doubles(std::vector<alexandria::MolProp> &mp,
                       char *doubles, bool bForceMerge);
 

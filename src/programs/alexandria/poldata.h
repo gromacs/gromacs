@@ -186,19 +186,19 @@ class Poldata
                                 { return (ptype.compare(p.getType()) == 0); });
         }
 
-        //! Return the poltype corresponding to atype of nullptr
+        //! Return the poltype corresponding to atype and true if successful
         bool atypeToPtype(const std::string &atype,
                           std::string       &ptype) const;
 
-        //! Return the poltype corresponding to atype of nullptr
+        //! Return the poltype corresponding to atype and true if successful
         bool atypeToBtype(const std::string &atype,
                           std::string       &btype) const;
         
         /* Return 1 if OK, 0 if not found */
-        bool getPtypePol(  const std::string &ptype,
-                           double *polarizability, double *sigPol) const;
-        bool getAtypePol(  const std::string &atype,
-                           double *polarizability, double *sigPol) const ;
+        bool getPtypePol(const std::string &ptype,
+                         double *polarizability, double *sigPol) const;
+        bool getAtypePol(const std::string &atype,
+                         double *polarizability, double *sigPol) const ;
 
         void addMiller(const std::string &miller,
                        int                atomnumber,

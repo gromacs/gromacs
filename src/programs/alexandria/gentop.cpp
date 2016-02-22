@@ -484,7 +484,6 @@ int alex_gentop(int argc, char *argv[])
         mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
-
     if (immOK == imm)
     {
         if (bTOP)

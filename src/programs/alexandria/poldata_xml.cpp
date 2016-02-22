@@ -277,6 +277,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
         case exmlATOMTYPE:
             if (NN(xbuf[exmlELEM]) &&
                 NN(xbuf[exmlATYPE]) &&
+                NN(xbuf[exmlBTYPE]) &&
                 NN(xbuf[exmlPTYPE]) &&
                 NN(xbuf[exmlVDWPARAMS]) &&
                 NN(xbuf[exmlEREF]))
