@@ -92,7 +92,7 @@ enum eelCu {
  * should match the order of enumerated types below.
  */
 enum evdwCu {
-    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
+    evdwCuCUT, evdwCuCUTCOMBGEOM, evdwCuCUTCOMBLB, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -138,6 +138,7 @@ struct cu_atomdata
 
     int      ntypes;            /**< number of atom types                         */
     int     *atom_types;        /**< atom type indices, size natoms               */
+    float2  *lj_comb;           /**< sqrt(c6),sqrt(c12) size natoms               */
 
     float3  *shift_vec;         /**< shifts                                       */
     bool     bShiftVecUploaded; /**< true if the shift vector has been uploaded   */

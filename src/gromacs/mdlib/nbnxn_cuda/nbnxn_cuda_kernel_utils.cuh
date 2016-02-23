@@ -91,6 +91,21 @@ extern texture<float, 1, cudaReadModeElementType> nbfp_comb_texref;
 extern texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
 
+/*! Convert LJ sigma,epsilon parameters to C6,C12. */
+static __forceinline__ __device__
+void convert_sigma_epsilon_to_c6_c12(const float  sigma,
+                                     const float  epsilon,
+                                     float       *c6,
+                                     float       *c12)
+{
+    float sigma2, sigma6;
+
+    sigma2 = sigma * sigma;
+    sigma6 = sigma2 *sigma2 * sigma2;
+    *c6    = epsilon * sigma6;
+    *c12   = *c6 * sigma6;
+}
+
 /*! Apply force switch,  force + energy version. */
 static __forceinline__ __device__
 void calculate_force_switch_F(const  cu_nbparam_t nbparam,
