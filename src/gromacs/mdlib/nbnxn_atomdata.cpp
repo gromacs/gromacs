@@ -903,6 +903,13 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t    *nbat,
                                                       ncz*grid->na_sc,
                                                       nbat->lj_comb + ash*2);
                 }
+                else if (nbat->XFormat == nbatXYZQ)
+                {
+                    copy_lj_to_nbat_lj_comb<1>(nbat->nbfp_comb,
+                                               nbat->type + ash,
+                                               ncz*grid->na_sc,
+                                               nbat->lj_comb + ash*2);
+                }
             }
         }
     }

@@ -257,6 +257,10 @@ Performance and Run Control
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
 
+``GMX_NO_LJ_COMB_RULE``
+        force the use of LJ paremeter lookup instead of using combination rules
+        in the non-bonded kernels.
+
 ``GMX_NO_CUDA_STREAMSYNC``
         the opposite of ``GMX_CUDA_STREAMSYNC``. Disables the use of the
         standard cudaStreamSynchronize-based GPU waiting to improve performance when using CUDA driver API
