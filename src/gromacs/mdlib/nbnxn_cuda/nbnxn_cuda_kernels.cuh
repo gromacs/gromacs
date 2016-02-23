@@ -66,6 +66,18 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJ ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJCombGeom ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJEwCombGeom ## __VA_ARGS__
@@ -102,6 +114,18 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJ ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJEwCombGeom ## __VA_ARGS__
@@ -137,6 +161,18 @@
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJ ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
@@ -175,6 +211,18 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJ ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJEwCombGeom ## __VA_ARGS__
@@ -211,6 +259,18 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJ ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJEwCombGeom ## __VA_ARGS__
@@ -246,6 +306,18 @@
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJ ## __VA_ARGS__
 #include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
