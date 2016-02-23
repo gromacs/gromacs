@@ -2145,7 +2145,10 @@ static void init_nb_verlet(FILE                *fp,
 
             bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
 
-            if (bSimpleList && (fr->vdwtype == evdwCUT && (fr->vdw_modifier == eintmodNONE || fr->vdw_modifier == eintmodPOTSHIFT)))
+            if (fr->vdwtype == evdwCUT &&
+                (fr->vdw_modifier == eintmodNONE ||
+                 fr->vdw_modifier == eintmodPOTSHIFT) &&
+                getenv("GMX_NO_LJ_COMB_RULE") == NULL)
             {
                 /* Plain LJ cut-off: we can optimize with combination rules */
                 enbnxninitcombrule = enbnxninitcombruleDETECT;

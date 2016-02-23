@@ -76,6 +76,9 @@
 #define LJ_EWALD
 #endif
 
+#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+#define LJ_COMB
+#endif
 
 /*
    Kernel launch parameters:
@@ -157,8 +160,13 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
     nbnxn_cj4_t        *pl_cj4      = plist.cj4;
     const nbnxn_excl_t *excl        = plist.excl;
+#ifndef LJ_COMB
     const int          *atom_types  = atdat.atom_types;
     int                 ntypes      = atdat.ntypes;
+#else
+    const float2       *lj_comb     = atdat.lj_comb;
+    float2              ljcp_i, ljcp_j;
+#endif
     const float4       *xq          = atdat.xq;
     float3             *f           = atdat.f;
     const float3       *shift_vec   = atdat.shift_vec;
@@ -209,13 +217,20 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
     int          sci, ci, cj,
                  ai, aj,
-                 cij4_start, cij4_end,
-                 typei, typej,
-                 i, jm, j4, wexcl_idx;
+                 cij4_start, cij4_end;
+#ifndef LJ_COMB
+    int          typei, typej;
+#endif
+    int          i, jm, j4, wexcl_idx;
     float        qi, qj_f,
-                 r2, inv_r, inv_r2, inv_r6,
-                 c6, c12,
-                 int_bit,
+                 r2, inv_r, inv_r2;
+#if !defined LJ_COMB_LB || defined CALC_ENERGIES
+    float        inv_r6, c6, c12;
+#endif
+#ifdef LJ_COMB_LB
+    float        sigma, epsilon;
+#endif
+    float        int_bit,
                  F_invr;
 #ifdef CALC_ENERGIES
     float        E_lj, E_el;
@@ -235,9 +250,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
     /* shmem buffer for cj, for each warp separately */
-    int *cjs    = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * 2 * c_nbnxnGpuJgroupSize;
+    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * 2 * c_nbnxnGpuJgroupSize;
+#ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    int *atib   = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+    int *atib      = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+#else
+    /* shmem buffer for i-atom LJ combination rule parameters */
+    float2 *ljcpib = ((float2 *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+#endif
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
     sci         = nb_sci.sci;           /* super-cluster */
@@ -254,8 +274,13 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         xqbuf.w *= nbparam.epsfac;
         xqib[tidxj * c_clSize + tidxi] = xqbuf;
 
+#ifndef LJ_COMB
         /* Pre-load the i-atom types into shared memory */
         atib[tidxj * c_clSize + tidxi] = atom_types[ai];
+#else
+        /* Pre-load the LJ combination parameters into shared memory */
+        ljcpib[tidxj * c_clSize + tidxi] = lj_comb[ai];
+#endif
     }
     __syncthreads();
 
@@ -268,14 +293,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* TODO: we are trading registers with flops by keeping lje_coeff-s, try re-calculating it later */
     lje_coeff2   = nbparam.ewaldcoeff_lj*nbparam.ewaldcoeff_lj;
     lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2*c_oneSixth;
-#endif /* LJ_EWALD */
+#endif
 
 
 #ifdef CALC_ENERGIES
     E_lj = 0.0f;
     E_el = 0.0f;
 
-#if defined EXCLUSION_FORCES /* Ewald or RF */
+#ifdef EXCLUSION_FORCES /* Ewald or RF */
     if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*c_numClPerSupercl)
     {
         /* we have the diagonal: add the charge and LJ self interaction energy term */
@@ -286,16 +311,16 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             E_el += qi*qi;
 #endif
 
-#if defined LJ_EWALD
+#ifdef LJ_EWALD
             E_lj += tex1Dfetch<float>(nbparam.nbfp_texobj, atom_types[(sci*c_numClPerSupercl + i)*c_clSize + tidxi]*(ntypes + 1)*2);
-#endif      /* LJ_EWALD */
+#endif
         }
 
         /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
 #ifdef LJ_EWALD
         E_lj /= c_clSize*NTHREAD_Z;
         E_lj *= 0.5f*c_oneSixth*lje_coeff6_6;
-#endif  /* LJ_EWALD */
+#endif
 
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
         /* Correct for epsfac^2 due to adding qi^2 */
@@ -345,7 +370,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     xqbuf   = xq[aj];
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
                     qj_f    = xqbuf.w;
+#ifndef LJ_COMB
                     typej   = atom_types[aj];
+#else
+                    ljcp_j  = lj_comb[aj];
+#endif
 
                     fcj_buf = make_float3(0.0f);
 
@@ -388,19 +417,36 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             {
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
-                                typei   = atib[i * c_clSize + tidxi];
 
+#ifndef LJ_COMB
                                 /* LJ 6*C6 and 12*C12 */
+                                typei   = atib[i * c_clSize + tidxi];
                                 c6      = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej));
                                 c12     = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * (ntypes * typei + typej) + 1);
+#else
+                                ljcp_i  = ljcpib[i * c_clSize + tidxi];
+#ifdef LJ_COMB_GEOM
+                                c6      = ljcp_i.x * ljcp_j.x;
+                                c12     = ljcp_i.y * ljcp_j.y;
+#else
+                                /* LJ 2^(1/6)*sigma and 12*epsilon */
+                                sigma   = ljcp_i.x + ljcp_j.x;
+                                epsilon = ljcp_i.y * ljcp_j.y;
+#endif
+#endif                          /* LJ_COMB */
 
                                 /* avoid NaN for excluded pairs at r=0 */
                                 r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
 
                                 inv_r   = rsqrt(r2);
                                 inv_r2  = inv_r * inv_r;
+#if !defined LJ_COMB_LB || defined CALC_ENERGIES
+#ifdef LJ_COMB_LB
+                                convert_sigma_epsilon_to_c6_c12(sigma, epsilon,
+                                                                &c6, &c12);
+#endif
                                 inv_r6  = inv_r2 * inv_r2 * inv_r2;
-#if defined EXCLUSION_FORCES
+#ifdef EXCLUSION_FORCES
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
                                 inv_r6  *= int_bit;
@@ -411,6 +457,16 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot)*c_oneTwelveth -
                                                      c6 * (inv_r6 + nbparam.dispersion_shift.cpot)*c_oneSixth);
 #endif
+#else                           /* LJ_COMB_LB || CALC_ENERGIES */
+                                float sig_r  = sigma*inv_r;
+                                float sig_r2 = sig_r*sig_r;
+                                float sig_r6 = sig_r2*sig_r2*sig_r2;
+#ifdef EXCLUSION_FORCES
+                                sig_r6 *= int_bit;
+#endif                          /* EXCLUSION_FORCES */
+
+                                F_invr  = epsilon * sig_r6 * (sig_r6 - 1.0f) * inv_r2;
+#endif                          /* LJ_COMB_LB || CALC_ENERGIES */
 
 #ifdef LJ_FORCE_SWITCH
 #ifdef CALC_ENERGIES
@@ -555,3 +611,5 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #undef EL_EWALD_ANY
 #undef EXCLUSION_FORCES
 #undef LJ_EWALD
+
+#undef LJ_COMB
