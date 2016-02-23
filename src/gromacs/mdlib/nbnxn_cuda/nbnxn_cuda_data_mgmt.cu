@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -276,13 +276,34 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 
     set_cutoff_parameters(nbp, ic);
 
+    /* We currently only have LJ combination rule (geometric and LB) kernels
+     * for plain cut-off LJ. On Maxell the force only kernels speed up 15%
+     * with PME and 20% with RF, the other kernels speed up about half as much.
+     * For LJ force-switch the geometric rule would give 7% speed-up, but this
+     * combination is rarely used. LJ force-switch with LB rule is more common,
+     * but gives only 1% speed-up.
+     */
     if (ic->vdwtype == evdwCUT)
     {
         switch (ic->vdw_modifier)
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
-                nbp->vdwtype = evdwCuCUT;
+                switch (nbat->comb_rule)
+                {
+                    case ljcrNONE:
+                        nbp->vdwtype = evdwCuCUT;
+                        break;
+                    case ljcrGEOM:
+                        nbp->vdwtype = evdwCuCUTCOMBGEOM;
+                        break;
+                    case ljcrLB:
+                        nbp->vdwtype = evdwCuCUTCOMBLB;
+                        break;
+                    default:
+                        gmx_incons("The requested LJ combination rule is not implemented in the CUDA GPU accelerated kernels!");
+                        break;
+                }
                 break;
             case eintmodFORCESWITCH:
                 nbp->vdwtype = evdwCuFSWITCH;
@@ -735,6 +756,9 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
     cu_atomdata_t *d_atdat   = nb->atdat;
     cudaStream_t   ls        = nb->stream[eintLocal];
 
+    bool bUseLjCombination = (nb->nbparam->vdwtype == evdwCuCUTCOMBGEOM ||
+                              nb->nbparam->vdwtype == evdwCuCUTCOMBLB);
+
     natoms    = nbat->natoms;
     realloced = false;
 
@@ -757,15 +781,23 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
             cu_free_buffered(d_atdat->f, &d_atdat->natoms, &d_atdat->nalloc);
             cu_free_buffered(d_atdat->xq);
             cu_free_buffered(d_atdat->atom_types);
+            cu_free_buffered(d_atdat->lj_comb);
         }
 
         stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
         stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");
-
-        stat = cudaMalloc((void **)&d_atdat->atom_types, nalloc*sizeof(*d_atdat->atom_types));
-        CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
+        if (bUseLjCombination)
+        {
+            stat = cudaMalloc((void **)&d_atdat->lj_comb, nalloc*sizeof(*d_atdat->lj_comb));
+            CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->lj_comb");
+        }
+        else
+        {
+            stat = cudaMalloc((void **)&d_atdat->atom_types, nalloc*sizeof(*d_atdat->atom_types));
+            CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
+        }
 
         d_atdat->nalloc = nalloc;
         realloced       = true;
@@ -780,8 +812,16 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_cuda_t              *nb,
         nbnxn_cuda_clear_f(nb, nalloc);
     }
 
-    cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
-                      natoms*sizeof(*d_atdat->atom_types), ls);
+    if (bUseLjCombination)
+    {
+        cu_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb,
+                          natoms*sizeof(*d_atdat->lj_comb), ls);
+    }
+    else
+    {
+        cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
+                          natoms*sizeof(*d_atdat->atom_types), ls);
+    }
 
     if (bDoTime)
     {
@@ -924,6 +964,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     cu_free_buffered(atdat->f, &atdat->natoms, &atdat->nalloc);
     cu_free_buffered(atdat->xq);
     cu_free_buffered(atdat->atom_types, &atdat->ntypes);
+    cu_free_buffered(atdat->lj_comb);
 
     cu_free_buffered(plist->sci, &plist->nsci, &plist->sci_nalloc);
     cu_free_buffered(plist->cj4, &plist->ncj4, &plist->cj4_nalloc);
