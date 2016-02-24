@@ -2626,7 +2626,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     const int           nsubpair_target_min = 36;
     const nbnxn_grid_t *grid;
     rvec                ls;
-    real                xy_diag2, r_eff_sup, vol_est, nsp_est, nsp_est_nl;
+    real                r_eff_sup, vol_est, nsp_est, nsp_est_nl;
 
     grid = &nbs->grid[0];
 
@@ -2649,11 +2649,11 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*c_gpuNumClusterPerCellY);
     ls[ZZ] = grid->na_c/(grid->atom_density*ls[XX]*ls[YY]);
 
-    /* The average squared length of the diagonal of a sub cell */
-    xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
+    /* The average length of the diagonal of a sub cell */
+    real diagonal = std::sqrt(ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ]);
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*0.5*diagonal;
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
