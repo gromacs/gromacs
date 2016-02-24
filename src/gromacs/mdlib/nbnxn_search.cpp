@@ -2653,7 +2653,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*0.5*std::sqrt(xy_diag2);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
