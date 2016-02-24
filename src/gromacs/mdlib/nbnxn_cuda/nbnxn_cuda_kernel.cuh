@@ -342,16 +342,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         imask       = pl_cj4[j4].imei[widx].imask;
         wexcl       = excl[wexcl_idx].pair[(tidx) & (warp_size - 1)];
 
+        /* Pre-load cj into shared memory on both warps separately.
+           Moving this into the conditional below is slower. */
+        if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
+        {
+            cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
+        }
+
 #ifndef PRUNE_NBL
         if (imask)
 #endif
         {
-            /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
-            {
-                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
-            }
-
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler and later it is much slower;
