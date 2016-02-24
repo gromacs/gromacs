@@ -329,12 +329,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #endif                                                 /* CALC_ENERGIES */
 
-    /* skip central shifts when summing shift forces */
-    if (nb_sci.shift == CENTRAL)
-    {
-        bCalcFshift = false;
-    }
-
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
@@ -570,6 +564,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
+    }
+
+    /* skip central shifts when summing shift forces */
+    if (nb_sci.shift == CENTRAL)
+    {
+        bCalcFshift = false;
     }
 
     float fshift_buf = 0.0f;
