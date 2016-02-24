@@ -271,14 +271,6 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
 #endif                                                 /* CALC_ENERGIES */
 
-    /* skip central shifts when summing shift forces */
-    if (nb_sci.shift == CENTRAL)
-    {
-        bCalcFshift = false;
-    }
-
-    fshift_buf = 0.0f;
-
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
     {
@@ -516,6 +508,14 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #endif
         }
     }
+
+    /* skip central shifts when summing shift forces */
+    if (nb_sci.shift == CENTRAL)
+    {
+        bCalcFshift = false;
+    }
+
+    fshift_buf = 0.0f;
 
     /* reduce i forces */
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
