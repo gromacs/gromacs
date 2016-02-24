@@ -475,7 +475,7 @@ void reduce_force_j_generic(__local float *f_buf, __global float *fout,
  */
 __INLINE__ __device__
 void reduce_force_i_generic(__local float *f_buf, __global float *fout,
-                            float *fshift_buf, bool bCalcFshift,
+                            float *fshift_buf,
                             int tidxi, int tidxj, int aidx)
 {
     /* Split the reduction between the first 3 line threads
@@ -492,10 +492,7 @@ void reduce_force_i_generic(__local float *f_buf, __global float *fout,
 
         atomicAdd_g_f(&fout[3 * aidx + tidxj], f);
 
-        if (bCalcFshift)
-        {
-            (*fshift_buf) += f;
-        }
+        (*fshift_buf) += f;
     }
 }
 
@@ -504,7 +501,7 @@ void reduce_force_i_generic(__local float *f_buf, __global float *fout,
  */
 __INLINE__ __device__
 void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
-                         float *fshift_buf, bool bCalcFshift,
+                         float *fshift_buf,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j;
@@ -536,10 +533,7 @@ void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
 
         atomicAdd_g_f(&fout[3 * aidx + tidxj], f);
 
-        if (bCalcFshift)
-        {
-            (*fshift_buf) += f;
-        }
+        (*fshift_buf) += f;
     }
 }
 
@@ -548,16 +542,16 @@ void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
  */
 __INLINE__ __device__
 void reduce_force_i(__local float *f_buf, __global float *f,
-                    float *fshift_buf, bool bCalcFshift,
+                    float *fshift_buf,
                     int tidxi, int tidxj, int ai)
 {
     if ((CL_SIZE & (CL_SIZE - 1)))
     {
-        reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
+        reduce_force_i_generic(f_buf, f, fshift_buf, tidxi, tidxj, ai);
     }
     else
     {
-        reduce_force_i_pow2(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
+        reduce_force_i_pow2(f_buf, f, fshift_buf, tidxi, tidxj, ai);
     }
 }
 
