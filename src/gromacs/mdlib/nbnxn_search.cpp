@@ -572,7 +572,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
                      int csj, int stride, const real *x_j,
                      real rl2)
 {
-#if !NBNXN_SEARCH_BB_SIMD4
+#if !GMX_SIMD4_HAVE_REAL
 
     /* Plain C version.
      * All coordinates are stored as xyzxyz...
@@ -598,12 +598,12 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     return FALSE;
 
-#else /* !NBNXN_SEARCH_BB_SIMD4 */
+#else /* !GMX_SIMD4_HAVE_REAL */
 
     /* 4-wide SIMD version.
      * A cluster is hard-coded to 8 atoms.
      * The coordinates x_i are stored as xxxxyyyy..., x_j is stored xyzxyz...
-     * Using 8-wide AVX is not faster on Intel Sandy Bridge.
+     * Using 8-wide AVX(2) is not faster on Intel Sandy Bridge and Haswell.
      */
     assert(c_nbnxnGpuClusterSize == 8);
 
@@ -693,7 +693,7 @@ clusterpair_in_range(const nbnxn_list_work_t *work,
 
     return FALSE;
 
-#endif /* !NBNXN_SEARCH_BB_SIMD4 */
+#endif /* !GMX_SIMD4_HAVE_REAL */
 }
 
 /* Returns the j sub-cell for index cj_ind */
@@ -2470,7 +2470,7 @@ static void icell_set_x_supersub(int ci,
                                  int stride, const real *x,
                                  nbnxn_list_work_t *work)
 {
-#if !NBNXN_SEARCH_BB_SIMD4
+#if !GMX_SIMD4_HAVE_REAL
 
     real * x_ci = work->x_ci;
 
@@ -2482,7 +2482,7 @@ static void icell_set_x_supersub(int ci,
         x_ci[i*DIM + ZZ] = x[(ia+i)*stride + ZZ] + shz;
     }
 
-#else /* !NBNXN_SEARCH_BB_SIMD4 */
+#else /* !GMX_SIMD4_HAVE_REAL */
 
     real * x_ci = work->x_ci_simd;
 
@@ -2501,7 +2501,7 @@ static void icell_set_x_supersub(int ci,
         }
     }
 
-#endif /* !NBNXN_SEARCH_BB_SIMD4 */
+#endif /* !GMX_SIMD4_HAVE_REAL */
 }
 
 static real minimum_subgrid_size_xy(const nbnxn_grid_t *grid)
