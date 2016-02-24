@@ -464,7 +464,7 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
  */
 static __forceinline__ __device__
 void reduce_force_i_generic(float *f_buf, float3 *fout,
-                            float *fshift_buf, bool bCalcFshift,
+                            float *fshift_buf,
                             int tidxi, int tidxj, int aidx)
 {
     if (tidxj < 3)
@@ -477,10 +477,7 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
 
         atomicAdd(&fout[aidx].x + tidxj, f);
 
-        if (bCalcFshift)
-        {
-            *fshift_buf += f;
-        }
+        *fshift_buf += f;
     }
 }
 
@@ -489,7 +486,7 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
  */
 static __forceinline__ __device__
 void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
-                         float *fshift_buf, bool bCalcFshift,
+                         float *fshift_buf,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j;
@@ -524,10 +521,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
 
         atomicAdd(&(fout[aidx].x) + tidxj, f);
 
-        if (bCalcFshift)
-        {
-            *fshift_buf += f;
-        }
+        *fshift_buf += f;
     }
 
 }
@@ -537,16 +531,16 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
  */
 static __forceinline__ __device__
 void reduce_force_i(float *f_buf, float3 *f,
-                    float *fshift_buf, bool bCalcFshift,
+                    float *fshift_buf,
                     int tidxi, int tidxj, int ai)
 {
     if ((c_clSize & (c_clSize - 1)))
     {
-        reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
+        reduce_force_i_generic(f_buf, f, fshift_buf, tidxi, tidxj, ai);
     }
     else
     {
-        reduce_force_i_pow2(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
+        reduce_force_i_pow2(f_buf, f, fshift_buf, tidxi, tidxj, ai);
     }
 }
 
@@ -556,7 +550,7 @@ void reduce_force_i(float *f_buf, float3 *f,
 #if GMX_PTX_ARCH >= 300
 static __forceinline__ __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
-                              float *fshift_buf, bool bCalcFshift,
+                              float *fshift_buf,
                               int tidxj, int aidx)
 {
     fin.x += __shfl_down(fin.x, c_clSize);
@@ -581,10 +575,7 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
     {
         atomicAdd(&fout[aidx].x + (tidxj & ~4), fin.x);
 
-        if (bCalcFshift)
-        {
-            *fshift_buf += fin.x;
-        }
+        *fshift_buf += fin.x;
     }
 }
 #endif

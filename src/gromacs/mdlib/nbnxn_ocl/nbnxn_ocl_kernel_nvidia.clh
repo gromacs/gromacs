@@ -268,14 +268,6 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 
 #endif                                                 /* CALC_ENERGIES */
 
-    /* skip central shifts when summing shift forces */
-    if (nb_sci.shift == CENTRAL)
-    {
-        bCalcFshift = false;
-    }
-
-    fshift_buf = 0.0f;
-
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
     {
@@ -510,6 +502,8 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
         }
     }
 
+    fshift_buf = 0.0f;
+
     /* reduce i forces */
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
@@ -520,13 +514,14 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
         f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
         barrier(CLK_LOCAL_MEM_FENCE);
         reduce_force_i(f_buf, f,
-                       &fshift_buf, bCalcFshift,
+                       &fshift_buf,
                        tidxi, tidxj, ai);
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    /* add up local shift forces into global mem */
-    if (bCalcFshift)
+    /* Add up local shift forces into global mem.
+       We skip the central cell, since it doesn't contribute to the virial. */
+    if (bCalcFshift && nb_sci.shift != CENTRAL)
     {
         /* Only threads with tidxj < 3 will update fshift.
            The threads performing the update must be the same with the threads

@@ -329,12 +329,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #endif                                                 /* CALC_ENERGIES */
 
-    /* skip central shifts when summing shift forces */
-    if (nb_sci.shift == CENTRAL)
-    {
-        bCalcFshift = false;
-    }
-
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
@@ -580,7 +574,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ai  = (sci * c_numClPerSupercl + ci_offset) * c_clSize + tidxi;
 #ifdef REDUCE_SHUFFLE
         reduce_force_i_warp_shfl(fci_buf[ci_offset], f,
-                                 &fshift_buf, bCalcFshift,
+                                 &fshift_buf,
                                  tidxj, ai);
 #else
         f_buf[                   tidx] = fci_buf[ci_offset].x;
@@ -588,20 +582,21 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         f_buf[2 * c_fbufStride + tidx] = fci_buf[ci_offset].z;
         __syncthreads();
         reduce_force_i(f_buf, f,
-                       &fshift_buf, bCalcFshift,
+                       &fshift_buf,
                        tidxi, tidxj, ai);
         __syncthreads();
 #endif
     }
 
-    /* add up local shift forces into global mem, tidxj indexes x,y,z */
+    /* Add up local shift forces into global mem, tidxj indexes x,y,z.
+       We skip the central cell, since it doesn't contribute to the virial */
 #ifdef REDUCE_SHUFFLE
-    if (bCalcFshift && (tidxj & 3) < 3)
+    if (bCalcFshift && nb_sci.shift != CENTRAL && (tidxj & 3) < 3)
     {
         atomicAdd(&(atdat.fshift[nb_sci.shift].x) + (tidxj & ~4), fshift_buf);
     }
 #else
-    if (bCalcFshift && tidxj < 3)
+    if (bCalcFshift && nb_sci.shift != CENTRAL && tidxj < 3)
     {
         atomicAdd(&(atdat.fshift[nb_sci.shift].x) + tidxj, fshift_buf);
     }
