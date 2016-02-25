@@ -1751,7 +1751,7 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         fkl = -fac * (-lalpha +lbeta +lbeta*lgamma);
 
         // calculating remaining term
-         // from f_j
+        // from f_j
         svmul(fij,r_ij,t);
         svmul(flj,r_lj,tt);
         rvec_add(t,tt,ttt);
