@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013-2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,13 +83,13 @@ void make_wall_tables(FILE *fplog,
             /* If the energy group pair is excluded, we don't need a table */
             if (!(fr->egp_flags[egp*ir->opts.ngener+negp_pp+w] & EGP_EXCL))
             {
-                fr->wall_tab[w][egp] = make_tables(fplog, fr, buf, 0,
-                                                   GMX_MAKETABLES_FORCEUSER);
                 sprintf(buf, "%s", tabfn);
                 sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
+                fr->wall_tab[w][egp] = make_tables(fplog, fr, buf, 0,
+                                                   GMX_MAKETABLES_FORCEUSER);
 
                 /* Since wall have no charge, we can compress the table */
                 for (int i = 0; i <= fr->wall_tab[w][egp]->n; i++)
@@ -236,8 +236,8 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                                 Fp    = Ft + Geps + Heps2;
                                 VV    = Yt + Fp*eps;
                                 FF    = Fp + Geps + 2.0*Heps2;
-                                Vd    = Cd*VV;
-                                Fd    = Cd*FF;
+                                Vd    = 6*Cd*VV;
+                                Fd    = 6*Cd*FF;
                                 /* Repulsion */
                                 nnn   = nnn + 4;
                                 Yt    = VFtab[nnn];
@@ -247,8 +247,8 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                                 Fp    = Ft + Geps + Heps2;
                                 VV    = Yt + Fp*eps;
                                 FF    = Fp + Geps + 2.0*Heps2;
-                                Vr    = Cr*VV;
-                                Fr    = Cr*FF;
+                                Vr    = 12*Cr*VV;
+                                Fr    = 12*Cr*FF;
                                 V     = Vd + Vr;
                                 F     = -lamfac*(Fd + Fr)*tabscale;
                             }
