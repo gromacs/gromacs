@@ -493,6 +493,14 @@ do_pairs(int ftype, int nbonds,
 
         energygrp_elec[gid]  += velec;
         energygrp_vdw[gid]   += vvdw;
+
+        if (vir != NULL) {
+            for (int m = 0; m < DIM; m++) {
+                vir[ai][m] += 0.5*(1e25/AVOGADRO)*fscal* dx[m] *dx[m];
+                vir[aj][m] += 0.5*(1e25/AVOGADRO)*fscal* dx[m] *dx[m];
+            }
+        }
+
         svmul(fscal, dx, dx);
 
         /* Add the forces */
