@@ -206,7 +206,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     ci = sci * NCL_PER_SUPERCL + tidxj;
     ai = ci * CL_SIZE + tidxi;
 
-    xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+    xqbuf    = xq[ai] + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+    xqbuf.w *= nbparam->epsfac;
+    xqib[tidxj * CL_SIZE + tidxi] = xqbuf;
 
 #ifdef IATYPE_SHMEM //NOTE: Should not be defined. Used with CUDA > 3.0 Re-evaluate the effect of preloading at a suitable time.
     /* Pre-load the i-atom types into shared memory */
@@ -256,17 +258,18 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #endif  /* LJ_EWALD */
 
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
-        E_el /= CL_SIZE;
+        /* Correct for epsfac^2 due to adding qi^2 */
+        E_el /= nbparam->epsfac*CL_SIZE;
 #if defined EL_RF || defined EL_CUTOFF
-        E_el *= -nbparam->epsfac*0.5f*c_rf;
+        E_el *= -0.5f*c_rf;
 #else
-        E_el *= -nbparam->epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
+        E_el *= -beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
-#endif                                                 /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
+#endif                                  /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
     }
-#endif                                                 /* EXCLUSION_FORCES */
+#endif                                  /* EXCLUSION_FORCES */
 
-#endif                                                 /* CALC_ENERGIES */
+#endif                                  /* CALC_ENERGIES */
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
@@ -302,7 +305,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                     /* load j atom data */
                     xqbuf   = xq[aj];
                     xj      = (float3)(xqbuf.xyz);
-                    qj_f    = nbparam->epsfac * xqbuf.w;
+                    qj_f    = xqbuf.w;
                     typej   = atom_types[aj];
 
                     fcj_buf = (float3)(0.0f);

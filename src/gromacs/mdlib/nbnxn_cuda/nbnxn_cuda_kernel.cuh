@@ -265,7 +265,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         /* Pre-load i-atom x and q into shared memory */
         ci = sci * c_numClPerSupercl + tidxj;
         ai = ci * c_clSize + tidxi;
-        xqib[tidxj * c_clSize + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
+
+        xqbuf    = xq[ai] + shift_vec[nb_sci.shift];
+        xqbuf.w *= nbparam.epsfac;
+        xqib[tidxj * c_clSize + tidxi] = xqbuf;
 #ifdef IATYPE_SHMEM
         /* Pre-load the i-atom types into shared memory */
         atib[tidxj * c_clSize + tidxi] = atom_types[ai];
@@ -317,17 +320,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif  /* LJ_EWALD */
 
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
-        E_el /= c_clSize*NTHREAD_Z;
+        /* Correct for epsfac^2 due to adding qi^2 */
+        E_el /= nbparam.epsfac*c_clSize*NTHREAD_Z;
 #if defined EL_RF || defined EL_CUTOFF
-        E_el *= -nbparam.epsfac*0.5f*c_rf;
+        E_el *= -0.5f*c_rf;
 #else
-        E_el *= -nbparam.epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
+        E_el *= -beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
-#endif                                                 /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
+#endif                                  /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
     }
-#endif                                                 /* EXCLUSION_FORCES */
+#endif                                  /* EXCLUSION_FORCES */
 
-#endif                                                 /* CALC_ENERGIES */
+#endif                                  /* CALC_ENERGIES */
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
@@ -365,7 +369,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     /* load j atom data */
                     xqbuf   = xq[aj];
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
-                    qj_f    = nbparam.epsfac * xqbuf.w;
+                    qj_f    = xqbuf.w;
                     typej   = atom_types[aj];
 
                     fcj_buf = make_float3(0.0f);
