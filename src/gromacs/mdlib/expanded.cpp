@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -364,7 +364,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     gmx_bool  bSufficientSamples;
     int       i;
     int       n0, np1, nm1, nval, min_nvalm, min_nvalp, maxc;
-    real      omega_m1_0, omega_p1_m1, omega_m1_p1, omega_p1_0, clam_osum;
+    real      omega_m1_0, omega_p1_0, clam_osum;
     real      de, de_function;
     real      cnval, zero_sum_weights;
     real     *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array, *dwp_array, *dwm_array;
@@ -572,15 +572,12 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
                 if (n0 > 0)
                 {
                     omega_m1_0 = chi_m2_0/(chi_m1_0*chi_m1_0) - 1.0;
-                }
-                if (nm1 > 0)
-                {
-                    omega_p1_m1 = chi_p2_m1/(chi_p1_m1*chi_p1_m1) - 1.0;
-                }
-                if ((n0 > 0) && (nm1 > 0))
-                {
-                    clam_weightsm = (std::log(chi_m1_0) - std::log(chi_p1_m1)) + cnval;
-                    clam_varm     = (1.0/n0)*(omega_m1_0) + (1.0/nm1)*(omega_p1_m1);
+                    if (nm1 > 0)
+                    {
+                        real omega_p1_m1 = chi_p2_m1/(chi_p1_m1*chi_p1_m1) - 1.0;
+                        clam_weightsm = (std::log(chi_m1_0) - std::log(chi_p1_m1)) + cnval;
+                        clam_varm     = (1.0/n0)*(omega_m1_0) + (1.0/nm1)*(omega_p1_m1);
+                    }
                 }
             }
 
@@ -589,15 +586,12 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
                 if (n0 > 0)
                 {
                     omega_p1_0 = chi_p2_0/(chi_p1_0*chi_p1_0) - 1.0;
-                }
-                if (np1 > 0)
-                {
-                    omega_m1_p1 = chi_m2_p1/(chi_m1_p1*chi_m1_p1) - 1.0;
-                }
-                if ((n0 > 0) && (np1 > 0))
-                {
-                    clam_weightsp = (std::log(chi_m1_p1) - std::log(chi_p1_0)) + cnval;
-                    clam_varp     = (1.0/np1)*(omega_m1_p1) + (1.0/n0)*(omega_p1_0);
+                    if (np1 > 0)
+                    {
+                        real omega_m1_p1 = chi_m2_p1/(chi_m1_p1*chi_m1_p1) - 1.0;
+                        clam_weightsp = (std::log(chi_m1_p1) - std::log(chi_p1_0)) + cnval;
+                        clam_varp     = (1.0/np1)*(omega_m1_p1) + (1.0/n0)*(omega_p1_0);
+                    }
                 }
             }
 
