@@ -198,7 +198,7 @@ pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
  */
 real morse_bonds(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
-                 const rvec x[], rvec f[], rvec fshift[],
+                 const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
                  real lambda, real *dvdlambda,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -273,7 +273,7 @@ real morse_bonds(int nbonds,
 //! \cond
 real cubic_bonds(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
-                 const rvec x[], rvec f[], rvec fshift[],
+                 const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
                  real gmx_unused lambda, real gmx_unused *dvdlambda,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -335,7 +335,7 @@ real cubic_bonds(int nbonds,
 
 real FENE_bonds(int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                const rvec x[], rvec f[], rvec fshift[],
+                const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
                 real gmx_unused lambda, real gmx_unused *dvdlambda,
                 const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -431,7 +431,7 @@ real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
 
 real bonds(int nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
-           const rvec x[], rvec f[], rvec fshift[],
+           const rvec x[], rvec f[], rvec vir[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
            real lambda, real *dvdlambda,
            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -486,9 +486,10 @@ real bonds(int nbonds,
             f[aj][m]           -= fij;
             fshift[ki][m]      += fij;
             fshift[CENTRAL][m] -= fij;
-	    if(global_vir!=NULL) { 
-		global_vir[ai][m] +=(1e25/AVOGADRO) * fij * dx[m];
-	    }
+	        if(vir!=NULL) {
+		        vir[ai][m] += 0.5*(1e25/AVOGADRO) * fij * dx[m];
+		        vir[aj][m] += 0.5*(1e25/AVOGADRO) * fij * dx[m];
+	        }
         }
     }               /* 59 TOTAL	*/
     return vtot;
@@ -496,7 +497,7 @@ real bonds(int nbonds,
 
 real restraint_bonds(int nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
-                     const rvec x[], rvec f[], rvec fshift[],
+                     const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
                      real lambda, real *dvdlambda,
                      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -598,7 +599,7 @@ real restraint_bonds(int nbonds,
 
 real polarize(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec fshift[],
+              const rvec x[], rvec f[], rvec vir[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
               real lambda, real *dvdlambda,
               const t_mdatoms *md, t_fcdata gmx_unused *fcd,
@@ -654,7 +655,7 @@ real polarize(int nbonds,
 
 real anharm_polarize(int nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
-                     const rvec x[], rvec f[], rvec fshift[],
+                     const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
                      real lambda, real *dvdlambda,
                      const t_mdatoms *md, t_fcdata gmx_unused *fcd,
@@ -719,7 +720,7 @@ real anharm_polarize(int nbonds,
 
 real water_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec gmx_unused fshift[],
+               const rvec x[], rvec f[], rvec vir[], rvec gmx_unused fshift[],
                const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
                const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -902,7 +903,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
 
 real thole_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec fshift[],
+               const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                const t_pbc *pbc, const t_graph gmx_unused *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
                const t_mdatoms *md, t_fcdata gmx_unused *fcd,
@@ -956,7 +957,7 @@ real bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
 
 real angles(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec fshift[],
+            const rvec x[], rvec f[], rvec vir[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -994,6 +995,8 @@ real angles(int nbonds,
             real nrkj2, nrij2;
             real nrkj_1, nrij_1;
             rvec f_i, f_j, f_k;
+            rvec r_ki;
+
 
             st  = dVdt*gmx_invsqrt(1 - cos_theta2); /*  12		*/
             sth = st*cos_theta;                     /*   1		*/
@@ -1014,6 +1017,8 @@ real angles(int nbonds,
             cii = sth*nrij_1*nrij_1;        /*   2		*/
             ckk = sth*nrkj_1*nrkj_1;        /*   2		*/
 
+            rvec_sub (r_kj, r_ij, r_ki);    /* construct r_ki for virial*/
+
             for (m = 0; m < DIM; m++)
             {           /*  39		*/
                 f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
@@ -1022,6 +1027,18 @@ real angles(int nbonds,
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
+                if (vir != NULL) {
+                    /* Summing up the virial pairwise */
+                    // k-i
+                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
+                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * cik * r_ki[m] * r_ki[m];
+                    // j-i
+                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
+                    vir[ai][m] += 0.5*(1e25/AVOGADRO) * (cii-cik)* r_ij[m] * r_ij[m];
+                    // j-k
+                    vir[aj][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
+                    vir[ak][m] += 0.5*(1e25/AVOGADRO) * (ckk-cik)* r_kj[m] * r_kj[m];
+                }
             }
             if (g != NULL)
             {
@@ -1210,7 +1227,7 @@ angles_noener_simd(int nbonds,
 
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
-                   const rvec x[], rvec f[], rvec fshift[],
+                   const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                    const t_pbc *pbc, const t_graph *g,
                    real lambda, real *dvdlambda,
                    const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -1280,7 +1297,7 @@ real linear_angles(int nbonds,
 
 real urey_bradley(int nbonds,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
-                  const rvec x[], rvec f[], rvec fshift[],
+                  const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                   const t_pbc *pbc, const t_graph *g,
                   real lambda, real *dvdlambda,
                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -1395,7 +1412,7 @@ real urey_bradley(int nbonds,
 
 real quartic_angles(int nbonds,
                     const t_iatom forceatoms[], const t_iparams forceparams[],
-                    const rvec x[], rvec f[], rvec fshift[],
+                    const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                     const t_pbc *pbc, const t_graph *g,
                     real gmx_unused lambda, real gmx_unused *dvdlambda,
                     const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -1640,7 +1657,7 @@ dih_angle_simd(const rvec *x,
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
-                rvec m, rvec n, rvec f[], rvec fshift[],
+                rvec m, rvec n, rvec f[], rvec vir[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
                 const rvec x[], int t1, int t2, int t3)
 {
@@ -1650,6 +1667,7 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
     real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
     real a, b, p, q, toler;
     ivec jt, dt_ij, dt_kj, dt_lj;
+
 
     iprm  = iprod(m, m);       /*  5    */
     iprn  = iprod(n, n);       /*  5	*/
@@ -1673,10 +1691,203 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         rvec_sub(uvec, vvec, svec);  /*  3	*/
         rvec_sub(f_i, svec, f_j);    /*  3	*/
         rvec_add(f_l, svec, f_k);    /*  3	*/
-        rvec_inc(f[i], f_i);         /*  3	*/
-        rvec_dec(f[j], f_j);         /*  3	*/
+        rvec_inc(f[i], f_i);         /*  3	*/ /* f[i] += f_i */
+        rvec_dec(f[j], f_j);         /*  3	*/ /* f[j] -= f_k */
         rvec_dec(f[k], f_k);         /*  3	*/
         rvec_inc(f[l], f_l);         /*  3	*/
+
+
+         /* Central Force Decomposition (CDF)*/
+        rvec t, tt, ttt;                     // temporary storage
+        rvec r_il, r_ik, r_lj;               // missing vectors between particles
+        rvec vkj;                            // versors
+        rvec pij, pkl;                       // projections
+        rvec vpij, vpkl;                     // versors of projections
+        real npij2, npij_1, npkl2, npkl_1;   // powers of norms
+        real ia, ia2, ialpha, ibeta, igamma; // decomposition on i
+        real la, la2, lalpha, lbeta, lgamma; // decomposition on l
+        real fac;                            // mutliplicative factor for forces
+        real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
+
+        // Creating remaining r_xy vectors
+        rvec_sub(r_ij,r_kj,r_ik);
+        rvec_add(r_kl,r_ik,r_il);
+        rvec_sub(r_kj,r_kl,r_lj);
+
+         /* CDF on i */
+        // Creating projections
+        svmul(nrkj_1, r_kj,vkj);
+        svmul(iprod(r_ij, vkj), vkj, t);
+        rvec_sub(r_ij, t, pij);
+        svmul(iprod(r_kl, vkj), vkj, t);
+        rvec_sub(r_kl, t, pkl);
+
+        npij2  = iprod(pij, pij);
+        npij_1 = gmx_invsqrt (npij2);
+        svmul (npij_1, pij, vpij);
+
+        ia2 = iprod(pkl,pkl) - iprod(pkl,vpij)*iprod(pkl,vpij);
+        ia = sqrt(ia2);
+
+        ialpha = -iprod(r_kl,vkj)*nrkj_1;
+        ibeta  = iprod(pkl,vpij)*npij_1;
+        igamma = -iprod(r_ij,vkj)*nrkj_1;
+
+         /* CDF on l */
+        npkl2  = iprod(pkl, pkl);
+        npkl_1 = gmx_invsqrt (npkl2);
+        svmul (npkl_1, pkl, vpkl);
+
+        la2 = iprod(pij,pij) - iprod(pij,vpkl)*iprod(pij,vpkl);
+        la = sqrt(la2);
+
+        lalpha = igamma;
+        lbeta  = iprod(pij,vpkl)*npkl_1;
+        lgamma = ialpha;
+
+        /* TESTING THE DECOMPOSITIONS
+          //assembling m from pairwise contributions
+        rvec vm;
+        svmul(-1, r_il, tt);
+        svmul((1 + ialpha - ibeta*igamma), r_ik, t);
+        rvec_add(t,tt, vm);
+        svmul(ibeta*igamma + ibeta - ialpha, r_ij, t);
+        rvec_add(t,vm, tt);
+        svmul(1/ia, tt, vm);
+        cprod (m,vm,tt);
+        printf ("(M x VM) : %lf %lf %lf\n", tt[0], tt[1], tt[2]);
+        printf (" M       : %lf %lf %lf\n", m[0], m[1], m[2]);
+        printf (" VM      : %lf %lf %lf\n\n", vm[0], vm[1], vm[2]);
+
+          //assembling n from pairwise contributions
+        rvec vn;
+        svmul(-1,r_il, tt);
+        svmul((-lalpha + lbeta*lgamma -1), r_lj, t);
+        rvec_add(t,tt, vn);
+        svmul(-lalpha + lbeta + lbeta*lgamma , r_kl, t);
+        rvec_add(t,vn, tt);
+        svmul(1/la, tt, vn);
+        cprod (n,vn,tt);
+        printf ("(N x VN) : %lf %lf %lf\n", tt[0], tt[1], tt[2]);
+        printf (" N       : %lf  %lf  %lf\n", n[0], n[1], n[2]);
+        printf (" VN      : %lf  %lf  %lf\n", vn[0], vn[1], vn[2]); */
+
+        // force components
+        fac = a*sqrt(iprm)/ia;
+        fij = fac * (ibeta*igamma+ibeta-ialpha);
+        fik = fac * (1 + ialpha-ibeta*igamma);
+        fil = fac * (-1);
+        flj = -fac * (-lalpha + lgamma*lbeta -1);
+        fkl = -fac * (-lalpha +lbeta +lbeta*lgamma);
+
+        // calculating remaining term
+         // from f_j
+        svmul(fij,r_ij,t);
+        svmul(flj,r_lj,tt);
+        rvec_add(t,tt,ttt);
+        rvec_sub(ttt,f_j,t);
+        fkj = sqrt(iprod(t,t)) * nrkj_1;
+
+
+        for (int m = 0; m < DIM; m++) {
+                                            // signed force * signed distance
+          vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
+          vir[i][m] += 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m];
+          vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
+
+          vir[j][m] += 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m];
+          vir[j][m] += 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m];
+          vir[j][m] += 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m];
+
+          vir[k][m] += 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m];
+          vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m];
+          vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m];
+
+          vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
+          vir[l][m] += 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m];
+          vir[l][m] += 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m];
+        };
+
+/*
+            printf("vir   fij * r_ij[m] *  r_ij[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m]);
+            printf("vir   fik * r_ik[m] *  r_ik[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m]);
+            printf("vir   fil * r_il[m] *  r_il[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m]);
+            printf("\n");
+
+            printf("vir  -fij * r_ij[m] * -r_ij[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m]);
+            printf("vir   fkj * r_kj[m] * -r_kj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m]);
+            printf("vir  -flj * r_lj[m] * -r_lj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m]);
+            printf("\n");
+
+            printf("vir  -fik * r_ik[m] * -r_ik[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m]);
+            printf("vir  -fkj * r_kj[m] *  r_kj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m]);
+            printf("vir  -fkl * r_kl[m] *  r_kl[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m]);
+            printf("\n");
+
+            printf("vir  -fil * r_il[m] * -r_il[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m]);
+            printf("vir   flj * r_lj[m] *  r_lj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m]);
+            printf("vir   fkl * r_kl[m] * -r_kl[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m]);
+       } */
+
+        /*
+
+        printf ("\n--> fkj = %lf\n\n", fkj);
+
+         // from f_k
+        svmul(fik,r_ik,t);
+        svmul(fkl,r_kl,tt);
+        rvec_add(t,tt,ttt);
+        rvec_sub(ttt,f_k,t);
+        fkj = sqrt(iprod(t,t)) * nrkj_1;
+
+        printf ("--> fkj = %lf\n", fkj);
+
+
+         // checking total force on i
+        rvec fi;
+        svmul(fij, r_ij,fi);
+        svmul(fik, r_ik,t);
+        rvec_add(fi,t,tt);
+        svmul(fil, r_il,t);
+        rvec_add(t,tt,fi);
+        printf("F_i : %lf  %lf  %lf\n", f_i[0], f_i[1], f_i[2]);
+        printf("Fi  : %lf  %lf  %lf\n", fi[0], fi[1], fi[2]);
+        // checking total force on l
+        rvec fl;
+        svmul(-fil, r_il,fl);
+        svmul(flj, r_lj,t);
+        rvec_add(fl,t,tt);
+        svmul(fkl, r_kl,t);
+        rvec_add(t,tt,fl);
+        printf("F_l : %lf  %lf  %lf\n", f_l[0], f_l[1], f_l[2]);
+        printf("Fl  : %lf  %lf  %lf\n", fl[0], fl[1], fl[2]);
+
+        // checking total force on j
+        rvec fj;
+        svmul(-fij, r_ij,fj);
+        svmul(+fkj, r_kj,t);
+        rvec_add(fj,t,tt);
+        svmul(-flj, r_lj,t);
+        rvec_add(t,tt,fj);
+        printf("F_j : %lf  %lf  %lf\n", -f_j[0], -f_j[1], -f_j[2]);
+        printf("Fj  : %lf  %lf  %lf\n", fj[0], fj[1], fj[2]);
+
+        // checking total force on k
+        rvec fk;
+        svmul(-fik, r_ik,fk);
+        svmul(-fkj, r_kj,t);
+        rvec_add(fk,t,tt);
+        svmul(-fkl, r_kl,t);
+        rvec_add(t,tt,fk);
+        printf("F_k : %lf  %lf  %lf\n", -f_k[0], -f_k[1], -f_k[2]);
+        printf("Fk  : %lf  %lf  %lf\n", fk[0], fk[1], fk[2]);
+
+        // net force
+        rvec_add(fi,fl,t);
+        rvec_add(fk,fj,tt);
+        rvec_add(t,tt,ttt);
+        printf ("Net force : %lf %lf %lf\n", ttt[0], ttt[1], ttt[2]); */
+
 
         if (g)
         {
@@ -1858,7 +2069,7 @@ static real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
 
 real pdihs(int nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
-           const rvec x[], rvec f[], rvec fshift[],
+           const rvec x[], rvec f[], rvec vir[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
            real lambda, real *dvdlambda,
            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -1881,6 +2092,7 @@ real pdihs(int nbonds,
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
                         &sign, &t1, &t2, &t3);  /*  84      */
+
         *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
                               forceparams[type].pdihs.cpB,
                               forceparams[type].pdihs.phiA,
@@ -1890,7 +2102,7 @@ real pdihs(int nbonds,
 
         vtot += vpd;
         do_dih_fup(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
-                   f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
+                   f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
 
 #ifdef DEBUG
         fprintf(debug, "pdih: (%d,%d,%d,%d) phi=%g\n",
@@ -2246,7 +2458,7 @@ rbdihs_noener_simd(int nbonds,
 
 real idihs(int nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
-           const rvec x[], rvec f[], rvec fshift[],
+           const rvec x[], rvec f[], rvec vir[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
            real lambda, real *dvdlambda,
            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2300,7 +2512,7 @@ real idihs(int nbonds,
         dvdl_term += 0.5*(kB - kA)*dp2 - kk*dphi0*dp;
 
         do_dih_fup(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,
-                   f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
+                   f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
         /* 218 TOTAL	*/
 #ifdef DEBUG
         if (debug)
@@ -2414,7 +2626,7 @@ static real low_angres(int nbonds,
 
 real angres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec fshift[],
+            const rvec x[], rvec f[], rvec vir[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2426,7 +2638,7 @@ real angres(int nbonds,
 
 real angresz(int nbonds,
              const t_iatom forceatoms[], const t_iparams forceparams[],
-             const rvec x[], rvec f[], rvec fshift[],
+             const rvec x[], rvec f[], rvec vir[], rvec fshift[],
              const t_pbc *pbc, const t_graph *g,
              real lambda, real *dvdlambda,
              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2438,7 +2650,7 @@ real angresz(int nbonds,
 
 real dihres(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec fshift[],
+            const rvec x[], rvec f[], rvec vir[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2524,7 +2736,7 @@ real dihres(int nbonds,
                 *dvdlambda += kfac*ddp*((dphiB - dphiA)-(phi0B - phi0A));
             }
             do_dih_fup(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
-                       f, fshift, pbc, g, x, t1, t2, t3);      /* 112		*/
+                       f, vir, fshift, pbc, g, x, t1, t2, t3);      /* 112		*/
         }
     }
     return vtot;
@@ -2533,7 +2745,7 @@ real dihres(int nbonds,
 
 real unimplemented(int gmx_unused nbonds,
                    const t_iatom gmx_unused forceatoms[], const t_iparams gmx_unused forceparams[],
-                   const rvec gmx_unused x[], rvec gmx_unused f[], rvec gmx_unused fshift[],
+                   const rvec gmx_unused x[], rvec gmx_unused f[], rvec gmx_unused vir[], rvec gmx_unused fshift[],
                    const t_pbc gmx_unused *pbc, const t_graph  gmx_unused *g,
                    real gmx_unused lambda, real gmx_unused *dvdlambda,
                    const t_mdatoms  gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2546,7 +2758,7 @@ real unimplemented(int gmx_unused nbonds,
 
 real restrangles(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
-                 const rvec x[], rvec f[], rvec fshift[],
+                 const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
                  real gmx_unused lambda, real gmx_unused *dvdlambda,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2649,7 +2861,7 @@ real restrangles(int nbonds,
 
 real restrdihs(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec fshift[],
+               const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real gmx_unused lambda, real gmx_unused *dvlambda,
                const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2757,7 +2969,7 @@ real restrdihs(int nbonds,
 
 real cbtdihs(int nbonds,
              const t_iatom forceatoms[], const t_iparams forceparams[],
-             const rvec x[], rvec f[], rvec fshift[],
+             const rvec x[], rvec f[], rvec vir[], rvec fshift[],
              const t_pbc *pbc, const t_graph *g,
              real gmx_unused lambda, real gmx_unused *dvdlambda,
              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2865,7 +3077,7 @@ real cbtdihs(int nbonds,
 
 real rbdihs(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec fshift[],
+            const rvec x[], rvec f[], rvec vir[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -2959,7 +3171,7 @@ real rbdihs(int nbonds,
         ddphi = -ddphi*sin_phi;         /*  11		*/
 
         do_dih_fup(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
-                   f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
+                   f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
         vtot += v;
     }
     *dvdlambda += dvdl_term;
@@ -3442,7 +3654,7 @@ real g96harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
 
 real g96bonds(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec fshift[],
+              const rvec x[], rvec f[], rvec vir[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
               real lambda, real *dvdlambda,
               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -3512,7 +3724,7 @@ real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc
 
 real g96angles(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec fshift[],
+               const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real lambda, real *dvdlambda,
                const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -3584,7 +3796,7 @@ real g96angles(int nbonds,
 
 real cross_bond_bond(int nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
-                     const rvec x[], rvec f[], rvec fshift[],
+                     const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
                      real gmx_unused lambda, real gmx_unused *dvdlambda,
                      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused  *fcd,
@@ -3658,7 +3870,7 @@ real cross_bond_bond(int nbonds,
 
 real cross_bond_angle(int nbonds,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
-                      const rvec x[], rvec f[], rvec fshift[],
+                      const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                       const t_pbc *pbc, const t_graph *g,
                       real gmx_unused lambda, real gmx_unused *dvdlambda,
                       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -3782,7 +3994,7 @@ static real bonded_tab(const char *type, int table_nr,
 
 real tab_bonds(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec fshift[],
+               const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real lambda, real *dvdlambda,
                const t_mdatoms gmx_unused *md, t_fcdata *fcd,
@@ -3846,7 +4058,7 @@ real tab_bonds(int nbonds,
 
 real tab_angles(int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                const rvec x[], rvec f[], rvec fshift[],
+                const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
                 real lambda, real *dvdlambda,
                 const t_mdatoms gmx_unused  *md, t_fcdata *fcd,
@@ -3930,7 +4142,7 @@ real tab_angles(int nbonds,
 
 real tab_dihs(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec fshift[],
+              const rvec x[], rvec f[], rvec vir[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
               real lambda, real *dvdlambda,
               const t_mdatoms gmx_unused *md, t_fcdata *fcd,
@@ -3964,7 +4176,7 @@ real tab_dihs(int nbonds,
 
         vtot += vpd;
         do_dih_fup(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,
-                   f, fshift, pbc, g, x, t1, t2, t3); /* 112	*/
+                   f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112	*/
 
 #ifdef DEBUG
         fprintf(debug, "pdih: (%d,%d,%d,%d) phi=%g\n",

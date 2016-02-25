@@ -603,7 +603,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 }
 
 real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
-            const rvec x[], rvec f[], rvec fshift[],
+            const rvec x[], rvec f[], rvec vir[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real gmx_unused lambda, real gmx_unused *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata *fcd,

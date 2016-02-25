@@ -52,7 +52,7 @@ struct t_pbc;
 
 typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
                       const t_iparams iparams[],
-                      const rvec x[], rvec f[], rvec fshift[],
+                      const rvec x[], rvec f[], rvec vir[], rvec fshift[],
                       const struct t_pbc *pbc, const struct t_graph *g,
                       real lambda, real *dvdlambda,
                       const t_mdatoms *md, t_fcdata *fcd,
