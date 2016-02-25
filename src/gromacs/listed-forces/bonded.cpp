@@ -1697,85 +1697,88 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         rvec_inc(f[l], f_l);         /*  3	*/
 
 
-         /* Central Force Decomposition (CDF) */
-        rvec t, tt, ttt;                     // temporary storage
-        rvec r_il, r_ik, r_lj;               // missing vectors between particles
-        rvec vkj;                            // versors
-        rvec pij, pkl;                       // projections
-        rvec vpij, vpkl;                     // versors of projections
-        real npij2, npij_1, npkl2, npkl_1;   // powers of norms
-        real ialpha, ibeta, igamma;          // decomposition on i
-        real lalpha, lbeta, lgamma;          // decomposition on l
-        real fac, ia, ia2;                   // mutliplicative factor for forces
-        real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
-
         // Creating remaining r_xy vectors
-        rvec_sub(r_ij,r_kj,r_ik);
-        rvec_add(r_kl,r_ik,r_il);
-        rvec_sub(r_kj,r_kl,r_lj);
+        if (vir != NULL) {
 
-         /* CDF on i */
-        // Creating projections
-        svmul(nrkj_1, r_kj,vkj);
-        svmul(iprod(r_ij, vkj), vkj, t);
-        rvec_sub(r_ij, t, pij);
-        svmul(iprod(r_kl, vkj), vkj, t);
-        rvec_sub(r_kl, t, pkl);
+             /* Central Force Decomposition (CDF) */
+            rvec t, tt, ttt;                     // temporary storage
+            rvec r_il, r_ik, r_lj;               // missing vectors between particles
+            rvec vkj;                            // versors
+            rvec pij, pkl;                       // projections
+            rvec vpij, vpkl;                     // versors of projections
+            real npij2, npij_1, npkl2, npkl_1;   // powers of norms
+            real ialpha, ibeta, igamma;          // decomposition on i
+            real lalpha, lbeta, lgamma;          // decomposition on l
+            real fac, ia, ia2;                   // mutliplicative factor for forces
+            real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
 
-        npij2  = iprod(pij, pij);
-        npij_1 = gmx_invsqrt (npij2);
-        svmul (npij_1, pij, vpij);
+            rvec_sub(r_ij,r_kj,r_ik);
+            rvec_add(r_kl,r_ik,r_il);
+            rvec_sub(r_kj,r_kl,r_lj);
 
-        ia2 = iprod(pkl,pkl) - iprod(pkl,vpij)*iprod(pkl,vpij);
-        ia = sqrt(ia2);
+             /* CDF on i */
+            // Creating projections
+            svmul(nrkj_1, r_kj,vkj);
+            svmul(iprod(r_ij, vkj), vkj, t);
+            rvec_sub(r_ij, t, pij);
+            svmul(iprod(r_kl, vkj), vkj, t);
+            rvec_sub(r_kl, t, pkl);
 
-        ialpha = -iprod(r_kl,vkj)*nrkj_1;
-        ibeta  = iprod(pkl,vpij)*npij_1;
-        igamma = -iprod(r_ij,vkj)*nrkj_1;
+            npij2  = iprod(pij, pij);
+            npij_1 = gmx_invsqrt (npij2);
+            svmul (npij_1, pij, vpij);
 
-         /* CDF on l */
-        npkl2  = iprod(pkl, pkl);
-        npkl_1 = gmx_invsqrt (npkl2);
-        svmul (npkl_1, pkl, vpkl);
+            ia2 = iprod(pkl,pkl) - iprod(pkl,vpij)*iprod(pkl,vpij);
+            ia = sqrt(ia2);
 
-        lalpha = igamma;
-        lbeta  = iprod(pij,vpkl)*npkl_1;
-        lgamma = ialpha;
+            ialpha = -iprod(r_kl,vkj)*nrkj_1;
+            ibeta  = iprod(pkl,vpij)*npij_1;
+            igamma = -iprod(r_ij,vkj)*nrkj_1;
 
-        // force components
-        fac = a*sqrt(iprm)/ia;
-        fij = fac * (ibeta*igamma+ibeta-ialpha);
-        fik = fac * (1 + ialpha-ibeta*igamma);
-        fil = fac * (-1);
-        flj = -fac * (-lalpha + lgamma*lbeta -1);
-        fkl = -fac * (-lalpha +lbeta +lbeta*lgamma);
+             /* CDF on l */
+            npkl2  = iprod(pkl, pkl);
+            npkl_1 = gmx_invsqrt (npkl2);
+            svmul (npkl_1, pkl, vpkl);
 
-        // calculating remaining term
-        // from f_j
-        svmul(fij,r_ij,t);
-        svmul(flj,r_lj,tt);
-        rvec_add(t,tt,ttt);
-        rvec_sub(ttt,f_j,t);
-        fkj = sqrt(iprod(t,t)) * nrkj_1;
+            lalpha = igamma;
+            lbeta  = iprod(pij,vpkl)*npkl_1;
+            lgamma = ialpha;
 
-        for (int m = 0; m < DIM; m++) {
-                                      // already signed force * signed distance
-            vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
-            vir[i][m] += 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m];
-            vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
+            // force components
+            fac = a*sqrt(iprm)/ia;
+            fij = fac * (ibeta*igamma+ibeta-ialpha);
+            fik = fac * (1 + ialpha-ibeta*igamma);
+            fil = fac * (-1);
+            flj = -fac * (-lalpha + lgamma*lbeta -1);
+            fkl = -fac * (-lalpha +lbeta +lbeta*lgamma);
 
-            vir[j][m] += 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m];
-            vir[j][m] += 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m];
-            vir[j][m] += 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m];
+            // calculating remaining term
+            // from f_j
+            svmul(fij,r_ij,t);
+            svmul(flj,r_lj,tt);
+            rvec_add(t,tt,ttt);
+            rvec_sub(ttt,f_j,t);
+            fkj = sqrt(iprod(t,t)) * nrkj_1;
 
-            vir[k][m] += 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m];
-            vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m];
-            vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m];
+            for (int m = 0; m < DIM; m++) {
+                                          // already signed force * signed distance
+                vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
+                vir[i][m] += 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m];
+                vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
 
-            vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
-            vir[l][m] += 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m];
-            vir[l][m] += 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m];
-        };
+                vir[j][m] += 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m];
+                vir[j][m] += 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m];
+                vir[j][m] += 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m];
+
+                vir[k][m] += 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m];
+                vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m];
+                vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m];
+
+                vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
+                vir[l][m] += 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m];
+                vir[l][m] += 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m];
+            }
+        }
 
         if (g)
         {
