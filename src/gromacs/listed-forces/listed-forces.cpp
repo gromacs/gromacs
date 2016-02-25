@@ -220,7 +220,7 @@ reduce_thread_forces(int n, rvec *f, rvec *fshift,
         for (i = 0; i < egNR; i++)
         {
             for (j = 0; j < f_t[1].grpp.nener; j++)
-            {
+           {
                 for (t = 1; t < nthreads; t++)
                 {
 
@@ -247,7 +247,7 @@ reduce_thread_forces(int n, rvec *f, rvec *fshift,
 real
 calc_one_bond(int thread,
               int ftype, const t_idef *idef,
-              const rvec x[], rvec f[], rvec fshift[],
+              const rvec x[], rvec f[], rvec vir[], rvec fshift[],
               t_forcerec *fr,
               const t_pbc *pbc, const t_graph *g,
               gmx_grppairener_t *grpp,
@@ -257,6 +257,7 @@ calc_one_bond(int thread,
               gmx_bool bCalcEnerVir,
               int *global_atom_index)
 {
+
     int      nat1, nbonds, efptFTYPE;
     real     v = 0;
     t_iatom *iatoms;
@@ -321,7 +322,7 @@ calc_one_bond(int thread,
         {
             v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
                                                   idef->iparams,
-                                                  x, f, fshift,
+                                                  x, f, vir, fshift,
                                                   pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                                                   md, fcd, global_atom_index);
         }
@@ -346,6 +347,7 @@ void calc_listed(const gmx_multisim_t *ms,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
+                 rvec vir[],
                  const struct t_pbc *pbc,
                  const struct t_pbc *pbc_full,
                  const struct t_graph *g,
@@ -454,7 +456,7 @@ void calc_listed(const gmx_multisim_t *ms,
             if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
             {
                 v = calc_one_bond(thread, ftype, idef, x,
-                                  ft, fshift, fr, pbc_null, g, grpp,
+                                  ft, vir, fshift, fr, pbc_null, g, grpp,
                                   nrnb, lambda, dvdlt,
                                   md, fcd, bCalcEnerVir,
                                   global_atom_index);
@@ -539,7 +541,7 @@ void calc_listed_lambda(const t_idef *idef,
             if (nr - nr_nonperturbed > 0)
             {
                 v = calc_one_bond(0, ftype, &idef_fe,
-                                  x, f, fshift, fr, pbc_null, g,
+                                  x, f, NULL, fshift, fr, pbc_null, g,
                                   grpp, nrnb, lambda, dvdl_dum,
                                   md, fcd, TRUE,
                                   global_atom_index);
@@ -563,6 +565,7 @@ do_force_listed(gmx_wallcycle        *wcycle,
                 const rvec            x[],
                 history_t            *hist,
                 rvec                  f[],
+                rvec                  vir[],
                 t_forcerec           *fr,
                 const struct t_pbc   *pbc,
                 const struct t_graph *graph,
@@ -588,7 +591,7 @@ do_force_listed(gmx_wallcycle        *wcycle,
     {
         set_pbc(&pbc_full, fr->ePBC, box);
     }
-    calc_listed(ms, idef, x, hist, f, fr, pbc, &pbc_full,
+    calc_listed(ms, idef, x, hist, f, fr, vir, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);
 
