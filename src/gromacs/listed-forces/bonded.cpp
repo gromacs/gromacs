@@ -1697,16 +1697,16 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         rvec_inc(f[l], f_l);         /*  3	*/
 
 
-         /* Central Force Decomposition (CDF)*/
+         /* Central Force Decomposition (CDF) */
         rvec t, tt, ttt;                     // temporary storage
         rvec r_il, r_ik, r_lj;               // missing vectors between particles
         rvec vkj;                            // versors
         rvec pij, pkl;                       // projections
         rvec vpij, vpkl;                     // versors of projections
         real npij2, npij_1, npkl2, npkl_1;   // powers of norms
-        real ia, ia2, ialpha, ibeta, igamma; // decomposition on i
-        real la, la2, lalpha, lbeta, lgamma; // decomposition on l
-        real fac;                            // mutliplicative factor for forces
+        real ialpha, ibeta, igamma;          // decomposition on i
+        real lalpha, lbeta, lgamma;          // decomposition on l
+        real fac, ia, ia2;                   // mutliplicative factor for forces
         real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
 
         // Creating remaining r_xy vectors
@@ -1738,39 +1738,9 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         npkl_1 = gmx_invsqrt (npkl2);
         svmul (npkl_1, pkl, vpkl);
 
-        la2 = iprod(pij,pij) - iprod(pij,vpkl)*iprod(pij,vpkl);
-        la = sqrt(la2);
-
         lalpha = igamma;
         lbeta  = iprod(pij,vpkl)*npkl_1;
         lgamma = ialpha;
-
-        /* TESTING THE DECOMPOSITIONS
-          //assembling m from pairwise contributions
-        rvec vm;
-        svmul(-1, r_il, tt);
-        svmul((1 + ialpha - ibeta*igamma), r_ik, t);
-        rvec_add(t,tt, vm);
-        svmul(ibeta*igamma + ibeta - ialpha, r_ij, t);
-        rvec_add(t,vm, tt);
-        svmul(1/ia, tt, vm);
-        cprod (m,vm,tt);
-        printf ("(M x VM) : %lf %lf %lf\n", tt[0], tt[1], tt[2]);
-        printf (" M       : %lf %lf %lf\n", m[0], m[1], m[2]);
-        printf (" VM      : %lf %lf %lf\n\n", vm[0], vm[1], vm[2]);
-
-          //assembling n from pairwise contributions
-        rvec vn;
-        svmul(-1,r_il, tt);
-        svmul((-lalpha + lbeta*lgamma -1), r_lj, t);
-        rvec_add(t,tt, vn);
-        svmul(-lalpha + lbeta + lbeta*lgamma , r_kl, t);
-        rvec_add(t,vn, tt);
-        svmul(1/la, tt, vn);
-        cprod (n,vn,tt);
-        printf ("(N x VN) : %lf %lf %lf\n", tt[0], tt[1], tt[2]);
-        printf (" N       : %lf  %lf  %lf\n", n[0], n[1], n[2]);
-        printf (" VN      : %lf  %lf  %lf\n", vn[0], vn[1], vn[2]); */
 
         // force components
         fac = a*sqrt(iprm)/ia;
@@ -1788,106 +1758,24 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         rvec_sub(ttt,f_j,t);
         fkj = sqrt(iprod(t,t)) * nrkj_1;
 
-
         for (int m = 0; m < DIM; m++) {
-                                            // signed force * signed distance
-          vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
-          vir[i][m] += 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m];
-          vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
+                                      // already signed force * signed distance
+            vir[i][m] += 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m];
+            vir[i][m] += 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m];
+            vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
 
-          vir[j][m] += 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m];
-          vir[j][m] += 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m];
-          vir[j][m] += 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m];
+            vir[j][m] += 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m];
+            vir[j][m] += 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m];
+            vir[j][m] += 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m];
 
-          vir[k][m] += 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m];
-          vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m];
-          vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m];
+            vir[k][m] += 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m];
+            vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m];
+            vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m];
 
-          vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
-          vir[l][m] += 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m];
-          vir[l][m] += 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m];
+            vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
+            vir[l][m] += 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m];
+            vir[l][m] += 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m];
         };
-
-/*
-            printf("vir   fij * r_ij[m] *  r_ij[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fij * r_ij[m] *  r_ij[m]);
-            printf("vir   fik * r_ik[m] *  r_ik[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fik * r_ik[m] *  r_ik[m]);
-            printf("vir   fil * r_il[m] *  r_il[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m]);
-            printf("\n");
-
-            printf("vir  -fij * r_ij[m] * -r_ij[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m]);
-            printf("vir   fkj * r_kj[m] * -r_kj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m]);
-            printf("vir  -flj * r_lj[m] * -r_lj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m]);
-            printf("\n");
-
-            printf("vir  -fik * r_ik[m] * -r_ik[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m]);
-            printf("vir  -fkj * r_kj[m] *  r_kj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m]);
-            printf("vir  -fkl * r_kl[m] *  r_kl[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m]);
-            printf("\n");
-
-            printf("vir  -fil * r_il[m] * -r_il[m] =  %lf\n", 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m]);
-            printf("vir   flj * r_lj[m] *  r_lj[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  flj * r_lj[m] *  r_lj[m]);
-            printf("vir   fkl * r_kl[m] * -r_kl[m] =  %lf\n", 0.5*(1e25/AVOGADRO) *  fkl * r_kl[m] * -r_kl[m]);
-       } */
-
-        /*
-
-        printf ("\n--> fkj = %lf\n\n", fkj);
-
-         // from f_k
-        svmul(fik,r_ik,t);
-        svmul(fkl,r_kl,tt);
-        rvec_add(t,tt,ttt);
-        rvec_sub(ttt,f_k,t);
-        fkj = sqrt(iprod(t,t)) * nrkj_1;
-
-        printf ("--> fkj = %lf\n", fkj);
-
-
-         // checking total force on i
-        rvec fi;
-        svmul(fij, r_ij,fi);
-        svmul(fik, r_ik,t);
-        rvec_add(fi,t,tt);
-        svmul(fil, r_il,t);
-        rvec_add(t,tt,fi);
-        printf("F_i : %lf  %lf  %lf\n", f_i[0], f_i[1], f_i[2]);
-        printf("Fi  : %lf  %lf  %lf\n", fi[0], fi[1], fi[2]);
-        // checking total force on l
-        rvec fl;
-        svmul(-fil, r_il,fl);
-        svmul(flj, r_lj,t);
-        rvec_add(fl,t,tt);
-        svmul(fkl, r_kl,t);
-        rvec_add(t,tt,fl);
-        printf("F_l : %lf  %lf  %lf\n", f_l[0], f_l[1], f_l[2]);
-        printf("Fl  : %lf  %lf  %lf\n", fl[0], fl[1], fl[2]);
-
-        // checking total force on j
-        rvec fj;
-        svmul(-fij, r_ij,fj);
-        svmul(+fkj, r_kj,t);
-        rvec_add(fj,t,tt);
-        svmul(-flj, r_lj,t);
-        rvec_add(t,tt,fj);
-        printf("F_j : %lf  %lf  %lf\n", -f_j[0], -f_j[1], -f_j[2]);
-        printf("Fj  : %lf  %lf  %lf\n", fj[0], fj[1], fj[2]);
-
-        // checking total force on k
-        rvec fk;
-        svmul(-fik, r_ik,fk);
-        svmul(-fkj, r_kj,t);
-        rvec_add(fk,t,tt);
-        svmul(-fkl, r_kl,t);
-        rvec_add(t,tt,fk);
-        printf("F_k : %lf  %lf  %lf\n", -f_k[0], -f_k[1], -f_k[2]);
-        printf("Fk  : %lf  %lf  %lf\n", fk[0], fk[1], fk[2]);
-
-        // net force
-        rvec_add(fi,fl,t);
-        rvec_add(fk,fj,tt);
-        rvec_add(t,tt,ttt);
-        printf ("Net force : %lf %lf %lf\n", ttt[0], ttt[1], ttt[2]); */
-
 
         if (g)
         {
