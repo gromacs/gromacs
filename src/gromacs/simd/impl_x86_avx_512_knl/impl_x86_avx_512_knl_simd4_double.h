@@ -49,7 +49,11 @@ static inline Simd4Double gmx_simdcall
 rsqrt(Simd4Double x)
 {
     return {
+#ifndef NDEBUG //for debug mask to the 4 actually used elements to not trigger 1/0 fp exception
+               _mm512_castpd512_pd256(_mm512_maskz_rsqrt28_pd(avx512Int2Mask(0xF), _mm512_castpd256_pd512(x.simdInternal_)))
+#else
                _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x.simdInternal_)))
+#endif
     };
 }
 
