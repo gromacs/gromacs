@@ -60,7 +60,7 @@ typedef struct
     int      gnth_pme;      /**< Global num. of threads per PME only process/tMPI thread. */
 
     int      nth[emntNR];   /**< Number of threads for each module, indexed with module_nth_t */
-    gmx_bool initialized;   /**< TRUE if the module as been initialized. */
+    bool     bIsInitialized;   /**< TRUE if the module as been initialized. */
 } omp_module_nthreads_t;
 
 /** Names of environment variables to set the per module number of threads.
@@ -260,7 +260,7 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
     }
 #endif
 
-    if (modth.initialized)
+    if (modth.bIsInitialized)
     {
         /* Just return if the initialization has already been
            done. This could only happen if gmx_omp_nthreads_init() has
@@ -384,7 +384,7 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
         }
     }
 
-    modth.initialized = TRUE;
+    modth.bIsInitialized = true;
 }
 
 /*! \brief Report on the OpenMP settings that will be used */
@@ -548,17 +548,21 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     issueOversubscriptionWarning(fplog, cr, nthreads_hw_avail, nppn, bSepPME);
 }
 
+/*!
+ *  The return value is a >0 integer that indicates the number of threads the
+ *  respective module is expected to use.
+ *  A-1 return value indicates that either invalid module was requested
+ *  or that the module has not been initialized at the time of calling.
+ */
 int gmx_omp_nthreads_get(int mod)
 {
-    if (mod < 0 || mod >= emntNR)
-    {
-        /* invalid module queried */
-        return -1;
-    }
-    else
-    {
-        return modth.nth[mod];
-    }
+    GMX_RELEASE_ASSERT(modth.bIsInitialized == true,
+                       "The omp_nthreads module has not been initialized");
+
+    GMX_RELEASE_ASSERT(mod >= 0 && mod < emntNR,
+                       "Number of threads requested for invalid OpenMP module");
+
+    return modth.nth[mod];
 }
 
 void
