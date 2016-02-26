@@ -548,9 +548,21 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     issueOversubscriptionWarning(fplog, cr, nthreads_hw_avail, nppn, bSepPME);
 }
 
+/*!
+ *  The return value is a >0 integer that indicates the number of threads the
+ *  respective module is expected to use.
+ *  A-1 return value indicates that either invalid module was requested
+ *  or that the module has not been initialized at the time of calling.
+ */
 int gmx_omp_nthreads_get(int mod)
 {
-    if (mod < 0 || mod >= emntNR)
+    GMX_ASSERT(modth.initialized == TRUE,
+               "The omp_nthreads module has not been initialized")
+
+    GMX_ASSERT(mod < 0 || mod >= emntNR,
+               "Number of threads requested for invalid OpenMP module")
+
+    if (mod < 0 || mod >= emntNR || modth.initialized == FALSE)
     {
         /* invalid module queried */
         return -1;
