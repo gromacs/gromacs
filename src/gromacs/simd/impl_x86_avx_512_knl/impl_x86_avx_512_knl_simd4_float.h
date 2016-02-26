@@ -49,7 +49,11 @@ static inline Simd4Float gmx_simdcall
 rsqrt(Simd4Float x)
 {
     return {
+#ifndef NDEBUG
+               _mm512_castps512_ps128(_mm512_maskz_rsqrt28_ps(avx512Int2Mask(0xF), _mm512_castps128_ps512(x.simdInternal_)))
+#else
                _mm512_castps512_ps128(_mm512_rsqrt28_ps(_mm512_castps128_ps512(x.simdInternal_)))
+#endif
     };
 }
 
