@@ -303,6 +303,7 @@ reduceIncr4ReturnSum(double *    m,
                      SimdDouble  v3)
 {
     __m512d t0, t2;
+    __m256d t3, t4;
 
     assert(std::size_t(m) % 32 == 0);
 
@@ -315,14 +316,15 @@ reduceIncr4ReturnSum(double *    m,
     t0 = _mm512_add_pd(t0, _mm512_shuffle_f64x2(t0, t0, 0xB1));
     t0 = _mm512_mask_shuffle_f64x2(t0, avx512Int2Mask(0x0C), t0, t0, 0xEE);
 
-    t2 = _mm512_maskz_loadu_pd(avx512Int2Mask(0xF), m);
-    t2 = _mm512_add_pd(t2, t0);
-    _mm512_mask_storeu_pd(m, avx512Int2Mask(0xF), t2);
+    t3 = _mm512_castpd512_pd256(t0);
+    t4 = _mm256_load_pd(m);
+    t4 = _mm256_add_pd(t4, t3);
+    _mm256_store_pd(m, t4);
 
-    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0x4E));
-    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
+    t3 = _mm256_add_pd(t3, _mm256_permutex_pd(t3, 0x4E));
+    t3 = _mm256_add_pd(t3, _mm256_permutex_pd(t3, 0xB1));
 
-    return *reinterpret_cast<double *>(&t0);
+    return *reinterpret_cast<double *>(&t3);
 }
 
 static inline SimdDouble gmx_simdcall
@@ -333,30 +335,27 @@ loadDualHsimd(const double * m0,
     assert(std::size_t(m1) % 32 == 0);
 
     return {
-               _mm512_mask_loadu_pd(_mm512_maskz_loadu_pd(avx512Int2Mask(0x0F), m0), avx512Int2Mask(0xF0), m1-4)
+               _mm512_insertf64x4(_mm512_castpd256_pd512(_mm256_load_pd((double*)m0)),
+                                  _mm256_load_pd((double*)m1), 1)
     };
 }
 
 static inline SimdDouble gmx_simdcall
 loadDuplicateHsimd(const double * m)
 {
-    __m512d tmp;
-
     assert(std::size_t(m) % 32 == 0);
 
-    tmp = _mm512_maskz_loadu_pd(avx512Int2Mask(0x0F), m);
     return {
-               _mm512_shuffle_f64x2(tmp, tmp, 0x44)
+               _mm512_broadcast_f64x4(_mm256_load_pd((double*)m))
     };
 }
 
 static inline SimdDouble gmx_simdcall
 load1DualHsimd(const double * m)
 {
-    __m512d tmp;
-    tmp = _mm512_maskz_expandloadu_pd(avx512Int2Mask(0x11), m);
     return {
-               _mm512_permutex_pd(tmp, 0)
+               _mm512_insertf64x4(_mm512_broadcastsd_pd(_mm_loadu_pd(m)),      //note: this does not load 256bit
+                                  _mm256_broadcastsd_pd(_mm_loadu_pd(m+1)), 1) //because both intriniscs get combined
     };
 }
 
@@ -369,7 +368,7 @@ storeDualHsimd(double *     m0,
     assert(std::size_t(m0) % 32 == 0);
     assert(std::size_t(m1) % 32 == 0);
 
-    _mm512_mask_storeu_pd(m0,   avx512Int2Mask(0x0F), a.simdInternal_);
+    _mm256_store_pd(m0, _mm512_castpd512_pd256(a.simdInternal_));
     _mm512_mask_storeu_pd(m1-4, avx512Int2Mask(0xF0), a.simdInternal_);
 }
 
@@ -381,31 +380,31 @@ incrDualHsimd(double *     m0,
     assert(std::size_t(m0) % 32 == 0);
     assert(std::size_t(m1) % 32 == 0);
 
-    __m512d x;
+    __m256d x;
 
     // Lower half
-    x = _mm512_maskz_loadu_pd(avx512Int2Mask(0x0F), m0);
-    x = _mm512_add_pd(x, a.simdInternal_);
-    _mm512_mask_storeu_pd(m0, avx512Int2Mask(0x0F), x);
+    x = _mm256_load_pd(m0);
+    x = _mm256_add_pd(x, _mm512_castpd512_pd256(a.simdInternal_));
+    _mm256_store_pd(m0, x);
 
     // Upper half
-    x = _mm512_maskz_loadu_pd(avx512Int2Mask(0xF0), m1-4);
-    x = _mm512_add_pd(x, a.simdInternal_);
-    _mm512_mask_storeu_pd(m1-4, avx512Int2Mask(0xF0), x);
+    x = _mm256_load_pd(m1);
+    x = _mm256_add_pd(x, _mm512_extractf64x4_pd(a.simdInternal_, 1));
+    _mm256_store_pd(m1, x);
 }
 
 static inline void gmx_simdcall
 decrHsimd(double *    m,
           SimdDouble  a)
 {
-    __m512d t;
+    __m256d t;
 
     assert(std::size_t(m) % 32 == 0);
 
     a.simdInternal_ = _mm512_add_pd(a.simdInternal_, _mm512_shuffle_f64x2(a.simdInternal_, a.simdInternal_, 0xEE));
-    t               = _mm512_maskz_loadu_pd(avx512Int2Mask(0x0F), m);
-    t               = _mm512_sub_pd(t, a.simdInternal_);
-    _mm512_mask_storeu_pd(m, avx512Int2Mask(0x0F), t);
+    t               = _mm256_load_pd(m);
+    t               = _mm256_sub_pd(t, _mm512_castpd512_pd256(a.simdInternal_));
+    _mm256_store_pd(m, t);
 }
 
 
@@ -417,7 +416,7 @@ gatherLoadTransposeHsimd(const double *       base0,
                          SimdDouble *         v0,
                          SimdDouble *         v1)
 {
-    __m512i  idx0, idx1;
+    __m128i  idx0, idx1;
     __m256i  idx;
     __m512d  tmp1, tmp2;
 
@@ -426,12 +425,12 @@ gatherLoadTransposeHsimd(const double *       base0,
     assert(std::size_t(base1) % 16 == 0);
     assert(std::size_t(align) % 2  == 0);
 
-    idx0 = _mm512_maskz_loadu_epi32(avx512Int2Mask(0x000F), offset);
+    idx0 = _mm_load_si128((const __m128i*)offset);
 
-    idx0 = _mm512_mullo_epi32(idx0, _mm512_set1_epi32(align));
-    idx1 = _mm512_add_epi32(idx0, _mm512_set1_epi32(1));
+    idx0 = _mm_mullo_epi32(idx0, _mm_set1_epi32(align));
+    idx1 = _mm_add_epi32(idx0, _mm_set1_epi32(1));
 
-    idx = _mm512_castsi512_si256(_mm512_mask_shuffle_i32x4(idx0, avx512Int2Mask(0x00F0), idx1, idx1, 0x00));
+    idx = _mm256_inserti128_si256(_mm256_castsi128_si256(idx0), idx1, 1);
 
     tmp1 = _mm512_i32gather_pd(idx, base0, 8);
     tmp2 = _mm512_i32gather_pd(idx, base1, 8);
@@ -446,6 +445,7 @@ reduceIncr4ReturnSumHsimd(double *     m,
                           SimdDouble   v1)
 {
     __m512d  t0, t1;
+    __m256d  t2, t3;
 
     assert(std::size_t(m) % 32 == 0);
 
@@ -454,14 +454,15 @@ reduceIncr4ReturnSumHsimd(double *     m,
     t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
     t0 = _mm512_mask_shuffle_f64x2(t0, avx512Int2Mask(0xAA), t0, t0, 0xEE);
 
-    t1 = _mm512_maskz_loadu_pd(avx512Int2Mask(0xF), m);
-    t1 = _mm512_add_pd(t1, t0);
-    _mm512_mask_storeu_pd(m, avx512Int2Mask(0xF), t1);
+    t2 = _mm512_castpd512_pd256(t0);
+    t3 = _mm256_load_pd(m);
+    t3 = _mm256_add_pd(t3, t2);
+    _mm256_store_pd(m, t3);
 
-    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0x4E));
-    t0 = _mm512_add_pd(t0, _mm512_permutex_pd(t0, 0xB1));
+    t2 = _mm256_add_pd(t2, _mm256_permutex_pd(t2, 0x4E));
+    t2 = _mm256_add_pd(t2, _mm256_permutex_pd(t2, 0xB1));
 
-    return *reinterpret_cast<double *>(&t0);
+    return *reinterpret_cast<double *>(&t2);
 }
 
 }      // namespace gmx
