@@ -58,12 +58,6 @@ int alex_merge_mp(int argc, char *argv[]);
 int alex_mp2csv(int argc, char *argv[]);
 int alex_molprop_test(int argc, char *argv[]);
 int alex_molprop_check(int argc, char *argv[]);
-/*
-   extern "C" {
-   int alex_mkice(int argc, char *argv[]);
-   int alex_mkyaw(int argc, char *argv[]);
-   }
- */
 
 /*! \brief
  * Convenience function for creating and registering a module.
@@ -109,12 +103,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Utility to dump a molecular property file to a spreadsheet");
     registerModule(manager, &alex_merge_mp, "merge_mp",
                    "Utility to merge a number of molecular property files and a SQLite database");
-/*
-    registerModule(manager, &alex_mkice, "mkice",
-                   "Generate an ice structure file");
-    registerModule(manager, &alex_mkyaw, "mkyaw",
-                   "Manipulate water files");
- */
 
     {
         gmx::CommandLineModuleGroup group =
@@ -144,7 +132,5 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
             manager->addModuleGroup("Testing stuff and funky utilities");
         group.addModule("poldata_test");
         group.addModule("molprop_test");
-        /*  group.addModule("mkice");
-           group.addModule("mkyaw"); */
     }
 }

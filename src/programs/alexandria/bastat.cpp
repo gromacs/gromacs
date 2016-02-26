@@ -492,6 +492,7 @@ int alex_bastat(int argc, char *argv[])
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int                       compress       = 0;
     static int                       maxwarn        = 0;
+    static int                       nexcl          = 2;
     static gmx_bool                  bHisto         = FALSE, bBondOrder = TRUE, bDih = FALSE;
     static real                      Dm             = 400, kt = 400, kp = 5, beta = 20, klin = 20;
     static char                     *lot            = (char *)"B3LYP/aug-cc-pVTZ";
@@ -503,6 +504,8 @@ int alex_bastat(int argc, char *argv[])
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
           "Will only write output if number of warnings is at most this." },
+        { "-nexcl",  FALSE, etINT,  {&nexcl},
+          "HIDDENNumber of exclusions. Check consistency of this option with the [TT]-pairs[tt] flag." },
         { "-Dm",    FALSE, etREAL, {&Dm},
           "Dissociation energy (kJ/mol)" },
         { "-beta",    FALSE, etREAL, {&beta},
@@ -602,8 +605,8 @@ int alex_bastat(int argc, char *argv[])
                        mmi.molProp()->formula().c_str());
                 continue;
             }
-            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel, 2,
-                                                 false, false, bDih);
+            immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel, nexcl,
+                                                 false, false, bDih, false);
 
             if (immOK != imm)
             {

@@ -46,6 +46,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gmxlib/network.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
@@ -110,13 +111,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
             int                       nexcl       = 2;
-            const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
-            eDih                      edih        = (eDih) get_option(dihopt);
             bool                      fitZeta     = false;
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 nexcl, false, false, edih);
-            mp_.AddShells(pd_, bPolar, model);
+                                 nexcl, false, false, false, bPolar);
             mp_.gr_.setOptions(model, 1993,
                                fitZeta, 5, 100, 5, false,
                                mp_.molProp()->getCharge(),
@@ -125,9 +123,10 @@ class RespTest : public gmx::test::CommandLineTestBase
             real        hfac        = 0;
             real        epsr        = 1;
             char       *symm_string = (char *)"";
-
+            t_commrec  *cr          = init_commrec();
+            
             mp_.GenerateCharges(pd_, aps_, model, eqgESP,
-                                hfac, epsr, lot, false, symm_string);
+                                hfac, epsr, lot, false, symm_string,cr, NULL);
 
             std::vector<double> qtotValues;
             for (size_t atom = 0; atom < mp_.gr_.nAtom(); atom++)

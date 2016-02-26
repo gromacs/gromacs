@@ -853,6 +853,7 @@ int alex_tune_dip(int argc, char *argv[])
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "tunedip",    ffWRITE },
         { efDAT, "-sel", "molselect", ffREAD },
+        { efXVG, "-tab", "table", ffOPTRD },
         { efLOG, "-g", "charges",    ffWRITE },
         { efXVG, "-x", "dipcorr",    ffWRITE },
         { efXVG, "-qhisto", "q_histo",    ffWRITE },
@@ -1020,7 +1021,9 @@ int alex_tune_dip(int argc, char *argv[])
             opt2fn_null("-d", NFILE, fnm),
             minimum_data, bZero,
             opt_elem, const_elem,
-            lot, gms, watoms, TRUE, seed);
+            lot, gms, watoms, TRUE, seed,
+            false, bPol,
+            opt2fn_null("-tab", NFILE, fnm));
     printf("Read %d molecules\n", (int)md._mymol.size());
 
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),

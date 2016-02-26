@@ -997,7 +997,7 @@ double OptParam::CalcDeviation()
                 do_force(debug, _cr, mymol.inputrec_, 0,
                          &my_nrnb, wcycle, mymol.ltop_,
                          &(mymol.mtop_->groups),
-                         mymol.box, mymol.x_, NULL,
+                         mymol.box_, mymol.x_, NULL,
                          mymol.f_, force_vir, mymol.md_,
                          mymol.enerd_, NULL,
                          mymol.state_->lambda, NULL,
@@ -1475,6 +1475,7 @@ int alex_tune_fc(int argc, char *argv[])
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "tune_fc",    ffWRITE },
         { efDAT, "-sel", "molselect", ffREAD },
+        { efXVG, "-tab", "table",    ffOPTRD },
         { efLOG, "-g", "tune_fc",    ffWRITE },
         { efXVG, "-x", "hform-corr", ffWRITE },
         { efXVG, "-conv", "param-conv", ffWRITE },
@@ -1623,7 +1624,9 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
-             lot, gms, watoms, FALSE, seed);
+             lot, gms, watoms, FALSE, seed,
+             false, bPol,
+             opt2fn_null("-tab", NFILE, fnm));
 
     opt.checkSupport(fp, bOpt);
 

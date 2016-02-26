@@ -273,12 +273,11 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
     std::vector < std::vector < unsigned int> > bonds;
     std::vector<int> nbonds;
     t_pbc            pbc;
-    matrix           box;
     real             th_toler = 175;
     real             ph_toler = 5;
 
-    clear_mat(box);
-    set_pbc(&pbc, epbcNONE, box);
+    clear_mat(box_);
+    set_pbc(&pbc, epbcNONE, box_);
 
     bonds.resize(topology_->atoms.nr);
     for (alexandria::BondIterator bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
@@ -358,9 +357,8 @@ static void cp_plist(t_params                   plist[],
     }
 }
 
-void MyMol::MakeAngles(const Poldata &pd,
-                       bool           bPairs,
-                       bool           bDihs)
+void MyMol::MakeAngles(bool bPairs,
+                       bool bDihs)
 {
     t_nextnb nnb;
     t_restp  rtp;
@@ -613,10 +611,88 @@ static void getBhamParams(const Poldata     &pd,
     }
 }
 
+static void plist_to_mtop(const Poldata             &pd,
+                          std::vector<PlistWrapper>  plist,
+                          gmx_mtop_t                *mtop_)
+{
+    double fudgeLJ;
+    double reppow = 12.0;
+    int    n      = 0;
+
+    /* Generate pairs */
+    fudgeLJ = pd.getFudgeLJ();
+
+    int nfptot = mtop_->ffparams.ntypes;
+    for (auto &pw : plist)
+    {
+        nfptot += pw.nParam()*NRFPA(pw.getFtype());
+    }
+    srenew(mtop_->ffparams.functype, nfptot);
+    srenew(mtop_->ffparams.iparams, nfptot);
+    for (int i = mtop_->ffparams.ntypes; i < nfptot; i++)
+    {
+        mtop_->ffparams.functype[i] = 0;
+        memset(&mtop_->ffparams.iparams[i], 0, sizeof(mtop_->ffparams.iparams[i]));
+    }
+
+    for (auto &pw : plist)
+    {
+        int ftype  = pw.getFtype();
+        int nra    = NRAL(ftype);
+        int nrfp   = NRFPA(ftype);
+        int nratot = pw.nParam()*(1+nra);
+        if (nratot > 0)
+        {
+            printf("There are %d interactions of type %s\n", nratot/(nra+1),
+                   interaction_function[ftype].name);
+        }
+        snew(mtop_->moltype[0].ilist[ftype].iatoms, nratot);
+        int k = 0;
+        for (ParamIterator j = pw.beginParam();
+             (j < pw.endParam()); ++j)
+        {
+            std::vector<real> c;
+            c.resize(MAXFORCEPARAM, 0);
+            int               l = 0;
+            if (ftype == F_LJ14)
+            {
+                int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
+                int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
+                int tp  = ati*mtop_->ffparams.atnr+atj;
+                c[l++] = mtop_->ffparams.iparams[tp].lj.c6*fudgeLJ;
+                c[l++] = mtop_->ffparams.iparams[tp].lj.c12*fudgeLJ;
+            }
+            else
+            {
+                for (; (l < nrfp); l++)
+                {
+                    c[l] = j->c[l];
+                    if (NOTSET == c[l])
+                    {
+                        c[l] = 0;
+                    }
+                }
+            }
+            for (; (l < MAXFORCEPARAM); l++)
+            {
+                c[l] = 0;
+            }
+            n = enter_params(&mtop_->ffparams, ftype, c.data(), 0, reppow, n, TRUE);
+            mtop_->moltype[0].ilist[ftype].iatoms[k++] = n;
+            for (l = 0; (l < nra); l++)
+            {
+                mtop_->moltype[0].ilist[ftype].iatoms[k++] = j->a[l];
+            }
+        }
+        mtop_->moltype[0].ilist[ftype].nr = k;
+    }
+}
+
 static void do_init_mtop(const Poldata &pd,
                          gmx_mtop_t    *mtop_,
                          char         **molname,
-                         t_atoms       *atoms)
+                         t_atoms       *atoms,
+                         std::vector<PlistWrapper> plist)
 {
     init_mtop(mtop_);
     mtop_->name     = molname;
@@ -632,6 +708,10 @@ static void do_init_mtop(const Poldata &pd,
 
     mtop_->natoms = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
+    for(int i = 0; i < atoms->nr; i++)
+    {
+        mtop_->moltype[0].atoms.atom[i] = atoms->atom[i];
+    }
 
     //! Count the number of types in this molecule, at least 1 assuming there is one atom
     int ntype = 1;
@@ -698,6 +778,8 @@ static void do_init_mtop(const Poldata &pd,
     /* Create a charge group block */
     stupid_fill_block(&(mtop_->moltype[0].cgs), atoms->nr, FALSE);
 
+    plist_to_mtop(pd, plist, mtop_);
+
 }
 
 static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
@@ -731,77 +813,6 @@ static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     blocka->index[natom] = nra;
     blocka->nr           = natom;
     blocka->nra          = nra;
-}
-
-static void plist_to_mtop(const Poldata             &pd,
-                          std::vector<PlistWrapper>  plist,
-                          gmx_mtop_t                *mtop_)
-{
-    double fudgeLJ;
-    double reppow = 12.0;
-    int    n      = 0;
-
-    /* Generate pairs */
-    fudgeLJ = pd.getFudgeLJ();
-
-    int nfptot = mtop_->ffparams.ntypes;
-    for (auto &pw : plist)
-    {
-        nfptot += pw.nParam()*NRFPA(pw.getFtype());
-    }
-    srenew(mtop_->ffparams.functype, nfptot);
-    srenew(mtop_->ffparams.iparams, nfptot);
-    for (int i = mtop_->ffparams.ntypes; i < nfptot; i++)
-    {
-        mtop_->ffparams.functype[i] = 0;
-        memset(&mtop_->ffparams.iparams[i], 0, sizeof(mtop_->ffparams.iparams[i]));
-    }
-
-    for (auto &pw : plist)
-    {
-        int nra    = NRAL(pw.getFtype());
-        int nrfp   = NRFPA(pw.getFtype());
-        int nratot = pw.nParam()*(1+nra);
-        snew(mtop_->moltype[0].ilist[pw.getFtype()].iatoms, nratot);
-        int k = 0;
-        for (ParamIterator j = pw.beginParam();
-             (j < pw.endParam()); ++j)
-        {
-            std::vector<real> c;
-            c.resize(MAXFORCEPARAM, 0);
-            int               l = 0;
-            if (pw.getFtype() == F_LJ14)
-            {
-                int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
-                int atj = mtop_->moltype[0].atoms.atom[j->a[1]].type;
-                int tp  = ati*mtop_->ffparams.atnr+atj;
-                c[l++] = mtop_->ffparams.iparams[tp].lj.c6*fudgeLJ;
-                c[l++] = mtop_->ffparams.iparams[tp].lj.c12*fudgeLJ;
-            }
-            else
-            {
-                for (; (l < nrfp); l++)
-                {
-                    c[l] = j->c[l];
-                    if (NOTSET == c[l])
-                    {
-                        c[l] = 0;
-                    }
-                }
-            }
-            for (; (l < MAXFORCEPARAM); l++)
-            {
-                c[l] = 0;
-            }
-            n = enter_params(&mtop_->ffparams, pw.getFtype(), c.data(), 0, reppow, n, TRUE);
-            mtop_->moltype[0].ilist[pw.getFtype()].iatoms[k++] = n;
-            for (l = 0; (l < nra); l++)
-            {
-                mtop_->moltype[0].ilist[pw.getFtype()].iatoms[k++] = j->a[l];
-            }
-        }
-        mtop_->moltype[0].ilist[pw.getFtype()].nr = k;
-    }
 }
 
 void mtop_update_cgs(gmx_mtop_t *mtop)
@@ -883,14 +894,20 @@ bool MyMol::IsSymmetric(real toler)
 
 static void fill_inputrec(t_inputrec *ir)
 {
-    ir->cutoff_scheme = ecutsGROUP;
-    ir->tabext        = 2; /* nm */
-    ir->ePBC          = epbcNONE;
-    ir->epsilon_r     = 1;
-    ir->vdwtype       = evdwCUT;
-    ir->coulombtype   = eelCUT;
-    ir->eDispCorr     = edispcNO;
+    ir->cutoff_scheme    = ecutsGROUP;
+    ir->tabext           = 0; /* nm */
+    ir->ePBC             = epbcNONE;
+    ir->ns_type          = ensSIMPLE;
+    ir->epsilon_r        = 1;
+    ir->vdwtype          = evdwCUT;
+    ir->coulombtype      = eelUSER;
+    ir->coulomb_modifier = eintmodNONE;
+    ir->eDispCorr        = edispcNO;
+    ir->vdw_modifier     = eintmodNONE;
+    ir->niter            = 25;
+    ir->em_stepsize      = 1e-3; // nm
     snew(ir->opts.egp_flags, 1);
+    ir->opts.ngener = 1;
     snew(ir->fepvals, 1);
 }
 
@@ -906,12 +923,12 @@ MyMol::MyMol() : gvt_(egvtALL)
     snew(symtab_, 1);
     open_symtab(symtab_);
     atype_ = init_atomtype();
-    clear_mat(box);
+    clear_mat(box_);
     mtop_  = NULL;
     ltop_  = NULL;
     md_    = NULL;
     mp_    = new MolProp;
-    snew(state_, 1);
+    state_ = NULL;
     snew(enerd_, 1);
     init_enerdata(1, 0, enerd_);
 
@@ -1076,7 +1093,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   int                     nexcl,
                                   bool                    bUseVsites,
                                   bool                    bPairs,
-                                  bool                    bDih)
+                                  bool                    bDih,
+                                  bool                    bAddShells)
 {
     immStatus                imm = immOK;
     int                      ftb;
@@ -1123,7 +1141,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (immOK == imm)
     {
         /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
-        MakeAngles(pd, bPairs, bDih);
+        MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
         MakeSpecialInteractions(bUseVsites);
@@ -1133,17 +1151,27 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         getForceConstants(pd);
 
-        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
         snew(mtop_, 1);
-        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms);
+    }
+    if (bAddShells && imm == immOK)
+    {
+        addShells(pd, iChargeDistributionModel);
+    }
+    if (imm == immOK)
+    {
+        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
+        
+        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_);
 
-        plist_to_mtop(pd, plist_, mtop_);
         excls_to_blocka(topology_->atoms.nr, excls_,
                         &(mtop_->moltype[0].excls));
 
-        ltop_ = gmx_mtop_generate_local_top(mtop_, false);
     }
-
+    if (bAddShells && imm == immOK)
+    {
+        shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
+    }
+    
     return imm;
 }
 
@@ -1194,7 +1222,16 @@ void MyMol::relaxShells(t_commrec *cr)
     
     init_nrnb(&my_nrnb);
     clear_mat (force_vir);
-    relax_shell_flexcon(debug, cr, FALSE, 0,
+    for(int i = 0; i < mtop_->natoms; i++)
+    {
+        md_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
+        if (NULL != debug)
+        {
+            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, md_->chargeA[i]);
+        }
+    }
+    ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+    relax_shell_flexcon(debug, cr, TRUE, 0,
                         inputrec_, TRUE, ~0,
                         ltop_, NULL, enerd_,
                         NULL, state_,
@@ -1203,6 +1240,10 @@ void MyMol::relaxShells(t_commrec *cr)
                         &(mtop_->groups),
                         shellfc_, fr_, FALSE, t, mu_tot,
                         NULL, NULL);
+    for(int i = 0; i < mtop_->natoms; i++)
+    {
+        copy_rvec(state_->x[i], x_[i]);
+    }
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
@@ -1213,12 +1254,16 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  real                       epsr,
                                  const char                *lot,
                                  bool                       bSymmetricCharges,
-                                 const char                *symm_string)
+                                 const char                *symm_string,
+                                 t_commrec                 *cr,
+                                 const char                *tabfn)
 {
     immStatus imm       = immOK;
     real      tolerance = 1e-8;
     int       maxiter   = 1000;
 
+    // This might be moved to a better place
+    GenerateGromacs(cr, tabfn);
     if (bSymmetricCharges)
     {
         std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_BONDS);
@@ -1284,14 +1329,14 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             do
             {
                 gr_.optimizeCharges();
-                for (int i = 0; i < topology_->atoms.nr; i++)
+                for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
                 {
-                    topology_->atoms.atom[i].q      =
-                        topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
+                    mtop_->moltype[0].atoms.atom[i].q      =
+                        mtop_->moltype[0].atoms.atom[i].qB = gr_.getAtomCharge(i);
                 }
                 if (nullptr != shellfc_)
                 {
-                    relaxShells(NULL);
+                    relaxShells(cr);
                 }
                 gr_.calcPot();
                 chi2[cur] = gr_.getRms(&wtot, &rrms);
@@ -1300,6 +1345,12 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 cur = 1-cur;
             }
             while (!converged);
+            // Now copy to topology for printing
+            for (int i = 0; i < topology_->atoms.nr; i++)
+            {
+                topology_->atoms.atom[i].q      =
+                    topology_->atoms.atom[i].qB = gr_.getAtomCharge(i);
+            }
         }
         break;
         case eqgEEM:
@@ -1327,21 +1378,26 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     return imm;
 }
 
-immStatus MyMol::GenerateGromacs(t_commrec *cr)
+immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
 {
     int nalloc = 2 * topology_->atoms.nr;
 
     snew(f_, nalloc);
     fr_ = mk_forcerec();
     init_forcerec(NULL, fr_, NULL, inputrec_, mtop_, cr,
-                  box, NULL, NULL, NULL, NULL, TRUE, -1);
-
+                  box_, tabfn, tabfn, NULL, NULL, TRUE, -1);
+    snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
-    ltop_ = gmx_mtop_generate_local_top(mtop_, inputrec_);
+    //ltop_ = gmx_mtop_generate_local_top(mtop_, false);
     md_   = init_mdatoms(NULL, mtop_, FALSE);
+    atoms2md(mtop_, inputrec_, 0, NULL, topology_->atoms.nr, md_);
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
         copy_rvec(x_[i], state_->x[i]);
+    }
+    if (NULL != shellfc_)
+    {
+        make_local_shells(cr, md_, shellfc_);
     }
     return immOK;
 }
@@ -1380,9 +1436,9 @@ void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
 
-    put_in_box(topology_->atoms.nr, box, x_, 0.3);
+    put_in_box(topology_->atoms.nr, box_, x_, 0.3);
     sprintf(title, "%s processed by alexandria", molProp()->getMolname().c_str());
-    write_sto_conf(fn, title, &topology_->atoms, x_, NULL, epbcNONE, box);
+    write_sto_conf(fn, title, &topology_->atoms, x_, NULL, epbcNONE, box_);
 }
 
 static void write_zeta_q(FILE *fp, QgenEem * qgen,
@@ -1893,55 +1949,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void topology_to_mtop(t_topology *top, gmx_mtop_t *mtop)
-{
-    // Primitive routine copying the whole t_topology into
-    // one molecule in mtop
-    mtop->symtab    = top->symtab;
-    mtop->name      = top->name;
-    mtop->atomtypes = top->atomtypes;
-    
-    // ffparams
-    mtop->ffparams.ntypes    = top->idef.ntypes;
-    mtop->ffparams.atnr      = top->idef.atnr;
-    mtop->ffparams.functype  = top->idef.functype;
-    mtop->ffparams.iparams   = top->idef.iparams;
-    mtop->ffparams.reppow    = 12;
-    mtop->ffparams.fudgeQQ   = top->idef.fudgeQQ;
-    mtop->ffparams.cmap_grid = top->idef.cmap_grid;
-    
-    // moltype
-    sfree(mtop->moltype);
-    mtop->nmoltype = 1;
-    snew(mtop->moltype, 1);
-    mtop->moltype[0].name  = put_symtab(&mtop->symtab, "MOL");
-    mtop->moltype[0].atoms = top->atoms;
-    for(int i = 0; i < F_NRE; i++)
-    {
-        mtop->moltype[0].ilist[i] = top->idef.il[i];
-    }
-    mtop->moltype[0].cgs   = top->cgs;
-    mtop->moltype[0].excls = top->excls;
-    
-    // Molblock
-    sfree(mtop->molblock);
-    mtop->nmolblock = 1;
-    snew(mtop->molblock, 1);
-    mtop->molblock[0].type = 0;
-    mtop->molblock[0].nmol = 1;
-    mtop->molblock[0].natoms_mol = top->atoms.nr;
-    
-    
-    // Other stuff
-    mtop->bIntermolecularInteractions = FALSE;
-    mtop->intermolecular_ilist = NULL;
-    mtop->natoms = top->atoms.nr;
-    mtop->maxres_renum = 1;
-    mtop->maxresnr = 1;
-    stupid_fill_block(&mtop->mols, mtop->natoms, TRUE);
-}
-
-void MyMol::AddShells(const Poldata &pd, bool bPolar, 
+void MyMol::addShells(const Poldata &pd, 
                       ChargeDistributionModel iModel)
 {
     int              i, j, k, iat, shell, ns = 0;
@@ -1953,10 +1961,6 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
     rvec            *newx;
     double           pol, sigpol;
 
-    if (!bPolar)
-    {
-        return;
-    }
     int      maxatom = topology_->atoms.nr*2+2;
     srenew(x_, maxatom);
     memset(&p, 0, sizeof(p));
@@ -1968,7 +1972,8 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
         if (pd.getAtypePol(*topology_->atoms.atomtype[i],
-                           &pol, &sigpol))
+                           &pol, &sigpol) && 
+            (pol > 0))
         {
             renum.push_back(i+ns);
             inv_renum[i+ns] = i;
@@ -1979,6 +1984,7 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
             add_param_to_plist(plist_, F_POLARIZATION, p);
         }
     }
+    renum.resize(1+topology_->atoms.nr, 0);
     renum[topology_->atoms.nr] = topology_->atoms.nr + ns;
     printf("added %d shells\n", ns);
     if (ns > 0)
@@ -2050,7 +2056,7 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
             {
                 newa->atom[j]            = topology_->atoms.atom[i];
                 newa->atom[iat].q        = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
-                newa->atom[iat].qB       = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
+                newa->atom[iat].qB       = newa->atom[iat].q;
                 newa->atom[j].m          = 0;
                 newa->atom[j].mB         = 0;
                 newa->atom[j].atomnumber = 0;
@@ -2064,8 +2070,8 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
                 newa->atomtype[j]           =
                     newa->atomtypeB[j]      = put_symtab(symtab_, buf);
                 newa->atom[j].ptype         = eptShell;
-                newa->atom[j].q             = newa->atom[j].q - newa->atom[iat].q;
-                newa->atom[j].qB            = 0;
+                newa->atom[j].q             = pd.getQ(iModel, *topology_->atoms.atomtype[i], 1);
+                newa->atom[j].qB            = newa->atom[j].q;
                 newa->atom[j].resind        = topology_->atoms.atom[i].resind;
                 sprintf(buf, "%ss", *(topology_->atoms.atomname[i]));
                 newa->atomname[j] = put_symtab(symtab_, buf);
@@ -2102,11 +2108,6 @@ void MyMol::AddShells(const Poldata &pd, bool bPolar,
         bHaveShells_ = true;
         sfree(shell_atom);
     }
-    
-    do_init_mtop(pd, mtop_, topology_->name, &topology_->atoms);
-    //topology_to_mtop(topology_, mtop_);
-    
-    shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
 }
 
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
@@ -2168,7 +2169,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
         }
         else
         {
-            gr_.makeGrid(spacing, box, x_);
+            gr_.makeGrid(spacing, box_, x_);
         }
         if (NULL != rhofn)
         {

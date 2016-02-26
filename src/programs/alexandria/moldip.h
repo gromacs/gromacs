@@ -68,7 +68,9 @@ class MolDip
                   char *opt_elem, char *const_elem,
                   char *lot,
                   const MolSelect &gms,
-                  real watoms, gmx_bool bCheckSupport, unsigned int seed);
+                  real watoms, gmx_bool bCheckSupport, unsigned int seed, 
+                  bool bDihedral, bool bPolar,
+                  const char *tabfn);
 
         void CalcDeviation();
 };

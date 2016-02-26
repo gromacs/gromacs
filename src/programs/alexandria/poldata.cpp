@@ -305,14 +305,10 @@ bool Poldata::getAtypePol(const std::string &atype,
                           double *polar, 
                           double *sigPol) const
 {
-    unsigned int i;
-
-    for (i = 0; (i < _alexandria.size()); i++)
+    auto fa = findAtype(atype);
+    if (_alexandria.end() != fa)
     {
-        if (atype.compare(_alexandria[i].getType()) == 0)
-        {
-            return getPtypePol( _alexandria[i].getPtype(), polar, sigPol);
-        }
+        return getPtypePol(fa->getPtype(), polar, sigPol);
     }
     return false;
 }
@@ -321,13 +317,11 @@ bool Poldata::getAtypePol(const std::string &atype,
 bool Poldata::getAtypeRefEnthalpy(const std::string &atype,
                                   double            *Href) const
 {
-    for (const auto &i : _alexandria)
+    auto fa = findAtype(atype);
+    if (_alexandria.end() != fa)
     {
-        if (atype.compare(i.getType()) == 0)
-        {
-            *Href = atof(i.getRefEnthalpy().c_str());
-            return true;
-        }
+        *Href = atof(fa->getRefEnthalpy().c_str());
+        return true;
     }
     return false;
 }

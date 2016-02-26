@@ -806,12 +806,14 @@ static void decrease_step_size(int nshell, t_shell s[])
 }
 
 static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real df,
-                       int ndir, real sf_dir)
+                       int ndir, real sf_dir, gmx_enerdata_t *enerd)
 {
     char buf[22];
 
-    fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e",
-            gmx_step_str(mdstep, buf), count, epot, df);
+    fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e POL: %6.2f, Coul: %6.2f",
+            gmx_step_str(mdstep, buf), count, epot, df, 
+            enerd->term[F_POLARIZATION]+enerd->term[F_WATER_POL]+enerd->term[F_ANHARM_POL],
+            enerd->term[F_COUL_SR]);
     if (ndir)
     {
         fprintf(fp, ", dir. rmsF: %6.2e\n", std::sqrt(sf_dir/ndir));
@@ -1157,7 +1159,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
     if (bVerbose && MASTER(cr))
     {
-        print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir);
+        print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir, enerd);
     }
 
     if (debug)
@@ -1261,12 +1263,13 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
         if (bVerbose && MASTER(cr))
         {
-            print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
+            print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir, enerd);
         }
 
         bConverged = (df[Try] < ftol);
-
-        if ((df[Try] < df[Min]))
+        
+        //if ((df[Try] < df[Min]))
+        if (Epot[Try] < Epot[Min])
         {
             if (debug)
             {

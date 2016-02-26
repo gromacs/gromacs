@@ -44,6 +44,7 @@
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
+#include "programs/alexandria/alex_modules.h"
 
 #include "legacymodules.h"
 
@@ -56,6 +57,7 @@ main(int argc, char *argv[])
         gmx::CommandLineModuleManager manager("gmx", &context);
         registerTrajectoryAnalysisModules(&manager);
         registerLegacyModules(&manager);
+        registerAlexandriaModules(&manager);
         manager.addHelpTopic(gmx::createSelectionHelpTopic());
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();

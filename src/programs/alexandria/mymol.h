@@ -117,12 +117,14 @@ class MyMol
                                 ChargeDistributionModel   iModel);
 
         //! Generate angles, dihedrals, exclusions etc.
-        void MakeAngles(const Poldata &pd,
-                        bool           bPairs, 
-                        bool           bDihs);
+        void MakeAngles(bool bPairs, 
+                        bool bDihs);
 
         //! Generate virtual sites or linear angles
         void MakeSpecialInteractions(bool bUseVsites);
+
+        //! Add shell particles
+        void addShells(const Poldata &pd, ChargeDistributionModel iModel);
 
         //! Check whether atom types exist in the force field
         immStatus checkAtoms(const Poldata &pd);
@@ -131,7 +133,7 @@ class MyMol
         void getForceConstants(const Poldata &pd);
     public:
         rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
-        matrix                    box;
+        matrix                    box_;
         real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq, Hform, Emol, Ecalc, Force2;
         real                     *qESP;
         tensor                    Q_exp, Q_calc, Q_esp;
@@ -169,15 +171,20 @@ class MyMol
                                    int                     nexcl,
                                    bool                    bUseVsites,
                                    bool                    bPairs,
-                                   bool                    bDih);
+                                   bool                    bDih,
+                                   bool                    bAddShells);
         //! Generate Charges
-        immStatus GenerateCharges(const Poldata &pd, gmx_atomprop_t ap,
-                                  ChargeDistributionModel iModel,
-                                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                                  real hfac, real epsr,
-                                  const char *lot,
-                                  bool bSymmetricCharges,
-                                  const char *symm_string);
+        immStatus GenerateCharges(const Poldata             &pd, 
+                                  gmx_atomprop_t             ap,
+                                  ChargeDistributionModel    iModel,
+                                  ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
+                                  real                       hfac,
+                                  real                       epsr,
+                                  const char                *lot,
+                                  bool                       bSymmetricCharges,
+                                  const char                *symm_string,
+                                  t_commrec                 *cr,
+                                  const char                *tabfn);
 
         // Collect the experimental properties
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
@@ -209,11 +216,10 @@ class MyMol
 
         void CalcMultipoles();
 
-        void AddShells(const Poldata &pd, bool bPolar, ChargeDistributionModel iModel);
-
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
-        immStatus GenerateGromacs(t_commrec *cr);
+        immStatus GenerateGromacs(t_commrec *cr,
+                                  const char *tabfn);
 
         void GenerateCube(ChargeDistributionModel iModel,
                           const Poldata          &pd,

@@ -4,6 +4,6 @@
   <String Name="type">hp</String>
   <String Name="miller">H</String>
   <String Name="bosque">H</String>
-  <Real Name="polarizability">0</Real>
-  <Real Name="sigPol">0</Real>
+  <Real Name="polarizability">0.260465</Real>
+  <Real Name="sigPol">0.0499449</Real>
 </ReferenceData>

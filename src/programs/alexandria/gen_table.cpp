@@ -1229,17 +1229,16 @@ int alex_gen_table(int argc, char *argv[])
         "The program can read the [TT]gentop.dat[tt] file (or otherwise as",
         "specified with the [TT]-di[tt] option) and generate tables for all",
         "possible interactions for a given charge model (as specified with",
-        "the [TT]-qgen[tt] option).[PAR]",
+        "the [TT]-qdist[tt] option).[PAR]",
         "For Slater interactions four parameters must be passed: the 1/Width",
         "and the row number of the element. The interactions are computed analytically",
         "which may be slow due to the fact that arbitraray precision arithmetic is",
         "needed. If the width of one of the Slater is zero a Nucleus-Slater interaction",
         "will be generated."
     };
-    static const char            *cqgen[] = {
+    static const char            *cqdist[] = {
         NULL, "None", "Yang", "Bultinck", "Rappe",
-        "AXp", "AXs", "AXg",
-        "ESP", "RESP", NULL
+        "AXp", "AXs", "AXg", NULL
     };
     static const char            *opt[]      = { NULL, "cut", "rf", "pme", NULL };
     static const char            *model[]    = { NULL, "ljc", "dec", "dec-pair", "guillot2001a", "slater", "AB1", NULL };
@@ -1250,7 +1249,7 @@ int alex_gen_table(int argc, char *argv[])
     static int                    ndisp      = 6;
     static int                    pts_nm     = 500;
     t_pargs                       pa[]       = {
-        { "-qgen",   FALSE, etENUM, {cqgen},
+        { "-qdist",  FALSE, etENUM, {cqdist},
           "Algorithm used for charge distribution" },
         { "-el",     FALSE, etENUM, {opt},
           "Electrostatics type: cut, rf or pme" },
@@ -1285,8 +1284,8 @@ int alex_gen_table(int argc, char *argv[])
     };
 #define NPA asize(pa)
     t_filenm                      fnm[] = {
-        { efXVG, "-o", "table", ffWRITE },
-        { efDAT, "-di",   "gentop", ffOPTRD }
+        { efXVG, "-o",  "table",  ffWRITE },
+        { efDAT, "-di", "gentop", ffOPTRD }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     FILE                         *fp;
@@ -1371,7 +1370,7 @@ int alex_gen_table(int argc, char *argv[])
         gmx_fatal(FARGS, "Invalid argument %s for option -m", opt[0]);
     }
 
-    if ((iDistributionModel = name2eemtype(cqgen[0])) == eqdNR)
+    if ((iDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
     {
         fprintf(stderr, "Running in old mode!\n");
         fn = opt2fn("-o", NFILE, fnm);
@@ -1438,9 +1437,15 @@ int alex_gen_table(int argc, char *argv[])
     {
         gmx_atomprop_t aps = gmx_atomprop_init();
         Poldata        pd;
+        std::string    gentop;
+        const char    *ptr = opt2fn_null("-di", NFILE, fnm);
+        if (NULL != ptr)
+        {
+            gentop.assign(ptr);
+        }
         try
         {
-            readPoldata(opt2fn_null("-di", NFILE, fnm), pd, aps);
+            readPoldata(gentop, pd, aps);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

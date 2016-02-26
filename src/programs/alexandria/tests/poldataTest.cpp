@@ -231,8 +231,8 @@ TEST_F (PoldataTest, forceField)
 
 TEST_F (PoldataTest, lenghtUnit)
 {
-    std::string lenght =  pd_.getLengthUnit( );
-    checker_.checkString(lenght, "lenghtUnit");
+    std::string length =  pd_.getLengthUnit( );
+    checker_.checkString(length, "lenghtUnit");
 }
 
 

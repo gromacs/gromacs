@@ -1251,11 +1251,10 @@ void QgenResp::optimizeCharges()
     // if we know that atoms 2, 3 and 4 have the same charge we
     // add two equation q2 - q3 = 0 and q2 - q4 = 0.
     // An extra row is needed to fix the total charge.
-    int                 nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
-    int                 ncolumn  = fitQ_;
-
-    double            **a = alloc_matrix(nrow, ncolumn);
-    std::vector<double> rhs;
+    int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
+    int                   ncolumn  = fitQ_;
+    double              **a        = alloc_matrix(nrow, ncolumn);
+    std::vector<double>   rhs;
 
     for (size_t j = 0; j < nEsp(); j++)
     {

@@ -526,7 +526,9 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                   char *lot,
                   const MolSelect &gms,
                   real watoms, gmx_bool bCheckSupport,
-                  unsigned int seed)
+                  unsigned int seed, 
+                  bool bDihedral, bool bPolar,
+                  const char *tabfn)
 {
     int                              i, n, nwarn = 0, nmol_cpu;
     int                              nexcl, imm_count[immNR];
@@ -597,7 +599,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
                                              _iChargeDistributionModel, nexcl,
-                                             false, false, edihNo);
+                                             false, false, bDihedral, bPolar);
 
                 if (_iChargeGenerationAlgorithm == eqgRESP)
                 {
@@ -608,20 +610,19 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                     mpnew.gr_.setBAXpRESP(true);
                     mpnew.gr_.setBEntropy(true);
                 }
-
+                if (bPolar)
+                {
+                    fprintf(stderr, "Not optimizing shells. Help!\n");
+                }
                 imm = mpnew.GenerateCharges(pd_, _atomprop,
                                             _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm,
                                             _hfac, _epsr,
-                                            lot, TRUE, NULL);
+                                            lot, TRUE, NULL, _cr, tabfn);
 
                 if (immOK == imm)
                 {
                     imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
-                }
-                if (immOK == imm)
-                {
-                    imm = mpnew.GenerateGromacs(_cr);
                 }
                 if (immOK == imm)
                 {
@@ -722,7 +723,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             }
 
             imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel, nexcl,
-                                         false, false, edihNo);
+                                         false, false, bDihedral, bPolar);
 
             if (immOK == imm)
             {
@@ -733,21 +734,21 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 mpnew.gr_.setBAXpRESP(true);
                 mpnew.gr_.setBEntropy(true);
             }
-
+            if (bPolar)
+            {
+                fprintf(stderr, "Not optimizing shells. Help!\n");
+            }
+                
             if (immOK == imm)
             {
                 imm = mpnew.GenerateCharges(pd_, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm,
                                             _hfac, _epsr,
-                                            lot, TRUE, NULL);
+                                            lot, TRUE, NULL, _cr, tabfn);
             }
             if (immOK == imm)
             {
                 imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
-            }
-            if (immOK == imm)
-            {
-                imm = mpnew.GenerateGromacs(_cr);
             }
             if (immOK == imm)
             {
@@ -963,6 +964,7 @@ void MolDip::CalcDeviation()
             if (mymol->shellfc_)
             {
                 split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
+                fprintf(stderr, "Check whether we need atoms2md here %s %d\n", __FILE__, __LINE__);
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
                          mymol->md_);
                 (void)

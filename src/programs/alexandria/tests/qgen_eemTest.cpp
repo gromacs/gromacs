@@ -46,6 +46,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/topology/topology.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/mymol.h"
@@ -111,15 +112,16 @@ class EemTest : public gmx::test::CommandLineTestBase
             eDih                      edih        = (eDih) get_option(dihopt);
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 nexcl, false, false, edih);
+                                 nexcl, false, false, edih, false);
 
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;
             char       *symm_string = (char *)"";
-
+            t_commrec  *cr          = init_commrec();
+            
             mp_.GenerateCharges(pd_, aps_, model, eqgEEM,
-                                hfac, epsr, lot, true, symm_string);
+                                hfac, epsr, lot, true, symm_string, cr, NULL);
 
             std::vector<double> qtotValues;
             for(int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
