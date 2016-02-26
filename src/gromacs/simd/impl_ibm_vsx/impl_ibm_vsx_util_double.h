@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,8 +96,8 @@ gatherLoadUTranspose(const double *        base,
 {
     SimdDouble      t1, t2;
 
-    t1  = load(base + align * offset[0]);
-    t2  = load(base + align * offset[1]);
+    t1  = simdLoad(base + align * offset[0]);
+    t2  = simdLoad(base + align * offset[1]);
 
     v0->simdInternal_ = vec_mergeh(t1.simdInternal_, t2.simdInternal_);
     v1->simdInternal_ = vec_mergel(t1.simdInternal_, t2.simdInternal_);
@@ -143,15 +143,15 @@ transposeScatterIncrU(double *            base,
         t3 = vec_mergeh(v2.simdInternal_, vec_splats(0.0));
         t4 = vec_mergel(v2.simdInternal_, vec_splats(0.0));
 
-        t5               = load(base + align * offset[0]);
-        t6               = load(base + align * offset[0] + 2);
+        t5               = simdLoad(base + align * offset[0]);
+        t6               = simdLoad(base + align * offset[0] + 2);
         t5.simdInternal_ = vec_add(t5.simdInternal_, t1);
         t6.simdInternal_ = vec_add(t6.simdInternal_, t3);
         store(base + align * offset[0], t5);
         store(base + align * offset[0] + 2, t6);
 
-        t5               = load(base + align * offset[1]);
-        t6               = load(base + align * offset[1] + 2);
+        t5               = simdLoad(base + align * offset[1]);
+        t6               = simdLoad(base + align * offset[1] + 2);
         t5.simdInternal_ = vec_add(t5.simdInternal_, t2);
         t6.simdInternal_ = vec_add(t6.simdInternal_, t4);
         store(base + align * offset[1], t5);
@@ -165,12 +165,12 @@ transposeScatterIncrU(double *            base,
         t1 = vec_mergeh(v0.simdInternal_, v1.simdInternal_);
         t2 = vec_mergel(v0.simdInternal_, v1.simdInternal_);
 
-        t3 = load(base + align * offset[0]);
+        t3 = simdLoad(base + align * offset[0]);
         t3.simdInternal_             = vec_add(t3.simdInternal_, t1);
         store(base + align * offset[0], t3);
         base[align * offset[0] + 2] += vec_extract(v2.simdInternal_, 0);
 
-        t4 = load(base + align * offset[1]);
+        t4 = simdLoad(base + align * offset[1]);
         t4.simdInternal_             = vec_add(t4.simdInternal_, t2);
         store(base + align * offset[1], t4);
         base[align * offset[1] + 2] += vec_extract(v2.simdInternal_, 1);
@@ -195,15 +195,15 @@ transposeScatterDecrU(double *            base,
         t3 = vec_mergeh(v2.simdInternal_, vec_splats(0.0));
         t4 = vec_mergel(v2.simdInternal_, vec_splats(0.0));
 
-        t5               = load(base + align * offset[0]);
-        t6               = load(base + align * offset[0] + 2);
+        t5               = simdLoad(base + align * offset[0]);
+        t6               = simdLoad(base + align * offset[0] + 2);
         t5.simdInternal_ = vec_sub(t5.simdInternal_, t1);
         t6.simdInternal_ = vec_sub(t6.simdInternal_, t3);
         store(base + align * offset[0], t5);
         store(base + align * offset[0] + 2, t6);
 
-        t5               = load(base + align * offset[1]);
-        t6               = load(base + align * offset[1] + 2);
+        t5               = simdLoad(base + align * offset[1]);
+        t6               = simdLoad(base + align * offset[1] + 2);
         t5.simdInternal_ = vec_sub(t5.simdInternal_, t2);
         t6.simdInternal_ = vec_sub(t6.simdInternal_, t4);
         store(base + align * offset[1], t5);
@@ -217,12 +217,12 @@ transposeScatterDecrU(double *            base,
         t1 = vec_mergeh(v0.simdInternal_, v1.simdInternal_);
         t2 = vec_mergel(v0.simdInternal_, v1.simdInternal_);
 
-        t3 = load(base + align * offset[0]);
+        t3 = simdLoad(base + align * offset[0]);
         t3.simdInternal_             = vec_sub(t3.simdInternal_, t1);
         store(base + align * offset[0], t3);
         base[align * offset[0] + 2] -= vec_extract(v2.simdInternal_, 0);
 
-        t4 = load(base + align * offset[1]);
+        t4 = simdLoad(base + align * offset[1]);
         t4.simdInternal_             = vec_sub(t4.simdInternal_, t2);
         store(base + align * offset[1], t4);
         base[align * offset[1] + 2] -= vec_extract(v2.simdInternal_, 1);

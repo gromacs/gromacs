@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -186,10 +186,10 @@ transposeScatterIncrU(float *              base,
         v2.simdInternal_ = vec_perm(t1, t3, vec_gpci(00415));
         v3.simdInternal_ = vec_perm(t1, t3, vec_gpci(02637));
         // increment
-        store(base + align*offset[0], load(base + align*offset[0]) + v0);
-        store(base + align*offset[1], load(base + align*offset[1]) + v1);
-        store(base + align*offset[2], load(base + align*offset[2]) + v2);
-        store(base + align*offset[3], load(base + align*offset[3]) + v3);
+        store(base + align*offset[0], simdLoad(base + align*offset[0]) + v0);
+        store(base + align*offset[1], simdLoad(base + align*offset[1]) + v1);
+        store(base + align*offset[2], simdLoad(base + align*offset[2]) + v2);
+        store(base + align*offset[3], simdLoad(base + align*offset[3]) + v3);
     }
     else
     {
@@ -237,10 +237,10 @@ transposeScatterDecrU(float *              base,
         v2.simdInternal_ = vec_perm(t1, t3, vec_gpci(00415));
         v3.simdInternal_ = vec_perm(t1, t3, vec_gpci(02637));
         // decrement
-        store(base + align*offset[0], load(base + align*offset[0]) - v0);
-        store(base + align*offset[1], load(base + align*offset[1]) - v1);
-        store(base + align*offset[2], load(base + align*offset[2]) - v2);
-        store(base + align*offset[3], load(base + align*offset[3]) - v3);
+        store(base + align*offset[0], simdLoad(base + align*offset[0]) - v0);
+        store(base + align*offset[1], simdLoad(base + align*offset[1]) - v1);
+        store(base + align*offset[2], simdLoad(base + align*offset[2]) - v2);
+        store(base + align*offset[3], simdLoad(base + align*offset[3]) - v3);
     }
     else
     {
@@ -325,7 +325,7 @@ reduceIncr4ReturnSum(float *    m,
     v0 = v0 + v1;
     v2 = v2 + v3;
     v0 = v0 + v2;
-    v2 = v0 + load(m);
+    v2 = v0 + simdLoad(m);
     store(m, v2);
 
     return reduce(v0);
