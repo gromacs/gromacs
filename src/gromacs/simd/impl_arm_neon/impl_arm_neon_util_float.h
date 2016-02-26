@@ -350,7 +350,7 @@ reduceIncr4ReturnSum(float *    m,
     v0 = v0 + v1;
     v2 = v2 + v3;
     v0 = v0 + v2;
-    v2 = v0 + load(m);
+    v2 = v0 + simdLoad(m);
     store(m, v2);
 
     return reduce(v0);
