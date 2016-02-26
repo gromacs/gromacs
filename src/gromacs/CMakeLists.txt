@@ -122,6 +122,7 @@ add_subdirectory(trajectory)
 add_subdirectory(utility)
 add_subdirectory(fileio)
 add_subdirectory(swap)
+add_subdirectory(alexandria)
 add_subdirectory(essentialdynamics)
 add_subdirectory(pulling)
 add_subdirectory(simd)
@@ -138,7 +139,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
 endif()
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
-list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
+list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES}
+${ALEXANDRIA_SOURCES} ${PROPERTY_SOURCES})
 
 # This would be the standard way to include thread_mpi, but
 # we want libgromacs to link the functions directly

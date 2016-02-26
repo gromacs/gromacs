@@ -39,12 +39,12 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/alexandria/alex_modules.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
-#include "programs/alexandria/alex_modules.h"
 
 #include "legacymodules.h"
 

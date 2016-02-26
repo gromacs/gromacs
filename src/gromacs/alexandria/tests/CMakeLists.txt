@@ -45,7 +45,7 @@ gmx_build_unit_test(
     qgen_eemTest.cpp
     qgen_respTest.cpp
     # pseudo-library for code for alexandria
-    $<TARGET_OBJECTS:alexandria_objlib>
+#    $<TARGET_OBJECTS:alexandria_objlib>
     )
 gmx_register_integration_test(
     ${testname}
