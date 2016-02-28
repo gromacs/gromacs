@@ -205,7 +205,7 @@ void
     {{
         if (ic->ljpme_comb_rule == eljpmeLB)
         {{
-            gmx_incons("The nbnxn SIMD kernels don't suport LJ-PME with LB");
+            gmx_incons("The nbnxn SIMD kernels don't support LJ-PME with LB");
         }}
         vdwkt = vdwktLJEWALDCOMBGEOM;
     }}

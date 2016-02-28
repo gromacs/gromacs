@@ -162,7 +162,7 @@ int gmx_sorient(int argc, char *argv[])
         "consist of 3 atoms per solvent molecule.",
         "Only solvent molecules between [TT]-rmin[tt] and [TT]-rmax[tt] are",
         "considered for [TT]-o[tt] and [TT]-no[tt] each frame.[PAR]",
-        "[TT]-o[tt]: distribtion of [MATH][COS][GRK]theta[grk][SUB]1[sub][cos][math] for rmin<=r<=rmax.[PAR]",
+        "[TT]-o[tt]: distribution of [MATH][COS][GRK]theta[grk][SUB]1[sub][cos][math] for rmin<=r<=rmax.[PAR]",
         "[TT]-no[tt]: distribution of [MATH][COS][GRK]theta[grk][SUB]2[sub][cos][math] for rmin<=r<=rmax.[PAR]",
         "[TT]-ro[tt]: [MATH][CHEVRON][COS][GRK]theta[grk][SUB]1[sub][cos][chevron][math] and [MATH][CHEVRON]3[COS]^2[GRK]theta[grk][SUB]2[sub][cos]-1[chevron][math] as a function of the",
         "distance.[PAR]",
@@ -176,7 +176,7 @@ int gmx_sorient(int argc, char *argv[])
     static real       rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
     t_pargs           pa[] = {
         { "-com",  FALSE, etBOOL,  {&bCom},
-          "Use the center of mass as the reference postion" },
+          "Use the center of mass as the reference position" },
         { "-v23",  FALSE, etBOOL,  {&bVec23},
           "Use the vector between atoms 2 and 3" },
         { "-rmin",  FALSE, etREAL, {&rmin}, "Minimum distance (nm)" },

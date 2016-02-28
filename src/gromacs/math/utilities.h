@@ -121,7 +121,7 @@ gmx_numzero(double a);
 
 /*! \brief Multiply two large ints
  *
- * \return False iff overflow occured
+ * \return False iff overflow occurred
  */
 gmx_bool
 check_int_multiply_for_overflow(gmx_int64_t  a,
