@@ -185,7 +185,7 @@ void do_conect(const char *fn, int n, rvec x[])
     {
         if ((c[i].aa == -1) || (c[i].ab == -1))
         {
-            fprintf(stderr, "Warning dot %d has no conections\n", i+1);
+            fprintf(stderr, "Warning dot %d has no connections\n", i+1);
         }
         fprintf(fp, "CONECT%5d%5d%5d\n", i+1, c[i].aa+1, c[i].ab+1);
     }

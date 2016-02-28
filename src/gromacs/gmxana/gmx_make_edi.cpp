@@ -685,7 +685,7 @@ int gmx_make_edi(int argc, char *argv[])
         { "-flood",  FALSE, etSTR, {&evSelections[2]},
           "Indices of eigenvectors for flooding"},
         { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-          "Freqency (in steps) of writing output in [REF].xvg[ref] file" },
+          "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
         { "-slope", FALSE, etREAL, { &edi_params.slope},
           "Minimal slope in acceptance radius expansion"},
         { "-linstep", FALSE, etSTR, {&evParams[0]},

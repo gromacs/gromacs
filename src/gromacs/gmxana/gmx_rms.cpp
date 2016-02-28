@@ -134,7 +134,7 @@ int gmx_rms(int argc, char *argv[])
         "otherwise the masses will be deduced from the [TT]atommass.dat[tt] file in",
         "[TT]GMXLIB[tt]. This is fine for proteins, but not",
         "necessarily for other molecules. A default mass of 12.011 amu (carbon)",
-        "is assigned to unknown atoms. You can check whether this happend by",
+        "is assigned to unknown atoms. You can check whether this happened by",
         "turning on the [TT]-debug[tt] flag and inspecting the log file.[PAR]",
 
         "With [TT]-f2[tt], the 'other structures' are taken from a second",

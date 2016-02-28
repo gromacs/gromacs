@@ -198,7 +198,7 @@ int gmx_spol(int argc, char *argv[])
     static real       rmin   = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
     t_pargs           pa[]   = {
         { "-com",  FALSE, etBOOL,  {&bCom},
-          "Use the center of mass as the reference postion" },
+          "Use the center of mass as the reference position" },
         { "-refat",  FALSE, etINT, {&srefat},
           "The reference atom of the solvent molecule" },
         { "-rmin",  FALSE, etREAL, {&rmin}, "Maximum distance (nm)" },

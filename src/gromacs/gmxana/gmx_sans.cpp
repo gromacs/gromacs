@@ -78,7 +78,7 @@ int gmx_sans(int argc, char *argv[])
     };
     static gmx_bool      bPBC     = TRUE;
     static gmx_bool      bNORM    = FALSE;
-    static real          binwidth = 0.2, grid = 0.05; /* bins shouldnt be smaller then smallest bond (~0.1nm) length */
+    static real          binwidth = 0.2, grid = 0.05; /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
     static real          start_q  = 0.0, end_q = 2.0, q_step = 0.01;
     static real          mcover   = -1;
     static unsigned int  seed     = 0;

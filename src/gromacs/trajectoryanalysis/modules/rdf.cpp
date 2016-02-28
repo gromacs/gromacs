@@ -225,7 +225,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
 {
     const char *const desc[] = {
         "[THISMODULE] calculates radial distribution functions from one",
-        "refernce set of position (set with [TT]-ref[tt]) to one or more",
+        "reference set of position (set with [TT]-ref[tt]) to one or more",
         "sets of positions (set with [TT]-sel[tt]).  To compute the RDF with",
         "respect to the closest position in a set in [TT]-ref[tt] instead, use",
         "[TT]-surf[tt]: if set, then [TT]-ref[tt] is partitioned into sets",
