@@ -2454,7 +2454,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                 {
                     if (gUsed >= window->nPull)
                     {
-                        gmx_fatal(FARGS, "gUsed too large (%d, nPull=%d). This error should have been catched before.\n",
+                        gmx_fatal(FARGS, "gUsed too large (%d, nPull=%d). This error should have been caught before.\n",
                                   gUsed, window->nPull);
                     }
 
@@ -3440,7 +3440,7 @@ int gmx_wham(int argc, char *argv[])
         { "-ac-trestart", FALSE, etREAL, {&opt.acTrestart},
           "When computing autocorrelation functions, restart computing every .. (ps)"},
         { "-acred", FALSE, etBOOL, {&opt.bAllowReduceIact},
-          "HIDDENWhen smoothing the ACTs, allow to reduce ACTs. Otherwise, only increase ACTs "
+          "HIDDENWhen smoothing the ACTs, allows one to reduce ACTs. Otherwise, only increase ACTs "
           "during smoothing"},
         { "-nBootstrap", FALSE,  etINT, {&opt.nBootStrap},
           "nr of bootstraps to estimate statistical uncertainty (e.g., 200)" },

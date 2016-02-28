@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -328,7 +328,7 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl)
             break;
         default:
             pr_dlist(stdout, 1, dl, 1, 0, TRUE, TRUE, TRUE, TRUE, MAXCHI);
-            gmx_fatal(FARGS, "Non existant dihedral %d in file %s, line %d",
+            gmx_fatal(FARGS, "Non existent dihedral %d in file %s, line %d",
                       Dih, __FILE__, __LINE__);
     }
     return b;
