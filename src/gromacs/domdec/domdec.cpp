@@ -9109,7 +9109,7 @@ void dd_partition_system(FILE                *fplog,
          * Box scaling happens at the end of the MD step,
          * after the DD partitioning.
          * We therefore have to do DLB in the first partitioning
-         * after an MD step where P-coupling occured.
+         * after an MD step where P-coupling occurred.
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */

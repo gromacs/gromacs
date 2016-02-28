@@ -57,7 +57,7 @@ void check_binwidth(real binwidth)
     real smallest_bin = 0.1;
     if (binwidth < smallest_bin)
     {
-        gmx_fatal(FARGS, "Binwidth shouldnt be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
+        gmx_fatal(FARGS, "Binwidth shouldn't be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
     }
 }
 
