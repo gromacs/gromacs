@@ -114,3 +114,7 @@ else()
     endif()
 endif()
 
+if(GMX_ALEXANDRIA)
+  add_subdirectory(alexandria)
+endif()
+
