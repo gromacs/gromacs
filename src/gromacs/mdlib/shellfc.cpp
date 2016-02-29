@@ -810,7 +810,7 @@ static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real 
 {
     char buf[22];
 
-    fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e POL: %6.2f, Coul: %6.2f",
+    fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e POL: %7.3f, Coul: %7.3f",
             gmx_step_str(mdstep, buf), count, epot, df, 
             enerd->term[F_POLARIZATION]+enerd->term[F_WATER_POL]+enerd->term[F_ANHARM_POL],
             enerd->term[F_COUL_SR]);

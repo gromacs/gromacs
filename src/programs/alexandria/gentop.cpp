@@ -47,8 +47,6 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/hardware/hw_info.h"
-#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -448,16 +446,7 @@ int alex_gentop(int argc, char *argv[])
     if (immOK == imm)
     {
         t_commrec     *cr     = init_commrec();
-        gmx_hw_info_t *hwinfo = gmx_detect_hardware(stdout, cr, false);
-        gmx_hw_opt_t   hw_opt;
         
-        check_and_update_hw_opt_1(&hw_opt, cr);
-        gmx_omp_nthreads_init(stdout, cr,
-                              hwinfo->nthreads_hw_avail,
-                              hw_opt.nthreads_omp,
-                              hw_opt.nthreads_omp_pme,
-                              (cr->duty & DUTY_PP) == 0,
-                              false);
         imm = mymol.GenerateCharges(pd, aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,

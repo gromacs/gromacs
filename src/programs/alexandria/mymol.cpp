@@ -58,10 +58,12 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -231,8 +233,9 @@ void MyMol::getForceConstants(const Poldata &pd)
                         pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak) &&
                         pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], cal))
                     {
+                        int ntrain;
                         if (pd.searchDihedral(egd, cai, caj, cak, cal,
-                                              &xx, &sx, NULL, params))
+                                              &xx, &sx, &ntrain, params))
                         {
                             j->c[0] = xx;
                             std::vector<std::string> ptr = gmx::splitString(params);
@@ -900,12 +903,13 @@ static void fill_inputrec(t_inputrec *ir)
     ir->ns_type          = ensSIMPLE;
     ir->epsilon_r        = 1;
     ir->vdwtype          = evdwCUT;
-    ir->coulombtype      = eelUSER;
+    ir->coulombtype      = eelCUT;
     ir->coulomb_modifier = eintmodNONE;
     ir->eDispCorr        = edispcNO;
     ir->vdw_modifier     = eintmodNONE;
     ir->niter            = 25;
-    ir->em_stepsize      = 1e-3; // nm
+    ir->em_stepsize      = 1e-2; // nm
+    ir->em_tol           = 1e-3;
     snew(ir->opts.egp_flags, 1);
     ir->opts.ngener = 1;
     snew(ir->fepvals, 1);
@@ -1231,6 +1235,9 @@ void MyMol::relaxShells(t_commrec *cr)
         }
     }
     ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+    ltop_->idef.nthreads = 1;
+    setup_bonded_threading(fr_, &ltop_->idef);
+
     relax_shell_flexcon(debug, cr, TRUE, 0,
                         inputrec_, TRUE, ~0,
                         ltop_, NULL, enerd_,
@@ -1263,6 +1270,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     int       maxiter   = 1000;
 
     // This might be moved to a better place
+    gmx_omp_nthreads_init(stdout, cr, 1, 1, 0, false, false);
     GenerateGromacs(cr, tabfn);
     if (bSymmetricCharges)
     {
@@ -1328,6 +1336,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             int    cur = 0;
             do
             {
+                gr_.updateAtomCoords(x_);
                 gr_.optimizeCharges();
                 for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
                 {
@@ -1341,7 +1350,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 gr_.calcPot();
                 chi2[cur] = gr_.getRms(&wtot, &rrms);
                 printf("RESP: RMS %g RRMS %g\n", chi2[cur], rrms);
-                converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-3);
+                converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-6) || (nullptr == shellfc_);
                 cur = 1-cur;
             }
             while (!converged);
@@ -1384,6 +1393,11 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
 
     snew(f_, nalloc);
     fr_ = mk_forcerec();
+    if (NULL != tabfn)
+    {
+        inputrec_->vdwtype     = evdwUSER;
+        inputrec_->coulombtype = eelUSER;
+    }
     init_forcerec(NULL, fr_, NULL, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, NULL, NULL, TRUE, -1);
     snew(state_, 1);

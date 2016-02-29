@@ -117,12 +117,12 @@ add_executable(alexandria alexandria.cpp
          $<TARGET_OBJECTS:alexandria_objlib>
          )
 target_link_libraries(alexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
-#set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
-#set_target_properties(alexandria PROPERTIES 
-#                      OUTPUT_NAME "${BINARY_NAME}")
+set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
+set_target_properties(alexandria PROPERTIES 
+                      OUTPUT_NAME "${BINARY_NAME}")
 
-#install(TARGETS alexandria
-#        RUNTIME DESTINATION ${BIN_INSTALL_DIR})
+install(TARGETS alexandria
+        RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libalexandria.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc

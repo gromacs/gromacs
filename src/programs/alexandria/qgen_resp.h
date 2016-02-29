@@ -176,6 +176,8 @@ class QgenResp
         void setAtomInfo(t_atoms       *atoms,
                          const Poldata &pd,
                          const rvec     x[]);
+                         
+        void updateAtomCoords(const rvec x[]);
 
         const std::string &getStoichiometry() const { return _stoichiometry; }
 

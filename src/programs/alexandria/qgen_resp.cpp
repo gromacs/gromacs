@@ -139,6 +139,14 @@ QgenResp::~QgenResp()
     gmx_rng_destroy(rnd_);
 }
 
+void QgenResp::updateAtomCoords(const rvec x[])
+{
+    for (size_t i = 0; (i < ra_.size()); i++)
+    {
+        ra_[i].setX(x[i]);
+    }
+}
+
 void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
                            const rvec                 x[])
