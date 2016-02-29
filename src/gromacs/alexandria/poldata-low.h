@@ -44,9 +44,10 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "coulombintegrals/coulombintegrals.h"
 
 /*! \brief
  * Enumerated type holding the charge distribution models used in PolData

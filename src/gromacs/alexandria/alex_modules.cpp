@@ -67,9 +67,9 @@ int alex_molprop_check(int argc, char *argv[]);
  * \param[in] name             Name for the new module.
  * \param[in] shortDescription One-line description for the new module.
  */
-static void registerModule(gmx::CommandLineModuleManager                *manager,
-                           gmx::CommandLineModuleManager::CMainFunction  mainFunction,
-                           const char *name, const char *shortDescription)
+void registerModule(gmx::CommandLineModuleManager                *manager,
+                    gmx::CommandLineModuleManager::CMainFunction  mainFunction,
+                    const char *name, const char *shortDescription)
 {
     manager->addModuleCMain(name, shortDescription, mainFunction);
 }
@@ -87,7 +87,7 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Optimize electrostatics parameters");
     registerModule(manager, &alex_bastat, "bastat",
                    "Deduce bond/angle/dihedral distributions from a set of strucures");
-    registerModule(manager, &alex_analyze, "alexandria_properties",
+    registerModule(manager, &alex_analyze, "analyze",
                    "Analyze molecular- or force field properties from a database and generate tables");
     registerModule(manager, &alex_gen_table, "gen_table",
                    "Generate tables for interaction functions used in mdrun");
