@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,  by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -579,7 +579,7 @@ void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
     /* Threads 0,1,2 and 4,5,6 increment x,y,z for their warp */
     if ((tidxj & 3) < 3)
     {
-        atomicAdd(&fout[aidx].x + (tidxj & ~4), fin.x);
+        atomicAdd(&fout[aidx].x + (tidxj & 3), fin.x);
 
         if (bCalcFshift)
         {
