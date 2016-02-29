@@ -18,9 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-add_subdirectory(coulombintegrals)
-
-set(ALEXANDRIA_SOURCES
+file(GLOB ALEXANDRIA_SOURCE
 	gentop_core.cpp
 	gentop_vsite.cpp
         qgen_eem.cpp
@@ -60,10 +58,10 @@ set(ALEXANDRIA_SOURCES
         tune_fc.cpp
         tune_pol.cpp
 #        gen_ff.cpp
-	)
+        )
+        
 
-set(ALEXANDRIA_SOURCES ${ALEXANDRIA_SOURCES} ${COULOMB_SOURCES}
-PARENT_SCOPE)
+set(ALEXANDRIA_SOURCES ${ALEXANDRIA_SOURCE} ${COULOMB_SOURCES} PARENT_SCOPE)
 	
 #add_library(libalexandria ${ALEXANDRIA_SOURCES})	
 #target_link_libraries(libalexandria libgromacs ${GMX_EXTRA_LIBRARIES})

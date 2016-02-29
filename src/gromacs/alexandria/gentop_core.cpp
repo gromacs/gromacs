@@ -76,8 +76,8 @@
 
 using namespace alexandria;
 
-void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
-                      matrix box)
+static void calc_angles_dihs2(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
+                              matrix box)
 {
     int           i, ai, aj, ak, al, t1, t2, t3;
     rvec          r_ij, r_kj, r_kl, m, n;

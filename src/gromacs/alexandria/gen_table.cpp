@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
@@ -23,7 +24,6 @@
 
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "coulombintegrals/coulombintegrals.h"
 
 
 using namespace alexandria;

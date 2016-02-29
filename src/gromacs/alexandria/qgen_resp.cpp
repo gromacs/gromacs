@@ -45,6 +45,7 @@
 #include <cstdlib>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/coulombintegrals/coulombintegrals.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -77,7 +78,6 @@
 #include "poldata.h"
 #include "qgen_eem.h"
 #include "stringutil.h"
-#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {
