@@ -40,7 +40,6 @@
 #include <stdlib.h>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/network.h"

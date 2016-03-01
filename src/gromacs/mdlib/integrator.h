@@ -91,7 +91,6 @@ class MDLogger;
  * \param[in] mdatoms             Structure containing atom information
  * \param[in] nrnb                Accounting for floating point operations
  * \param[in] wcycle              Wall cycle timing information
- * \param[in] ed                  Essential dynamics sampling information
  * \param[in] fr                  Force record with cut-off information and more
  * \param[in] repl_ex_nst         How often we do replica exchange (in steps)
  * \param[in] repl_ex_nex         How many replicas we have
@@ -116,7 +115,6 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &md
                              ObservablesHistory *observablesHistory,
                              t_mdatoms *mdatoms,
                              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                             gmx_edsam_t ed,
                              t_forcerec *fr,
                              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                              gmx_membed_t gmx_unused * membed,
