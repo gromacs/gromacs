@@ -33,6 +33,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *  \brief OpenCL non-bonded kernel for NVIDIA GPUs.
+ *
+ *  OpenCL 1.2 support is expected (CUDA driver API 7.5 and later).
+ *
+ *  \author Anca Hamuraru <anca@streamcomputing.eu>
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+
+
 #include "nbnxn_ocl_kernel_utils.clh"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +66,11 @@
 #if defined LJ_EWALD_COMB_GEOM || defined LJ_EWALD_COMB_LB
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define LJ_EWALD
+#endif
+
+#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+#define LJ_COMB
 #endif
 
 /*
@@ -84,14 +100,22 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, 1)))
         __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     #endif
 #endif
-(int ntypes,                                                               /* IN  */
+(
+ // FIXME:
+#ifndef LJ_COMB
+ int ntypes,                                                               /* IN  */
+#endif
  cl_nbparam_params_t nbparam_params,                                       /* IN  */
  const __global float4 *restrict xq,                                       /* IN  */
  __global float *restrict f,                /* stores float3 values */     /* OUT */
  __global float *restrict e_lj,                                            /* OUT */
  __global float *restrict e_el,                                            /* OUT */
 __global float *restrict fshift,            /* stores float3 values */     /* OUT */
+#ifdef LJ_COMB
+ const __global float2 *restrict lj_comb,      /* stores float2 values */  /* IN  */
+#else
  const __global int *restrict atom_types,                                  /* IN  */
+#endif
  const __global float *restrict shift_vec,  /* stores float3 values */     /* IN  */
  __constant float* nbfp_climg2d,                                           /* IN  */
  __constant float* nbfp_comb_climg2d,                                      /* IN  */
@@ -111,7 +135,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     cl_nbparam_params_t *nbparam = &nbparam_params;
 
     float               rcoulomb_sq = nbparam->rcoulomb_sq;
-
+#ifdef LJ_COMB
+    float2              ljcp_i, ljcp_j;
+#endif
 #ifdef VDW_CUTOFF_CHECK
     float               rvdw_sq     = nbparam_params.rvdw_sq;
     float               vdw_in_range;
@@ -150,13 +176,20 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     unsigned int widx   = tidx / WARP_SIZE; /* warp index */
     int          sci, ci, cj, ci_offset,
                  ai, aj,
-                 cij4_start, cij4_end,
-                 typei, typej,
-                 i, jm, j4, wexcl_idx;
+                 cij4_start, cij4_end;
+#ifndef LJ_COMB
+    int          typei, typej;
+#endif
+    int          i, jm, j4, wexcl_idx;
     float        qi, qj_f,
-                 r2, inv_r, inv_r2, inv_r6,
-                 c6, c12,
-                 int_bit,
+                 r2, inv_r, inv_r2;
+#if !defined LJ_COMB_LB || defined CALC_ENERGIES
+    float        inv_r6, c6, c12;
+#endif
+#if defined LJ_COMB_LB
+    float        sigma, epsilon;
+#endif
+    float        int_bit,
                  F_invr;
 
 #ifdef CALC_ENERGIES
@@ -176,19 +209,25 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
 
     /* shmem buffer for cj, for both warps separately */
-    __local int *cjs     = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    __local int *cjs       = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
     #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
 
 #ifdef IATYPE_SHMEM
+#ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    __local int *atib = (__local int *)(LOCAL_OFFSET);
+    __local int *atib      = (__local int *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
     #define LOCAL_OFFSET atib + NCL_PER_SUPERCL * CL_SIZE
+#else
+    __local float2 *ljcpib = (__local float2 *)(LOCAL_OFFSET);
+    #undef LOCAL_OFFSET
+    #define LOCAL_OFFSET ljcpib + NCL_PER_SUPERCL * CL_SIZE
+#endif
 #endif
 
 #ifndef REDUCE_SHUFFLE
     /* shmem j force buffer */
-    __local float *f_buf = (__local float *)(LOCAL_OFFSET);
+    __local float *f_buf   = (__local float *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
     #define LOCAL_OFFSET f_buf + CL_SIZE * CL_SIZE * 3
 #endif
@@ -211,8 +250,12 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     xqib[tidxj * CL_SIZE + tidxi] = xqbuf;
 
 #ifdef IATYPE_SHMEM
+#ifndef LJ_COMB
     /* Pre-load the i-atom types into shared memory */
-    atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
+    atib[tidxj * CL_SIZE + tidxi]   = atom_types[ai];
+#else
+    ljcpib[tidxj * CL_SIZE + tidxi] = lj_comb[ai];
+#endif
 #endif
     /* Initialise warp vote. (8x8 block) 2 warps for nvidia */
     if(tidx==0 || tidx==32)
@@ -306,7 +349,11 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                     xqbuf   = xq[aj];
                     xj      = (float3)(xqbuf.xyz);
                     qj_f    = xqbuf.w;
+#ifndef LJ_COMB
                     typej   = atom_types[aj];
+#else
+                    ljcp_j  = lj_comb[aj];
+#endif
 
                     fcj_buf = (float3)(0.0f);
 
@@ -342,7 +389,6 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                                 imask &= ~mask_ji;
 
                             warp_any[widx]=0;
-
 #endif
 
                             int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
@@ -358,19 +404,42 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
 #ifdef IATYPE_SHMEM
+#ifndef LJ_COMB
                                 typei   = atib[i * CL_SIZE + tidxi];
 #else
-                                typei   = atom_types[ai];
+                                ljcp_i  = ljcpib[i * CL_SIZE + tidxi];
 #endif
+#else /* IATYPE_SHMEM */
+#ifndef LJ_COMB
+                                typei   = atom_types[ai];
+#else
+                                ljcp_i  = lj_comb[ai];
+#endif
+#endif /* IATYPE_SHMEM */
                                 /* LJ 6*C6 and 12*C12 */
+#ifndef LJ_COMB
                                 c6      = nbfp_climg2d[2 * (ntypes * typei + typej)];
                                 c12     = nbfp_climg2d[2 * (ntypes * typei + typej)+1];
+#else   /* LJ_COMB */
+#ifdef LJ_COMB_GEOM
+                                c6      = ljcp_i.x * ljcp_j.x;
+                                c12     = ljcp_i.y * ljcp_j.y;
+#else
+                                /* LJ 2^(1/6)*sigma and 12*epsilon */
+                                sigma   = ljcp_i.x + ljcp_j.x;
+                                epsilon = ljcp_i.y * ljcp_j.y;
+#if defined CALC_ENERGIES || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
+                                convert_sigma_epsilon_to_c6_c12(sigma, epsilon, &c6, &c12);
+#endif
+#endif                          /* LJ_COMB_GEOM */
+#endif                          /* LJ_COMB */
 
                                 /* avoid NaN for excluded pairs at r=0 */
                                 r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
 
                                 inv_r   = rsqrt(r2);
                                 inv_r2  = inv_r * inv_r;
+#if !defined LJ_COMB_LB || defined CALC_ENERGIES
                                 inv_r6  = inv_r2 * inv_r2 * inv_r2;
 #if defined EXCLUSION_FORCES
                                 /* We could mask inv_r2, but with Ewald
@@ -384,6 +453,16 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                                                      c6 * (inv_r6 + nbparam->dispersion_shift.cpot)*ONE_SIXTH_F);
 
 #endif
+#else                           /* ! LJ_COMB_LB || CALC_ENERGIES */
+                                float sig_r  = sigma*inv_r;
+                                float sig_r2 = sig_r*sig_r;
+                                float sig_r6 = sig_r2*sig_r2*sig_r2;
+#if defined EXCLUSION_FORCES
+                                sig_r6 *= int_bit;
+#endif                          /* EXCLUSION_FORCES */
+
+                                F_invr  = epsilon * sig_r6 * (sig_r6 - 1.0f) * inv_r2;
+#endif                          /* ! LJ_COMB_LB || CALC_ENERGIES */
 
 
 #ifdef LJ_FORCE_SWITCH
@@ -551,3 +630,5 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #undef EL_EWALD_ANY
 #undef EXCLUSION_FORCES
 #undef LJ_EWALD
+
+#undef LJ_COMB
