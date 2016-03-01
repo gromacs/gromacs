@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/fileio/trxio.h"
@@ -204,7 +205,6 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
                            t_state *state_global,
                            t_mdatoms *mdatoms,
                            t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                           gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                            real cpt_period, real max_hours,
@@ -225,7 +225,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   ObservablesHistory *observablesHistory,
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                  gmx_edsam_t ed, t_forcerec *fr,
+                  t_forcerec *fr,
                   int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                   gmx_membed_t *membed,
                   real cpt_period, real max_hours,
@@ -346,6 +346,17 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         ir->nstxout_compressed = 0;
     }
     groups = &top_global->groups;
+
+    gmx_edsam *ed = nullptr;
+    if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
+    {
+        /* Initialize essential dynamics sampling */
+        ed = init_edsam(opt2fn_null("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
+                        top_global, ir, cr, constr,
+                        as_rvec_array(state_global->x.data()),
+                        state_global->box, observablesHistory,
+                        oenv, Flags & MD_APPENDFILES);
+    }
 
     if (ir->eSwapCoords != eswapNO)
     {
@@ -1857,6 +1868,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         finish_swapcoords(ir->swap);
     }
+
+    /* Do essential dynamics cleanup if needed. Close .edo file */
+    done_ed(&ed);
 
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(ir->bIMD, ir->imd);
