@@ -97,8 +97,13 @@ enum eelOcl {
  * should match the order of enumerated types below.
  */
 enum evdwOcl {
-    evdwOclCUT, evdwOclFSWITCH, evdwOclPSWITCH, evdwOclEWALDGEOM, evdwOclEWALDLB, evdwOclNR
+    evdwOclCUT, evdwOclCUTCOMBGEOM, evdwOclCUTCOMBLB, evdwOclFSWITCH, evdwOclPSWITCH, evdwOclEWALDGEOM, evdwOclEWALDLB, evdwOclNR
 };
+
+// FIXME
+// #if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+// #define LJ_COMB
+// #endif
 
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.
@@ -135,6 +140,7 @@ typedef struct cl_atomdata
 
     int         ntypes;              /**< number of atom types                           */
     cl_mem      atom_types;          /**< int buffer with atom type indices, size natoms */
+    cl_mem      lj_comb;             /**< float2 buffer with sqrt(c6),sqrt(c12), size natoms */
 
     cl_mem      shift_vec;           /**< float3 buffer with shifts values               */
     size_t      shift_vec_elem_size; /**< Size in bytes for one element of shift_vec buffer */
@@ -281,7 +287,7 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
     ///@}
 
-    bool bPrefetchLjParam; /* true if prefetching fg i-atom LJ parameters should be used in the kernels */
+    bool bPrefetchLjParam; /**< true if prefetching fg i-atom LJ parameters should be used in the kernels */
 
     /**< auxiliary kernels implementing memset-like functions */
     ///@{
