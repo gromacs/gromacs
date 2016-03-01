@@ -90,6 +90,8 @@ static const char * kernel_electrostatic_family_definitions[] =
 static const char * kernel_VdW_family_definitions[] =
 {
     " -DVDWNAME=_VdwLJ",
+    " -DLJ_COMB_GEOM -DVDWNAME=_VdwLJCombGeom",
+    " -DLJ_COMB_LB  -DVDWNAME=_VdwLJCombLB",
     " -DLJ_FORCE_SWITCH -DVDWNAME=_VdwLJFsw",
     " -DLJ_POT_SWITCH -DVDWNAME=_VdwLJPsw",
     " -DLJ_EWALD_COMB_GEOM -DVDWNAME=_VdwLJEwCombGeom",
@@ -191,6 +193,8 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
 
     device_id        = nb->dev_info->ocl_gpu_id.ocl_device_id;
     context          = nb->dev_info->context;
+
+
 
     /* Here we pass macros and static const int variables defined in include
      * files outside the nbnxn_ocl as macros, to avoid including those files
