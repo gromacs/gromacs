@@ -38,7 +38,6 @@
 #ifndef GMX_MBLIB_CONSTR_H
 #define GMX_MBLIB_CONSTR_H
 
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -204,9 +203,13 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
 
 gmx_constr_t init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              gmx_edsam_t ed, t_state *state,
+                              gmx_bool bEssentialDynamics,
                               struct t_commrec *cr);
 /* Initialize constraints stuff */
+
+void saveEdsamPointer(gmx_constr_t      constr,
+                      struct gmx_edsam *ed);
+/* Put a pointer to the essential dynamics constraints into the constr struct */
 
 void set_constraints(gmx_constr_t             constr,
                      gmx_localtop_t          *top,
