@@ -90,6 +90,8 @@ static const char * kernel_electrostatic_family_definitions[] =
 static const char * kernel_VdW_family_definitions[] =
 {
     " -DVDWNAME=_VdwLJ",
+    " -DLJ_COMB_GEOM -DVDWNAME=_VdwLJCombGeom",
+    " -DLJ_COMB_LB  -DVDWNAME=_VdwLJCombLB",
     " -DLJ_FORCE_SWITCH -DVDWNAME=_VdwLJFsw",
     " -DLJ_POT_SWITCH -DVDWNAME=_VdwLJPsw",
     " -DLJ_EWALD_COMB_GEOM -DVDWNAME=_VdwLJEwCombGeom",
