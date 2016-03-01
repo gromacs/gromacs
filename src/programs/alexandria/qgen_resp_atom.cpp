@@ -68,7 +68,7 @@ RespAtomType::RespAtomType(int                             atype,
     atype_       = atype;
     atomtype_    = atomtype;
     bRestrained_ = bRestr;
-
+    bHasShell_   = hasShell;
     int nZeta    = std::max(1, pd.getNzeta(iDistributionModel, atomtype_));
     if (particleType == eptShell)
     {

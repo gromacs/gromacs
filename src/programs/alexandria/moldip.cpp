@@ -605,8 +605,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 {
                     mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
                                          true, 1, 200, 5, true,
-                                         mpnew.molProp()->getCharge(),
                                          -2, 2, false, watoms);
+                    mpnew.gr_.setMolecularCharge(mpnew.molProp()->getCharge());
                     mpnew.gr_.setBAXpRESP(true);
                     mpnew.gr_.setBEntropy(true);
                 }
@@ -729,8 +729,8 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             {
                 mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
                                      true, 1, 200, 5, true,
-                                     mpnew.molProp()->getCharge(),
                                      -2, 2, false, watoms);
+                mpnew.gr_.setMolecularCharge(mpnew.molProp()->getCharge());
                 mpnew.gr_.setBAXpRESP(true);
                 mpnew.gr_.setBEntropy(true);
             }

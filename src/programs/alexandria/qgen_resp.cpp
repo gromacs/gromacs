@@ -85,7 +85,7 @@ QgenResp::QgenResp()
 {
     rnd_                = nullptr;
     setOptions(eqdAXp, 0, false, 5, 100, -1, false,
-               0, -3, 3, true, 0);
+               -3, 3, true, 0);
     _bAXpRESP           = false;
     _qfac               = 1e-3;
     _bHyper             = 0.1;
@@ -102,7 +102,6 @@ void QgenResp::setOptions(ChargeDistributionModel c,
                           real                    zetaMax,
                           real                    deltaZeta,
                           bool                    randomZeta,
-                          real                    qtot,
                           real                    qmin,
                           real                    qmax,
                           bool                    randomQ,
@@ -118,7 +117,6 @@ void QgenResp::setOptions(ChargeDistributionModel c,
 
     uniqueQ_            = 0;
     fitQ_               = 0;
-    _qtot               = qtot;
     _qmin               = qmin;
     _qmax               = qmax; /* e */
     _bRandQ             = randomQ;
@@ -170,7 +168,8 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
             nShell_ += 1;
             break;
         default:
-            fprintf(stderr, "Oh dear, particle %d is a %s\n", i, ptype_str[atoms->atom[i].ptype]);
+            fprintf(stderr, "Oh dear, particle %d is a %s\n", 
+                    i, ptype_str[atoms->atom[i].ptype]);
         }
         if (findRAT(atoms->atom[i].type) == endRAT())
         {
@@ -184,11 +183,6 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     // Then add all the atoms
     for (int i = 0; (i < atoms->nr); i++)
     {
-        // THIS is a hack
-        bool hasShell = ((i < atoms->nr-1) &&
-                         (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
-                         (atoms->atom[i].ptype == eptAtom) &&
-                         (atoms->atom[i+1].ptype == eptShell));
         // Now compute starting charge for atom, taking into account
         // the charges of the other "shells".
         auto rat = findRAT(atoms->atom[i].type);
@@ -198,7 +192,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
         // "rest" of the charge on a particle is such that we fit charges to 
         // the residual electrostatic potential only.
         double qref = 0;
-        if (hasShell)
+        if (rat->hasShell())
         {
             // The reference charge is the charge of the shell times -1
             auto ratp = findRAT(atoms->atom[i+1].type);
@@ -220,7 +214,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
         if (debug)
         {
             fprintf(debug, "Atom %d hasShell %s q = %g qref = %g\n",
-                    i, gmx::boolToString(hasShell), q, qref);
+                    i, gmx::boolToString(rat->hasShell()), q, qref);
         }
     }
 }
@@ -1253,6 +1247,37 @@ int QgenResp::optimizeZeta(int maxiter, real *rms)
     }
 }
 
+void QgenResp::regularizeCharges()
+{
+    double qtot   = 0;
+    int    nfixed = 0;
+    for (size_t ii = 0; ii < nAtom(); ii++)
+    {
+        auto rat = findRAT(ra_[ii].atype());
+        GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency with atomtypes");
+
+        qtot += ra_[ii].q();
+        if (ra_[ii].fixedQ())
+        {
+            nfixed++;
+        }
+        if (!rat->hasShell())
+        {
+            qtot -= ra_[ii].qRef();
+        }
+    }
+    //printf("qtot = %g _qtot = %d nAtom = %d nfixed = %d\n", qtot, _qtot, static_cast<int>(nAtom()), nfixed);
+    double dq = (_qtot - qtot)/(nAtom()-nfixed);
+    for (size_t ii = 0; ii < nAtom(); ii++)
+    {
+        if (!ra_[ii].fixedQ())
+        {
+            ra_[ii].setQ(ra_[ii].q() + dq);
+        }
+    }
+    printf("Please implement symmetrizing charges\n");
+}
+
 void QgenResp::optimizeCharges()
 {
     // Increase number of rows for the symmetric atoms. E.g.
@@ -1345,7 +1370,7 @@ void QgenResp::optimizeCharges()
     }
     // Add the equations to ascertain symmetric charges
     int    j1     = nEsp();
-    double factor = 1000.0;
+    double factor = nEsp();
     for (int i = 0; i < static_cast<int>(nAtom()); i++)
     {
         if (symmetricAtoms_[i] < i)
@@ -1419,6 +1444,7 @@ void QgenResp::optimizeCharges()
     sfree(x);
 
     free_matrix(a);
+    regularizeCharges();
 }
 
 void QgenResp::potcomp(const std::string      &potcomp,

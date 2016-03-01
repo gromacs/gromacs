@@ -66,6 +66,8 @@ class RespAtomType
 
         bool getBRestrained() const { return bRestrained_; }
 
+        bool hasShell() const { return bHasShell_; }
+        
         int getAtype() const { return atype_; }
 
         void setAtype(int i) { atype_ = i; }
@@ -83,6 +85,8 @@ class RespAtomType
         int                   atype_;
         //! Signify whether this charge should be restrained during fitting
         bool                  bRestrained_;
+        //! Signify whether this particle has a shell
+        bool                  bHasShell_;
         //! String corresponding to atom type
         std::string           atomtype_;
         //! Arrays of charge components
@@ -98,8 +102,8 @@ typedef std::vector<RespAtomType>::const_iterator RespAtomTypeConstIterator;
 class RespAtom
 {
     public:
- RespAtom(int atomnumber, int atype, double q, double qref, gmx::RVec x)
-     : atomnumber_(atomnumber), atype_(atype), q_(q), qref_(qref), x_(x)
+        RespAtom(int atomnumber, int atype, double q, double qref, gmx::RVec x)
+            : atomnumber_(atomnumber), atype_(atype), q_(q), qref_(qref), x_(x)
         {
             qindex_ = -1;
             fixedQ_ = (q != 0);

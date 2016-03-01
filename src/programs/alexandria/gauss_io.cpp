@@ -42,6 +42,8 @@
 
 #include "config.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -183,7 +185,6 @@ static void gmx_molprop_read_babel(const char *g98,
     OpenBabel::OBMol           mol;
     OpenBabel::OBAtomIterator  OBai;
     OpenBabel::OBBondIterator  OBbi;
-    OpenBabel::OBConversion   *conv;
     //OpenBabel::OBAtom *OBa;
     OpenBabel::OBBond         *OBb;
     OpenBabel::OBPairData     *OBpd;
@@ -199,12 +200,15 @@ static void gmx_molprop_read_babel(const char *g98,
     char       *program, *method, *basis, *charge_model, *ptr, *g98ptr;
     int         bondid;
 
-    conv = read_babel(g98, &mol);
+    OpenBabel::OBConversion *conv = read_babel(g98, &mol);
     if (NULL == conv)
     {
         fprintf(stderr, "Failed reading %s\n", g98);
         return;
     }
+    int qtot = mol.GetTotalCharge();
+    int mult = mol.GetTotalSpinMultiplicity();
+    printf("Total charge %d\n", qtot);
     delete conv;
 
     conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
@@ -213,7 +217,7 @@ static void gmx_molprop_read_babel(const char *g98,
     {
         const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
-
+        
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
@@ -246,8 +250,8 @@ static void gmx_molprop_read_babel(const char *g98,
     }
 
     // get bondorders.
-    mol.PerceiveBondOrders();
-    mol.ConnectTheDots();
+    //mol.PerceiveBondOrders();
+    //mol.ConnectTheDots();
 
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
     if ((NULL != basisset) && (strlen(basisset) > 0))
@@ -302,7 +306,7 @@ static void gmx_molprop_read_babel(const char *g98,
     alexandria::Experiment ca(program, method, basis, reference,
                               conformation, g98ptr);
     mpt.AddExperiment(ca);
-
+    printf("Charge finally is %d\n", mol.GetTotalCharge());
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
     mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());

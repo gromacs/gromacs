@@ -110,7 +110,6 @@ class QgenResp
          * \param[in] zetaMax    Maximum allowed zeta value
          * \param[in] deltaZeta  Minimum difference between zeta values in one atom
          * \param[in] randomZeta Use random starting values for zeta optimization
-         * \param[in] qtot       Total molecular charge
          * \param[in] qmin       Minimum allowed atomic charge
          * \param[in] qmax       Maximum allowed atomic charge
          * \param[in] randomQ    Use random starting values for charge optimization
@@ -123,7 +122,6 @@ class QgenResp
                         real                    zetaMax,
                         real                    deltaZeta,
                         bool                    randomZeta,
-                        real                    qtot,
                         real                    qmin,
                         real                    qmax,
                         bool                    randomQ,
@@ -136,6 +134,8 @@ class QgenResp
         void setBEntropy(bool bEntropy) { _bEntropy  = bEntropy; }
 
         real getMolecularCharge() const { return _qtot; }
+
+        void setMolecularCharge(int qtot) { _qtot = qtot; }
 
         // int atomicnumber2row(int elem);
 
@@ -231,6 +231,9 @@ class QgenResp
          */
         void optimizeCharges();
 
+        // Make sure the total charge is correct and that symmetry is obeyed
+        void regularizeCharges();
+
         int optimizeZeta(int maxiter, real *rms);
 
         void potcomp(const std::string      &potcomp,
@@ -258,7 +261,8 @@ class QgenResp
         void setZeta(int atom, int zz, double zeta);
 
         ChargeDistributionModel   _iDistributionModel;
-        double                    _qtot, _watoms;
+        double                    _watoms;
+        int                       _qtot;
         double                    _rms, _rrms, _penalty, _pfac, _entropy, _wtot;
         dvec                      _origin, _space;
         bool                      _bFitZeta, _bEntropy;

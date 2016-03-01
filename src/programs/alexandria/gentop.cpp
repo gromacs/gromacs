@@ -437,7 +437,7 @@ int alex_gentop(int argc, char *argv[])
     {
         mymol.gr_.setOptions(iChargeDistributionModel, seed,
                              bFitZeta, zmin, zmax, delta_z, bRandZeta,
-                             mymol.molProp()->getCharge(), -3, 3, bRandQ, watoms);
+                             -3, 3, bRandQ, watoms);
         mymol.gr_.setBAXpRESP(bAXpRESP);
         mymol.gr_.setRDecrZeta(rDecrZeta);
         mymol.gr_.setBEntropy(bEntropy);

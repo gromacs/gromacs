@@ -117,8 +117,8 @@ class RespTest : public gmx::test::CommandLineTestBase
                                  nexcl, false, false, false, bPolar);
             mp_.gr_.setOptions(model, 1993,
                                fitZeta, 5, 100, 5, false,
-                               mp_.molProp()->getCharge(),
                                -3, 3, false, 0);
+            mp_.gr_.setMolecularCharge(mp_.molProp()->getCharge());
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;

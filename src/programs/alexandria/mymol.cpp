@@ -1298,6 +1298,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         {
             gr_.setAtomInfo(&topology_->atoms, pd, x_);
             gr_.setAtomSymmetry(symmetric_charges_);
+            gr_.setMolecularCharge(molProp()->getCharge());
             gr_.summary(debug);
             /* Even if we get the right LoT it may still not have
              * the ESP
