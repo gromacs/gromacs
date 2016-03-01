@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,6 +67,18 @@
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJ ## y
 #include CL_SOURCE_FILE
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJCombGeom ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJCombLB ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecCut_VdwLJEwCombGeom ## y
@@ -103,6 +115,18 @@
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJ ## y
 #include CL_SOURCE_FILE
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJCombGeom ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJCombLB ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecRF_VdwLJEwCombGeom ## y
@@ -138,6 +162,18 @@
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJ ## y
 #include CL_SOURCE_FILE
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJCombGeom ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEw_VdwLJCombLB ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
@@ -176,6 +212,18 @@
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJ ## y
 #include CL_SOURCE_FILE
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJCombGeom ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJCombLB ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwTwinCut_VdwLJEwCombGeom ## y
@@ -212,6 +260,18 @@
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJ ## y
 #include CL_SOURCE_FILE
 #undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJCombGeom ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJCombLB ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTab_VdwLJEwCombGeom ## y
@@ -247,6 +307,18 @@
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwinCut_VdwLJ ## y
 #include CL_SOURCE_FILE
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwin_VdwLJCombGeom ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, y) x ## _ElecEwQSTabTwin_VdwLJCombLB ## y
+#include CL_SOURCE_FILE
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
