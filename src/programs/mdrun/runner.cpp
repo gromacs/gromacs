@@ -57,7 +57,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/oenv.h"
@@ -728,7 +727,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_walltime_accounting_t walltime_accounting = nullptr;
     int                       rc;
     gmx_int64_t               reset_counters;
-    gmx_edsam_t               ed           = nullptr;
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = nullptr;
     gmx_hw_info_t            *hwinfo       = nullptr;
@@ -1050,16 +1048,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bcast(sizeof(box), box, cr);
     }
 
-    // TODO This should move to do_md(), because it only makes sense
-    // with dynamical integrators, but there is no test coverage and
-    // it interacts with constraints, somehow.
-    /* Essential dynamics */
-    if (opt2bSet("-ei", nfile, fnm))
-    {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(mtop->natoms, &observablesHistory, nfile, fnm, Flags, oenv, cr);
-    }
-
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
@@ -1369,7 +1357,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                      bVerbose, Flags);
         }
 
-        constr = init_constraints(fplog, mtop, inputrec, ed, observablesHistory.edsamHistory.get(), state, cr);
+        /* Let init_constraints know whether we have essential dynamics constraints.
+         * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
+         */
+        bool doEdsam = (opt2fn_null("-ei", nfile, fnm) != nullptr || observablesHistory.edsamHistory);
+
+        constr = init_constraints(fplog, mtop, inputrec, doEdsam, cr);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1389,7 +1382,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      nstepout, mdModules.outputProvider(),
                                      inputrec, mtop,
                                      fcd, state, &observablesHistory,
-                                     mdatoms, nrnb, wcycle, ed, fr,
+                                     mdatoms, nrnb, wcycle, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                      membed,
                                      cpt_period, max_hours,
@@ -1454,8 +1447,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     rc = (int)gmx_get_stop_condition();
-
-    done_ed(&ed);
 
 #if GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they

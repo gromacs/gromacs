@@ -54,14 +54,14 @@
 
 /*! \brief Abstract type for essential dynamics
  *
- * The main type is defined only in edsam.c
+ * The main type is defined only in edsam.cpp
  */
 typedef struct gmx_edsam *gmx_edsam_t;
 
-struct edsamhistory_t;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -80,40 +80,34 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
               t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
 
 
-/*! \brief Reads in the .edi file containing the essential dynamics (ED) and flooding data.
- *
- * This function opens the ED input and output files, reads in all datasets it finds
- * in the input file, and cross-checks whether the .edi file information is consistent
- * with the ED data found in the checkpoint file (if present).
- * gmx make_edi can be used to create an .edi input file.
- *
- * \param natoms            Number of atoms of the whole MD system.
- * \param oh                Observables history, contains ED observables history
- * \param nfile             Number of entries (files) in the fnm structure.
- * \param fnm               The filenames struct; it contains also the names of the
- *                          essential dynamics and flooding in + output files.
- * \param Flags             Flags passed over from main, used to determine
- *                          whether we are appending.
- * \param oenv              Needed to open the output xvgr file.
- * \param cr                Data needed for MPI communication.
- * \returns                 Pointer to the initialized essential dynamics / flooding data.
- */
-gmx_edsam_t ed_open(int natoms, struct ObservablesHistory *oh, int nfile, const t_filenm fnm[],
-                    unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr);
-
 /*! \brief Initializes the essential dynamics and flooding module.
  *
+ * \param ediFileName       Essential dynamics input file.
+ * \param edoFileName       Output file for essential dynamics data.
  * \param mtop              Molecular topology.
  * \param ir                MD input parameter record.
  * \param cr                Data needed for MPI communication.
- * \param ed                The essential dynamics data.
+ * \param constr            Data structure keeping the constraint information.
  * \param x                 Positions of the whole MD system.
  * \param box               The simulation box.
- * \param EDstate           ED data stored in the checkpoint file.
+ * \param oh                The observables history container.
+ * \param oenv              The output environment information.
+ * \param bAppend           Append to existing output files?
+ *
+ * \returns                 A pointer to the ED data structure.
  */
-void init_edsam(const gmx_mtop_t *mtop, const t_inputrec *ir, t_commrec *cr,
-                gmx_edsam_t ed, rvec x[], matrix box, edsamhistory_t *EDstate);
-
+gmx_edsam_t init_edsam(
+        const char             *ediFileName,
+        const char             *edoFileName,
+        const gmx_mtop_t       *mtop,
+        const t_inputrec       *ir,
+        t_commrec              *cr,
+        struct gmx_constr      *constr,
+        rvec                    x[],
+        matrix                  box,
+        ObservablesHistory     *oh,
+        const gmx_output_env_t *oenv,
+        gmx_bool                bAppend);
 
 /*! \brief Make a selection of the home atoms for the ED groups.
  *
