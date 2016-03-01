@@ -150,6 +150,22 @@ typedef struct {
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
+/*! Convert LJ sigma,epsilon parameters to C6,C12. */
+static __forceinline__ __device__
+void convert_sigma_epsilon_to_c6_c12(const float  sigma,
+                                     const float  epsilon,
+                                     float       *c6,
+                                     float       *c12)
+{
+    float sigma2, sigma6;
+
+    sigma2 = sigma * sigma;
+    sigma6 = sigma2 *sigma2 * sigma2;
+    *c6    = epsilon * sigma6;
+    *c12   = *c6 * sigma6;
+}
+
+
 /*! Apply force switch,  force + energy version. */
  __INLINE__ __device__
 void calculate_force_switch_F(cl_nbparam_params_t *nbparam,
