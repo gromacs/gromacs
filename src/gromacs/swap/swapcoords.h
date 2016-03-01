@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,13 @@ void init_swapcoords(
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
         unsigned long           Flags);
+
+
+/*! \brief Finalizes ion / water position swapping.
+ *
+ * \param[in] sc            Pointer to swap data.
+ */
+void finish_swapcoords(t_swapcoords *sc);
 
 
 /*! \brief Make a selection of the home atoms for the swap groups. These are
