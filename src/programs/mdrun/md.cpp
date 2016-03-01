@@ -52,6 +52,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
+#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
@@ -212,7 +213,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   t_state *state_global,
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                  gmx_edsam_t ed, t_forcerec *fr,
+                  t_forcerec *fr,
                   int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                   real cpt_period, real max_hours,
                   int imdport,
@@ -343,6 +344,17 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * multiple ranks. */
         membed = init_membed(fplog, nfile, fnm, top_global, ir, state, cr, &cpt_period);
     }
+
+    gmx_edsam *ed = NULL;
+    if (opt2bSet("-ei", nfile, fnm) || state_global->edsamstate.nED > 0)
+    {
+        /* Initialize essential dynamics sampling */
+        ed = init_edsam(opt2fn("-ei", nfile, fnm), opt2fn("-eo", nfile, fnm),
+                        top_global, ir, cr, constr,
+                        state_global->x, state_global->box, &state_global->edsamstate,
+                        oenv, Flags & MD_APPENDFILES);
+    }
+
     if (ir->bPull)
     {
         /* Initialize pull code */
