@@ -1831,7 +1831,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         print_replica_exchange_statistics(fplog, repl_ex);
     }
 
-    // TODO clean up swapcoords
+    // Clean up swapcoords
+    if (ir->eSwapCoords != eswapNO)
+    {
+        finish_swapcoords(ir->swap);
+    }
 
     if (ir->bRot)
     {

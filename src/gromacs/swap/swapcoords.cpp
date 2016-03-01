@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1823,6 +1823,16 @@ void init_swapcoords(
     if (MASTER(cr) && !bAppend)
     {
         print_ionlist_legend(ir, oenv);
+    }
+}
+
+
+void finish_swapcoords(t_swapcoords *sc)
+{
+    if (sc->si_priv->fpout)
+    {
+        // Close the swap output file
+        gmx_fio_fclose(sc->si_priv->fpout);
     }
 }
 
