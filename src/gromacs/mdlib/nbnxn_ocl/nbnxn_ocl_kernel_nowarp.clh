@@ -33,6 +33,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *  \brief OpenCL non-bonded "generic" kernel for architectures other than AMD/NVIDIA.
+ *
+ *  This kernel is use by default on all architectures other than the ones we
+ *  explicitly support/optimize for.
+ *
+ *  OpenCL 1.1 support is expected.
+ *
+ *  \author Anca Hamuraru <anca@streamcomputing.eu>
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_mdlib
+ */
+
 #include "nbnxn_ocl_kernel_utils.clh"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
