@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,6 @@
 #ifndef GMX_MBLIB_CONSTR_H
 #define GMX_MBLIB_CONSTR_H
 
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -197,9 +196,11 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
 
 gmx_constr_t init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              gmx_edsam_t ed, t_state *state,
                               struct t_commrec *cr);
 /* Initialize constraints stuff */
+
+void saveEdsamPointer(gmx_constr_t      constr,
+                      struct gmx_edsam *ed);
 
 void set_constraints(gmx_constr_t             constr,
                      gmx_localtop_t          *top,
