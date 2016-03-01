@@ -38,6 +38,7 @@
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -69,8 +70,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
-
 
 /*! \brief This parameter should be determined heuristically from the
  * kernel execution times
@@ -82,6 +83,15 @@
  */
 static unsigned int gpu_min_ci_balanced_factor = 50;
 
+
+/*! \brief Returns true if LJ combination rules are used in the non-bonded kernels.
+ *
+ * Full doc in nbnxn_ocl_internal.h */
+bool useLjCombRule(int vdwType)
+{
+    return (vdwType == evdwOclCUTCOMBGEOM ||
+            vdwType == evdwOclCUTCOMBLB);
+}
 
 /*! \brief Free device buffers
  *
@@ -302,6 +312,7 @@ static void set_cutoff_parameters(cl_nbparam_t              *nbp,
  * evdwOcl. */
 static void
 map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t *ic,
+                                            int                        combRule,
                                             int                       *gpu_eeltype,
                                             int                       *gpu_vdwtype)
 {
@@ -311,7 +322,21 @@ map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t *ic,
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
-                *gpu_vdwtype = evdwOclCUT;
+                switch (combRule)
+                {
+                    case ljcrNONE:
+                        *gpu_vdwtype = evdwOclCUT;
+                        break;
+                    case ljcrGEOM:
+                        *gpu_vdwtype = evdwOclCUTCOMBGEOM;
+                        break;
+                    case ljcrLB:
+                        *gpu_vdwtype = evdwOclCUTCOMBLB;
+                        break;
+                    default:
+                        gmx_incons("The requested LJ combination rule is not implemented in the OpenCL GPU accelerated kernels!");
+                        break;
+                }
                 break;
             case eintmodFORCESWITCH:
                 *gpu_vdwtype = evdwOclFSWITCH;
@@ -376,6 +401,7 @@ static void init_nbparam(cl_nbparam_t              *nbp,
     set_cutoff_parameters(nbp, ic);
 
     map_interaction_types_to_gpu_kernel_flavors(ic,
+                                                nbat->comb_rule,
                                                 &(nbp->eeltype),
                                                 &(nbp->vdwtype));
 
@@ -916,6 +942,7 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
         {
             ocl_free_buffered(d_atdat->f, &d_atdat->natoms, &d_atdat->nalloc);
             ocl_free_buffered(d_atdat->xq, NULL, NULL);
+            ocl_free_buffered(d_atdat->lj_comb, NULL, NULL);
             ocl_free_buffered(d_atdat->atom_types, NULL, NULL);
         }
 
@@ -925,13 +952,25 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
         d_atdat->f = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE, nalloc * d_atdat->f_elem_size, NULL, &cl_error);
         assert(CL_SUCCESS == cl_error);
 
+        // TODO: change the flag to read-only
         d_atdat->xq = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float4), NULL, &cl_error);
         assert(CL_SUCCESS == cl_error);
         // TODO: handle errors, check clCreateBuffer flags
 
-        d_atdat->atom_types = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE, nalloc * sizeof(int), NULL, &cl_error);
-        assert(CL_SUCCESS == cl_error);
-        // TODO: handle errors, check clCreateBuffer flags
+        if (useLjCombRule(nb->nbparam->vdwtype))
+        {
+            // TODO: change the flag to read-only
+            d_atdat->lj_comb = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE, nalloc * sizeof(cl_float2), NULL, &cl_error);
+            assert(CL_SUCCESS == cl_error);
+            // TODO: handle errors, check clCreateBuffer flags
+        }
+        else
+        {
+            // TODO: change the flag to read-only
+            d_atdat->atom_types = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE, nalloc * sizeof(int), NULL, &cl_error);
+            assert(CL_SUCCESS == cl_error);
+            // TODO: handle errors, check clCreateBuffer flags
+        }
 
         d_atdat->nalloc = nalloc;
         realloced       = true;
@@ -946,8 +985,17 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
         nbnxn_ocl_clear_f(nb, nalloc);
     }
 
-    ocl_copy_H2D_async(d_atdat->atom_types, nbat->type, 0,
-                       natoms*sizeof(int), ls, bDoTime ? &(timers->atdat) : NULL);
+    if (useLjCombRule(nb->nbparam->vdwtype))
+    {
+        ocl_copy_H2D_async(d_atdat->lj_comb, nbat->lj_comb, 0,
+                           natoms*sizeof(cl_float2), ls, bDoTime ? &(timers->atdat) : NULL);
+    }
+    else
+    {
+        ocl_copy_H2D_async(d_atdat->atom_types, nbat->type, 0,
+                           natoms*sizeof(int), ls, bDoTime ? &(timers->atdat) : NULL);
+
+    }
 
     /* kick off the tasks enqueued above to ensure concurrency with the search */
     cl_error = clFlush(ls);
@@ -1010,6 +1058,7 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     free_ocl_buffer(&(nb->atdat->e_lj));
     free_ocl_buffer(&(nb->atdat->e_el));
     free_ocl_buffer(&(nb->atdat->fshift));
+    free_ocl_buffer(&(nb->atdat->lj_comb));
     free_ocl_buffer(&(nb->atdat->atom_types));
     free_ocl_buffer(&(nb->atdat->shift_vec));
     sfree(nb->atdat);
