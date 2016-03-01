@@ -998,16 +998,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bcast(sizeof(box), box, cr);
     }
 
-    // TODO This should move to do_md(), because it only makes sense
-    // with dynamical integrators, but there is no test coverage and
-    // it interacts with constraints, somehow.
-    /* Essential dynamics */
-    if (opt2bSet("-ei", nfile, fnm))
-    {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
-    }
-
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
@@ -1283,7 +1273,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                      bVerbose, Flags);
         }
 
-        constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
+        constr = init_constraints(fplog, mtop, inputrec, cr);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1302,7 +1292,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      vsite, constr,
                                      nstepout, inputrec, mtop,
                                      fcd, state,
-                                     mdatoms, nrnb, wcycle, ed, fr,
+                                     mdatoms, nrnb, wcycle, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                      cpt_period, max_hours,
                                      imdport,

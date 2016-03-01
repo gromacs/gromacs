@@ -614,7 +614,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
         if (constr->ed && delta_step > 0)
         {
-            /* apply the essential dynamcs constraints here */
+            /* apply the essential dynamics constraints here */
             do_edsam(ir, step, cr, xprime, v, box, constr->ed);
         }
     }
@@ -1133,7 +1133,6 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
 
 gmx_constr_t init_constraints(FILE *fplog,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              gmx_edsam_t ed, t_state *state,
                               t_commrec *cr)
 {
     int nconstraints =
@@ -1145,8 +1144,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     GMX_RELEASE_ASSERT(!ir->bPull || ir->pull_work != NULL, "init_constraints called with COM pulling before/without initializing the pull code");
 
     if (nconstraints + nsettles == 0 &&
-        !(ir->bPull && pull_have_constraint(ir->pull_work)) &&
-        ed == NULL)
+        !(ir->bPull && pull_have_constraint(ir->pull_work)) )
     {
         return NULL;
     }
@@ -1285,17 +1283,15 @@ gmx_constr_t init_constraints(FILE *fplog,
     constr->warncount_lincs  = 0;
     constr->warncount_settle = 0;
 
-    /* Initialize the essential dynamics sampling.
-     * Put the pointer to the ED struct in constr */
-    constr->ed = ed;
-    if (ed != NULL || state->edsamstate.nED > 0)
-    {
-        init_edsam(mtop, ir, cr, ed, state->x, state->box, &state->edsamstate);
-    }
-
     constr->warn_mtop = mtop;
 
     return constr;
+}
+
+/* Put a pointer to the essential dynamics constraints into the constr struct */
+void saveEdsamPointer(gmx_constr_t constr, gmx_edsam_t ed)
+{
+    constr->ed = ed;
 }
 
 const t_blocka *atom2constraints_moltype(gmx_constr_t constr)
