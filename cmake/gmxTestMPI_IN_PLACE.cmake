@@ -47,7 +47,7 @@ MACRO(GMX_TEST_MPI_IN_PLACE VARIABLE)
     set(CMAKE_REQUIRED_FLAGS ${MPI_COMPILE_FLAGS})
     set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
     set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
-    check_c_source_compiles(
+    check_cxx_source_compiles(
       "#include <mpi.h>
 int main(void) {
   void* buf;
