@@ -329,7 +329,7 @@ calc_one_bond(int thread,
     }
     else
     {
-        v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
+        v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, vir, fshift,
                      pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
     }
 

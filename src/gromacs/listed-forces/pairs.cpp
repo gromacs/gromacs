@@ -334,7 +334,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
 real
 do_pairs(int ftype, int nbonds,
          const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec f[], rvec fshift[],
+         const rvec x[], rvec f[], rvec vir[], rvec fshift[],
          const struct t_pbc *pbc, const struct t_graph *g,
          real *lambda, real *dvdl,
          const t_mdatoms *md,
@@ -493,6 +493,14 @@ do_pairs(int ftype, int nbonds,
 
         energygrp_elec[gid]  += velec;
         energygrp_vdw[gid]   += vvdw;
+
+        if (vir != NULL) {
+            for (int m = 0; m < DIM; m++) {
+                vir[ai][m] += 0.5*(1e25/AVOGADRO)*fscal* dx[m] *dx[m];
+                vir[aj][m] += 0.5*(1e25/AVOGADRO)*fscal* dx[m] *dx[m];
+            }
+        }
+
         svmul(fscal, dx, dx);
 
         /* Add the forces */
