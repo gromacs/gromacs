@@ -973,13 +973,13 @@ and one that does not (type 9).
 For details see \tabref{topfile2}.
 The table files are supplied to the {\tt mdrun} program.
 After the table file name an underscore, the letter ``b'' for bonds,
-``a'' for angles or ``d'' for dihedrals and the table number are appended.
-For example, for a bond with $n=0$ (and using the default table file name)
-the table is read from the file {\tt table_b0.xvg}.  Multiple tables can be
-supplied simply by using different values of $n$, and are applied to the appropriate
+``a'' for angles or ``d'' for dihedrals and the table number must be appended.
+For example, a tabulated bond with $n=0$ can be read from the file {\tt table_b0.xvg}.
+Multiple tables can be
+supplied simply by adding files with different values of $n$, and are applied to the appropriate
 bonds, as specified in the topology (\tabref{topfile2}).
-The format for the table files is three columns with $x$, $f(x)$, $-f'(x)$,
-where $x$ should be uniformly-spaced. Requirements for entries in the topology
+The format for the table files is three fixed-format columns of any suitable width. These columns must contain $x$, $f(x)$, $-f'(x)$,
+and the values of $x$ should be uniformly spaced. Requirements for entries in the topology
 are given in~\tabref{topfile2}. 
 The setup of the tables is as follows:
 \\{\bf bonds}:
