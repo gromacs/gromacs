@@ -341,7 +341,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Note that membed cannot work in parallel because mtop is
          * changed here. Fix this if we ever want to make it run with
          * multiple ranks. */
-        membed = init_membed(fplog, nfile, fnm, top_global, ir, state, cr, &cpt_period);
+        membed = init_membed(fplog, nfile, fnm, top_global, ir, state_global, cr, &cpt_period);
     }
     if (ir->bPull)
     {
