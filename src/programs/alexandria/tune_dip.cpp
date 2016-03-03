@@ -173,7 +173,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
 {
     FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
     double        d2 = 0;
-    real          rms, sigma, aver, error, qq, chi2, espx, espy, espdx, espdy, wtot;
+    real          rms, sigma, aver, error, qq, chi2;
     int           j, k, n, nout, nlsqt = 0, mm, nn;
     char         *resnm, *atomnm;
     const  char **atomtypes = NULL;
@@ -865,10 +865,10 @@ int alex_tune_dip(int argc, char *argv[])
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int                  nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int                  minimum_data  = 3, compress = 1;
-    static real                 tol           = 1e-3, stol = 1e-6, watoms = 1;
+    static real                 tol           = 1e-3, stol = 1e-6, watoms = 0;
     static gmx_bool             bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
     static real                 J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real                 J0_1          = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
+    static real                 J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real                 fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
     static real                 th_toler      = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
     static char                *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
@@ -950,8 +950,6 @@ int alex_tune_dip(int argc, char *argv[])
           "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
         { "-hfac",  FALSE, etREAL, {&hfac},
           "Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
-        { "-epsr", FALSE, etREAL, {&epsr},
-          "Relative dielectric constant to account for intramolecular polarization. Should be >= 1." },
         { "-opthfac",  FALSE, etBOOL, {&bOptHfac},
           "[HIDDEN]Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." },
         { "-dip_toler", FALSE, etREAL, {&dip_toler},
@@ -1007,7 +1005,7 @@ int alex_tune_dip(int argc, char *argv[])
     md.Init(cr, bQM, bGaussianBug,
             iChargeDistributionModel,
             iChargeGenerationAlgorithm,
-            rDecrZeta, epsr,
+            rDecrZeta,
             J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
             fc_bound, fc_mu, fc_quad, fc_charge,
             fc_esp, 1, 1, fixchi, bOptHfac, hfac, bPol, bFitZeta);
@@ -1020,7 +1018,7 @@ int alex_tune_dip(int argc, char *argv[])
             opt2fn_null("-d", NFILE, fnm),
             minimum_data, bZero,
             opt_elem, const_elem,
-            lot, gms, watoms, TRUE, seed,
+            lot, gms, watoms, TRUE,
             false, bPol,
             opt2fn_null("-tab", NFILE, fnm));
     printf("Read %d molecules\n", (int)md._mymol.size());

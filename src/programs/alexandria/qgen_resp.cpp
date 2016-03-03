@@ -928,7 +928,7 @@ double QgenResp::optimizeCharges()
 
     if (nEsp() < nAtom())
     {
-        printf("Only %d ESP points for %d atoms. Can not generate charges.\n",
+        printf("WARNING: Only %d ESP points for %d atoms. Can not generate charges.\n",
                static_cast<int>(nEsp()), static_cast<int>(nAtom()));
         return 0.0;
     }
@@ -1008,7 +1008,7 @@ double QgenResp::optimizeCharges()
         {
             fprintf(debug, "rhs[%2d] = %10.3f  a[%d] = %10.3f  %10.3f  %10.3f\n", 
                     static_cast<int>(j), rhs[j], 
-                    static_cast<int>(j), a[0][j], a[1][j], a[2][j]);
+                    static_cast<int>(j), a[j][0], a[j][1], a[j][2]);
         }
     }
     // Add the equations to ascertain symmetric charges

@@ -72,8 +72,7 @@ QgenEem::QgenEem(const Poldata            &pd,
                  rvec                     *x,
                  ChargeDistributionModel   iChargeDistributionModel,
                  double                    hfac,
-                 int                       qtotal,
-                 double                    epsr)
+                 int                       qtotal)
 {
     _bWarned    = false;
     _bAllocSave = false;
@@ -86,7 +85,6 @@ QgenEem::QgenEem(const Poldata            &pd,
     _iChargeDistributionModel   = iChargeDistributionModel;
     _hfac                       = hfac;
     _qtotal                     = qtotal;
-    _epsr                       = std::max(1.0, epsr);
 
     _natom      = 0;
     for (i = j = 0; (i < atoms->nr); i++)
@@ -355,7 +353,7 @@ void QgenEem::updateJ00()
 
     for (i = 0; (i < _natom); i++)
     {
-        j0 = _j00[i]/_epsr;
+        j0 = _j00[i];
         if (((_iChargeDistributionModel == eqdYang) ||
              (_iChargeDistributionModel == eqdRappe)) &&
             (_atomnr[i] == 1))
@@ -516,7 +514,7 @@ void QgenEem::calcJab()
             {
                 Jab = Jab*calcSij(i, j);
             }
-            _Jab[j][i] = _Jab[i][j] = Jab/_epsr;
+            _Jab[j][i] = _Jab[i][j] = Jab;
         }
     }
 }

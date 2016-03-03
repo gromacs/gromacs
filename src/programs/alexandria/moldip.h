@@ -38,7 +38,7 @@ class MolDip
         ChargeGenerationAlgorithm      _iChargeGenerationAlgorithm;
         t_index_count                 *_ic;
         real                           _J0_0, _Chi0_0, _w_0, _J0_1, _Chi0_1, _w_1;
-        real                           _hfac, _hfac0, _decrzeta, _epsr;
+        real                           _hfac, _hfac0, _decrzeta;
         real                           _ener[ermsNR], _fc[ermsNR];
         gmx_bool                       _bOptHfac, _bPol, _bQM;
         char                          *_fixchi;
@@ -55,7 +55,7 @@ class MolDip
         void Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   ChargeDistributionModel iChargeDistributionModel,
                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                  real rDecrZeta, real epsr,
+                  real rDecrZeta,
                   real J0_0, real Chi0_0, real w_0,
                   real J0_1, real Chi0_1, real w_1,
                   real fc_bound, real fc_mu, real fc_quad, real fc_charge,
@@ -68,7 +68,7 @@ class MolDip
                   char *opt_elem, char *const_elem,
                   char *lot,
                   const MolSelect &gms,
-                  real watoms, gmx_bool bCheckSupport, unsigned int seed, 
+                  real watoms, gmx_bool bCheckSupport,
                   bool bDihedral, bool bPolar,
                   const char *tabfn);
 

@@ -1259,7 +1259,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                  real                       watoms,
                                  real                       hfac,
-                                 real                       epsr,
                                  const char                *lot,
                                  bool                       bSymmetricCharges,
                                  const char                *symm_string,
@@ -1335,9 +1334,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                     convert2gmx(epi->getZ(), xu),
                                     convert2gmx(epi->getV(), vu));
                 }
-                printf("Added %d ESP points to the RESP structure.\n",
-                       static_cast<int>(gr_.nEsp()));
+                if (debug)
+                {
+                    fprintf(debug, "Added %d ESP points to the RESP structure.\n",
+                            static_cast<int>(gr_.nEsp()));
+                }
             }
+            
             bool   converged = false;
             double chi2[2] = { 1e8, 1e8 };
             real   rrms = 0, wtot;
@@ -1375,7 +1378,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         {
             QgenEem qgen(pd, &topology_->atoms, x_,
                          iChargeDistributionModel,
-                         hfac, molProp()->getCharge(), epsr);
+                         hfac, molProp()->getCharge());
 
             if (eQGEN_OK != qgen.generateCharges(NULL,
                                                  molProp()->getMolname().c_str(),
@@ -1387,10 +1390,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
         }
         break;
-        case eqgRESP:
-        default:
-            gmx_fatal(FARGS, "Not implemented RESP");
-            break;
+    default:
+        gmx_fatal(FARGS, "Not implemented");
+        break;
     }
 
     return imm;
@@ -1411,7 +1413,7 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
                   box_, tabfn, tabfn, NULL, NULL, TRUE, -1);
     snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
-    //ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+    ltop_ = gmx_mtop_generate_local_top(mtop_, false);
     md_   = init_mdatoms(NULL, mtop_, FALSE);
     atoms2md(mtop_, inputrec_, 0, NULL, topology_->atoms.nr, md_);
     for (int i = 0; (i < topology_->atoms.nr); i++)

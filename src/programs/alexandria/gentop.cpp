@@ -161,7 +161,7 @@ int alex_gentop(int argc, char *argv[])
     static real                      btol           = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
     static real                      hfac           = 0, qweight = 1e-3, bhyper = 0.1;
     static real                      th_toler       = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
-    static real                      dbox           = 0.370424, penalty_fac = 1, epsr = 1;
+    static real                      dbox           = 0.370424, penalty_fac = 1;
     static int                       nexcl          = 2;
     static int                       maxiter        = 25000, maxcycle = 1;
     static int                       nmol           = 1;
@@ -232,8 +232,6 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENUse the B-factor supplied in a pdb file for the atomic charges" },
         { "-btol",  FALSE, etREAL, {&btol},
           "HIDDENRelative tolerance for determining whether two atoms are bonded." },
-        { "-epsr", FALSE, etREAL, {&epsr},
-          "HIDDENRelative dielectric constant to account for intramolecular polarization. Should be >= 1." },
         { "-spacing", FALSE, etREAL, {&spacing},
           "Spacing of grid points for computing the potential (not used when a reference file is read)." },
         { "-dbox", FALSE, etREAL, {&dbox},
@@ -440,7 +438,7 @@ int alex_gentop(int argc, char *argv[])
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     watoms,
-                                    hfac, epsr,
+                                    hfac,
                                     lot, bQsym, symm_string, cr,
                                     opt2fn_null("-tab", NFILE, fnm));
     }

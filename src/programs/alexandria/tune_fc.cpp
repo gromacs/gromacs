@@ -542,8 +542,7 @@ void OptParam::checkSupport(FILE *fp,
     int ntotal  = _mymol.size();
     int nlocal  = 0;
 
-    for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
-         mymol < _mymol.end(); )
+    for (auto mymol = _mymol.begin(); mymol < _mymol.end(); )
     {
         if (mymol->eSupp != eSupportLocal)
         {
@@ -573,7 +572,7 @@ void OptParam::checkSupport(FILE *fp,
                     default:
                         gmx_fatal(FARGS, "Boe");
                 }
-
+                bSupport = (mymol->ltop_ != nullptr);
                 for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
                 {
                     int         ai, aj, ak, al;
@@ -1484,10 +1483,10 @@ int alex_tune_fc(int argc, char *argv[])
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
-    static real           tol           = 1e-3, stol = 1e-6, watoms = 1;
+    static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
     static gmx_bool       bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
+    static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
     static real           factor        = 0.8;
     static char          *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
@@ -1611,7 +1610,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     opt.Init(cr, bQM, bGaussianBug, iDistributionModel,
              iChargeGenerationAlgorithm,
-             rDecrZeta, epsr,
+             rDecrZeta,
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi, bOptHfac, hfac, bPol, bFitZeta);
@@ -1624,7 +1623,7 @@ int alex_tune_fc(int argc, char *argv[])
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
-             lot, gms, watoms, FALSE, seed,
+             lot, gms, watoms, FALSE,
              false, bPol,
              opt2fn_null("-tab", NFILE, fnm));
 

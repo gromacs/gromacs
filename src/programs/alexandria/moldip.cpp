@@ -481,7 +481,7 @@ MolDip::MolDip()
 void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   ChargeDistributionModel iChargeDistributionModel,
                   ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                  real rDecrZeta, real epsr,
+                  real rDecrZeta,
                   real J0_0, real Chi0_0, real w_0,
                   real J0_1, real Chi0_1, real w_1,
                   real fc_bound, real fc_mu, real fc_quad, real fc_charge,
@@ -498,7 +498,6 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     _iChargeDistributionModel   = iChargeDistributionModel;
     _iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
     _decrzeta                   = rDecrZeta;
-    _epsr                       = epsr;
     _J0_0                       = J0_0;
     _Chi0_0                     = Chi0_0;
     _w_0                        = w_0;
@@ -530,7 +529,6 @@ void MolDip::Read(FILE *fp,
                   const MolSelect &gms,
                   real watoms, 
                   gmx_bool bCheckSupport,
-                  unsigned int seed, 
                   bool bDihedral, bool bPolar,
                   const char *tabfn)
 {
@@ -612,7 +610,7 @@ void MolDip::Read(FILE *fp,
                     imm = mpnew.GenerateCharges(pd_, _atomprop,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
-                                                watoms, _hfac, _epsr,
+                                                watoms, _hfac,
                                                 lot, TRUE, NULL, _cr, tabfn);
                     rms = mpnew.espRms();
                 }
@@ -725,7 +723,7 @@ void MolDip::Read(FILE *fp,
             {
                 imm = mpnew.GenerateCharges(pd_, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm,
-                                            watoms, _hfac, _epsr,
+                                            watoms, _hfac,
                                             lot, TRUE, NULL, _cr, tabfn);
                 rms = mpnew.espRms();
             }
@@ -882,7 +880,6 @@ void MolDip::CalcDeviation()
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
     int                     at_global;
-    real                    rms;
 
     if (PAR(_cr))
     {
@@ -920,7 +917,7 @@ void MolDip::CalcDeviation()
             QgenEem qgen(pd_, &(mymol->topology_->atoms), 
                          mymol->x_, _iChargeDistributionModel,
                          _hfac,
-                         mymol->molProp()->getCharge(), _epsr);
+                         mymol->molProp()->getCharge());
             
             double chieq = 0;
             eQ = qgen.generateChargesSm(debug,
@@ -999,7 +996,6 @@ void MolDip::CalcDeviation()
             {
                 int  mm, nn;
                 rvec dmu;
-                real wtot;
 
                 rvec_sub(mymol->mu_calc, mymol->mu_exp, dmu);
                 _ener[ermsMU]   = iprod(dmu, dmu);
@@ -1017,16 +1013,6 @@ void MolDip::CalcDeviation()
                         _ener[ermsQUAD] += gmx::square(mymol->Q_exp[mm][mm] - mymol->Q_calc[mm][mm]);
                     }
                 }
-                //if (mymol->gr_.nEsp() > 0)
-                //{
-                    real rrms;
-                    //  _ener[ermsESP] += mymol->gr_.getRms(&wtot, &rrms);
-                    // if (NULL != debug)
-                    //{
-                    //   fprintf(debug, "RMS %s = %g\n",
-                    //          mymol->molProp()->getMolname().c_str(), _ener[ermsESP]);
-                    //}
-                    //}
             }
             else
             {

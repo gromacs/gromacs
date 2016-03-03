@@ -181,7 +181,6 @@ class MyMol
                                   ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                   real                       watoms,
                                   real                       hfac,
-                                  real                       epsr,
                                   const char                *lot,
                                   bool                       bSymmetricCharges,
                                   const char                *symm_string,

@@ -18,7 +18,7 @@ enum {
 };
 
 enum ChargeGenerationAlgorithm {
-    eqgNONE, eqgEEM, eqgESP, eqgRESP, eqgNR
+    eqgNONE, eqgEEM, eqgESP
 };
 
 namespace alexandria
@@ -36,8 +36,7 @@ class QgenEem
                 t_atoms *atoms,
                 rvec *x,
                 ChargeDistributionModel   iChargeDistributionModel,
-                double hfac, int qtotal,
-                double epsr);
+                double hfac, int qtotal);
 
         int generateChargesSm(FILE *fp,
                               const Poldata &pd,
@@ -75,7 +74,7 @@ class QgenEem
         gmx_bool                                           _bWarned;
         ChargeDistributionModel                            _iChargeDistributionModel;
         int                                                _natom, _eQGEN;
-        double                                             _qtotal, _chieq, _hfac, _epsr;
+        double                                             _qtotal, _chieq, _hfac;
         /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
         std::vector<std::string>                           _elem;
         std::vector<int>                                   _atomnr;
