@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 #define _force_h
 
 
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/tgroup.h"
@@ -104,7 +105,7 @@ t_forcetable make_tables(FILE *fp, const output_env_t oenv,
  * to .xvg files
  */
 
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
+bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle);
 /* Return a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
  */
@@ -177,7 +178,7 @@ void init_forcerec(FILE              *fplog,
                    const char        *tabfn,
                    const char        *tabafn,
                    const char        *tabpfn,
-                   const char        *tabbfn,
+                   const t_filenm    *tabbfnm,
                    const char        *nbpu_opt,
                    gmx_bool           bNoSolvOpt,
                    real               print_force);
