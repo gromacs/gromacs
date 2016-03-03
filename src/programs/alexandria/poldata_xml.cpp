@@ -311,53 +311,53 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
         case exmlGT_BOND:
             if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
                 NN(xbuf[exmlLENGTH]) && NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlBONDORDER]) &&
-                NN(xbuf[exmlPARAMS]) && NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlNTRAIN]))
             {
-                pd.addBond( xbuf[exmlATOM1], xbuf[exmlATOM2],
-                             my_atof(xbuf[exmlLENGTH].c_str()),
-                             my_atof(xbuf[exmlSIGMA].c_str()),
-                             atoi(xbuf[exmlNTRAIN].c_str()),
-                             my_atof(xbuf[exmlBONDORDER].c_str()),
-                             xbuf[exmlPARAMS]);
+                pd.addBond(xbuf[exmlATOM1], xbuf[exmlATOM2],
+                           my_atof(xbuf[exmlLENGTH].c_str()),
+                           my_atof(xbuf[exmlSIGMA].c_str()),
+                           atoi(xbuf[exmlNTRAIN].c_str()),
+                           my_atof(xbuf[exmlBONDORDER].c_str()),
+                           xbuf[exmlPARAMS]);
             }
             break;
         case exmlGT_ANGLE:
             if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
                 NN(xbuf[exmlATOM3]) && NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlPARAMS]) && NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlNTRAIN]))
             {
-                pd.addAngle( xbuf[exmlATOM1], xbuf[exmlATOM2],
-                              xbuf[exmlATOM3], my_atof(xbuf[exmlANGLE].c_str()),
-                              my_atof(xbuf[exmlSIGMA].c_str()), atoi(xbuf[exmlNTRAIN].c_str()),
-                              xbuf[exmlPARAMS].c_str());
+                pd.addAngle(xbuf[exmlATOM1], xbuf[exmlATOM2],
+                            xbuf[exmlATOM3], my_atof(xbuf[exmlANGLE].c_str()),
+                            my_atof(xbuf[exmlSIGMA].c_str()), atoi(xbuf[exmlNTRAIN].c_str()),
+                            xbuf[exmlPARAMS].c_str());
             }
             break;
         case exmlGT_DIHEDRAL:
             if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
                 NN(xbuf[exmlATOM3]) && NN(xbuf[exmlATOM4]) &&
                 NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlPARAMS]) && NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlNTRAIN]))
             {
-                pd.addDihedral( egdPDIHS,
-                                 xbuf[exmlATOM1], xbuf[exmlATOM2],
-                                 xbuf[exmlATOM3], xbuf[exmlATOM4],
-                                 my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
-                                 atoi(xbuf[exmlNTRAIN].c_str()),
-                                 xbuf[exmlPARAMS]);
+                pd.addDihedral(egdPDIHS,
+                               xbuf[exmlATOM1], xbuf[exmlATOM2],
+                               xbuf[exmlATOM3], xbuf[exmlATOM4],
+                               my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
+                               atoi(xbuf[exmlNTRAIN].c_str()),
+                               xbuf[exmlPARAMS]);
             }
             break;
         case exmlGT_IMPROPER:
             if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
                 NN(xbuf[exmlATOM3]) && NN(xbuf[exmlATOM4]) &&
                 NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlPARAMS]) && NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlNTRAIN]))
             {
-                pd.addDihedral( egdIDIHS,
-                                 xbuf[exmlATOM1], xbuf[exmlATOM2],
-                                 xbuf[exmlATOM3], xbuf[exmlATOM4],
-                                 my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
-                                 atoi(xbuf[exmlNTRAIN].c_str()),
-                                 xbuf[exmlPARAMS]);
+                pd.addDihedral(egdIDIHS,
+                               xbuf[exmlATOM1], xbuf[exmlATOM2],
+                               xbuf[exmlATOM3], xbuf[exmlATOM4],
+                               my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
+                               atoi(xbuf[exmlNTRAIN].c_str()),
+                               xbuf[exmlPARAMS]);
             }
             break;
         case exmlSYM_CHARGE:

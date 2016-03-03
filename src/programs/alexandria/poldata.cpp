@@ -456,7 +456,8 @@ GtBondIterator Poldata::findBond(const std::string &atom1,
                                     (atom2.compare(gtb.getAtom2()) == 0)) ||
                                    ((atom1.compare(gtb.getAtom2()) == 0) &&
                                     (atom2.compare(gtb.getAtom1()) == 0))) &&
-                                  (bondorder == gtb.getBondorder()));
+                                  (0 == bondorder ||
+                                   bondorder == gtb.getBondorder()));
                         });
 }
 
@@ -471,7 +472,8 @@ GtBondConstIterator Poldata::findBond(const std::string &atom1,
                                     (atom2.compare(gtb.getAtom2()) == 0)) ||
                                    ((atom1.compare(gtb.getAtom2()) == 0) &&
                                     (atom2.compare(gtb.getAtom1()) == 0))) &&
-                                  (bondorder == gtb.getBondorder()));
+                                  (0 == bondorder ||
+                                   bondorder == gtb.getBondorder()));
                         });
 }
 
@@ -547,33 +549,32 @@ bool Poldata::setBondParams(const std::string &atom1,
     return false;
 }
 
-bool Poldata::addBond(const std::string &atom1,
+void Poldata::addBond(const std::string &atom1,
                       const std::string &atom2,
-                      double length, 
-                      double sigma,
-                      int ntrain,
-                      double bondorder, 
+                      double             length, 
+                      double             sigma,
+                      int                ntrain,
+                      double             bondorder, 
                       const std::string &params)
 {
     if (setBondParams(atom1, atom2, length, sigma, ntrain, bondorder, params))
     {
-        return true;
+        return;
     }
-    
-    FfatypeIterator a1, a2;
-    
-    if (((a1 = btypeToAtype(atom1)) == _alexandria.end()) ||
-        ((a2 = btypeToAtype(atom2)) == _alexandria.end()))
+    else if (haveBtype(atom1) && haveBtype(atom2))
     {
-        return false;
+        GtBond bond(atom1, atom2, params,
+                    btypeToAtype(atom1)->getElem(), 
+                    btypeToAtype(atom2)->getElem(),
+                    length, sigma, bondorder, ntrain);
+        
+        _gtBond.push_back(bond);
     }
-    GtBond bond(atom1, atom2, params,
-                a1->getElem(), a2->getElem(),
-                length, sigma, bondorder, ntrain);
-    
-    _gtBond.push_back(bond);
-    
-    return true;
+    else
+    {
+        gmx_fatal(FARGS, "Trying to add bond for non-existing atomtypes %s or %s",
+                  atom1.c_str(), atom2.c_str());
+    }
 }
 
 bool Poldata::searchBond(const std::string &atom1,
@@ -632,35 +633,29 @@ bool Poldata::setAngleParams(const std::string &atom1,
     return false;
 }
 
-bool Poldata::addAngle(const std::string &atom1, 
+void Poldata::addAngle(const std::string &atom1, 
                        const std::string &atom2,
                        const std::string &atom3,
-                       double angle,
-                       double sigma,
-                       int ntrain, 
+                       double             angle,
+                       double             sigma,
+                       int                ntrain, 
                        const std::string &params)
 {
-    if (setAngleParams(atom1, atom2, atom3,
-                       angle, sigma, ntrain, params))
+    if (setAngleParams(atom1, atom2, atom3, angle, sigma, ntrain, params))
     {
-        return true;
+        return;
     }
-    
-    FfatypeIterator a1, a2, a3;
-    
-    if (((a1 = btypeToAtype(atom1)) == _alexandria.end()) ||
-        ((a2 = btypeToAtype(atom2)) == _alexandria.end()) ||
-        ((a3 = btypeToAtype(atom3)) == _alexandria.end()))
+    else if (haveBtype(atom1) && haveBtype(atom2) && haveBtype(atom3))
     {
-        return false;
+        GtAngle ang(atom1, atom2, atom3,params, angle, sigma, ntrain);
+        
+        _gtAngle.push_back(ang);
     }
-
-    GtAngle ang(atom1, atom2, atom3,
-                params, angle, sigma, ntrain);
-
-    _gtAngle.push_back(ang);
-    
-    return false;
+    else
+    {
+        gmx_fatal(FARGS, "Trying to add angle for non-existing atomtypes %s, %s or %s",
+                  atom1.c_str(), atom2.c_str(), atom3.c_str());
+    }
 }
 
 GtAngleIterator Poldata::findAngle(const std::string &atom1,
@@ -668,7 +663,7 @@ GtAngleIterator Poldata::findAngle(const std::string &atom1,
                                    const std::string &atom3)
 {
     return std::find_if(_gtAngle.begin(), _gtAngle.end(),
-                        [atom1,atom2,atom3](const GtAngle gta)
+                        [atom1,atom2,atom3](const GtAngle &gta)
                         { return ((((atom1.compare(gta.getAtom1()) == 0) &&
                                     (atom3.compare(gta.getAtom3()) == 0)) ||
                                    ((atom1.compare(gta.getAtom3()) == 0) &&
@@ -683,7 +678,7 @@ GtAngleConstIterator Poldata::findAngle(const std::string &atom1,
 {
     GtAngleConstIterator ba = _gtAngle.begin(), ea = _gtAngle.end();
     return std::find_if(ba, ea,
-                        [atom1,atom2,atom3](const GtAngle gta)
+                        [atom1,atom2,atom3](const GtAngle &gta)
                         { return ((((atom1.compare(gta.getAtom1()) == 0) &&
                                     (atom3.compare(gta.getAtom3()) == 0)) ||
                                    ((atom1.compare(gta.getAtom3()) == 0) &&
@@ -799,7 +794,7 @@ bool Poldata::setDihedralParams(int egd,
     return false;
 }
 
-bool Poldata::addDihedral(int egd,
+void Poldata::addDihedral(int egd,
                           const std::string &atom1, 
                           const std::string &atom2,
                           const std::string &atom3, 
@@ -813,20 +808,21 @@ bool Poldata::addDihedral(int egd,
                           atom3, atom4, dihedral,
                           sigma, ntrain, params))
     {
-        return true;
+        return;
     }
-    FfatypeConstIterator a1 = findAtype(atom1), a2 = findAtype(atom2), 
-        a3 = findAtype(atom3), a4 = findAtype(atom4);
-    if (a1 != _alexandria.end() && a2 != _alexandria.end() &&
-        a3 != _alexandria.end() && a4 != _alexandria.end())
+    else if (haveBtype(atom1) && haveBtype(atom2) && 
+             haveBtype(atom3) && haveBtype(atom4))
     {
         GtDihedral dihed(atom1, atom2, atom3, atom4,
                          params, dihedral, sigma, ntrain);
     
         _gtDihedral[egd].push_back(dihed);
-        return true;
     }
-    return false;
+    else
+    {
+        gmx_fatal(FARGS, "Trying to add dihedral for non-existing atomtypes %s, %s, %s or %s",
+                  atom1.c_str(), atom2.c_str(), atom3.c_str(), atom4.c_str());
+    }
 }
 
 bool Poldata::searchDihedral(int egd,

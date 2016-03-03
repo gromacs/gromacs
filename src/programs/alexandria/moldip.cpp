@@ -947,14 +947,14 @@ void MolDip::CalcDeviation()
                 split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
                 fprintf(stderr, "Check whether we need atoms2md here %s %d\n", __FILE__, __LINE__);
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
-                         mymol->md_);
+                         mymol->mdatoms_);
                 (void)
                 relax_shell_flexcon(debug, _cr, FALSE, 0,
                                     mymol->inputrec_, TRUE,
                                     GMX_FORCE_ALLFORCES,
                                     mymol->ltop_, NULL, NULL, NULL,
                                     mymol->state_,
-                                    mymol->f_, force_vir, mymol->md_,
+                                    mymol->f_, force_vir, mymol->mdatoms_,
                                     &my_nrnb, wcycle, NULL,
                                     &(mymol->mtop_->groups),
                                     mymol->shellfc_, mymol->fr_, FALSE, t, mu_tot,

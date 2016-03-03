@@ -194,8 +194,9 @@ void MyMol::getForceConstants(const Poldata &pd)
                         pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
                         pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak))
                     {
+                        int ntrain;
                         if (pd.searchAngle(cai, caj, cak,
-                                           &xx, &sx, NULL, params))
+                                           &xx, &sx, &ntrain, params))
                         {
                             j->c[0] = xx;
                             std::vector<std::string> ptr = gmx::splitString(params);
@@ -928,11 +929,12 @@ MyMol::MyMol() : gvt_(egvtALL)
     open_symtab(symtab_);
     atype_ = init_atomtype();
     clear_mat(box_);
-    mtop_  = NULL;
-    ltop_  = NULL;
-    md_    = NULL;
-    mp_    = new MolProp;
-    state_ = NULL;
+    mtop_       = nullptr;
+    fr_         = nullptr;
+    ltop_       = nullptr;
+    mdatoms_    = nullptr;
+    mp_         = new MolProp;
+    state_      = nullptr;
     snew(enerd_, 1);
     init_enerdata(1, 0, enerd_);
 
@@ -944,30 +946,30 @@ MyMol::MyMol() : gvt_(egvtALL)
 MyMol::~MyMol()
 {
     return;
-    if (NULL != cgnr_)
+    if (nullptr != cgnr_)
     {
         sfree(cgnr_);
-        cgnr_ = NULL;
+        cgnr_ = nullptr;
     }
-    if (NULL != atype_)
+    if (nullptr != atype_)
     {
         done_atomtype(atype_);
-        atype_ = NULL;
+        atype_ = nullptr;
     }
-    if (NULL != inputrec_)
+    if (nullptr != inputrec_)
     {
         sfree(inputrec_);
-        inputrec_ = NULL;
+        inputrec_ = nullptr;
     }
     for (auto &pw : plist_)
     {
         pw.eraseParams();
     }
-    if (NULL != symtab_)
+    if (nullptr != symtab_)
     {
         done_symtab(symtab_);
         sfree(symtab_);
-        symtab_ = NULL;
+        symtab_ = nullptr;
     }
 }
 
@@ -1059,7 +1061,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
     {
         imm = immLOT;
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Tried to convert %s to gromacs. LOT is %s. Natoms is %d\n",
                 molProp()->getMolname().c_str(), lot, natom);
@@ -1104,7 +1106,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     int                      ftb;
     t_param                  b;
 
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Generating topology_ for %s\n", molProp()->getMolname().c_str());
     }
@@ -1175,7 +1177,11 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         shellfc_ = init_shell_flexcon(debug, mtop_, 0, 1, false);
     }
-    
+    if (nullptr == ltop_ && imm == immOK)
+    {
+        ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+    }
+
     return imm;
 }
 
@@ -1228,10 +1234,10 @@ void MyMol::relaxShells(t_commrec *cr)
     clear_mat (force_vir);
     for(int i = 0; i < mtop_->natoms; i++)
     {
-        md_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
-        if (NULL != debug)
+        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
+        if (nullptr != debug)
         {
-            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, md_->chargeA[i]);
+            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
         }
     }
     ltop_ = gmx_mtop_generate_local_top(mtop_, false);
@@ -1240,13 +1246,13 @@ void MyMol::relaxShells(t_commrec *cr)
 
     relax_shell_flexcon(debug, cr, TRUE, 0,
                         inputrec_, TRUE, ~0,
-                        ltop_, NULL, enerd_,
-                        NULL, state_,
-                        f_, force_vir, md_,
-                        &my_nrnb, wcycle, NULL,
+                        ltop_, nullptr, enerd_,
+                        nullptr, state_,
+                        f_, force_vir, mdatoms_,
+                        &my_nrnb, wcycle, nullptr,
                         &(mtop_->groups),
                         shellfc_, fr_, FALSE, t, mu_tot,
-                        NULL, NULL);
+                        nullptr, nullptr);
     for(int i = 0; i < mtop_->natoms; i++)
     {
         copy_rvec(state_->x[i], x_[i]);
@@ -1309,7 +1315,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             /* Even if we get the right LoT it may still not have
              * the ESP
              */
-            auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, NULL);
+            auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
             if (ci != molProp()->EndExperiment())
             {
                 size_t iesp = 0;
@@ -1380,7 +1386,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                          iChargeDistributionModel,
                          hfac, molProp()->getCharge());
 
-            if (eQGEN_OK != qgen.generateCharges(NULL,
+            if (eQGEN_OK != qgen.generateCharges(nullptr,
                                                  molProp()->getMolname().c_str(),
                                                  pd, &topology_->atoms,
                                                  tolerance,
@@ -1402,27 +1408,33 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
 {
     int nalloc = 2 * topology_->atoms.nr;
 
-    snew(f_, nalloc);
-    fr_ = mk_forcerec();
-    if (NULL != tabfn)
+    if (nullptr == f_)
+    {
+        snew(f_, nalloc);
+    }
+    if (nullptr == fr_ )
+    {
+        fr_ = mk_forcerec();
+    }
+    if (nullptr != tabfn)
     {
         inputrec_->vdwtype     = evdwUSER;
         inputrec_->coulombtype = eelUSER;
     }
-    init_forcerec(NULL, fr_, NULL, inputrec_, mtop_, cr,
-                  box_, tabfn, tabfn, NULL, NULL, TRUE, -1);
+    init_forcerec(nullptr, fr_, nullptr, inputrec_, mtop_, cr,
+                  box_, tabfn, tabfn, nullptr, nullptr, TRUE, -1);
     snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
-    ltop_ = gmx_mtop_generate_local_top(mtop_, false);
-    md_   = init_mdatoms(NULL, mtop_, FALSE);
-    atoms2md(mtop_, inputrec_, 0, NULL, topology_->atoms.nr, md_);
+    printf("Making ltop_ for %s\n", molProp()->getMolname().c_str());
+    mdatoms_   = init_mdatoms(nullptr, mtop_, FALSE);
+    atoms2md(mtop_, inputrec_, 0, nullptr, topology_->atoms.nr, mdatoms_);
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
         copy_rvec(x_[i], state_->x[i]);
     }
-    if (NULL != shellfc_)
+    if (nullptr != shellfc_)
     {
-        make_local_shells(cr, md_, shellfc_);
+        make_local_shells(cr, mdatoms_, shellfc_);
     }
     return immOK;
 }
@@ -1463,7 +1475,7 @@ void MyMol::PrintConformation(const char *fn)
 
     put_in_box(topology_->atoms.nr, box_, x_, 0.3);
     sprintf(title, "%s processed by alexandria", molProp()->getMolname().c_str());
-    write_sto_conf(fn, title, &topology_->atoms, x_, NULL, epbcNONE, box_);
+    write_sto_conf(fn, title, &topology_->atoms, x_, nullptr, epbcNONE, box_);
 }
 
 static void write_zeta_q(FILE *fp, QgenEem * qgen,
@@ -1473,7 +1485,7 @@ static void write_zeta_q(FILE *fp, QgenEem * qgen,
     double zeta, q;
     bool   bAtom, bTypeSet;
 
-    if (NULL == qgen)
+    if (nullptr == qgen)
     {
         return;
     }
@@ -1556,7 +1568,7 @@ static void write_zeta_q2(QgenEem * qgen, gpp_atomtype_t atype,
     double     zeta, q, qtot;
     gmx_bool   bAtom;
 
-    if (NULL == qgen)
+    if (nullptr == qgen)
     {
         return;
     }
@@ -1821,7 +1833,7 @@ void MyMol::PrintTopology(const char             *fn,
                plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
     {
-        print_top_mols(fp, printmol.name, getForceField().c_str(), NULL, 0, NULL, 1, &printmol);
+        print_top_mols(fp, printmol.name, getForceField().c_str(), nullptr, 0, nullptr, 1, &printmol);
     }
 
     if (bVerbose)
@@ -1916,23 +1928,23 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     {
         srenew(dest->atom, src->nr);
         srenew(dest->atomname, src->nr);
-        if (NULL != src->atomtype)
+        if (nullptr != src->atomtype)
         {
             srenew(dest->atomtype, src->nr);
         }
-        else if (NULL != dest->atomtype)
+        else if (nullptr != dest->atomtype)
         {
             sfree(dest->atomtype);
-            dest->atomtype = NULL;
+            dest->atomtype = nullptr;
         }
-        if (NULL != src->atomtypeB)
+        if (nullptr != src->atomtypeB)
         {
             srenew(dest->atomtypeB, src->nr);
         }
-        else if (NULL != dest->atomtypeB)
+        else if (nullptr != dest->atomtypeB)
         {
             sfree(dest->atomtypeB);
-            dest->atomtypeB = NULL;
+            dest->atomtypeB = nullptr;
         }
     }
     dest->nr = src->nr;
@@ -1940,11 +1952,11 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     {
         dest->atom[i]      = src->atom[i];
         dest->atomname[i]  = src->atomname[i];
-        if (NULL != src->atomtype)
+        if (nullptr != src->atomtype)
         {
             dest->atomtype[i]  = src->atomtype[i];
         }
-        if (NULL != src->atomtypeB)
+        if (nullptr != src->atomtypeB)
         {
             dest->atomtypeB[i] = src->atomtypeB[i];
         }
@@ -1954,20 +1966,20 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
         srenew(dest->resinfo, src->nres);
     }
 
-    if (NULL != src->pdbinfo)
+    if (nullptr != src->pdbinfo)
     {
         srenew(dest->pdbinfo, src->nres);
     }
-    else if (NULL != dest->pdbinfo)
+    else if (nullptr != dest->pdbinfo)
     {
         sfree(dest->pdbinfo);
-        dest->pdbinfo = NULL;
+        dest->pdbinfo = nullptr;
     }
     dest->nres = src->nres;
     for (i = 0; (i < src->nres); i++)
     {
         dest->resinfo[i] = src->resinfo[i];
-        if (NULL != src->pdbinfo)
+        if (nullptr != src->pdbinfo)
         {
             dest->pdbinfo[i] = src->pdbinfo[i];
         }
@@ -2142,7 +2154,7 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
     if ((cgnr_ = generate_charge_groups(ecg, &topology_->atoms,
                                         plist_,
                                         bUsePDBcharge,
-                                        &qtot, &mtot)) == NULL)
+                                        &qtot, &mtot)) == nullptr)
     {
         return immChargeGeneration;
     }
@@ -2168,8 +2180,8 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
                          const char             *diffhistfn,
                          const gmx_output_env_t *oenv)
 {
-    if ((NULL  != potfn) || (NULL != hisfn) || (NULL != rhofn) ||
-        ((NULL != difffn) && (NULL != reffn)))
+    if ((nullptr  != potfn) || (nullptr != hisfn) || (nullptr != rhofn) ||
+        ((nullptr != difffn) && (nullptr != reffn)))
     {
         char      buf[256];
         char     *gentop_version = (char *)"v0.99b";
@@ -2185,7 +2197,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
                 gentop_version,
                 getEemtypeName(iChargeDistributionModel));
 
-        if (NULL != difffn)
+        if (nullptr != difffn)
         {
             grref.setAtomInfo(&topology_->atoms, pd, x_);
             grref.setAtomSymmetry(symmetric_charges_);
@@ -2196,7 +2208,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
         {
             gr_.makeGrid(spacing, box_, x_);
         }
-        if (NULL != rhofn)
+        if (nullptr != rhofn)
         {
             sprintf(buf, "Electron density generated by %s based on %s charges",
                     gentop_version, getEemtypeName(iChargeDistributionModel));
@@ -2205,16 +2217,16 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
         }
         sprintf(buf, "Potential generated by %s based on %s charges",
                 gentop_version, getEemtypeName(iChargeDistributionModel));
-        if (NULL != potfn)
+        if (nullptr != potfn)
         {
             gr_.calcPot();
             gr_.writeCube(potfn, buf);
         }
-        if (NULL != hisfn)
+        if (nullptr != hisfn)
         {
             gr_.writeHisto(hisfn, buf, oenv);
         }
-        if ((NULL != difffn) || (NULL != diffhistfn))
+        if ((nullptr != difffn) || (nullptr != diffhistfn))
         {
             sprintf(buf, "Potential difference generated by %s based on %s charges",
                     gentop_version,
@@ -2236,7 +2248,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
     int          ia;
 
     if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
-                              lot, NULL, (char *)"elec",
+                              lot, nullptr, (char *)"elec",
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
     {
@@ -2268,7 +2280,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
     }
     /* Check handling of LOT */
     if (molProp()->getPropRef(MPO_DIPOLE, iqmQM,
-                              (char *)mylot.c_str(), NULL, (char *)"ESP", &value, &error, &T,
+                              (char *)mylot.c_str(), nullptr, (char *)"ESP", &value, &error, &T,
                               myref, mylot, vec, quadrupole))
     {
         for (m = 0; (m < DIM); m++)
@@ -2277,7 +2289,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         }
     }
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
-                           lot, NULL, (char *)"DeltaHform", &value, &error, &T))
+                           lot, nullptr, (char *)"DeltaHform", &value, &error, &T))
     {
         Hform = value;
         Emol  = value;

@@ -152,7 +152,7 @@ class MyMol
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
         gmx_enerdata_t           *enerd_;
-        t_mdatoms                *md_;
+        t_mdatoms                *mdatoms_;
         t_topology               *topology_;
 
         //! Constructor

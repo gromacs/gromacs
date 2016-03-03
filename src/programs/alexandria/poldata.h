@@ -168,6 +168,11 @@ class Poldata
                                 { return (f.getBtype().compare(btype) == 0); });
         }
 
+        bool haveBtype(const std::string &btype)
+        {
+            return (btypeToAtype(btype) != _alexandria.end());
+        }
+        
         FfatypeIterator ptypeToAtype(const std::string &ptype)
         {
             return std::find_if(_alexandria.begin(), _alexandria.end(), 
@@ -280,7 +285,7 @@ class Poldata
                           double            *polarizability) const;
 
         /* Return true on success or false otherwise */
-        bool addBond(const std::string &atom1,
+        void addBond(const std::string &atom1,
                      const std::string &atom2,
                      double length, 
                      double sigma, 
@@ -345,7 +350,7 @@ class Poldata
         const std::string &getPolarRef() const { return _alexandriaPolarRef; }
 
         /* Return true on success, false otherwise */
-        bool addAngle(const std::string &atom1, 
+        void addAngle(const std::string &atom1, 
                       const std::string &atom2,
                       const std::string &atom3,
                       double angle, 
@@ -399,7 +404,7 @@ class Poldata
         }
 
         /* Return 1 on success or 0 otherwise */
-        bool addDihedral(int egd, 
+        void addDihedral(int egd, 
                          const std::string &atom1,
                          const std::string &atom2,
                          const std::string &atom3, 

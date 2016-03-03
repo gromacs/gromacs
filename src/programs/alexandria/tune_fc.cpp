@@ -98,30 +98,43 @@
  *
  * Writes the whole bond energy matrix.
  */
-static void dump_csv(int                              nD,
-                     char                            *ctest[],
-                     std::vector<alexandria::MyMol>  &mm,
-                     double                         **a,
-                     double                          *x)
+static void dump_csv(const std::vector<std::string>        &ctest,
+                     const std::vector<alexandria::MyMol>  &mm,
+                     const std::vector<int>                &ntest,
+                     const std::vector<double>             &Edissoc,
+                     double                               **a,
+                     double                                *x)
 {
     FILE *csv = gmx_ffopen("tune_fc.csv", "w");
-    fprintf(csv, "\"\",");
-    for (int j = 0; (j < nD); j++)
+    fprintf(csv, ",");
+    for (auto j : ctest)
     {
-        fprintf(csv, "\"%s\",", ctest[j]);
+        fprintf(csv, "%s,", j.c_str());
     }
     fprintf(csv, "\n");
     int i = 0;
     for (auto &mymol : mm)
     {
-        fprintf(csv, "\"%s\",", mymol.molProp()->getMolname().c_str());
-        for (int j = 0; (j < nD); j++)
+        fprintf(csv, "%s,", mymol.molProp()->getMolname().c_str());
+        for (size_t j = 0; (j < ctest.size()); j++)
         {
-            fprintf(csv, "%g,", a[i][j]);
+            fprintf(csv, "%g,", a[j][i]);
         }
         fprintf(csv, "%.3f\n", x[i]);
         i++;
     }
+    fprintf(csv, "Total,");
+    for (auto j : ntest)
+    {
+        fprintf(csv, "%d,", j);
+    }
+    fprintf(csv, "\n");
+    fprintf(csv, "Edissoc,");
+    for (auto j : Edissoc)
+    {
+        fprintf(csv, "%.3f,", j);
+    }
+    fprintf(csv, "\n");
     fclose(csv);
 }
 
@@ -237,7 +250,11 @@ class ForceConstants
          */
         void makeReverseIndex();
 
-        int reverseIndex(int poldataIndex) { return reverseIndex_[poldataIndex]; }
+        int reverseIndex(int poldataIndex) 
+        { 
+            GMX_RELEASE_ASSERT(poldataIndex >= 0 && poldataIndex < static_cast<int>(reverseIndex_.size()), "Incorrect poldataIndex"); 
+            return reverseIndex_[poldataIndex]; 
+        }
 
         int bt() const { return bt_; }
 
@@ -589,8 +606,14 @@ void OptParam::checkSupport(FILE *fp,
                     {
                         case ebtsBONDS:
                         {
-                            bSupport = (bSupport &&
-                                        pd_.findBond(aai, aaj, 0) != pd_.getBondEnd());
+                            if (pd_.findBond(aai, aaj, 0) == pd_.getBondEnd())
+                            {
+                                bSupport = false;
+                                if (debug)
+                                {
+                                    fprintf(debug, "Cannot find bond %s-%s\n", aai.c_str(), aaj.c_str());
+                                }
+                            }
                             break;
                         }
                         case ebtsANGLES:
@@ -602,8 +625,15 @@ void OptParam::checkSupport(FILE *fp,
                             }
                             else
                             {
-                                bSupport = (bSupport &&
-                                            pd_.findAngle(aai, aaj, aak) != pd_.getAngleEnd());
+                                if (pd_.findAngle(aai, aaj, aak) == pd_.getAngleEnd())
+                                {
+                                    bSupport = false;
+                                    if (debug)
+                                    {
+                                        fprintf(debug, "Cannot find angle %s-%s-%s\n", 
+                                                aai.c_str(), aaj.c_str(), aak.c_str());
+                                    }
+                                }
                             }
                         }
                         break;
@@ -620,8 +650,15 @@ void OptParam::checkSupport(FILE *fp,
                             else
                             {
                                 int egd = (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
-                                bSupport = (bSupport &&
-                                            pd_.findDihedral(egd, aai, aaj, aak, aal) != pd_.getDihedralEnd(egd));
+                                if (pd_.findDihedral(egd, aai, aaj, aak, aal) == pd_.getDihedralEnd(egd))
+                                {
+                                    bSupport = false;
+                                    if (debug)
+                                    {
+                                        fprintf(debug, "Cannot find dihedral %s-%s-%s-%s\n", 
+                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                                    }
+                                }
                             }
                             break;
                         }
@@ -654,44 +691,35 @@ void OptParam::checkSupport(FILE *fp,
 
 void OptParam::getDissociationEnergy(FILE *fplog)
 {
-    int        nD, nMol, ai, aj, niter, row;
-    char     **ctest;
-    char       buf[STRLEN];
-    double   **a, **at, **ata;
-    double    *x, *atx, *fpp;
-    double     a0, da0, ax, chi2;
-    int       *test;
-    gmx_bool   bZero = FALSE;
+    double                    **a;
+    std::vector<double>         rhs;
+    std::vector<int>            ntest;
+    std::vector<std::string>    ctest;
 
-    nD     = ForceConstants_[ebtsBONDS].nbad();
-    nMol   = _mymol.size();
+    int nD   = ForceConstants_[ebtsBONDS].nbad();
+    int nMol = _mymol.size();
     if ((0 == nD) || (0 == nMol))
     {
         gmx_fatal(FARGS, "Number of variables is %d and number of molecules is %d",
                   nD, nMol);
     }
-    a      = alloc_matrix(nMol, nD);
-    at     = alloc_matrix(nD, nMol);
-    ata    = alloc_matrix(nD, nD);
-    snew(x, nMol+1);
-    snew(atx, nD+1);
-    snew(fpp, nD+1);
-    snew(test, nD+1);
-    snew(ctest, nD+1);
+    a = alloc_matrix(nD, nMol);
+    ntest.resize(nD, 0);
+    ctest.resize(nD);
 
     fprintf(fplog, "There are %d different bondtypes to optimize the heat of formation\n",
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    int ftb = pd_.getBondFtype();
+    int ftb = 0; //pd_.getBondFtype();
     int j   = 0;
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
          (mymol < _mymol.end()); mymol++, j++)
     {
         for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
         {
-            ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-            aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+            int ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+            int aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
             std::string aai, aaj;
             if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
                 pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
@@ -700,15 +728,15 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                 if (gtb != pd_.getBondEnd())
                 {
                     int gt  = gtb - pd_.getBondBegin();
-                    int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
+                    //int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
 
-                    at[gti][j]++;
-                    a[j][gti]++;
-                    test[gti]++;
-                    if (NULL == ctest[gti])
+                    a[gt][j]++;
+                    ntest[gt]++;
+                    if (ctest[gt].empty())
                     {
-                        sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
-                        ctest[gti] = strdup(buf);
+                        char buf[STRLEN];
+                        snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
+                        ctest[gt].assign(buf);
                     }
                 }
             }
@@ -721,109 +749,46 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-        x[j] = mymol->Emol;
+        rhs.push_back(mymol->Emol);
     }
+    char buf[STRLEN];
+    snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
+    GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
-    matrix_multiply(debug, nMol, nD, a, at, ata);
-    dump_csv(nD, ctest, _mymol, a, x);
-    if ((row = matrix_invert(debug, nD, ata)) != 0)
+    int nzero = std::count_if(ntest.begin(), ntest.end(), 
+                              [](const int n) { return n == 0; });
+    printf("There are %d bondtypes without support\n", nzero);
+    double **a2 = alloc_matrix(nD-nzero, nMol);
+    int i2 = 0;
+    for(int i = 0; i<nD; i++)
     {
-        int k = row - 1;
-        for (int m = 0; (m < nD); m++)
+        if (ntest[i] > 0)
         {
-            if (m == k)
+            for(int j = 0; j<nMol; j++)
             {
-                continue;
+                a2[i2][j] = a[i][j];
             }
-            bool   bSame = true;
-            double bfac1 = 0, bfac2 = 0;
-            for (int l = 0; bSame && (l < nMol); l++)
-            {
-                if ((a[m][l] != 0) || (a[k][l] != 0))
-                {
-                    if (a[m][l] != 0)
-                    {
-                        bfac2 = (1.0*a[k][l])/a[m][l];
-                        if ((bfac1 == 0) && (bfac2 != 0))
-                        {
-                            bfac1 = bfac2;
-                        }
-                        else if (bfac1 != 0)
-                        {
-                            bSame = (bfac1 == bfac2);
-                        }
-                    }
-                }
-            }
-            if (bSame)
-            {
-                gmx_fatal(FARGS, "Colums %d and %d are identical bfac1 = %g",
-                          k + 1, m + 1, bfac1);
-            }
-        }
-        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect column = %d (%s), nD = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row, ctest[row-1], nD);
-    }
-    a0    = 0;
-    niter = 0;
-    do
-    {
-        for (int i = 0; (i < nD); i++)
-        {
-            atx[i] = 0;
-            for (int j = 0; (j < nMol); j++)
-            {
-                atx[i] += at[i][j]*(x[j]-a0);
-            }
-        }
-        for (int i = 0; (i < nD); i++)
-        {
-            fpp[i] = 0;
-            for (int j = 0; (j < nD); j++)
-            {
-                fpp[i] += ata[i][j]*atx[j];
-            }
-        }
-        da0  = 0;
-        chi2 = 0;
-        if (bZero)
-        {
-            for (j = 0; (j < nMol); j++)
-            {
-                ax = a0;
-                for (int i = 0; (i < nD); i++)
-                {
-                    ax += fpp[i]*a[j][i];
-                }
-                da0  += (x[j]-ax);
-                chi2 += gmx::square(x[j]-ax);
-            }
-            da0 = da0 / nMol;
-            a0 += da0;
-            niter++;
-            printf("iter: %d, a0 = %g, chi2 = %g\n",
-                   niter, a0, chi2/nMol);
+            ntest[i2] = ntest[i];
+            ctest[i2] = ctest[i];
+            i2++;
         }
     }
-    while ((fabs(da0) > 1e-5) && (niter < 1000));
-
-    for (int i = 0; (i < nD); i++)
+    std::vector<double> Edissoc(i2);
+    ctest.resize(i2);
+    ntest.resize(i2);
+    dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
+    double chi2 = multi_regression(debug, nMol, rhs.data(), i2, a2, Edissoc.data());
+    
+    for (size_t i = 0; (i < ctest.size()); i++)
     {
         if (fplog)
         {
             fprintf(fplog, "Optimized dissociation energy for %8s with %4d copies to %g\n",
-                    ctest[i], test[i], fpp[i]);
+                    ctest[i].c_str(), ntest[i], Edissoc[i]);
         }
-        sfree(ctest[i]);
     }
-    sfree(ctest);
-    sfree(test);
-    sfree(fpp);
-    sfree(atx);
-    sfree(x);
     free_matrix(a);
-    free_matrix(at);
-    free_matrix(ata);
+    free_matrix(a2);
 }
 
 void OptParam::InitOpt(FILE *fplog,
@@ -977,7 +942,7 @@ double OptParam::CalcDeviation()
 
             /* Now compute energy */
             atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0,
-                     mymol.md_);
+                     mymol.mdatoms_);
 
             for (j = 0; (j < mymol.molProp()->NAtom()); j++)
             {
@@ -997,7 +962,7 @@ double OptParam::CalcDeviation()
                          &my_nrnb, wcycle, mymol.ltop_,
                          &(mymol.mtop_->groups),
                          mymol.box_, mymol.x_, NULL,
-                         mymol.f_, force_vir, mymol.md_,
+                         mymol.f_, force_vir, mymol.mdatoms_,
                          mymol.enerd_, NULL,
                          mymol.state_->lambda, NULL,
                          mymol.fr_,
