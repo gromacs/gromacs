@@ -69,7 +69,7 @@ void free_matrix(double **a)
     sfree(a);
 }
 
-#define DEBUG_MATRIX
+#define DEBUG_MATRIX 1
 void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z)
 {
     int i, j, k;

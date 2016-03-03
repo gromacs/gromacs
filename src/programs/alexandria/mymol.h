@@ -103,11 +103,13 @@ class MyMol
         int             *cgnr_;
         t_excls         *excls_;
         GentopVsites     gvt_;
+        QgenResp         gr_;
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
         double           ref_enthalpy_, mutot_;
         double           polarizability_, sig_pol_;
+        double           EspRms_;
         //! Determine whether a molecule has symmetry (within a certain tolerance)
         bool IsSymmetric(real toler);
 
@@ -150,7 +152,6 @@ class MyMol
         t_symtab                 *symtab_;
         t_inputrec               *inputrec_;
         gmx_enerdata_t           *enerd_;
-        QgenResp                  gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;
 
@@ -164,20 +165,21 @@ class MyMol
         MolProp *molProp() const { return mp_; }
 
         //! Generate the topology structure
-        immStatus GenerateTopology(gmx_atomprop_t          ap,
-                                   const Poldata          &pd,
-                                   const char             *lot,
-                                   ChargeDistributionModel iModel,
-                                   int                     nexcl,
-                                   bool                    bUseVsites,
-                                   bool                    bPairs,
-                                   bool                    bDih,
-                                   bool                    bAddShells);
+        immStatus GenerateTopology(gmx_atomprop_t            ap,
+                                   const Poldata            &pd,
+                                   const char               *lot,
+                                   ChargeDistributionModel   iModel,
+                                   int                       nexcl,
+                                   bool                      bUseVsites,
+                                   bool                      bPairs,
+                                   bool                      bDih,
+                                   bool                      bAddShells);
         //! Generate Charges
         immStatus GenerateCharges(const Poldata             &pd, 
                                   gmx_atomprop_t             ap,
                                   ChargeDistributionModel    iModel,
                                   ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
+                                  real                       watoms,
                                   real                       hfac,
                                   real                       epsr,
                                   const char                *lot,
@@ -186,6 +188,8 @@ class MyMol
                                   t_commrec                 *cr,
                                   const char                *tabfn);
 
+        double espRms() const { return EspRms_; }
+        
         // Collect the experimental properties
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
                               alexandria::GaussAtomProp &gap);

@@ -519,13 +519,17 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     _bPol                       = bPol;
 }
 
-void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
+void MolDip::Read(FILE *fp, 
+                  const char *fn, 
+                  const char *pd_fn,
                   int minimum_data,
                   gmx_bool bZero,
-                  char *opt_elem, char *const_elem,
+                  char *opt_elem, 
+                  char *const_elem,
                   char *lot,
                   const MolSelect &gms,
-                  real watoms, gmx_bool bCheckSupport,
+                  real watoms, 
+                  gmx_bool bCheckSupport,
                   unsigned int seed, 
                   bool bDihedral, bool bPolar,
                   const char *tabfn)
@@ -535,6 +539,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     immStatus                        imm;
     std::vector<alexandria::MolProp> mp;
     alexandria::GaussAtomProp        gap;
+    real                             rms;
 
     for (i = 0; (i < immNR); i++)
     {
@@ -594,35 +599,26 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             {
                 int               dest = (n % _cr->nnodes);
                 alexandria::MyMol mpnew;
-
+                printf("%s\n", mpi->getMolname().c_str());
                 mpnew.molProp()->Merge(mpi);
 
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
-                                             _iChargeDistributionModel, nexcl,
+                                             _iChargeDistributionModel,
+                                             nexcl,
                                              false, false, bDihedral, bPolar);
-
-                if (_iChargeGenerationAlgorithm == eqgRESP)
-                {
-                    mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
-                                         true, 1, 200, 5, true,
-                                         -2, 2, false, watoms);
-                    mpnew.gr_.setMolecularCharge(mpnew.molProp()->getCharge());
-                    mpnew.gr_.setBAXpRESP(true);
-                    mpnew.gr_.setBEntropy(true);
-                }
-                if (bPolar)
-                {
-                    fprintf(stderr, "Not optimizing shells. Help!\n");
-                }
-                imm = mpnew.GenerateCharges(pd_, _atomprop,
-                                            _iChargeDistributionModel,
-                                            _iChargeGenerationAlgorithm,
-                                            _hfac, _epsr,
-                                            lot, TRUE, NULL, _cr, tabfn);
 
                 if (immOK == imm)
                 {
-                    imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
+                    imm = mpnew.GenerateCharges(pd_, _atomprop,
+                                                _iChargeDistributionModel,
+                                                _iChargeGenerationAlgorithm,
+                                                watoms, _hfac, _epsr,
+                                                lot, TRUE, NULL, _cr, tabfn);
+                    rms = mpnew.espRms();
+                }
+                if (immOK == imm)
+                {
+                    imm = mpnew.GenerateChargeGroups(ecgGroup, FALSE);
                 }
                 if (immOK == imm)
                 {
@@ -727,24 +723,11 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-                mpnew.gr_.setOptions(_iChargeDistributionModel, seed,
-                                     true, 1, 200, 5, true,
-                                     -2, 2, false, watoms);
-                mpnew.gr_.setMolecularCharge(mpnew.molProp()->getCharge());
-                mpnew.gr_.setBAXpRESP(true);
-                mpnew.gr_.setBEntropy(true);
-            }
-            if (bPolar)
-            {
-                fprintf(stderr, "Not optimizing shells. Help!\n");
-            }
-                
-            if (immOK == imm)
-            {
                 imm = mpnew.GenerateCharges(pd_, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm,
-                                            _hfac, _epsr,
+                                            watoms, _hfac, _epsr,
                                             lot, TRUE, NULL, _cr, tabfn);
+                rms = mpnew.espRms();
             }
             if (immOK == imm)
             {
@@ -899,6 +882,7 @@ void MolDip::CalcDeviation()
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
     int                     at_global;
+    real                    rms;
 
     if (PAR(_cr))
     {
@@ -983,10 +967,10 @@ void MolDip::CalcDeviation()
             mymol->CalcMultipoles();
 
             /* Compute the ESP on the points */
-            if (mymol->gr_.nEsp() > 0 && _bQM)
-            {
-                mymol->gr_.calcPot();
-            }
+            //if (mymol->gr_.nEsp() > 0 && _bQM)
+            //{
+            //   mymol->gr_.calcPot();
+            //}
             qtot = 0;
             for (j = 0; (j < mymol->topology_->atoms.nr); j++)
             {
@@ -1033,16 +1017,16 @@ void MolDip::CalcDeviation()
                         _ener[ermsQUAD] += gmx::square(mymol->Q_exp[mm][mm] - mymol->Q_calc[mm][mm]);
                     }
                 }
-                if (mymol->gr_.nEsp() > 0)
-                {
+                //if (mymol->gr_.nEsp() > 0)
+                //{
                     real rrms;
-                    _ener[ermsESP] += mymol->gr_.getRms(&wtot, &rrms);
-                    if (NULL != debug)
-                    {
-                        fprintf(debug, "RMS %s = %g\n",
-                                mymol->molProp()->getMolname().c_str(), _ener[ermsESP]);
-                    }
-                }
+                    //  _ener[ermsESP] += mymol->gr_.getRms(&wtot, &rrms);
+                    // if (NULL != debug)
+                    //{
+                    //   fprintf(debug, "RMS %s = %g\n",
+                    //          mymol->molProp()->getMolname().c_str(), _ener[ermsESP]);
+                    //}
+                    //}
             }
             else
             {

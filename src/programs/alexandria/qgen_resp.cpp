@@ -81,11 +81,10 @@
 
 namespace alexandria
 {
+
 QgenResp::QgenResp()
 {
     rnd_                = nullptr;
-    setOptions(eqdAXp, 0, false, 5, 100, -1, false,
-               -3, 3, true, 0);
     _bAXpRESP           = false;
     _qfac               = 1e-3;
     _bHyper             = 0.1;
@@ -93,43 +92,17 @@ QgenResp::QgenResp()
     _pfac               = 1;
     _bEntropy           = false;
     _rDecrZeta          = true;
-}
-
-void QgenResp::setOptions(ChargeDistributionModel c,
-                          unsigned int            seed,
-                          bool                    fitZeta,
-                          real                    zetaMin,
-                          real                    zetaMax,
-                          real                    deltaZeta,
-                          bool                    randomZeta,
-                          real                    qmin,
-                          real                    qmax,
-                          bool                    randomQ,
-                          real                    watoms)
-{
-    _iDistributionModel = c;
-    _bFitZeta           = fitZeta && (c != eqdAXp);
-    _zmin               = zetaMin;
-    _zmax               = zetaMax;
-    _deltaZ             = deltaZeta;
-    _bRandZeta          = randomZeta;
-    _rDecrZeta          = true;
-
+    _bFitZeta           = false;
+    _zmin               = 5;
+    _zmax               = 100;
+    _deltaZ             = 1;
+    _bRandZeta          = false;
+    _rDecrZeta          = false;
     uniqueQ_            = 0;
     fitQ_               = 0;
-    _qmin               = qmin;
-    _qmax               = qmax; /* e */
-    _bRandQ             = randomQ;
-    _watoms             = watoms;
-    if (seed <= 0)
-    {
-        seed = gmx_rng_make_seed();
-    }
-    if (nullptr != rnd_)
-    {
-        gmx_rng_destroy(rnd_);
-    }
-    rnd_ = gmx_rng_init(seed);
+    _qmin               = -3;
+    _qmax               = 3; /* e */
+    _bRandQ             = false;
 }
 
 QgenResp::~QgenResp()
@@ -223,10 +196,9 @@ void QgenResp::summary(FILE *fp)
 {
     if (NULL != fp)
     {
-        fprintf(fp, "There are %d atoms, %d atomtypes %d parameters for (R)ESP fitting.\n",
+        fprintf(fp, "There are %d atoms, %d atomtypes for (R)ESP fitting.\n",
                 static_cast<int>(nAtom()),
-                static_cast<int>(nAtomType()),
-                static_cast<int>(nParam()));
+                static_cast<int>(nAtomType()));
         for (size_t i = 0; (i < nAtom()); i++)
         {
             fprintf(fp, " %d", symmetricAtoms_[i]);
@@ -235,54 +207,10 @@ void QgenResp::summary(FILE *fp)
     }
 }
 
-int QgenResp::addParam(size_t aindex, eParm eparm, size_t zz)
-{
-    int iParam = -1;
-    if (eparm == eparmQ)
-    {
-        range_check(aindex, 0, nAtom());
-        raparam_.push_back(RespParam(eparm, aindex, zz));
-        if (debug)
-        {
-            fprintf(debug, "GRESP: Adding charge for atom %d\n",
-                    static_cast<int>(aindex));
-        }
-        iParam = nParam()-1;
-    }
-    else if (_bFitZeta)
-    {
-        RespAtomTypeIterator rat = findRAT(aindex);
-        GMX_RELEASE_ASSERT(rat != endRAT(), "Can not not find atomtype");
-        GMX_RELEASE_ASSERT(zz < rat->getNZeta(), "Zeta out of range");
-        // See if we have this one in the library already.
-        RespParamIterator rap = std::find_if(raparam_.begin(), raparam_.end(),
-                                             [eparm, aindex, zz](RespParam const &rp)
-                                             { return (rp.eParam() == eparm &&
-                                                       rp.aIndex() == aindex &&
-                                                       rp.zIndex() == zz); });
-        if (rap == raparam_.end())
-        {
-            raparam_.push_back(RespParam(eparm, aindex, zz));
-            iParam = nParam()-1;
-            if (debug)
-            {
-                fprintf(debug, "GRESP: Adding zeta %d for atom type %d\n",
-                        static_cast<int>(zz), static_cast<int>(aindex));
-            }
-        }
-        else
-        {
-            iParam = rap - raparam_.begin();
-        }
-    }
-    return iParam;
-}
-
 void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
 {
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
-    GMX_RELEASE_ASSERT(nParam() == 0, "There are parameters already in the Resp structure");
     GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 || 
                        symmetricAtoms.size() == nAtom(), 
                        "Please pass me a correct symmetric atoms vector");
@@ -312,40 +240,6 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
             }
         }
     }
-    // TODO: warning:
-    if (0)
-    {
-        /* Map the symmetric atoms */
-        for (size_t i = 0; (i < nAtom()); i++)
-        {
-            int                  atype = ra_[i].atype();
-            RespAtomTypeIterator rai   = findRAT(atype);
-
-            if (symmetricAtoms[i] == static_cast<int>(i))
-            {
-                // We optimize at most 1 charge per atom, so use index 0
-                if (!ra_[i].fixedQ())
-                {
-                    int iParam = addParam(i, eparmQ, 0);
-                    ra_[i].setQindex(iParam);
-                }
-                // Check if we have this atype covered already
-                if (rai != ratype_.end())
-                {
-                    // New atom type
-                    for (size_t zz = 0; (zz < rai->getNZeta()); zz++)
-                    {
-                        int iParam = addParam(atype, eparmZ, zz);
-                        (rai->beginRZ()+zz)->setZindex(iParam);
-                    }
-                }
-            }
-            else if (symmetricAtoms[i] > static_cast<int>(i))
-            {
-                gmx_fatal(FARGS, "The symmetricAtoms array can not point to larger atom numbers");
-            }
-        }
-    }
     if (debug)
     {
         size_t maxz = 0;
@@ -372,9 +266,6 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
             fprintf(debug, "\n");
         }
     }
-    fprintf(stderr, "There are %d variables to optimize for %d atoms. fitQ = %d uniqueQ = %d\n",
-            static_cast<int>(nParam()), static_cast<int>(nAtom()),
-            fitQ_, uniqueQ_);
     GMX_RELEASE_ASSERT(fitQ_ > 0, "No charges to fit");
 }
 
@@ -857,91 +748,6 @@ void QgenResp::warning(const std::string fn, int line)
     fprintf(stderr, "         using the second set, starting at line %d\n", line);
 }
 
-void QgenResp::setVector(double *params)
-{
-    size_t n = 0;
-
-    for (const auto &rp : raparam_)
-    {
-        if (rp.eParam() == eparmQ)
-        {
-            /* First do charges */
-            int atom = rp.aIndex();
-            params[n] = ra_[atom].q();
-            if (_bRandQ)
-            {
-                params[n] += 0.2*(gmx_rng_uniform_real(rnd_)-0.5);
-            }
-        }
-        else
-        {
-            int                  atype = rp.aIndex();
-            int                  zz    = rp.zIndex();
-            RespAtomTypeIterator rai   = findRAT(atype);
-            RowZetaQIterator     rzi   = rai->beginRZ() + zz;
-            if (_bRandZeta)
-            {
-                real zmin = _zmin;
-                real zmax = _zmax;
-
-                if ((_deltaZ > 0) && (rai->getBRestrained()))
-                {
-                    zmin = rzi->zetaRef()-_deltaZ;
-                    zmax = rzi->zetaRef()+_deltaZ;
-                }
-                /*if ((zz > 1) && (_rDecrZeta >= 0))
-                    {
-                    zmax = ra_[i].getZeta(zz-1)-_rDecrZeta;
-                    if (zmax < zmin)
-                    {
-                    zmax = (zmin+ra_[i].getZeta(zz-1))/2;
-                    }
-                    }*/
-                params[n] = zmin + (zmax-zmin)*gmx_rng_uniform_real(rnd_);
-            }
-            else
-            {
-                params[n] = rzi->zeta();
-            }
-        }
-        n++;
-    }
-}
-
-void QgenResp::getVector(double *params)
-{
-    double qtot = 0;
-    for (auto &ra : ra_)
-    {
-        /* First do charges */
-        int qi = ra.qIndex();
-        if (qi >= 0)
-        {
-            ra.setQ(params[qi]);
-            qtot += params[qi];
-        }
-        // Make sure to add the charges for nuclei to qtot
-        auto rat = findRAT(ra.atype());
-        for (auto rz = rat->beginRZ(); rz < rat->endRZ()-1; ++rz)
-        {
-            qtot += rz->q();
-        }
-    }
-    ra_[0].setQ(_qtot-qtot);
-
-    for (auto &rat : ratype_)
-    {
-        for (auto rz = rat.beginRZ(); rz < rat.endRZ(); ++rz)
-        {
-            int zi = rz->zIndex();
-            if (zi >= 0)
-            {
-                rz->setZeta(params[zi]);
-            }
-        }
-    }
-}
-
 void QgenResp::addEspPoint(double x, double y,
                            double z, double V)
 {
@@ -1065,21 +871,6 @@ double QgenResp::calcPenalty()
     return _penalty;
 }
 
-// Writen in C style, needed as an function argument
-double chargeFunction(void *gr, double v[])
-{
-    QgenResp *resp = (QgenResp *)gr;
-    real      rrms, rms  = 0;
-    real      wtot;
-
-    resp->getVector(v);
-    resp->calcPot();
-    double penalty = resp->calcPenalty();
-    rms = resp->getRms(&wtot, &rrms);
-
-    return rms + penalty;
-}
-
 void QgenResp::statistics(int len, char buf[])
 {
     if (len >= 100)
@@ -1090,160 +881,6 @@ void QgenResp::statistics(int len, char buf[])
     else
     {
         fprintf(stderr, "buflen too small (%d) in gmx_resp_statistics\n", len);
-    }
-}
-
-void LeastSquaresFit(int      ncolumn,
-                     int      nrow,
-                     double **a,
-                     double  *x,
-                     double  *rhs)
-{
-    double **aT  = alloc_matrix(ncolumn, nrow);
-    double **aTa = alloc_matrix(ncolumn, ncolumn);
-    int      row;
-
-    for (int c = 0; c < ncolumn; c++)
-    {
-        for (int r = 0; r < nrow; r++)
-        {
-            aT[c][r] = a[r][c];
-        }
-    }
-    matrix_multiply(debug, nrow, ncolumn, a, aT, aTa);
-    if ((row = matrix_invert(debug, ncolumn, aTa)) != 0)
-    {
-        int k = row - 1;
-        for (int m = 0; (m < ncolumn); m++)
-        {
-            if (m == k)
-            {
-                continue;
-            }
-            bool   bSame = true;
-            double bfac1 = 0, bfac2 = 0;
-            for (int l = 0; bSame && (l < nrow); l++)
-            {
-                if ((a[m][l] != 0) || (a[k][l] != 0))
-                {
-                    if (a[m][l] != 0)
-                    {
-                        bfac2 = (1.0*a[k][l])/a[m][l];
-                        if ((bfac1 == 0) && (bfac2 != 0))
-                        {
-                            bfac1 = bfac2;
-                        }
-                        else if (bfac1 != 0)
-                        {
-                            bSame = (bfac1 == bfac2);
-                        }
-                    }
-                }
-            }
-            if (bSame)
-            {
-                gmx_fatal(FARGS, "Colums %d and %d are identical bfac1 = %g",
-                          k + 1, m + 1, bfac1);
-            }
-        }
-        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect column = %d, ncolumn = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row, ncolumn);
-    }
-    double  da0, chi2;
-    double  a0    = 0;
-    int     niter = 0;
-    bool    bZero = false;
-    double *aTx;
-    snew(aTx, ncolumn);
-    do
-    {
-        for (int i = 0; (i < ncolumn); i++)
-        {
-            aTx[i] = 0;
-            for (int j = 0; (j < nrow); j++)
-            {
-                aTx[i] += aT[i][j]*(rhs[j]-a0);
-            }
-        }
-        for (int i = 0; (i < ncolumn); i++)
-        {
-            x[i] = 0;
-            for (int j = 0; (j < ncolumn); j++)
-            {
-                x[i] += aTa[i][j]*aTx[j];
-            }
-        }
-        da0  = 0;
-        chi2 = 0;
-        if (bZero)
-        {
-            for (int j = 0; (j < nrow); j++)
-            {
-                double ax = a0;
-                for (int i = 0; (i < ncolumn); i++)
-                {
-                    ax += x[i]*a[j][i];
-                }
-                da0  += (rhs[j]-ax);
-                chi2 += gmx::square(rhs[j]-ax);
-            }
-            da0 = da0 / nrow;
-            a0 += da0;
-            niter++;
-            printf("iter: %d, a0 = %g, chi2 = %g\n",
-                   niter, a0, chi2/nrow);
-        }
-    }
-    while ((fabs(da0) > 1e-5) && (niter < 1000));
-    sfree(aTx);
-    free_matrix(aT);
-    free_matrix(aTa);
-}
-
-int QgenResp::optimizeZeta(int maxiter, real *rms)
-{
-    std::vector<double> param;
-    double              ccc;
-    int                 bConv;
-    char                buf[STRLEN];
-
-    param.resize(nParam(), 0);
-    setVector(param.data());
-
-    // This has to be reimplemented in a way that the chargeFunction
-    // calls optimizeCharges to fit the charges, while the nmsimplex
-    // only tunes the zeta.
-    real toler = 1e-8;
-    bConv = nmsimplex(debug, (void *)this, chargeFunction,
-                      param.data(), nParam(),
-                      toler, 1, maxiter, &ccc);
-    if (bConv)
-    {
-        statistics(STRLEN-1, buf);
-    }
-    else
-    {
-        printf("NM Simplex did not converge\n\n");
-    }
-
-    if (_bEntropy)
-    {
-        *rms = _entropy;
-    }
-    else
-    {
-        *rms = _rms;
-    }
-
-    getVector(param.data());
-
-    if (bConv)
-    {
-        return eQGEN_OK;
-    }
-    else
-    {
-        return eQGEN_NOTCONVERGED;
     }
 }
 
@@ -1278,7 +915,7 @@ void QgenResp::regularizeCharges()
     printf("Please implement symmetrizing charges\n");
 }
 
-void QgenResp::optimizeCharges()
+double QgenResp::optimizeCharges()
 {
     // Increase number of rows for the symmetric atoms. E.g.
     // if we know that atoms 2, 3 and 4 have the same charge we
@@ -1286,9 +923,15 @@ void QgenResp::optimizeCharges()
     // An extra row is needed to fix the total charge.
     int                   nrow     = nEsp() + 1 + fitQ_ - uniqueQ_;
     int                   ncolumn  = fitQ_;
-    double              **a        = alloc_matrix(nrow, ncolumn);
+    double              **a        = alloc_matrix(ncolumn, nrow);
     std::vector<double>   rhs;
 
+    if (nEsp() < nAtom())
+    {
+        printf("Only %d ESP points for %d atoms. Can not generate charges.\n",
+               static_cast<int>(nEsp()), static_cast<int>(nAtom()));
+        return 0.0;
+    }
     for (size_t j = 0; j < nEsp(); j++)
     {
         rhs.push_back(ep_[j].v());
@@ -1345,13 +988,13 @@ void QgenResp::optimizeCharges()
                 else
                 {
                     rhs[j]  -= ra_[ii].qRef()*pot;
-                    a[j][i] += pot;
+                    a[i][j] += pot;
                 }
             }
             if (i == 0 && j < 4*nAtom() && debug)
             {
                 fprintf(debug, "j = %d r = %g AJI = %g dx = %g %g %g\n",
-                        static_cast<int>(j), r, a[j][i], dx[XX], dx[YY], dx[ZZ]);
+                        static_cast<int>(j), r, a[i][j], dx[XX], dx[YY], dx[ZZ]);
             }
         }
         if (!ra_[ii].fixedQ())
@@ -1365,7 +1008,7 @@ void QgenResp::optimizeCharges()
         {
             fprintf(debug, "rhs[%2d] = %10.3f  a[%d] = %10.3f  %10.3f  %10.3f\n", 
                     static_cast<int>(j), rhs[j], 
-                    static_cast<int>(j), a[j][0], a[j][1], a[j][2]);
+                    static_cast<int>(j), a[0][j], a[1][j], a[2][j]);
         }
     }
     // Add the equations to ascertain symmetric charges
@@ -1375,8 +1018,8 @@ void QgenResp::optimizeCharges()
     {
         if (symmetricAtoms_[i] < i)
         {
-            a[j1][i]                  =  factor;
-            a[j1][symmetricAtoms_[i]] = -factor;
+            a[i][j1]                  =  factor;
+            a[symmetricAtoms_[i]][j1] = -factor;
             rhs.push_back(0);
             j1++;
         }
@@ -1390,9 +1033,8 @@ void QgenResp::optimizeCharges()
     i           = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
-        a[nrow-1][i] = factor;
-        int                  atype = ra_[ii].atype();
         qtot += ra_[ii].qRef();
+        int                  atype = ra_[ii].atype();
         RespAtomTypeIterator rat   = findRAT(atype);
         for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
         {
@@ -1400,6 +1042,7 @@ void QgenResp::optimizeCharges()
         }
         if (!ra_[ii].fixedQ())
         {
+            a[i][nrow-1] = factor;
             i++;
         }
     }
@@ -1411,7 +1054,7 @@ void QgenResp::optimizeCharges()
             fprintf(debug, "ROW");
             for (int j = 0; j < ncolumn; j++)
             {
-                fprintf(debug, "  %8g", a[i][j]);
+                fprintf(debug, "  %8g", a[j][i]);
             }
             fprintf(debug, "  %8g\n", rhs[i]);
         }
@@ -1422,7 +1065,7 @@ void QgenResp::optimizeCharges()
         fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
     }
     snew(x, ncolumn);
-    LeastSquaresFit(ncolumn, nrow, a, x, rhs.data());
+    double chi2 = multi_regression(debug, nrow, rhs.data(), ncolumn, a, x);
     i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
@@ -1445,6 +1088,8 @@ void QgenResp::optimizeCharges()
 
     free_matrix(a);
     regularizeCharges();
+    
+    return chi2;
 }
 
 void QgenResp::potcomp(const std::string      &potcomp,

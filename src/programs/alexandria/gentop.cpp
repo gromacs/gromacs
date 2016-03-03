@@ -401,9 +401,8 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        alexandria::MolProp       mp;
-        alexandria::GaussAtomProp gap;
-        const char               *fn;
+        alexandria::MolProp  mp;
+        const char          *fn;
 
         if (opt2bSet("-g03", NFILE, fnm))
         {
@@ -433,16 +432,6 @@ int alex_gentop(int argc, char *argv[])
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel, nexcl,
                                  bGenVSites, bPairs, bDihedral, bPolar);
 
-    if ((immOK == imm)  && (eqgESP == iChargeGenerationAlgorithm))
-    {
-        mymol.gr_.setOptions(iChargeDistributionModel, seed,
-                             bFitZeta, zmin, zmax, delta_z, bRandZeta,
-                             -3, 3, bRandQ, watoms);
-        mymol.gr_.setBAXpRESP(bAXpRESP);
-        mymol.gr_.setRDecrZeta(rDecrZeta);
-        mymol.gr_.setBEntropy(bEntropy);
-    }
-
     if (immOK == imm)
     {
         t_commrec     *cr     = init_commrec();
@@ -450,6 +439,7 @@ int alex_gentop(int argc, char *argv[])
         imm = mymol.GenerateCharges(pd, aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
+                                    watoms,
                                     hfac, epsr,
                                     lot, bQsym, symm_string, cr,
                                     opt2fn_null("-tab", NFILE, fnm));

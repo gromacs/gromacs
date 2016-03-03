@@ -104,48 +104,22 @@ class QgenResp
         /*! \brief Set options for ESP charge generation
          *
          * \param[in] c          Charge distribution model eqdAXp, eqdAXg or eqdAXs
-         * \param[in] seed       Random number generator seed. If <= 0 a seed will be generated.
-         * \param[in] fitZeta    Do we fit the zeta (AXg/AXs only)
-         * \param[in] zetaMin    Minimum allowed zeta value
-         * \param[in] zetaMax    Maximum allowed zeta value
-         * \param[in] deltaZeta  Minimum difference between zeta values in one atom
-         * \param[in] randomZeta Use random starting values for zeta optimization
-         * \param[in] qmin       Minimum allowed atomic charge
-         * \param[in] qmax       Maximum allowed atomic charge
-         * \param[in] randomQ    Use random starting values for charge optimization
          * \param[in] watoms     Weighting factor for atoms in ESP fit
          */
-        void setOptions(ChargeDistributionModel c,
-                        unsigned int            seed,
-                        bool                    fitZeta,
-                        real                    zetaMin,
-                        real                    zetaMax,
-                        real                    deltaZeta,
-                        bool                    randomZeta,
-                        real                    qmin,
-                        real                    qmax,
-                        bool                    randomQ,
-                        real                    watoms);
-
-        void setBAXpRESP(bool bAXpRESP) { _bAXpRESP = bAXpRESP; }
-
-        void setRDecrZeta(real rDecrZeta) { _rDecrZeta = rDecrZeta; }
-
-        void setBEntropy(bool bEntropy) { _bEntropy  = bEntropy; }
-
+        void setChargeDistributionModel(ChargeDistributionModel c)
+        { _iDistributionModel = c; }
+        
+        void setAtomWeight(real watoms) { _watoms = watoms; }
+        
         real getMolecularCharge() const { return _qtot; }
 
         void setMolecularCharge(int qtot) { _qtot = qtot; }
-
-        // int atomicnumber2row(int elem);
 
         size_t nAtom() const { return ra_.size(); }
 
         size_t nAtomType() const { return ratype_.size(); }
 
         size_t nEsp() const { return ep_.size(); }
-
-        size_t nParam() const { return raparam_.size(); }
 
         void statistics(int len, char buf[]);
 
@@ -228,13 +202,12 @@ class QgenResp
          *
          * Optimizes the charges using matrix inversion. No restraints are
          * taken into account.
+         * \return chi2, the square deviation from the electrostatic potential.
          */
-        void optimizeCharges();
+        double optimizeCharges();
 
         // Make sure the total charge is correct and that symmetry is obeyed
         void regularizeCharges();
-
-        int optimizeZeta(int maxiter, real *rms);
 
         void potcomp(const std::string      &potcomp,
                      const std::string      &pdbdiff,
@@ -245,12 +218,9 @@ class QgenResp
 
         double calcPenalty();
 
-        void getVector(double *params);
-
         real myWeight(int iatom) const;
 
     private:
-        void setVector(double *params);
         //! Return the charge for one "shell" of an atom
         double getCharge(int atom, size_t zz) const;
 
@@ -279,7 +249,6 @@ class QgenResp
         //! Total number of parameters
         std::vector<RespAtom>     ra_;
         std::vector<RespAtomType> ratype_;
-        std::vector<RespParam>    raparam_;
         std::vector<std::string>  _dzatoms;
         std::string               _stoichiometry;
         std::vector<EspPoint>     ep_;
@@ -287,16 +256,6 @@ class QgenResp
 
         void warning(const std::string fn, int line);
 
-        /*! \brief Adds a parameter to the optimization list
-         *
-         * \param[in] atom  Either the atom index or the atom type
-         * \param[in] eparm Either eparmQ, in which case atom is the
-         *                  atom index, or eparmZ, in which case atom
-         *                  is the atom type.
-         * \param[in] zz    The zeta index
-         * \return The index in the parameter list.
-         */
-        int addParam(size_t atom, eParm eparm, size_t zz);
 };
 
 } // namespace

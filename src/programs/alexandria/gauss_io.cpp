@@ -64,38 +64,27 @@
 #include "poldata.h"
 #include "stringutil.h"
 
-static bool comp_esp(alexandria::ElectrostaticPotential ea,
-                     alexandria::ElectrostaticPotential eb)
-{
-    if (ea.getV() < eb.getV())
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-static void merge_electrostatic_potential(alexandria::MolProp &mpt,
+static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
-                                          int natom, int maxpot)
+                                          int                                              natom, 
+                                          int                                              maxpot)
 {
-    alexandria::ElectrostaticPotentialIterator esi;
-    int i;
-
+    int mymod = 1;
     if ((maxpot > 0) && (maxpot < (int)espv.size()))
     {
-        std::sort(espv.begin()+natom, espv.end(), comp_esp);
+        std::sort(espv.begin()+natom, espv.end(), 
+                  [](const alexandria::ElectrostaticPotential &a,
+                     const alexandria::ElectrostaticPotential &b)
+                  {  return (a.getV() < b.getV()); });
+                  
+        int npot = espv.size() - natom;
+        mymod = npot / maxpot;
     }
-    else
+    
+    int i  = 0;
+    for (auto esi = espv.begin(); (esi < espv.end()); esi++, i++)
     {
-        maxpot = 1;
-    }
-    i  = 0;
-    for (esi = espv.begin(); (esi < espv.end()); esi++, i++)
-    {
-        if ((i < natom) || (((i-natom) % maxpot) == 0))
+        if ((i < natom) || (((i-natom) % mymod) == 0))
         {
             mpt.LastExperiment()->AddPotential(*esi);
         }

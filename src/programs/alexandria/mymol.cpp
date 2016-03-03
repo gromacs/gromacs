@@ -1257,6 +1257,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  gmx_atomprop_t             ap,
                                  ChargeDistributionModel    iChargeDistributionModel,
                                  ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
+                                 real                       watoms,
                                  real                       hfac,
                                  real                       epsr,
                                  const char                *lot,
@@ -1272,6 +1273,12 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     // This might be moved to a better place
     gmx_omp_nthreads_init(stdout, cr, 1, 1, 0, false, false);
     GenerateGromacs(cr, tabfn);
+    double EspRms_ = 0;
+    if (eqgESP == iChargeGenerationAlgorithm)
+    {
+        gr_.setChargeDistributionModel(iChargeDistributionModel);
+        gr_.setAtomWeight(watoms);
+    }
     if (bSymmetricCharges)
     {
         std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_BONDS);
@@ -1333,12 +1340,12 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
             bool   converged = false;
             double chi2[2] = { 1e8, 1e8 };
-            real   rrms, wtot;
+            real   rrms = 0, wtot;
             int    cur = 0;
             do
             {
                 gr_.updateAtomCoords(x_);
-                gr_.optimizeCharges();
+                EspRms_ = gr_.optimizeCharges();
                 for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
                 {
                     mtop_->moltype[0].atoms.atom[i].q      =
@@ -1350,7 +1357,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
                 gr_.calcPot();
                 chi2[cur] = gr_.getRms(&wtot, &rrms);
-                printf("RESP: RMS %g RRMS %g\n", chi2[cur], rrms);
+                double rms = std::sqrt(EspRms_/gr_.nEsp());
+                printf("RESP: RMS %g RMSoc %g\n", chi2[cur], rms);
                 converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-6) || (nullptr == shellfc_);
                 cur = 1-cur;
             }
@@ -2267,9 +2275,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         }
     }
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
-                           lot, NULL, (char *)"DeltaHform", &T, &value, NULL))
+                           lot, NULL, (char *)"DeltaHform", &value, &error, &T))
     {
-        gmx_fatal(FARGS, "Please rewrite code");
         Hform = value;
         Emol  = value;
         for (ia = 0; (ia < topology_->atoms.nr); ia++)

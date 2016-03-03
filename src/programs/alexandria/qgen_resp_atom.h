@@ -170,38 +170,6 @@ typedef std::vector<RespAtom>::iterator RespAtomIterator;
 //! Let's loop over RespAtoms, shall we?
 typedef std::vector<RespAtom>::const_iterator RespAtomConstIterator;
 
-//! Optimizable entities
-enum eParm {
-    //! Optimize charge
-    eparmQ,
-    //! Optimize zeta
-    eparmZ
-};
-
-class RespParam
-{
-    public:
-        RespParam(eParm eparm, size_t aindex, size_t zindex) :
-            eparm_(eparm), aindex_(aindex), zindex_(zindex) {}
-
-        eParm eParam() const { return eparm_; }
-
-        size_t aIndex() const { return aindex_; }
-
-        size_t zIndex() const { return zindex_; }
-
-    private:
-        //! Type of parameter
-        eParm  eparm_;
-        //! Atom index (for charges) or atype index (for zeta)
-        size_t aindex_;
-        //! Zeta index (in the RespAtomType) in case we're optimizing zeta
-        size_t zindex_;
-};
-
-//! Looking for the right Resp parameters? Here to help.
-typedef std::vector<RespParam>::iterator RespParamIterator;
-
 } // namespace
 
 #endif

@@ -214,15 +214,14 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
             print_quad(fp, mi->Q_exp, NULL, NULL, quad_toler);
             print_quad(fp, mi->Q_exp, mi->Q_calc, (char *)"EEM", quad_toler);
             print_quad(fp, mi->Q_exp, mi->Q_esp, (char *)"ESP", quad_toler);
-            real rrms;
-            chi2 = mi->gr_.getRms(&wtot, &rrms);
-            fprintf(fp, "ESP chi2 %g Hartree/e wtot = %g\n", chi2, wtot);
-            mi->gr_.potLsq( lsq_esp);
-            while (estatsOK == gmx_stats_get_point(lsq_esp, &espx, &espy,
-                                                   &espdx, &espdy, 5))
-            {
-                fprintf(fp, "ESP outlier: EEM = %g, should be %g\n", espy, espx);
-            }
+            chi2 = mi->espRms();
+            fprintf(fp, "ESP chi2 %g Hartree/e\n", chi2);
+            //mi->gr_.potLsq( lsq_esp);
+            //while (estatsOK == gmx_stats_get_point(lsq_esp, &espx, &espy,
+            //&espdx, &espdy, 5))
+            //{
+            //  fprintf(fp, "ESP outlier: EEM = %g, should be %g\n", espy, espx);
+            //}
 
             fprintf(xvgf, "%10g  %10g\n", mi->dip_exp, mi->dip_calc);
             for (mm = 0; (mm < DIM); mm++)
