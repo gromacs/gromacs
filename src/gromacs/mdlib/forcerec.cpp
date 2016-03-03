@@ -47,6 +47,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/ewald.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/force.h"
@@ -82,6 +83,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "nbnxn_gpu_jit_support.h"
 
@@ -1339,6 +1341,19 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
     }
 }
 
+/*!\brief If there's bonded interactions of type \c ftype1 or \c
+ * ftype2 present in the topology, build an array of the number of
+ * interactions present for each bonded interaction index found in the
+ * topology.
+ *
+ * \c ftype1 or \c ftype2 may be set to -1 to disable seeking for a
+ * valid type with that parameter.
+ *
+ * \c count will be reallocated as necessary to fit the largest bonded
+ * interaction index found, and its current size will be returned in
+ * \c ncount. It will contain zero for every bonded interaction index
+ * for which no interactions are present in the topology.
+ */
 static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                          int *ncount, int **count)
 {
@@ -1346,22 +1361,28 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
     const t_ilist       *il;
     int                  mt, ftype, stride, i, j, tabnr;
 
+    // Loop over all moleculetypes
     for (mt = 0; mt < mtop->nmoltype; mt++)
     {
         molt = &mtop->moltype[mt];
+        // Loop over all interaction types
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
+            // If the current interaction type is one of the types whose tables we're trying to count...
             if (ftype == ftype1 || ftype == ftype2)
             {
                 il     = &molt->ilist[ftype];
                 stride = 1 + NRAL(ftype);
+                // ... and there are actually some interactions for this type
                 for (i = 0; i < il->nr; i += stride)
                 {
+                    // Find out which table index the user wanted
                     tabnr = mtop->ffparams.iparams[il->iatoms[i]].tab.table;
                     if (tabnr < 0)
                     {
                         gmx_fatal(FARGS, "A bonded table number is smaller than 0: %d\n", tabnr);
                     }
+                    // Make room for this index in the data structure
                     if (tabnr >= *ncount)
                     {
                         srenew(*count, tabnr+1);
@@ -1371,6 +1392,7 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                         }
                         *ncount = tabnr+1;
                     }
+                    // Record that this table index is used and must have a valid file
                     (*count)[tabnr]++;
                 }
             }
@@ -1378,13 +1400,23 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
     }
 }
 
+/*!\brief If there's bonded interactions of flavour \c tabext and type
+ * \c ftype1 or \c ftype2 present in the topology, seek them in the
+ * list of filenames passed to mdrun, and make bonded tables from
+ * those files.
+ *
+ * \c ftype1 or \c ftype2 may be set to -1 to disable seeking for a
+ * valid type with that parameter.
+ *
+ * A fatal error occurs if no matching filename is found.
+ */
 static bondedtable_t *make_bonded_tables(FILE *fplog,
                                          int ftype1, int ftype2,
                                          const gmx_mtop_t *mtop,
-                                         const char *basefn, const char *tabext)
+                                         const t_filenm *tabbfnm,
+                                         const char *tabext)
 {
-    int            i, ncount, *count;
-    char           tabfn[STRLEN];
+    int            ncount, *count;
     bondedtable_t *tab;
 
     tab = NULL;
@@ -1393,17 +1425,41 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
     count  = NULL;
     count_tables(ftype1, ftype2, mtop, &ncount, &count);
 
+    // Are there any relevant tabulated bond interactions?
     if (ncount > 0)
     {
         snew(tab, ncount);
-        for (i = 0; i < ncount; i++)
+        for (int i = 0; i < ncount; i++)
         {
+            // Do any interactions exist that requires this table?
             if (count[i] > 0)
             {
-                sprintf(tabfn, "%s", basefn);
-                sprintf(tabfn + strlen(basefn) - strlen(ftp2ext(efXVG)) - 1, "_%s%d.%s",
-                        tabext, i, ftp2ext(efXVG));
-                tab[i] = make_bonded_table(fplog, tabfn, NRAL(ftype1)-2);
+                // This pattern enforces the current requirement that
+                // table filenames end in a characteristic sequence
+                // before the file type extension, and avoids table 13
+                // being recognized and used for table 1.
+                std::string patternToFind = gmx::formatString("_%s%d.", tabext, i);
+                bool        madeTable     = false;
+                for (int j = 0; j < tabbfnm->nfiles && !madeTable; ++j)
+                {
+                    std::string filename(tabbfnm->fns[j]);
+                    if (gmx::contains(filename, patternToFind))
+                    {
+                        // Finally read the table from the file found
+                        tab[i]    = make_bonded_table(fplog, tabbfnm->fns[j], NRAL(ftype1)-2);
+                        madeTable = true;
+                    }
+                }
+                if (!madeTable)
+                {
+                    bool isPlural = (ftype2 != -1);
+                    gmx_fatal(FARGS, "Tabulated interaction of type '%s%s%s' with index %d cannot be used because no table file whose name matched '%sxvg' was passed via the gmx mdrun -tableb command-line option.",
+                              interaction_function[ftype1].longname,
+                              isPlural ? "' or '" : "",
+                              isPlural ? interaction_function[ftype2].longname : "",
+                              i,
+                              patternToFind.c_str());
+                }
             }
         }
         sfree(count);
@@ -2303,7 +2359,7 @@ void init_forcerec(FILE              *fp,
                    const char        *tabfn,
                    const char        *tabafn,
                    const char        *tabpfn,
-                   const char        *tabbfn,
+                   const t_filenm    *tabbfnm,
                    const char        *nbpu_opt,
                    gmx_bool           bNoSolvOpt,
                    real               print_force)
@@ -3159,17 +3215,17 @@ void init_forcerec(FILE              *fp,
         make_wall_tables(fp, oenv, ir, tabfn, &mtop->groups, fr);
     }
 
-    if (fcd && tabbfn)
+    if (fcd && tabbfnm)
     {
         fcd->bondtab  = make_bonded_tables(fp,
                                            F_TABBONDS, F_TABBONDSNC,
-                                           mtop, tabbfn, "b");
+                                           mtop, tabbfnm, "b");
         fcd->angletab = make_bonded_tables(fp,
                                            F_TABANGLES, -1,
-                                           mtop, tabbfn, "a");
+                                           mtop, tabbfnm, "a");
         fcd->dihtab   = make_bonded_tables(fp,
                                            F_TABDIHS, -1,
-                                           mtop, tabbfn, "d");
+                                           mtop, tabbfnm, "d");
     }
     else
     {
