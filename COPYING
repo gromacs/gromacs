@@ -1019,7 +1019,7 @@ packages (and has been). We only ask that proper credit be given to the authors.
 
 While the rest of GROMACS is LGPL, we think it's only fair to give you the same rights to
 our modified BLAS files as the original netlib versions, so do what you want with them.
-However, be warned that we have only tested that they to the right thing in the cases used
+However, be warned that we have only tested that they do the right thing in the cases used
 in GROMACS (primarily full & sparse matrix diagonalization), so in most cases it is a much
 better idea to use the full reference implementation.
 
@@ -1044,7 +1044,7 @@ packages (and has been). We only ask that proper credit be given to the authors.
 While the rest of GROMACS is LGPL, we think it's only fair to give you the same rights to
 our modified LAPACK files as the original netlib versions, so do what you want with them.
 
-However, be warned that we have only tested that they to the right thing in the cases used
+However, be warned that we have only tested that they do the right thing in the cases used
 in GROMACS (primarily full & sparse matrix diagonalization), so in most cases it is a much
 better idea to use the full reference implementation.
 
@@ -1053,7 +1053,8 @@ Erik Lindahl, 2008-10-07.
 7. Parts of Boost C++ library
 =============================
 
-   Files: src/gromacs/utility/current_functin.h
+   Files: src/gromacs/utility/current_function.h
+          src/gromacs/utility/path.cpp
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
