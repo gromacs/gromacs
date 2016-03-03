@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -733,6 +733,13 @@ static void read_tables(FILE *fp, const char *fn,
         {
             /* Check if the second column is close to minus the numerical
              * derivative of the first column.
+             *
+             * TODO This check works e.g. if you erroneously negate
+             * the third column of
+             * src/programs/mdrun/tests/butane_b0.xvg, but not if you
+             * do that to the angle and dihedral tables. Hopefully
+             * this code will die before we have to care about where
+             * the bug is.
              */
             ssd = 0;
             ns  = 0;
@@ -1800,7 +1807,7 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
     return table;
 }
 
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
+bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)
 {
     t_tabledata   td;
     double        start;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,10 +134,11 @@ int gmx_mdrun(int argc, char *argv[])
         "functions is read using the [TT]-tablep[tt] option.[PAR]",
         "When tabulated bonded functions are present in the topology,",
         "interaction functions are read using the [TT]-tableb[tt] option.",
-        "For each different tabulated interaction type the table file name is",
-        "modified in a different way: before the file extension an underscore is",
-        "appended, then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals",
-        "and finally the table number of the interaction type.[PAR]",
+        "For each different tabulated interaction type used, a table file name must",
+        "be given. For the topology to work, a file name given here must match a",
+        "character sequence before the file extension. That sequence is: an underscore,",
+        "then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals,",
+        "and finally the matching table number index used in the topology.[PAR]",
         "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
         "coordinates and forces when pulling is selected",
         "in the [REF].mdp[ref] file.[PAR]",
@@ -239,7 +240,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-table",  "table",    ffOPTRD },
         { efXVG, "-tabletf", "tabletf",    ffOPTRD },
         { efXVG, "-tablep", "tablep",   ffOPTRD },
-        { efXVG, "-tableb", "table",    ffOPTRD },
+        { efXVG, "-tableb", "table",    ffOPTRDMULT },
         { efTRX, "-rerun",  "rerun",    ffOPTRD },
         { efXVG, "-tpi",    "tpi",      ffOPTWR },
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
