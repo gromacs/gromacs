@@ -47,6 +47,8 @@
 
 #include "bonded.h"
 
+#include "config.h"
+
 #include <assert.h>
 
 #include <cmath>

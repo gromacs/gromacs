@@ -310,7 +310,7 @@ calc_bonded_reduction_mask(int natoms,
 {
     assert(nthread <= BITMASK_SIZE);
 
-    int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
+    int nblock = (natoms + c_reductionBlockSize - 1) >> c_reductionBlockBits;
 
     if (nblock > f_thread->block_nalloc)
     {
@@ -318,7 +318,7 @@ calc_bonded_reduction_mask(int natoms,
         srenew(f_thread->mask,        f_thread->block_nalloc);
         srenew(f_thread->block_index, f_thread->block_nalloc);
         sfree_aligned(f_thread->f);
-        snew_aligned(f_thread->f,     f_thread->block_nalloc*reduction_block_size, 128);
+        snew_aligned(f_thread->f,     f_thread->block_nalloc*c_reductionBlockSize, 128);
     }
 
     gmx_bitmask_t *mask = f_thread->mask;
@@ -344,7 +344,7 @@ calc_bonded_reduction_mask(int natoms,
                 {
                     for (int a = 1; a < nat1; a++)
                     {
-                        bitmask_set_bit(&mask[idef->il[ftype].iatoms[i+a] >> reduction_block_bits], thread);
+                        bitmask_set_bit(&mask[idef->il[ftype].iatoms[i+a] >> c_reductionBlockBits], thread);
                     }
                 }
             }
@@ -393,7 +393,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     /* Reduce the masks over the threads and determine which blocks
      * we need to reduce over.
      */
-    int nblock_tot = (fr->natoms_force + reduction_block_size - 1) >> reduction_block_bits;
+    int nblock_tot = (fr->natoms_force + c_reductionBlockSize - 1) >> c_reductionBlockBits;
     if (nblock_tot > bt->block_nalloc)
     {
         bt->block_nalloc = over_alloc_large(nblock_tot);
@@ -445,9 +445,9 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     if (debug)
     {
         fprintf(debug, "Number of %d atom blocks to reduce: %d\n",
-                reduction_block_size, bt->nblock_used);
+                c_reductionBlockSize, bt->nblock_used);
         fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
-                ctot*reduction_block_size/(double)fr->natoms_force,
+                ctot*c_reductionBlockSize/(double)fr->natoms_force,
                 ctot/(double)bt->nblock_used);
     }
 }

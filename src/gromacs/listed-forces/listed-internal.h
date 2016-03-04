@@ -53,8 +53,8 @@
  * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
  * size on all systems.
  */
-static const int reduction_block_size = 32; /**< Force buffer block size in atoms*/
-static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
+static const int c_reductionBlockSize = 32; /**< Force buffer block size in atoms*/
+static const int c_reductionBlockBits =  5; /**< log2(reduction_block_size) */
 
 /*! \internal \brief struct with output for bonded forces, used per thread */
 typedef struct
