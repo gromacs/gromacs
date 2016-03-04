@@ -165,8 +165,6 @@ class BondNames
         //! Internal routine to extract the parameters
         void extractParams();
     public:
-        BondNames() {};
-
         BondNames(int                ncopies,
                   const std::string &name,
                   const std::string &params,
@@ -222,22 +220,15 @@ class ForceConstants
     private:
         int                    bt_;
         int                    ft_;
-        int                    nbad_;
         bool                   bOpt_;
         std::vector<BondNames> bn_;
-        //opt_bad_t *_bad;
         std::vector<int>       reverseIndex_;
         std::vector<double>    params_;
     public:
-        ForceConstants(int bt, bool bOpt) : bt_(bt), bOpt_(bOpt)
-        {
-            ft_   = 0;
-            nbad_ = 0;
-        }
+        ForceConstants(int bt, int ft, bool bOpt) : bt_(bt), ft_(ft), bOpt_(bOpt)
+        { }
 
         void addForceConstant(BondNames bn) { bn_.push_back(bn); }
-
-        void analyzePoldata(const Poldata &pd);
 
         void analyzeIdef(std::vector<MyMol> &mm,
                          const Poldata      &pd);
@@ -266,37 +257,8 @@ class ForceConstants
 
         BondNamesIterator endBN() { return bn_.end(); }
 
-        int nbad() const { return nbad_; }
+        size_t nbad() const { return bn_.size(); }
 };
-
-void ForceConstants::analyzePoldata(const Poldata &pd)
-{
-    if (!bOpt_)
-    {
-        return;
-    }
-    switch (bt_)
-    {
-        case ebtsBONDS:
-            nbad_ = pd.getNgtBond();
-            ft_   = pd.getBondFtype();
-            break;
-        case ebtsANGLES:
-            nbad_ = pd.getNgtAngle();
-            ft_   = pd.getAngleFtype();
-            break;
-        case ebtsPDIHS:
-            nbad_ = pd.getNgtDihedral(egdPDIHS);
-            ft_   = pd.getDihedralFtype(egdPDIHS);
-            break;
-        case ebtsIDIHS:
-            nbad_ = pd.getNgtDihedral(egdIDIHS);
-            ft_   = pd.getDihedralFtype(egdIDIHS);
-            break;
-        default:
-            gmx_fatal(FARGS, "Boe");
-    }
-}
 
 void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                                  const Poldata      &pd)
@@ -381,15 +343,15 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                 if (found)
                 {
                     auto c = std::find_if(bn_.begin(), bn_.end(),
-                                          [buf](BondNames &bn)
-                                          { return bn.name().compare(buf); });
+                                          [buf](const BondNames &bn)
+                                          { return bn.name().compare(buf) == 0; });
                     if (c != bn_.end())
                     {
                         c->inc();
                     }
                     else
                     {
-                        BondNames bn(1, buf, params, bondorder, index);
+                        BondNames bn(1, buf, params, index, bondorder);
                         addForceConstant(bn);
                     }
                 }
@@ -400,8 +362,13 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
 
 void ForceConstants::makeReverseIndex()
 {
+    int N = 0;
+    for(const auto &i : bn_) 
+    {
+        N = std::max(N, i.poldataIndex());
+    }
+    reverseIndex_.resize(N+1, -1);
     int j = 0;
-    reverseIndex_.resize(nbad(), 0);
     for (const auto &i : bn_)
     {
         reverseIndex_[i.poldataIndex()] = j++;
@@ -728,15 +695,15 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                 if (gtb != pd_.getBondEnd())
                 {
                     int gt  = gtb - pd_.getBondBegin();
-                    //int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
+                    int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
 
-                    a[gt][j]++;
-                    ntest[gt]++;
-                    if (ctest[gt].empty())
+                    a[gti][j]++;
+                    ntest[gti]++;
+                    if (ctest[gti].empty())
                     {
                         char buf[STRLEN];
                         snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-                        ctest[gt].assign(buf);
+                        ctest[gti].assign(buf);
                     }
                 }
             }
@@ -756,13 +723,13 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
     int nzero = std::count_if(ntest.begin(), ntest.end(), 
-                              [](const int n) { return n == 0; });
-    printf("There are %d bondtypes without support\n", nzero);
+                              [](const int n) { return n < 3; });
+    printf("There are %d bondtypes without support out of %d\n", nzero, nD);
     double **a2 = alloc_matrix(nD-nzero, nMol);
     int i2 = 0;
     for(int i = 0; i<nD; i++)
     {
-        if (ntest[i] > 0)
+        if (ntest[i] > 2)
         {
             for(int j = 0; j<nMol; j++)
             {
@@ -773,6 +740,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
             i2++;
         }
     }
+    GMX_RELEASE_ASSERT(i2 == nD-nzero, "Inconsistency");
     std::vector<double> Edissoc(i2);
     ctest.resize(i2);
     ntest.resize(i2);
@@ -795,13 +763,14 @@ void OptParam::InitOpt(FILE *fplog,
                        bool  bOpt[ebtsNR],
                        real  factor)
 {
+    static const int fts[ebtsNR] = { F_BONDS, F_ANGLES, F_PDIHS, F_IDIHS };
     for (int i = 0; (i < ebtsNR); i++)
     {
-        ForceConstants_.push_back(ForceConstants(i, bOpt[i]));
-        ForceConstants_[i].analyzePoldata(pd_);
-        ForceConstants_[i].analyzeIdef(_mymol, pd_);
-        ForceConstants_[i].makeReverseIndex();
-        ForceConstants_[i].dump(fplog);
+        ForceConstants fc(i, fts[i], bOpt[i]);
+        fc.analyzeIdef(_mymol, pd_);
+        fc.makeReverseIndex();
+        fc.dump(fplog);
+        ForceConstants_.push_back(fc);
     }
 
     Opt2List();
@@ -903,7 +872,7 @@ double OptParam::CalcDeviation()
     {
         return _ener[ermsTOT];
     }
-    if (NULL == debug)
+    if (NULL != debug)
     {
         fprintf(debug, "Begin communicating force parameters\n");
         fflush(debug);
@@ -912,7 +881,7 @@ double OptParam::CalcDeviation()
     {
         pd_.broadcast(_cr);
     }
-    if (NULL == debug)
+    if (NULL != debug)
     {
         fprintf(debug, "Done communicating force parameters\n");
         fflush(debug);
