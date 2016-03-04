@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/topology/topology.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
@@ -111,14 +112,9 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
             int                       nexcl       = 2;
-            bool                      fitZeta     = false;
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  nexcl, false, false, false, bPolar);
-            mp_.gr_.setOptions(model, 1993,
-                               fitZeta, 5, 100, 5, false,
-                               -3, 3, false, 0);
-            mp_.gr_.setMolecularCharge(mp_.molProp()->getCharge());
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;
@@ -129,13 +125,13 @@ class RespTest : public gmx::test::CommandLineTestBase
                                 hfac, epsr, lot, false, symm_string,cr, NULL);
 
             std::vector<double> qtotValues;
-            for (size_t atom = 0; atom < mp_.gr_.nAtom(); atom++)
+            for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
             {
-                qtotValues.push_back(mp_.gr_.getAtomCharge(atom));
+                qtotValues.push_back(mp_.mtop_->moltype[0].atoms.atom[atom].q);
             }
             char buf[256];
             snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%d",
-                     static_cast<int>(mp_.gr_.chargeDistributionModel()));
+                     static_cast<int>(model));
             checker_.checkSequence(qtotValues.begin(),
                                    qtotValues.end(), buf);
         }

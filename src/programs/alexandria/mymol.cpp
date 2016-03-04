@@ -933,6 +933,7 @@ MyMol::MyMol() : gvt_(egvtALL)
     fr_         = nullptr;
     ltop_       = nullptr;
     mdatoms_    = nullptr;
+    f_          = nullptr;
     mp_         = new MolProp;
     state_      = nullptr;
     snew(enerd_, 1);
