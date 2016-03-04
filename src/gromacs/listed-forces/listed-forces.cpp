@@ -92,20 +92,27 @@ isPairInteraction(int ftype)
 static void
 zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
-    f_thread_t *f_t      = &bt->f_t[thread];
-    const int   nelem_fa = sizeof(*f_t->f)/sizeof(real);
+    f_thread_t *f_t       = &bt->f_t[thread];
+    const int   blockSize = c_reductionBlockSize*sizeof(*f_t->f)/sizeof(real);
+    real       *f         = &f_t->f[0][0];
 
     for (int i = 0; i < f_t->nblock_used; i++)
     {
-        int a0 = f_t->block_index[i]*reduction_block_size;
-        int a1 = a0 + reduction_block_size;
-        for (int a = a0; a < a1; a++)
+        int j0 = f_t->block_index[i]*blockSize;
+        int j1 = j0 + blockSize;
+#ifdef GMX_SIMD_HAVE_REAL
+        assert(blockSize % GMX_SIMD_REAL_WIDTH == 0);
+        SimdReal zero = setZero();
+        for (int j = j0; j < j1; j += GMX_SIMD_REAL_WIDTH)
         {
-            for (int d = 0; d < nelem_fa; d++)
-            {
-                f_t->f[a][d] = 0;
-            }
+            store(f + j, zero);
         }
+#else
+        for (int j = j0; j < j1; j++)
+        {
+            f[j] = 0;
+        }
+#endif
     }
 
     for (int i = 0; i < SHIFTS; i++)
@@ -174,9 +181,9 @@ reduce_thread_forces(int n, rvec *f,
             if (nfb > 0)
             {
                 /* Reduce force buffers for threads that contribute */
-                int a0 =  ind     *reduction_block_size;
-                int a1 = (ind + 1)*reduction_block_size;
-                /* It would be nice if we could pad f to avoid this min */
+                int a0 =  ind     *c_reductionBlockSize;
+                int a1 = (ind + 1)*c_reductionBlockSize;
+                /* TODO: Pad f to avoid this min and add SIMD reduction */
                 a1     = std::min(a1, n);
                 for (int a = a0; a < a1; a++)
                 {

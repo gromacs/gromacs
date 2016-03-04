@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,17 +36,30 @@
 
 #include "nbnxn_kernel_common.h"
 
+#include <assert.h>
+
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/simd/simd.h"
+
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 {
-    int i;
-
-    for (i = 0; i < nbat->natoms*nbat->fstride; i++)
+#if GMX_SIMD_HAVE_REAL
+    /* f is aligned and padded with  NBNXN_BUFFERFLAG_SIZE */
+    assert(NBNXN_BUFFERFLAG_SIZE % GMX_SIMD_REAL_WIDTH == 0);
+    SimdReal zero = setZero();
+    for (int i = 0; i < nbat->natoms*nbat->fstride; i += GMX_SIMD_REAL_WIDTH)
+    {
+        store(f + i, zero);
+    }
+#else
+    for (int i = 0; i < nbat->natoms*nbat->fstride; i++)
     {
         f[i] = 0;
     }
+#endif
 }
 
 static void
@@ -54,22 +67,33 @@ clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
 {
     const nbnxn_buffer_flags_t *flags;
     gmx_bitmask_t               our_flag;
-    int                         b, a0, a1, i;
 
     flags = &nbat->buffer_flags;
 
     bitmask_init_bit(&our_flag, output_index);
 
-    for (b = 0; b < flags->nflag; b++)
+    for (int b = 0; b < flags->nflag; b++)
     {
         if (!bitmask_is_disjoint(flags->flag[b], our_flag))
         {
-            a0 = b*NBNXN_BUFFERFLAG_SIZE;
-            a1 = a0 + NBNXN_BUFFERFLAG_SIZE;
-            for (i = a0*nbat->fstride; i < a1*nbat->fstride; i++)
+            int i0, i1;
+
+            i0 = b*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+            i1 = i0 + NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+#if GMX_SIMD_HAVE_REAL
+            /* f is aligned and padded with  NBNXN_BUFFERFLAG_SIZE */
+            assert(NBNXN_BUFFERFLAG_SIZE % GMX_SIMD_REAL_WIDTH == 0);
+            SimdReal zero = setZero();
+            for (int i = i0; i < i1; i += GMX_SIMD_REAL_WIDTH)
+            {
+                store(f + i, zero);
+            }
+#else
+            for (int i = i0; i < i1; i++)
             {
                 f[i] = 0;
             }
+#endif
         }
     }
 }
