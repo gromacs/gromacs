@@ -54,6 +54,7 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/linearalgebra/gmx_lapack.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
@@ -656,6 +657,60 @@ void OptParam::checkSupport(FILE *fp,
     }
 }
 
+extern void dgelsd(int* m, int* n, int* nrhs, double* a, int* lda,
+                   double* b, int* ldb, double* s, double* rcond, int* rank,
+                   double* work, int* lwork, int* iwork, int* info );
+
+double multi_regression2(FILE *fp, int nrow, double y[], int ncol,
+                         double **a, double x[])
+{
+    /* Executable statements */
+    printf( " DGELSD Example Program Results\n" );
+    /* Query and allocate the optimal workspace */
+    int     lwork = -1;
+    int     lda   = ncol;
+    int     ldb   = nrow;
+    int     nrhs  = 1;
+    int     rank;
+    double  rcond = -1.0;
+    double  wkopt;
+    double *s;
+    snew(s, nrow);
+    // Compute length of integer array iwork according to
+    // https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mkl_lapack_examples/dgelsd_ex.c.htm
+    int  smlsiz = 25;
+    int  nlvl   = std::max(0L, std::lround(std::log2(std::min(nrow, ncol)/(smlsiz+1) ) ) + 1);
+    int  liwork = 3*std::min(ncol,nrow)*nlvl + 11*std::min(nrow, ncol);
+    int *iwork;
+    snew(iwork, liwork);
+    int info;
+    dgelsd(&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s, &rcond, &rank, &wkopt, &lwork,
+           iwork, &info );
+    lwork = (int)wkopt;
+    double *work;
+    snew(work, lwork);
+    /* Solve the equations A*X = B */
+    dgelsd(&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s, &rcond, &rank, work, &lwork,
+           iwork, &info );
+    /* Check for convergence */
+    if( info > 0 ) 
+    {
+        printf( "The algorithm computing SVD failed to converge;\n" );
+        printf( "the least squares solution could not be computed.\n" );
+        exit( 1 );
+    }
+    for(int i = 0; i < ncol; i++)
+    {
+        x[i] = y[i];
+    }
+ 
+    sfree(s);
+    sfree(work);
+    sfree(iwork);
+    
+    return 0.0;
+}
+
 void OptParam::getDissociationEnergy(FILE *fplog)
 {
     double                    **a;
@@ -745,7 +800,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     ctest.resize(i2);
     ntest.resize(i2);
     dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
-    double chi2 = multi_regression(debug, nMol, rhs.data(), i2, a2, Edissoc.data());
+    double chi2 = multi_regression2(debug, nMol, rhs.data(), i2, a2, Edissoc.data());
     
     for (size_t i = 0; (i < ctest.size()); i++)
     {

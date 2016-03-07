@@ -195,9 +195,6 @@ static void gmx_molprop_read_babel(const char *g98,
         fprintf(stderr, "Failed reading %s\n", g98);
         return;
     }
-    int qtot = mol.GetTotalCharge();
-    int mult = mol.GetTotalSpinMultiplicity();
-    printf("Total charge %d\n", qtot);
     delete conv;
 
     conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
@@ -295,7 +292,6 @@ static void gmx_molprop_read_babel(const char *g98,
     alexandria::Experiment ca(program, method, basis, reference,
                               conformation, g98ptr);
     mpt.AddExperiment(ca);
-    printf("Charge finally is %d\n", mol.GetTotalCharge());
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
     mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());
