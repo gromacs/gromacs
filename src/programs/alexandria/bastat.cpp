@@ -494,7 +494,7 @@ int alex_bastat(int argc, char *argv[])
     static int                       maxwarn        = 0;
     static int                       nexcl          = 2;
     static gmx_bool                  bHisto         = FALSE, bBondOrder = TRUE, bDih = FALSE;
-    static real                      Dm             = 400, kt = 400, kp = 5, beta = 20, klin = 20;
+    static real                      Dm             = 0, kt = 0, kp = 0, beta = 0, klin = 0;
     static char                     *lot            = (char *)"B3LYP/aug-cc-pVTZ";
     static const char               *cqdist[]       = {
         NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL

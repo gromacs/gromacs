@@ -76,6 +76,7 @@
 #include "nmsimplex.h"
 #include "poldata.h"
 #include "qgen_eem.h"
+#include "regression.h"
 #include "stringutil.h"
 #include "coulombintegrals/coulombintegrals.h"
 
@@ -1065,7 +1066,7 @@ double QgenResp::optimizeCharges()
         fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
     }
     snew(x, ncolumn);
-    double chi2 = multi_regression(debug, nrow, rhs.data(), ncolumn, a, x);
+    multi_regression2(nrow, rhs.data(), ncolumn, a, x);
     i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
@@ -1089,7 +1090,7 @@ double QgenResp::optimizeCharges()
     free_matrix(a);
     regularizeCharges();
     
-    return chi2;
+    return 0;
 }
 
 void QgenResp::potcomp(const std::string      &potcomp,

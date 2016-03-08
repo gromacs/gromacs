@@ -97,6 +97,7 @@ set(ALEXANDRIA_SOURCES
         phase.cpp
         plistwrapper.cpp
         poldata_test.cpp
+        regression.cpp
         stringutil.cpp
         tune_dip.cpp
         tune_fc.cpp

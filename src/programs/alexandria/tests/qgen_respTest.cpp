@@ -97,9 +97,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
 
-            auto tolerance = gmx::test::defaultRealTolerance();
-            
-            //        gmx::test::relativeToleranceAsUlp(1.0, 200));
+            auto tolerance = gmx::test::relativeToleranceAsUlp(1.0, 500000);
             checker_.setDefaultTolerance(tolerance);
         }
 

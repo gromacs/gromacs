@@ -54,7 +54,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/linearalgebra/gmx_lapack.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
@@ -93,6 +92,7 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "qgen_eem.h"
+#include "regression.h"
 #include "stringutil.h"
 
 /*! \brief Write a csv file containing molecule names and bond energy
@@ -499,20 +499,34 @@ void OptParam::List2Opt()
             switch (fc.bt())
             {
                 case ebtsBONDS:
-                    pd_.setBondParams(bondtypes[0], bondtypes[1],
-                                      0, 0, 0, b->bondorder(), buf);
+                    {
+                        auto fb = pd_.findBond(bondtypes[0], bondtypes[1], 0);
+                        if (pd_.getBondEnd() != fb)
+                        {
+                            fb->setParams(buf);
+                        }
+                    }
                     break;
                 case ebtsANGLES:
-                    pd_.setAngleParams(bondtypes[0], bondtypes[1], bondtypes[2],
-                                       0, 0, 0, buf);
+                    {
+                        auto fa = pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2]);
+                        if (pd_.getAngleEnd() != fa)
+                        {
+                            fa->setParams(buf);
+                        }
+                    }
                     break;
                 case ebtsPDIHS:
-                    pd_.setDihedralParams(egdPDIHS, bondtypes[0], bondtypes[1],
-                                          bondtypes[2], bondtypes[3], 0, 0, 0, buf);
-                    break;
                 case ebtsIDIHS:
-                    pd_.setDihedralParams(egdIDIHS, bondtypes[0], bondtypes[1],
-                                          bondtypes[2], bondtypes[3], 0, 0, 0, buf);
+                    {
+                        int egd = (fc.bt() == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
+                        auto fd = pd_.findDihedral(egd, bondtypes[0], bondtypes[1],
+                                                   bondtypes[2], bondtypes[3]);
+                        if (pd_.getDihedralEnd(egd) != fd)
+                        {
+                            fd->setParams(buf);
+                        }
+                    }
                     break;
                 default:
                     gmx_fatal(FARGS, "Unsupported bts %d", fc.bt());
@@ -657,60 +671,6 @@ void OptParam::checkSupport(FILE *fp,
     }
 }
 
-extern void dgelsd(int* m, int* n, int* nrhs, double* a, int* lda,
-                   double* b, int* ldb, double* s, double* rcond, int* rank,
-                   double* work, int* lwork, int* iwork, int* info );
-
-double multi_regression2(FILE *fp, int nrow, double y[], int ncol,
-                         double **a, double x[])
-{
-    /* Executable statements */
-    printf( " DGELSD Example Program Results\n" );
-    /* Query and allocate the optimal workspace */
-    int     lwork = -1;
-    int     lda   = ncol;
-    int     ldb   = nrow;
-    int     nrhs  = 1;
-    int     rank;
-    double  rcond = -1.0;
-    double  wkopt;
-    double *s;
-    snew(s, nrow);
-    // Compute length of integer array iwork according to
-    // https://software.intel.com/sites/products/documentation/doclib/mkl_sa/11/mkl_lapack_examples/dgelsd_ex.c.htm
-    int  smlsiz = 25;
-    int  nlvl   = std::max(0L, std::lround(std::log2(std::min(nrow, ncol)/(smlsiz+1) ) ) + 1);
-    int  liwork = 3*std::min(ncol,nrow)*nlvl + 11*std::min(nrow, ncol);
-    int *iwork;
-    snew(iwork, liwork);
-    int info;
-    dgelsd(&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s, &rcond, &rank, &wkopt, &lwork,
-           iwork, &info );
-    lwork = (int)wkopt;
-    double *work;
-    snew(work, lwork);
-    /* Solve the equations A*X = B */
-    dgelsd(&nrow, &ncol, &nrhs, a[0], &lda, y, &ldb, s, &rcond, &rank, work, &lwork,
-           iwork, &info );
-    /* Check for convergence */
-    if( info > 0 ) 
-    {
-        printf( "The algorithm computing SVD failed to converge;\n" );
-        printf( "the least squares solution could not be computed.\n" );
-        exit( 1 );
-    }
-    for(int i = 0; i < ncol; i++)
-    {
-        x[i] = y[i];
-    }
- 
-    sfree(s);
-    sfree(work);
-    sfree(iwork);
-    
-    return 0.0;
-}
-
 void OptParam::getDissociationEnergy(FILE *fplog)
 {
     double                    **a;
@@ -779,7 +739,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
 
     int nzero = std::count_if(ntest.begin(), ntest.end(), 
                               [](const int n) { return n < 3; });
-    printf("There are %d bondtypes without support out of %d\n", nzero, nD);
+    fprintf(fplog, "There are %d bondtypes without support out of %d\n", nzero, nD);
     double **a2 = alloc_matrix(nD-nzero, nMol);
     int i2 = 0;
     for(int i = 0; i<nD; i++)
@@ -800,7 +760,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     ctest.resize(i2);
     ntest.resize(i2);
     dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
-    double chi2 = multi_regression2(debug, nMol, rhs.data(), i2, a2, Edissoc.data());
+    multi_regression2(nMol, rhs.data(), i2, a2, Edissoc.data());
     
     for (size_t i = 0; (i < ctest.size()); i++)
     {
@@ -812,6 +772,23 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     }
     free_matrix(a);
     free_matrix(a2);
+    int i = 0;
+    j = 0;
+    for(auto b = ForceConstants_[ebtsBONDS].beginBN();
+        b < ForceConstants_[ebtsBONDS].endBN(); ++b)
+    {
+        if (ntest[i] > 0)
+        {
+            std::vector<std::string> aa = gmx::splitString(b->name());
+            GtBondIterator gtb = pd_.findBond(aa[0], aa[1], 0);
+            GMX_RELEASE_ASSERT(gtb != pd_.getBondEnd(), "Can not find my bonds");
+            std::vector<std::string> pp = gmx::splitString(b->paramString());
+            char buf[256];
+            snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[j++], pp[1].c_str());
+            gtb->setParams(buf);
+        }
+        i++;
+    }
 }
 
 void OptParam::InitOpt(FILE *fplog,

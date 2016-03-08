@@ -67,7 +67,7 @@ class EemTest : public gmx::test::CommandLineTestBase
         alexandria::MyMol               mp_;
         gmx_atomprop_t                  aps_;
 
-        //init set tolecrance
+        //init set tolerance
         EemTest () : checker_(this->rootChecker())
         {
             alexandria::MolProp     molprop;
@@ -96,6 +96,9 @@ class EemTest : public gmx::test::CommandLineTestBase
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
+            
+            auto tolerance = gmx::test::relativeToleranceAsUlp(1.0, 500000);
+            checker_.setDefaultTolerance(tolerance);
         }
 
         // Static initiation, only run once every test.
