@@ -1759,14 +1759,15 @@ static void write_top2(FILE *out, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds2(out, d_bonds, F_BONDS,
+        print_bondeds2(out, d_bonds, 
+                       pd.getBondFtype(),
                        pd.getBondFtype(),
                        plist_);
         print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds2(out, d_angles, F_ANGLES,
+        print_bondeds2(out, d_angles, pd.getAngleFtype(), 
                        pd.getAngleFtype(), plist_);
         print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES,
                        plist_);

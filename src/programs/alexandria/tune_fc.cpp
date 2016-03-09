@@ -742,13 +742,13 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
     int nzero = std::count_if(ntest.begin(), ntest.end(), 
-                              [](const int n) { return n < 3; });
+                              [](const int n) { return n == 0; });
     fprintf(fplog, "There are %d bondtypes without support out of %d\n", nzero, nD);
     double **a2 = alloc_matrix(nD-nzero, nMol);
     int i2 = 0;
     for(int i = 0; i<nD; i++)
     {
-        if (ntest[i] > 2)
+        if (ntest[i] > 0)
         {
             for(int j = 0; j<nMol; j++)
             {

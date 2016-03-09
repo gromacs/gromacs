@@ -118,7 +118,7 @@ void
     F77_FUNC(dbdsqr, DBDSQR) (const char *uplo, int *n, int *ncvt, int *nru, int *ncc, double *d,
                               double *e, double *vt, int *ldvt, double *u, int *ldu,
                               double *c, int *ldc, double *work, int *info);
-
+                              
 void
     F77_FUNC(dgetrf, DGETRF) (int *m, int *n, double *a, int *lda, int *ipiv, int *info);
 
