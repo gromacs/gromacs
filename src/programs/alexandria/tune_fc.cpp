@@ -220,13 +220,14 @@ class ForceConstants
 {
     private:
         int                    bt_;
-        int                    ft_;
+        int                    ftype_;
+        InteractionType        itype_;
         bool                   bOpt_;
         std::vector<BondNames> bn_;
         std::vector<int>       reverseIndex_;
         std::vector<double>    params_;
     public:
-        ForceConstants(int bt, int ft, bool bOpt) : bt_(bt), ft_(ft), bOpt_(bOpt)
+        ForceConstants(int bt, int ftype, InteractionType itype, bool bOpt) : bt_(bt), ftype_(ftype), itype_(itype), bOpt_(bOpt)
         { }
 
         void addForceConstant(BondNames bn) { bn_.push_back(bn); }
@@ -248,9 +249,11 @@ class ForceConstants
             return reverseIndex_[poldataIndex]; 
         }
 
-        int bt() const { return bt_; }
+        int bt2() const { return bt_; }
 
-        int ft() const { return ft_; }
+        int ftype() const { return ftype_; }
+        
+        InteractionType interactionType() const { return itype_; }
 
         void dump(FILE *fp) const;
 
@@ -272,13 +275,13 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
     }
     for (auto &mymol : mm)
     {
-        for (int i = 0; (i < mymol.ltop_->idef.il[ft_].nr); i += interaction_function[ft_].nratoms+1)
+        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr); i += interaction_function[ftype_].nratoms+1)
         {
             std::string params;
             bool        found     = false;
             double      bondorder = 0;
-            int         ai        = mymol.ltop_->idef.il[ft_].iatoms[i+1];
-            int         aj        = mymol.ltop_->idef.il[ft_].iatoms[i+2];
+            int         ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
+            int         aj        = mymol.ltop_->idef.il[ftype_].iatoms[i+2];
             if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ai], aai) &&
                 pd.atypeToBtype( *mymol.topology_->atoms.atomtype[aj], aaj))
             {
@@ -303,7 +306,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                     break;
                     case ebtsANGLES:
                     {
-                        int ak  = mymol.ltop_->idef.il[ft_].iatoms[i+3];
+                        int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak))
                         {
                             GtAngleConstIterator gta = pd.findAngle(aai, aaj, aak);
@@ -321,8 +324,8 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                     case ebtsPDIHS:
                     case ebtsIDIHS:
                     {
-                        int ak  = mymol.ltop_->idef.il[ft_].iatoms[i+3];
-                        int al  = mymol.ltop_->idef.il[ft_].iatoms[i+4];
+                        int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
+                        int al  = mymol.ltop_->idef.il[ftype_].iatoms[i+4];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak) &&
                             pd.atypeToBtype( *mymol.topology_->atoms.atomtype[al], aal))
                         {
@@ -496,9 +499,9 @@ void OptParam::List2Opt()
             const std::vector<std::string> bondtypes =
                 gmx::splitString(b->name());
 
-            switch (fc.bt())
+            switch (fc.interactionType())
             {
-                case ebtsBONDS:
+                case InteractionType_BONDS:
                     {
                         auto fb = pd_.findBond(bondtypes[0], bondtypes[1], 0);
                         if (pd_.getBondEnd() != fb)
@@ -507,7 +510,7 @@ void OptParam::List2Opt()
                         }
                     }
                     break;
-                case ebtsANGLES:
+                case InteractionType_ANGLES:
                     {
                         auto fa = pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2]);
                         if (pd_.getAngleEnd() != fa)
@@ -516,10 +519,10 @@ void OptParam::List2Opt()
                         }
                     }
                     break;
-                case ebtsPDIHS:
-                case ebtsIDIHS:
+                case InteractionType_PDIHS:
+                case InteractionType_IDIHS:
                     {
-                        int egd = (fc.bt() == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
+                        int egd = (fc.interactionType() == InteractionType_PDIHS) ? egdPDIHS : egdIDIHS;
                         auto fd = pd_.findDihedral(egd, bondtypes[0], bondtypes[1],
                                                    bondtypes[2], bondtypes[3]);
                         if (pd_.getDihedralEnd(egd) != fd)
@@ -529,7 +532,8 @@ void OptParam::List2Opt()
                     }
                     break;
                 default:
-                    gmx_fatal(FARGS, "Unsupported bts %d", fc.bt());
+                    gmx_fatal(FARGS, "Unsupported InteractionType %d", 
+                              static_cast<int>(fc.interactionType()));
             }
         }
     }
@@ -693,7 +697,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    int ftb = 0; //pd_.getBondFtype();
+    int ftb = pd_.getBondFtype();
     int j   = 0;
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
          (mymol < _mymol.end()); mymol++, j++)
@@ -731,7 +735,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-        rhs.push_back(mymol->Emol);
+        rhs.push_back(-mymol->Emol);
     }
     char buf[STRLEN];
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
@@ -759,8 +763,8 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     std::vector<double> Edissoc(i2);
     ctest.resize(i2);
     ntest.resize(i2);
-    dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
     multi_regression2(nMol, rhs.data(), i2, a2, Edissoc.data());
+    dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
     
     for (size_t i = 0; (i < ctest.size()); i++)
     {
@@ -786,6 +790,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
             char buf[256];
             snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[j++], pp[1].c_str());
             gtb->setParams(buf);
+            b->setParamString(buf);
         }
         i++;
     }
@@ -795,10 +800,15 @@ void OptParam::InitOpt(FILE *fplog,
                        bool  bOpt[ebtsNR],
                        real  factor)
 {
-    static const int fts[ebtsNR] = { F_BONDS, F_ANGLES, F_PDIHS, F_IDIHS };
-    for (int i = 0; (i < ebtsNR); i++)
+    std::vector<int> fts;
+    fts.push_back(pd_.getBondFtype());
+    fts.push_back(pd_.getAngleFtype());
+    fts.push_back(pd_.getDihedralFtype(egdPDIHS));
+    fts.push_back(pd_.getDihedralFtype(egdIDIHS));
+
+    for (size_t bt = 0; (bt < fts.size()); bt++)
     {
-        ForceConstants fc(i, fts[i], bOpt[i]);
+        ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), bOpt[bt]);
         fc.analyzeIdef(_mymol, pd_);
         fc.makeReverseIndex();
         fc.dump(fplog);
@@ -886,13 +896,7 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
 double OptParam::CalcDeviation()
 {
     int             j;
-    int             flags;
     double          ener;
-    real            t         = 0;
-    rvec            mu_tot    = {0, 0, 0};
-    tensor          force_vir = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    t_nrnb          my_nrnb;
-    gmx_wallcycle_t wcycle;
     FILE           *dbcopy;
 
     if (PAR(_cr))
@@ -918,15 +922,11 @@ double OptParam::CalcDeviation()
         fprintf(debug, "Done communicating force parameters\n");
         fflush(debug);
     }
-    init_nrnb(&my_nrnb);
 
-    wcycle  = wallcycle_init(stdout, 0, _cr);
     for (j = 0; (j < ermsNR); j++)
     {
         _ener[j] = 0;
     }
-    flags = GMX_FORCE_NS | GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES | GMX_FORCE_ENERGY | GMX_FORCE_STATECHANGED;
-    flags = ~0;
     for (auto &mymol : _mymol)
     {
         if ((mymol.eSupp == eSupportLocal) ||
@@ -937,7 +937,7 @@ double OptParam::CalcDeviation()
             {
                 if (fc.nbad() > 0)
                 {
-                    mymol.UpdateIdef(pd_, fc.bt());
+                    mymol.UpdateIdef(pd_, fc.interactionType());
                 }
             }
 
@@ -953,23 +953,7 @@ double OptParam::CalcDeviation()
             /* Now optimize the shell positions */
             dbcopy = debug;
             debug  = NULL;
-            if (mymol.shellfc_)
-            {
-                mymol.relaxShells(_cr);
-            }
-            else
-            {
-                do_force(debug, _cr, mymol.inputrec_, 0,
-                         &my_nrnb, wcycle, mymol.ltop_,
-                         &(mymol.mtop_->groups),
-                         mymol.box_, mymol.x_, NULL,
-                         mymol.f_, force_vir, mymol.mdatoms_,
-                         mymol.enerd_, NULL,
-                         mymol.state_->lambda, NULL,
-                         mymol.fr_,
-                         NULL, mu_tot, t, NULL, NULL, FALSE,
-                         flags);
-            }
+            mymol.computeForces(debug, _cr);
             debug         = dbcopy;
             mymol.Force2  = 0;
             for (j = 0; (j < mymol.molProp()->NAtom()); j++)
@@ -1354,7 +1338,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
     }
     fprintf(fp, "%s\n", title);
     fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n",
-            "Molecule", "DHf@298K", "Emol@0K", "Calc-Exp", "rms F", "Outlier?");
+            "Molecule", "DHf@298K", "Emol@0K", "Ecalc", "rms F", "Outlier?");
     msd = 0;
     i   = 0;
     for (std::vector<alexandria::MyMol>::iterator mi = _mymol.begin();
@@ -1364,7 +1348,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i,
                 mi->molProp()->getMolname().c_str(),
-                mi->Hform, mi->Emol, DeltaE,
+                mi->Hform, mi->Emol, mi->Ecalc,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += gmx::square(mi->Emol-mi->Ecalc);
@@ -1602,6 +1586,7 @@ int alex_tune_fc(int argc, char *argv[])
     opt.InitOpt(fp, bOpt, factor);
 
     print_moldip_mols(fp, opt._mymol, FALSE, FALSE);
+    opt.CalcDeviation();
     if (MASTER(cr))
     {
         opt.PrintSpecs(fp, (char *)"Before optimization", NULL, oenv, false);

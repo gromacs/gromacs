@@ -9,29 +9,54 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 
 namespace alexandria
 {
+//! Interaction type
+enum InteractionType 
+{
+    InteractionType_BONDS  = ebtsBONDS,
+    InteractionType_ANGLES = ebtsANGLES,
+    InteractionType_PDIHS  = ebtsPDIHS,
+    InteractionType_IDIHS  = ebtsIDIHS,
+    InteractionType_LJ14,
+    InteractionType_Polarization,
+    InteractionType_LINEAR_ANGLES,
+    InteractionType_CONSTR,
+    InteractionType_VSITE2
+};
+
 //! Utility typedef
 typedef std::vector<t_param>::iterator ParamIterator;
+
 //! Cleaner version of plist array
 class PlistWrapper
 {
     private:
-    //! Function type
+        //! Function type
         int                  ftype_;
+        //! Interaction type
+        InteractionType      itype_;
         //! Array of parameters
         std::vector<t_param> p_;
     public:
         //! Constructor
-        PlistWrapper(int ftype) :ftype_(ftype) {}
+        PlistWrapper(InteractionType itype,
+                     int             ftype) :ftype_(ftype), itype_(itype) {}
        
         //! Add one parameter
         void addParam(t_param p) { p_.push_back(p); }
         
         //! Return the function type
-        int getFtype() { return ftype_; }
+        int getFtype() const { return ftype_; }
 
+        //! Update the function type
+        void setFtype(int ftype) { ftype_ = ftype; }
+        
+        //! Return the interaction type
+        InteractionType interactionType() const { return itype_; }
+        
         //! Loop over parameters        
         ParamIterator beginParam() { return p_.begin(); }
         
@@ -53,6 +78,8 @@ typedef std::vector<PlistWrapper>::iterator PlistWrapperIterator;
 
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype);
 
+PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionType itype);
+
 unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype);
 
 void add_param_to_plist(std::vector<PlistWrapper> &plist,
@@ -64,7 +91,8 @@ void delete_params(std::vector<PlistWrapper> &plist_,
                    const int                  alist[]);
 
 void add_param_to_plist(std::vector<PlistWrapper> &plist,
-                        const int                  ftype,
+                        int                        ftype,
+                        InteractionType            itype,
                         const t_param             &p);
 }
 

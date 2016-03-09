@@ -25,6 +25,13 @@ PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype)
                         { return p.getFtype() == ftype; });
 }
 
+PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, InteractionType itype)
+{
+    return std::find_if(plist.begin(), plist.end(),
+                        [itype](PlistWrapper &p) 
+                        { return p.interactionType() == itype; });
+}
+
 unsigned int CountPlist(std::vector<PlistWrapper> &plist, int ftype)
 {
     return std::count_if(plist.begin(), plist.end(),
@@ -129,14 +136,15 @@ void delete_params(std::vector<PlistWrapper> &plist_,
 }
 
 void add_param_to_plist(std::vector<PlistWrapper> &plist,
-                        const int                  ftype,
+                        int                        ftype,
+                        InteractionType            itype,
                         const t_param             &p)
 {
     std::vector<PlistWrapper>::iterator pwi = SearchPlist(plist, ftype);
 
     if (plist.end() == pwi)
     {
-        PlistWrapper pw(ftype);
+        PlistWrapper pw(itype, ftype);
         plist.push_back(pw);
         pwi = plist.end() - 1;
     }

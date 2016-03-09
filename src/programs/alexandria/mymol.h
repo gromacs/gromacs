@@ -204,15 +204,15 @@ class MyMol
         //! Compute/derive global info about the molecule
         void CalcQPol(const Poldata &pd);
 
-        //! Relax the shells (if any) in the molecule
-        void relaxShells(t_commrec *cr);
+        //! Relax the shells (if any) or compute the forces in the molecule
+        void computeForces(FILE *fplog, t_commrec *cr);
 
         //! Set the force field
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 
         //! Update internal structures for bondtype due to changes in pd
-        void UpdateIdef(const Poldata &pd,
-                        int            bondtype);
+        void UpdateIdef(const Poldata   &pd,
+                        InteractionType  iType);
 
         //! Get the force field
         std::string getForceField() { return forcefield_; }

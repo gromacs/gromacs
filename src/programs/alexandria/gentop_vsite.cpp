@@ -18,6 +18,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "plistwrapper.h"
 #include "poldata.h"
 
 namespace alexandria
@@ -252,7 +253,7 @@ static void calc_vsite2parm(t_atoms *atoms,
     pp.a[0] = gvl->a[0];
     pp.a[1] = natoms;
     pp.c[0] = rVV;
-    add_param_to_plist(plist, F_CONSTR, pp);
+    add_param_to_plist(plist, F_CONSTR, InteractionType_CONSTR, pp);
 
     /* Add vsites */
     for (i = 1; (i < gvl->nline); i++)
@@ -262,7 +263,7 @@ static void calc_vsite2parm(t_atoms *atoms,
         pp.a[1] = gvl->a[0];
         pp.a[2] = natoms;
         pp.c[0] = ac[i];
-        add_param_to_plist(plist, F_VSITE2, pp);
+        add_param_to_plist(plist, F_VSITE2, InteractionType_VSITE2, pp);
     }
 }
 
@@ -397,7 +398,7 @@ static void set_linear_angle_params(int                        a[],
         }
         pp.c[0] = (b1/(b0+b1));
         pp.c[1] = ktheta;
-        add_param_to_plist(plist, F_LINEAR_ANGLES, pp);
+        add_param_to_plist(plist, F_LINEAR_ANGLES, InteractionType_LINEAR_ANGLES, pp);
     }
     else if (NULL != debug)
     {
@@ -546,7 +547,7 @@ void GentopVsites::generateSpecial(bool bUseVsites,
             {
                 pp.a[j] = planar_[i].a[j];
             }
-            add_param_to_plist(plist, F_IDIHS, pp);
+            add_param_to_plist(plist, F_IDIHS, InteractionType_IDIHS, pp);
         }
     }
 }
