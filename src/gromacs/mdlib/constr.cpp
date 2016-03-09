@@ -550,12 +550,23 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
             if (settle_error >= 0)
             {
-                dump_confs(fplog, step, constr->warn_mtop, start, homenr, cr, x, xprime, box);
+                char buf[256];
+                sprintf(buf,
+                        "\nstep " "%" GMX_PRId64 ": Water molecule starting at atom %d can not be "
+                        "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
+                        step, ddglatnr(cr->dd, settle->iatoms[settle_error*(1+NRAL(F_SETTLE))+1]));
+                if (fplog)
+                {
+                    fprintf(fplog, "%s", buf);
+                }
+                fprintf(stderr, "%s", buf);
+                constr->warncount_settle++;
+                if (constr->warncount_settle > constr->maxwarn)
+                {
+                    too_many_constraint_warnings(-1, constr->warncount_settle);
+                }
+                bDump = TRUE;
 
-                gmx_fatal(FARGS,
-                          "\nstep " "%" GMX_PRId64 ": Water molecule starting at atom %d can not be "
-                          "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
-                          step, ddglatnr(cr->dd, settle->iatoms[settle_error*(1+NRAL(F_SETTLE))+1]));
             }
         }
     }
