@@ -240,19 +240,49 @@ transposeScatterIncrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
-
-    store(rdata0, v0);
-    store(rdata1, v1);
-    store(rdata2, v2);
-
-    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    __m512d t[4], t5, t6, t7, t8;
+    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
+    t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+    t6   = _mm512_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
+    t7   = _mm512_unpacklo_pd(v2.simdInternal_, _mm512_setzero_pd());
+    t8   = _mm512_unpackhi_pd(v2.simdInternal_, _mm512_setzero_pd());
+    t[0] = _mm512_mask_permutex_pd(t5, avx512Int2Mask(0xCC), t7, 0x4E);
+    t[1] = _mm512_mask_permutex_pd(t6, avx512Int2Mask(0xCC), t8, 0x4E);
+    t[2] = _mm512_mask_permutex_pd(t7, avx512Int2Mask(0x33), t5, 0x4E);
+    t[3] = _mm512_mask_permutex_pd(t8, avx512Int2Mask(0x33), t6, 0x4E);
+    if (align < 4)
     {
-        base[ align * offset[i] + 0] += rdata0[i];
-        base[ align * offset[i] + 1] += rdata1[i];
-        base[ align * offset[i] + 2] += rdata2[i];
+        for (int i = 0; i < 4; i++)
+        {
+            _mm512_mask_storeu_pd(base + o[0 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
+                                          _mm256_add_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i]))));
+            _mm512_mask_storeu_pd(base + o[4 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
+                                          _mm256_add_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1))));
+        }
+    }
+    else
+    {
+        if (align % 4 == 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                _mm256_store_pd(base + o[0 + i],
+                                _mm256_add_pd(_mm256_load_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i])));
+                _mm256_store_pd(base + o[4 + i],
+                                _mm256_add_pd(_mm256_load_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1)));
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                _mm256_storeu_pd(base + o[0 + i],
+                                 _mm256_add_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i])));
+                _mm256_storeu_pd(base + o[4 + i],
+                                 _mm256_add_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1)));
+            }
+        }
     }
 }
 
@@ -264,19 +294,49 @@ transposeScatterDecrU(double *            base,
                       SimdDouble          v1,
                       SimdDouble          v2)
 {
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata0[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata1[GMX_SIMD_DOUBLE_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)  rdata2[GMX_SIMD_DOUBLE_WIDTH];
-
-    store(rdata0, v0);
-    store(rdata1, v1);
-    store(rdata2, v2);
-
-    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    __m512d t[4], t5, t6, t7, t8;
+    GMX_ALIGNED(std::int64_t, 8)    o[8];
+    _mm512_store_epi64(o, _mm512_cvtepi32_epi64(_mm256_mullo_epi32(_mm256_load_si256((const __m256i*)(offset  )), _mm256_set1_epi32(align))));
+    t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+    t6   = _mm512_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
+    t7   = _mm512_unpacklo_pd(v2.simdInternal_, _mm512_setzero_pd());
+    t8   = _mm512_unpackhi_pd(v2.simdInternal_, _mm512_setzero_pd());
+    t[0] = _mm512_mask_permutex_pd(t5, avx512Int2Mask(0xCC), t7, 0x4E);
+    t[2] = _mm512_mask_permutex_pd(t7, avx512Int2Mask(0x33), t5, 0x4E);
+    t[1] = _mm512_mask_permutex_pd(t6, avx512Int2Mask(0xCC), t8, 0x4E);
+    t[3] = _mm512_mask_permutex_pd(t8, avx512Int2Mask(0x33), t6, 0x4E);
+    if (align < 4)
     {
-        base[ align * offset[i] + 0] -= rdata0[i];
-        base[ align * offset[i] + 1] -= rdata1[i];
-        base[ align * offset[i] + 2] -= rdata2[i];
+        for (int i = 0; i < 4; i++)
+        {
+            _mm512_mask_storeu_pd(base + o[0 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
+                                          _mm256_sub_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i]))));
+            _mm512_mask_storeu_pd(base + o[4 + i], avx512Int2Mask(7), _mm512_castpd256_pd512(
+                                          _mm256_sub_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1))));
+        }
+    }
+    else
+    {
+        if (align % 4 == 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                _mm256_store_pd(base + o[0 + i],
+                                _mm256_sub_pd(_mm256_load_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i])));
+                _mm256_store_pd(base + o[4 + i],
+                                _mm256_sub_pd(_mm256_load_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1)));
+            }
+        }
+        else
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                _mm256_storeu_pd(base + o[0 + i],
+                                 _mm256_sub_pd(_mm256_loadu_pd(base + o[0 + i]), _mm512_castpd512_pd256(t[i])));
+                _mm256_storeu_pd(base + o[4 + i],
+                                 _mm256_sub_pd(_mm256_loadu_pd(base + o[4 + i]), _mm512_extractf64x4_pd(t[i], 1)));
+            }
+        }
     }
 }
 
@@ -369,7 +429,7 @@ storeDualHsimd(double *     m0,
     assert(std::size_t(m1) % 32 == 0);
 
     _mm256_store_pd(m0, _mm512_castpd512_pd256(a.simdInternal_));
-    _mm512_mask_storeu_pd(m1-4, avx512Int2Mask(0xF0), a.simdInternal_);
+    _mm256_store_pd(m1, _mm512_extractf64x4_pd(a.simdInternal_, 1));
 }
 
 static inline void gmx_simdcall
