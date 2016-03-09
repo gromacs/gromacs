@@ -201,10 +201,9 @@ class QgenResp
         /*!  brief Do the ESP optimization
          *
          * Optimizes the charges using matrix inversion. No restraints are
-         * taken into account.
-         * \return chi2, the square deviation from the electrostatic potential.
+         * taken into account, except total charge and charge symmetries.
          */
-        double optimizeCharges();
+        void optimizeCharges();
 
         // Make sure the total charge is correct and that symmetry is obeyed
         void regularizeCharges();

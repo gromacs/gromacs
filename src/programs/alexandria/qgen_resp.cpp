@@ -916,7 +916,7 @@ void QgenResp::regularizeCharges()
     printf("Please implement symmetrizing charges\n");
 }
 
-double QgenResp::optimizeCharges()
+void QgenResp::optimizeCharges()
 {
     // Increase number of rows for the symmetric atoms. E.g.
     // if we know that atoms 2, 3 and 4 have the same charge we
@@ -931,7 +931,7 @@ double QgenResp::optimizeCharges()
     {
         printf("WARNING: Only %d ESP points for %d atoms. Can not generate charges.\n",
                static_cast<int>(nEsp()), static_cast<int>(nAtom()));
-        return 0.0;
+        return;
     }
     for (size_t j = 0; j < nEsp(); j++)
     {
@@ -1089,8 +1089,6 @@ double QgenResp::optimizeCharges()
 
     free_matrix(a);
     regularizeCharges();
-    
-    return 0;
 }
 
 void QgenResp::potcomp(const std::string      &potcomp,

@@ -973,7 +973,7 @@ static void fill_inputrec(t_inputrec *ir)
     ir->vdw_modifier     = eintmodNONE;
     ir->niter            = 25;
     ir->em_stepsize      = 1e-2; // nm
-    ir->em_tol           = 1e-3;
+    ir->em_tol           = 1e-2;
     snew(ir->opts.egp_flags, 1);
     ir->opts.ngener = 1;
     snew(ir->fepvals, 1);
@@ -1437,7 +1437,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             do
             {
                 gr_.updateAtomCoords(x_);
-                EspRms_ = gr_.optimizeCharges();
+                gr_.optimizeCharges();
                 for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
                 {
                     mtop_->moltype[0].atoms.atom[i].q      =
@@ -1448,9 +1448,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                     computeForces(NULL, cr);
                 }
                 gr_.calcPot();
-                chi2[cur] = gr_.getRms(&wtot, &rrms);
-                double rms = std::sqrt(EspRms_/gr_.nEsp());
-                printf("RESP: RMS %g RMSoc %g\n", chi2[cur], rms);
+                EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
+                printf("RESP: RMS %g\n", chi2[cur]);
                 converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-6) || (nullptr == shellfc_);
                 cur = 1-cur;
             }
@@ -1508,7 +1507,6 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
                   box_, tabfn, tabfn, nullptr, nullptr, TRUE, -1);
     snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
-    printf("Making ltop_ for %s\n", molProp()->getMolname().c_str());
     mdatoms_   = init_mdatoms(nullptr, mtop_, FALSE);
     atoms2md(mtop_, inputrec_, 0, nullptr, topology_->atoms.nr, mdatoms_);
     for (int i = 0; (i < topology_->atoms.nr); i++)
@@ -2107,7 +2105,10 @@ void MyMol::addShells(const Poldata &pd,
     }
     renum.resize(1+topology_->atoms.nr, 0);
     renum[topology_->atoms.nr] = topology_->atoms.nr + ns;
-    printf("added %d shells\n", ns);
+    if (NULL != debug)
+    {
+        fprintf(debug, "added %d shells\n", ns);
+    }
     if (ns > 0)
     {
         t_atom          *shell_atom;
