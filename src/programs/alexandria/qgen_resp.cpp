@@ -1003,26 +1003,22 @@ void QgenResp::optimizeCharges()
             i++;
         }
     }
-    if (debug)
-    {
-        for (size_t j = 0; j < nAtom(); j++)
-        {
-            fprintf(debug, "rhs[%2d] = %10.3f  a[%d] = %10.3f  %10.3f  %10.3f\n", 
-                    static_cast<int>(j), rhs[j], 
-                    static_cast<int>(j), a[j][0], a[j][1], a[j][2]);
-        }
-    }
     // Add the equations to ascertain symmetric charges
     int    j1     = nEsp();
+    int    i1     = 0;
     double factor = nEsp();
     for (int i = 0; i < static_cast<int>(nAtom()); i++)
     {
         if (symmetricAtoms_[i] < i)
         {
-            a[i][j1]                  =  factor;
-            a[symmetricAtoms_[i]][j1] = -factor;
+            a[i1][j1]                  =  factor;
+            a[symmetricAtoms_[i1]][j1] = -factor;
             rhs.push_back(0);
             j1++;
+        }
+        if (!ra_[i1].fixedQ())
+        {
+            i1++;
         }
     }
     GMX_RELEASE_ASSERT(j1 == static_cast<int>(rhs.size()),

@@ -588,10 +588,10 @@ int alex_bastat(int argc, char *argv[])
         printf("Too many warnings (%d). Terminating.\n", nwarn);
         return 0;
     }
-    ftb = F_BONDS;
-    fta = F_ANGLES;
-    ftd = F_PDIHS;
-    fti = F_IDIHS;
+    ftb = pd.getBondFtype();
+    fta = pd.getAngleFtype();
+    ftd = pd.getDihedralFtype(egdPDIHS);
+    fti = pd.getDihedralFtype(egdIDIHS);
     for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         if (gms.status(mpi->getIupac()) == imsTrain)

@@ -294,17 +294,19 @@ static int clean_index_count(t_index_count *ic, int minimum_data, FILE *fp)
     return nremove;
 }
 
-static void update_index_count_bool(t_index_count *ic, const Poldata &pd,
-                                    const char *string, gmx_bool bSet,
-                                    gmx_bool bAllowZero, ChargeDistributionModel iDistributionModel)
+static void update_index_count_bool(t_index_count *ic, 
+                                    const Poldata &pd,
+                                    const char *string, 
+                                    gmx_bool bSet,
+                                    gmx_bool bAllowZero, 
+                                    ChargeDistributionModel iDistributionModel)
 {
     std::vector<std::string> ptr = gmx::splitString(string);
-    for (std::vector<std::string>::iterator k = ptr.begin();
-         (k < ptr.end()); ++k)
+    for (auto &k : ptr)
     {
-        if (pd.haveEemSupport(iDistributionModel, *k, bAllowZero))
+        if (pd.haveEemSupport(iDistributionModel, k, bAllowZero))
         {
-            add_index_count(ic, k->c_str(), bSet);
+            add_index_count(ic, k.c_str(), bSet);
         }
     }
 }
@@ -327,7 +329,7 @@ static int check_data_sufficiency(FILE *fp,
     /* Parse opt_elem list to test which elements to optimize */
     if (NULL != const_elem)
     {
-        update_index_count_bool(ic, pd, const_elem, TRUE, FALSE, iDistributionModel);
+        update_index_count_bool(ic, pd, const_elem, TRUE, TRUE, iDistributionModel);
     }
     if (NULL != opt_elem)
     {
@@ -335,12 +337,11 @@ static int check_data_sufficiency(FILE *fp,
     }
     else
     {
-        for (EempropsConstIterator eep = pd.BeginEemprops();
-             eep != pd.EndEemprops(); eep++)
+        for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
             if ((eep->getEqdModel() == iDistributionModel) &&
                 !const_index_count(ic, (char *)eep->getName()) &&
-                pd.haveEemSupport( iDistributionModel, eep->getName(), FALSE))
+                pd.haveEemSupport(iDistributionModel, eep->getName(), FALSE))
             {
                 add_index_count(ic, eep->getName(), FALSE);
             }
