@@ -182,7 +182,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     __local int *cjs     = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
     #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
 
-#ifdef IATYPE_SHMEM //Should not be defined!
+#ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
     __local int *atib = (__local int *)(LOCAL_OFFSET);
     #undef LOCAL_OFFSET
@@ -213,7 +213,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     xqbuf.w *= nbparam->epsfac;
     xqib[tidxj * CL_SIZE + tidxi] = xqbuf;
 
-#ifdef IATYPE_SHMEM //NOTE: Should not be defined. Re-evaluate the effect of preloading at a suitable time.
+#ifdef IATYPE_SHMEM
     /* Pre-load the i-atom types into shared memory */
     atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif
@@ -364,7 +364,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                             {
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
-#ifdef IATYPE_SHMEM //Should not be defined!
+#ifdef IATYPE_SHMEM
                                 typei   = atib[i * CL_SIZE + tidxi];
 #else
                                 typei   = atom_types[ai];
