@@ -1338,7 +1338,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
     }
     fprintf(fp, "%s\n", title);
     fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n",
-            "Molecule", "DHf@298K", "Emol@0K", "Ecalc", "rms F", "Outlier?");
+            "Molecule", "DHf@298K", "Emol@0K", "Delta E", "rms F", "Outlier?");
     msd = 0;
     i   = 0;
     for (std::vector<alexandria::MyMol>::iterator mi = _mymol.begin();
@@ -1348,7 +1348,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i,
                 mi->molProp()->getMolname().c_str(),
-                mi->Hform, mi->Emol, mi->Ecalc,
+                mi->Hform, mi->Ecalc, DeltaE,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += gmx::square(mi->Emol-mi->Ecalc);

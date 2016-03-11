@@ -533,14 +533,14 @@ void MolDip::Read(FILE *fp,
                   bool bDihedral, bool bPolar,
                   const char *tabfn)
 {
-    int                              i, n, nwarn = 0, nmol_cpu;
+    int                              nwarn = 0, nmol_cpu;
     int                              nexcl, imm_count[immNR];
     immStatus                        imm;
     std::vector<alexandria::MolProp> mp;
     alexandria::GaussAtomProp        gap;
     real                             rms;
 
-    for (i = 0; (i < immNR); i++)
+    for (int i = 0; (i < immNR); i++)
     {
         imm_count[i] = 0;
     }
@@ -588,15 +588,14 @@ void MolDip::Read(FILE *fp,
         gmx_sumi(1, &nmol_cpu, _cr);
     }
 
+    int ntopol = 0;
     if (MASTER(_cr))
     {
-        i = -1;
-        int n = 0;
         for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); ++mpi)
         {
             if (imsTrain == gms.status(mpi->getIupac()))
             {
-                int               dest = (n % _cr->nnodes);
+                int               dest = (ntopol % _cr->nnodes);
                 alexandria::MyMol mpnew;
                 printf("%s\n", mpi->getMolname().c_str());
                 mpnew.molProp()->Merge(mpi);
@@ -663,11 +662,12 @@ void MolDip::Read(FILE *fp,
                     if (immOK == imm)
                     {
                         _mymol.push_back(mpnew);
-                        n++;
+                        ntopol++;
                         if (NULL != debug)
                         {
-                            fprintf(debug, "Added %s, n = %d\n",
-                                    mpnew.molProp()->getMolname().c_str(), n);
+                            fprintf(debug, "Added %s, ntopol = %d\n",
+                                    mpnew.molProp()->getMolname().c_str(), 
+                                    ntopol);
                         }
                     }
                 }
@@ -684,7 +684,7 @@ void MolDip::Read(FILE *fp,
             imm_count[imm]++;
         }
         /* Send signal done with transferring molecules */
-        for (i = 1; (i < _cr->nnodes); i++)
+        for (int i = 1; (i < _cr->nnodes); i++)
         {
             gmx_send_int(_cr, i, 0);
         }
@@ -696,7 +696,7 @@ void MolDip::Read(FILE *fp,
          *           S L A V E   N O D E S
          *
          ***********************************************/
-        n = 0;
+        ntopol = 0;
         while (gmx_recv_int(_cr, 0) == 1)
         {
             /* Receive another molecule */
@@ -766,7 +766,7 @@ void MolDip::Read(FILE *fp,
         int nmoltot = 0;
         if (PAR(_cr))
         {
-            for (i = 0; (i < _cr->nnodes); i++)
+            for (int i = 0; (i < _cr->nnodes); i++)
             {
                 fprintf(fp, "node %d has %d molecules\n", i, nmolpar[i]);
                 nmoltot += nmolpar[i];
@@ -776,10 +776,11 @@ void MolDip::Read(FILE *fp,
         {
             nmoltot = mp.size();
         }
-        fprintf(fp, "Made topologies for %d out of %d molecules.\n", n,
+        fprintf(fp, "Made topologies for %d out of %d molecules.\n", 
+                ntopol,
                 (MASTER(_cr)) ? nmoltot : nmol_cpu);
 
-        for (i = 0; (i < immNR); i++)
+        for (int i = 0; (i < immNR); i++)
         {
             if (imm_count[i] > 0)
             {
