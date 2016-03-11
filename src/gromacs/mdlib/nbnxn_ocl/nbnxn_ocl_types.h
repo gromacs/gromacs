@@ -281,6 +281,8 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
     ///@}
 
+    bool bPrefetchLjParam; /* true if prefetching fg i-atom LJ parameters should be used in the kernels */
+
     /**< auxiliary kernels implementing memset-like functions */
     ///@{
     cl_kernel           kernel_memset_f;

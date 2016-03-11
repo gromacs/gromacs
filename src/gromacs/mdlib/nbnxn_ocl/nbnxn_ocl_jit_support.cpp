@@ -197,7 +197,7 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
      * in the JIT compilation that happens at runtime.
      */
     sprintf(runtime_consts,
-            "-DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s",
+            "-DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s %s",
             CENTRAL,                                    /* Defined in ishift.h */
             c_nbnxnGpuNumClusterPerSupercluster,        /* Defined in nbnxn_pairlist.h */
             c_nbnxnGpuClusterSize,                      /* Defined in nbnxn_pairlist.h */
@@ -205,6 +205,7 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
             STRINGIFY_MACRO(NBNXN_AVOID_SING_R2_INC)    /* Defined in nbnxn_consts.h */
                                                         /* NBNXN_AVOID_SING_R2_INC passed as string to avoid
                                                            floating point representation problems with sprintf */
+            , (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
             );
 
     /* Need to catch std::bad_alloc here and during compilation string

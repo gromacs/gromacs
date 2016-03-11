@@ -634,6 +634,13 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
     memset(nb->kernel_noener_noprune_ptr, 0, sizeof(nb->kernel_noener_noprune_ptr));
     memset(nb->kernel_noener_prune_ptr, 0, sizeof(nb->kernel_noener_prune_ptr));
 
+    /* Enable LJ param manual prefetch for AMD or if we request through env. var.
+     * TODO: decide about NVIDIA
+     */
+    nb->bPrefetchLjParam =
+        ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) ||
+         (getenv("IATYPE_SHMEM") != NULL));
+
     /* Init auxiliary kernels */
     nb->kernel_memset_f      = nbnxn_gpu_create_kernel(nb, "memset_f");
     nb->kernel_memset_f2     = nbnxn_gpu_create_kernel(nb, "memset_f2");
