@@ -245,7 +245,7 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
 
 /*! \brief Calculates the amount of shared memory required by the OpenCL kernel in use.
  */
-static inline int calc_shmem_required()
+static inline int calc_shmem_required(bool bPrefetchLjParam)
 {
     int shmem;
 
@@ -255,17 +255,11 @@ static inline int calc_shmem_required()
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately */
     shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);           /* cjs  */
-#ifdef IATYPE_SHMEM
-    /* FIXME: this should not be compile-time decided but rather at runtime.
-     * This issue propagated from the CUDA code where due to the source to source
-     * compilation there was confusion the way to set up arch-dependent launch parameters.
-     * Here too this should be converted to a hardware/arch/generation dependent
-     * conditional when re-evaluating the need for i atom type preloading.
-     */
-    /* i-atom types in shared memory */
-    #pragma error "Should not be defined"
-    shmem += c_numClPerSupercl * c_clSize * sizeof(int); /* atib */
-#endif
+    if (bPrefetchLjParam)
+    {
+	/* i-atom types in shared memory */
+	shmem += c_numClPerSupercl * c_clSize * sizeof(int); /* atib */
+    }
     /* force reduction buffers in shared memory */
     shmem += c_clSize * c_clSize * 3 * sizeof(float);    /* f_buf */
     /* Warp vote. In fact it must be * number of warps in block.. */
@@ -517,7 +511,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     validate_global_work_size(global_work_size, 3, nb->dev_info);
 
-    shmem     = calc_shmem_required();
+    shmem     = calc_shmem_required(nb->bPrefetchLjParam);
 
 #ifdef DEBUG_OCL
     {
