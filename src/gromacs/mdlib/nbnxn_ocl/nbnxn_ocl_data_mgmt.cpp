@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -633,6 +633,14 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxn_ocl_t *nb)
     memset(nb->kernel_ener_prune_ptr, 0, sizeof(nb->kernel_ener_prune_ptr));
     memset(nb->kernel_noener_noprune_ptr, 0, sizeof(nb->kernel_noener_noprune_ptr));
     memset(nb->kernel_noener_prune_ptr, 0, sizeof(nb->kernel_noener_prune_ptr));
+
+    /* Enable LJ param manual prefetch for AMD or if we request through env. var.
+     * TODO: decide about NVIDIA
+     */
+    nb->bPrefetchLjParam =
+        ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) ||
+         ((getenv("GMX_OCL_ENABLE_I_PREFETCH") != NULL) &&
+          (getenv("GMX_OCL_DISABLE_I_PREFETCH") == NULL)));
 
     /* Init auxiliary kernels */
     nb->kernel_memset_f      = nbnxn_gpu_create_kernel(nb, "memset_f");
