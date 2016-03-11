@@ -790,7 +790,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
 
         /* Determine if this is a neighbor search step */
-        bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
+        bNStList = (ir->nstlist > 0  && step_rel % ir->nstlist == 0);
 
         if (bPMETune && bNStList)
         {
