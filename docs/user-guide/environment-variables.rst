@@ -416,6 +416,14 @@ compilation of OpenCL kernels, but they are also used in device selection.
         function properly with this option on, it is solely for the
         simplicity of stepping in a kernel and see what is happening.
 
+``GMX_OCL_DISABLE_I_PREFETCH``
+        Disables i-atom data (type or LJ parameter) prefetch allowig
+        testing.
+
+``GMX_OCL_ENABLE_I_PREFETCH``
+        Enables i-atom data (type or LJ parameter) prefetch allowig
+        testing on platforms where this behavior is not default.
+
 ``GMX_OCL_NB_ANA_EWALD``
         Forces the use of analytical Ewald kernels. Equivalent of
         CUDA environment variable ``GMX_CUDA_NB_ANA_EWALD``
