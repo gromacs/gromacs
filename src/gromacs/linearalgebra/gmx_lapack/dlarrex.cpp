@@ -1,12 +1,3 @@
-#ifdef _MSC_VER
-// MSVC does not provide isnan(), but it has _isnan()
-#    include <float.h>
-#    define isnan _isnan
-#else
-// we borrow isnan from C since it is not in std:: until c++11
-#   include <math.h>
-#endif
-
 #include <cctype>
 #include <cmath>
 
@@ -192,7 +183,7 @@ L60:
 	}
 	for (i__ = in; i__ >= 1; --i__) {
 	    tmp = sgndef * work[i__];
-        if (tmp < 0. || std::abs(work[(in << 1) + i__])<GMX_DOUBLE_MIN || isnan(tmp)) {
+        if (tmp < 0. || std::abs(work[(in << 1) + i__])<GMX_DOUBLE_MIN || std::isnan(tmp)) {
 		delta *= 2.;
 		goto L60;
 	    }
@@ -247,7 +238,7 @@ L100:
 
 	for (i__ = in; i__ >= 1; --i__) {
 	    tmp = sgndef * work[i__];
-	    if (tmp < 0. || std::abs(work[(in << 1) + i__])<GMX_DOUBLE_MIN || isnan(tmp)) {
+	    if (tmp < 0. || std::abs(work[(in << 1) + i__])<GMX_DOUBLE_MIN || std::isnan(tmp)) {
 		delta *= 2.;
 		goto L100;
 	    }
