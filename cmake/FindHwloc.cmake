@@ -100,7 +100,10 @@ if(HWLOC_INCLUDE_DIRS)
         endif()
     endif()
 
-    message(STATUS "hwloc version: ${HWLOC_VERSION}")
+    if (NOT Hwloc_FIND_QUIETLY)
+        message(STATUS "hwloc version: ${HWLOC_VERSION}")
+    endif()
+
     # Parse header if cross-compiling, or if hwloc-info was not found
     if(NOT HWLOC_VERSION)
         # Hwloc is never installed as a framework on OS X, so this should always work.
