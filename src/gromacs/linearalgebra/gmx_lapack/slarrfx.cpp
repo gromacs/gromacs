@@ -1,12 +1,3 @@
-#ifdef _MSC_VER
-// MSVC does not provide isnan(), but it has _isnan()
-#    include <float.h>
-#    define isnan _isnan
-#else
-// we borrow isnan from C since it is not in std:: until c++11
-#   include <math.h>
-#endif
-
 #include <cmath>
 
 #include "gromacs/utility/real.h"
@@ -62,7 +53,7 @@ L10:
 	d__2 = dmax1, d__3 = std::abs(dplus[i__ + 1]);
 	dmax1 = (d__2>d__3) ? d__2 : d__3;
     }
-    if (isnan(dmax1)) {
+    if (std::isnan(dmax1)) {
 	*sigma -= std::abs(*sigma) * delta;
 	delta *= 2.;
 	goto L10;
@@ -82,7 +73,7 @@ L30:
 	d__2 = dmax2, d__3 = std::abs(work[i__ + 1]);
 	dmax2 = (d__2>d__3) ? d__2 : d__3;
     }
-    if (isnan(dmax2)) {
+    if (std::isnan(dmax2)) {
 	tmp += std::abs(tmp) * delta;
 	delta *= 2.;
 	goto L30;
