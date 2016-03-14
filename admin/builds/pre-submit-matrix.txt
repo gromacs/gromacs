@@ -9,3 +9,5 @@ msvc-2015 openmp release
 icc-16.0 msvc-2015 fftpack
 icc-16.0 openmp mkl cmake-3.3.2 simd=avx_256
 gcc-5.2 openmp simd=avx_128_fma
+gcc-4.8 opencl cuda-7.5 mpi
+gcc-5.2 opencl amdappsdk-3.0 release
