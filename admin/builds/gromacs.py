@@ -45,6 +45,7 @@ extra_options = {
     'double': Option.simple,
     'thread-mpi': Option.bool,
     'gpu': Option.bool,
+    'opencl': Option.bool,
     'openmp': Option.bool
 }
 extra_projects = [Project.REGRESSIONTESTS]
@@ -76,9 +77,15 @@ def do_build(context):
         cmake_opts['GMX_SIMD'] = 'None'
     else:
         cmake_opts['GMX_SIMD'] = context.opts.simd
-    if context.opts.gpu:
+    if context.opts.gpu or context.opts.opencl:
         cmake_opts['GMX_GPU'] = 'ON'
-        cmake_opts.update(context.get_cuda_cmake_options())
+        if context.opts.opencl:
+            context.env.set_env_var('CUDA_PATH', context.env.cuda_root)
+            context.env.set_env_var('AMDAPPSDKROOT', context.env.amdappsdk_root)
+            cmake_opts['GMX_USE_OPENCL'] = 'ON'
+        else:
+            cmake_opts['CUDA_TOOLKIT_ROOT_DIR'] = context.env.cuda_root
+            cmake_opts['CUDA_HOST_COMPILER'] = context.env.cuda_host_compiler
     else:
         cmake_opts['GMX_GPU'] = 'OFF'
     if context.opts.thread_mpi is False:
