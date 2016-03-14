@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -176,9 +176,9 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                 /* The wall energy groups are always at the end of the list */
                 ggid = gid[i]*ngid + ngid - nwall + w;
                 at   = type[i];
-                /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                Cd = nbfp[ntw[w]+2*at]/6.0;
-                Cr = nbfp[ntw[w]+2*at+1]/12.0;
+                /* nbfp now includes the 6/12 derivative prefactors */
+                Cd = nbfp[ntw[w]+2*at]/6;
+                Cr = nbfp[ntw[w]+2*at+1]/12;
                 if (!((Cd == 0 && Cr == 0) || (egp_flags[ggid] & EGP_EXCL)))
                 {
                     if (w == 0)
@@ -230,8 +230,8 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                                 Fp    = Ft + Geps + Heps2;
                                 VV    = Yt + Fp*eps;
                                 FF    = Fp + Geps + 2.0*Heps2;
-                                Vd    = Cd*VV;
-                                Fd    = Cd*FF;
+                                Vd    = 6*Cd*VV;
+                                Fd    = 6*Cd*FF;
                                 /* Repulsion */
                                 nnn   = nnn + 4;
                                 Yt    = VFtab[nnn];
@@ -241,8 +241,8 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                                 Fp    = Ft + Geps + Heps2;
                                 VV    = Yt + Fp*eps;
                                 FF    = Fp + Geps + 2.0*Heps2;
-                                Vr    = Cr*VV;
-                                Fr    = Cr*FF;
+                                Vr    = 12*Cr*VV;
+                                Fr    = 12*Cr*FF;
                                 V     = Vd + Vr;
                                 F     = -lamfac*(Fd + Fr)*tabscale;
                             }
