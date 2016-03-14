@@ -277,6 +277,27 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
 }
 
 
+TEST(ReferenceDataTest, HandlesEmptyStrings)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("", "Empty");
+        checker.checkString("\n", "EmptyLine");
+        checker.checkTextBlock("", "EmptyBlock");
+        checker.checkTextBlock("\n", "EmptyLineBlock");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("", "Empty");
+        checker.checkString("\n", "EmptyLine");
+        checker.checkTextBlock("", "EmptyBlock");
+        checker.checkTextBlock("\n", "EmptyLineBlock");
+    }
+}
+
+
 TEST(ReferenceDataTest, HandlesEmbeddedCdataEndTagInTextBlock)
 {
     /* stringblocks are implemented as CDATA fields, and the first
