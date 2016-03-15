@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,11 +49,11 @@ struct t_trxframe;
 
 typedef struct gmx_rmpbc *gmx_rmpbc_t;
 
-gmx_rmpbc_t gmx_rmpbc_init(struct t_idef *idef, int ePBC, int natoms);
+gmx_rmpbc_t gmx_rmpbc_init(const t_idef *idef, int ePBC, int natoms);
 
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc);
 
-void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, matrix box, rvec x[]);
+void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[]);
 /* Correct coordinates x for atoms within every molecule for the periodic
  * boundary conditions such that every molecule is whole.
  * natoms is the size x and can be smaller than the number
@@ -61,14 +61,14 @@ void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, matrix box, rvec x[]);
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
  */
 
-void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, matrix box, rvec x[],
+void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[],
                     rvec x_s[]);
 /* As gmx_rmpbc, but outputs in x_s and does not modify x. */
 
 void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, struct t_trxframe *fr);
 /* As gmx_rmpbc but operates on a t_trxframe data structure. */
 
-void rm_gropbc(struct t_atoms *atoms, rvec x[], matrix box);
+void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box);
 /* Simple routine for use in analysis tools that just have a pdb or
  * similar file.
  */

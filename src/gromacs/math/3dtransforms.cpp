@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@ void gmx_mat4_copy(mat4 a, mat4 b)
     }
 }
 
-void gmx_mat4_transform_point(mat4 m, rvec x, vec4 v)
+void gmx_mat4_transform_point(mat4 m, const rvec x, vec4 v)
 {
     int i;
 

@@ -187,7 +187,7 @@ void gmx_prepare_tng_writing(const char              *filename,
 }
 
 void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
-                                 t_trxframe             *frame,
+                                 const t_trxframe       *frame,
                                  int                     natoms)
 {
 #if GMX_USE_TNG

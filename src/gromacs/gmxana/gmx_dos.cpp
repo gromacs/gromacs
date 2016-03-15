@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
 };
 
-static int calcMoleculesInIndexGroup(t_block *mols, int natoms, int *index, int nindex)
+static int calcMoleculesInIndexGroup(const t_block *mols, int natoms, const int *index, int nindex)
 {
     int   i    = 0;
     int   mol  = 0;

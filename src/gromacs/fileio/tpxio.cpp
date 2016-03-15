@@ -3635,12 +3635,15 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
 }
 
 void write_tpx_state(const char *fn,
-                     t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
+                     const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop)
 {
     t_fileio *fio;
 
     fio = open_tpx(fn, "w");
-    do_tpx(fio, FALSE, ir, state, mtop, FALSE);
+    do_tpx(fio, FALSE,
+           const_cast<t_inputrec *>(ir),
+           const_cast<t_state *>(state),
+           const_cast<gmx_mtop_t *>(mtop), FALSE);
     close_tpx(fio);
 }
 

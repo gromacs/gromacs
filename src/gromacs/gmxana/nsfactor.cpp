@@ -151,7 +151,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     return (gmx_neutron_atomic_structurefactors_t *) gnsf;
 }
 
-gmx_sans_t *gmx_sans_init (t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf)
+gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf)
 {
     gmx_sans_t    *gsans = NULL;
     int            i, j;

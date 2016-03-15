@@ -448,7 +448,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
-                          real bfac_max, t_atoms *atoms,
+                          real bfac_max, const t_atoms *atoms,
                           gmx_bool bDo_jc, const char *fn,
                           const gmx_output_env_t *oenv)
 {
@@ -1066,7 +1066,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
 static void order_params(FILE *log,
                          const char *fn, int maxchi, int nlist, t_dlist dlist[],
                          const char *pdbfn, real bfac_init,
-                         t_atoms *atoms, rvec x[], int ePBC, matrix box,
+                         t_atoms *atoms, const rvec x[], int ePBC, matrix box,
                          gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const gmx_output_env_t *oenv)
 {
     FILE *fp;

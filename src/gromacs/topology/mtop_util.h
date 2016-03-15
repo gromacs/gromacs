@@ -273,6 +273,6 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
  * \param[in]  mtop Molecular topology
  * \returns Vector that will be filled with the atom indices
  */
-std::vector<size_t> get_atom_index(gmx_mtop_t *mtop);
+std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
 
 #endif

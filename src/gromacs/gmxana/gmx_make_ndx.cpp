@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -294,7 +294,7 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
     return (*nr) != NOTSET;
 }
 
-static int select_atomnumbers(char **string, t_atoms *atoms, int n1,
+static int select_atomnumbers(char **string, const t_atoms *atoms, int n1,
                               int *nr, int *index, char *gname)
 {
     char    buf[STRLEN];
@@ -357,7 +357,7 @@ static int select_atomnumbers(char **string, t_atoms *atoms, int n1,
     return *nr;
 }
 
-static int select_residuenumbers(char **string, t_atoms *atoms,
+static int select_residuenumbers(char **string, const t_atoms *atoms,
                                  int n1, char c,
                                  int *nr, int *index, char *gname)
 {
@@ -430,7 +430,7 @@ static int select_residuenumbers(char **string, t_atoms *atoms,
     return *nr;
 }
 
-static int select_residueindices(char **string, t_atoms *atoms,
+static int select_residueindices(char **string, const t_atoms *atoms,
                                  int n1, char c,
                                  int *nr, int *index, char *gname)
 {
@@ -506,7 +506,7 @@ static int select_residueindices(char **string, t_atoms *atoms,
 }
 
 
-static gmx_bool atoms_from_residuenumbers(t_atoms *atoms, int group, t_blocka *block,
+static gmx_bool atoms_from_residuenumbers(const t_atoms *atoms, int group, t_blocka *block,
                                           int *nr, int *index, char *gname)
 {
     int i, j, j0, j1, resnr, nres;
@@ -580,7 +580,7 @@ static gmx_bool comp_name(const char *name, const char *search)
     return matches;
 }
 
-static int select_chainnames(t_atoms *atoms, int n_names, char **names,
+static int select_chainnames(const t_atoms *atoms, int n_names, char **names,
                              int *nr, int *index)
 {
     char    name[2];
@@ -614,7 +614,7 @@ static int select_chainnames(t_atoms *atoms, int n_names, char **names,
     return *nr;
 }
 
-static int select_atomnames(t_atoms *atoms, int n_names, char **names,
+static int select_atomnames(const t_atoms *atoms, int n_names, char **names,
                             int *nr, int *index, gmx_bool bType)
 {
     char   *name;
@@ -654,7 +654,7 @@ static int select_atomnames(t_atoms *atoms, int n_names, char **names,
     return *nr;
 }
 
-static int select_residuenames(t_atoms *atoms, int n_names, char **names,
+static int select_residuenames(const t_atoms *atoms, int n_names, char **names,
                                int *nr, int *index)
 {
     char   *name;
@@ -768,7 +768,7 @@ static void remove_group(int nr, int nr2, t_blocka *block, char ***gn)
     }
 }
 
-static void split_group(t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
+static void split_group(const t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
                         gmx_bool bAtom)
 {
     char    buf[STRLEN], *name;
@@ -811,7 +811,7 @@ static void split_group(t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
     block->index[block->nr] = block->nra;
 }
 
-static int split_chain(t_atoms *atoms, rvec *x,
+static int split_chain(const t_atoms *atoms, const rvec *x,
                        int sel_nr, t_blocka *block, char ***gn)
 {
     char    buf[STRLEN];
@@ -917,7 +917,7 @@ static int split_chain(t_atoms *atoms, rvec *x,
     return nchain;
 }
 
-static gmx_bool check_have_atoms(t_atoms *atoms, char *string)
+static gmx_bool check_have_atoms(const t_atoms *atoms, char *string)
 {
     if (atoms == NULL)
     {
@@ -930,7 +930,7 @@ static gmx_bool check_have_atoms(t_atoms *atoms, char *string)
     }
 }
 
-static gmx_bool parse_entry(char **string, int natoms, t_atoms *atoms,
+static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
                             t_blocka *block, char ***gn,
                             int *nr, int *index, char *gname)
 {
@@ -1114,7 +1114,7 @@ static gmx_bool parse_entry(char **string, int natoms, t_atoms *atoms,
     return bRet;
 }
 
-static void list_residues(t_atoms *atoms)
+static void list_residues(const t_atoms *atoms)
 {
     int      i, j, start, end, prev_resind, resind;
     gmx_bool bDiff;
@@ -1160,7 +1160,7 @@ static void list_residues(t_atoms *atoms)
     printf("\n");
 }
 
-static void edit_index(int natoms, t_atoms *atoms, rvec *x, t_blocka *block, char ***gn, gmx_bool bVerbose)
+static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka *block, char ***gn, gmx_bool bVerbose)
 {
     static char   **atnames, *ostring;
     static gmx_bool bFirst = TRUE;

@@ -192,7 +192,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
 void get_enx_state(const char *fn, real t,
-                   gmx_groups_t *groups, t_inputrec *ir,
+                   const gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state);
 /*
  * Reads state variables from enx file fn at time t.

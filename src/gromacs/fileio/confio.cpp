@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,8 @@
 #include "gromacs/utility/smalloc.h"
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
-                            t_atoms *atoms,
-                            rvec x[], rvec *v, int ePBC, matrix box,
+                            const t_atoms *atoms,
+                            const rvec x[], const rvec *v, int ePBC, const matrix box,
                             int nindex, int index[])
 {
     FILE       *out;
@@ -84,13 +84,13 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             fr.title  = title;
             fr.natoms = atoms->nr;
             fr.bAtoms = TRUE;
-            fr.atoms  = atoms;
+            fr.atoms  = const_cast<t_atoms *>(atoms);
             fr.bX     = TRUE;
-            fr.x      = x;
+            fr.x      = const_cast<rvec *>(x);
             if (v)
             {
                 fr.bV = TRUE;
-                fr.v  = v;
+                fr.v  = const_cast<rvec *>(v);
             }
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
@@ -119,8 +119,8 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
     }
 }
 
-void write_sto_conf(const char *outfile, const char *title, t_atoms *atoms,
-                    rvec x[], rvec *v, int ePBC, matrix box)
+void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms,
+                    const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
     FILE       *out;
     int         ftp;
@@ -138,13 +138,13 @@ void write_sto_conf(const char *outfile, const char *title, t_atoms *atoms,
             fr.title  = title;
             fr.natoms = atoms->nr;
             fr.bAtoms = TRUE;
-            fr.atoms  = atoms;
+            fr.atoms  = const_cast<t_atoms *>(atoms); // TODO check
             fr.bX     = TRUE;
-            fr.x      = x;
+            fr.x      = const_cast<rvec *>(x);
             if (v)
             {
                 fr.bV = TRUE;
-                fr.v  = v;
+                fr.v  = const_cast<rvec *>(v);
             }
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
@@ -174,7 +174,7 @@ void write_sto_conf(const char *outfile, const char *title, t_atoms *atoms,
 
 void write_sto_conf_mtop(const char *outfile, const char *title,
                          gmx_mtop_t *mtop,
-                         rvec x[], rvec *v, int ePBC, matrix box)
+                         const rvec x[], const rvec *v, int ePBC, const matrix box)
 {
     int     ftp;
     FILE   *out;
