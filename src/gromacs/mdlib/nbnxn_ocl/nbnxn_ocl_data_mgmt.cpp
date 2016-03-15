@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -617,11 +617,10 @@ nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_lj));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_el));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
-    assert(cl_error == CL_SUCCESS);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error));
 
     cl_error = clEnqueueNDRangeKernel(ls, zero_e_fshift, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-    assert(cl_error == CL_SUCCESS);
-
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error));
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
@@ -652,9 +651,6 @@ static void nbnxn_ocl_init_const(gmx_nbnxn_ocl_t                *nb,
 {
     init_atomdata_first(nb->atdat, nbv_group[0].nbat->ntype, nb->dev_info);
     init_nbparam(nb->nbparam, ic, nbv_group[0].nbat, nb->dev_info);
-
-    /* clear energy and shift force outputs */
-    nbnxn_ocl_clear_e_fshift(nb);
 }
 
 //! This function is documented in the header file
@@ -762,6 +758,9 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
      */
     nbnxn_gpu_compile_kernels(nb);
     nbnxn_gpu_init_kernels(nb);
+
+    /* clear energy and shift force outputs */
+    nbnxn_ocl_clear_e_fshift(nb);
 
     *p_nb = nb;
 
