@@ -120,6 +120,12 @@ if(GMX_MPI)
              "Please consider updating your OpenMPI if your MPI wrapper compilers "
              "are using the above OpenMPI version.")
         endif()
+        if(OPENMPI_VERSION VERSION_EQUAL "1.8.6")
+          MESSAGE(WARNING
+             "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
+             "This OpenMPI version is known to leak memory with GROMACS,"
+             "please update to a more recent version. "
+        endif()
         unset(OPENMPI_VERSION)
         unset(OPENMPI_TYPE)
         unset(OPENMPI_EXEC_RETURN)
