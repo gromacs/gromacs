@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ extern real pprms(FILE *fp, int nbb, t_bb bb[]);
 extern real ca_phi(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
-extern real dip(int nbb, int bbind[], rvec x[], t_atom atom[]);
+extern real dip(int nbb, const int bbind[], const rvec x[], const t_atom atom[]);
 
 extern real rise(int gnx, int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
@@ -118,7 +118,7 @@ extern void do_start_end(int nres, t_bb bb[], int *nbb,
                          int bbindex[], int *nca, int caindex[],
                          gmx_bool bRange, int rStart, int rEnd);
 
-extern void calc_hxprops(int nres, t_bb bb[], rvec x[]);
+extern void calc_hxprops(int nres, t_bb bb[], const rvec x[]);
 
 extern void pr_bb(FILE *fp, int nres, t_bb bb[]);
 

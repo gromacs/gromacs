@@ -122,9 +122,8 @@ static gmx_bool is_charge(real charge)
 
 
 /* calculate charge density */
-static void calc_q2all(
-        gmx_mtop_t *mtop,   /* molecular topology */
-        real *q2all, real *q2allnr)
+static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
+                       real *q2all, real *q2allnr)
 {
     int             imol, iatom; /* indices for loops */
     real            q2_all = 0;  /* Sum of squared charges */
@@ -812,7 +811,7 @@ static void create_info(t_inputinfo *info)
 /* Allocate and fill an array with coordinates and charges,
  * returns the number of charges found
  */
-static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_commrec *cr)
+static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec x_orig[], t_commrec *cr)
 {
     int                     i;
     int                     nq; /* number of charged particles */
@@ -922,8 +921,8 @@ static void bcast_info(t_inputinfo *info, t_commrec *cr)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(t_inputinfo *info, t_state *state,
-                               gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, int seed,
+static void estimate_PME_error(t_inputinfo *info, const t_state *state,
+                               const gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
                                t_commrec *cr)
 {
     rvec *x     = NULL; /* The coordinates */

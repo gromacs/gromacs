@@ -115,7 +115,7 @@ static void xlate_atomname_gmx2pdb(char *name)
 }
 
 
-void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
+void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
 {
     real alpha, beta, gamma;
 
@@ -260,8 +260,8 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
 }
 
 void write_pdbfile_indexed(FILE *out, const char *title,
-                           t_atoms *atoms, rvec x[],
-                           int ePBC, matrix box, char chainid,
+                           const t_atoms *atoms, const rvec x[],
+                           int ePBC, const matrix box, char chainid,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains)
 {
@@ -411,8 +411,8 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     gmx_residuetype_destroy(rt);
 }
 
-void write_pdbfile(FILE *out, const char *title, t_atoms *atoms, rvec x[],
-                   int ePBC, matrix box, char chainid, int model_nr, gmx_conect conect, gmx_bool bTerSepChains)
+void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms, const rvec x[],
+                   int ePBC, const matrix box, char chainid, int model_nr, gmx_conect conect, gmx_bool bTerSepChains)
 {
     int i, *index;
 
@@ -505,7 +505,7 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     }
 }
 
-void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
+void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
 {
     int    i, atomnumber, len;
     size_t k;
@@ -1027,7 +1027,7 @@ void gmx_pdb_read_conf(const char *infile,
     gmx_fio_fclose(in);
 }
 
-gmx_conect gmx_conect_generate(t_topology *top)
+gmx_conect gmx_conect_generate(const t_topology *top)
 {
     int        f, i;
     gmx_conect gc;

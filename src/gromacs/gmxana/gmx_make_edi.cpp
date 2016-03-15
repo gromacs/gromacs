@@ -493,7 +493,7 @@ void init_edx(struct edix *edx)
 }
 
 void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                int igro[], rvec *x, const char* structure)
+                int igro[], const rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */
@@ -518,7 +518,7 @@ void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
     }
 }
 
-void get_structure(t_atoms *atoms, const char *IndexFile,
+void get_structure(const t_atoms *atoms, const char *IndexFile,
                    const char *StructureFile, struct edix *edx, int nfit,
                    int ifit[], int nav, int index[])
 {

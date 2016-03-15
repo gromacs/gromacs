@@ -146,7 +146,7 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
 
 void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo);
 
-t_atoms *copy_t_atoms(t_atoms *src);
+t_atoms *copy_t_atoms(const t_atoms *src);
 /* copy an atoms struct from src to a new one */
 
 void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);

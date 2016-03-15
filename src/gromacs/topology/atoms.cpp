@@ -176,7 +176,7 @@ void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
     std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
 }
 
-t_atoms *copy_t_atoms(t_atoms *src)
+t_atoms *copy_t_atoms(const t_atoms *src)
 {
     t_atoms *dst;
     int      i;

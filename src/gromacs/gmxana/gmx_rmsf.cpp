@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static real find_pdb_bfac(t_atoms *atoms, t_resinfo *ri, char *atomnm)
+static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
 {
     char rresnm[8];
     int  i;
@@ -110,7 +110,7 @@ void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
 
 static void average_residues(double f[], double **U, int uind,
                              int isize, int index[], real w_rls[],
-                             t_atoms *atoms)
+                             const t_atoms *atoms)
 {
     int    i, j, start;
     double av, m;

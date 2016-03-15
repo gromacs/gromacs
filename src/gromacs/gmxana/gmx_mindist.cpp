@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,7 +141,7 @@ static void periodic_dist(int ePBC,
 }
 
 static void periodic_mindist_plot(const char *trxfn, const char *outfn,
-                                  t_topology *top, int ePBC,
+                                  const t_topology *top, int ePBC,
                                   int n, int index[], gmx_bool bSplit,
                                   const gmx_output_env_t *oenv)
 {
@@ -327,7 +327,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
 
 void dist_plot(const char *fn, const char *afile, const char *dfile,
                const char *nfile, const char *rfile, const char *xfile,
-               real rcut, gmx_bool bMat, t_atoms *atoms,
+               real rcut, gmx_bool bMat, const t_atoms *atoms,
                int ng, int *index[], int gnx[], char *grpn[], gmx_bool bSplit,
                gmx_bool bMin, int nres, int *residue, gmx_bool bPBC, int ePBC,
                gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
@@ -596,7 +596,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     sfree(x0);
 }
 
-int find_residues(t_atoms *atoms, int n, int index[], int **resindex)
+int find_residues(const t_atoms *atoms, int n, int index[], int **resindex)
 {
     int  i;
     int  nres      = 0, resnr, presnr = 0;

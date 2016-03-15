@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@
 
 static const int NOTSET = -9368163;
 
-void calc_rm_cm(int isize, int index[], t_atoms *atoms, rvec x[], rvec xcm)
+void calc_rm_cm(int isize, int index[], const t_atoms *atoms, rvec x[], rvec xcm)
 {
     int  i, d;
     real tm, m;
@@ -106,7 +106,7 @@ int build_res_index(int isize, int index[], t_atom atom[], int rindex[])
     return r;
 }
 
-int find_res_end(int i, int isize, int index[], t_atoms *atoms)
+int find_res_end(int i, int isize, int index[], const t_atoms *atoms)
 {
     int rnr;
 
@@ -329,8 +329,8 @@ int find_first_atom_in_res(int rnr, int isize, int index[], t_atom atom[])
     }
 }
 
-void find_matching_names(int *isize1, int index1[], t_atoms *atoms1,
-                         int *isize2, int index2[], t_atoms *atoms2)
+void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
+                         int *isize2, int index2[], const t_atoms *atoms2)
 {
     int        i1, i2, ii1, ii2, m1, m2;
     int        atcmp, rescmp;
