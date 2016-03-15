@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -119,6 +119,12 @@ if(GMX_MPI)
              "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
              "Please consider updating your OpenMPI if your MPI wrapper compilers "
              "are using the above OpenMPI version.")
+        endif()
+        if(OPENMPI_VERSION VERSION_EQUAL "1.8.6")
+          MESSAGE(WARNING
+             "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
+             "This OpenMPI version is known to leak memory with GROMACS,"
+             "please update to a more recent version. ")
         endif()
         unset(OPENMPI_VERSION)
         unset(OPENMPI_TYPE)
