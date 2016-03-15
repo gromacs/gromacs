@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ typedef struct {
     float bBox;
 } t_fr_time;
 
-static void tpx2system(FILE *fp, gmx_mtop_t *mtop)
+static void tpx2system(FILE *fp, const gmx_mtop_t *mtop)
 {
     int                       nmol, nvsite = 0;
     gmx_mtop_atomloop_block_t aloop;
@@ -110,7 +110,7 @@ static void tpx2system(FILE *fp, gmx_mtop_t *mtop)
     fprintf(fp, "\n\n");
 }
 
-static void tpx2params(FILE *fp, t_inputrec *ir)
+static void tpx2params(FILE *fp, const t_inputrec *ir)
 {
     fprintf(fp, "\\subsection{Simulation settings}\n");
     fprintf(fp, "A total of %g ns were simulated with a time step of %g fs.\n",

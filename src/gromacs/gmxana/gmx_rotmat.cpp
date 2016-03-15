@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
 
 static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int skip,
                      int gnx, int *index,
-                     gmx_bool bMW, t_topology *top, int ePBC, rvec *x_ref)
+                     gmx_bool bMW, const t_topology *top, int ePBC, rvec *x_ref)
 {
     int          natoms, nfr_all, nfr, i, j, a, r, c, min_fr;
     t_trxstatus *status;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,11 +110,10 @@ static gmx_bool in_data(t_corr *curr, int nx00)
 }
 
 t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
-                  int nmol, gmx_bool bTen, gmx_bool bMass, real dt, t_topology *top,
+                  int nmol, gmx_bool bTen, gmx_bool bMass, real dt, const t_topology *top,
                   real beginfit, real endfit)
 {
     t_corr  *curr;
-    t_atoms *atoms;
     int      i;
 
     snew(curr, 1);
@@ -161,7 +160,7 @@ t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
     {
         if (bMass)
         {
-            atoms = &top->atoms;
+            const t_atoms *atoms = &top->atoms;
             snew(curr->mass, atoms->nr);
             for (i = 0; (i < atoms->nr); i++)
             {
@@ -325,7 +324,7 @@ static real calc1_norm(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
 }
 
 /* calculate the com of molecules in x and put it into xa */
-static void calc_mol_com(int nmol, int *molindex, t_block *mols, t_atoms *atoms,
+static void calc_mol_com(int nmol, int *molindex, const t_block *mols, const t_atoms *atoms,
                          rvec *x, rvec *xa)
 {
     int  m, mol, i, d;
@@ -482,7 +481,7 @@ static void prep_data(gmx_bool bMol, int gnx, int index[],
    atoms = atom data (for mass)
    com(output) = center of mass  */
 static void calc_com(gmx_bool bMol, int gnx, int index[],
-                     rvec xcur[], rvec xprev[], matrix box, t_atoms *atoms,
+                     rvec xcur[], rvec xprev[], matrix box, const t_atoms *atoms,
                      rvec com)
 {
     int    i, m, ind;
@@ -545,9 +544,9 @@ static real calc1_mol(t_corr *curr, int nx, int gmx_unused index[], int nx0, rve
     return gtot/nx;
 }
 
-void printmol(t_corr *curr, const char *fn,
-              const char *fn_pdb, int *molindex, t_topology *top,
-              rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
+static void printmol(t_corr *curr, const char *fn,
+                     const char *fn_pdb, int *molindex, const t_topology *top,
+                     rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
 {
 #define NDIST 100
     FILE       *out;
@@ -555,16 +554,12 @@ void printmol(t_corr *curr, const char *fn,
     int         i, j;
     real        a, b, D, Dav, D2av, VarD, sqrtD, sqrtD_max, scale;
     t_pdbinfo  *pdbinfo = NULL;
-    int        *mol2a   = NULL;
+    const int  *mol2a   = NULL;
 
     out = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D", oenv);
 
     if (fn_pdb)
     {
-        if (top->atoms.pdbinfo == NULL)
-        {
-            snew(top->atoms.pdbinfo, top->atoms.nr);
-        }
         pdbinfo = top->atoms.pdbinfo;
         mol2a   = top->mols.index;
     }
@@ -640,7 +635,7 @@ void printmol(t_corr *curr, const char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
+int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
               gmx_bool bMol, int gnx[], int *index[],
               t_calc_func *calc1, gmx_bool bTen, int *gnx_com, int *index_com[],
               real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
@@ -838,7 +833,7 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
     return natoms;
 }
 
-static void index_atom2mol(int *n, int *index, t_block *mols)
+static void index_atom2mol(int *n, int *index, const t_block *mols)
 {
     int nat, i, nmol, mol, j;
 
@@ -945,6 +940,10 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
         }
         i             = top->atoms.nr;
         top->atoms.nr = nat_trx;
+        if (pdb_file && top->atoms.pdbinfo == NULL)
+        {
+            snew(top->atoms.pdbinfo, top->atoms.nr);
+        }
         printmol(msd, mol_file, pdb_file, index[0], top, x, ePBC, box, oenv);
         top->atoms.nr = i;
     }

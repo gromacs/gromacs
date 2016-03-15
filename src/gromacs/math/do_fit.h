@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[]);
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
-void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x,
+void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x,
                 matrix R);
 /* Calculates the rotation matrix R for which
  * sum_i w_rls_i (xp_i - R x_i).(xp_i - R x_i)
@@ -75,7 +75,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x,
  * x_rotated[i] = sum R[i][j]*x[j]
  */
 
-void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x);
+void do_fit_ndim(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
  * (w_rls[i]) are not taken into account in fitting.
  * This makes is possible to fit eg. on Calpha atoms and orient
@@ -83,7 +83,7 @@ void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x);
  * therefore both xp and x should be centered round the origin.
  */
 
-void do_fit(int natoms, real *w_rls, rvec *xp, rvec *x);
+void do_fit(int natoms, real *w_rls, const rvec *xp, rvec *x);
 /* Calls do_fit with ndim=3, thus fitting in 3D */
 
 void reset_x_ndim(int ndim, int ncm, const int *ind_cm,

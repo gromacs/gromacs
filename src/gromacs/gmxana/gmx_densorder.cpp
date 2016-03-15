@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ enum {
     methSEL, methBISECT, methFUNCFIT, methNR
 };
 
-static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
+static void center_coords(const t_atoms *atoms, matrix box, rvec x0[], int axis)
 {
     int  i, m;
     real tmass, mm;
@@ -101,7 +101,7 @@ static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, int **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
+static void density_in_time (const char *fn, int **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, const t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
 
 {
 /*

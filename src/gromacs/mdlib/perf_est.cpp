@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -277,7 +277,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
 }
 
 static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                          matrix box,
+                          const matrix box,
                           int *nq_tot, int *nlj_tot,
                           double *cost_pp,
                           gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
@@ -404,7 +404,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 }
 
 static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                           matrix box,
+                           const matrix box,
                            int *nq_tot, int *nlj_tot,
                            double *cost_pp,
                            gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
@@ -516,7 +516,7 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 }
 
 float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                        matrix box)
+                        const matrix box)
 {
     int            nq_tot, nlj_tot;
     gmx_bool       bChargePerturbed, bTypePerturbed;

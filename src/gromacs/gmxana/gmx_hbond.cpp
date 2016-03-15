@@ -571,7 +571,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
     }
 }
 
-static char *mkatomname(t_atoms *atoms, int i)
+static char *mkatomname(const t_atoms *atoms, int i)
 {
     static char buf[32];
     int         rnr;
@@ -624,7 +624,7 @@ static void add_acc(t_acceptors *a, int ia, int grp)
     a->acc[a->nra++] = ia;
 }
 
-static void search_acceptors(t_topology *top, int isize,
+static void search_acceptors(const t_topology *top, int isize,
                              int *index, t_acceptors *a, int grp,
                              gmx_bool bNitAcc,
                              gmx_bool bContact, gmx_bool bDoIt, unsigned char *datable)
@@ -727,13 +727,12 @@ static void add_dh(t_donors *ddd, int id, int ih, int grp, unsigned char *databl
     }
 }
 
-static void search_donors(t_topology *top, int isize, int *index,
+static void search_donors(const t_topology *top, int isize, int *index,
                           t_donors *ddd, int grp, gmx_bool bContact, gmx_bool bDoIt,
                           unsigned char *datable)
 {
     int            i, j;
     t_functype     func_type;
-    t_ilist       *interaction;
     int            nr1, nr2, nr3;
 
     if (!ddd->dptr)
@@ -760,7 +759,7 @@ static void search_donors(t_topology *top, int isize, int *index,
     {
         for (func_type = 0; (func_type < F_NRE); func_type++)
         {
-            interaction = &(top->idef.il[func_type]);
+            const t_ilist *interaction = &(top->idef.il[func_type]);
             if (func_type == F_POSRES || func_type == F_FBPOSRES)
             {
                 /* The ilist looks strange for posre. Bug in grompp?
@@ -2226,7 +2225,7 @@ static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t
 static void dump_hbmap(t_hbdata *hb,
                        int nfile, t_filenm fnm[], gmx_bool bTwo,
                        gmx_bool bContact, int isize[], int *index[], char *grpnames[],
-                       t_atoms *atoms)
+                       const t_atoms *atoms)
 {
     FILE    *fp, *fplog;
     int      ddd, hhh, aaa, i, j, k, m, grp;

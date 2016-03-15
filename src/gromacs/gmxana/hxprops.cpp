@@ -209,7 +209,7 @@ real ca_phi(int gnx, int index[], rvec x[])
     return (phitot/(gnx-4.0));
 }
 
-real dip(int nbb, int bbind[], rvec x[], t_atom atom[])
+real dip(int nbb, int bbind[], rvec x[], const t_atom atom[])
 {
     int  i, m, ai;
     rvec dipje;
@@ -483,7 +483,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
     return rms;
 }
 
-void calc_hxprops(int nres, t_bb bb[], rvec x[])
+void calc_hxprops(int nres, t_bb bb[], const rvec x[])
 {
     int  i, ao, an, t1, t2, t3;
     rvec dx, r_ij, r_kj, r_kl, m, n;

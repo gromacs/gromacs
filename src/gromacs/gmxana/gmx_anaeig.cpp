@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -498,11 +498,11 @@ static void overlap(const char *outfile, int natoms,
     xvgrclose(out);
 }
 
-static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
+static void project(const char *trajfile, const t_topology *top, int ePBC, matrix topbox,
                     const char *projfile, const char *twodplotfile,
                     const char *threedplotfile, const char *filterfile, int skip,
                     const char *extremefile, gmx_bool bExtrAll, real extreme,
-                    int nextr, t_atoms *atoms, int natoms, int *index,
+                    int nextr, const t_atoms *atoms, int natoms, int *index,
                     gmx_bool bFit, rvec *xref, int nfit, int *ifit, real *w_rls,
                     real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
@@ -1069,7 +1069,7 @@ int gmx_anaeig(int argc, char *argv[])
 
     t_topology        top;
     int               ePBC  = -1;
-    t_atoms          *atoms = NULL;
+    const t_atoms    *atoms = NULL;
     rvec             *xtop, *xref1, *xref2, *xrefp = NULL;
     gmx_bool          bDMR1, bDMA1, bDMR2, bDMA2;
     int               nvec1, nvec2, *eignr1 = NULL, *eignr2 = NULL;

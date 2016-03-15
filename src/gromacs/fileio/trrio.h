@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,7 @@ gmx_bool gmx_trr_read_frame(struct t_fileio *fio, int *step, real *t, real *lamb
  */
 
 void gmx_trr_write_frame(struct t_fileio *fio, int step, real t, real lambda,
-                         rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+                         const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f);
 /* Write a trr frame to file fp, box, x, v, f may be NULL */
 
 void gmx_trr_read_single_header(const char *fn, gmx_trr_header_t *header);
@@ -125,7 +125,7 @@ void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
  */
 
 void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
-                                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+                                rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f);
 /* Write a single trr frame to file fn, which is closed afterwards */
 
 #ifdef __cplusplus

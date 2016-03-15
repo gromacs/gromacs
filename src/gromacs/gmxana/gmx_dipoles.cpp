@@ -176,7 +176,7 @@ static void rvec2sprvec(rvec dipcart, rvec dipsp)
 
 void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
             int mindex[], rvec x[], rvec mu[],
-            int ePBC, matrix box, t_atom *atom, int *nAtom)
+            int ePBC, matrix box, const t_atom *atom, int *nAtom)
 {
     static rvec *xcm[2] = { NULL, NULL};
     int          gi, gj, j0, j1, i, j, k, n, grp0, grp1;
@@ -440,7 +440,7 @@ gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol
     return bCont;
 }
 
-static void neutralize_mols(int n, int *index, t_block *mols, t_atom *atom)
+static void neutralize_mols(int n, int *index, const t_block *mols, t_atom *atom)
 {
     double mtot, qtot;
     int    ncharged, m, a0, a1, a;
@@ -479,7 +479,7 @@ static void neutralize_mols(int n, int *index, t_block *mols, t_atom *atom)
     }
 }
 
-static void mol_dip(int k0, int k1, rvec x[], t_atom atom[], rvec mu)
+static void mol_dip(int k0, int k1, rvec x[], const t_atom atom[], rvec mu)
 {
     int  k, m;
     real q;
@@ -495,7 +495,7 @@ static void mol_dip(int k0, int k1, rvec x[], t_atom atom[], rvec mu)
     }
 }
 
-static void mol_quad(int k0, int k1, rvec x[], t_atom atom[], rvec quad)
+static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
 {
     int      i, k, m, n, niter;
     real     q, r2, mass, masstot;
@@ -723,7 +723,7 @@ static void compute_avercos(int n, rvec dip[], real *dd, rvec axis, gmx_bool bPa
     axis[ZZ] = ddc3/n;
 }
 
-static void do_dip(t_topology *top, int ePBC, real volume,
+static void do_dip(const t_topology *top, int ePBC, real volume,
                    const char *fn,
                    const char *out_mtot, const char *out_eps,
                    const char *out_aver, const char *dipdist,
@@ -779,32 +779,32 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     };
 #define NLEGADIP asize(leg_adip)
 
-    FILE         *outdd, *outmtot, *outaver, *outeps, *caver = NULL;
-    FILE         *dip3d = NULL, *adip = NULL;
-    rvec         *x, *dipole = NULL, mu_t, quad, *dipsp = NULL;
-    t_gkrbin     *gkrbin = NULL;
-    gmx_enxnm_t  *enm    = NULL;
-    t_enxframe   *fr;
-    int           nframes = 1000, nre, timecheck = 0, ncolour = 0;
-    ener_file_t   fmu     = NULL;
-    int           i, n, m, natom = 0, gnx_tot, teller, tel3;
-    t_trxstatus  *status;
-    int          *dipole_bin, ndipbin, ibin, iVol, idim = -1;
-    unsigned long mode;
-    real          rcut = 0, t, t0, t1, dt, dd, rms_cos;
-    rvec          dipaxis;
-    matrix        box;
-    gmx_bool      bCorr, bTotal, bCont;
-    double        M_diff = 0, epsilon, invtel, vol_aver;
-    double        mu_ave, mu_mol, M2_ave = 0, M_ave2 = 0, M_av[DIM], M_av2[DIM];
-    double        M[3], M2[3], M4[3], Gk = 0, g_k = 0;
-    gmx_stats_t  *Qlsq, mulsq, muframelsq = NULL;
-    ivec          iMu;
-    real        **muall        = NULL;
-    rvec         *slab_dipoles = NULL;
-    t_atom       *atom         = NULL;
-    t_block      *mols         = NULL;
-    gmx_rmpbc_t   gpbc         = NULL;
+    FILE          *outdd, *outmtot, *outaver, *outeps, *caver = NULL;
+    FILE          *dip3d = NULL, *adip = NULL;
+    rvec          *x, *dipole = NULL, mu_t, quad, *dipsp = NULL;
+    t_gkrbin      *gkrbin = NULL;
+    gmx_enxnm_t   *enm    = NULL;
+    t_enxframe    *fr;
+    int            nframes = 1000, nre, timecheck = 0, ncolour = 0;
+    ener_file_t    fmu     = NULL;
+    int            i, n, m, natom = 0, gnx_tot, teller, tel3;
+    t_trxstatus   *status;
+    int           *dipole_bin, ndipbin, ibin, iVol, idim = -1;
+    unsigned long  mode;
+    real           rcut = 0, t, t0, t1, dt, dd, rms_cos;
+    rvec           dipaxis;
+    matrix         box;
+    gmx_bool       bCorr, bTotal, bCont;
+    double         M_diff = 0, epsilon, invtel, vol_aver;
+    double         mu_ave, mu_mol, M2_ave = 0, M_ave2 = 0, M_av[DIM], M_av2[DIM];
+    double         M[3], M2[3], M4[3], Gk = 0, g_k = 0;
+    gmx_stats_t   *Qlsq, mulsq, muframelsq = NULL;
+    ivec           iMu;
+    real         **muall        = NULL;
+    rvec          *slab_dipoles = NULL;
+    const t_atom  *atom         = NULL;
+    const t_block *mols         = NULL;
+    gmx_rmpbc_t    gpbc         = NULL;
 
     gnx_tot = gnx[0];
     if (ncos > 1)
@@ -1468,7 +1468,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     }
 }
 
-void dipole_atom2molindex(int *n, int *index, t_block *mols)
+void dipole_atom2molindex(int *n, int *index, const t_block *mols)
 {
     int nmol, i, j, m;
 

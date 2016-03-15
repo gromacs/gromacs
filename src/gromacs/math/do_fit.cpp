@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
     return calc_similar_ind(TRUE, natoms, NULL, mass, x, xp);
 }
 
-void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x, matrix R)
+void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matrix R)
 {
     int      c, r, n, j, i, irot, s;
     double **omega, **om;
@@ -259,7 +259,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x, matrix R)
     sfree(om);
 }
 
-void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x)
+void do_fit_ndim(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x)
 {
     int    j, m, r, c;
     matrix R;
@@ -286,7 +286,7 @@ void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x)
     }
 }
 
-void do_fit(int natoms, real *w_rls, rvec *xp, rvec *x)
+void do_fit(int natoms, real *w_rls, const rvec *xp, rvec *x)
 {
     do_fit_ndim(3, natoms, w_rls, xp, x);
 }
