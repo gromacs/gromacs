@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,8 @@ typedef struct gmx_neutron_atomic_structurefactors_t {
 } gmx_neutron_atomic_structurefactors_t;
 
 typedef struct gmx_sans_t {
-    struct t_topology *top;     /* topology */
-    double            *slength; /* scattering length for this topology */
+    const t_topology *top;     /* topology */
+    double           *slength; /* scattering length for this topology */
 } gmx_sans_t;
 
 typedef struct gmx_radial_distribution_histogram_t {
@@ -76,7 +76,7 @@ void normalize_probability(int n, double *a);
 
 gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
 
-gmx_sans_t *gmx_sans_init(struct t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
+gmx_sans_t *gmx_sans_init(const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t  *gsans,
                                                                           rvec        *x,

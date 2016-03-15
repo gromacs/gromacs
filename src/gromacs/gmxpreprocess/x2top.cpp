@@ -102,7 +102,7 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
 }
 
 void mk_bonds(int nnm, t_nm2type nmt[],
-              t_atoms *atoms, rvec x[], t_params *bond, int nbond[],
+              t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
               gmx_bool bPBC, matrix box)
 {
     t_param b;
@@ -275,7 +275,7 @@ void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRoun
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
+void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
                       matrix box)
 {
     int    i, ai, aj, ak, al, t1, t2, t3;

@@ -1193,7 +1193,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     return top;
 }
 
-std::vector<size_t> get_atom_index(gmx_mtop_t *mtop)
+std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop)
 {
 
     std::vector<size_t>       atom_index;

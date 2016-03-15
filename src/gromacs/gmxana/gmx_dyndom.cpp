@@ -52,7 +52,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
+static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans, real angle,
                      rvec head, rvec tail, int isize, int index[],
                      rvec xout[], rvec vout[])
 {

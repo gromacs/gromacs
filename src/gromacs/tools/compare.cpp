@@ -232,7 +232,7 @@ cmp_double(FILE *fp, const char *s, int index, double i1, double i2, double ftol
     }
 }
 
-static void cmp_rvec(FILE *fp, const char *s, int index, rvec i1, rvec i2, real ftol, real abstol)
+static void cmp_rvec(FILE *fp, const char *s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
 {
     if (!equal_real(i1[XX], i2[XX], ftol, abstol) ||
         !equal_real(i1[YY], i2[YY], ftol, abstol) ||
@@ -251,7 +251,7 @@ static void cmp_rvec(FILE *fp, const char *s, int index, rvec i1, rvec i2, real 
     }
 }
 
-static void cmp_ivec(FILE *fp, const char *s, int index, ivec i1, ivec i2)
+static void cmp_ivec(FILE *fp, const char *s, int index, const ivec i1, const ivec i2)
 {
     if ((i1[XX] != i2[XX]) || (i1[YY] != i2[YY]) || (i1[ZZ] != i2[ZZ]))
     {
@@ -268,7 +268,7 @@ static void cmp_ivec(FILE *fp, const char *s, int index, ivec i1, ivec i2)
     }
 }
 
-static void cmp_ilist(FILE *fp, int ftype, t_ilist *il1, t_ilist *il2)
+static void cmp_ilist(FILE *fp, int ftype, const t_ilist *il1, const t_ilist *il2)
 {
     int  i;
     char buf[256];
@@ -294,7 +294,7 @@ static void cmp_ilist(FILE *fp, int ftype, t_ilist *il1, t_ilist *il2)
 }
 
 void cmp_iparm(FILE *fp, const char *s, t_functype ft,
-               t_iparams ip1, t_iparams ip2, real ftol, real abstol)
+               const t_iparams &ip1, const t_iparams &ip2, real ftol, real abstol)
 {
     int      i;
     gmx_bool bDiff;
@@ -313,7 +313,7 @@ void cmp_iparm(FILE *fp, const char *s, t_functype ft,
     }
 }
 
-void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft, t_iparams ip1, real ftol, real abstol)
+void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft, const t_iparams &ip1, real ftol, real abstol)
 {
     int      nrfpA, nrfpB, p0, i;
     gmx_bool bDiff;
@@ -367,7 +367,7 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
     }
 }
 
-static void cmp_idef(FILE *fp, t_idef *id1, t_idef *id2, real ftol, real abstol)
+static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, real abstol)
 {
     int  i;
     char buf1[64], buf2[64];
@@ -401,7 +401,7 @@ static void cmp_idef(FILE *fp, t_idef *id1, t_idef *id2, real ftol, real abstol)
     }
 }
 
-static void cmp_block(FILE *fp, t_block *b1, t_block *b2, const char *s)
+static void cmp_block(FILE *fp, const t_block *b1, const t_block *b2, const char *s)
 {
     char buf[32];
 
@@ -410,7 +410,7 @@ static void cmp_block(FILE *fp, t_block *b1, t_block *b2, const char *s)
     cmp_int(fp, buf, -1, b1->nr, b2->nr);
 }
 
-static void cmp_blocka(FILE *fp, t_blocka *b1, t_blocka *b2, const char *s)
+static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const char *s)
 {
     char buf[32];
 
@@ -421,7 +421,7 @@ static void cmp_blocka(FILE *fp, t_blocka *b1, t_blocka *b2, const char *s)
     cmp_int(fp, buf, -1, b1->nra, b2->nra);
 }
 
-static void cmp_atom(FILE *fp, int index, t_atom *a1, t_atom *a2, real ftol, real abstol)
+static void cmp_atom(FILE *fp, int index, const t_atom *a1, const t_atom *a2, real ftol, real abstol)
 {
     if (a2)
     {
@@ -443,7 +443,7 @@ static void cmp_atom(FILE *fp, int index, t_atom *a1, t_atom *a2, real ftol, rea
     }
 }
 
-static void cmp_atoms(FILE *fp, t_atoms *a1, t_atoms *a2, real ftol, real abstol)
+static void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol)
 {
     int i;
 
@@ -466,7 +466,7 @@ static void cmp_atoms(FILE *fp, t_atoms *a1, t_atoms *a2, real ftol, real abstol
     }
 }
 
-static void cmp_top(FILE *fp, t_topology *t1, t_topology *t2, real ftol, real abstol)
+static void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)
 {
     fprintf(fp, "comparing top\n");
     if (t2)
@@ -485,7 +485,7 @@ static void cmp_top(FILE *fp, t_topology *t1, t_topology *t2, real ftol, real ab
     }
 }
 
-static void cmp_groups(FILE *fp, gmx_groups_t *g0, gmx_groups_t *g1,
+static void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
                        int natoms0, int natoms1)
 {
     int  i, j;
@@ -522,7 +522,7 @@ static void cmp_groups(FILE *fp, gmx_groups_t *g0, gmx_groups_t *g1,
      */
 }
 
-static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, rvec x1[], rvec x2[],
+static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, const rvec x1[], const rvec x2[],
                              real ftol, real abstol)
 {
     int    i, m;
@@ -555,7 +555,7 @@ static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, rvec x1[], rvec
     }
 }
 
-static void cmp_rvecs(FILE *fp, const char *title, int n, rvec x1[], rvec x2[],
+static void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x2[],
                       gmx_bool bRMSD, real ftol, real abstol)
 {
     int    i, m;
@@ -580,7 +580,7 @@ static void cmp_rvecs(FILE *fp, const char *title, int n, rvec x1[], rvec x2[],
     }
 }
 
-static void cmp_grpopts(FILE *fp, t_grpopts *opt1, t_grpopts *opt2, real ftol, real abstol)
+static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, real ftol, real abstol)
 {
     int  i, j;
     char buf1[256], buf2[256];
@@ -631,7 +631,7 @@ static void cmp_grpopts(FILE *fp, t_grpopts *opt1, t_grpopts *opt2, real ftol, r
     }
 }
 
-static void cmp_cosines(FILE *fp, const char *s, t_cosines c1[DIM], t_cosines c2[DIM], real ftol, real abstol)
+static void cmp_cosines(FILE *fp, const char *s, const t_cosines c1[DIM], const t_cosines c2[DIM], real ftol, real abstol)
 {
     int  i, m;
     char buf[256];
@@ -652,7 +652,7 @@ static void cmp_pull(FILE *fp)
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
 
-static void cmp_simtempvals(FILE *fp, t_simtemp *simtemp1, t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
+static void cmp_simtempvals(FILE *fp, const t_simtemp *simtemp1, const t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
 {
     int i;
     cmp_int(fp, "inputrec->simtempvals->eSimTempScale", -1, simtemp1->eSimTempScale, simtemp2->eSimTempScale);
@@ -664,7 +664,7 @@ static void cmp_simtempvals(FILE *fp, t_simtemp *simtemp1, t_simtemp *simtemp2, 
     }
 }
 
-static void cmp_expandedvals(FILE *fp, t_expanded *expand1, t_expanded *expand2, int n_lambda, real ftol, real abstol)
+static void cmp_expandedvals(FILE *fp, const t_expanded *expand1, const t_expanded *expand2, int n_lambda, real ftol, real abstol)
 {
     int i;
 
@@ -700,7 +700,7 @@ static void cmp_expandedvals(FILE *fp, t_expanded *expand1, t_expanded *expand2,
     cmp_real(fp, "inputrec->expandedvals->mc-temperature", -1, expand1->mc_temp, expand2->mc_temp, ftol, abstol);
 }
 
-static void cmp_fepvals(FILE *fp, t_lambda *fep1, t_lambda *fep2, real ftol, real abstol)
+static void cmp_fepvals(FILE *fp, const t_lambda *fep1, const t_lambda *fep2, real ftol, real abstol)
 {
     int i, j;
     cmp_int(fp, "inputrec->nstdhdl", -1, fep1->nstdhdl, fep2->nstdhdl);
@@ -728,7 +728,7 @@ static void cmp_fepvals(FILE *fp, t_lambda *fep1, t_lambda *fep2, real ftol, rea
     cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
 }
 
-static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, real abstol)
+static void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol)
 {
     fprintf(fp, "comparing inputrec\n");
 
@@ -889,7 +889,7 @@ static void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
     }
 }
 
-static void comp_state(t_state *st1, t_state *st2,
+static void comp_state(const t_state *st1, const t_state *st2,
                        gmx_bool bRMSD, real ftol, real abstol)
 {
     int i, j, nc;

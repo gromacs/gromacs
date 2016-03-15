@@ -58,7 +58,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
+static void calc_com_pbc(int nrefat, const t_topology *top, rvec x[], t_pbc *pbc,
                          int index[], rvec xref, int ePBC)
 {
     const real tol = 1e-4;
@@ -115,7 +115,7 @@ static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
     }
 }
 
-void spol_atom2molindex(int *n, int *index, t_block *mols)
+void spol_atom2molindex(int *n, int *index, const t_block *mols)
 {
     int nmol, i, j, m;
 

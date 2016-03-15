@@ -201,7 +201,7 @@ p_status(const char *const *restype, int nres,
 
 
 static int *
-mk_aid(t_atoms *atoms, const char ** restype, const char * typestring, int *nra, gmx_bool bMatch)
+mk_aid(const t_atoms *atoms, const char ** restype, const char * typestring, int *nra, gmx_bool bMatch)
 /* Make an array of ints for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
 {
     int     *a;
@@ -232,7 +232,7 @@ typedef struct {
     char    *gname;
 } restp_t;
 
-static void analyse_other(const char ** restype, t_atoms *atoms,
+static void analyse_other(const char ** restype, const t_atoms *atoms,
                           t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     restp_t *restp = NULL;
@@ -375,7 +375,7 @@ typedef struct gmx_help_make_index_group
     int compareto;
 } t_gmx_help_make_index_group;
 
-static void analyse_prot(const char ** restype, t_atoms *atoms,
+static void analyse_prot(const char ** restype, const t_atoms *atoms,
                          t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     /* lists of atomnames to be used in constructing index groups: */
@@ -573,7 +573,7 @@ static void analyse_prot(const char ** restype, t_atoms *atoms,
 }
 
 
-void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
+void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     gmx_residuetype_t*rt = NULL;
     char             *resnm;
@@ -1023,7 +1023,7 @@ void rd_index_nrs(char *statfile, int ngrps, int isize[],
     rd_groups(grps, gnames, grpnames, ngrps, isize, index, grpnr);
 }
 
-void get_index(t_atoms *atoms, const char *fnm, int ngrps,
+void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
                int isize[], int *index[], char *grpnames[])
 {
     char    ***gnames;

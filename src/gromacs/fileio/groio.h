@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,21 +59,21 @@ gmx_bool gro_next_x_or_v(FILE *status, struct t_trxframe *fr);
 int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
-void write_hconf_indexed_p(FILE *out, const char *title, struct t_atoms *atoms,
+void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
                            int nx, const int index[], int ndec,
-                           rvec *x, rvec *v, matrix box);
+                           const rvec *x, const rvec *v, const matrix box);
 
 void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop, int pr,
-                      rvec *x, rvec *v, matrix box);
+                      const rvec *x, const rvec *v, const matrix box);
 
-void write_hconf_p(FILE *out, const char *title, struct t_atoms *atoms, int ndec,
-                   rvec *x, rvec *v, matrix box);
+void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms, int ndec,
+                   const rvec *x, const rvec *v, const matrix box);
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */
 
 void write_conf_p(const char *outfile, const char *title,
-                  struct t_atoms *atoms, int pr,
-                  rvec *x, rvec *v, matrix box);
+                  const t_atoms *atoms, int pr,
+                  const rvec *x, const rvec *v, const matrix box);
 
 #ifdef __cplusplus
 }

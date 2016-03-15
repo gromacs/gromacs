@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,20 +52,20 @@ struct t_atoms;
 struct t_topology;
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
-                            struct t_atoms *atoms,
-                            rvec x[], rvec *v, int ePBC, matrix box,
+                            const t_atoms *atoms,
+                            const rvec x[], const rvec *v, int ePBC, const matrix box,
                             int nindex, int index[]);
 /* like write_sto_conf, but indexed */
 
 void write_sto_conf(const char *outfile, const char *title,
-                    struct t_atoms *atoms,
-                    rvec x[], rvec *v, int ePBC, matrix box);
+                    const t_atoms *atoms,
+                    const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL)
  * to an STO (.gro or .pdb) file */
 
 void write_sto_conf_mtop(const char *outfile, const char *title,
                          struct gmx_mtop_t *mtop,
-                         rvec x[], rvec *v, int ePBC, matrix box);
+                         const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
 gmx_bool read_tps_conf(const char *infile, struct t_topology *top,

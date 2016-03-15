@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -431,7 +431,7 @@ static void make_hconf_format(int pr, gmx_bool bVel, char format[])
 
 }
 
-static void write_hconf_box(FILE *out, int pr, matrix box)
+static void write_hconf_box(FILE *out, int pr, const matrix box)
 {
     char format[100];
     int  l;
@@ -461,9 +461,9 @@ static void write_hconf_box(FILE *out, int pr, matrix box)
     }
 }
 
-void write_hconf_indexed_p(FILE *out, const char *title, t_atoms *atoms,
+void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
                            int nx, const int index[], int pr,
-                           rvec *x, rvec *v, matrix box)
+                           const rvec *x, const rvec *v, const matrix box)
 {
     char resnm[6], nm[6], format[100];
     int  ai, i, resind, resnr;
@@ -519,7 +519,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, t_atoms *atoms,
 }
 
 void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
-                      rvec *x, rvec *v, matrix box)
+                      const rvec *x, const rvec *v, const matrix box)
 {
     char                    format[100];
     int                     i, resnr;
@@ -557,8 +557,8 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
     fflush(out);
 }
 
-void write_hconf_p(FILE *out, const char *title, t_atoms *atoms, int pr,
-                   rvec *x, rvec *v, matrix box)
+void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms, int pr,
+                   const rvec *x, const rvec *v, const matrix box)
 {
     int     *aa;
     int      i;
@@ -573,8 +573,8 @@ void write_hconf_p(FILE *out, const char *title, t_atoms *atoms, int pr,
 }
 
 void write_conf_p(const char *outfile, const char *title,
-                  t_atoms *atoms, int pr,
-                  rvec *x, rvec *v, matrix box)
+                  const t_atoms *atoms, int pr,
+                  const rvec *x, const rvec *v, const matrix box)
 {
     FILE *out;
 

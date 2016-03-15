@@ -527,7 +527,7 @@ static void init_dr_res(t_dr_result *dr, int ndr)
 }
 
 static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
-                              int nsteps, t_idef *idef, gmx_mtop_t *mtop,
+                              int nsteps, t_idef *idef, const gmx_mtop_t *mtop,
                               real max_dr, int nlevels, gmx_bool bThird)
 {
     FILE      *fp;

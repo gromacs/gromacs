@@ -110,7 +110,7 @@ static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 }
 
 static int check_atom_names(const char *fn1, const char *fn2,
-                            gmx_mtop_t *mtop, t_atoms *at)
+                            gmx_mtop_t *mtop, const t_atoms *at)
 {
     int      mb, m, i, j, nmismatch;
     t_atoms *tat;

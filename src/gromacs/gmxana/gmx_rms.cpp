@@ -64,7 +64,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-static void norm_princ(t_atoms *atoms, int isize, int *index, int natoms,
+static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
                        rvec *x)
 {
     int  i, m;

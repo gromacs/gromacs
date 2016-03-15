@@ -1594,7 +1594,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 }
 
 
-static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
+static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
                     const char *filename, gmx_bool bDp,
                     int *blocks, int *hists, int *samples, int *nlambdas,
                     const gmx_output_env_t *oenv)
