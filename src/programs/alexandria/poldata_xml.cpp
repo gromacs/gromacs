@@ -623,7 +623,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_double(grandchild, exml_names[exmlANGLE], angle->getAngle());
         add_xml_double(grandchild, exml_names[exmlSIGMA], angle->getSigma());
         add_xml_int(grandchild, exml_names[exmlNTRAIN], angle->getNtrain());
-        add_xml_char(grandchild, exml_names[exmlPARAMS], params.c_str());
+        add_xml_char(grandchild, exml_names[exmlPARAMS], angle->getParams().c_str());
     }
 
     for (i = 0; (i < egdNR); i++)

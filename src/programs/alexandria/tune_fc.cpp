@@ -788,7 +788,10 @@ void OptParam::getDissociationEnergy(FILE *fplog)
             GMX_RELEASE_ASSERT(gtb != pd_.getBondEnd(), "Can not find my bonds");
             std::vector<std::string> pp = gmx::splitString(b->paramString());
             char buf[256];
-            snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[j++], pp[1].c_str());
+            // Here we use the "knowledge" that the energy is the second parameter in
+            // the Morse description. Not good!
+            snprintf(buf, sizeof(buf), "%s  %.2f  %s", pp[0].c_str(),
+                     Edissoc[j++], pp[2].c_str());
             gtb->setParams(buf);
             b->setParamString(buf);
         }
@@ -1294,7 +1297,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
                     *(mi->topology_->atoms.atomtype[j]), mi->topology_->atoms.atom[j].q);
             if (bForce)
             {
-                fprintf(fp, "  %8.3f  %8.3f  %8.3f",
+                fprintf(fp, "   f = %8.3f  %8.3f  %8.3f",
                         mi->f_[j][XX],
                         mi->f_[j][YY],
                         mi->f_[j][ZZ]);
@@ -1348,7 +1351,7 @@ void OptParam::PrintSpecs(FILE *fp, char *title,
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i,
                 mi->molProp()->getMolname().c_str(),
-                mi->Hform, mi->Ecalc, DeltaE,
+                mi->Hform, mi->Emol, DeltaE,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += gmx::square(mi->Emol-mi->Ecalc);

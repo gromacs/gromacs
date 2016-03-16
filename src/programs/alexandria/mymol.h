@@ -119,11 +119,12 @@ class MyMol
                                 ChargeDistributionModel   iModel);
 
         //! Generate angles, dihedrals, exclusions etc.
-        void MakeAngles(bool bPairs, 
-                        bool bDihs);
+        void MakeAngles(bool           bPairs, 
+                        bool           bDihs);
 
         //! Generate virtual sites or linear angles
-        void MakeSpecialInteractions(bool bUseVsites);
+        void MakeSpecialInteractions(const Poldata &pd,
+                                     bool           bUseVsites);
 
         //! Add shell particles
         void addShells(const Poldata &pd, ChargeDistributionModel iModel);

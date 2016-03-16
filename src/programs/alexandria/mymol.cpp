@@ -278,7 +278,8 @@ void MyMol::getForceConstants(const Poldata &pd)
     }
 }
 
-void MyMol::MakeSpecialInteractions(bool bUseVsites)
+void MyMol::MakeSpecialInteractions(const Poldata &pd,
+                                    bool           bUseVsites)
 {
     std::vector < std::vector < unsigned int> > bonds;
     std::vector<int> nbonds;
@@ -338,7 +339,7 @@ void MyMol::MakeSpecialInteractions(bool bUseVsites)
     }
     int anr = topology_->atoms.nr;
 
-    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_,
+    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x_,
                          plist_, symtab_, atype_, &excls_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
@@ -418,7 +419,7 @@ static void cp_plist(t_params                  *plist,
             }
             for (int j = interaction_function[ftype].nrfpA; j < MAXFORCEPARAM; j++)
             {
-                plist->param[i].c[j] = NOTSET;
+                plist->param[i].c[j] = 0;
             }
             pw.addParam(plist->param[i]);
         }
@@ -1166,9 +1167,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   bool                    bDih,
                                   bool                    bAddShells)
 {
-    immStatus                imm = immOK;
-    int                      ftb;
-    t_param                  b;
+    immStatus imm = immOK;
+    int       ftb;
+    t_param   b;
 
     if (nullptr != debug)
     {
@@ -1201,7 +1202,22 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         {
             b.a[0] = bi->getAi() - 1;
             b.a[1] = bi->getAj() - 1;
-            add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
+            auto bb = pd.findBond(*topology_->atoms.atomtype[b.a[0]],
+                                  *topology_->atoms.atomtype[b.a[1]],
+                                  0);
+            if (bb != pd.getBondEnd())
+            {
+                std::string pp = bb->getParams();
+                std::vector<double> dd = getDoubles(pp);
+                int ii = 0;
+                // TODO FIX THIS 0.001
+                b.c[ii++] = 0.001*bb->getLength();
+                for(auto &d : dd)
+                {
+                    b.c[ii++] = d;
+                }
+                add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
+            }
         }
         if (molProp()->NBond() == 0)
         {
@@ -1214,7 +1230,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
-        MakeSpecialInteractions(bUseVsites);
+        MakeSpecialInteractions(pd, bUseVsites);
 
         getForceConstants(pd);
 
@@ -1920,18 +1936,14 @@ void MyMol::PrintTopology(const char             *fn,
 
     if (bVerbose)
     {
-        printf("There are %4d proper dihedrals, %4d impropers\n"
-               "          %4d angles, %4d linear angles\n"
-               "          %4d pairs, %4d bonds, %4d atoms\n"
-               "          %4d polarizations\n",
-               CountPlist(plist_, F_PDIHS),
-               CountPlist(plist_, F_IDIHS),
-               CountPlist(plist_, F_ANGLES),
-               CountPlist(plist_, F_LINEAR_ANGLES),
-               CountPlist(plist_, F_LJ14),
-               CountPlist(plist_, F_BONDS),
-               topology_->atoms.nr,
-               CountPlist(plist_, F_POLARIZATION));
+        for(auto &p : plist_)
+        {
+            if (p.nParam() > 0)
+            {
+                printf("There are %4d %s interactions\n", p.nParam(), 
+                       interaction_function[p.getFtype()].name);
+            }
+        }
         for (std::vector<std::string>::iterator i = commercials.begin(); (i < commercials.end()); ++i)
         {
             printf("%s\n", i->c_str());
@@ -2083,11 +2095,7 @@ void MyMol::addShells(const Poldata &pd,
     int      maxatom = topology_->atoms.nr*2+2;
     srenew(x_, maxatom);
     memset(&p, 0, sizeof(p));
-    inv_renum.reserve(topology_->atoms.nr*2);
-    for (i = 0; (i < topology_->atoms.nr*2); i++)
-    {
-        inv_renum[i] = -1;
-    }
+    inv_renum.resize(topology_->atoms.nr*2, -1);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
         if (pd.getAtypePol(*topology_->atoms.atomtype[i],
@@ -2127,7 +2135,7 @@ void MyMol::addShells(const Poldata &pd,
         /* Make new exclusion array, and put the shells in it */
         snew(newexcls, newa->nr);
         /* TODO: other polarization types */
-        std::vector<PlistWrapper>::iterator pw = SearchPlist(plist_, F_POLARIZATION);
+        auto pw = SearchPlist(plist_, F_POLARIZATION);
         if (plist_.end() != pw)
         {
             for (ParamIterator j = pw->beginParam();
@@ -2142,6 +2150,11 @@ void MyMol::addShells(const Poldata &pd,
                 // Now add the exclusions from the nucleus to the shell.
                 // We know that the nuclues is 0 since we just made the list
                 int i0 = inv_renum[j->a[0]];
+                char buf[256];
+                snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) shell %d (%d)",
+                         j->a[0], inv_renum[j->a[0]],
+                         j->a[1], inv_renum[j->a[1]]);
+                GMX_RELEASE_ASSERT(i0 >= 0, buf);
                 for (int j0 = 0; (j0 < excls_[i0].nr); j0++)
                 {
                     add_excl_pair(newexcls, j->a[0], renum[excls_[i0].e[j0]]);

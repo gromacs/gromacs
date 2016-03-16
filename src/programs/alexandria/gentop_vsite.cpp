@@ -362,15 +362,8 @@ static void set_linear_angle_params(int                        a[],
 {
     t_param pp;
     real    b0 = 0, b1 = 0;
-    std::vector<PlistWrapper>::iterator pw;
+    auto    pw = SearchPlist(plist, InteractionType_BONDS);
 
-    for (pw = plist.begin(); (pw < plist.end()); ++pw)
-    {
-        if (pw->getFtype() == F_BONDS)
-        {
-            break;
-        }
-    }
     if (plist.end() == pw)
     {
         fprintf(stderr, "Can not find the bonds in set_linear_angle_params\n");
@@ -407,11 +400,14 @@ static void set_linear_angle_params(int                        a[],
     }
 }
 
-void GentopVsites::generateSpecial(bool bUseVsites,
-                                   t_atoms *atoms, rvec **x,
-                                   std::vector<PlistWrapper> &plist,
-                                   t_symtab *symtab,
-                                   gpp_atomtype_t atype, t_excls **excls)
+void GentopVsites::generateSpecial(const Poldata             &pd,
+                                   bool                       bUseVsites,
+                                   t_atoms                   *atoms, 
+                                   rvec                     **x,
+                                   std::vector<PlistWrapper>  &plist,
+                                   t_symtab                  *symtab,
+                                   gpp_atomtype_t             atype, 
+                                   t_excls                  **excls)
 {
     int     j, nlin_at;
     int     a[MAXATOMLIST], aa[2];
@@ -420,10 +416,10 @@ void GentopVsites::generateSpecial(bool bUseVsites,
 
     mergeLinear(bUseVsites);
 
-    ftb     = F_BONDS;
-    fta     = F_ANGLES;
-    ftp     = F_PDIHS;
-    fti     = F_IDIHS;
+    ftb     = pd.getBondFtype();
+    fta     = pd.getAngleFtype();
+    ftp     = pd.getDihedralFtype(egdPDIHS);
+    fti     = pd.getDihedralFtype(egdIDIHS);
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)
     {
