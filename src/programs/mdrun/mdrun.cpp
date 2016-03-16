@@ -204,10 +204,11 @@ int gmx_mdrun(int argc, char *argv[])
         "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
         "or upon receiving a signal."
         "[PAR]",
-        "When [TT]mdrun[tt] receives a TERM signal, it will set nsteps to the current",
-        "step plus one. When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
-        "pressed), it will stop after the next neighbor search step ",
-        "(with nstlist=0 at the next step).",
+        "When [TT]mdrun[tt] receives a TERM signal, it will stop after",
+        "the next global communication step.",
+        "When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
+        "pressed), it will stop at the next neighbor search step or at the",
+        "second global communication step, whichever is larger.",
         "In both cases all the usual output will be written to file.",
         "When running with MPI, a signal to one of the [TT]mdrun[tt] ranks",
         "is sufficient, this signal should not be sent to mpirun or",
