@@ -97,25 +97,34 @@ class MyMol
         //! The molprop
         MolProp         *mp_;
         //! Gromacs structures
+	//! Exclusion number
         int              nexcl_;
         //! List of symmetric charges
         std::vector<int> symmetric_charges_;
         int             *cgnr_;
+	//! List of exclusions
         t_excls         *excls_;
+	//! virtual site
         GentopVsites     gvt_;
         QgenResp         gr_;
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
+	//! Reference enthalpy of formation 
         double           ref_enthalpy_, mutot_;
         double           polarizability_, sig_pol_;
+	//! Root-mean square deviation of the calculated ESP from QM ESP
         double           EspRms_;
         //! Determine whether a molecule has symmetry (within a certain tolerance)
         bool IsSymmetric(real toler);
 
         //! Generate Atoms based on quantum calculation with specified level of theory
-        immStatus GenerateAtoms(gmx_atomprop_t            ap,
+        immStatus GenerateAtoms(
+				//! Gromacs atom properties
+				gmx_atomprop_t            ap,
+				//! Level of theory used for QM calculations 
                                 const char               *lot,
+				//! The distrbution model of charge (e.x. point charge, gaussian, and slater models)
                                 ChargeDistributionModel   iModel);
 
         //! Generate angles, dihedrals, exclusions etc.
@@ -165,29 +174,52 @@ class MyMol
         //! Return my inner molprop
         MolProp *molProp() const { return mp_; }
 
-        //! Generate the topology structure
+        /*! \brief
+	 * It generates the topology structure which will be used to print 
+	 * the topology file. 
+	 */
         immStatus GenerateTopology(gmx_atomprop_t            ap,
                                    const Poldata            &pd,
+				   //! The level of theory used for QM calculation
                                    const char               *lot,
+				   //! The distrbution model of charge (e.x. point charge, gaussian, and slater models)
                                    ChargeDistributionModel   iModel,
+				   //! Number of Exclusions
                                    int                       nexcl,
+				   //! Add virtual sites to the topology structure 
                                    bool                      bUseVsites,
+				   //! Add pairs to the topology structure
                                    bool                      bPairs,
+				   //! Add dihedrals to the topology structure
                                    bool                      bDih,
+				   //! Add shells to the topology structure
                                    bool                      bAddShells);
-        //! Generate Charges
-        immStatus GenerateCharges(const Poldata             &pd, 
+        /*! \brief
+	 * Generate atomic partial charges
+	 */
+        immStatus GenerateCharges(
+				  //! Data structure containing atomic properties required for charge claculation
+				  const Poldata             &pd, 
                                   gmx_atomprop_t             ap,
+				  //! The distrbution model of charge (e.x. point charge, gaussian or slater models)
                                   ChargeDistributionModel    iModel,
+				  //! The algorithm calculating the partial charge (e.x. ESP, RESP)
                                   ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                   real                       watoms,
                                   real                       hfac,
+				  //! The level of theory used for QM calculation
                                   const char                *lot,
+				  //! Consider molecular symmetry to calculate partial charge
                                   bool                       bSymmetricCharges,
+				  //! The type of molecular symmetry
                                   const char                *symm_string,
                                   t_commrec                 *cr,
                                   const char                *tabfn);
 
+	/*! \brief
+	 * Return the root-mean square deviation of 
+	 * the generated ESP from the QM ESP. 
+	 */
         double espRms() const { return EspRms_; }
         
         // Collect the experimental properties
@@ -195,11 +227,15 @@ class MyMol
                               alexandria::GaussAtomProp &gap);
 
         //! Print the topology that was generated previously in GROMACS format.
-        //! fp is a File pointer opened previously.
-        void PrintTopology(const char             *fn,
+        void PrintTopology(
+			   //! A File pointer opened previously.
+			   const char             *fn,
+			   //! The distrbution model of charge (e.x. point charge, gaussian, and slater models)
                            ChargeDistributionModel iModel,
+			   //! Verbose
                            bool                    bVerbose,
                            const Poldata          &pd,
+			   //! Gromacs atom properties 
                            gmx_atomprop_t          aps);
 
         //! Compute/derive global info about the molecule
@@ -217,9 +253,11 @@ class MyMol
 
         //! Get the force field
         std::string getForceField() { return forcefield_; }
-
+	
+	//! Calculate multipoles
         void CalcMultipoles();
 
+	//! Generate Charge Groups
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
         immStatus GenerateGromacs(t_commrec *cr,
@@ -238,9 +276,10 @@ class MyMol
                           const char             *diffhistfn,
                           const gmx_output_env_t *oenv);
 
-        //! Print the coordinates corresponding to topology after adding shell particles
-        //! and/or vsites. fp is a File pointer opened previously.
-        void PrintConformation(const char *fn);
+        //! Print the coordinates corresponding to topology after adding shell particles and/or vsites. 
+        void PrintConformation(
+			       //! A File pointer opened previously.
+			       const char *fn);
 };
 
 const char *immsg(immStatus imm);
