@@ -44,6 +44,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <algorithm>
+
 #include "thread_mpi/threads.h"
 
 #include "gromacs/commandline/filenm.h"
@@ -942,7 +944,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
         }
 
-        /* < 0 means stop at next step, > 0 means stop at next NS step */
+        /* < 0 means stop after this step, > 0 means stop at next NS step */
         if ( (gs.set[eglsSTOPCOND] < 0) ||
              ( (gs.set[eglsSTOPCOND] > 0) && (bNStList || ir->nstlist == 0) ) )
         {
@@ -1304,30 +1306,31 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 #endif
             )
         {
+            int nsteps_stop = -1;
+
             /* this is just make gs.sig compatible with the hack
                of sending signals around by MPI_Reduce with together with
                other floats */
             if (gmx_get_stop_condition() == gmx_stop_cond_next_ns)
             {
                 gs.sig[eglsSTOPCOND] = 1;
+                nsteps_stop          = std::max(ir->nstlist, 2*nstglobalcomm);
             }
             if (gmx_get_stop_condition() == gmx_stop_cond_next)
             {
                 gs.sig[eglsSTOPCOND] = -1;
+                nsteps_stop          = nstglobalcomm + 1;
             }
-            /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
-                        "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        gmx_get_signal_name(),
-                        gs.sig[eglsSTOPCOND] == 1 ? "NS " : "");
+                        "\n\nReceived the %s signal, stopping within %d steps\n\n",
+                        gmx_get_signal_name(), nsteps_stop);
                 fflush(fplog);
             }
             fprintf(stderr,
-                    "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    gmx_get_signal_name(),
-                    gs.sig[eglsSTOPCOND] == 1 ? "NS " : "");
+                    "\n\nReceived the %s signal, stopping within %d steps\n\n",
+                    gmx_get_signal_name(), nsteps_stop);
             fflush(stderr);
             handled_stop_condition = (int)gmx_get_stop_condition();
         }
