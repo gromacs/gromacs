@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ int many_auto_correl(int nfunc, int ndata, int nfft, real **c)
             fftcode = gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in, (void *)out);
             for (j = 0; (j < nfft); j++)
             {
-                c[i][j] = out[j][0]/ndata;
+                c[i][j] = out[j][0];
             }
         }
         /* Free the memory */
