@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@ extern "C" {
  * This routine performs many autocorrelation function calculations using FFTs.
  * The GROMACS FFT library wrapper is employed. On return the c[] arrays contain
  * a symmetric function that is useful for further FFT:ing, for instance in order to
- * compute spectra.
+ * compute spectra. The correlation function is NOT normalized.
  *
  * The functions uses OpenMP parallellization.
  *
