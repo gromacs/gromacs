@@ -935,15 +935,18 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     n_prev      = pme_lb->cycles_n;
     cycles_prev = pme_lb->cycles_c;
     wallcycle_get(wcycle, ewcSTEP, &pme_lb->cycles_n, &pme_lb->cycles_c);
-    if (pme_lb->cycles_n == 0)
+
+    /* Before the first step we haven't done any steps yet.
+     * Also handle cases where ir->init_step % ir->nstlist != 0.
+     */
+    if (pme_lb->cycles_n < ir->nstlist)
     {
-        /* Before the first step we haven't done any steps yet */
         return;
     }
     /* Sanity check, we expect nstlist cycle counts */
     if (pme_lb->cycles_n - n_prev != ir->nstlist)
     {
-        /* We could return here, but it's safer to issue and error and quit */
+        /* We could return here, but it's safer to issue an error and quit */
         gmx_incons("pme_loadbal_do called at an interval != nstlist");
     }
 
