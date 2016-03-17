@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2743,7 +2743,8 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
-    double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, n_sub = 0;
+    double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
+    ivec                   *dof_vcm;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
     int                     mb, mol, ftype, as;
@@ -2768,7 +2769,9 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
      */
     snew(nrdf_tc, groups->grps[egcTC].nr+1);
     snew(nrdf_vcm, groups->grps[egcVCM].nr+1);
+    snew(dof_vcm, groups->grps[egcVCM].nr+1);
     snew(na_vcm, groups->grps[egcVCM].nr+1);
+    snew(nrdf_vcm_sub, groups->grps[egcVCM].nr+1);
 
     for (i = 0; i < groups->grps[egcTC].nr; i++)
     {
@@ -2776,7 +2779,10 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     }
     for (i = 0; i < groups->grps[egcVCM].nr+1; i++)
     {
-        nrdf_vcm[i] = 0;
+        nrdf_vcm[i]     = 0;
+        clear_ivec(dof_vcm[i]);
+        na_vcm[i]       = 0;
+        nrdf_vcm_sub[i] = 0;
     }
 
     snew(nrdf2, natoms);
@@ -2792,7 +2798,8 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             {
                 if (opts->nFreeze[g][d] == 0)
                 {
-                    nrdf2[i] += 2;
+                    nrdf2[i]                              += 2;
+                    dof_vcm[ggrpnr(groups, egcVCM, i)][d]  = 1;
                 }
             }
             nrdf_tc [ggrpnr(groups, egcTC, i)]  += 0.5*nrdf2[i];
@@ -2922,21 +2929,30 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
     if (ir->nstcomm != 0)
     {
-        /* Subtract 3 from the number of degrees of freedom in each vcm group
-         * when com translation is removed and 6 when rotation is removed
-         * as well.
+        /* Subtract 3 (or less with frozen dimensions) from the number
+         * of degrees of freedom in each vcm group when com translation
+         * is removed and 6 when rotation is removed as well.
          */
-        switch (ir->comm_mode)
+        for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
         {
-            case ecmLINEAR:
-                n_sub = ndof_com(ir);
-                break;
-            case ecmANGULAR:
-                n_sub = 6;
-                break;
-            default:
-                n_sub = 0;
-                gmx_incons("Checking comm_mode");
+            switch (ir->comm_mode)
+            {
+                case ecmLINEAR:
+                    nrdf_vcm_sub[j] = 0;
+                    for (d = 0; d < DIM; d++)
+                    {
+                        if (dof_vcm[j][d])
+                        {
+                            nrdf_vcm_sub[j]++;
+                        }
+                    }
+                    break;
+                case ecmANGULAR:
+                    nrdf_vcm_sub[j] = 6;
+                    break;
+                default:
+                    gmx_incons("Checking comm_mode");
+            }
         }
 
         for (i = 0; i < groups->grps[egcTC].nr; i++)
@@ -2961,16 +2977,15 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             nrdf_uc = nrdf_tc[i];
             if (debug)
             {
-                fprintf(debug, "T-group[%d] nrdf_uc = %g, n_sub = %g\n",
-                        i, nrdf_uc, n_sub);
+                fprintf(debug, "T-group[%d] nrdf_uc = %g\n", i, nrdf_uc);
             }
             nrdf_tc[i] = 0;
             for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
             {
-                if (nrdf_vcm[j] > n_sub)
+                if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
                     nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
-                        (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
+                        (nrdf_vcm[j] - nrdf_vcm_sub[j])/nrdf_vcm[j];
                 }
                 if (debug)
                 {
@@ -2995,7 +3010,9 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(nrdf2);
     sfree(nrdf_tc);
     sfree(nrdf_vcm);
+    sfree(dof_vcm);
     sfree(na_vcm);
+    sfree(nrdf_vcm_sub);
 }
 
 static void decode_cos(char *s, t_cosines *cosine)
