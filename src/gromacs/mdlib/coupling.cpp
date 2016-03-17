@@ -1029,7 +1029,7 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
         /* now, set temperature variables */
         for (i = 0; i < ngtc; i++)
         {
-            if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
+            if (opts->tau_t[i] > 0 && opts->ref_t[i] > 0 && opts->nrdf[i] > 0)
             {
                 reft = std::max<real>(0, opts->ref_t[i]);
                 nd   = opts->nrdf[i];
