@@ -89,7 +89,7 @@ static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 /* CUDA supports everything. Our current OpenCL implementation only
  * supports using exactly one GPU per PP rank, so sharing is
  * impossible */
-static const bool gpuSharingSupport[] = { false, true, false };
+static const bool gpuSharingSupport[] = { false, true, true };
 static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
 
 /* CUDA supports everything. Our current OpenCL implementation seems

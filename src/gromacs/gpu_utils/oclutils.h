@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,31 +69,37 @@ typedef struct
     cl_device_id        ocl_device_id;   /**< Device ID */
 } ocl_gpu_id_t;
 
-/*! \internal \brief OpenCL GPU information
+/*! \internal \brief OpenCL device information.
  *
- * \todo Move context and program outside this data structure.
- * They are specific to a certain usage of the device (e.g. with/without OpenGL
- * interop) and do not provide general device information as the data structure
- * name indicates.
- *
- * TODO Document fields
+ * The OpenCL device information is queried and set at detection and contains
+ * both information about the device/hardware returned by the runtime as well
+ * as additional data like support status.
  */
 struct gmx_device_info_t
 {
-    //! @cond Doxygen_Suppress
-    ocl_gpu_id_t        ocl_gpu_id;
-    char                device_name[256];
-    char                device_version[256];
-    char                device_vendor[256];
-    int                 compute_units;
-    int                 adress_bits;
-    int                 stat;
-    ocl_vendor_id_t     vendor_e;
+    ocl_gpu_id_t        ocl_gpu_id;          /**! device ID assigned at detection   */
+    char                device_name[256];    /**! device name */
+    char                device_version[256]; /**! device version */
+    char                device_vendor[256];  /**! device vendor */
+    int                 compute_units;       /**! number of compute units */
+    int                 adress_bits;         /**! number of adress bits the device is capable of */
+    int                 stat;                /**! device status takes values of e_gpu_detect_res_t */
+    ocl_vendor_id_t     vendor_e;            /**! device vendor as defined by ocl_vendor_id_t */
+};
 
-    cl_context          context;
-    cl_program          program;
-    //! @endcond Doxygen_Suppress
-
+/*! \internal \brief OpenCL GPU runtime data
+ *
+ * The device runtime data is meant to hold objects associated with a GROMACS rank's
+ * (thread or process) use of a single device (multiple devices per rank is not
+ * implemented). These objects should be constructed at ther point where a device
+ * dets assigned to a rank and released at when this assignment is no longer valid
+ * (i.e. at cleanup in the current implementation).
+ *
+ */
+struct gmx_device_runtime_data_t
+{
+    cl_context context; /**! OpenCL context */
+    cl_program program; /**! OpenCL program */
 };
 
 #if !defined(NDEBUG)

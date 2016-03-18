@@ -107,7 +107,12 @@
 
 #endif /* CHECK_CUDA_ERRORS */
 
-/*! CUDA device information. */
+/*! \brief CUDA device information.
+ *
+ * The CUDA device information is queried and set at detection and contains
+ * both information about the device/hardware returned by the runtime as well
+ * as additional data like support status.
+ */
 struct gmx_device_info_t
 {
     int                 id;                     /* id of the CUDA device */
