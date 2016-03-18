@@ -1142,6 +1142,8 @@ gmx_constr_t init_constraints(FILE *fplog,
     int nsettles =
         gmx_mtop_ftype_count(mtop, F_SETTLE);
 
+    GMX_RELEASE_ASSERT(!ir->bPull || ir->pull_work != NULL, "init_constraints called with COM pulling before/without initializing the pull code");
+
     if (nconstraints + nsettles == 0 &&
         !(ir->bPull && pull_have_constraint(ir->pull_work)) &&
         ed == NULL)
