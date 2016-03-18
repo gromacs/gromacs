@@ -554,7 +554,6 @@ Known limitations of the OpenCL support
 Limitations in the current OpenCL support of interest to |Gromacs| users:
 
 - Using more than one GPU on a node is supported only with thread MPI
-- Sharing a GPU between multiple PP ranks is not supported
 - No Intel devices (CPUs, GPUs or Xeon Phi) are supported
 - Due to blocking behavior of some asynchronous task enqueuing functions
   in the NVIDIA OpenCL runtime, with the affected driver versions there is
