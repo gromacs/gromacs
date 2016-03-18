@@ -238,7 +238,7 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
 
     if (NULL == kernel_ptr[0])
     {
-        *kernel_ptr = clCreateKernel(nb->dev_info->program, kernel_name_to_run, &cl_error);
+        *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
         assert(cl_error == CL_SUCCESS);
     }
     // TODO: handle errors
@@ -537,7 +537,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
             if (NULL == nb->debug_buffer)
             {
-                nb->debug_buffer = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                nb->debug_buffer = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                                                   debug_buffer_size, debug_buffer_h, &cl_error);
 
                 assert(CL_SUCCESS == cl_error);
