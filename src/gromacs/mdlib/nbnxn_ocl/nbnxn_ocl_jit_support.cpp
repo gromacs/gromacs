@@ -192,7 +192,7 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     }
 
     device_id        = nb->dev_info->ocl_gpu_id.ocl_device_id;
-    context          = nb->dev_info->context;
+    context          = nb->dev_rundata->context;
 
 
 
@@ -239,5 +239,5 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    nb->dev_info->program = program;
+    nb->dev_rundata->program = program;
 }
