@@ -94,6 +94,8 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_rotation.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -1265,6 +1267,22 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Assumes uniform use of the number of OpenMP threads */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
 
+        if (inputrec->bPull)
+        {
+            /* Initialize pull code */
+            inputrec->pull_work =
+                init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
+                          mtop, cr, oenv, inputrec->fepvals->init_lambda,
+                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+        }
+
+        if (inputrec->bRot)
+        {
+            /* Initialize enforced rotation code */
+            init_rot(fplog, inputrec, nfile, fnm, cr, state->x, state->box, mtop, oenv,
+                     bVerbose, Flags);
+        }
+
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
 
         if (DOMAINDECOMP(cr))
@@ -1290,6 +1308,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      imdport,
                                      Flags,
                                      walltime_accounting);
+
+        if (inputrec->bRot)
+        {
+            finish_rot(inputrec->rot);
+        }
+
+        if (inputrec->bPull)
+        {
+            finish_pull(inputrec->pull_work);
+        }
+
     }
     else
     {
