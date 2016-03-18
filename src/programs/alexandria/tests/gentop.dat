@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="GAFF" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="1" fudgeLJ="1">
+  <atomtypes forcefield="GAFF" function="LJ_SR" combination_rule="Arithmetic" nexclusions="1" fudgeQQ="1" fudgeLJ="1">
     <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h1" ptype="ha" btype="h1" vdwparams="0 0" ref_enthalpy="217.999"/>
     <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h2" ptype="ha" btype="h1" vdwparams="0 0" ref_enthalpy="217.999"/>
     <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h3" ptype="ha" btype="h1" vdwparams="0 0" ref_enthalpy="217.999"/>

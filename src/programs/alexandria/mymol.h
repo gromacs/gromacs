@@ -184,8 +184,6 @@ class MyMol
                                    const char               *lot,
 				   //! The distrbution model of charge (e.x. point charge, gaussian, and slater models)
                                    ChargeDistributionModel   iModel,
-				   //! Number of Exclusions
-                                   int                       nexcl,
 				   //! Add virtual sites to the topology structure 
                                    bool                      bUseVsites,
 				   //! Add pairs to the topology structure

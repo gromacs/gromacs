@@ -110,12 +110,11 @@ class EemTest : public gmx::test::CommandLineTestBase
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
-            int                       nexcl       = 2;
             const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
             eDih                      edih        = (eDih) get_option(dihopt);
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 nexcl, false, false, edih, false);
+                                 false, false, edih, false);
 
             //Needed for GenerateCharges
             real        hfac        = 0;

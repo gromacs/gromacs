@@ -162,7 +162,6 @@ int alex_gentop(int argc, char *argv[])
     static real                      hfac           = 0, qweight = 1e-3, bhyper = 0.1;
     static real                      th_toler       = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
     static real                      dbox           = 0.370424, penalty_fac = 1;
-    static int                       nexcl          = 2;
     static int                       maxiter        = 25000, maxcycle = 1;
     static int                       nmol           = 1;
     static real                      rDecrZeta      = -1;
@@ -196,8 +195,6 @@ int alex_gentop(int argc, char *argv[])
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
-        { "-nexcl",  FALSE, etINT,  {&nexcl},
-          "HIDDENNumber of exclusions. Check consistency of this option with the [TT]-pairs[tt] flag." },
         { "-dih",    FALSE, etBOOL, {&bDihedral},
           "Add dihedrals to the topology" },
         { "-H14",    FALSE, etBOOL, {&bH14},
@@ -427,20 +424,24 @@ int alex_gentop(int argc, char *argv[])
     mymol.molProp()->Merge(mpi);
     mymol.SetForceField(forcefield);
 
-    imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel, nexcl,
+    imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
                                  bGenVSites, bPairs, bDihedral, bPolar);
 
     if (immOK == imm)
     {
-        t_commrec     *cr     = init_commrec();
-        
+        t_commrec  *cr    = init_commrec();
+        const char *tabfn = opt2fn_null("-tab", NFILE, fnm);
+        if (NULL == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
+        {
+            gmx_fatal(FARGS, "Can not generate charges in a polarizable system with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+        }
         imm = mymol.GenerateCharges(pd, aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     watoms,
                                     hfac,
                                     lot, bQsym, symm_string, cr,
-                                    opt2fn_null("-tab", NFILE, fnm));
+                                    tabfn);
     }
     if (immOK == imm)
     {

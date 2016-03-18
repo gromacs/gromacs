@@ -110,10 +110,9 @@ class RespTest : public gmx::test::CommandLineTestBase
         {
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
-            int                       nexcl       = 2;
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 nexcl, false, false, false, bPolar);
+                                 false, false, false, bPolar);
             //Needed for GenerateCharges
             real        hfac        = 0;
             real        epsr        = 1;

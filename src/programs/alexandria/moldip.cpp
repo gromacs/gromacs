@@ -534,7 +534,7 @@ void MolDip::Read(FILE *fp,
                   const char *tabfn)
 {
     int                              nwarn = 0, nmol_cpu;
-    int                              nexcl, imm_count[immNR];
+    int                              imm_count[immNR];
     immStatus                        imm;
     std::vector<alexandria::MolProp> mp;
     alexandria::GaussAtomProp        gap;
@@ -554,8 +554,6 @@ void MolDip::Read(FILE *fp,
         alexandria::readPoldata(pd_fn, pd_, _atomprop);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
-    nexcl = pd_.getNexcl();
 
     if (NULL != fp)
     {
@@ -602,7 +600,6 @@ void MolDip::Read(FILE *fp,
 
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
                                              _iChargeDistributionModel,
-                                             nexcl,
                                              false, false, bDihedral, bPolar);
 
                 if (immOK == imm)
@@ -717,7 +714,7 @@ void MolDip::Read(FILE *fp,
                 fflush(debug);
             }
 
-            imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel, nexcl,
+            imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel,
                                          false, false, bDihedral, bPolar);
 
             if (immOK == imm)

@@ -1161,7 +1161,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   const Poldata          &pd,
                                   const char             *lot,
                                   ChargeDistributionModel iChargeDistributionModel,
-                                  int                     nexcl,
                                   bool                    bUseVsites,
                                   bool                    bPairs,
                                   bool                    bDih,
@@ -1176,7 +1175,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         fprintf(debug, "Generating topology_ for %s\n", molProp()->getMolname().c_str());
     }
 
-    nexcl_ = nexcl;
+    nexcl_ = pd.getNexcl();
     molProp()->GenerateComposition(pd);
     if (molProp()->NAtom() <= 0)
     {
