@@ -341,6 +341,9 @@ void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 {
     if (gpu_info)
     {
+
+        //FIXME
+#if 0
         for (int i = 0; i < gpu_info->n_dev; i++)
         {
             cl_int gmx_unused cl_error;
@@ -359,6 +362,7 @@ void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
                 assert(CL_SUCCESS == cl_error);
             }
         }
+#endif
 
         sfree(gpu_info->gpu_dev);
     }

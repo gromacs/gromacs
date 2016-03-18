@@ -89,11 +89,13 @@ struct gmx_device_info_t
     int                 adress_bits;
     int                 stat;
     ocl_vendor_id_t     vendor_e;
+    //! @endcond Doxygen_Suppress
+};
 
+struct gmx_device_runtime_data_t
+{
     cl_context          context;
     cl_program          program;
-    //! @endcond Doxygen_Suppress
-
 };
 
 #if !defined(NDEBUG)

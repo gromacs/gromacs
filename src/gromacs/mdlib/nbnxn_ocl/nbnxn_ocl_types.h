@@ -277,6 +277,7 @@ typedef struct cl_timers
 struct gmx_nbnxn_ocl_t
 {
     struct gmx_device_info_t *dev_info;        /**< OpenCL device information                                  */
+    struct gmx_device_runtime_data_t *dev_rundata; /**< OpenCL runtime data (context, kernels)                  */
 
     /**< Pointers to non-bonded kernel functions
      * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
