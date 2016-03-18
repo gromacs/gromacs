@@ -339,29 +339,12 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 //! This function is documented in the header file
 void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 {
-    if (gpu_info)
+    if (gpu_info == NULL)
     {
-        for (int i = 0; i < gpu_info->n_dev; i++)
-        {
-            cl_int gmx_unused cl_error;
-
-            if (gpu_info->gpu_dev[i].context)
-            {
-                cl_error                     = clReleaseContext(gpu_info->gpu_dev[i].context);
-                gpu_info->gpu_dev[i].context = NULL;
-                assert(CL_SUCCESS == cl_error);
-            }
-
-            if (gpu_info->gpu_dev[i].program)
-            {
-                cl_error                     = clReleaseProgram(gpu_info->gpu_dev[i].program);
-                gpu_info->gpu_dev[i].program = NULL;
-                assert(CL_SUCCESS == cl_error);
-            }
-        }
-
-        sfree(gpu_info->gpu_dev);
+        return;
     }
+
+    sfree(gpu_info->gpu_dev);
 }
 
 //! This function is documented in the header file

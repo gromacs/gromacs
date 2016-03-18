@@ -3233,8 +3233,12 @@ void free_gpu_resources(const t_forcerec     *fr,
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
-         * destroying the context in free_gpu() as some ranks may be sharing
+         * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
          * GPU and context.
+         *
+         * This is not a concern in OpenCL where we use one context per rank which
+         * is freed in nbnxn_gpu_free().
+         *
          * Note: as only PP ranks need to free GPU resources, so it is safe to
          * not call the barrier on PME ranks.
          */
