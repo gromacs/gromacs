@@ -86,10 +86,10 @@ static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
  * array entry. */
 
-/* CUDA supports everything. Our current OpenCL implementation only
- * supports using exactly one GPU per PP rank, so sharing is
- * impossible */
-static const bool gpuSharingSupport[] = { false, true, false };
+/* Both CUDA and OpenCL (on the supported/tested platforms) supports
+ * GPU device sharing.
+ */
+static const bool gpuSharingSupport[] = { false, true, true };
 static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
 
 /* CUDA supports everything. Our current OpenCL implementation seems
