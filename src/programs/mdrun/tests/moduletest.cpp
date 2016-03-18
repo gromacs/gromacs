@@ -49,11 +49,13 @@
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/textwriter.h"
 #include "programs/mdrun/mdrun_main.h"
 
@@ -235,17 +237,75 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
         caller.addOption("-nsteps", nsteps_);
     }
 
-#if GMX_MPI
-#  if GMX_GPU != GMX_GPU_NONE
-#    if GMX_THREAD_MPI
-    int         numGpusNeeded = g_numThreads;
-#    else   /* Must be real MPI */
-    int         numGpusNeeded = gmx_node_num();
-#    endif
-    std::string gpuIdString(numGpusNeeded, '0');
-    caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
+#if GMX_GPU != GMX_GPU_NONE
+    scoped_guard_sfree hwinfo(gmx_detect_hardware(nullptr, nullptr, true));
+    int numberOfNodes = hwinfo->nphysicalnode;
+#if GMX_THREAD_MPI
+    /* Can't use gmx_node_num() because it is only valid after spawn of thread-MPI threads */
+    int numberOfRanks = g_numThreads;
+#elif GMX_LIB_MPI
+    int numberOfRanks = gmx_node_num();
+#else
+    int numberOfRanks = 1;
 #endif
+
+    TextLineWrapper wrapper;
+    wrapper.settings().setLineLength(78);
+    std::string message;
+    if ((hwinfo->ngpu_compatible_total > hwinfo->nphysicalnode) &&
+        !gmx_multiple_gpu_per_node_supported())
+    {
+        // There's more than one GPU per node, but we can only use one
+        // of them. If we need to, can we share it between ranks?
+        if ((numberOfRanks > hwinfo->ngpu_compatible_tot) &&
+            !gmx_gpu_sharing_supported())
+        {
+            // We can't share GPUs between ranks, and we'd need to. Cope as best we can.
+            message += "GROMACS in this build configuration cannot run on more than one GPU per node, and cannot share GPUs between ranks. ";
+#if GMX_LIB_MPI
+            // With real MPI, the problem has to be solved by the caller, so just do what we can.
+            message += formatString("So, with %d ranks and %d GPUs, this test will run on the CPU only.", numberOfRanks, hwinfo->ngpu_compatible_tot);
+            // TODO What if some other code is using -nb?
+            caller.addOption("-nb", "cpu");
+#else
+            // This case must be thread-MPI. (No-MPI had only one rank.)
+            message += formatString("So, this test will run with GPU support enabled and on a single rank, rather than "
+                                    "the %d ranks and %d nodes that would have been the default.", numberOfRanks, numberOfNodes);
+            g_numThreads = numberOfRanks = 1;
+#endif
+        }
+        else
+        {
+            // We can only run on one GPU. Guess to use ID 0. By default, mdrun will use it for as many ranks as required.
+            // TODO What if -gpu_id is already in use?
+            caller.addOption("-gpu_id", "0");
+        }
+    }
+    else if ((hwinfo->ngpu_compatible_tot > 0) &&
+             (numberOfRanks > hwinfo->ngpu_compatible_tot) &&
+             !gmx_gpu_sharing_supported())
+    {
+        // We can't share GPUs between ranks, and we'd need to. Cope as best we can.
+        message += "GROMACS in this build configuration cannot share GPUs between ranks. ";
+#if GMX_LIB_MPI
+        // With real MPI, the problem has to be solved by the caller, so just do what we can.
+        message += formatString("So, with %d ranks and %d GPUs, this test will run on the CPU only.", numberOfRanks, hwinfo->ngpu_compatible_tot);
+        // TODO What if some other code is using -nb?
+        caller.addOption("-nb", "cpu");
+#else
+        // This case must be thread-MPI. (No-MPI had only one rank.)
+        message += formatString("So, this test will run with GPU support enabled and on as many ranks "
+                                "as GPUs (%d), rather than the %d ranks and %d nodes that would have "
+                                "been the default.", hwinfo->ngpu_compatible_tot, numberOfRanks, numberOfNodes);
+        g_numThreads = numberOfRanks = hwinfo->ngpu_compatible_tot;
+#endif
+    }
+
+    if (gmx_node_rank() == 0 && !message.empty())
+    {
+        fprintf(stderr, "%s\n", wrapper.wrapToString(message).c_str());
+    }
+#endif /* GMX_GPU != GMX_GPU_NONE */
 
 #if GMX_THREAD_MPI
     caller.addOption("-ntmpi", g_numThreads);
@@ -255,30 +315,6 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-#if GMX_GPU != GMX_GPU_NONE
-    /* TODO Ideally, with real MPI, we could call
-     * gmx_collect_hardware_mpi() here and find out how many nodes
-     * mdrun will run on. For now, we assume that we're running on one
-     * node regardless of the number of ranks, because that's true in
-     * Jenkins and for most developers running the tests. */
-    int numberOfNodes = 1;
-#if GMX_THREAD_MPI
-    /* Can't use gmx_node_num() because it is only valid after spawn of thread-MPI threads */
-    int numberOfRanks = g_numThreads;
-#elif GMX_LIB_MPI
-    int numberOfRanks = gmx_node_num();
-#else
-    int numberOfRanks = 1;
-#endif
-    if (numberOfRanks > numberOfNodes && !gmx_multiple_gpu_per_node_supported())
-    {
-        if (gmx_node_rank() == 0)
-        {
-            fprintf(stderr, "GROMACS in this build configuration cannot run on more than one GPU per node,\n so with %d ranks and %d nodes, this test will disable GPU support", numberOfRanks, numberOfNodes);
-        }
-        caller.addOption("-nb", "cpu");
-    }
-#endif
     return gmx_mdrun(caller.argc(), caller.argv());
 }
 
