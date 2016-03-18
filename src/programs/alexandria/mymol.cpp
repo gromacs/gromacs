@@ -1342,6 +1342,31 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     }
 }
 
+double MyMol::computeIsoPolarizability(double efield, double ref_mu,
+				       FILE *fplog, t_commrec *cr)
+{
+
+  const double unit_factor = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
+
+  int m;
+  double isopol = 0.0;
+  double sum_of_mus = 0.0;
+
+  for (m = 0; (m < DIM); m++)
+  {
+    snew(inputrec_->ex[m].a, efield);
+    computeForces(fplog, cr);
+    // how to extract dipole moment for each efield?
+    sfree(inputrec_->ex[m].a);
+  }
+
+  if (fabs(sum_of_mus) > (DIM*ref_mu))
+  {
+    isopol = (((fabs(sum_of_mus) - (DIM*ref_mu))/(efield))/3.0)*(unit_factor);
+  }
+  return isopol;
+}
+
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  gmx_atomprop_t             ap,
                                  ChargeDistributionModel    iChargeDistributionModel,
