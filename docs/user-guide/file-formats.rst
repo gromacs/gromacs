@@ -181,7 +181,7 @@ edr
 ---
 
 The edr file extension stands for portable energy file.
-The energies are stored using the xdr protocol.
+The edr format is based on XDR, a portable data representation.
 
 See also :ref:`gmx energy`.
 
@@ -652,7 +652,8 @@ related to the trajectory of a simulation. For example, it might
 contain coordinates, velocities, forces and/or energies. Various :ref:`mdp`
 file options control which of these are written by :ref:`gmx mdrun`, whether data
 is written with compression, and how lossy that compression can be.
-This file is in portable binary format and can be read with :ref:`gmx dump`.
+This file is in portable binary format <https://doi.org/10.1002/jcc.23495>,
+and its contents can be read with :ref:`gmx dump`.
 
 .. parsed-literal::
 
@@ -813,6 +814,10 @@ frames etc.) using:
 
    % :ref:`gmx check` -f traj.trr
 
+The TRR format is based on XDR, a portable data representation. If you
+want to read and write such files, consider making use of libxdrfile,
+available on the |Gromacs| website.
+
 .. _xpm:
 
 xpm
@@ -882,17 +887,19 @@ The C-comment delimiters and the colon in the extra fields are optional.
 xtc
 ---
 
-The xtc format is a **portable** format for trajectories.
-It uses the *xdr* routines for writing and reading
-data which was created for the Unix NFS system. The trajectories
+The xtc format is a **portable** format for trajectories,
+based on XDR, a portable data representation
+which was created for the Unix NFS system. The trajectories
 are written using a reduced precision algorithm which works
 in the following way: the coordinates (in nm) are multiplied by a scale
 factor, typically 1000, so that you have coordinates in pm.
 These are rounded to integer values. Then several other tricks are
 performed, for instance making use of the fact that atoms close
 in sequence are usually close in space too (e.g. a water molecule).
-To this end, the <i>xdr</i> library is extended with a special routine
-to write 3-D float coordinates.
+
+If you want to read and write such files, consider making use of
+libxdrfile, available on the |Gromacs| website, and described
+further below.
 
 .. link is broken: This routine was written by Frans van Hoesel
    as part of an Europort project, and can be obtained through <a
