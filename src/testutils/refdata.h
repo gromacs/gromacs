@@ -457,7 +457,7 @@ class TestReferenceChecker
          * values of the sequence are checked.  Calls \c checkItem(&compound, *i)
          * with that compound for each iterator \c i in the range [begin, end).
          * \p checkItem should use the various check methods in the passed
-         * checker to check each value.
+         * checker to check each value, passing NULL for the id value.
          *
          * This method can be used to check a sequence made of compound types.
          * Typically \p checkItem will create a compound within the passed
