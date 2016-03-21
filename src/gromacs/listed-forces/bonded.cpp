@@ -741,7 +741,7 @@ real aniso_pol(int nbonds,
      */
 
     const real  kdrude = 418400.0;
-    int         i, m, type, ki;
+    int         i, m, n, type, ki;
     /* following CHARMM naming here for ease of transferring the code */
     int         ai, aj, al, am, an;
     real        vtot;
@@ -797,6 +797,11 @@ real aniso_pol(int nbonds,
             /* set up parallel and perpendicular vectors */
             pbc_rvec_sub(pbc, x[ai], x[al], u1);    /* parallel */              /* 3 */
             pbc_rvec_sub(pbc, x[am], x[an], u2);    /* perpendicular */         /* 3 */
+
+            /* TODO: need to keep original vectors for virial (below) */
+            rvec r_il, r_mn;
+            copy_rvec(u1, r_il);
+            copy_rvec(u2, r_mn);
 
             /* get u1 and u2 vector lengths */
             r_u1 = sqrt(iprod(u1, u1));     /* 6 */
@@ -879,19 +884,18 @@ real aniso_pol(int nbonds,
                 f[al][m] += fl[m];              /* parallel atom */
                 f[am][m] += fm[m];              /* perpendicular atom 1 */
                 f[an][m] -= fm[m];              /* perpendicular atom 2 */
+            } /* 30 */
 
-                fshift[ki][m]       -= f[ai][m];
-                fshift[ki][m]       += f[aj][m];
-                fshift[ki][m]       += f[al][m];
-                fshift[ki][m]       += f[am][m];
-                fshift[ki][m]       -= f[an][m];
-
-                fshift[CENTRAL][m]  += f[ai][m];
-                fshift[CENTRAL][m]  -= f[aj][m];
-                fshift[CENTRAL][m]  -= f[al][m];
-                fshift[CENTRAL][m]  -= f[am][m];
-                fshift[CENTRAL][m]  += f[an][m];
-            }   /* 48 */
+            /* TODO: check */
+            /* Update virial */
+            for (m=0; m<DIM; m++)
+            {
+                for (n=0; n<DIM; n++)
+                {
+                    fshift[ki][m]       += fj[m]*dr[n] - fl[m]*r_il[n] + fm[m]*r_mn[n];
+                    fshift[CENTRAL][m]  += fj[m]*dr[n] - fl[m]*r_il[n] + fm[m]*r_mn[n];
+                }
+            } /* 108 */
 
             if (debug)
             {
