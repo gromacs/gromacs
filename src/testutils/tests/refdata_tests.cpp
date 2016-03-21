@@ -182,6 +182,30 @@ TEST(ReferenceDataTest, HandlesSequenceData)
     }
 }
 
+//! Helper typedef
+typedef double dvec[3];
+//! Helper function for HandlesSequenceOfCustomData
+void checkCustomVector(TestReferenceChecker *checker, const dvec &value)
+{
+    checker->checkVector(value, NULL);
+}
+
+TEST(ReferenceDataTest, HandlesSequenceOfCustomData)
+{
+    const dvec seq[] = { {-3, 4, 5}, {-2.3, 5, 0} };
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(std::begin(seq), std::end(seq), "seq", checkCustomVector);
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(std::begin(seq), std::end(seq), "seq", checkCustomVector);
+    }
+}
+
 
 TEST(ReferenceDataTest, HandlesIncorrectData)
 {
