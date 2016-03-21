@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -457,7 +457,7 @@ class TestReferenceChecker
          * values of the sequence are checked.  Calls \c checkItem(&compound, *i)
          * with that compound for each iterator \c i in the range [begin, end).
          * \p checkItem should use the various check methods in the passed
-         * checker to check each value.
+         * checker to check each value, passing NULL for the id value.
          *
          * This method can be used to check a sequence made of compound types.
          * Typically \p checkItem will create a compound within the passed
