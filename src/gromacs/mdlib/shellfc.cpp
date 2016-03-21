@@ -960,24 +960,24 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * Avoids polarization catastrophe by imposing a limit on the bond
  * length between a Drude and its bonded heavy atom.  If the bond
  * length is greater than the limit, the length will be set to that
- * limit and the velocities along the bond vector are scaled 
+ * limit and the velocities along the bond vector are scaled
  * down according to the Drude temperature set in the .mdp file
  */
-void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md, 
+void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,
                           t_state *state, tensor force_vir)
 {
 
     int     i, j, m, n;
     int     ia, ib;                 /* heavy atom and drude, respectively */
     real    ma, mb, mtot;           /* masses of drude and heavy atom, and their sum */
-    real    dt, max_t;
+    real    dt, max_t, invdt;
     real    fac;
     real    rab2;                   /* squared distance */
     real    rab;                    /* total distance */
     real    rwall, rwall2;          /* wall distance, and squared distance */
     real    dr;                     /* difference between rab and rwall */
-    real    dr_a, dr_b;             
-    real    dprod_vr1, dprod_vr2;   
+    real    dr_a, dr_b;
+    real    dprod_vr1, dprod_vr2;
     real    tmp_dprod_vr1, tmp_dprod_vr2;
     real    vbcom;                  /* velocity of the COM of the drude-heavy atom bond */
     real    vbond;                  /* relative velocity between drude and heavy atom */
@@ -985,8 +985,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     rvec    xa, xb;                 /* coordinates of heavy atom and drude, respectively */
     rvec    vinita, vinitb;         /* original velocities of heavy atom and drude, respectively */
     rvec    va, vb;                 /* velocities of heavy atom and drude, respectively */
-    rvec    vb1, vp1;               /* Bond and particle velocities for heavy atom */ 
-    rvec    vb2, vp2;               /* Bond and particle velocities for Drude */ 
+    rvec    vb1, vp1;               /* Bond and particle velocities for heavy atom */
+    rvec    vb2, vp2;               /* Bond and particle velocities for Drude */
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
     rvec    dfa, dfb;               /* change in forces, applied as corrections to the virial */
     t_pbc  *pbc;
@@ -1000,7 +1000,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     set_pbc(pbc, ir->ePBC, state->box);
 
     const real kbt = BOLTZ * ir->drude->drude_t;
-    max_t = 2.0 * ir->delta_t;
+    max_t = ir->delta_t;
+    invdt = 1.0/(ir->delta_t * 0.5);
 
     rwall = ir->drude->drude_r;
     rwall2 = rwall * rwall;
@@ -1018,7 +1019,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     for (i = 0; i < nrlocal; i++)
     {
         nral = NRAL(flocal[i]);
-        ilist = &idef->il[flocal[i]];    
+        ilist = &idef->il[flocal[i]];
 
         /* loop over all entries in ilist for bonds or polarization */
         for (j = 0; j < ilist->nr; j += 1+nral)
@@ -1047,12 +1048,11 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 }
                 continue;
             }
-            
 
             if (debug)
             {
-                fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n", 
-                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), 
+                fprintf(debug, "HARDWALL: Drude atom %d connected to heavy atom %d\n",
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1),
                         DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
             }
 
@@ -1113,7 +1113,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 if (rab > (2.0*rwall))
                 {
                     gmx_fatal(FARGS, "Drude atom %d is too far (r = %f) from its heavy atom %d.\n"
-                              "Cannot apply hardwall.\n", DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), rab, 
+                              "Cannot apply hardwall.\n", DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), rab,
                               DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ia):(ia+1));
                 }
 
@@ -1177,11 +1177,11 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
                 if (dprod_vr1 == dprod_vr2)
                 {
-                    dt = max_t; 
+                    dt = max_t;
                 }
                 else
                 {
-                    dt = dr / fabs(dprod_vr1 - dprod_vr2); 
+                    dt = dr / fabs(dprod_vr1 - dprod_vr2);
                     /* sanity check */
                     if (dt > max_t)
                     {
@@ -1198,8 +1198,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 }
 
                 /* reflect the velocity along the bond vector, scale down */
-                tmp_dprod_vr1 = ((-1.0)*dprod_vr1*vbond*mb) / (fabs(dprod_vr1)*mtot);
-                tmp_dprod_vr2 = ((-1.0)*dprod_vr2*vbond*ma) / (fabs(dprod_vr2)*mtot);
+                tmp_dprod_vr1 = (-dprod_vr1*vbond*mb) / (fabs(dprod_vr1)*mtot);
+                tmp_dprod_vr2 = (-dprod_vr2*vbond*ma) / (fabs(dprod_vr2)*mtot);
 
                 if (debug)
                 {
@@ -1209,8 +1209,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                     fprintf(debug, "HARDWALL: tmp_dprod_vr2 after reflect: %f\n", tmp_dprod_vr2);
                 }
 
-                dr_a = (dr*mb)/mtot + (dt*tmp_dprod_vr1); 
-                dr_b = (-1.0*dr*ma)/mtot + (dt*tmp_dprod_vr2); 
+                dr_a = (dr*mb)/mtot + (dt*tmp_dprod_vr1);
+                dr_b = (-dr*ma)/mtot + (dt*tmp_dprod_vr2);
 
                 /* correct the positions */
                 svmul(dr_a, vecab, tmpvecab);
@@ -1224,8 +1224,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 /* correct the velocities */
                 tmp_dprod_vr1 += vbcom;
                 tmp_dprod_vr2 += vbcom;
-        
-                svmul(tmp_dprod_vr1, vecab, vb1); 
+                svmul(tmp_dprod_vr1, vecab, vb1);
                 svmul(tmp_dprod_vr2, vecab, vb2);
 
                 /* update velocities */
@@ -1236,12 +1235,12 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
                 /* virial corrections due to heavy atom */
                 rvec_sub(va, vinita, dva);
-                fac = ma*(1.0/(dt*0.5));
+                fac = ma*invdt;
                 svmul(fac, dva, dfa);
 
                 /* virial corrections due to Drude */
                 rvec_sub(vb, vinitb, dvb);
-                fac = mb*(1.0/(dt*0.5));
+                fac = mb*invdt;
                 svmul(fac, dvb, dfb);
 
                 for (m=0; m<DIM; m++)
@@ -1277,7 +1276,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
     } /* end of loop over all local bonded interactions */
 
-} 
+}
 
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
