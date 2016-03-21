@@ -96,6 +96,21 @@ static gmx_bool is_cbeta_drude(t_atoms *atoms, int ai)
             ((*(atoms->atomname[ai]))[2] == 'B'));
 }
 
+static gmx_bool is_n(t_atoms *atoms, int ai)
+{
+    return ((*(atoms->atomname[ai]))[0] == 'N');
+}
+
+static gmx_bool is_pro(t_atoms *atoms, int ai)
+{
+    gmx_bool    bPro = FALSE;
+    if (strcmp(*(atoms->resinfo[atoms->atom[ai].resind].name), "PRO") == 0)
+    {
+        bPro = TRUE;
+    }
+    return bPro;
+}
+
 static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
@@ -998,6 +1013,33 @@ static int pcompar(const void *a, const void *b)
     }
 }
 
+static int tcomp(const void *d1, const void *d2)
+{
+    t_param *p1, *p2;
+    int      dc;
+
+    p1 = (t_param *)d1;
+    p2 = (t_param *)d2;
+    /* First sort by J & K (the two central) atoms */
+    if ((dc = (p1->aj()-p2->aj())) != 0)
+    {
+        return dc;
+    }
+    else if ((dc = (p1->ak()-p2->ak())) != 0)
+    {
+        return dc;
+    }
+    /* Finally, sort by I and J (two outer) atoms */
+    else if ((dc = (p1->ai()-p2->ai())) != 0)
+    {
+        return dc;
+    }
+    else
+    {
+        return (p1->al()-p2->al());
+    }
+}
+
 static void clean_bonds(t_params *ps)
 {
     int     i, j;
@@ -1081,7 +1123,7 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
         }
 
         /* sort */
-        qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), pcompar);
+        qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), tcomp);
 
         /* Remove doubles, but here keep the second instance of a parameter if it is duplicated */
         j = 0;
@@ -1122,6 +1164,29 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
                         set_p_string(&(ps->param[i]), buf);
                     }
                 }
+                /* need special condition for PRO since it has unique alpha/Thole for amide N */
+                if ((is_n(atoms, ps->param[i].a[0])) && (is_pro(atoms, ps->param[i].a[0])))
+                {
+                    /* here, ai[0] (proline-specific) is the value to keep */
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
+                    if (ai[0] != ai[1])
+                    {
+                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
+                        set_p_string(&(ps->param[i]), buf);
+                    }
+                }
+                else if ((is_n(atoms, ps->param[i].a[2])) && (is_pro(atoms, ps->param[i].a[2])))
+                {
+                    /* here, aj[1] (proline-specific) is the value to keep */
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
+                    if (aj[0] != aj[1])
+                    {
+                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[1], alphai[1], alphaj[1]);
+                        set_p_string(&(ps->param[i]), buf);
+                    }
+                }
                 /* copy params and shift the list */
                 if (j != i)
                 {
@@ -1154,7 +1219,21 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
                     sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
                     set_p_string(&(ps->param[i]), buf);
                 }
-
+                /* as above */
+                if ((is_n(atoms, ps->param[i].a[0])) && (is_pro(atoms, ps->param[i].a[0])))
+                {
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
+                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
+                    set_p_string(&(ps->param[i]), buf);
+                }
+                else if ((is_n(atoms, ps->param[i].a[2])) && (is_pro(atoms, ps->param[i].a[2])))
+                {
+                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
+                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
+                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
+                    set_p_string(&(ps->param[i]), buf);
+                }
                 if (j != i)
                 {
                     cp_param(&(ps->param[j]), &(ps->param[i]));
