@@ -182,6 +182,28 @@ TEST(ReferenceDataTest, HandlesSequenceData)
     }
 }
 
+typedef float fvec[3];
+void checkCustomVector(TestReferenceChecker *checker, const fvec &value)
+{
+    checker->checkVector(value, NULL);
+}
+
+TEST(ReferenceDataTest, HandlesSequenceOfCustomData)
+{
+    const fvec seq[] = { {-3, 4, 5}, {-2.3, 5, 0} };
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(std::begin(seq), std::end(seq), "seq", checkCustomVector);
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(std::begin(seq), std::end(seq), "seq", checkCustomVector);
+    }
+}
+
 
 TEST(ReferenceDataTest, HandlesIncorrectData)
 {
