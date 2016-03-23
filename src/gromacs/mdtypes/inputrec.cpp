@@ -532,6 +532,10 @@ static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)
     pr_indent(fp, indent);
     fprintf(fp, "pull-coord %d:\n", c);
     PS("type", EPULLTYPE(pcrd->eType));
+    if (pcrd->eType == epullEXTERNAL)
+    {
+        PS("potential-provider", pcrd->externalPotentialProvider);
+    }
     PS("geometry", EPULLGEOM(pcrd->eGeom));
     for (g = 0; g < pcrd->ngroup; g++)
     {
