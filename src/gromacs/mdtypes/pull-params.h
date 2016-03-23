@@ -70,6 +70,7 @@ static const int c_pullCoordNgroupMax = 6;
 /*! \brief Struct that defines a pull coordinate */
 typedef struct {
     int      eType;                        /**< The pull type: umbrella, constraint, ... */
+    char    *externalPotentialProvider;    /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
     int      eGeom;                        /**< The pull geometry */
     int      ngroup;                       /**< The number of groups, depends on eGeom */
     int      group[c_pullCoordNgroupMax];  /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
