@@ -104,31 +104,55 @@ void get_pull_coord_value(struct pull_t      *pull,
                           double             *value);
 
 
-/*! \brief Set the reference value for a pull coord with rate!=0 to value_ref.
+/*! \brief Registers the provider of an external potential for a coordinate.
  *
- * This modifies the reference value. For potential (non-constraint) pulling,
- * a modification of the reference value at time t will lead to a different
- * force over t-dt/2 to t and over t to t+dt/2. To take this into account,
- * bUpdateForce=TRUE will update the force when this function is called
- * after calling pull_potential.
- * Note: can not be called for a pull coord with rate!=0.
+ * This function is only used for checking the consistency of the pull setup.
+ * For each pull coordinate of type external-potential, selected by the user
+ * in the mdp file, there has to be a module that provides this potential.
+ * The module registers itself as the provider by calling this function.
+ * The passed \p provider string has to match the string that the user
+ * passed with at the potential-provider pull coordinate mdp option.
+ * This function should be called after init_pull has been called and before
+ * pull_potential is called for the first time.
+ * This function does many consistency checks and when it returns and the
+ * first call to do_potential passes, the pull setup is quaranteed to be
+ * correct (unless the module doesn't call apply_external_pull_coord_force
+ * every step or calls it with incorrect forces). This registering function
+ * will exit with a (release) assertion failure when used incorrely or
+ * with a fatal error when the user (mdp) input in inconsistent.
  *
  * \param[in,out] pull         The pull struct.
- * \param[in]     coord_ind    The pull coordinate index to set.
- * \param[in]     value_ref    The reference value, unit: nm or rad.
- * \param[in]     pbc          Information structure about periodicity.
- * \param[in]     md           Atom properties.
- * \param[in]     lambda       The value of lambda in FEP calculations.
- * \param[in]     bUpdateForce Update the force for the new reference value.
- * \param[in,out] f            The forces.
- * \param[in,out] vir          The virial, can be NULL.
+ * \param[in]     coord_index  The pull coordinate index to register the external potential for.
+ * \param[in]     provider     Provider string, should match the potential-provider pull coordinate mdp option.
  */
-void set_pull_coord_reference_value(struct pull_t *pull,
-                                    int coord_ind, real value_ref,
-                                    const struct t_pbc *pbc,
-                                    const t_mdatoms *md,
-                                    real lambda,
-                                    gmx_bool bUpdateForce, rvec *f, tensor vir);
+void register_external_pull_potential(struct pull_t *pull,
+                                      int            coord_index,
+                                      const char    *provider);
+
+
+/*! \brief Apply forces of an external potential to a pull coordinate.
+ *
+ * This function applies the external scalar force \p coord_force to
+ * the pull coordinate, distributing it over the atoms in the groups
+ * involved in the pull coordinate. The corresponding potential energy
+ * value should be added to the pull or the module's potential energy term
+ * separately by the module itself.
+ * This function should be called after pull_potential has been called and,
+ * obviously, before the coordinates are updated uses the forces.
+ *
+ * \param[in,out] pull           The pull struct.
+ * \param[in]     coord_index    The pull coordinate index to set the force for.
+ * \param[in]     coord_force    The scalar force for the pull coordinate.
+ * \param[in]     mdatoms        Atom properties, only masses are used.
+ * \param[in,out] force          The force buffer.
+ * \param[in,out] virial         The virial, can be NULL.
+ */
+void apply_external_pull_coord_force(struct pull_t   *pull,
+                                     int              coord_index,
+                                     double           coord_force,
+                                     const t_mdatoms *mdatoms,
+                                     rvec            *force,
+                                     tensor           virial);
 
 
 /*! \brief Set the all the pull forces to zero.
@@ -208,7 +232,7 @@ struct pull_t *init_pull(FILE                   *fplog,
                          const t_inputrec       *ir,
                          int                     nfile,
                          const t_filenm          fnm[],
-                         gmx_mtop_t             *mtop,
+                         const gmx_mtop_t       *mtop,
                          t_commrec             * cr,
                          const gmx_output_env_t *oenv,
                          real                    lambda,

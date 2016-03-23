@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "readir.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -130,7 +132,7 @@ static void process_pull_dim(char *dim_buf, ivec dim, const t_pull_coord *pcrd)
     }
 }
 
-static void init_pull_coord(t_pull_coord *pcrd,
+static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
                             char *dim_buf,
                             const char *origin_buf, const char *vec_buf,
                             warninp_t wi)
@@ -149,6 +151,14 @@ static void init_pull_coord(t_pull_coord *pcrd,
                   epull_names[pcrd->eType],
                   epullg_names[pcrd->eGeom],
                   epull_names[epullUMBRELLA]);
+    }
+
+    if (pcrd->eType == epullEXTERNAL && pcrd->externalPotentialProvider[0] == '\0')
+    {
+        sprintf(buf, "The use of pull type '%s' for pull coordinate %d requires that the name of the module providing the potential external is set with the option %s%d%s",
+                epull_names[pcrd->eType], coord_index_for_output,
+                "pull-coord", coord_index_for_output, "-potential-provider");
+        warning_error(wi, buf);
     }
 
     process_pull_dim(dim_buf, pcrd->dim, pcrd);
@@ -241,7 +251,8 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     t_inpfile    *inp;
     const char   *tmp;
     char        **grpbuf;
-    char          buf[STRLEN], groups[STRLEN], dim_buf[STRLEN];
+    char          buf[STRLEN];
+    char          provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
     char          wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
     t_pull_group *pgrp;
@@ -307,6 +318,9 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         pcrd = &pull->coord[i-1];
         sprintf(buf, "pull-coord%d-type", i);
         EETYPE(buf,             pcrd->eType, epull_names);
+        sprintf(buf, "pull-coord%d-potential-provider", i);
+        STYPE(buf,              provider, "");
+        pcrd->externalPotentialProvider = gmx_strdup(provider);
         sprintf(buf, "pull-coord%d-geometry", i);
         EETYPE(buf,             pcrd->eGeom, epullg_names);
         sprintf(buf, "pull-coord%d-groups", i);
@@ -352,7 +366,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         RTYPE(buf,              pcrd->kB,    pcrd->k);
 
         /* Initialize the pull coordinate */
-        init_pull_coord(pcrd, dim_buf, origin_buf, vec_buf, wi);
+        init_pull_coord(pcrd, i, dim_buf, origin_buf, vec_buf, wi);
     }
 
     *ninp_p   = ninp;
@@ -459,11 +473,12 @@ void make_pull_coords(pull_params_t *pull)
     }
 }
 
-void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const gmx_output_env_t *oenv)
+pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
+                      rvec *x, matrix box, real lambda,
+                      const gmx_output_env_t *oenv)
 {
     pull_params_t *pull;
-    struct pull_t *pull_work;
+    pull_t        *pull_work;
     t_mdatoms     *md;
     t_pbc          pbc;
     int            c;
@@ -553,5 +568,5 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         fprintf(stderr, "     %10.3f %s\n", pcrd->init, pull_coordinate_units(pcrd));
     }
 
-    finish_pull(pull_work);
+    return pull_work;
 }
