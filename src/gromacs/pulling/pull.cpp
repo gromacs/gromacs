@@ -230,6 +230,8 @@ static void pull_print_f(FILE *out, struct pull_t *pull, double t)
 
 void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time)
 {
+    GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "pull_print_output called before all external pull potentials have been applied");
+
     if ((pull->params.nstxout != 0) && (step % pull->params.nstxout == 0))
     {
         pull_print_x(pull->out_x, pull, time);
@@ -1276,11 +1278,10 @@ static void add_virial_coord(tensor vir, const pull_coord_work_t *pcrd)
     }
 }
 
-static void calc_pull_coord_force(pull_coord_work_t *pcrd,
-                                  double dev, real lambda,
-                                  real *V, tensor vir, real *dVdl)
+static void calc_pull_coord_scalar_force_and_potential(pull_coord_work_t *pcrd,
+                                                       double dev, real lambda,
+                                                       real *V, real *dVdl)
 {
-    int    m;
     real   k, dkdl;
 
     k    = (1.0 - lambda)*pcrd->params.k + lambda*pcrd->params.kB;
@@ -1310,14 +1311,22 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             *V           +=    k*pcrd->value;
             *dVdl        += dkdl*pcrd->value;
             break;
+        case epullEXTERNAL:
+            gmx_incons("the scalar pull force should not be calculated internally for pull type external");
+            break;
         default:
             gmx_incons("Unsupported pull type in do_pull_pot");
     }
+}
+
+static void calc_pull_coord_vector_force(pull_coord_work_t *pcrd)
+{
+    /* The geometry of the coordinate determines how the scalar force relates to the force on each group */
 
     if (pcrd->params.eGeom == epullgDIST)
     {
         double invdr01 = pcrd->value > 0 ? 1./pcrd->value : 0.;
-        for (m = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             pcrd->f01[m] = pcrd->f_scal*pcrd->dr01[m]*invdr01;
         }
@@ -1350,7 +1359,7 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             dsvmul(invdr01, pcrd->dr01, normalized_dr01);
             dsvmul(invdr23, pcrd->dr23, normalized_dr23);
 
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 /* Here, f_scal is -dV/dtheta */
                 pcrd->f01[m] = pcrd->f_scal*invdr01*(a*normalized_dr23[m] - b*normalized_dr01[m]);
@@ -1383,7 +1392,7 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             a       = -gmx::invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
             b       = a*cos_theta;
 
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 pcrd->f01[m] = pcrd->f_scal*invdr01*(a*pcrd->vec[m] - b*normalized_dr01[m]);
             }
@@ -1441,79 +1450,117 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
     }
     else
     {
-        for (m = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             pcrd->f01[m] = pcrd->f_scal*pcrd->vec[m];
         }
     }
-
-    add_virial_coord(vir, pcrd);
 }
 
-void set_pull_coord_reference_value(struct pull_t *pull,
-                                    int coord_ind, real value_ref,
-                                    const struct t_pbc *pbc,
-                                    const t_mdatoms *md,
-                                    real lambda,
-                                    gmx_bool bUpdateForce, rvec *f, tensor vir)
+
+void register_external_pull_potential(struct pull_t *pull,
+                                      int            coord_index,
+                                      const char    *provider)
+{
+    GMX_RELEASE_ASSERT(pull != NULL, "register_external_pull_potential called before init_pull");
+    GMX_RELEASE_ASSERT(provider != NULL, "register_external_pull_potential called with NULL as provider name");
+
+    if (coord_index < 0 || coord_index > pull->ncoord - 1)
+    {
+        gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d which is out of the pull coordinate range %d - %d\n",
+                  provider, coord_index + 1, 1, pull->ncoord);
+    }
+
+    pull_coord_work_t *pcrd = &pull->coord[coord_index];
+
+    if (pcrd->params.eType != epullEXTERNAL)
+    {
+        gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d which of type '%s', whereas external potentials are only supported with type '%s'",
+                  provider, coord_index + 1, epull_names[pcrd->params.eType], epull_names[epullEXTERNAL]);
+    }
+
+    GMX_RELEASE_ASSERT(pcrd->params.externalPotentialProvider != NULL, "The external potential provider string for a pull coordinate is NULL");
+
+    if (strcmp(provider, pcrd->params.externalPotentialProvider) != 0)
+    {
+        gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d which expects the external potential to be provided by a module named '%s'",
+                  provider, coord_index + 1, pcrd->params.externalPotentialProvider);
+    }
+
+    if (pcrd->bExternalPotentialProviderHasBeenRegistered)
+    {
+        gmx_fatal(FARGS, "Module '%s' attempted to register an external potential for pull coordinate %d multiple times",
+                  provider, coord_index + 1);
+    }
+
+    pcrd->bExternalPotentialProviderHasBeenRegistered = true;
+    pull->numUnregisteredExternalPotentials--;
+
+    GMX_RELEASE_ASSERT(pull->numUnregisteredExternalPotentials >= 0, "Negative unregisterd potentials, the pull code in inconsistent");
+}
+
+
+static void check_external_potential_registration(const struct pull_t *pull)
+{
+    if (pull->numUnregisteredExternalPotentials > 0)
+    {
+        int c;
+        for (c = 0; c < pull->ncoord; c++)
+        {
+            if (pull->coord[c].params.eType == epullEXTERNAL &&
+                !pull->coord[c].bExternalPotentialProviderHasBeenRegistered)
+            {
+                break;
+            }
+        }
+
+        GMX_RELEASE_ASSERT(c < pull->ncoord, "Internal inconsistency in the pull potential provider counting");
+
+        gmx_fatal(FARGS, "No external provider for external pull potentials have been provided for %d pull coordinates. The first coordinate without provider is number %d, which expects a module named '%s' to provide the external potential.",
+                  pull->numUnregisteredExternalPotentials,
+                  c + 1, pull->coord[c].params.externalPotentialProvider);
+    }
+}
+
+/* Pull takes care of adding the forces of the external potential.
+ * The external potential module  has to make sure that the corresponding
+ * potential energy is added either to the pull term or to a term
+ * specific to the external module.
+ */
+void apply_external_pull_coord_force(struct pull_t *pull,
+                                     int coord_index,
+                                     double coord_force,
+                                     const t_mdatoms *mdatoms,
+                                     rvec *force, tensor virial,
+                                     double reference_value)
 {
     pull_coord_work_t *pcrd;
 
-    pcrd = &pull->coord[coord_ind];
+    GMX_ASSERT(coord_index >= 0 && coord_index < pull->ncoord, "apply_external_pull_coord_force called with coord_index out of range");
 
-    if (pcrd->params.rate != 0)
+    if (pull->comm.bParticipate)
     {
-        gmx_incons("Can not update the reference value for pull coordinates with rate!=0");
+        pcrd = &pull->coord[coord_index];
+
+        GMX_RELEASE_ASSERT(pcrd->params.eType == epullEXTERNAL, "The pull force can only be set externally on pull coordinates of external type");
+
+        GMX_ASSERT(pcrd->bExternalPotentialProviderHasBeenRegistered, "apply_external_pull_coord_force called for an unregistered pull coordinate");
+
+        /* Set the force */
+        pcrd->f_scal = coord_force;
+
+        /* Calculate the forces on the pull groups */
+        calc_pull_coord_vector_force(pcrd);
+
+        /* Add the forces for this coordinate to the total virial and force */
+        add_virial_coord(virial, pcrd);
+
+        apply_forces_coord(pull, coord_index, mdatoms, force);
+
+        pcrd->value_ref = reference_value;
     }
 
-    /* Update the reference value */
-    low_set_pull_coord_reference_value(pcrd, coord_ind, value_ref);
-
-    if (bUpdateForce)
-    {
-        real   V = 0, dVdl = 0;
-        double f_scal_old;
-        dvec   f01_old, f23_old, f45_old;
-        double dev;
-        int    m;
-
-        if (pcrd->params.eType == epullCONSTRAINT)
-        {
-            gmx_incons("Can not update the pull force for constraint coordinates");
-        }
-
-        /* The time parameter is not used here, so we pass 0.0 */
-        dev = get_pull_coord_deviation(pull, coord_ind, pbc, 0.0);
-
-        f_scal_old = pcrd->f_scal;
-        copy_dvec(pcrd->f01, f01_old);
-
-        /* Note: f23, f45 will only actually be used for certain geometries */
-        copy_dvec(pcrd->f23, f23_old);
-        copy_dvec(pcrd->f45, f45_old);
-
-        /* Calculate the new forces, ingnore V, vir and dVdl */
-        calc_pull_coord_force(pcrd, dev, lambda, &V, NULL, &dVdl);
-
-        /* Here we determine the force correction:
-         * substract the half step contribution we added already,
-         * add the half step contribution for the new force.
-         * Note that the printing of f_scal is done in pull_potential, which
-         * might be called before this function is called, so the output might
-         * contain values without the correction below.
-         */
-        pcrd->f_scal   = 0.5*(-f_scal_old + pcrd->f_scal);
-        for (m = 0; m < DIM; m++)
-        {
-            pcrd->f01[m] = 0.5*(-f01_old[m] + pcrd->f01[m]);
-            pcrd->f23[m] = 0.5*(-f23_old[m] + pcrd->f23[m]);
-            pcrd->f45[m] = 0.5*(-f45_old[m] + pcrd->f45[m]);
-        }
-
-        add_virial_coord(vir, pcrd);
-
-        apply_forces_coord(pull, coord_ind, md, f);
-    }
+    pull->numExternalPotentialsStillToBeAppliedThisStep--;
 }
 
 /* Calculate the pull potential and scalar force for a pull coordinate */
@@ -1530,7 +1577,11 @@ static void do_pull_pot_coord(struct pull_t *pull, int coord_ind, t_pbc *pbc,
 
     dev = get_pull_coord_deviation(pull, coord_ind, pbc, t);
 
-    calc_pull_coord_force(pcrd, dev, lambda, V, vir, dVdl);
+    calc_pull_coord_scalar_force_and_potential(pcrd, dev, lambda, V, dVdl);
+
+    calc_pull_coord_vector_force(pcrd);
+
+    add_virial_coord(vir, pcrd);
 }
 
 real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
@@ -1541,6 +1592,12 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 
     assert(pull != NULL);
 
+    /* Ideally we should check external potential registration only during
+     * the initialization phase, but that requires another function call
+     * that should be done exactly in the right order. So we check here.
+     */
+    check_external_potential_registration(pull);
+
     if (pull->comm.bParticipate)
     {
         real dVdl = 0;
@@ -1549,7 +1606,9 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
 
         for (int c = 0; c < pull->ncoord; c++)
         {
-            if (pull->coord[c].params.eType == epullCONSTRAINT)
+            /* For external potential the force is assumed to be given by an external module by a call to
+               apply_pull_coord_external_force */
+            if (pull->coord[c].params.eType == epullCONSTRAINT || pull->coord[c].params.eType == epullEXTERNAL)
             {
                 continue;
             }
@@ -1566,6 +1625,11 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
             *dvdlambda += dVdl;
         }
     }
+
+    GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "Too few or too many external pull potentials have been applied the previous step");
+    /* All external pull potentials still need to be applied */
+    pull->numExternalPotentialsStillToBeAppliedThisStep =
+        pull->numCoordinatesWithExternalPotential;
 
     return (MASTER(cr) ? V : 0.0);
 }
@@ -1980,6 +2044,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
     }
 
+    pull->numCoordinatesWithExternalPotential = 0;
+
     for (c = 0; c < pull->ncoord; c++)
     {
         pull_coord_work_t *pcrd;
@@ -2065,7 +2131,18 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             /* Initialize the constant reference value */
             low_set_pull_coord_reference_value(pcrd, c, pcrd->params.init*pull_conversion_factor_userinput2internal(&pcrd->params));
         }
+
+        if (pcrd->params.eType == epullEXTERNAL)
+        {
+            /* This external potential needs to be registered later */
+            pull->numCoordinatesWithExternalPotential++;
+        }
+        pcrd->bExternalPotentialProviderHasBeenRegistered = false;
     }
+
+    pull->numUnregisteredExternalPotentials             =
+        pull->numCoordinatesWithExternalPotential;
+    pull->numExternalPotentialsStillToBeAppliedThisStep = 0;
 
     pull->ePBC = ir->ePBC;
     switch (pull->ePBC)
