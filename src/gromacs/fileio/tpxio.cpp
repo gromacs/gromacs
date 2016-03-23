@@ -110,6 +110,7 @@ enum tpxv {
     tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
+    tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -280,12 +281,41 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
     gmx_fio_do_int(fio, pgrp->pbcatom);
 }
 
-static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
+static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
+                          gmx_bool bRead, int file_version,
                           int ePullOld, int eGeomOld, ivec dimOld)
 {
     if (file_version >= tpxv_PullCoordNGroup)
     {
         gmx_fio_do_int(fio,  pcrd->eType);
+        if (file_version >= tpxv_PullExternalPotential)
+        {
+            if (pcrd->eType == epullEXTERNAL)
+            {
+                if (bRead)
+                {
+                    char buf[STRLEN];
+
+                    gmx_fio_do_string(fio, buf);
+                    pcrd->externalPotentialProvider = gmx_strdup(buf);
+                }
+                else
+                {
+                    gmx_fio_do_string(fio, pcrd->externalPotentialProvider);
+                }
+            }
+            else
+            {
+                pcrd->externalPotentialProvider = NULL;
+            }
+        }
+        else
+        {
+            if (bRead)
+            {
+                pcrd->externalPotentialProvider = NULL;
+            }
+        }
         /* Note that we try to support adding new geometries without
          * changing the tpx version. This requires checks when printing the
          * geometry string and a check and fatal_error in init_pull.
@@ -741,7 +771,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
         for (g = 0; g < pull->ncoord; g++)
         {
             do_pull_coord(fio, &pull->coord[g],
-                          file_version, ePullOld, eGeomOld, dimOld);
+                          bRead, file_version, ePullOld, eGeomOld, dimOld);
         }
     }
 }
