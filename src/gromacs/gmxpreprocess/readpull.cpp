@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "readir.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -130,7 +132,7 @@ static void process_pull_dim(char *dim_buf, ivec dim, const t_pull_coord *pcrd)
     }
 }
 
-static void init_pull_coord(t_pull_coord *pcrd,
+static void init_pull_coord(t_pull_coord *pcrd, int coord_index_for_output,
                             char *dim_buf,
                             const char *origin_buf, const char *vec_buf,
                             warninp_t wi)
@@ -149,6 +151,34 @@ static void init_pull_coord(t_pull_coord *pcrd,
                   epull_names[pcrd->eType],
                   epullg_names[pcrd->eGeom],
                   epull_names[epullUMBRELLA]);
+    }
+
+    if (pcrd->eType == epullEXTERNAL)
+    {
+        if (pcrd->externalPotentialProvider[0] == '\0')
+        {
+            sprintf(buf, "The use of pull type '%s' for pull coordinate %d requires that the name of the module providing the potential external is set with the option %s%d%s",
+                    epull_names[pcrd->eType], coord_index_for_output,
+                    "pull-coord", coord_index_for_output, "-potential-provider");
+            warning_error(wi, buf);
+        }
+
+        if (pcrd->rate != 0)
+        {
+            sprintf(buf, "The use of pull type '%s' for pull coordinate %d requires that the pull rate is zero",
+                    epull_names[pcrd->eType], coord_index_for_output);
+            warning_error(wi, buf);
+        }
+
+        if (pcrd->eGeom == epullgCYL)
+        {
+            /* Warn the user of a PBC restriction, caused by the fact that 
+             * there is no reference value with an external pull potential.
+             */
+            sprintf(buf, "With pull type '%s' and geometry '%s', atoms in distance along the cylinder axis between atoms in the cyclinder group and the COM of the pull group should be smaller than half the box length",
+                    epull_names[pcrd->eType], epullg_names[pcrd->eGeom]);
+            warning_note(wi, buf);
+        }
     }
 
     process_pull_dim(dim_buf, pcrd->dim, pcrd);
@@ -237,11 +267,12 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
                        pull_params_t *pull,
                        warninp_t wi)
 {
-    int           ninp, i, nscan, idum;
+    int           ninp, nscan, idum;
     t_inpfile    *inp;
     const char   *tmp;
     char        **grpbuf;
-    char          buf[STRLEN], groups[STRLEN], dim_buf[STRLEN];
+    char          buf[STRLEN];
+    char          provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
     char          wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
     t_pull_group *pgrp;
@@ -286,15 +317,15 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     /* Read the pull groups */
     snew(grpbuf, pull->ngroup);
     /* Group 0 is the absolute reference, we don't read anything for 0 */
-    for (i = 1; i < pull->ngroup; i++)
+    for (int groupNum = 1; groupNum < pull->ngroup; groupNum++)
     {
-        pgrp = &pull->group[i];
-        snew(grpbuf[i], STRLEN);
-        sprintf(buf, "pull-group%d-name", i);
-        STYPE(buf,              grpbuf[i], "");
-        sprintf(buf, "pull-group%d-weights", i);
+        pgrp = &pull->group[groupNum];
+        snew(grpbuf[groupNum], STRLEN);
+        sprintf(buf, "pull-group%d-name", groupNum);
+        STYPE(buf,              grpbuf[groupNum], "");
+        sprintf(buf, "pull-group%d-weights", groupNum);
         STYPE(buf,              wbuf, "");
-        sprintf(buf, "pull-group%d-pbcatom", i);
+        sprintf(buf, "pull-group%d-pbcatom", groupNum);
         ITYPE(buf,              pgrp->pbcatom, 0);
 
         /* Initialize the pull group */
@@ -302,14 +333,17 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     }
 
     /* Read the pull coordinates */
-    for (i = 1; i < pull->ncoord + 1; i++)
+    for (int coordNum = 1; coordNum < pull->ncoord + 1; coordNum++)
     {
-        pcrd = &pull->coord[i-1];
-        sprintf(buf, "pull-coord%d-type", i);
+        pcrd = &pull->coord[coordNum - 1];
+        sprintf(buf, "pull-coord%d-type", coordNum);
         EETYPE(buf,             pcrd->eType, epull_names);
-        sprintf(buf, "pull-coord%d-geometry", i);
+        sprintf(buf, "pull-coord%d-potential-provider", coordNum);
+        STYPE(buf,              provider, "");
+        pcrd->externalPotentialProvider = gmx_strdup(provider);
+        sprintf(buf, "pull-coord%d-geometry", coordNum);
         EETYPE(buf,             pcrd->eGeom, epullg_names);
-        sprintf(buf, "pull-coord%d-groups", i);
+        sprintf(buf, "pull-coord%d-groups", coordNum);
         STYPE(buf,              groups, "");
 
         switch (pcrd->eGeom)
@@ -334,25 +368,25 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
             warning_error(wi, wbuf);
         }
 
-        sprintf(buf, "pull-coord%d-dim", i);
+        sprintf(buf, "pull-coord%d-dim", coordNum);
         STYPE(buf,              dim_buf,     "Y Y Y");
-        sprintf(buf, "pull-coord%d-origin", i);
+        sprintf(buf, "pull-coord%d-origin", coordNum);
         STYPE(buf,              origin_buf,  "0.0 0.0 0.0");
-        sprintf(buf, "pull-coord%d-vec", i);
+        sprintf(buf, "pull-coord%d-vec", coordNum);
         STYPE(buf,              vec_buf,     "0.0 0.0 0.0");
-        sprintf(buf, "pull-coord%d-start", i);
+        sprintf(buf, "pull-coord%d-start", coordNum);
         EETYPE(buf,             pcrd->bStart, yesno_names);
-        sprintf(buf, "pull-coord%d-init", i);
+        sprintf(buf, "pull-coord%d-init", coordNum);
         RTYPE(buf,              pcrd->init,  0.0);
-        sprintf(buf, "pull-coord%d-rate", i);
+        sprintf(buf, "pull-coord%d-rate", coordNum);
         RTYPE(buf,              pcrd->rate,  0.0);
-        sprintf(buf, "pull-coord%d-k", i);
+        sprintf(buf, "pull-coord%d-k", coordNum);
         RTYPE(buf,              pcrd->k,     0.0);
-        sprintf(buf, "pull-coord%d-kB", i);
+        sprintf(buf, "pull-coord%d-kB", coordNum);
         RTYPE(buf,              pcrd->kB,    pcrd->k);
 
         /* Initialize the pull coordinate */
-        init_pull_coord(pcrd, dim_buf, origin_buf, vec_buf, wi);
+        init_pull_coord(pcrd, coordNum, dim_buf, origin_buf, vec_buf, wi);
     }
 
     *ninp_p   = ninp;
@@ -459,11 +493,12 @@ void make_pull_coords(pull_params_t *pull)
     }
 }
 
-void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const gmx_output_env_t *oenv)
+pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
+                      rvec *x, matrix box, real lambda,
+                      const gmx_output_env_t *oenv)
 {
     pull_params_t *pull;
-    struct pull_t *pull_work;
+    pull_t        *pull_work;
     t_mdatoms     *md;
     t_pbc          pbc;
     int            c;
@@ -553,5 +588,5 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         fprintf(stderr, "     %10.3f %s\n", pcrd->init, pull_coordinate_units(pcrd));
     }
 
-    finish_pull(pull_work);
+    return pull_work;
 }

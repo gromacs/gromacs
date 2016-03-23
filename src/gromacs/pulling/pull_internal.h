@@ -100,6 +100,9 @@ typedef struct
     dvec          f45;        /* Force for groups 4 and 5 */
     dvec          planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
     dvec          planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
+
+    /* For external-potential coordinates only, for checking if a provider has been registered */
+    bool          bExternalPotentialProviderHasBeenRegistered;
 }
 pull_coord_work_t;
 
@@ -147,6 +150,13 @@ struct pull_t
 
     FILE              *out_x;        /* Output file for pull data */
     FILE              *out_f;        /* Output file for pull data */
+
+    /* The number of coordinates using an external potential */
+    int                numCoordinatesWithExternalPotential;
+    /* Counter for checking external potential registration */
+    int                numUnregisteredExternalPotentials;
+    /* */
+    int                numExternalPotentialsStillToBeAppliedThisStep;
 };
 
 
