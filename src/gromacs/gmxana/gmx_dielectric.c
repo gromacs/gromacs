@@ -366,7 +366,6 @@ int gmx_dielectric(int argc, char *argv[])
     if (ny == 2)
     {
         printf("Creating standard deviation numbers ...\n");
-        srenew(y, 3);
         snew(y[2], nx);
 
         fac = 1.0/((real)nx);
