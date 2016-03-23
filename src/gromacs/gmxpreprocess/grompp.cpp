@@ -81,6 +81,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
@@ -2013,9 +2014,21 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
+    struct pull_t *pull;
+
     if (ir->bPull)
     {
-        set_pull_init(ir, sys, state->x, state->box, state->lambda[efptMASS], oenv);
+        pull = set_pull_init(ir, sys, state->x, state->box, state->lambda[efptMASS], oenv);
+    }
+
+    /* Modules that supply external potential for pull coordinates
+     * should register those potentials here. finish_pull() will check
+     * that providers have been registerd for all external potentials.
+     */
+
+    if (ir->bPull)
+    {
+        finish_pull(pull);
     }
 
     if (ir->bRot)

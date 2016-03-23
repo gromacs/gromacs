@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@ struct gmx_groups_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;
+struct pull_t;
 struct t_grpopts;
 struct t_inputrec;
 struct t_rot;
@@ -139,10 +140,13 @@ void make_pull_groups(pull_params_t *pull,
 void make_pull_coords(pull_params_t *pull);
 /* Process the pull coordinates after reading the pull groups */
 
-void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const gmx_output_env_t *oenv);
+pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
+                      rvec *x, matrix box, real lambda,
+                      const gmx_output_env_t *oenv);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.
+ * Returns the pull_t pull work struct. This should be passed to finish_pull()
+ * after all modules have registered their external potentials, if present.
  */
 
 int str_nelem(const char *str, int maxptr, char *ptr[]);
