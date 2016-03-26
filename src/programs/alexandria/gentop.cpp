@@ -146,7 +146,7 @@ int alex_gentop(int argc, char *argv[])
         { efDAT, "-q",    "qout", ffOPTWR },
         { efDAT, "-mpdb", "molprops", ffOPTRD },
         { efDAT, "-d",    "gentop", ffOPTRD },
-        { efXVG, "-tab",  "table",  ffOPTRD },
+        { efXVG, "-table","table",  ffOPTRD },
         { efCUB, "-pot",  "potential", ffOPTWR },
         { efCUB, "-ref",  "refpot", ffOPTRD },
         { efCUB, "-diff", "diffpot", ffOPTWR },
@@ -430,7 +430,7 @@ int alex_gentop(int argc, char *argv[])
     if (immOK == imm)
     {
         t_commrec  *cr    = init_commrec();
-        const char *tabfn = opt2fn_null("-tab", NFILE, fnm);
+        const char *tabfn = opt2fn_null("-table", NFILE, fnm);
         if (NULL == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
             gmx_fatal(FARGS, "Can not generate charges in a polarizable system with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));

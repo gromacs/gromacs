@@ -1218,7 +1218,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                 add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
             }
         }
-        if (molProp()->NBond() == 0)
+        auto pw = SearchPlist(plist_, ftb);
+        if (plist_.end() == pw || pw->nParam() == 0)
         {
             imm = immGenBonds;
         }
@@ -1247,6 +1248,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
+        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+        //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     }
     if (imm == immOK)
     {
@@ -1256,7 +1259,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         excls_to_blocka(topology_->atoms.nr, excls_,
                         &(mtop_->moltype[0].excls));
-
     }
     if (bAddShells && imm == immOK)
     {
