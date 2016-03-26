@@ -60,8 +60,7 @@ void delete_params(std::vector<PlistWrapper> &plist_,
     {
         case 2:
             /* Remove bonds, if present */
-            for (ParamIterator j = pwi->beginParam();
-                 (j < pwi->endParam()); ++j)
+            for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
             {
                 if (((j->a[0] == alist[0]) &&
                      (j->a[1] == alist[1])) ||
@@ -80,8 +79,7 @@ void delete_params(std::vector<PlistWrapper> &plist_,
             break;
         case 3:
             /* Remove angle, if present */
-            for (ParamIterator j = pwi->beginParam();
-                 (j < pwi->endParam()); ++j)
+            for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
             {
                 if (j->a[1] == alist[1])
                 {
@@ -103,8 +101,7 @@ void delete_params(std::vector<PlistWrapper> &plist_,
             break;
         case 4:
             /* Remove dihedral, if present. Allow wildcard in alist[3] (specified as -1) */
-            for (ParamIterator j = pwi->beginParam();
-                 (j < pwi->endParam()); ++j)
+            for (auto j = pwi->beginParam(); (j < pwi->endParam()); ++j)
             {
                 if (((j->a[0] == alist[0]) &&
                      (j->a[1] == alist[1]) &&

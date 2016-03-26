@@ -1223,18 +1223,24 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             imm = immGenBonds;
         }
     }
+    //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+    //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     if (immOK == imm)
     {
         /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
         MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
+        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+        //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
         MakeSpecialInteractions(pd, bUseVsites);
 
         getForceConstants(pd);
 
         /* Move the plist_ to the correct function */
         mv_plists(pd, plist_, true);
+        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+        //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
 
         snew(mtop_, 1);
     }
