@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -89,7 +90,7 @@ bool write_point_to_output(const awh_bias_t *awh_bias, int point_index)
     return in_target_region(&awh_bias->coordpoint[point_index]);
 }
 
-void getPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *pmf)
+void getPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, float *pmf)
 {
     /* The PMF is just the negative of the log of the sampled PMF histogram.
        Points with zero target weight are ignored, they will mostly contain noise. */
@@ -102,7 +103,7 @@ void getPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *pmf)
             pmf[i] = in_target_region(&awh_bias->coordpoint[i]) ? std::exp(awh_bias->coordpoint[i].log_pmfsum) : 0;
         }
 
-        gmx_sumd_sim(awh_bias->npoints, pmf, ms);
+        gmx_sumf_sim(awh_bias->npoints, pmf, ms);
 
         /* Take log again to get (non-normalized) PMF */
         for (int i = 0; i < awh_bias->npoints; i++)
@@ -156,9 +157,9 @@ static double get_biased_weight_from_point(const awh_bias_t *awh_bias, int point
     return weight;
 }
 
-void getConvolvedPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *convolvedPmf)
+void getConvolvedPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, float *convolvedPmf)
 {
-    double *pmf;
+    float *pmf;
 
     snew(pmf, awh_bias->npoints);
 
@@ -1293,6 +1294,7 @@ static void set_awh_coord_value(awh_t *awh, struct pull_t *pull_work,
 }
 
 real update_awh(awh_t                  *awh,
+                const awh_params_t     *awh_params,
                 struct pull_t          *pull_work,
                 int                     ePBC,
                 const t_mdatoms        *mdatoms,
@@ -1308,6 +1310,18 @@ real update_awh(awh_t                  *awh,
     double   bias_potential = 0;
 
     wallcycle_start(wallcycle, ewcAWH);
+
+    /* Prepare AWH output data to later print to the energy file */
+    if (time_to_write(step, awh->writer))
+    {
+        /* Make sure bias is up to date globally. This will also update the free energy and weight histogram. */
+        for (int k = 0; k < awh->nbias; k++)
+        {
+            do_skipped_updates_for_all_points(awh->awh_bias, step);
+        }
+
+        prep_awh_output(awh->writer, awh_params, awh, ms);
+    }
 
     /* Update the AWH coordinate values with those of the corresponding pull coordinates. */
     set_awh_coord_value(awh, pull_work, ePBC, box);
@@ -1325,4 +1339,9 @@ real update_awh(awh_t                  *awh,
     wallcycle_stop(wallcycle, ewcAWH);
 
     return static_cast<real>(bias_potential);
+}
+
+void write_awh_to_energyframe(t_enxframe *fr, const awh_t *awh)
+{
+    write_awh_to_frame(fr, awh->writer);
 }
