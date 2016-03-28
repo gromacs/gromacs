@@ -55,6 +55,7 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -70,6 +71,7 @@
 #include "gromacs/utility/pleasecite.h"
 
 #include "bias.h"
+#include "biaswriter.h"
 #include "grid.h"
 #include "pointstate.h"
 
@@ -107,6 +109,15 @@ class BiasCoupledToSystem
                                      const t_commrec      *cr)
         {
             bias_->restoreStateFromHistory(biasHistory, cr);
+        };
+
+        /*! \brief Prepare data for writing to energy frame.
+         *
+         * \param[in] ms  Struct for multi-simulation communication.
+         */
+        void prepareOutput(const gmx_multisim_t *ms)
+        {
+            bias_->prepareOutput(ms);
         };
 
         /*! \brief Set the coordinate value(s) and evolves the bias at every step.
@@ -175,7 +186,8 @@ Awh::Awh(FILE              *fplog,
          const AwhParams   &awhParams,
          struct pull_t     *pull_work) :
     seed_(awhParams.seed),
-    potentialOffset_(0)
+    potentialOffset_(0),
+    nstout_(awhParams.nstOut)
 {
     /* We already checked for this in grompp, but check again here. */
     GMX_RELEASE_ASSERT(ir.pull != nullptr, "With AWH we should have pull parameters");
@@ -256,6 +268,15 @@ real Awh::applyBiasForcesAndUpdateBias(struct pull_t          *pull_work,
                                        FILE                   *fplog)
 {
     wallcycle_start(wallcycle, ewcAWH);
+
+    if (nstout_ > 0 && step % nstout_ == 0)
+    {
+        /* Prepare AWH output data to later write to the energy file. */
+        for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+        {
+            biasCoupledToSystem.prepareOutput(ms);
+        }
+    }
 
     t_pbc  pbc;
     set_pbc(&pbc, ePBC, box);
@@ -373,6 +394,39 @@ void Awh::registerAwhWithPull(const AwhParams &awhParams,
         {
             register_external_pull_potential(pull_work, biasParams.dimParams[d].pullCoordIndex, Awh::externalPotentialString());
         }
+    }
+}
+
+/* Fill the AWH data block of an energy frame with data (if there is any). */
+void Awh::writeToEnergyframe(t_enxframe *frame) const
+{
+    if (biasCoupledToSystem_[0].bias().numEnergySubblocksToWrite() == 0)
+    {
+        return;
+    }
+
+    /* Get the total number of energy subblocks that AWH needs */
+    int numSubblocks  = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        numSubblocks += biasCoupledToSystem.bias().numEnergySubblocksToWrite();
+    }
+
+    /* Add 1 energy block */
+    add_blocks_enxframe(frame, frame->nblock + 1);
+
+    /* Take the block that was just added and set the number of subblocks. */
+    t_enxblock *awhenergyblock = &(frame->block[frame->nblock - 1]);
+    add_subblocks_enxblock(awhenergyblock, numSubblocks);
+
+    /* Claim it as an AWH block. */
+    awhenergyblock->id = enxAWH;
+
+    /* Transfer AWH data blocks to energy sub blocks */
+    int energySubblockCount = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        energySubblockCount += biasCoupledToSystem.bias().writeToEnergySubblocks(&(awhenergyblock->sub[energySubblockCount]));
     }
 }
 

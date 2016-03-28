@@ -475,11 +475,25 @@ class BiasState
             return points_;
         };
 
+        /*! \brief Returns the current histogram size.
+         */
+        double histogramSize() const
+        {
+            return histSize_;
+        };
+
         /*! \brief Returns true if we are in the initial stage.
          */
         bool inInitialStage() const
         {
             return inInitialStage_;
+        };
+
+        /*! \brief Returns the log of the current sample weight, scaled because of the histograms scaling.
+         */
+        double scaledSampleWeight() const
+        {
+            return scaledSampleWeight_;
         };
 
         /* Data members */
@@ -529,10 +543,10 @@ class BiasState
  * \param[in] coordValue  Coordinate value.
  * \returns the convolved bias >= -GMX_DOUBLE_MAX.
  */
-double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
-                         const Grid                    &grid,
-                         const std::vector<PointState> &points,
-                         const awh_dvec                &coordValue);
+double calculateConvolvedBias(const std::vector<DimParams>  &dimParams,
+                              const Grid                    &grid,
+                              const std::vector<PointState> &points,
+                              const awh_dvec                &coordValue);
 
 /*! \brief
  * Sets the given array with PMF values.
