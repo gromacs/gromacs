@@ -376,6 +376,11 @@ void please_cite(FILE *fp, const char *key)
           "Quantifying Artifacts in Ewald Simulations of Inhomogeneous Systems with a Net Charge",
           "J. Chem. Theory Comput.",
           10, 2014, "381-393" },
+        { "Lindahl2014",
+          "V. Lindahl, J. Lidmar, B. Hess",
+          "Accelerated weight histogram method for exploring free energy landscapes",
+          "J. Chem. Phys.",
+          141, 2014, "044110" },
     };
 #define NSTR (int)asize(citedb)
 
