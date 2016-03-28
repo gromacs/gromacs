@@ -49,6 +49,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation.h"
 #include "grid.h"
 #include "internal.h"
 #include "pointstate.h"
@@ -73,6 +74,7 @@ static int get_normtype(int evar)
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normtype = enormtypeDISTRIBUTION; break;
         default:
             normtype = enormtypeNONE; break;
@@ -114,6 +116,7 @@ static double get_normvalue(int evar, const Bias &bias, int count)
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normvalue = static_cast<double>(bias.pointState().size());
             break;
         default:
@@ -152,6 +155,14 @@ BiasWriter::BiasWriter(const Bias &bias)
             case evarCOORDVALUE:
                 varToBlock_[evar] = blockCount;
                 var_nblock[evar]  = bias.ndim();
+                break;
+            case evarFORCECORRVOL:
+                varToBlock_[evar] = blockCount;
+                var_nblock[evar]  = 1;
+                break;
+            case evarFRICTION:
+                varToBlock_[evar] = blockCount;
+                var_nblock[evar]  = bias.forcecorr().corrmatrix[0].ncorr;
                 break;
             default:
                 /* Most variables need one block */
@@ -270,6 +281,8 @@ void BiasWriter::transferVariablePointDataToWriter(int evar, int m,
     int bstart = getVarStartBlock(evar);
     GMX_ASSERT(m < static_cast<int>(block_[bstart].data.size()), "Attempt to transfer AWH data to block for point index out of range");
 
+    int numCorrelation = bias.forcecorr().corrmatrix[0].ncorr;
+
     /* Transfer the point data of this variable to the right block(s) */
     int b = bstart;
     switch (evar)
@@ -314,6 +327,17 @@ void BiasWriter::transferVariablePointDataToWriter(int evar, int m,
             break;
         case evarTARGET:
             block_[b].data[m] =  bias.pointState()[m].target();
+            break;
+        case evarFORCECORRVOL:
+            block_[b].data[m] = get_correlation_volelem(&bias.forcecorr(), m);
+            break;
+        case evarFRICTION:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < numCorrelation; n++)
+            {
+                block_[b].data[m] = get_correlation_timeintegral(&bias.forcecorr(), m, n);
+                b++;
+            }
             break;
         default:
             gmx_incons("Unknown AWH output variable");
