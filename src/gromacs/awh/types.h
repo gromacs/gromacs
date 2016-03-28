@@ -59,6 +59,7 @@ typedef double awh_dvec[c_awhBiasMaxNumDim];
 typedef int awh_ivec[c_awhBiasMaxNumDim];
 
 struct grid_t;
+struct awh_energywriter_t;
 
 /*! \cond INTERNAL */
 
@@ -126,11 +127,12 @@ struct awh_bias_t {
 
 //! A collection of AWH biases.
 struct awh_t {
-    int          nbias;            /**< Number of AWH biases. */
-    awh_bias_t  *awh_bias;         /**< AWH biases. */
-    bool         convolveForce;    /**< If true, the force on the pull coordinate is convolved. Otherwise, simple umbrella force. */
-    gmx_int64_t  seed;             /**< Random seed. */
-    double       potential_offset; /**< The offset of the bias potential due to bias updates. */
+    int                 nbias;            /**< Number of AWH biases. */
+    awh_bias_t         *awh_bias;         /**< AWH biases. */
+    bool                convolveForce;    /**< If true, the force on the pull coordinate is convolved. Otherwise, simple umbrella force. */
+    gmx_int64_t         seed;             /**< Random seed. */
+    double              potential_offset; /**< The offset of the bias potential due to bias updates. */
+    awh_energywriter_t *writer;           /**< Takes care of AWH data output. */
 };
 
 /*! \endcond */
