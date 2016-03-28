@@ -74,6 +74,7 @@
 
 #include "bias.h"
 #include "biassharing.h"
+#include "correlationgrid.h"
 #include "pointstate.h"
 
 namespace gmx
@@ -169,6 +170,8 @@ Awh::Awh(FILE              *fplog,
         Bias::ThisRankWillDoIO thisRankWillDoIO = (MASTER(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
         biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, inputRecord.delta_t, numSharingSimulations, biasInitFilename, thisRankWillDoIO),
                                           pullCoordIndex);
+
+        biasCoupledToSystem_.back().bias.printInitializationToLog(fplog);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
@@ -229,16 +232,16 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
          * sampling observables based on the input pull coordinate value,
          * setting the bias force and/or updating the AWH bias state.
          */
-        awh_dvec biasForce;
-        double   biasPotential;
-        double   biasPotentialJump;
+        double              biasPotential;
+        double              biasPotentialJump;
         /* Note: In the near future this call will be split in calls
          *       to supports bias sharing within a single simulation.
          */
-        biasCts.bias.calcForceAndUpdateBias(coordValue, biasForce,
-                                            &biasPotential, &biasPotentialJump,
-                                            commRecord_->ms,
-                                            t, step, seed_, fplog);
+        gmx::ArrayRef<const double> biasForce =
+            biasCts.bias.calcForceAndUpdateBias(coordValue,
+                                                &biasPotential, &biasPotentialJump,
+                                                commRecord_->ms,
+                                                t, step, seed_, fplog);
 
         awhPotential += biasPotential;
 
@@ -258,7 +261,9 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
 
         if (isOutputStep(step))
         {
-            /* Ensure that we output fully updated data */
+            /* We might have skipped updates for part of the grid points.
+             * Ensure all points are updated before writing out their data.
+             */
             biasCts.bias.doSkippedUpdatesForAllPoints();
         }
     }

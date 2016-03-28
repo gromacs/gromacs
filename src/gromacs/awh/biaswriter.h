@@ -69,13 +69,15 @@ class Bias;
 //! Enum with the AWH variables to write.
 enum class AwhOutputEntryType
 {
-    MetaData,           //!< Meta data.
-    CoordValue,         //!< Coordinate value.
-    Pmf,                //!< The pmf.
-    Bias,               //!< The bias.
-    Visits,             //!< The number of visits.
-    Weights,            //!< The weights.
-    Target              //!< The target distribition.
+    MetaData,               //!< Meta data.
+    CoordValue,             //!< Coordinate value.
+    Pmf,                    //!< The pmf.
+    Bias,                   //!< The bias.
+    Visits,                 //!< The number of visits.
+    Weights,                //!< The weights.
+    Target,                 //!< The target distribition.
+    ForceCorrelationVolume, //!< The volume of the force correlation tensor.
+    FrictionTensor          //!< The full friction tensor.
 };
 
 //! Enum with the types of metadata to write.
@@ -104,8 +106,8 @@ class AwhEnergyBlock
         /*! \brief Constructor
          *
          * \param[in] numPoints           Number of points in block.
-         * \param[in] normalizationType   Value for normalization type enum.
-         * \param[in] normalizationValue  Normalization value.
+         * \param[in] normalizationType   Type of normalization.
+         * \param[in] normalizationValue  Value to normalization with.
          */
         AwhEnergyBlock(int            numPoints,
                        Normalization  normalizationType,
@@ -128,6 +130,30 @@ class AwhEnergyBlock
  */
 class BiasWriter
 {
+    public:
+        /*! \brief Constructor.
+         *
+         * \param[in] bias  The AWH bias.
+         */
+        BiasWriter(const Bias &bias);
+
+        /*! \brief Returns the number of data blocks.
+         *
+         * \returns the number of data blocks.
+         */
+        int numBlocks() const
+        {
+            return block_.size();
+        }
+
+        /*! \brief Collect AWH bias data in blocks and write to energy subblocks.
+         *
+         * \param[in]     bias      The AWH Bias.
+         * \param[in,out] subblock  Energy subblocks to write to.
+         * \returns the number of blocks written.
+         */
+        int writeToEnergySubblocks(const Bias &bias, t_enxsubblock *subblock);
+
     private:
         /*! \brief Query if the writer has a block for the given variable.
          *
@@ -170,38 +196,12 @@ class BiasWriter
                                        const Bias                 &bias,
                                        gmx::ArrayRef<const float>  pmf);
 
-    public:
-        /*! \brief Constructor.
-         *
-         * \param[in] bias  The AWH bias.
-         */
-        BiasWriter(const Bias &bias);
-
-        /*! \brief Returns the number of data blocks.
-         *
-         * \returns the number of data blocks.
-         */
-        int numBlocks() const
-        {
-            return block_.size();
-        }
-
-    private:
         /*! \brief
          * Prepare the bias output data.
          *
          * \param[in] bias  The AWH Bias.
          */
         void prepareBiasOutput(const Bias &bias);
-
-    public:
-        /*! \brief Collect AWH bias data in blocks and write to energy subblocks.
-         *
-         * \param[in]     bias      The AWH Bias.
-         * \param[in,out] subblock  Energy subblocks to write to.
-         * \returns the number of blocks written.
-         */
-        int writeToEnergySubblocks(const Bias &bias, t_enxsubblock *subblock);
 
     private:
         std::vector<AwhEnergyBlock>       block_;             /**< The data blocks */

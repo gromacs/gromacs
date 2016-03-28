@@ -45,6 +45,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/awh/correlationgrid.h"
 #include "gromacs/awh/pointstate.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/stringutil.h"
@@ -231,12 +232,12 @@ TEST_P(BiasTest, ForcesBiasPmf)
     {
         coordMaxValue = std::max(coordMaxValue, std::abs(coord));
 
-        awh_dvec coordValue = { coord, 0, 0, 0 };
-        awh_dvec biasForce;
-        double   potential = 0;
-        bias.calcForceAndUpdateBias(coordValue,
-                                    biasForce, &potential, &potentialJump,
-                                    nullptr, step, step, seed_, nullptr);
+        awh_dvec                    coordValue = { coord, 0, 0, 0 };
+        double                      potential  = 0;
+        gmx::ArrayRef<const double> biasForce  =
+            bias.calcForceAndUpdateBias(coordValue,
+                                        &potential, &potentialJump,
+                                        nullptr, step, step, seed_, nullptr);
 
         force.push_back(biasForce[0]);
         pot.push_back(potential);
@@ -316,11 +317,10 @@ TEST(BiasTest, DetectsCovering)
         double   coord = midPoint + halfWidth*(0.5*std::sin(t) + 0.55*std::sin(1.5*t));
 
         awh_dvec coordValue    = { coord, 0, 0, 0 };
-        awh_dvec biasForce;
         double   potential     = 0;
         double   potentialJump = 0;
         bias.calcForceAndUpdateBias(coordValue,
-                                    biasForce, &potential, &potentialJump,
+                                    &potential, &potentialJump,
                                     nullptr, step, step, params.awhParams.seed, nullptr);
 
         inInitialStage = bias.state().inInitialStage();
