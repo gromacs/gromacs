@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/awhhistory.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -188,6 +189,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     snew(state->enerhist, 1);
     init_energyhistory(state->enerhist);
     init_df_history(&state->dfhist, nlambda);
+    init_awhbiashistory(&state->awhbiashist);
     init_swapstate(&state->swapstate);
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;

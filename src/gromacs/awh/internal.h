@@ -1,0 +1,133 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/*! \internal \file
+ *
+ * \brief
+ * Functions and declarations for internal use in the AWH module.
+ *
+ * \author Viveca Lindahl
+ * \ingroup module_awh
+ */
+
+#ifndef GMX_AWH_INTERNAL_H
+#define GMX_AWH_INTERNAL_H
+
+#include "types.h" /* This currently needed for awh_dvec */
+
+struct t_awh;
+struct t_awh_grid;
+struct awhdim_params_t;
+struct gmx_multisim_t;
+struct pull_params_t;
+struct t_inputrec;
+struct t_commrec;
+
+/*! \brief Calculates the convolved bias at a point in the AWH grid.
+ *
+ * Note: if it turns out to be costly to calculate this pointwise
+ * the convolved bias for the whole grid could be returned instead.
+ *
+ * \param[in] awh         The AWH bias.
+ * \param[in] coord_value The coordinate values of the point.
+ * \returns the convolved bias >= -GMX_DOUBLE_MAX.
+ */
+double calc_convolved_bias(const t_awh *awh, const awh_dvec coord_value);
+
+/*! \brief Sets the given array with the PMF values.
+ *
+ * \param[in] awh         The AWH bias.
+ * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
+ * \param[out] pmf        Array of the same length as the AWH grid to store the PMF in.
+ */
+void get_pmf(const t_awh *awh, const gmx_multisim_t *ms, double *pmf);
+
+/*! \brief Convert internal coordinate units to external, user coordinate units.
+ *
+ * \param[in] awh                  The AWH bias.
+ * \param[in] pull_params          Pull parameters.
+ * \param[in] awh_dimindex        AWH coordinate dimension to convert.
+ * \returns the conversion factor.
+ */
+double coord_value_conversion_factor_internal2userinput(const t_awh *awh, const pull_params_t *pull_params, int awh_dimindex);
+
+/*! \brief Convert external, user coordinate units to internal coordinate units.
+ *
+ * \param[in] awh                  The AWH bias.
+ * \param[in] pull_params          Pull parameters.
+ * \param[in] awh_dimindex        AWH coordinate dimension to convert.
+ * \returns the conversion factor.
+ */
+double coord_value_conversion_factor_userinput2internal(const t_awh *awh, const pull_params_t *pull_params, int awh_dimindex);
+
+/*! \brief Get the grid point index of the current coordinate value.
+ *
+ * \param[in] awh                  The AWH bias.
+ * \returns the grid point index of the coordinate value.
+ */
+int get_coord_value_index(const t_awh *awh);
+
+/*! \brief Query if the current coordinate value is in range of the AWH grid.
+ *
+ * \param[in] awh                  The AWH bias.
+ * \returns true if the coordinate value is in the grid.
+ */
+bool coord_value_is_in_grid(const t_awh *awh);
+
+/*! \brief Allocate, initialize and return an AWH working struct for mdrun.
+ *
+ * This is used to get a temporary AWH working struct at preprocessing time.
+ *
+ * \param[in,out] fplog               General output log file (or NULL).
+ * \param[in] ir                      General input parameters.
+ * \param[in] cr                      Struct for communication (or NULL).
+ * \param[in] awhbias_params          AWH input parameters.
+ * \returns the initialized AWH struct.
+ */
+t_awhbias *init_awhbias(FILE                    *fplog,
+                        const t_inputrec        *ir,
+                        const t_commrec         *cr,
+                        const awhbias_params_t  *awhbias_params);
+
+
+/*! \brief Register the AWH biased coordinates with pull.
+ *
+ * \param[in] awhbias                 The AWH bias.
+ * \param[in,out] pull_work           Pull struct which AWH will register the bias into.
+ * \returns the initialized AWH struct.
+ */
+void register_bias_with_pull(const t_awhbias *awhbias, struct pull_t *pull_work);
+
+#endif  /* GMX_AWH_INTERNAL_H */
