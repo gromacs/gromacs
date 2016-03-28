@@ -58,13 +58,13 @@ struct pull_params_t;
 /*! \brief Allocate, initialize and return an AWH writer.
  *
  * \param[in] nstout                Number of steps per output writing.
+ * \param[in] bForce_correlation    True if printing basic force correlation data.
  * \param[in] awh               AWH working struct.
  * \param[in] pull_params           Pull parameters.
  * \returns the initialized writer.
  */
-awh_energywriter_t *init_awh_energywriter(int nstout,
+awh_energywriter_t *init_awh_energywriter(int nstout, bool bForce_correlation,
                                           const awh_t *awh, const pull_params_t *pull_params);
-
 
 /*! \brief Query if output should be written at the given step.
  *

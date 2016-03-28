@@ -748,6 +748,8 @@ static void pr_awh(FILE *fp, int indent, awh_params_t *awh_params)
     PI(opt, awh_params->nsamples_update_free_energy);
     sprintf(opt, "%s-potential", prefix);
     PS(opt, EAWHPOTENTIAL(awh_params->ePotential));
+    sprintf(opt, "%s-forcecorr", prefix);
+    PS(opt, EBOOL(awh_params->bForce_correlation));
 
     for (k = 0; k < awh_params->nbias; k++)
     {
