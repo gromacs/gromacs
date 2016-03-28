@@ -218,6 +218,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, cr)),
     updateWeight(numSamplesUpdateFreeEnergy*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
+    errorInitial(awhBiasParams.errorInitial),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)
