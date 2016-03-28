@@ -723,6 +723,7 @@ static void do_awhbias(t_fileio *fio, awhbias_params_t *awhbias_params, gmx_bool
     gmx_fio_do_int(fio, awhbias_params->nsamples_move_refvalue);
     gmx_fio_do_int(fio, awhbias_params->nsamples_update_free_energy);
     gmx_fio_do_gmx_bool(fio, awhbias_params->bConvolve_force);
+    gmx_fio_do_gmx_bool(fio, awhbias_params->bForce_correlation);
 
     if (awhbias_params->nawh > 0)
     {

@@ -58,11 +58,12 @@ struct t_enxframe;
 /*! \brief Allocate, initialize and return an AWH bias writer.
  *
  * \param[in] nstout                Number of steps per output writing.
+ * \param[in] bForce_correlation    True if printing basic force correlation data.
  * \param[in] awhbias               AWH bias working struct.
  * \param[in] pull_params           Pull parameters.
  * \returns the initialized writer.
  */
-awhbias_energywriter_t *init_awhbias_energywriter(int nstout,
+awhbias_energywriter_t *init_awhbias_energywriter(int nstout, bool bForce_correlation,
                                                   const t_awhbias *awhbias, const pull_params_t *pull_params);
 
 

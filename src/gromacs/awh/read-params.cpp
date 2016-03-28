@@ -437,6 +437,10 @@ awhbias_params_t *read_awhbiasparams(int *ninp_p, t_inpfile **inp_p, const t_inp
     sprintf(opt, "%s-convolve-force", prefix);
     EETYPE(opt, awhbias_params->bConvolve_force, yesno_names);
 
+    CTYPE("Monitor and output AWH bias force correlation");
+    sprintf(opt, "%s-forcecorr", prefix);
+    EETYPE(opt, awhbias_params->bForce_correlation, yesno_names);
+
     /* Read the parameters specific to each AWH bias */
     for (int k = 0; k < awhbias_params->nawh; k++)
     {
