@@ -46,6 +46,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/awh/biaswriter.h"
+#include "gromacs/awh/correlationgrid.h"
 #include "gromacs/awh/grid.h"
 #include "gromacs/awh/pointstate.h"
 #include "gromacs/mdtypes/awh-params.h"
