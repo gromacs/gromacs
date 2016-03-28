@@ -52,6 +52,7 @@
 struct t_awhbias;
 struct t_commrec;
 struct pull_t;
+struct correlation_grid_history_t;
 
 //! Coordinate point history data.
 typedef struct awhhistory_coord_point_t
@@ -82,6 +83,10 @@ typedef struct awhhistory_t
     int                            in_initial;                /**< True if in the intial stage. */
     double                         histsize;                  /**< Size of reference weight histogram. */
     double                         log_relative_sampleweight; /**< Keep track of the weight of new samples relative to previous samples. */
+
+    /* Force correlation */
+    int                         bForce_correlation;    /**< Do force correlation statistics? */
+    correlation_grid_history_t *forcecorr_hist;        /**< History for force correlation statistics. */
 } awhhistory_t;
 
 //! A collection of AWH bias history data. */
@@ -140,5 +145,13 @@ void restore_awhbias_state_from_history(const awhbiashistory_t       *awhbiashis
  */
 void update_awhbiashistory(awhbiashistory_t       *awhbiashist,
                            const t_awhbias        *awhbias);
+
+/* \brief
+ * Query if force correlation should be checkpointed.
+ *
+ * \param[in] awhbiashist  AWH bias history.
+ * \returns True if force correlation should be checkpointed.
+ */
+bool force_correlation_needs_checkpointing(const awhbiashistory_t *awhbiashist);
 
 #endif
