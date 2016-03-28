@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -686,6 +687,73 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     }
 }
 
+static void pr_awhdim(FILE *fp, int indent, awh_dim_params_t *awh_dim_params, char *prefix)
+{
+    pr_indent(fp, indent);
+    indent++;
+    fprintf(fp,  "%s:\n", prefix);
+    PI("pull-coord", awh_dim_params->pull_coord_index + 1);
+    PR("min", awh_dim_params->origin);
+    PR("max", awh_dim_params->end);
+    PR("diffusion", awh_dim_params->diffusion);
+    PI("ninterval", awh_dim_params->ninterval);
+    PR("interval-overlap", awh_dim_params->interval_overlap);
+}
+
+static void pr_awh(FILE *fp, int indent, awh_bias_params_t *awh_bias_params, char *prefix)
+{
+    int  d;
+    char opt[STRLEN];
+
+    sprintf(opt, "%s-target", prefix);
+    PS(opt, EAWHTARGET(awh_bias_params->eTarget));
+    sprintf(opt, "%s-target-param", prefix);
+    PR(opt, awh_bias_params->target_param);
+    sprintf(opt, "%s-growth", prefix);
+    PS(opt, EAWHGROWTH(awh_bias_params->eGrowth));
+    sprintf(opt, "%s-user-data", prefix);
+    PS(opt, EBOOL(awh_bias_params->bUser_data));
+    sprintf(opt, "%s-error-init", prefix);
+    PR(opt, awh_bias_params->error_initial);
+    sprintf(opt, "%s-ndim", prefix);
+    PI(opt, awh_bias_params->ndim);
+    sprintf(opt, "%s-share", prefix);
+    PS(opt, EBOOL(awh_bias_params->bShare));
+    for (d = 0; d < awh_bias_params->ndim; d++)
+    {
+        char prefixdim[STRLEN];
+        sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
+        pr_awhdim(fp, indent, &awh_bias_params->dim_params[d], prefixdim);
+    }
+}
+
+static void pr_awh(FILE *fp, int indent, awh_params_t *awh_params)
+{
+    int  k;
+    char opt[STRLEN], prefix[STRLEN];
+
+    sprintf(prefix, "%s", "awh");
+
+    sprintf(opt, "%s-nbias", prefix);
+    PI(opt, awh_params->nbias);
+    sprintf(opt, "%s-seed", prefix);
+    PI(opt, awh_params->seed);
+    sprintf(opt, "%s-nstsample", prefix);
+    PI(opt, awh_params->nstsample_coord);
+    sprintf(opt, "%s-nsamples-refvalue", prefix);
+    PI(opt, awh_params->nsamples_move_refvalue);
+    sprintf(opt, "%s-nsamples-update", prefix);
+    PI(opt, awh_params->nsamples_update_free_energy);
+    sprintf(opt, "%s-convolve-force", prefix);
+    PS(opt, EBOOL(awh_params->bConvolve_force));
+
+    for (k = 0; k < awh_params->nbias; k++)
+    {
+        sprintf(prefix, "awh%d", k + 1);
+        pr_awh(fp, indent, &awh_params->awh_bias_params[k], prefix);
+    }
+}
+
 static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
 {
     pr_indent(fp, indent);
@@ -958,6 +1026,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         if (ir->bPull)
         {
             pr_pull(fp, indent, ir->pull);
+        }
+
+        /* AWH BIASING */
+        PS("awh", EBOOL(ir->bDoAwh));
+        if (ir->bDoAwh)
+        {
+            pr_awh(fp, indent, ir->awh_params);
         }
 
         /* ENFORCED ROTATION */
