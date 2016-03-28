@@ -1823,6 +1823,291 @@ applicable pulling coordinate.
    :mdp:`free-energy` is turned on. The force constant is then (1 -
    lambda) * :mdp:`pull-coord1-k` + lambda * :mdp:`pull-coord1-kB`.
 
+AWH adaptive biasing
+^^^^^^^^^^^^^^^^^^^^
+
+.. mdp:: awh
+
+   .. mdp-value:: no
+
+      No biasing.
+
+   .. mdp-value:: yes
+
+      Adaptively bias a reaction coordinate using the AWH method and estimate
+      the corresponding PMF. The PMF and other AWH data are written to energy
+      file at an interval set by :mdp:`awh-nstout` and can be extracted with
+      the ``gmx awh`` tool. The AWH coordinate can be
+      multidimensional and is defined by mapping each dimension to a pull coordinate index.
+      This is only allowed if :mdp:`pull-coord1-type=external-potential` and
+      :mdp:`pull-coord1-potential-provider` = ``awh`` for the concerned pull coordinate
+      indices.
+
+.. mdp:: awh-potential
+
+   .. mdp-value:: convolved
+
+      The applied biasing potential is the convolution of the bias function and a
+      set of harmonic umbrella potentials (see :mdp-value:`awh-potential=umbrella` below). This results
+      in a smooth potential function and force. The resolution of the potential is set
+      by the force constant of each umbrella, see :mdp-value:`awh1-dim1-pull-coord`.
+
+   .. mdp-value:: umbrella
+
+      The potential bias is applied by controlling the position of an harmonic potential
+      using Monte-Carlo sampling.  The force constant is set with
+      mdp-value:`awh1-dim1-force-constant`. The umbrella location
+      is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
+      When new umbrella positions are sampled often enough,
+      the average potential and force equals that of :mdp:`awh-potential=convolved`. This option
+      can be useful for cases when calculating the convolved force for each step becomes
+      computationally expensive.
+
+.. mdp:: awh-share-multisim
+
+   .. mdp-value:: no
+
+      AWH will not share biases across simulations started with
+      :ref:`gmx mdrun` option ``-multidir``. The biases will be independent.
+
+   .. mdp-value:: yes
+
+      With :ref:`gmx mdrun` and option ``-multidir`` the bias and PMF estimates
+      for biases with :mdp:`share-group` >0 will be shared across simulations
+      with the biases with the same ``share-group`` value.
+      The simulations should have the same AWH settings for sharing to make sense.
+      :ref:`gmx mdrun` will check whether the simulations are technically
+      compatible for sharing, but the user should check that bias sharing
+      physically makes sense.
+
+.. mdp:: awh-seed
+
+   (-1) Random seed for Monte-Carlo sampling the umbrella position,
+   where -1 indicates to generate a seed. Only used with
+   :mdp:`awh-potential=umbrella`.
+
+.. mdp:: awh-nstout
+
+   (100000)
+   Number of steps between printing AWH data to the energy file, should be
+   a multiple of :mdp:`nstenergy`.
+
+.. mdp:: awh-nstsample
+
+   (10)
+   Number of steps between sampling of the coordinate value. This sampling
+   is the basis for updating the bias and estimating the PMF and other AWH observables.
+
+.. mdp:: awh-nsamples-update
+
+   (10)
+   The number of coordinate samples used for each AWH update.
+   The update interval in steps is :mdp:`awh-nstsample` times this value.
+
+.. mdp:: awh-nbias
+
+   (1)
+   The number of biases, each acting independently on its own coordinate.
+   The following options should be specified
+   for each bias although below only the options for bias number 1 is shown. Options for
+   other bias indices are  obtained by replacing '1' by the bias index.
+
+.. mdp:: awh1-error-init
+
+   (10.0) \[kJ mol-1\]
+   Estimated initial average error of the PMF for this bias. This value together with the
+   given diffusion constant(s) :mdp:`awh1-dim1-diffusion` determine the initial biasing rate.
+   The error is obviously not known *a priori*. Only a rough estimate of :mdp:`awh1-error-init`
+   is needed however.
+   As a  general guideline, leave :mdp:`awh1-error-init` to its default value when starting a new
+   simulation. On the other hand, when there is *a priori* knowledge of the PMF (e.g. when
+   an initial PMF estimate is provided, see the :mdp:`awh1-user-data` option)
+   then :mdp:`awh1-error-init` should reflect that knowledge.
+
+.. mdp:: awh1-growth
+
+   .. mdp-value:: exp-linear
+
+   Each bias keeps a reference weight histogram for the coordinate samples.   
+   Its size sets the magnitude of the bias function and free energy estimate updates
+   (few samples corresponds to large updates and vice versa).
+   Thus, its growth rate sets the maximum convergence rate.
+   By default, the histogram is robustly initialized by restricting its growth in an initial,
+   exponential stage, followed by a final, linear stage where the growth rate
+   equals the sampling rate (set by :mdp:`awh-nstsample`).
+   The initial stage is typically necessary for efficient convergence when starting a new simulation where
+   high free energy barriers have not yet been flattened by the bias.
+   In the initial stage, the histogram is repeatedly scaled down after having
+   added new samples, keeping it at a constant size. Each time the sampling interval is 
+   considered covered the histogram is instead scaled up by the heuristically chosen factor 3.
+   The exit to the final stage is determined dynamically by requiring that
+   initial stage samples are always scaled down relative to final stage samples.
+
+   .. mdp-value:: linear
+
+   As :mdp-value:`awh1-growth=exp-linear` but skip the initial stage. This may be useful if there is *a priori*
+   knowledge (see :mdp:`awh1-error-init`) which eliminates the need for an initial stage. This is also
+   the setting compatible with :mdp-value:`awh1-target=local-boltzmann`.
+
+.. mdp:: awh1-equilibrate-histogram
+
+   .. mdp-value:: no
+
+      Do not equilibrate histogram.
+
+   .. mdp-value:: yes
+
+      Before entering the initial stage (see :mdp-value:`awh1-growth=exp-linear`), make sure the
+      histogram of sampled weights is following the target distribution closely enough (specifically,
+      at least 80% of the target region needs to have a local relative error of less than 20%). This
+      option would typically only be used when sharing the bias across several simulations
+      (:mdp:`awh1-share-group` > 0) and the initial configurations poorly represent the target
+      distribution.
+
+.. mdp:: awh1-target
+
+   .. mdp-value:: constant
+
+      The bias is tuned towards a constant (uniform) coordinate distribution
+      in the defined sampling interval (defined by  \[:mdp:`awh1-dim1-start`, :mdp:`awh1-dim1-end`\]).
+
+   .. mdp-value:: cutoff
+
+      Similar to :mdp-value:`awh1-target=constant`, but the target
+      distribution is proportional to 1/(1 + exp(F - :mdp-value:`awh1-target=cutoff`)),
+      where F is the free energy relative to the estimated global minimum.
+      This provides a smooth switch of a flat target distribution in
+      regions with free energy lower than the cut-off to a Boltzmann
+      distribution in regions with free energy higher than the cut-off.
+
+   .. mdp-value:: boltzmann
+
+      The target distribution is a Boltzmann distribtution with a scaled beta (inverse temperature)
+      factor given by :mdp:`aw1-target-beta-scaling`. *E.g.*, a value of 0.1
+      would give the same coordinate distribution as sampling with a simulation temperature
+      scaled by 10.
+
+   .. mdp-value:: local-boltzmann
+
+      Same target distribution and use of :mdp-value:`awh1-target-beta-scaling=boltzmann`
+      but the convergence towards the target distribution is inherently local *i.e.*, the rate of
+      change of the bias only depends on the local sampling. This local convergence property is
+      only compatible with :mdp-value:`growth=linear`, since for
+      :mdp-value:`growth=exp-linear` histograms are globally rescaled initially.
+
+.. mdp:: awh1-target-beta-scaling
+
+   [0] \[\]
+   For :mdp-value:`awh1-target=boltzmann` and :mdp-value:`awh1-target=local-boltzmann`
+   it is the unitless beta scaling factor taking values in (0,1).
+
+.. mdp:: awh1-target-cutoff
+
+   [0] \[kJ mol-1\]
+   For :mdp:`awh1-target=cutoff` this is the cutoff, should be > 0.
+
+.. mdp:: awh1-user-data
+
+   .. mdp-value:: no
+
+      Initialize the PMF and target distribution with default values.
+
+   .. mdp-value:: yes
+
+      Initialize the PMF and target distribution with user provided data. For :mdp:`awh-nbias` = 1,
+      :ref:`gmx mdrun` will expect a file ``awh-init.xvg`` to be present in the run directory.
+      For multiple biases, :ref:`gmx mdrun` expects files ``awh-init1.xvg``, ``awh-init2.xvg``, etc.
+      The file name can be changed with the ``-awh`` option.
+      The first :mdp:`awh1-ndim` columns of
+      each input file should contain the coordinate values, such that each row defines a point in
+      coordinate space. Column :mdp:`awh1-ndim` + 1 should contain the PMF value for each point.
+      The target distribution column can either follow the PMF (column  :mdp:`awh1-ndim` + 2) or
+      be in the same column as written by ``gmx awh``.
+
+.. mdp:: awh1-share-group
+
+   .. mdp-value:: 0
+
+      Do not share the bias.
+
+   .. mdp-value:: positive
+
+      Share the bias and PMF estimates within and/or between simulations.
+      Within a simulation, the bias will be shared between biases that have the
+      same sharing group index (note that the current code does not support this).
+      With :mdp-value:`awh-share-multisim=yes` and
+      :ref:`gmx mdrun` option ``-multidir`` the bias will also be shared across simulations.
+      Sharing may increase convergence initially, although the starting configurations
+      can be critical, especially when sharing between many biases.
+      Currently, positive group values should start at 1 and increase
+      by 1 for each subsequent bias that is shared.
+
+.. mdp:: awh1-ndim
+
+   (1) \[integer\]
+   Number of dimensions of the coordinate, each dimension maps to 1 pull coordinate.
+   The following options should be specified for each such dimension. Below only
+   the options for dimension number 1 is shown. Options for other dimension indices are
+   obtained by replacing '1' by the dimension index.
+
+.. mdp:: awh1-dim1-coord-provider
+
+   .. mdp-value:: pull
+
+      The module providing the reaction coordinate for this dimension.
+      Currently AWH can only act on pull coordinates.
+
+.. mdp:: awh1-dim1-coord-index
+
+   (1)
+   Index of the pull coordinate defining this coordinate dimension.
+
+.. mdp:: awh1-dim1-force-constant
+
+   (0) \[kJ/mol/nm^2\] or \[kJ/mol/rad^2\]
+   Force constant for the (convolved) umbrella potential(s) along this
+   coordinate dimension.
+
+.. mdp:: awh1-dim1-start
+
+   (0.0) \[nm\]/\[rad\]
+   Start value of the sampling interval along this dimension. The range of allowed
+   values depends on the relevant pull geometry (see :mdp:`pull-coord1-geometry`).
+   For periodic geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
+   is allowed. The interval will then wrap around from +period/2 to -period/2.
+
+.. mdp:: awh1-dim1-end
+
+   (0.0) \[nm\]/\[rad\]
+   End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
+
+.. mdp:: awh1-dim1-period
+
+   (0.0) \[nm\]/\[rad\]
+   The period of this reaction coordinate, use 0 when the coordinate is not periodic.
+
+.. mdp:: awh1-dim1-diffusion
+
+   (1e-5) \[nm^2/ps\]/\[rad^2/ps\]
+   Estimated diffusion constant for this coordinate dimension determining the initial
+   biasing rate. This needs only be a rough estimate and should not critically
+   affect the results unless it is set to something very low, leading to slow convergence,
+   or very high, forcing the system far from equilibrium. Not setting this value
+   explicitly generates a warning.
+
+.. mdp:: awh1-dim1-cover-diameter
+
+   (0.0)) \[nm\]/\[rad\]
+   Diameter that needs to be sampled by a single simulation around a coordinate value
+   before the point is considered covered in the initial stage (see :mdp-value:`awh1-growth=exp-linear`).
+   A value > 0  ensures that for each covering there is a continuous transition of this diameter 
+   across each coordinate value.
+   This is trivially true for independent simulations but not for for multiple bias-sharing simulations
+   (:mdp-value:`awh1-share=yes`).
+   For a diameter = 0, covering occurs as soon as the simulations have sampled the whole interval, which
+   for many sharing simulations does not guarantee transitions across free energy barriers.
+   On the other hand, when the diameter >= the sampling interval length, covering occurs when a single simulation
+   has independently sampled the whole interval.
 
 Enforced rotation
 ^^^^^^^^^^^^^^^^^
