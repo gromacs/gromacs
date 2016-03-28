@@ -46,6 +46,7 @@
 
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -654,6 +655,83 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     }
 }
 
+static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParams, char *prefix)
+{
+    pr_indent(fp, indent);
+    indent++;
+    fprintf(fp,  "%s:\n", prefix);
+    PS("coord-provider", EAWHCOORDPROVIDER(awhDimParams->eCoordProvider));
+    PI("coord-index", awhDimParams->coordIndex + 1);
+    PR("start", awhDimParams->origin);
+    PR("end", awhDimParams->end);
+    PR("period", awhDimParams->period);
+    PR("force-constant", awhDimParams->forceConstant);
+    PR("diffusion", awhDimParams->diffusion);
+    PR("start", awhDimParams->origin);
+    PR("end", awhDimParams->end);
+    PR("cover-diameter", awhDimParams->coverDiameter);
+}
+
+static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams, char *prefix)
+{
+    char opt[STRLEN];
+
+    sprintf(opt, "%s-error-init", prefix);
+    PR(opt, awhBiasParams->errorInitial);
+    sprintf(opt, "%s-growth", prefix);
+    PS(opt, EAWHGROWTH(awhBiasParams->eGrowth));
+    sprintf(opt, "%s-target", prefix);
+    PS(opt, EAWHTARGET(awhBiasParams->eTarget));
+    sprintf(opt, "%s-target-beta-scalng", prefix);
+    PR(opt, awhBiasParams->targetBetaScaling);
+    sprintf(opt, "%s-target-cutoff", prefix);
+    PR(opt, awhBiasParams->targetCutoff);
+    sprintf(opt, "%s-user-data", prefix);
+    PS(opt, EBOOL(awhBiasParams->bUserData));
+    sprintf(opt, "%s-share-group", prefix);
+    PI(opt, awhBiasParams->shareGroup);
+    sprintf(opt, "%s-equilibrate-histogram", prefix);
+    PS(opt, EBOOL(awhBiasParams->equilibrateHistogram));
+    sprintf(opt, "%s-ndim", prefix);
+    PI(opt, awhBiasParams->ndim);
+
+    for (int d = 0; d < awhBiasParams->ndim; d++)
+    {
+        char prefixdim[STRLEN];
+        sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
+        pr_awh_bias_dim(fp, indent, &awhBiasParams->dimParams[d], prefixdim);
+    }
+}
+
+static void pr_awh(FILE *fp, int indent, gmx::AwhParams *awhParams)
+{
+    int  k;
+    char opt[STRLEN], prefix[STRLEN];
+
+    sprintf(prefix, "%s", "awh");
+
+    sprintf(opt, "%s-potential", prefix);
+    PS(opt, EAWHPOTENTIAL(awhParams->ePotential));
+    sprintf(opt, "%s-seed", prefix);
+    PI(opt, awhParams->seed);
+    sprintf(opt, "%s-nstout", prefix);
+    PI(opt, awhParams->nstOut);
+    sprintf(opt, "%s-nstsample", prefix);
+    PI(opt, awhParams->nstSampleCoord);
+    sprintf(opt, "%s-nsamples-update", prefix);
+    PI(opt, awhParams->numSamplesUpdateFreeEnergy);
+    sprintf(opt, "%s-share-bias-multisim", prefix);
+    PS(opt, EBOOL(awhParams->shareBiasMultisim));
+    sprintf(opt, "%s-nbias", prefix);
+    PI(opt, awhParams->numBias);
+
+    for (k = 0; k < awhParams->numBias; k++)
+    {
+        sprintf(prefix, "awh%d", k + 1);
+        pr_awh_bias(fp, indent, &awhParams->awhBiasParams[k], prefix);
+    }
+}
+
 static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
 {
     pr_indent(fp, indent);
@@ -928,6 +1006,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
             pr_pull(fp, indent, ir->pull);
         }
 
+        /* AWH BIASING */
+        PS("awh", EBOOL(ir->bDoAwh));
+        if (ir->bDoAwh)
+        {
+            pr_awh(fp, indent, ir->awhParams);
+        }
+
         /* ENFORCED ROTATION */
         PS("rotation", EBOOL(ir->bRot));
         if (ir->bRot)
@@ -1061,6 +1146,56 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
+}
+
+static void cmp_awhDimParams(FILE *fp, const gmx::AwhDimParams *dimp1, const gmx::AwhDimParams *dimp2, int dimIndex, real ftol, real abstol)
+{
+    /* Note that we have double index here, but the compare functions only
+     * support one index, so here we only print the dim index and not the bias.
+     */
+    cmp_int(fp, "inputrec.awhParams->bias?->dim->coord_index", dimIndex, dimp1->coordIndex, dimp2->coordIndex);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->period", dimIndex, dimp1->period, dimp2->period, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->coord_value_init", dimIndex, dimp1->coordValueInit, dimp2->coordValueInit, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter, dimp2->coverDiameter, ftol, abstol);
+}
+
+static void cmp_awhBiasParams(FILE *fp, const gmx::AwhBiasParams *bias1, const gmx::AwhBiasParams *bias2, int biasIndex, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->awhParams->ndim", biasIndex, bias1->ndim, bias2->ndim);
+    cmp_int(fp, "inputrec->awhParams->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
+    cmp_double(fp, "inputrec->awhParams->biastargetBetaScaling", biasIndex, bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->biastargetCutoff", biasIndex, bias1->targetCutoff, bias2->targetCutoff, ftol, abstol);
+    cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
+    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData, bias2->bUserData);
+    cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial, bias2->errorInitial, ftol, abstol);
+    cmp_int(fp, "inputrec->awhParams->biasShareGroup", biasIndex, bias1->shareGroup, bias2->shareGroup);
+
+    for (int dim = 0; dim < std::min(bias1->ndim, bias2->ndim); dim++)
+    {
+        cmp_awhDimParams(fp, &bias1->dimParams[dim], &bias2->dimParams[dim], dim, ftol, abstol);
+    }
+}
+
+static void cmp_awhParams(FILE *fp, const gmx::AwhParams *awh1, const gmx::AwhParams *awh2, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->awhParams->nbias", -1, awh1->numBias, awh2->numBias);
+    cmp_int64(fp, "inputrec->awhParams->seed", awh1->seed, awh2->seed);
+    cmp_int(fp, "inputrec->awhParams->nstout", -1, awh1->nstOut, awh2->nstOut);
+    cmp_int(fp, "inputrec->awhParams->nstsample_coord", -1, awh1->nstSampleCoord, awh2->nstSampleCoord);
+    cmp_int(fp, "inputrec->awhParams->nsamples_update_free_energy", -1, awh1->numSamplesUpdateFreeEnergy, awh2->numSamplesUpdateFreeEnergy);
+    cmp_int(fp, "inputrec->awhParams->ePotential", -1, awh1->ePotential, awh2->ePotential);
+    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim, awh2->shareBiasMultisim);
+
+    if (awh1->numBias == awh2->numBias)
+    {
+        for (int bias = 0; bias < awh1->numBias; bias++)
+        {
+            cmp_awhBiasParams(fp, &awh1->awhBiasParams[bias], &awh2->awhBiasParams[bias], bias, ftol, abstol);
+        }
+    }
 }
 
 static void cmp_simtempvals(FILE *fp, const t_simtemp *simtemp1, const t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
@@ -1247,6 +1382,12 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     if (ir1->bPull && ir2->bPull)
     {
         cmp_pull(fp);
+    }
+
+    cmp_bool(fp, "inputrec->bDoAwh", -1, ir1->bDoAwh, ir2->bDoAwh);
+    if (ir1->bDoAwh && ir2->bDoAwh)
+    {
+        cmp_awhParams(fp, ir1->awhParams, ir2->awhParams, ftol, abstol);
     }
 
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
