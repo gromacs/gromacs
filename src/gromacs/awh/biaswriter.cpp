@@ -50,6 +50,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "bias.h"
+#include "correlationgrid.h"
 #include "grid.h"
 #include "pointstate.h"
 
@@ -76,6 +77,7 @@ static int getNormtype(int evar)
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normtype = enormtypeDISTRIBUTION; break;
         default:
             normtype = enormtypeNONE; break;
@@ -119,6 +121,9 @@ static double getNormvalue(int evar, const Bias &bias, int count)
         case evarTARGET:
             normvalue = static_cast<double>(bias.state().points().size());
             break;
+        case evarFORCECORRVOL:
+            normvalue = static_cast<double>(bias.state().points().size());
+            break;
         default:
             break;
     }
@@ -155,6 +160,14 @@ BiasWriter::BiasWriter(const Bias &bias)
             case evarCOORDVALUE:
                 varToBlock_[evar] = blockCount;
                 var_nblock[evar]  = bias.ndim();
+                break;
+            case evarFORCECORRVOL:
+                varToBlock_[evar] = blockCount;
+                var_nblock[evar]  = 1;
+                break;
+            case evarFRICTION:
+                varToBlock_[evar] = blockCount;
+                var_nblock[evar]  = bias.forceCorr().tensorSize();
                 break;
             default:
                 /* Most variables need one block */
@@ -273,6 +286,9 @@ void BiasWriter::transferVariablePointDataToWriter(int evar, int m,
     int bstart = getVarStartBlock(evar);
     GMX_ASSERT(m < static_cast<int>(block_[bstart].data.size()), "Attempt to transfer AWH data to block for point index out of range");
 
+    const CorrelationGrid &forceCorr      = bias.forceCorr();
+    int                    numCorrelation = forceCorr.tensorSize();
+
     /* Transfer the point data of this variable to the right block(s) */
     int b = bstart;
     switch (evar)
@@ -317,6 +333,17 @@ void BiasWriter::transferVariablePointDataToWriter(int evar, int m,
             break;
         case evarTARGET:
             block_[b].data[m] = bias.state().points()[m].target();
+            break;
+        case evarFORCECORRVOL:
+            block_[b].data[m] = forceCorr.corr()[m].getVolumeElement(forceCorr.dtSample);
+            break;
+        case evarFRICTION:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < numCorrelation; n++)
+            {
+                block_[b].data[m] = forceCorr.corr()[m].getTimeIntegral(n, forceCorr.dtSample);
+                b++;
+            }
             break;
         default:
             gmx_incons("Unknown AWH output variable");

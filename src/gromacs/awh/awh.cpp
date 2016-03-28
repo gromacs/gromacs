@@ -243,6 +243,8 @@ Awh::Awh(FILE              *fplog,
         std::unique_ptr<Bias> biasPtr =
             std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t));
 
+        biasPtr->printInitializationToLog(fplog);
+
         biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(std::move(biasPtr), pullCoordIndex));
     }
 
@@ -338,7 +340,7 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        biasCoupledToSystem_[k].bias().state().initHistoryFromState(&awhHistory->bias[k]);
+        biasCoupledToSystem_[k].bias().initHistoryFromState(&awhHistory->bias[k]);
     }
 }
 
@@ -378,8 +380,7 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        const Bias &bias = biasCoupledToSystem_[k].bias();
-        bias.state().updateHistory(&awhHistory->bias[k], bias.grid());
+        biasCoupledToSystem_[k].bias().updateHistory(&awhHistory->bias[k]);
     }
 }
 
