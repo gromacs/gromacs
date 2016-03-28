@@ -76,6 +76,7 @@ struct AwhBiasParams;
 struct AwhHistory;
 struct AwhParams;
 struct AwhPointStateHistory;
+class CorrelationGrid;
 class Grid;
 class GridAxis;
 class PointState;
@@ -163,6 +164,16 @@ class Bias
              const std::string              &biasInitFilename,
              bool                            thisRankDoesIO,
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
+
+        /*! \brief
+         * Print information about initialization to log file.
+         *
+         * Prints information about AWH variables that are set internally
+         * but might be of interest to the user.
+         *
+         * \param[in,out] fplog  Log file, can be nullptr.
+         */
+        void printInitializationToLog(FILE *fplog) const;
 
         /*! \brief
          * Evolves the bias at every step.
@@ -294,7 +305,25 @@ class Bias
                                        gmx_int64_t  step,
                                        FILE        *fplog);
 
+        /*! \brief
+         * Collect samples for the force correlation analysis.
+         *
+         * \param[in] probWeightNeighbor  Probability weight of the neighboring points.
+         * \param[in] t                   The time.
+         */
+        void updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
+                                    double                        t);
+
     public:
+        /*! \brief Return a const reference to the force correlation data.
+         */
+        const CorrelationGrid &forceCorr() const
+        {
+            GMX_ASSERT(forceCorr_ != nullptr, "forceCorr() should only be called with a valid force correlation object");
+
+            return *forceCorr_.get();
+        }
+
         /*! \brief Prepare data for writing to energy frame.
          */
         void prepareOutput();
@@ -321,6 +350,9 @@ class Bias
         std::vector<int>             updateList_;        /**< List of points for update for temporary use (could be made another tempWorkSpace) */
 
         const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+
+        /* Force correlation */
+        std::unique_ptr<CorrelationGrid> forceCorr_;   /**< Takes care of force correlation statistics. */
 
         /* I/O */
         std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */

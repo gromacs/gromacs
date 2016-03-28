@@ -49,6 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "bias.h"
+#include "correlationgrid.h"
 #include "grid.h"
 #include "pointstate.h"
 
@@ -64,13 +65,15 @@ namespace gmx
  */
 static const std::map<AwhVar, Normalization> awhVarToNormalization =
 {
-    { AwhVar::MetaData,   Normalization::None },
-    { AwhVar::CoordValue, Normalization::Coordinate },
-    { AwhVar::Pmf,        Normalization::FreeEnergy },
-    { AwhVar::Bias,       Normalization::FreeEnergy },
-    { AwhVar::Visits,     Normalization::Distribution },
-    { AwhVar::Weights,    Normalization::Distribution },
-    { AwhVar::Target,     Normalization::Distribution }
+    { AwhVar::MetaData,               Normalization::None },
+    { AwhVar::CoordValue,             Normalization::Coordinate },
+    { AwhVar::Pmf,                    Normalization::FreeEnergy },
+    { AwhVar::Bias,                   Normalization::FreeEnergy },
+    { AwhVar::Visits,                 Normalization::Distribution },
+    { AwhVar::Weights,                Normalization::Distribution },
+    { AwhVar::Target,                 Normalization::Distribution },
+    { AwhVar::ForceCorrelationVolume, Normalization::Distribution },
+    { AwhVar::FrictionTensor,         Normalization::None }
 };
 
 /*! \brief
@@ -108,6 +111,9 @@ static double getNormvalue(AwhVar var, const Bias &bias, int count)
         case AwhVar::Target:
             normValue = static_cast<double>(bias.state().points().size());
             break;
+        case AwhVar::ForceCorrelationVolume:
+            normValue = static_cast<double>(bias.state().points().size());
+            break;
         default:
             break;
     }
@@ -141,6 +147,10 @@ BiasWriter::BiasWriter(const Bias &bias)
             if (awhVar == AwhVar::CoordValue)
             {
                 varNumBlock[awhVar] = bias.ndim();
+            }
+            else if (awhVar == AwhVar::FrictionTensor)
+            {
+                varNumBlock[awhVar] = bias.forceCorr().tensorSize();
             }
             else
             {
@@ -284,6 +294,9 @@ BiasWriter::transferPointDataToWriter(AwhVar                    var,
     int blockStart = getVarStartBlock(var);
     GMX_ASSERT(pointIndex < static_cast<int>(block_[blockStart].data.size()), "Attempt to transfer AWH data to block for point index out of range");
 
+    const CorrelationGrid &forceCorr      = bias.forceCorr();
+    int                    numCorrelation = forceCorr.tensorSize();
+
     /* Transfer the point data of this variable to the right block(s) */
     int b = blockStart;
     switch (var)
@@ -318,6 +331,17 @@ BiasWriter::transferPointDataToWriter(AwhVar                    var,
             break;
         case AwhVar::Target:
             block_[b].data[pointIndex] = bias.state().points()[pointIndex].target();
+            break;
+        case AwhVar::ForceCorrelationVolume:
+            block_[b].data[pointIndex] = forceCorr.corr()[pointIndex].getVolumeElement(forceCorr.dtSample);
+            break;
+        case AwhVar::FrictionTensor:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < numCorrelation; n++)
+            {
+                block_[b].data[pointIndex] = forceCorr.corr()[pointIndex].getTimeIntegral(n, forceCorr.dtSample);
+                b++;
+            }
             break;
         default:
             GMX_ASSERT(false, "Unknown AWH output variable");

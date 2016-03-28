@@ -54,6 +54,8 @@
 namespace gmx
 {
 
+struct CorrelationGridHistory;
+
 /*! \cond INTERNAL */
 
 //! Grid point state history data.
@@ -105,10 +107,12 @@ struct AwhBiasHistory
     std::vector<AwhPointStateHistory> pointState; /**< History for grid coordinate points. */
 
     AwhBiasStateHistory               state;      /**< The global state of the AWH bias. */
+    CorrelationGridHistory           *forceCorr;  /**< History for force correlation statistics. */
 
     /*! \brief Constructor. */
     AwhBiasHistory() : pointState(),
-                       state()
+                       state(),
+                       forceCorr(nullptr)
     {
     }
 };
