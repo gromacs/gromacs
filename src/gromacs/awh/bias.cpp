@@ -93,7 +93,10 @@ void Bias::warnForHistogramAnomalies(double t, gmx_int64_t step, FILE *fplog)
 
 void Bias::doSkippedUpdatesForAllPoints()
 {
-    state_.doSkippedUpdatesForAllPoints(params_);
+    if (params_.skipUpdates())
+    {
+        state_.doSkippedUpdatesForAllPoints(params_);
+    }
 }
 
 void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
@@ -250,6 +253,27 @@ Bias::Bias(int                             biasIndexInCollection,
     updateList_.reserve(grid_.numPoints());
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias);
+
+    if (thisRankDoesIO_)
+    {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+
+    return writer_->numBlocks();
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+
+    return writer_->writeToEnergySubblocks(*this, subblock);
 }
 
 } // namespace gmx

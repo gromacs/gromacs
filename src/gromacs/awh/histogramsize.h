@@ -172,9 +172,16 @@ class HistogramSize
 
         /*! \brief Returns true if we are in the initial stage of the AWH method.
          */
-        inline bool inInitialStage() const
+        bool inInitialStage() const
         {
             return inInitialStage_;
+        };
+
+        /*! \brief Returns The log of the current sample weight, scaled because of the histogram rescaling.
+         */
+        double logScaledSampleWeight() const
+        {
+            return logScaledSampleWeight_;
         };
 
     private:
