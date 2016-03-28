@@ -99,7 +99,8 @@ enum class RandomDomain
     Thermostat               = 0x00005000,   //!< Stochastic temperature coupling
     Barostat                 = 0x00006000,   //!< Stochastic pressure coupling
     ReplicaExchange          = 0x00007000,   //!< Replica exchange metropolis moves
-    ExpandedEnsemble         = 0x00008000    //!< Expanded ensemble lambda moves
+    ExpandedEnsemble         = 0x00008000,   //!< Expanded ensemble lambda moves
+    AwhBiasing               = 0x00009000    //!< AWH biasing reference value moves
 };
 
 }      // namespace gmx
