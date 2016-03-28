@@ -143,6 +143,16 @@ class BiasState
                            const Grid     &grid) const;
 
     private:
+        /*! \brief Convolves the given PMF using the given AWH bias.
+         *
+         * \param[in] dimParams     The bias dimensions parameters
+         * \param[in] grid          The grid.
+         * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
+         */
+        void calcConvolvedPmf(const std::vector<DimParams> &dimParams,
+                              const Grid                   &grid,
+                              std::vector<float>           *convolvedPmf) const;
+
         /*! \brief
          * Convolves the PMF and sets the initial free energy to its convolution.
          *
@@ -435,6 +445,34 @@ class BiasState
                                const std::vector<double> &probWeightNeighbor,
                                double                     convolvedBias);
 
+        /*! \brief
+         * Calculates the convolved bias for a given coordinate value.
+         *
+         * The convolved bias is the effective bias acting on the coordinate.
+         * Since the bias here has arbitrary normalization, this only makes
+         * sense as a relative, to other coordinate values, measure of the bias.
+         *
+         * \note If it turns out to be costly to calculate this pointwise
+         * the convolved bias for the whole grid could be returned instead.
+         *
+         * \param[in] dimParams   The bias dimensions parameters
+         * \param[in] grid        The grid.
+         * \param[in] coordValue  Coordinate value.
+         * \returns the convolved bias >= -GMX_DOUBLE_MAX.
+         */
+        double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
+                                 const Grid                    &grid,
+                                 const awh_dvec                &coordValue) const;
+
+        /*! \brief
+         * Fills the given array with PMF values, resizes if necessary.
+         *
+         * Points outside of the biasing target region will get PMF = GMX_FLOAT_MAX.
+         *
+         * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
+         */
+        void getPmf(std::vector<float>            *pmf) const;
+
     public:
         /*! \brief Returns the current coordinate state.
          */
@@ -457,6 +495,13 @@ class BiasState
             return histogramSize_.inInitialStage();
         };
 
+        /*! \brief Returns the current histogram size.
+         */
+        inline HistogramSize histogramSize() const
+        {
+            return histogramSize_;
+        };
+
         /* Data members */
     private:
         CoordinateState coordinateState_; /**< The Current coordinate state */
@@ -473,40 +518,6 @@ class BiasState
         awh_ivec  originUpdatelist_;  /**< The origin of the rectangular region that has been sampled since last update. */
         awh_ivec  endUpdatelist_;     /**< The end of the rectangular region that has been sampled since last update. */
 };
-
-/* Here follow some utility functions used by multiple files in AWH */
-
-/*! \brief
- * Calculates the convolved bias for a given coordinate value.
- *
- * The convolved bias is the effective bias acting on the coordinate.
- * Since the bias here has arbitrary normalization, this only makes
- * sense as a relative, to other coordinate values, measure of the bias.
- *
- * \note If it turns out to be costly to calculate this pointwise
- * the convolved bias for the whole grid could be returned instead.
- *
- * \param[in] dimParams   The bias dimensions parameters
- * \param[in] grid        The grid.
- * \param[in] points      The point state.
- * \param[in] coordValue  Coordinate value.
- * \returns the convolved bias >= -GMX_DOUBLE_MAX.
- */
-double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
-                         const Grid                    &grid,
-                         const std::vector<PointState> &points,
-                         const awh_dvec                &coordValue);
-
-/*! \brief
- * Fills the given array with PMF values, resizes if necessary.
- *
- * Points outside of the biasing target region will get PMF = GMX_FLOAT_MAX.
- *
- * \param[in]     points  The point state.
- * \param[in,out] pmf     Array returned will be of the same length as the AWH grid to store the PMF in.
- */
-void getPmf(const std::vector<PointState> &points,
-            std::vector<float>            *pmf);
 
 //! Linewidth used for warning output
 static const int c_linewidth = 80 - 2;

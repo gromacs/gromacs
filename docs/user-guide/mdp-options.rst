@@ -1856,7 +1856,7 @@ AWH adaptive biasing
 
       The potential bias is applied by controlling the position of an harmonic potential
       using Monte-Carlo sampling.  The force constant is set with
-      :mdp-value:`awh1-dim1-force-constant`. The umbrella location
+      :mdp:`awh1-dim1-force-constant`. The umbrella location
       is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
       When new umbrella positions are sampled often enough,
       the average potential and force equals that of :mdp:`awh-potential=convolved`. This option
@@ -2022,7 +2022,7 @@ AWH adaptive biasing
       each input file should contain the coordinate values, such that each row defines a point in
       coordinate space. Column :mdp:`awh1-ndim` + 1 should contain the PMF value for each point.
       The target distribution column can either follow the PMF (column  :mdp:`awh1-ndim` + 2) or
-      be in the same column as written by ``gmx awh``.
+      be in the same column as written by :ref:`gmx awh`.
 
 .. mdp:: awh1-share-group
 
