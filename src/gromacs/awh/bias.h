@@ -60,11 +60,13 @@
 
 #include "biasparams.h"
 #include "biasstate.h"
+#include "biaswriter.h"
 #include "dimparams.h"
 #include "grid.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
+struct t_enxsubblock;
 
 namespace gmx
 {
@@ -205,7 +207,7 @@ class Bias
          * sense as a relative, to other coordinate values, measure of the bias.
          *
          * \param[in] coordValue  The coordinate value.
-         * \returns the convolved bias >= -GMX_DOUBLE_MAX.
+         * \returns the convolved bias >= -GMX_FLOAT_MAX.
          */
         double calcConvolvedBias(const awh_dvec &coordValue) const
         {
@@ -276,6 +278,17 @@ class Bias
             return params_.biasIndex;
         }
 
+        /*! \brief Return the coordinate value for a grid point.
+         *
+         * \param[in] gridPointIndex  The index of the grid point.
+         */
+        inline const awh_dvec &getGridCoordValue(size_t gridPointIndex) const
+        {
+            GMX_ASSERT(gridPointIndex < grid_.numPoints(), "gridPointIndex should be in the range of the grid");
+
+            return grid_.point(gridPointIndex).coordValue;
+        }
+
     private:
         /*! \brief
          * Performs statistical checks on the collected histograms and warns if issues are detected.
@@ -288,6 +301,18 @@ class Bias
                                        gmx_int64_t  step,
                                        FILE        *fplog);
 
+    public:
+        /*! \brief Return the number of data blocks that have been prepared for writing.
+         */
+        int numEnergySubblocksToWrite() const;
+
+        /*! \brief Write bias data blocks to energy subblocks.
+         *
+         * \param[in,out] subblock  Energy subblocks to write to.
+         * \returns the number of subblocks written.
+         */
+        int writeToEnergySubblocks(t_enxsubblock *subblock) const;
+
         /* Data members. */
     private:
         const std::vector<DimParams> dimParams_;         /**< Parameters for each dimension. */
@@ -299,6 +324,9 @@ class Bias
         std::vector<int>             updateList_;        /**< List of points for update for temporary use (could be made another tempWorkSpace) */
 
         const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+
+        /* I/O */
+        std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */
 
         /* Temporary working vector used during the update.
          * This only here to avoid allocation at every MD step.
