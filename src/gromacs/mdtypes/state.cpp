@@ -46,6 +46,7 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -244,6 +245,7 @@ t_state::t_state() : natoms(0),
                      ekinstate(),
                      hist(),
                      dfhist(nullptr),
+                     awhHistory(nullptr),
                      ddp_count(0),
                      ddp_count_cg_gl(0),
                      cg_gl()
