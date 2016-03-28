@@ -113,6 +113,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numStepsSampleCoord(awhParams.nstSampleCoord),
     numSamplesUpdateFreeEnergy(awhParams.numSamplesUpdateFreeEnergy),
     eTarget(awhBiasParams.eTarget),
+    errorInitial(awhBiasParams.errorInitial),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips)

@@ -75,6 +75,7 @@ struct gmx_wallcycle;
 struct pull_t;
 class t_state;
 struct t_commrec;
+struct t_enxframe;
 struct t_inputrec;
 struct t_mdatoms;
 
@@ -224,6 +225,12 @@ class Awh
                                      const t_commrec  *cr);
 
     public:
+        /*! \brief Fills the AWH data block of an energy frame with data at certain steps.
+         *
+         * \param[in,out] fr  Energy data frame.
+         */
+        void writeToEnergyframe(t_enxframe *fr) const;
+
         /*! \brief Returns string "AWH" for registering AWH as an external potential with pull.
          */
         static const char *externalPotentialString()
@@ -248,6 +255,7 @@ class Awh
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
+        int                              nstout_;              /**< Interval in steps for writing to energy file. */
 };
 
 }      // namespace gmx
