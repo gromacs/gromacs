@@ -63,6 +63,7 @@
 
 struct gmx_multisim_t;
 struct t_commrec;
+struct t_enxsubblock;
 
 namespace gmx
 {
@@ -74,6 +75,7 @@ struct AwhParams;
 struct AwhPointStateHistory;
 class BiasParams;
 class BiasState;
+class BiasWriter;
 class Grid;
 class GridAxis;
 class PointState;
@@ -247,6 +249,24 @@ class Bias
          */
         void checkHistograms(double t, gmx_int64_t step, FILE *fplog);
 
+    public:
+        /*! \brief Prepare data for writing to energy frame.
+         *
+         * \param[in] ms    Struct for multi-simulation communication.
+         */
+        void prepareOutput(const gmx_multisim_t *ms);
+
+        /*! \brief Return the number of data blocks that have been prepared for writing.
+         */
+        int numEnergySubblocksToWrite() const;
+
+        /*! \brief Write bias data blocks to energy subblocks.
+         *
+         * \param[in,out] subblock  Energy subblocks to write to.
+         * \returns the number of subblocks written.
+         */
+        int writeToEnergySubblocks(t_enxsubblock *subblock) const;
+
         /* Data members. */
     private:
         const std::vector<DimParams> dimParams_;   /**< Parameters for each dimension. */
@@ -256,6 +276,9 @@ class Bias
 
         BiasState                    state_;       /**< The state, both global and of the grid points */
         std::vector<int>             updateList_;  /**< List of points for update for temporary use (could be made another tempWorkSpace) */
+
+        /* I/O */
+        std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */
 
         /* Temporary working vector used during the update.
          * This only here to avoid allocation at every MD step.

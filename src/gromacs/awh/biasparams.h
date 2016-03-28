@@ -138,6 +138,7 @@ class BiasParams
         bool               idealWeighthistUpdate;      /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
         double             update_weight;              /**< The probability weight accumulated for each update. */
         double             localWeightScaling;         /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
+        double             errorInitial;               /**< Estimated initial free energy error. */
         double             histSizeInitial;            /**< Initial reference weight histogram size. */
         int                numSharedUpdate;            /**< The number of (multi-)simulations sharing the bias update */
         awh_ivec           coverRadius;                /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
