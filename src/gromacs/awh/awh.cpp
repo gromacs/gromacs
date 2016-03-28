@@ -72,6 +72,8 @@
 
 #include "bias.h"
 #include "biaswriter.h"
+#include "correlationgrid.h"
+#include "correlationhistory.h"
 
 namespace gmx
 {
@@ -243,6 +245,8 @@ Awh::Awh(FILE              *fplog,
         std::unique_ptr<Bias> biasPtr =
             std::unique_ptr<Bias>(new Bias(cr, k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t));
 
+        biasPtr->printInitializationToLog(fplog);
+
         biasCoupledToSystem_.emplace_back(BiasCoupledToSystem(std::move(biasPtr), pullCoordIndex));
     }
 
@@ -338,7 +342,9 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        biasCoupledToSystem_[k].bias().state().initHistoryFromState(&awhHistory->bias[k]);
+        AwhBiasHistory &biasHistory = awhHistory->bias[k];
+        biasCoupledToSystem_[k].bias().state().initHistoryFromState(&biasHistory);
+        biasHistory.forceCorr = initCorrelationGridHistoryFromState(biasCoupledToSystem_[k].bias().forceCorr());
     }
 }
 

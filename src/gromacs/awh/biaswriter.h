@@ -67,7 +67,7 @@ class Bias;
 //! Enum with the AWH variables to write
 enum {
     evarMETA, evarCOORDVALUE, evarPMF, evarBIAS, evarVISITS, evarWEIGHTS,
-    evarTARGET, evarNR
+    evarTARGET, evarFORCECORRVOL, evarFRICTION, evarNR
 };
 
 //! Enum with the types of metadata to write
