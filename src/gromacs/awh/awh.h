@@ -71,6 +71,7 @@ struct awh_history_t;
  * \param[in,out] awh_history         AWH bias history to initialize.
  * \param[in,out] pull_work           Pull struct which AWH will register the bias into.
  * \param[in] startingFromCheckpoint  True if this this is a continuation run.
+ * \param[in] nstreplica_exchange     Replica exchange step interval.
  * \returns the initialized AWH struct.
  */
 awh_t *init_awh_md(FILE                    *fplog,
@@ -79,7 +80,8 @@ awh_t *init_awh_md(FILE                    *fplog,
                    const awh_params_t      *awh_params,
                    awh_history_t           *awh_history,
                    struct pull_t           *pull_work,
-                   bool                     startingFromCheckpoint);
+                   bool                     startingFromCheckpoint,
+                   int                      nstreplica_exchange);
 
 /*! \brief Do an AWH biasing update.
  *
