@@ -243,6 +243,9 @@ wall-ewald-zfac          = 3
 ; COM PULLING          
 pull                     = no
 
+; AWH biasing          
+awh                      = no
+
 ; ENFORCED ROTATION    
 ; Enforced rotation: No or Yes
 rotation                 = no

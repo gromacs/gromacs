@@ -72,6 +72,13 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 
+/*! \brief Returns if the pull coordinate is an angle
+ *
+ * \param[in] pcrd The pull coordinate to query the type for.
+ * \returns a boolean telling if the coordinate is of angle type.
+ */
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd);
+
 /*! \brief Returns the units of the pull coordinate.
  *
  * \param[in] pcrd The pull coordinate to query the units for.
@@ -98,13 +105,11 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
  * \param[in,out] pull      The pull struct.
  * \param[in]     coord_ind Number of the pull coordinate.
  * \param[in]     pbc       Information structure about periodicity.
- * \param[out]    value     The value of the pull coordinate.
+ * \returns the value of the pull coordinate.
  */
-void get_pull_coord_value(struct pull_t      *pull,
-                          int                 coord_ind,
-                          const struct t_pbc *pbc,
-                          double             *value);
-
+double get_pull_coord_value(struct pull_t      *pull,
+                            int                 coord_ind,
+                            const struct t_pbc *pbc);
 
 /*! \brief Registers the provider of an external potential for a coordinate.
  *
