@@ -55,6 +55,7 @@
 #define GMX_MDTYPES_STATE_H
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/paddedvector.h"
@@ -62,6 +63,8 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+struct AwhHistory;
 
 struct t_inputrec;
 
@@ -211,12 +214,13 @@ class t_state
         ekinstate_t              ekinstate;       //!< The state of the kinetic energy
 
         /* History for special algorithms, should be moved to a history struct */
-        history_t                hist;            //!< Time history for restraints
-        df_history_t            *dfhist;          //!< Free-energy history for free energy analysis
+        history_t                   hist;            //!< Time history for restraints
+        df_history_t               *dfhist;          //!< Free-energy history for free energy analysis
+        std::shared_ptr<AwhHistory> awhHistory;      //!< Accelerated weight histogram history
 
-        int                      ddp_count;       //!< The DD partitioning count for this state
-        int                      ddp_count_cg_gl; //!< The DD partitioning count for index_gl
-        std::vector<int>         cg_gl;           //!< The global cg number of the local cgs
+        int                         ddp_count;       //!< The DD partitioning count for this state
+        int                         ddp_count_cg_gl; //!< The DD partitioning count for index_gl
+        std::vector<int>            cg_gl;           //!< The global cg number of the local cgs
 };
 
 #ifndef DOXYGEN
