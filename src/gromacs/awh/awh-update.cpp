@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation.h"
 #include "data-writer.h"
 #include "grid.h"
 #include "history.h"
@@ -125,6 +126,7 @@ static double get_f_min(const awh_bias_t *awh_bias)
 
     return f_min;
 }
+
 static double get_biased_weight_from_point(const awh_bias_t *awh_bias, int point_index, double bias, const awh_dvec value)
 {
     double weight = 0;
@@ -477,6 +479,29 @@ static void set_umbrella_force(awh_bias_t *awh_bias, awh_dvec force,
         }
 
         *potential_jump += pot_new - pot_cur;
+    }
+}
+
+static void update_force_correlation(correlation_grid_t *forcecorr, const awh_bias_t *awh_bias, double t)
+{
+    for (int n = 0; n < awh_bias->grid->point[awh_bias->coord_value_index].nneighbors; n++)
+    {
+        int      m_neighbor;
+        double   weight_neighbor;
+        awh_dvec force_from_neighbor;
+
+        weight_neighbor = awh_bias->prob_weight_neighbor[n];
+        m_neighbor      = awh_bias->grid->point[awh_bias->coord_value_index].neighbor[n];
+
+        /* Add the force data of this neighbor point. Note: the sum of these forces is the convolved force.
+
+           We actually add the force normalized by beta which has the units of 1/length. This means that the
+           resulting correlation time integral is directly in units of friction time/length^2 which is really what
+           we're interested in. */
+        calc_umbrella_force(awh_bias, awh_bias->betak, m_neighbor, force_from_neighbor);
+
+        /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
+        add_data_to_correlation_matrix(forcecorr, m_neighbor, weight_neighbor, force_from_neighbor, t);
     }
 }
 
@@ -1159,8 +1184,11 @@ static void sample_pmf(awh_bias_t *awh_bias)
     }
 }
 
-static void do_sampling(awh_bias_t *awh_bias)
+static void do_sampling(awh_bias_t *awh_bias, double t)
 {
+    /* Force correlation */
+    update_force_correlation(awh_bias->forcecorr, awh_bias, t);
+
     /* Sampling-based deconvolution extracting the PMF */
     sample_pmf(awh_bias);
 
@@ -1189,7 +1217,7 @@ static void do_awh_step(awh_bias_t *awh_bias, int awh_id,
 
         if (do_at_step(awh_bias->nstsample_coord, step))
         {
-            do_sampling(awh_bias);
+            do_sampling(awh_bias, t);
         }
     }
     /* The force on the coordinate resulting from the bias. */
