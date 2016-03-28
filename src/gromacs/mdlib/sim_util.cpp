@@ -49,6 +49,7 @@
 
 #include <array>
 
+#include "gromacs/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -718,6 +719,7 @@ static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
  * global communication at the end, so global barriers within the MD loop
  * are as close together as possible.
  *
+ * \param[in]     fplog            The log file
  * \param[in]     cr               The communication record
  * \param[in]     inputrec         The input record
  * \param[in]     step             The current MD step
@@ -738,7 +740,8 @@ static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
  * \todo Convert all other algorithms called here to ForceProviders.
  */
 static void
-computeSpecialForces(t_commrec        *cr,
+computeSpecialForces(FILE             *fplog,
+                     t_commrec        *cr,
                      t_inputrec       *inputrec,
                      gmx_int64_t       step,
                      double            t,
@@ -771,6 +774,16 @@ computeSpecialForces(t_commrec        *cr,
                                forceWithVirial,
                                mdatoms, enerd, lambda, t,
                                wcycle);
+
+        if (inputrec->bDoAwh)
+        {
+            Awh &awh = *inputrec->awh;
+            enerd->term[F_COM_PULL] +=
+                awh.applyBiasForcesAndUpdateBias(inputrec->pull_work,
+                                                 inputrec->ePBC, *mdatoms, box,
+                                                 forceWithVirial,
+                                                 cr->ms, t, step, wcycle, fplog);
+        }
     }
 
     rvec *f = as_rvec_array(forceWithVirial->force_.data());
@@ -1333,7 +1346,7 @@ static void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
-    computeSpecialForces(cr, inputrec, step, t, wcycle,
+    computeSpecialForces(fplog, cr, inputrec, step, t, wcycle,
                          fr->forceProviders, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
@@ -1798,7 +1811,7 @@ static void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
     }
 
-    computeSpecialForces(cr, inputrec, step, t, wcycle,
+    computeSpecialForces(fplog, cr, inputrec, step, t, wcycle,
                          fr->forceProviders, box, x, mdatoms, lambda,
                          flags, &forceWithVirial, enerd,
                          ed, bNS);
