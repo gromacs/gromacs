@@ -46,6 +46,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
@@ -501,6 +502,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     if (constr && !DOMAINDECOMP(cr))
     {
         set_constraints(constr, top, ir, mdatoms, cr);
+    }
+    /* Initialize AWH bias and restore state from history in checkpoint if needed. */
+    if (fr->bDoAwh)
+    {
+        fr->awh = init_awh_md(fplog, ir, cr, ir->awh_params,
+                              &(state_global->awh_history), ir->pull_work,
+                              startingFromCheckpoint);
     }
 
     if (repl_ex_nst > 0 && MASTER(cr))
@@ -1086,6 +1094,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         else
         {
+            /* The AWH history need to be saved _before_ doing force calculations where the AWH bias is updated
+               (or the AWH update will be performed twice for one step when continuing). It would be best to
+               call this update function from do_md_trajectory_writing but that would occur after do_force.
+               One would have to divide the update_awh function into one function applying the AWH force
+               and one doing the AWH bias update. The update AWH bias function could then be called after
+               do_md_trajectory_writing (then containing update_awh_history).
+               The checkpointing will in the future probably moved to the start of the md loop which will
+               rid of this issue. */
+            if (fr->bDoAwh && bCPT)
+            {
+                update_awh_history(&state_global->awh_history, fr->awh);
+            }
+
             /* The coordinates (x) are shifted (to get whole molecules)
              * in do_force.
              * This is parallellized as well, and does communication too.
