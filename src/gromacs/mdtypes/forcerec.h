@@ -64,6 +64,8 @@ struct t_QMMMrec;
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 
+struct awh_t;
+
 /* macros for the cginfo data in forcerec
  *
  * Since the tpx format support max 256 energy groups, we do the same here.
@@ -406,6 +408,10 @@ typedef struct t_forcerec {
     double t_fnbf;
     double t_wait;
     int    timesteps;
+
+    /* AWH biasing */
+    gmx_bool          bDoAwh;
+    struct awh_t     *awh;
 
     /* User determined parameters, copied from the inputrec */
     int  userint1;
