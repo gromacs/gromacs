@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 
 #include <string.h>
 
+#include "gromacs/awh/awh-params.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -480,6 +481,26 @@ static void bc_cosines(const t_commrec *cr, t_cosines *cs)
     }
 }
 
+static void bc_awh(const t_commrec *cr, awh_params_t *awh_params)
+{
+    block_bc(cr, *awh_params);
+
+    snew_bc(cr, awh_params->dim_params, awh_params->ndim);
+    nblock_bc(cr, awh_params->ndim, awh_params->dim_params);
+}
+
+static void bc_awhbias(const t_commrec *cr, awhbias_params_t *awhbias_params)
+{
+    int k;
+
+    block_bc(cr, *awhbias_params);
+    snew_bc(cr, awhbias_params->awh_params, awhbias_params->nawh);
+    for (k = 0; k < awhbias_params->nawh; k++)
+    {
+        bc_awh(cr, &awhbias_params->awh_params[k]);
+    }
+}
+
 static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
 {
     block_bc(cr, *pgrp);
@@ -681,6 +702,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->pull, 1);
         bc_pull(cr, inputrec->pull);
     }
+    if (inputrec->bAwhbias)
+    {
+        snew_bc(cr, inputrec->awhbias_params, 1);
+        bc_awhbias(cr, inputrec->awhbias_params);
+    }
+
     if (inputrec->bRot)
     {
         snew_bc(cr, inputrec->rot, 1);
