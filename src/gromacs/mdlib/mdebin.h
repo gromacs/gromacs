@@ -48,11 +48,17 @@ struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+class Awh;
 struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
 class t_state;
+
+namespace gmx
+{
+class Awh;
+}
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions
@@ -154,7 +160,8 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 gmx_int64_t step, double time,
                 int mode,
                 t_mdebin *md, t_fcdata *fcd,
-                gmx_groups_t *groups, t_grpopts *opts);
+                gmx_groups_t *groups, t_grpopts *opts,
+                gmx::Awh *awh);
 
 
 
