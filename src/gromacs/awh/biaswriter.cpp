@@ -49,6 +49,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "bias.h"
+#include "correlationgrid.h"
 #include "grid.h"
 #include "pointstate.h"
 
@@ -67,13 +68,15 @@ namespace
  */
 static const std::map<AwhOutputEntryType, Normalization> outputTypeToNormalization =
 {
-    { AwhOutputEntryType::MetaData,   Normalization::None },
-    { AwhOutputEntryType::CoordValue, Normalization::Coordinate },
-    { AwhOutputEntryType::Pmf,        Normalization::FreeEnergy },
-    { AwhOutputEntryType::Bias,       Normalization::FreeEnergy },
-    { AwhOutputEntryType::Visits,     Normalization::Distribution },
-    { AwhOutputEntryType::Weights,    Normalization::Distribution },
-    { AwhOutputEntryType::Target,     Normalization::Distribution }
+    { AwhOutputEntryType::MetaData,               Normalization::None },
+    { AwhOutputEntryType::CoordValue,             Normalization::Coordinate },
+    { AwhOutputEntryType::Pmf,                    Normalization::FreeEnergy },
+    { AwhOutputEntryType::Bias,                   Normalization::FreeEnergy },
+    { AwhOutputEntryType::Visits,                 Normalization::Distribution },
+    { AwhOutputEntryType::Weights,                Normalization::Distribution },
+    { AwhOutputEntryType::Target,                 Normalization::Distribution },
+    { AwhOutputEntryType::ForceCorrelationVolume, Normalization::Distribution },
+    { AwhOutputEntryType::FrictionTensor,         Normalization::None }
 };
 
 /*! \brief
@@ -114,6 +117,9 @@ float getNormalizationValue(AwhOutputEntryType  outputType,
         case AwhOutputEntryType::Target:
             normalizationValue = static_cast<float>(bias.state().points().size());
             break;
+        case AwhOutputEntryType::ForceCorrelationVolume:
+            normalizationValue = static_cast<double>(bias.state().points().size());
+            break;
         default:
             break;
     }
@@ -149,6 +155,10 @@ BiasWriter::BiasWriter(const Bias &bias)
             if (outputType == AwhOutputEntryType::CoordValue)
             {
                 outputTypeNumBlock[outputType] = bias.ndim();
+            }
+            else if (outputType == AwhOutputEntryType::FrictionTensor)
+            {
+                outputTypeNumBlock[outputType] = bias.forceCorr().tensorSize();
             }
             else
             {
@@ -290,6 +300,9 @@ BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
     int blockStart = getVarStartBlock(outputType);
     GMX_ASSERT(pointIndex < static_cast<int>(block_[blockStart].data().size()), "Attempt to transfer AWH data to block for point index out of range");
 
+    const CorrelationGrid &forceCorr      = bias.forceCorr();
+    int                    numCorrelation = forceCorr.tensorSize();
+
     /* Transfer the point data of this variable to the right block(s) */
     int b = blockStart;
     switch (outputType)
@@ -324,6 +337,17 @@ BiasWriter::transferPointDataToWriter(AwhOutputEntryType          outputType,
             break;
         case AwhOutputEntryType::Target:
             block_[b].data()[pointIndex] = bias.state().points()[pointIndex].target();
+            break;
+        case AwhOutputEntryType::ForceCorrelationVolume:
+            block_[b].data()[pointIndex] = forceCorr.corr()[pointIndex].getVolumeElement(forceCorr.dtSample);
+            break;
+        case AwhOutputEntryType::FrictionTensor:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < numCorrelation; n++)
+            {
+                block_[b].data()[pointIndex] = forceCorr.corr()[pointIndex].getTimeIntegral(n, forceCorr.dtSample);
+                b++;
+            }
             break;
         default:
             GMX_RELEASE_ASSERT(false, "Unknown AWH output variable");

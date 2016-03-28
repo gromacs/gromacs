@@ -74,6 +74,7 @@
 
 #include "bias.h"
 #include "biassharing.h"
+#include "correlationgrid.h"
 #include "pointstate.h"
 
 namespace gmx
@@ -169,6 +170,8 @@ Awh::Awh(FILE              *fplog,
         Bias::ThisRankWillDoIO thisRankWillDoIO = (MASTER(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
         biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, inputRecord.delta_t, numSharingSimulations, biasInitFilename, thisRankWillDoIO),
                                           pullCoordIndex);
+
+        biasCoupledToSystem_.back().bias.printInitializationToLog(fplog);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */

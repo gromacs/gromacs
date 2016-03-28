@@ -52,6 +52,7 @@
 #include <string>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
@@ -116,6 +117,11 @@ class OutputFile
                                      EnergyUnit           energyUnit,
                                      real                 kTValue);
 
+        /*! \brief Initializes the output file setup for the fricion output. */
+        void initializeFrictionOutputFile(int                  subblockStart,
+                                          int                  numSubblocks,
+                                          const AwhBiasParams *awhBiasParams);
+
         /*! \brief Opens a single output file for a bias, prints title and legends.
          *
          * \param[in] time  The time for of frame to be written.
@@ -156,10 +162,12 @@ class BiasReader
         //! Constructor.
         BiasReader(int                         subblockStart,
                    int                         numSubblocks,
-                   std::unique_ptr<OutputFile> awhOutputFile) :
+                   std::unique_ptr<OutputFile> awhOutputFile,
+                   std::unique_ptr<OutputFile> frictionOutputFile) :
             subblockStart_(subblockStart),
             numSubblocks_(numSubblocks),
-            awhOutputFile_(std::move(awhOutputFile))
+            awhOutputFile_(std::move(awhOutputFile)),
+            frictionOutputFile_(std::move(frictionOutputFile))
         {
         }
 
@@ -169,6 +177,12 @@ class BiasReader
             return *awhOutputFile_.get();
         }
 
+        //! Return the a pointer to the friction output file data, can return nullptr
+        const OutputFile *frictionOutputFile() const
+        {
+            return frictionOutputFile_.get();
+        }
+
         //! Return the starting subblock.
         int subblockStart() const
         {
@@ -176,10 +190,10 @@ class BiasReader
         }
 
     private:
-        const int                   subblockStart_; /**< The start index of the subblocks to read. */
-        const int                   numSubblocks_;  /**< Number of subblocks to read. */
-        std::unique_ptr<OutputFile> awhOutputFile_; /**< The standard AWH output file data. */
-        /* NOTE: A second OutputFile will be added soon, this will also make numSubblocks_ useful. */
+        const int                   subblockStart_;      /**< The start index of the subblocks to read. */
+        const int                   numSubblocks_;       /**< Number of subblocks to read. */
+        std::unique_ptr<OutputFile> awhOutputFile_;      /**< The standard AWH output file data. */
+        std::unique_ptr<OutputFile> frictionOutputFile_; /**< The friction/metric tensor output file data */
 };
 
 /*! \brief All options and meta-data needed for the AWH output */
@@ -211,7 +225,7 @@ namespace
 
 /* NOTE: A second value will be added soon. */
 enum {
-    awhGraphTypeAwh
+    awhGraphTypeAwh, awhGraphTypeFriction
 };
 
 /*! \brief The maximum number of observables per subblock, not including the full friction tensor.
@@ -220,7 +234,7 @@ enum {
  * the output that mdrun writes. It would be better to define these
  * values in a single location.
  */
-static constexpr int maxAwhGraphs = 5;
+static constexpr int maxAwhGraphs = 6;
 
 /*! \brief Constructs a legend for a standard awh output file */
 std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
@@ -233,7 +247,8 @@ std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
           "Coord bias",
           "Coord distr",
           "Ref value distr",
-          "Target ref value distr" }
+          "Target ref value distr",
+          "Friction metric" }
     };
 
     std::vector<std::string>                    legend;
@@ -256,6 +271,15 @@ std::vector<std::string>makeLegend(const AwhBiasParams *awhBiasParams,
             }
         }
         break;
+        case awhGraphTypeFriction:
+            for (int i0 = 0; i0 < awhBiasParams->ndim; i0++)
+            {
+                for (int i1 = 0; i1 <= i0; i1++)
+                {
+                    legend.push_back(gmx::formatString("%d,%d", i0, i1));
+                }
+            }
+            break;
     }
 
     GMX_RELEASE_ASSERT(legend.size() == numLegend, "The number of legends requested for printing and the number generated should be the same");
@@ -327,6 +351,31 @@ void OutputFile::initializeAwhOutputFile(int                  subblockStart,
     }
 }
 
+/*! \brief Initializes the output file setup for the fricion output (note that the filename is not set here). */
+void OutputFile::initializeFrictionOutputFile(int                  subblockStart,
+                                              int                  numSubblocks,
+                                              const AwhBiasParams *awhBiasParams)
+{
+    /* The first subblock with actual graph y-values is index 1 + ndim */
+    numDim_           = awhBiasParams->ndim;
+    int numTensorElem = (numDim_*(numDim_ + 1))/2;
+
+    /* The friction tensor elements are always the last subblocks */
+    if (numSubblocks < 1 + numDim_ + maxAwhGraphs + numTensorElem)
+    {
+        gmx_fatal(FARGS, "You requested friction tensor output, but the AWH data in the energy file does not contain the friction tensor");
+    }
+    GMX_ASSERT(numSubblocks == 1 + numDim_ + maxAwhGraphs + numTensorElem, "The number of sub-blocks per bias should be 1 + ndim + maxAwhGraphs + (ndim*(ndim + 1))/2");
+
+    firstGraphSubblock_ = subblockStart + numSubblocks - numTensorElem;
+    numGraph_           = numTensorElem;
+    scaleFactor_.resize(numGraph_, 1);
+    int numLegend       = numDim_ - 1 + numGraph_;
+    legend_             = makeLegend(awhBiasParams, awhGraphTypeFriction, numLegend);
+    xLabel_             = "(nm or deg)";
+    yLabel_             = "(nm\\S-2\\Nps or rad\\S-2\\Nps)";
+}
+
 AwhReader::AwhReader(const AwhParams  *awhParams,
                      int               numFileOptions,
                      const t_filenm   *filenames,
@@ -337,6 +386,8 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
     kT_(kT)
 {
     GMX_RELEASE_ASSERT(block != nullptr, "NULL pointer passed to initAwhReader");
+
+    bool outputFriction = opt2bSet("-fric", numFileOptions, filenames);
 
     /* The first subblock of each AWH block has metadata about
      * the number of subblocks belonging to that AWH block.
@@ -352,13 +403,23 @@ AwhReader::AwhReader(const AwhParams  *awhParams,
 
         int                         numSubblocks  = (int)block->sub[subblockStart].fval[0];
 
-        std::unique_ptr<OutputFile> outputFileAwh(new OutputFile(opt2fn("-o", numFileOptions, filenames), "AWH", awhParams->numBias, k));
+        std::unique_ptr<OutputFile> awhOutputFile(new OutputFile(opt2fn("-o", numFileOptions, filenames), "AWH", awhParams->numBias, k));
 
-        outputFileAwh->initializeAwhOutputFile(subblockStart, numSubblocks,
+        awhOutputFile->initializeAwhOutputFile(subblockStart, numSubblocks,
                                                awhBiasParams, awhGraphSelection,
                                                energyUnit, kT);
 
-        biasReader_.emplace_back(BiasReader(subblockStart, numSubblocks, std::move(outputFileAwh)));
+        std::unique_ptr<OutputFile> frictionOutputFile;
+        if (outputFriction)
+        {
+            frictionOutputFile = gmx::compat::make_unique<OutputFile>(opt2fn("-fric", numFileOptions, filenames), "Friction tensor", awhParams->numBias, k);
+
+            frictionOutputFile->initializeFrictionOutputFile(subblockStart, numSubblocks, awhBiasParams);
+        }
+
+        biasReader_.emplace_back(BiasReader(subblockStart, numSubblocks,
+                                            std::move(awhOutputFile),
+                                            std::move(frictionOutputFile)));
 
         subblockStart += numSubblocks;
     }
@@ -407,11 +468,11 @@ void AwhReader::processAwhFrame(const t_enxblock       &block,
 
     for (auto &biasReader : biasReader_)
     {
+        const int subStart = biasReader.subblockStart();
+
         /* Each frame and AWH instance extracted generates one xvg file. */
         {
             const OutputFile &awhOutputFile = biasReader.awhOutputFile();
-
-            const int         subStart = biasReader.subblockStart();
 
             FILE             *fpAwh = awhOutputFile.openBiasOutputFile(time, oenv);
 
@@ -427,6 +488,16 @@ void AwhReader::processAwhFrame(const t_enxblock       &block,
 
             gmx_ffclose(fpAwh);
         }
+
+        const OutputFile *frictionOutputFile = biasReader.frictionOutputFile();
+        if (frictionOutputFile != nullptr)
+        {
+            FILE *fpFriction = frictionOutputFile->openBiasOutputFile(time, oenv);
+
+            frictionOutputFile->writeData(block, subStart, fpFriction);
+
+            gmx_ffclose(fpFriction);
+        }
     }
 }
 
@@ -435,11 +506,19 @@ int gmx_awh(int argc, char *argv[])
 {
     const char         *desc[] = {
         "[THISMODULE] extracts AWH data from an energy file.",
-        "One file is written per AWH bias per time frame.",
+        "One or two files are written per AWH bias per time frame.",
         "The bias index, if more than one, is appended to the file, as well as",
         "the time of the frame. By default only the PMF is printed.",
         "With [TT]-more[tt] the bias, target and coordinate distributions",
         "are also printed.",
+        "With [TT]-more[tt] the bias, target and coordinate distributions",
+        "are also printed, as well as the metric sqrt(det(friction_tensor))",
+        "normalized such that the average is 1.",
+        "Option [TT]-fric[tt] prints all components of the friction tensor",
+        "to an additional set of files. Note that the absolute values of",
+        "the friction tensor elements can be somewhat different from the real",
+        "friction due to the fact that we only have access to short parts",
+        "of the correlation time interval at each sampling point."
     };
     static gmx_bool     moreGraphs = FALSE;
     static int          skip       = 0;
@@ -463,7 +542,8 @@ int gmx_awh(int argc, char *argv[])
     t_filenm            fnm[] = {
         { efEDR, "-f", nullptr,           ffREAD  },
         { efTPR, "-s", nullptr,           ffREAD  },
-        { efXVG, "-o",    "awh",          ffWRITE }
+        { efXVG, "-o",    "awh",          ffWRITE },
+        { efXVG, "-fric", "friction",     ffOPTWR }
     };
     const int           nfile  = asize(fnm);
     if (!parse_common_args(&argc, argv,

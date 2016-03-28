@@ -65,6 +65,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "correlationgrid.h"
+#include "correlationhistory.h"
 #include "pointstate.h"
 
 namespace gmx
@@ -133,6 +135,8 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
 
         if (sampleCoord)
         {
+            updateForceCorrelation(*probWeightNeighbor, t);
+
             state_.sampleCoordAndPmf(grid_, *probWeightNeighbor, convolvedBias);
         }
     }
@@ -206,6 +210,12 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
+
+        if (forceCorr_ != nullptr)
+        {
+            GMX_RELEASE_ASSERT(biasHistory->forceCorr != nullptr, "When using force correlation we need a force correlation object in the history");
+            forceCorr_->restoreStateFromHistory(*biasHistory->forceCorr);
+        }
     }
 
     if (PAR(cr))
@@ -219,6 +229,11 @@ void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
     state_.initHistoryFromState(biasHistory);
+
+    if (forceCorr_ != nullptr)
+    {
+        biasHistory->forceCorr = initCorrelationGridHistoryFromState(forceCorr());
+    }
 }
 
 void Bias::updateHistory(AwhBiasHistory *biasHistory) const
@@ -226,6 +241,12 @@ void Bias::updateHistory(AwhBiasHistory *biasHistory) const
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
     state_.updateHistory(biasHistory, grid_);
+
+    if (forceCorr_ != nullptr)
+    {
+        GMX_RELEASE_ASSERT(biasHistory->forceCorr != nullptr, "AWH history force correlation not initialized when updating history");
+        updateCorrelationGridHistory(biasHistory->forceCorr, forceCorr());
+    }
 }
 
 Bias::Bias(int                             biasIndexInCollection,
@@ -253,7 +274,60 @@ Bias::Bias(int                             biasIndexInCollection,
 
     if (thisRankDoesIO_)
     {
+        /* Set up the force correlation object. */
+        bool   blocklengthInWeight = false;
+        /* We let the correlation init function set its parameters to something useful for now. */
+        double blockLength       = 0;
+        /* Construct the force correlation object. */
+        forceCorr_ = std::unique_ptr<CorrelationGrid>(new CorrelationGrid(state_.points().size(), ndim(),
+                                                                          blockLength, blocklengthInWeight,
+                                                                          awhParams.nstSampleCoord*mdTimeStep));
+
         writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+void Bias::printInitializationToLog(FILE *fplog) const
+{
+    if (fplog != nullptr && forceCorr_ != nullptr)
+    {
+        std::string prefix =
+            gmx::formatString("\nawh%d:", params_.biasIndex + 1);
+
+        fprintf(fplog,
+                "%s initial force correlation block length = %g %s"
+                "%s force correlation number of blocks = %d",
+                prefix.c_str(), forceCorr().getBlockLength(),
+                forceCorr().blockLengthInWeight ? "" : "ps",
+                prefix.c_str(), forceCorr().getNumBlocks());
+    }
+}
+
+void Bias::updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
+                                  double                        t)
+{
+    if (forceCorr_ == nullptr)
+    {
+        return;
+    }
+
+    const std::vector<int> &neighbor = grid_.point(state_.coordState().gridpointIndex()).neighbor;
+
+    for (size_t n = 0; n < neighbor.size(); n++)
+    {
+        double weightNeighbor = probWeightNeighbor[n];
+        int    indexNeighbor  = neighbor[n];
+
+        /* Add the force data of this neighbor point. Note: the sum of these forces is the convolved force.
+
+           We actually add the force normalized by beta which has the units of 1/length. This means that the
+           resulting correlation time integral is directly in units of friction time/length^2 which is really what
+           we're interested in. */
+        awh_dvec forceFromNeighbor;
+        state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, forceFromNeighbor);
+
+        /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
+        forceCorr_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
     }
 }
 

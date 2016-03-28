@@ -61,6 +61,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/awh-correlation-history.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -167,6 +168,7 @@ enum {
     eawhhUPDATELIST,
     eawhhLOGSCALEDSAMPLEWEIGHT,
     eawhhNUMUPDATES,
+    eawhhFORCECORR,
     eawhhNR
 };
 
@@ -180,6 +182,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_updatelist",
     "awh_logScaledSampleWeight",
     "awh_numupdates"
+    "awh_forcecorr"
 };
 
 //! Higher level vector element type, only used for formatting checkpoint dumps
@@ -1500,6 +1503,51 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
     return 0;
 }
 
+static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
+                                   gmx::CorrelationGridHistory *corrGrid,
+                                   FILE *list, int eawhh)
+{
+    int ret = 0;
+
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->numCorrTensor), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->tensorSize), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->numBlockData), list);
+
+    if (bRead)
+    {
+        initCorrelationGridHistory(corrGrid, corrGrid->numCorrTensor, corrGrid->tensorSize, corrGrid->numBlockData);
+    }
+
+    for (int j = 0; j < corrGrid->numCorrTensor; j++)
+    {
+        gmx::CorrelationTensorHistory *corrTensor = &corrGrid->corrTensor[j];
+
+        for (int k = 0; k < corrGrid->tensorSize; k++)
+        {
+            gmx::CorrelationHistory *corr = &corrTensor->corr[k];
+
+            for (int l = 0; l < corrGrid->numBlockData; l++)
+            {
+                gmx::CorrelationBlockdataHistory *blockData = &corr->blockData[l];
+
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->blockSumW), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->blockSumSqrW), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->blockSumWX), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->blockSumWY), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->simSumSqrBlockW), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->simSumBlockSqrW), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->simSumBlockWBlockWX), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->simSumBlockWBlockWY), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->blockLength), list);
+                do_cpt_int_err(xd, eawhh_names[eawhh], &(blockData->previousBlockIndex), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData->correlationIntegral), list);
+            }
+        }
+    }
+
+    return ret;
+}
+
 static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                            int fflags, gmx::AwhBiasHistory *biasHistory,
                            FILE *list)
@@ -1561,6 +1609,13 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                     break;
                 case eawhhNUMUPDATES:
                     do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
+                    break;
+                case eawhhFORCECORR:
+                    if (bRead)
+                    {
+                        snew(biasHistory->forceCorr, 1);
+                    }
+                    ret = do_cpt_correlation_grid(xd, bRead, fflags, biasHistory->forceCorr, list, i);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
@@ -1843,7 +1898,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                         (1 << eawhhUMBRELLAGRIDPOINT) |
                         (1 << eawhhUPDATELIST) |
                         (1 << eawhhLOGSCALEDSAMPLEWEIGHT) |
-                        (1 << eawhhNUMUPDATES));
+                        (1 << eawhhNUMUPDATES) |
+                        (1 << eawhhFORCECORR));
     }
 
     /* We can check many more things now (CPU, acceleration, etc), but

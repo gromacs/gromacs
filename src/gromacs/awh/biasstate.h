@@ -135,7 +135,7 @@ class BiasState
         void initHistoryFromState(AwhBiasHistory *biasHistory) const;
 
         /*! \brief
-         * Update the bias history with a new state.
+         * Update the bias state history with the current state.
          *
          * \param[out] biasHistory  Bias history struct.
          * \param[in]  grid         The bias grid.
