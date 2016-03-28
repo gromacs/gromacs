@@ -37,7 +37,9 @@
 #ifndef GMX_MDTYPES_INPUTREC_H
 #define GMX_MDTYPES_INPUTREC_H
 
-#include <stdio.h>
+#include <cstdio>
+
+#include <memory>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -51,6 +53,8 @@ struct pull_params_t;
 
 namespace gmx
 {
+class Awh;
+struct AwhParams;
 class KeyValueTreeObject;
 }
 
@@ -355,6 +359,11 @@ struct t_inputrec
     gmx_bool              bPull;             /* Do we do COM pulling?                        */
     struct pull_params_t *pull;              /* The data for center of mass pulling          */
     struct pull_t        *pull_work;         /* The COM pull force calculation data structure; TODO this pointer should live somewhere else */
+
+    /* AWH bias data */
+    gmx_bool                 bDoAwh;    /* Use awh biasing for PMF calculations?        */
+    gmx::AwhParams          *awhParams; /* AWH biasing parameters                       */
+    gmx::Awh                *awh;       /* AWH work object */
 
     /* Enforced rotation data */
     gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
