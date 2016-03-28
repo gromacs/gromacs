@@ -58,6 +58,7 @@ struct t_awhbias;
 struct awhbias_params_t;
 struct awhbiashistory_t;
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
+struct t_enxframe;
 
 
 /*! \brief Allocate, initialize and return an AWH working struct for mdrun.
@@ -109,6 +110,7 @@ t_awhbias *init_awhbias_md(FILE                    *fplog,
  * \returns the potential energy for the bias.
  */
 real update_awhbias(t_awhbias              *awhbias,
+                    const awhbias_params_t *awhbias_params,
                     struct pull_t          *pull_work,
                     int                     ePBC,
                     const t_mdatoms        *mdatoms,
@@ -120,5 +122,12 @@ real update_awhbias(t_awhbias              *awhbias,
                     gmx_int64_t             step,
                     gmx_wallcycle_t         wallcycle,
                     FILE                   *fplog);
+
+/*! \brief Fills the AWH data block of an energy frame with data at certain steps.
+ *
+ * \param[in,out] fr      Energy data frame.
+ * \param[in] awhbias      AWH working struct.
+ */
+void write_awhbias_to_energyframe(t_enxframe *fr, const t_awhbias *awhbias);
 
 #endif /* GMX_AWH_H */

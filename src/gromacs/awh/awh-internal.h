@@ -61,6 +61,15 @@ struct pull_params_t;
 struct t_inputrec;
 struct t_commrec;
 
+/*! \brief Query if a point in the AWH grid has valid data that should be included in the output printing.
+ *
+ * \param[in] awh         The AWH bias.
+ * \param[in] point_index Point index.
+ * \returns true if the data of the point should be included.
+ */
+bool write_point_to_output(const t_awh *awh, int point_index);
+
+
 /*! \brief Calculates the convolved bias at a point in the AWH grid.
  *
  * Note: if it turns out to be costly to calculate this pointwise

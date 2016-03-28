@@ -738,6 +738,8 @@ static void pr_awhbias(FILE *fp, int indent, awhbias_params_t *awhbias_params)
     PI(opt, awhbias_params->nawh);
     sprintf(opt, "%s-seed", prefix);
     PI(opt, awhbias_params->seed);
+    sprintf(opt, "%s-nstout", prefix);
+    PI(opt, awhbias_params->nstout);
     sprintf(opt, "%s-nstsample", prefix);
     PI(opt, awhbias_params->nstsample_coord);
     sprintf(opt, "%s-nsamples-refvalue", prefix);
