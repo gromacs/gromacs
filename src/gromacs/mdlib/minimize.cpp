@@ -1097,7 +1097,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
     }
     where();
 
@@ -1537,7 +1537,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
-                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
@@ -1586,7 +1586,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             /* Write final energy file entries */
             print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
                        !do_log ? fplog : NULL, step, step, eprNORMAL,
-                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
         }
     }
 
@@ -1821,7 +1821,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
-                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
     }
     where();
 
@@ -2370,7 +2370,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
-                       mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                       mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
@@ -2418,7 +2418,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     {
         print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
                    !do_log ? fplog : NULL, step, step, eprNORMAL,
-                   mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                   mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
     }
 
     /* Print some stuff... */
@@ -2609,7 +2609,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                            do_per_step(steps_accepted, inputrec->nstdisreout),
                            do_per_step(steps_accepted, inputrec->nstorireout),
                            fplog, count, count, eprNORMAL,
-                           mdebin, fcd, &(top_global->groups), &(inputrec->opts));
+                           mdebin, fcd, &(top_global->groups), &(inputrec->opts), NULL);
                 fflush(fplog);
             }
         }
