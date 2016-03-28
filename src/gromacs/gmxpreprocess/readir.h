@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
