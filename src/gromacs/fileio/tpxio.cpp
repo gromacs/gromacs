@@ -54,6 +54,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
@@ -111,6 +112,7 @@ enum tpxv {
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
+    tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -677,6 +679,61 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     {
         fepvals->lambda_start_n = 0;
         fepvals->lambda_stop_n  = fepvals->n_lambda;
+    }
+}
+
+static void do_awh(t_fileio *fio, awh_params_t *awh_params, gmx_bool bRead,
+                   int gmx_unused file_version)
+{
+    gmx_fio_do_int(fio, awh_params->eTarget);
+    gmx_fio_do_double(fio, awh_params->target_param);
+    gmx_fio_do_int(fio, awh_params->eGrowth);
+    gmx_fio_do_int(fio, awh_params->bUser_data);
+    gmx_fio_do_double(fio, awh_params->error_initial);
+    gmx_fio_do_int(fio, awh_params->ndim);
+    gmx_fio_do_gmx_bool(fio, awh_params->bShare);
+
+    if (bRead)
+    {
+        snew(awh_params->dim_params, awh_params->ndim);
+    }
+
+    for (int d = 0; d < awh_params->ndim; d++)
+    {
+        awhdim_params_t *dim_params = &awh_params->dim_params[d];
+
+        gmx_fio_do_double(fio, dim_params->origin);
+        gmx_fio_do_double(fio, dim_params->end);
+        gmx_fio_do_int(fio, dim_params->pull_coord_index);
+        gmx_fio_do_double(fio, dim_params->period);
+        gmx_fio_do_double(fio, dim_params->diffusion);
+        gmx_fio_do_int(fio, dim_params->ninterval);
+        gmx_fio_do_double(fio, dim_params->interval_overlap);
+        gmx_fio_do_double(fio, dim_params->coord_value_init);
+    }
+}
+
+static void do_awhbias(t_fileio *fio, awhbias_params_t *awhbias_params, gmx_bool bRead,
+                       int gmx_unused file_version)
+{
+    gmx_fio_do_int(fio, awhbias_params->nawh);
+    gmx_fio_do_int64(fio, awhbias_params->seed);
+    gmx_fio_do_int(fio, awhbias_params->nstsample_coord);
+    gmx_fio_do_int(fio, awhbias_params->nsamples_move_refvalue);
+    gmx_fio_do_int(fio, awhbias_params->nsamples_update_free_energy);
+    gmx_fio_do_gmx_bool(fio, awhbias_params->bConvolve_force);
+
+    if (awhbias_params->nawh > 0)
+    {
+        if (bRead)
+        {
+            snew(awhbias_params->awh_params, awhbias_params->nawh);
+        }
+
+        for (int k = 0; k < awhbias_params->nawh; k++)
+        {
+            do_awh(fio, &awhbias_params->awh_params[k], bRead, file_version);
+        }
     }
 }
 
@@ -1716,6 +1773,24 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bPull = FALSE;
+    }
+
+    if (file_version >= tpxv_AcceleratedWeightHistogram)
+    {
+        gmx_fio_do_gmx_bool(fio, ir->bAwhbias);
+
+        if (ir->bAwhbias)
+        {
+            if (bRead)
+            {
+                snew(ir->awhbias_params, 1);
+            }
+            do_awhbias(fio, ir->awhbias_params, bRead, file_version);
+        }
+    }
+    else
+    {
+        ir->bAwhbias = FALSE;
     }
 
     /* Enforced rotation */
