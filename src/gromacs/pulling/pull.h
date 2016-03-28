@@ -73,6 +73,13 @@ namespace gmx
 class ForceWithVirial;
 }
 
+/*! \brief Returns if the pull coordinate is an angle
+ *
+ * \param[in] pcrd The pull coordinate to query the type for.
+ * \returns a boolean telling if the coordinate is of angle type.
+ */
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd);
+
 /*! \brief Returns the units of the pull coordinate.
  *
  * \param[in] pcrd The pull coordinate to query the units for.
@@ -99,13 +106,11 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
  * \param[in,out] pull      The pull struct.
  * \param[in]     coord_ind Number of the pull coordinate.
  * \param[in]     pbc       Information structure about periodicity.
- * \param[out]    value     The value of the pull coordinate.
+ * \returns the value of the pull coordinate.
  */
-void get_pull_coord_value(struct pull_t      *pull,
-                          int                 coord_ind,
-                          const struct t_pbc *pbc,
-                          double             *value);
-
+double get_pull_coord_value(struct pull_t      *pull,
+                            int                 coord_ind,
+                            const struct t_pbc *pbc);
 
 /*! \brief Registers the provider of an external potential for a coordinate.
  *
@@ -145,19 +150,17 @@ void register_external_pull_potential(struct pull_t *pull,
  * This function should be called after pull_potential has been called and,
  * obviously, before the coordinates are updated uses the forces.
  *
- * \param[in,out] pull           The pull struct.
- * \param[in]     coord_index    The pull coordinate index to set the force for.
- * \param[in]     coord_force    The scalar force for the pull coordinate.
- * \param[in]     mdatoms        Atom properties, only masses are used.
- * \param[in,out] force          The force buffer.
- * \param[in,out] virial         The virial, can be NULL.
+ * \param[in,out] pull             The pull struct.
+ * \param[in]     coord_index      The pull coordinate index to set the force for.
+ * \param[in]     coord_force      The scalar force for the pull coordinate.
+ * \param[in]     mdatoms          Atom properties, only masses are used.
+ * \param[in,out] forceWithVirial  Force and virial buffers.
  */
-void apply_external_pull_coord_force(struct pull_t   *pull,
-                                     int              coord_index,
-                                     double           coord_force,
-                                     const t_mdatoms *mdatoms,
-                                     rvec            *force,
-                                     tensor           virial);
+void apply_external_pull_coord_force(struct pull_t        *pull,
+                                     int                   coord_index,
+                                     double                coord_force,
+                                     const t_mdatoms      *mdatoms,
+                                     gmx::ForceWithVirial *forceWithVirial);
 
 
 /*! \brief Set the all the pull forces to zero.
