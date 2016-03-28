@@ -49,6 +49,7 @@
 
 #include <array>
 
+#include "gromacs/awh/awh.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -1420,6 +1421,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t,
                                wcycle);
+        if (fr->bDoAwh)
+        {
+            enerd->term[F_COM_PULL] += update_awh(fr->awh, inputrec->pull_work,
+                                                  inputrec->ePBC, mdatoms, box, f, vir_force,
+                                                  cr->ms, t, step, wcycle, fplog);
+        }
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
@@ -1795,6 +1802,12 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t,
                                wcycle);
+        if (inputrec->bDoAwh)
+        {
+            enerd->term[F_COM_PULL] += update_awh(fr->awh, inputrec->pull_work,
+                                                  inputrec->ePBC, mdatoms, box, f, vir_force,
+                                                  cr->ms, t, step, wcycle, fplog);
+        }
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
