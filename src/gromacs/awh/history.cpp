@@ -51,6 +51,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation-history.h"
 #include "grid.h"
 #include "types.h"
 
@@ -73,6 +74,7 @@ static void init_bias_history(awh_bias_history_t *bias_history)
     bias_history->ndim                      = 0;
     bias_history->scaledSampleWeight        = 0;
     bias_history->maxScaledSampleWeight     = 0;
+    bias_history->forcecorr                 = NULL;
 }
 
 /*! \brief
@@ -89,6 +91,8 @@ static void init_bias_history_from_state(awh_bias_history_t *bias_history, const
     bias_history->ndim               = bias->ndim;
 
     snew(bias_history->coordpoint, bias_history->npoints);
+
+    bias_history->forcecorr = init_correlation_grid_history_from_state(bias->forcecorr);
 }
 
 /* Allocate and initialize an AWH history with the given AWH state. */
@@ -144,6 +148,9 @@ static void update_bias_history(awh_bias_history_t *bias_history, const awh_bias
 
     bias_history->scaledSampleWeight     = bias->scaledSampleWeight;
     bias_history->maxScaledSampleWeight  = bias->maxScaledSampleWeight;
+
+    GMX_RELEASE_ASSERT(bias_history->forcecorr != NULL, "AWH history force correlation not initialized when updating history");
+    update_correlation_grid_history(bias_history->forcecorr, bias->forcecorr);
 }
 
 /*! \brief
@@ -180,6 +187,8 @@ static void restore_bias_state_from_history(const awh_bias_history_t *bias_histo
 
     bias->scaledSampleWeight     = bias_history->scaledSampleWeight;
     bias->maxScaledSampleWeight  = bias_history->maxScaledSampleWeight;
+
+    restore_correlation_grid_state_from_history(bias_history->forcecorr, bias->forcecorr);
 }
 
 /* Update the AWH bias history for checkpointing. */
@@ -210,10 +219,18 @@ static void broadcast_initialize_bias_history(awh_bias_history_t *bias_history, 
         snew(bias_history->coordpoint, bias_history->npoints);
     }
     gmx_bcast(sizeof(awh_coordpoint_history_t)*bias_history->npoints, bias_history->coordpoint, cr);
+
+    correlation_grid_history_t *corrgrid_hist =
+        init_correlation_grid_history_from_checkpoint((MASTER(cr) ? bias_history->forcecorr : NULL), cr);
+
+    if (!MASTER(cr))
+    {
+        bias_history->forcecorr = corrgrid_hist;
+    }
 }
 
 /*! \brief
- * Initialize and allocate for the AWH history when only master rank has been initialized.
+ * Initialize and allocate for the AWH history when only the master rank has been initialized.
  *
  * \param[in,out] awh_history   AWH history struct.
  * \param[in] cr                Struct for communication.

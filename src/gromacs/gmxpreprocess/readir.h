@@ -40,6 +40,7 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/math/vectypes.h"
 
 struct gmx_groups_t;
 struct gmx_mtop_t;
