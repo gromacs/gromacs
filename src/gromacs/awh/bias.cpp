@@ -65,6 +65,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "correlationgrid.h"
+#include "correlationhistory.h"
 #include "pointstate.h"
 
 namespace gmx
@@ -100,7 +102,7 @@ void Bias::doSkippedUpdatesForAllPoints()
 }
 
 void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                  awh_dvec              biasForce,
+                                  gmx::ArrayRef<double> biasForce,
                                   double               *awhPotential,
                                   double               *potentialJump,
                                   const gmx_multisim_t *ms,
@@ -109,6 +111,8 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
                                   gmx_int64_t           seed,
                                   FILE                 *fplog)
 {
+    GMX_RELEASE_ASSERT(biasForce.size() == dimParams_.size(), "The size of biasForce should match the dimensionality of the bias");
+
     if (step < 0)
     {
         GMX_THROW(InvalidInputError("The step number is negative which is not supported by the AWH code."));
@@ -136,6 +140,8 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
 
         if (sampleCoord)
         {
+            updateForceCorrelation(*probWeightNeighbor, t);
+
             state_.sampleCoordAndPmf(grid_, *probWeightNeighbor, convolvedBias);
         }
     }
@@ -209,6 +215,11 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
+
+        if (forceCorrelation_ != nullptr)
+        {
+            forceCorrelation_->restoreStateFromHistory(biasHistory->forceCorrelation);
+        }
     }
 
     if (PAR(cr))
@@ -222,6 +233,11 @@ void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
     state_.initHistoryFromState(biasHistory);
+
+    if (forceCorrelation_ != nullptr)
+    {
+        biasHistory->forceCorrelation = initCorrelationGridHistoryFromState(forceCorrelation());
+    }
 }
 
 void Bias::updateHistory(AwhBiasHistory *biasHistory) const
@@ -229,6 +245,11 @@ void Bias::updateHistory(AwhBiasHistory *biasHistory) const
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
     state_.updateHistory(biasHistory, grid_);
+
+    if (forceCorrelation_ != nullptr)
+    {
+        updateCorrelationGridHistory(&biasHistory->forceCorrelation, forceCorrelation());
+    }
 }
 
 Bias::Bias(int                             biasIndexInCollection,
@@ -256,7 +277,62 @@ Bias::Bias(int                             biasIndexInCollection,
 
     if (thisRankDoesIO_)
     {
+        /* Set up the force correlation object. */
+
+        /* We let the correlation init function set its parameters
+         * to something useful for now.
+         */
+        double blockLength = 0;
+        /* Construct the force correlation object. */
+        forceCorrelation_ = std::unique_ptr<CorrelationGrid>(new CorrelationGrid(state_.points().size(), ndim(),
+                                                                                 blockLength, CorrelationGrid::BlockLengthMeasure::Time,
+                                                                                 awhParams.nstSampleCoord*mdTimeStep));
+
         writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+void Bias::printInitializationToLog(FILE *fplog) const
+{
+    if (fplog != nullptr && forceCorrelation_ != nullptr)
+    {
+        std::string prefix =
+            gmx::formatString("\nawh%d:", params_.biasIndex + 1);
+
+        fprintf(fplog,
+                "%s initial force correlation block length = %g %s"
+                "%s force correlation number of blocks = %d",
+                prefix.c_str(), forceCorrelation().getBlockLength(),
+                forceCorrelation().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight ? "" : "ps",
+                prefix.c_str(), forceCorrelation().getNumBlocks());
+    }
+}
+
+void Bias::updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
+                                  double                        t)
+{
+    if (forceCorrelation_ == nullptr)
+    {
+        return;
+    }
+
+    const std::vector<int> &neighbor = grid_.point(state_.coordState().gridpointIndex()).neighbor;
+
+    std::vector<double>     forceFromNeighbor(ndim());
+    for (size_t n = 0; n < neighbor.size(); n++)
+    {
+        double weightNeighbor = probWeightNeighbor[n];
+        int    indexNeighbor  = neighbor[n];
+
+        /* Add the force data of this neighbor point. Note: the sum of these forces is the convolved force.
+
+           We actually add the force normalized by beta which has the units of 1/length. This means that the
+           resulting correlation time integral is directly in units of friction time/length^2 which is really what
+           we're interested in. */
+        state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, forceFromNeighbor);
+
+        /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
+        forceCorrelation_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
     }
 }
 
