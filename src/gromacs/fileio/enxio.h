@@ -81,6 +81,8 @@ enum {
     enxDHHIST, /* BAR histogram                                              */
     enxDH,     /* BAR raw delta H data                                       */
 
+    enxAWH,    /* AWH data */
+
     enxNR      /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
                 * future code which contain more blocks.
@@ -93,7 +95,7 @@ extern const char *enx_block_id_name[];
 
 /* the subblocks that are contained in energy file blocks. Each of these
    has a number of values of a single data type in a .edr file. */
-typedef struct
+struct t_enxsubblock
 {
     int          nr;        /* number of items in subblock */
     xdr_datatype type;      /* the block type */
@@ -114,7 +116,7 @@ typedef struct
     int lval_alloc;
     int cval_alloc;
     int sval_alloc;
-} t_enxsubblock;
+};
 
 
 /* the energy file blocks. Each block contains a number of sub-blocks
@@ -128,7 +130,7 @@ typedef struct t_enxblock{
 
 
 /* The frames that are read/written */
-typedef struct {
+struct t_enxframe {
     double          t;            /* Timestamp of this frame	                     */
     gmx_int64_t     step;         /* MD step	                             */
     gmx_int64_t     nsteps;       /* The number of steps between frames            */
@@ -141,7 +143,7 @@ typedef struct {
     int             nblock;       /* Number of following energy blocks             */
     t_enxblock     *block;        /* The blocks                                    */
     int             nblock_alloc; /* The number of blocks allocated                */
-} t_enxframe;
+};
 
 /* file handle */
 typedef struct ener_file *ener_file_t;
