@@ -1343,6 +1343,18 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
             {
                 for (i = 0; i < b1->nsub; i++)
                 {
+                    /* The AWH visits sub-block is a histogram. Rounding issues
+                     * can cause large relative differences in histogram values,
+                     * so we exclude it here to allow for stable comparisons
+                     * of AWH energy file output.
+                     */
+                    /* This value should match the enum in the AWH code */
+                    const int evarVISITS = 4;
+                    if (b1->id == enxAWH && i == evarVISITS)
+                    {
+                        continue;
+                    }
+
                     t_enxsubblock *s1, *s2;
 
                     s1 = &(b1->sub[i]);

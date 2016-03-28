@@ -1845,6 +1845,7 @@ AWH adaptive biasing
 
    (100000)
    Number of steps between printing AWH data to the energy file.
+   Should be a multiple of :mdp:`nstenergy`.
 
 .. mdp:: awh-nstsample
 
