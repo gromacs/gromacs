@@ -49,6 +49,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+struct correlation_grid_history_t;
+
 /*! \cond INTERNAL */
 
 //! Coordinate point history data.
@@ -81,6 +83,7 @@ typedef struct awh_bias_history_t
     double                         histsize;                  /**< Size of reference weight histogram. */
     double                         scaledSampleWeight;        /**< The log of the current sample weight, scaled because of the histogram rescaling. */
     double                         maxScaledSampleWeight;     /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
+    correlation_grid_history_t    *forcecorr;                 /**< History for force correlation statistics. */
 } awh_bias_history_t;
 
 //! A collection of AWH bias history data. */
