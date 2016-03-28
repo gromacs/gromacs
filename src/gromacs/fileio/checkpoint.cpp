@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/awh-correlation-history.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -159,6 +160,7 @@ enum {
     eawhhCOORDPOINT, eawhhREFCOORDPOINT,
     eawhhUPDATELIST,
     eawhhSCALEDSAMPLEWEIGHT,
+    eawhhFORCECORR,
     eawhhNR
 };
 
@@ -171,6 +173,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_coordpoint", "awh_refCoordpoint",
     "awh_updatelist",
     "awh_scaledSampleWeight",
+    "awh_forcecorr",
 };
 
 enum {
@@ -1399,6 +1402,48 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
+                                   correlation_grid_history_t *corrgrid,
+                                   FILE *list, int eawhh)
+{
+    int ret = 0;
+
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrgrid->ncorrmatrix), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrgrid->ncorr), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrgrid->nblockdata), list);
+
+    if (bRead)
+    {
+        init_correlation_grid_history(corrgrid, corrgrid->ncorrmatrix, corrgrid->ncorr, corrgrid->nblockdata);
+    }
+
+    for (int j = 0; j < corrgrid->ncorrmatrix; j++)
+    {
+        correlation_matrix_history_t *corrmatrix = &corrgrid->corrmatrix[j];
+
+        for (int k = 0; k < corrgrid->ncorr; k++)
+        {
+            correlation_history_t *corr = &corrmatrix->corr[k];
+
+            do_cpt_double_err(xd, eawhh_names[eawhh], &(corr->covariance), list);
+
+            for (int l = 0; l < corrgrid->nblockdata; l++)
+            {
+                correlation_blockdata_history_t *blockdata = &corr->blockdata[l];
+
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata->blocklength), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata->correlation_integral), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata->sum_wx), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata->sum_wy), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata->sum_w), list);
+                do_cpt_int_err(xd, eawhh_names[eawhh], &(blockdata->blockindex_prev), list);
+            }
+        }
+    }
+
+    return ret;
+}
+
 static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                            int fflags, awh_bias_history_t *bias_history,
                            FILE *list)
@@ -1451,6 +1496,13 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                 case eawhhSCALEDSAMPLEWEIGHT:
                     do_cpt_double_err(xd, eawhh_names[i], &(bias_history->scaledSampleWeight), list);
                     do_cpt_double_err(xd, eawhh_names[i], &(bias_history->maxScaledSampleWeight), list);
+                    break;
+                case eawhhFORCECORR:
+                    if (bRead)
+                    {
+                        snew(bias_history->forcecorr, 1);
+                    }
+                    ret = do_cpt_correlation_grid(xd, bRead, fflags, bias_history->forcecorr, list, i);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
@@ -1713,7 +1765,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                         (1<<eawhhNPOINTS) |
                         (1<<eawhhCOORDPOINT) | (1<<eawhhREFCOORDPOINT) |
                         (1<<eawhhUPDATELIST) |
-                        (1<<eawhhSCALEDSAMPLEWEIGHT));
+                        (1<<eawhhSCALEDSAMPLEWEIGHT) |
+                        (1<<eawhhFORCECORR));
     }
 
     /* We can check many more things now (CPU, acceleration, etc), but
