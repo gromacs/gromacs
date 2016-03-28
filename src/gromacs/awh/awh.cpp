@@ -55,6 +55,7 @@
 #include <algorithm>
 
 #include "gromacs/awh/awh.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -67,6 +68,7 @@
 #include "gromacs/utility/pleasecite.h"
 
 #include "bias.h"
+#include "biaswriter.h"
 #include "grid.h"
 #include "internal.h"
 #include "pointstate.h"
@@ -81,7 +83,8 @@ Awh::Awh(FILE                *fplog,
          bool                 startingFromCheckpoint) :
     convolveForce_(awhParams->ePotential == eawhpotentialCONVOLVED),
     seed_(awhParams->seed),
-    potentialOffset_(0)
+    potentialOffset_(0),
+    nstout_(awhParams->nstout)
 {
     GMX_RELEASE_ASSERT(ir->pull != nullptr, "With AWH we should have pull parameters");
 
@@ -135,6 +138,15 @@ real Awh::update(struct pull_t          *pull_work,
                  FILE                   *fplog)
 {
     wallcycle_start(wallcycle, ewcAWH);
+
+    if (nstout_ > 0 && step % nstout_ == 0)
+    {
+        /* Prepare AWH output data to later write to the energy file. */
+        for (auto &bias : bias_)
+        {
+            bias.prepareOutput(ms, step);
+        }
+    }
 
     t_pbc  pbc;
     set_pbc(&pbc, ePBC, box);
@@ -233,5 +245,38 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
         bias_[k].updateHistory(&awhHistory->bias[k]);
+    }
+}
+
+/* Fill the AWH data block of an energy frame with data (if there is any). */
+void Awh::writeToEnergyframe(t_enxframe *frame) const
+{
+    if (bias_[0].numEnergySubblocksToWrite() == 0)
+    {
+        return;
+    }
+
+    /* Get the total number of energy subblocks that AWH needs */
+    int numSubblocks  = 0;
+    for (auto &bias : bias_)
+    {
+        numSubblocks += bias.numEnergySubblocksToWrite();
+    }
+
+    /* Add 1 energy block */
+    add_blocks_enxframe(frame, frame->nblock + 1);
+
+    /* Take the block that was just added and set the number of subblocks. */
+    t_enxblock *awhenergyblock = &(frame->block[frame->nblock - 1]);
+    add_subblocks_enxblock(awhenergyblock, numSubblocks);
+
+    /* Claim it as an AWH block. */
+    awhenergyblock->id = enxAWH;
+
+    /* Transfer AWH data blocks to energy sub blocks */
+    int energySubblockCount = 0;
+    for (auto &bias : bias_)
+    {
+        energySubblockCount += bias.writeToEnergySubblocks(&(awhenergyblock->sub[energySubblockCount]));
     }
 }
