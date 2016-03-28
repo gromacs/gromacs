@@ -74,17 +74,16 @@
 namespace gmx
 {
 
-void BiasState::getPmf(std::vector<float> *pmf) const
+void BiasState::getPmf(gmx::ArrayRef<float> pmf) const
 {
+    GMX_ASSERT(pmf.size() == points_.size(), "pmf should have the size of the bias grid");
+
     /* The PMF is just the negative of the log of the sampled PMF histogram.
      * Points with zero target weight are ignored, they will mostly contain noise.
      */
-
-    pmf->resize(points_.size());
-
     for (size_t i = 0; i < points_.size(); i++)
     {
-        (*pmf)[i] = points_[i].inTargetRegion() ? -points_[i].logPmfSum() : GMX_FLOAT_MAX;
+        pmf[i] = points_[i].inTargetRegion() ? -points_[i].logPmfSum() : GMX_FLOAT_MAX;
     }
 }
 
@@ -138,7 +137,7 @@ void sumPmf(gmx::ArrayRef<PointState>  pointState,
  */
 double freeEnergyMinimumValue(gmx::ArrayRef<const PointState> pointState)
 {
-    double fMin = GMX_DOUBLE_MAX;
+    double fMin = GMX_FLOAT_MAX;
 
     for (auto const &ps : pointState)
     {
@@ -204,8 +203,8 @@ void BiasState::calcConvolvedPmf(const std::vector<DimParams>  &dimParams,
     convolvedPmf->resize(numPoints);
 
     /* Get the PMF to convolve. */
-    std::vector<float> pmf;
-    getPmf(&pmf);
+    std::vector<float> pmf(numPoints);
+    getPmf(pmf);
 
     for (size_t m = 0; m < numPoints; m++)
     {
@@ -302,7 +301,7 @@ int BiasState::warnForHistogramAnomalies(const Grid  &grid,
                                          FILE        *fplog,
                                          int          maxNumWarnings) const
 {
-    const double maxHistogramRatio = 0.5; /* Tolerance for printing a warning about the histogram ratios */
+    const double maxHistogramRatio = 0.5;  /* Tolerance for printing a warning about the histogram ratios */
 
     /* Sum up the histograms and get their normalization */
     double sumVisits  = 0;
@@ -445,10 +444,10 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
     for (size_t d = 0; d < dimParams.size(); d++)
     {
         /* clang thinks newForce[d] can be garbage */
-#ifndef __clang_analyzer__
+ #ifndef __clang_analyzer__
         /* Average of the current and new force */
         biasForce[d] = 0.5*(biasForce[d] + newForce[d]);
-#endif
+ #endif
     }
 
     return newPotential;
@@ -862,7 +861,7 @@ bool BiasState::isSamplingRegionCovered(const BiasParams             &params,
        of the target region are ignored. */
 
     /* Set the free energy cutoff */
-    double maxFreeEnergy = GMX_DOUBLE_MAX;
+    double maxFreeEnergy = GMX_FLOAT_MAX;
 
     if (params.eTarget == eawhtargetCUTOFF)
     {
@@ -1142,8 +1141,8 @@ double BiasState::calcConvolvedBias(const std::vector<DimParams>  &dimParams,
                                            coordValue);
     }
 
-    /* Returns -GMX_DOUBLE_MAX if no neighboring points were in the target region. */
-    return (weightSum > 0) ? std::log(weightSum) : -GMX_DOUBLE_MAX;
+    /* Returns -GMX_FLOAT_MAX if no neighboring points were in the target region. */
+    return (weightSum > 0) ? std::log(weightSum) : -GMX_FLOAT_MAX;
 }
 
 void BiasState::sampleProbabilityWeights(const Grid                &grid,

@@ -55,6 +55,7 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -105,7 +106,7 @@ struct BiasCoupledToSystem
 
 BiasCoupledToSystem::BiasCoupledToSystem(Bias                    bias,
                                          const std::vector<int> &pullCoordIndex) :
-    bias(bias),
+    bias(std::move(bias)),
     pullCoordIndex(pullCoordIndex)
 {
     /* We already checked for this in grompp, but check again here. */
@@ -119,6 +120,7 @@ Awh::Awh(FILE              *fplog,
          const std::string &biasInitFilename,
          pull_t            *pull_work) :
     seed_(awhParams.seed),
+    nstout_(awhParams.nstOut),
     commRecord_(commRecord),
     pull_(pull_work),
     potentialOffset_(0)
@@ -186,6 +188,11 @@ Awh::Awh(FILE              *fplog,
 
 Awh::~Awh() = default;
 
+bool Awh::isOutputStep(gmx_int64_t step) const
+{
+    return (nstout_ > 0 && step % nstout_ == 0);
+}
+
 real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
                                        const t_mdatoms        &mdatoms,
                                        const matrix            box,
@@ -247,6 +254,12 @@ real Awh::applyBiasForcesAndUpdateBias(int                     ePBC,
             apply_external_pull_coord_force(pull_, biasCts.pullCoordIndex[d],
                                             biasForce[d], &mdatoms,
                                             forceWithVirial);
+        }
+
+        if (isOutputStep(step))
+        {
+            /* Ensure that we output fully updated data */
+            biasCts.bias.doSkippedUpdatesForAllPoints();
         }
     }
 
@@ -338,6 +351,45 @@ void Awh::registerAwhWithPull(const AwhParams &awhParams,
         {
             register_external_pull_potential(pull_work, biasParams.dimParams[d].coordIndex, Awh::externalPotentialString());
         }
+    }
+}
+
+/* Fill the AWH data block of an energy frame with data (if there is any). */
+void Awh::writeToEnergyFrame(gmx_int64_t  step,
+                             t_enxframe  *frame) const
+{
+    GMX_ASSERT(MASTER(commRecord_), "writeToEnergyFrame should only be called on the master rank");
+    GMX_ASSERT(frame != nullptr, "Need a valid energy frame");
+
+    if (!isOutputStep(step))
+    {
+        /* This is not an AWH output step, don't write any AWH data */
+        return;
+    }
+
+    /* Get the total number of energy subblocks that AWH needs */
+    int numSubblocks  = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        numSubblocks += biasCoupledToSystem.bias.numEnergySubblocksToWrite();
+    }
+    GMX_ASSERT(numSubblocks > 0, "We should always have data to write");
+
+    /* Add 1 energy block */
+    add_blocks_enxframe(frame, frame->nblock + 1);
+
+    /* Take the block that was just added and set the number of subblocks. */
+    t_enxblock *awhEnergyBlock = &(frame->block[frame->nblock - 1]);
+    add_subblocks_enxblock(awhEnergyBlock, numSubblocks);
+
+    /* Claim it as an AWH block. */
+    awhEnergyBlock->id = enxAWH;
+
+    /* Transfer AWH data blocks to energy sub blocks */
+    int energySubblockCount = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        energySubblockCount += biasCoupledToSystem.bias.writeToEnergySubblocks(&(awhEnergyBlock->sub[energySubblockCount]));
     }
 }
 
