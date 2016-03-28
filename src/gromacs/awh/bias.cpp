@@ -66,6 +66,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "biaswriter.h"
 #include "grid.h"
 #include "internal.h"
 #include "math.h"
@@ -286,7 +287,7 @@ static void checkOnData(const Bias &bias, double t, gmx_int64_t step, FILE *fplo
     double             sum_W = 0, sum_visits = 0;
     double             inv_norm_visits, inv_norm_W;
 
-    if (fplog == NULL || alltime_nwarnings >= max_alltime_nwarnings || bias.state().inInitialStage ||
+    if (fplog == nullptr || alltime_nwarnings >= max_alltime_nwarnings || bias.state().inInitialStage ||
         (step == 0) || (step % nstcheck_on_data != 0))
     {
         return;
@@ -787,7 +788,7 @@ double Bias::newHistSizeInitialStage(double t, bool haveCovered, FILE *fplog)
     state_.inInitialStage = !bExit;
 
     /* Print information about coverings and if there was an exit. */
-    if (fplog != NULL)
+    if (fplog != nullptr)
     {
         char                buf[STRLEN];
         sprintf(buf, "\nawh%d:", biasIndex + 1);
@@ -1603,4 +1604,30 @@ void Bias::broadcast(const t_commrec *cr)
     gmx_bcast(pointState_.size()*sizeof(PointState), pointState_.data(), cr);
 
     gmx_bcast(sizeof(BiasState), &state_, cr);
+}
+
+/* Prepare data for writing to energy frame. */
+void Bias::prepareOutput(const gmx_multisim_t *ms)
+{
+    if (params_.skipUpdates())
+    {
+        doSkippedUpdatesForAllPoints();
+    }
+
+    if (writer_ != nullptr)
+    {
+        writer_->prepareBiasOutput(*this, ms);
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    return writer_->writeToEnergySubblocks(subblock);
 }
