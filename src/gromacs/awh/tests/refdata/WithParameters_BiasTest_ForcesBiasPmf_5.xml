@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Properties">
+    <Int Name="Length">3</Int>
+    <String>stage:           initial</String>
+    <String>convolve forces: no</String>
+    <String>skip updates:    yes</String>
+  </Sequence>
+  <Sequence Name="Force">
+    <Int Name="Length">21</Int>
+    <Real>-70.000000000000014</Real>
+    <Real>-49.999999999999986</Real>
+    <Real>-5.0000000000000604</Real>
+    <Real>-49.999999999999993</Real>
+    <Real>-5</Real>
+    <Real>80.000000000000014</Real>
+    <Real>-184.99999999999989</Real>
+    <Real>-64.999999999999829</Real>
+    <Real>75.000000000000071</Real>
+    <Real>10.000000000000011</Real>
+    <Real>-59.999999999999943</Real>
+    <Real>-9.999999999999897</Real>
+    <Real>-4.9999999999999485</Real>
+    <Real>60</Real>
+    <Real>0</Real>
+    <Real>-44.999999999999929</Real>
+    <Real>60.000000000000057</Real>
+    <Real>5.3290705182007514e-14</Real>
+    <Real>-30.000000000000028</Real>
+    <Real>-59.999999999999943</Real>
+    <Real>-29.999999999999972</Real>
+  </Sequence>
+  <Sequence Name="PointBias">
+    <Int Name="Length">21</Int>
+    <Real>-2.7252571125147735</Real>
+    <Real>-2.7406945936944584</Real>
+    <Real>-2.8751558537650319</Real>
+    <Real>-3.2406864635799923</Real>
+    <Real>-3.5460149559446359</Real>
+    <Real>-3.5687884755542472</Real>
+    <Real>-3.4901303714495153</Real>
+    <Real>-3.4970015262603624</Real>
+    <Real>-3.4496621504416853</Real>
+    <Real>-3.2125376886451624</Real>
+    <Real>-2.91505863813991</Real>
+    <Real>-2.7962936950351538</Real>
+    <Real>-2.8888307484050659</Real>
+    <Real>-2.9753285114361296</Real>
+    <Real>-2.8869539267116591</Real>
+    <Real>-2.7654523327441973</Real>
+    <Real>-2.7283623342197525</Real>
+    <Real>-2.7247454958847039</Real>
+    <Real>-2.7246193286548039</Real>
+    <Real>-2.7246176904526385</Real>
+    <Real>-2.7246176904526385</Real>
+  </Sequence>
+  <Sequence Name="PointLogPmfsum">
+    <Int Name="Length">21</Int>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>4.3399332371624695</Real>
+    <Real>4.1747174038020365</Real>
+    <Real>4.1623670231442622</Real>
+    <Real>4.0396595028897746</Real>
+    <Real>4.1446557041188061</Real>
+    <Real>3.9896509587172271</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.9896509549207697</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+    <Real>3.7345175271931224</Real>
+  </Sequence>
+</ReferenceData>
