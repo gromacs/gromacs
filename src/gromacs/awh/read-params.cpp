@@ -660,8 +660,9 @@ void set_state_dependent_awh_params(awh_params_t *awh_params,
     }
     check_input_consistency_interval(awh_params, wi);
 
-    /* Make a temporary working awh (with NULL log file and commrec) and register
-       AWH as external potential with pull. */
-    awh_t     *awh = init_awh(NULL, inputrec, NULL, awh_params);
+
+    /* Make a temporary working awh (with NULL log file and commrec and no replica exchange)
+       and register AWH as external potential with pull. */
+    awh_t     *awh = init_awh(NULL, inputrec, NULL, awh_params, 0);
     register_bias_with_pull(awh, pull_work);
 }
