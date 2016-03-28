@@ -55,6 +55,7 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -120,7 +121,8 @@ Awh::Awh(FILE              *fplog,
          const std::string &biasInitFilename,
          pull_t            *pull_work) :
     seed_(awhParams.seed),
-    potentialOffset_(0)
+    potentialOffset_(0),
+    nstout_(awhParams.nstOut)
 {
     /* We already checked for this in grompp, but check again here. */
     GMX_RELEASE_ASSERT(ir.pull != nullptr, "With AWH we should have pull parameters");
@@ -162,7 +164,7 @@ Awh::Awh(FILE              *fplog,
         }
 
         /* Construct the bias and couple it to the system. */
-        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename),
+        biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename, MASTER(cr)),
                                           pullCoordIndex);
     }
 
@@ -187,7 +189,7 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
                                        const t_mdatoms        &mdatoms,
                                        const matrix            box,
                                        gmx::ForceWithVirial   *forceWithVirial,
-                                       const gmx_multisim_t   *ms,
+                                       const t_commrec        *cr,
                                        double                  t,
                                        gmx_int64_t             step,
                                        gmx_wallcycle          *wallcycle,
@@ -225,7 +227,7 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
         double   biasPotential, biasPotentialJump;
         biasCTS.bias.calcForceAndUpdateBias(coordValue, biasForce,
                                             &biasPotential, &biasPotentialJump,
-                                            ms, t, step, seed_, fplog);
+                                            cr->ms, t, step, seed_, fplog);
 
         awhPotential += biasPotential;
 
@@ -241,6 +243,15 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
             apply_external_pull_coord_force(pull_work, biasCTS.pullCoordIndex[d],
                                             biasForce[d], &mdatoms,
                                             forceWithVirial);
+        }
+    }
+
+    if (nstout_ > 0 && step % nstout_ == 0)
+    {
+        /* Prepare AWH output data to later write to the energy file. */
+        for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+        {
+            biasCoupledToSystem.bias.prepareOutput();
         }
     }
 
@@ -319,6 +330,39 @@ void Awh::registerAwhWithPull(const AwhParams &awhParams,
         {
             register_external_pull_potential(pull_work, biasParams.dimParams[d].coordIndex, Awh::externalPotentialString());
         }
+    }
+}
+
+/* Fill the AWH data block of an energy frame with data (if there is any). */
+void Awh::writeToEnergyframe(t_enxframe *frame) const
+{
+    if (biasCoupledToSystem_[0].bias.numEnergySubblocksToWrite() == 0)
+    {
+        return;
+    }
+
+    /* Get the total number of energy subblocks that AWH needs */
+    int numSubblocks  = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        numSubblocks += biasCoupledToSystem.bias.numEnergySubblocksToWrite();
+    }
+
+    /* Add 1 energy block */
+    add_blocks_enxframe(frame, frame->nblock + 1);
+
+    /* Take the block that was just added and set the number of subblocks. */
+    t_enxblock *awhenergyblock = &(frame->block[frame->nblock - 1]);
+    add_subblocks_enxblock(awhenergyblock, numSubblocks);
+
+    /* Claim it as an AWH block. */
+    awhenergyblock->id = enxAWH;
+
+    /* Transfer AWH data blocks to energy sub blocks */
+    int energySubblockCount = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        energySubblockCount += biasCoupledToSystem.bias.writeToEnergySubblocks(&(awhenergyblock->sub[energySubblockCount]));
     }
 }
 

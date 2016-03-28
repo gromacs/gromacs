@@ -62,7 +62,6 @@
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "grid.h"
@@ -219,6 +218,7 @@ Bias::Bias(int                             biasIndexInCollection,
            double                          mdTimeStep,
            int                             numSharingSimulations,
            const std::string              &biasInitFilename,
+           bool                            thisRankDoesIO,
            BiasParams::DisableUpdateSkips  disableUpdateSkips) :
     dimParams_(dimParamsInit),
     grid_(new Grid(dimParamsInit, awhBiasParams.dimParams)),
@@ -231,6 +231,37 @@ Bias::Bias(int                             biasIndexInCollection,
     updateList_.reserve(grid_->numPoints());
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid(), params_, biasInitFilename, awhParams.numBias);
+
+    if (thisRankDoesIO)
+    {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+/* Prepare data for writing to energy frame. */
+void Bias::prepareOutput()
+{
+    if (params_.skipUpdates())
+    {
+        doSkippedUpdatesForAllPoints();
+    }
+
+    if (writer_ != nullptr)
+    {
+        writer_->prepareBiasOutput(*this);
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    return writer_->writeToEnergySubblocks(subblock);
 }
 
 } // namespace gmx
