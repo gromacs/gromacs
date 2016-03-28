@@ -77,6 +77,7 @@ struct pull_work_t;
 struct pull_t;
 class t_state;
 struct t_commrec;
+struct t_enxframe;
 struct t_inputrec;
 struct t_mdatoms;
 
@@ -203,6 +204,14 @@ class Awh
          */
         void restoreStateFromHistory(const AwhHistory *awhHistory);
 
+        /*! \brief Fills the AWH data block of an energy frame with data at certain steps.
+         *
+         * \param[in]     step  The current MD step.
+         * \param[in,out] fr    Energy data frame.
+         */
+        void writeToEnergyFrame(gmx_int64_t  step,
+                                t_enxframe  *fr) const;
+
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */
         static const char *externalPotentialString();
@@ -224,6 +233,7 @@ class Awh
     private:
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
+        const int                        nstout_;              /**< Interval in steps for writing to energy file. */
         const t_commrec                 *commRecord_;          /**< Pointer to the communication record. */
         pull_t                          *pull_;                /**< Pointer to the pull working data. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
