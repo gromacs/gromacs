@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct awh_history_t;
 struct energyhistory_t;
 
 /*
@@ -225,6 +226,7 @@ typedef struct t_state
     struct energyhistory_t *enerhist;        /* Energy history for statistics           */
     swapstate_t             swapstate;       /* Position swapping                       */
     df_history_t            dfhist;          /*Free energy history for free energy analysis  */
+    awh_history_t          *awh_history;     /* History for awh biasing */
     edsamstate_t            edsamstate;      /* Essential dynamics / flooding history */
 
     int                     ddp_count;       /* The DD partitioning count for this state  */
