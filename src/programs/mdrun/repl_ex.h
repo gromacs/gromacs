@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 struct gmx_enerdata_t;
 struct gmx_multisim_t;
+struct awh_t;
 struct t_commrec;
 struct t_inputrec;
 struct t_state;
@@ -56,12 +57,14 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
                                     const gmx_multisim_t *ms,
                                     const t_state *state,
                                     const t_inputrec *ir,
+                                    const awh_t *awh,
                                     int nst, int nmultiex, int init_seed);
 /* Should only be called on the master nodes */
 
 gmx_bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
                           gmx_repl_ex_t re,
+                          const awh_t *awh,
                           t_state *state, gmx_enerdata_t *enerd,
                           t_state *state_local,
                           gmx_int64_t step, real time);

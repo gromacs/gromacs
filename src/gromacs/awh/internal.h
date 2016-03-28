@@ -126,12 +126,14 @@ double scaleUserInputToInternal(const pull_params_t *pull_params, int pullCoordI
  * \param[in]     ir              General input parameters.
  * \param[in]     cr              Struct for communication (or NULL).
  * \param[in]     awh_params      AWH input parameters.
+ * \param[in] nstreplica_exchange Replica exchange step interval.
  * \returns the initialized AWH struct.
  */
 awh_t *init_awh(FILE                    *fplog,
                 const t_inputrec        *ir,
                 const t_commrec         *cr,
-                const awh_params_t      *awh_params);
+                const awh_params_t      *awh_params,
+                int                      nstreplica_exchange);
 
 /*! \brief Register the AWH biased coordinates with pull.
  *
