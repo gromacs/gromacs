@@ -60,6 +60,7 @@ struct Bias;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct t_commrec;
+struct t_enxframe;
 struct t_inputrec;
 struct t_mdatoms;
 
@@ -70,6 +71,7 @@ class AwhBiasCollection
     bool              convolveForce_;    /**< If true, the force on the pull coordinate is convolved. Otherwise, simple umbrella force. */
     gmx_int64_t       seed_;             /**< Random seed. */
     double            potentialOffset_;  /**< The offset of the bias potential due to bias updates. */
+    int               nstout_;           /**< Interval in steps for writing to energy file. */
 
     /* Temporary working vector used during the update of each bias.
      * This only here to avoid allocation at every MD step.
@@ -160,6 +162,13 @@ class AwhBiasCollection
          */
         void restoreStateFromHistory(const AwhHistory &awhHistory,
                                      const t_commrec  *cr);
+
+    public:
+        /*! \brief Fills the AWH data block of an energy frame with data at certain steps.
+         *
+         * \param[in,out] fr  Energy data frame.
+         */
+        void writeToEnergyframe(t_enxframe *fr) const;
 };
 
 /*! \endcond */

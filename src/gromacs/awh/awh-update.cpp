@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -1914,6 +1915,21 @@ real AwhBiasCollection::update(struct pull_t          *pull_work,
                                FILE                   *fplog)
 {
     wallcycle_start(wallcycle, ewcAWH);
+
+    /* Prepare AWH output data to later print to the energy file */
+    if (nstout_ > 0 && step % nstout_ == 0)
+    {
+        /* Make sure bias is up to date globally. This will also update the free energy and weight histogram. */
+        for (auto &bias : bias_)
+        {
+            if (bias.params.canSkipUpdates())
+            {
+                doSkippedUpdatesForAllPoints(&bias, step);
+            }
+
+            bias.writer->prepareBiasOutput(bias, ms);
+        }
+    }
 
     t_pbc  pbc;
     set_pbc(&pbc, ePBC, box);
