@@ -77,6 +77,7 @@ struct AwhPointStateHistory;
 class BiasParams;
 class BiasState;
 class BiasWriter;
+class CorrelationGrid;
 class Grid;
 class GridAxis;
 class PointState;
@@ -157,6 +158,16 @@ class Bias
         ~Bias();
 
         /*! \brief
+         * Print information about initialization to log file.
+         *
+         * Prints information about AWH variables that are set internally
+         * but might be of interest to the user.
+         *
+         * \param[in,out] fplog  Log file, can be nullptr.
+         */
+        void printInitializationToLog(FILE *fplog) const;
+
+        /*! \brief
          * Update the coordinate value of dimension \p dim.
          *
          * Currently public because AWH calls it.
@@ -205,6 +216,24 @@ class Bias
          */
         void restoreStateFromHistory(const AwhBiasHistory *biasHistory,
                                      const t_commrec      *cr);
+
+        /*! \brief
+         * Allocate and initialize a bias history with the given bias state.
+         *
+         * This function will be called at the start of a new simulation.
+         * Note that only constant data will be initialized here.
+         * History data is set by \ref updateHistory.
+         *
+         * \param[in,out] biasHistory  AWH history to initialize.
+         */
+        void initHistoryFromState(AwhBiasHistory *biasHistory) const;
+
+        /*! \brief
+         * Update the bias history with the current state.
+         *
+         * \param[out] biasHistory  Bias history struct.
+         */
+        void updateHistory(AwhBiasHistory *biasHistory) const;
 
         /*! \brief
          * Do all previously skipped updates.
@@ -259,7 +288,25 @@ class Bias
          */
         void checkHistograms(double t, gmx_int64_t step, FILE *fplog);
 
+        /*! \brief
+         * Collect samples for the force correlation analysis.
+         *
+         * \param[in] probWeightNeighbor  Probability weight of the neighboring points.
+         * \param[in] t                   The time.
+         */
+        void updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
+                                    double                        t);
+
     public:
+        /*! \brief Return a const reference to the force correlation data.
+         */
+        const CorrelationGrid &forceCorr() const
+        {
+            GMX_ASSERT(forceCorr_ != nullptr, "forceCorr() should only be called with a valid force correlation object");
+
+            return *forceCorr_.get();
+        }
+
         /*! \brief Prepare data for writing to energy frame.
          *
          * \param[in] ms    Struct for multi-simulation communication.
@@ -286,6 +333,9 @@ class Bias
 
         BiasState                    state_;       /**< The state, both global and of the grid points */
         std::vector<int>             updateList_;  /**< List of points for update for temporary use (could be made another tempWorkSpace) */
+
+        /* Force correlation */
+        std::unique_ptr<CorrelationGrid> forceCorr_;   /**< Takes care of force correlation statistics. */
 
         /* I/O */
         std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */
