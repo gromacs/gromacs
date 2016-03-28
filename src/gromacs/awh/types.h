@@ -125,6 +125,9 @@ struct awh_bias_t {
 
     /* Force correlation */
     correlation_grid_t *forcecorr;           /**< Takes care of force correlation statistics. */
+
+    /* Replica exchange */
+    int       nstreplica_exchange;           /**< Replica exchange frequency (0 if no replica exchange) */
 };
 
 //! A collection of AWH biases.
