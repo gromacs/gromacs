@@ -57,20 +57,20 @@ struct pull_params_t;
 
 /*! \brief Allocate, initialize and return an AWH writer.
  *
- * \param[in] nstout                Number of steps per output writing.
+ * \param[in] nstout            Number of steps per output writing.
  * \param[in] awh               AWH working struct.
- * \param[in] pull_params           Pull parameters.
+ * \param[in] pull_params       Pull parameters.
  * \returns the initialized writer.
  */
-awh_energywriter_t *init_awh_energywriter(int nstout,
-                                          const awh_t *awh, const pull_params_t *pull_params);
-
+awh_energywriter_t *init_awh_energywriter(int                  nstout,
+                                          const awh_t         *awh,
+                                          const pull_params_t *pull_params);
 
 /*! \brief Query if output should be written at the given step.
  *
  * \param[in,out] energywriter   The writer struct.
- * \param[in]     awh_params AWH parameters.
- * \param[in]     awh        AWH working struct.
+ * \param[in]     awh_params     AWH parameters.
+ * \param[in]     awh            AWH working struct.
  * \param[in]     ms             Struct for multi-simulation communication, needed for bias sharing replicas.
  */
 void prep_awh_output(awh_energywriter_t *energywriter, const awh_params_t *awh_params,
