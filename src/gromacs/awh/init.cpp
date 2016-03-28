@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation.h"
 #include "data-writer.h"
 #include "grid.h"
 #include "history.h"
@@ -297,10 +298,21 @@ static void printPartitioningDomainInit(const char              *awhPrefix,
  */
 static void print_log_init(const awh_bias_t        *awh_bias,
                            const awh_bias_params_t *awh_bias_params,
-                           FILE                    *fplog)
+                           FILE                    *fplog,
+                           bool                     bBlocklength_in_weight)
 {
     char           awhstr[STRLEN];
     sprintf(awhstr, "\nawh%d:", awh_bias->biasIndex + 1);
+
+    if (fplog != NULL)
+    {
+        fprintf(fplog,
+                "%s initial force correlation block length = %g %s"
+                "%s force correlation number of blocks = %d",
+                awhstr, get_blocklength(awh_bias->forcecorr),
+                bBlocklength_in_weight ? "" : "ps",
+                awhstr, get_nblocks(awh_bias->forcecorr));
+    }
 
     printPartitioningDomainInit(awhstr, awh_bias, awh_bias_params, fplog);
 }
@@ -853,10 +865,22 @@ static void init_awh_bias(FILE                       *fplog,
         partition_domain(awh_bias, awh_bias_params, awh_bias->coord_value_index);
     }
 
+    bool blocklength_in_weight   = false;
+
+    /* We let the correlation init function set its parameters to something useful for now. */
+    int    nblocks               = 0;
+    double blocklength           = 0;
+
+    awh_bias->forcecorr = init_correlation_grid(awh_bias->npoints, awh_bias->ndim,
+                                                nblocks, blocklength,
+                                                blocklength_in_weight,
+                                                ir->delta_t,
+                                                awh_bias->nstsample_coord);
+
     /* Print information about AWH variables that are set internally but might be of interest to the user. */
     if ((cr == NULL) || (MASTER(cr)))
     {
-        print_log_init(awh_bias, awh_bias_params, fplog);
+        print_log_init(awh_bias, awh_bias_params, fplog, blocklength_in_weight);
     }
 }
 
