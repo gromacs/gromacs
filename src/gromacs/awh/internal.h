@@ -97,7 +97,7 @@ double calc_convolved_bias(const awh_bias_t *awh_bias, const awh_dvec coord_valu
  * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[in, out] pmf    Array of the same length as the AWH grid to store the PMF in.
  */
-void getPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *pmf);
+void getPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, float *pmf);
 
 /*! \brief Convolves the given PMF using the given AWH bias.
  *
@@ -105,7 +105,7 @@ void getPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *pmf);
  * \param[in] ms                Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[in,out] convolvedPmf  Array of the same length as the AWH grid to store the convolved PMF in.
  */
-void getConvolvedPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *convolvedPmf);
+void getConvolvedPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, float *convolvedPmf);
 
 /*! \brief Convert internal coordinate units to external, user coordinate units.
  *
