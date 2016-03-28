@@ -358,6 +358,10 @@ struct t_inputrec
     struct pull_params_t *pull;              /* The data for center of mass pulling          */
     struct pull_t        *pull_work;         /* The COM pull force calculation data structure; TODO this pointer should live somewhere else */
 
+    /* AWH bias data */
+    gmx_bool                 bDoAwh;     /* Use awh biasing for PMF calculations?        */
+    struct awh_params_t     *awh_params; /* AWH biasing parameters                       */
+
     /* Enforced rotation data */
     gmx_bool                 bRot;           /* Calculate enforced rotation potential(s)?    */
     t_rot                   *rot;            /* The data for enforced rotation potentials    */
