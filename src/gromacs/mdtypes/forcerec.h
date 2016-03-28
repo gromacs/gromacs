@@ -421,6 +421,15 @@ struct t_forcerec {
     double t_wait;
     int    timesteps;
 
+    /* AWH biasing */
+    gmx_bool    bDoAwh;
+    // TODO: make this a unique pointer once we get rid of C
+#ifdef __cplusplus
+    class Awh  *awh;
+#else
+    struct Awh *awh;
+#endif
+
     /* User determined parameters, copied from the inputrec */
     int  userint1;
     int  userint2;
