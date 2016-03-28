@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,8 @@ typedef struct {
 static const int c_pullCoordNgroupMax = 6;
 
 /*! \brief Struct that defines a pull coordinate */
-typedef struct {
+struct t_pull_coord
+{
     int      eType;                        /**< The pull type: umbrella, constraint, ... */
     char    *externalPotentialProvider;    /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
     int      eGeom;                        /**< The pull geometry */
@@ -82,7 +83,7 @@ typedef struct {
     real     rate;                         /**< Rate of motion (nm/ps) or (deg/ps) */
     real     k;                            /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
     real     kB;                           /**< Force constant for state B */
-} t_pull_coord;
+};
 
 /*! \brief Struct containing all pull parameters */
 typedef struct pull_params_t {
