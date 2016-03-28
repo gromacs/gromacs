@@ -77,6 +77,7 @@ struct pull_work_t;
 struct pull_t;
 class t_state;
 struct t_commrec;
+struct t_enxframe;
 struct t_inputrec;
 struct t_mdatoms;
 
@@ -193,7 +194,7 @@ class Awh
          * \param[in]     ePBC             Type of periodic boundary conditions.
          * \param[in]     box              Box vectors.
          * \param[in,out] forceWithVirial  Force and virial buffers.
-         * \param[in]     ms               Struct for multi-simulation communication.
+         * \param[in]     cr               Communication record.
          * \param[in]     t                Time.
          * \param[in]     step             Time step.
          * \param[in,out] wallcycle        Wallcycle counter.
@@ -205,7 +206,7 @@ class Awh
                                           const t_mdatoms        &mdatoms,
                                           const matrix            box,
                                           gmx::ForceWithVirial   *forceWithVirial,
-                                          const gmx_multisim_t   *ms,
+                                          const t_commrec        *cr,
                                           double                  t,
                                           gmx_int64_t             step,
                                           gmx_wallcycle          *wallcycle,
@@ -240,6 +241,12 @@ class Awh
         void restoreStateFromHistory(const AwhHistory *awhHistory,
                                      const t_commrec  *cr);
 
+        /*! \brief Fills the AWH data block of an energy frame with data at certain steps.
+         *
+         * \param[in,out] fr  Energy data frame.
+         */
+        void writeToEnergyframe(t_enxframe *fr) const;
+
         /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
          */
         static const char *externalPotentialString();
@@ -261,6 +268,7 @@ class Awh
         std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
         const gmx_int64_t                seed_;                /**< Random seed for MC jumping with umbrella type bias potential. */
         double                           potentialOffset_;     /**< The offset of the bias potential which changes due to bias updates. */
+        int                              nstout_;              /**< Interval in steps for writing to energy file. */
 };
 
 }      // namespace gmx

@@ -72,7 +72,8 @@ const char      *enx_block_id_name[] = {
     "Distance restraints",
     "Free energy data",
     "BAR histogram",
-    "Delta H raw data"
+    "Delta H raw data",
+    "AWH data"
 };
 
 
