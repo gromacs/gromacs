@@ -63,6 +63,7 @@ typedef int awh_ivec[c_biasMaxNumDim];
 
 struct AwhHistory;
 struct awh_params_t;
+struct BiasWriter;
 struct gmx_multisim_t;
 struct t_commrec;
 class Grid;
@@ -139,6 +140,7 @@ struct BiasParams
     bool      idealWeighthistUpdate; /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
     double    update_weight;         /**< The probability weight accumulated for each update. */
     double    localWeightScaling;    /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
+    double    errorInitial;          /**< Estimated initial free energy error. */
     double    histSizeInitial;       /**< Initial reference weight histogram size. */
     int       numSharedUpdate;       /**< The number of (multi-)simulations sharing the bias update */
     awh_ivec  coverRadius;           /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
@@ -198,6 +200,9 @@ struct Bias
     BiasParams              params;                     /**< Constant parameters for the method. */
 
     BiasState               state;                      /**< The global state. */
+
+    /* I/O */
+    std::unique_ptr<BiasWriter> writer;                 /**< Takes care of AWH data output. */
 };
 
 /*! \endcond */

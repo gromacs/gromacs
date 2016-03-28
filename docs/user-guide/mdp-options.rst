@@ -1975,7 +1975,7 @@ AWH adaptive biasing
       each input file should contain the coordinate values, such that each row defines a point in
       coordinate space. Column :mdp:`awh1-ndim` + 1 should contain the PMF value for each point.
       The target distribution column can either follow the PMF (column  :mdp:`awh1-ndim` + 2) or
-      be in the same column as written by ``gmx awh``.
+      be in the same column as written by :ref:`gmx awh`.
 
 .. mdp:: awh1-share
 

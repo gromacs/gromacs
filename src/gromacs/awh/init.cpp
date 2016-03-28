@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -830,6 +831,7 @@ static void initBias(FILE                     *fplog,
     bias->grid = std::unique_ptr<Grid>(new Grid(bias->ndim, bias->dimParams, grid_origin, grid_end, grid_period));
 
     /* Estimate and initialize histSizeInitial. The estimation depends on the grid. */
+    params->errorInitial    = awhBiasParams.error_initial;
     params->histSizeInitial = getInitialHistSizeEstimate(bias->dimParams, awhBiasParams, bias->grid.get(), params->nstsample_coord*ir->delta_t);
     state->histSize         = params->histSizeInitial;
 
@@ -866,6 +868,8 @@ static void initBias(FILE                     *fplog,
         double spacing         = bias->grid->axis(d).spacing;
         params->coverRadius[d] = spacing > 0 ?  static_cast<int>(std::round(coverRadius/spacing)) : 0;
     }
+
+    bias->writer = std::unique_ptr<BiasWriter>(new BiasWriter(*bias));
 
     /* Print information about AWH variables that are set internally but might be of interest to the user. */
     if ((cr == NULL) || (MASTER(cr)))
@@ -906,6 +910,7 @@ AwhBiasCollection::AwhBiasCollection(FILE                *fplog,
     convolveForce_   = (awhParams->ePotential == eawhpotentialCONVOLVED);
     seed_            = awhParams->seed;
     potentialOffset_ = 0;
+    nstout_          = awhParams->nstout;
 
     for (int k = 0; k < awhParams->nbias; k++)
     {
