@@ -50,6 +50,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation.h"
 #include "grid.h"
 #include "internal.h"
 #include "types.h"
@@ -61,7 +62,7 @@
 //! Enum with the AWH variables to write
 enum {
     evarMETA, evarCOORDVALUE, evarPMF, evarBIAS, evarVISITS, evarWEIGHTS,
-    evarTARGET, evarNR
+    evarTARGET, evarFORCECORRVOL, evarFRICTION, evarCORRTIME, evarNR
 };
 
 //! Enum with the types of metadata to write
@@ -71,7 +72,8 @@ enum {
 
 //! Enum with different ways of normalizing the output
 enum {
-    enormtypeNONE, enormtypeCOORD, enormtypeFREE_ENERGY, enormtypeDISTRIBUTION
+    enormtypeNONE, enormtypeCOORD, enormtypeFREE_ENERGY,
+    enormtypeDISTRIBUTION, enormtypeAVERAGE
 };
 
 struct block_t {
@@ -125,6 +127,8 @@ static int get_normtype(int evar)
         case evarWEIGHTS:
         case evarTARGET:
             normtype = enormtypeDISTRIBUTION; break;
+        case evarFORCECORRVOL:
+            normtype = enormtypeAVERAGE; break;
         default:
             normtype = enormtypeNONE; break;
     }
@@ -174,6 +178,9 @@ static double get_normvalue(int evar, const awh_bias_t *awh_bias, const pull_par
         case evarTARGET:
             normvalue = get_distribution_normvalue(awh_bias, pull_params);
             break;
+        case evarFORCECORRVOL:
+            normvalue = 1.0;
+            break;
         default:
             break;
     }
@@ -200,8 +207,9 @@ static void init_block(block_t *block, int npoints, int normtype, double normval
     block->normvalue = static_cast<float>(normvalue);
 }
 
-static void init_bias_writer(bias_writer_t *writer,
-                             const awh_bias_t *awh_bias, const pull_params_t *pull_params)
+static void init_bias_writer(bias_writer_t       *writer,
+                             const awh_bias_t    *awh_bias,
+                             const pull_params_t *pull_params)
 {
     int blockcount;
     int var_nblock[evarNR];                /* Number of blocks per variable   */
@@ -217,6 +225,19 @@ static void init_bias_writer(bias_writer_t *writer,
             case evarCOORDVALUE:
                 writer->var_to_block[evar] = blockcount;
                 var_nblock[evar]           = awh_bias->ndim;
+                break;
+            case evarFORCECORRVOL:
+                writer->var_to_block[evar] = blockcount;
+                var_nblock[evar]           = 1;
+                break;
+            case evarFRICTION:
+                writer->var_to_block[evar] = blockcount;
+                var_nblock[evar]           = awh_bias->forcecorr->corrmatrix[0].ncorr;
+                break;
+            case evarCORRTIME:
+                /* Currently not enabled. */
+                writer->var_to_block[evar] = -1;
+                var_nblock[evar]           = 0;
                 break;
             default:
                 /* Most variables need one block */
@@ -343,15 +364,23 @@ static void normalize_data(bias_writer_t *writer, const awh_bias_t *awh_bias)
                 }
 
                 break;
+            case enormtypeAVERAGE:
             case enormtypeDISTRIBUTION:
-                /* Normalize distribution values by normalizing their sum */
+                /* Normalize distribution values by its average or integral */
                 for (int m = 0; m < block->npoints; m++)
                 {
                     sum += block->data[m];
                 }
                 if (sum > 0)
                 {
-                    inv_norm = block->normvalue/static_cast<float>(sum);
+                    if (block->normtype == enormtypeAVERAGE)
+                    {
+                        inv_norm = block->npoints/static_cast<float>(sum);
+                    }
+                    else
+                    {
+                        inv_norm = block->normvalue/static_cast<float>(sum);
+                    }
                 }
                 for (int m = 0; m < block->npoints; m++)
                 {
@@ -374,9 +403,11 @@ static void transfer_variable_point_data_to_writer(int evar, bias_writer_t *writ
     }
 
     /* The starting block index of this variable. Note that some variables need several (contiguous) blocks. */
-    int          bstart     = get_var_startblock(writer, evar);
-    block_t     *block      = writer->block;
+    int      bstart       = get_var_startblock(writer, evar);
+    block_t *block        = writer->block;
     GMX_ASSERT(m < block[bstart].npoints, "Attempt to transfer AWH data to block for point index out of range");
+
+    int      ncorrelation = awh_bias->forcecorr->corrmatrix[0].ncorr;
 
     /* Transfer the point data of this variable to the right block(s) */
     int b = bstart;
@@ -422,6 +453,25 @@ static void transfer_variable_point_data_to_writer(int evar, bias_writer_t *writ
             break;
         case evarTARGET:
             block[b].data[m] =  awh_bias->coordpoint[m].target;
+            break;
+        case evarFORCECORRVOL:
+            block[b].data[m] = get_correlation_volelem(awh_bias->forcecorr, m);
+            break;
+        case evarFRICTION:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < ncorrelation; n++)
+            {
+                block[b].data[m] = get_correlation_timeintegral(awh_bias->forcecorr, m, n);
+                b++;
+            }
+            break;
+        case evarCORRTIME:
+            /* Force correlation times */
+            for (int n = 0; n < ncorrelation; n++)
+            {
+                block[b].data[m] = get_correlation_time(awh_bias->forcecorr, m, n);
+                b++;
+            }
             break;
         default:
             gmx_incons("Unknown AWH output variable");
