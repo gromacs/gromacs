@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <cmath>
 
+#include "gromacs/awh/correlation.h"
 #include "gromacs/awh/grid.h"
 #include "gromacs/awh/internal.h"
 #include "gromacs/awh/types.h"
@@ -59,7 +60,7 @@
 //! Enum with the AWH variables to write
 enum {
     evarMETA, evarCOORDVALUE, evarPMF, evarBIAS, evarVISITS, evarWEIGHTS,
-    evarTARGET, evarNR
+    evarTARGET, evarFORCECORRVOL, evarFRICTION, evarCORRTIME, evarNR
 };
 
 //! Enum with the types of metadata to write
@@ -122,6 +123,7 @@ static int get_normtype(int evar)
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normtype = enormtypeDISTRIBUTION; break;
         default:
             normtype = enormtypeNONE; break;
@@ -171,6 +173,7 @@ static double get_normvalue(int evar, const t_awh *awh, const pull_params_t *pul
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normvalue = get_distribution_normvalue(awh, pull_params);
             break;
         default:
@@ -199,7 +202,7 @@ static void init_awh_block(awh_block_t *block, int npoints, int normtype, double
     block->normvalue = normvalue;
 }
 
-static void init_awh_writer(awh_writer_t *writer,
+static void init_awh_writer(awh_writer_t *writer, bool bForce_correlation,
                             const t_awh *awh, const pull_params_t *pull_params)
 {
     int blockcount;
@@ -216,6 +219,19 @@ static void init_awh_writer(awh_writer_t *writer,
             case evarCOORDVALUE:
                 writer->var_to_block[evar] = blockcount;
                 var_nblock[evar]           = awh->ndim;
+                break;
+            case evarFORCECORRVOL:
+                writer->var_to_block[evar] = bForce_correlation ? blockcount : -1;
+                var_nblock[evar]           = bForce_correlation ? 1 : 0;
+                break;
+            case evarFRICTION:
+                writer->var_to_block[evar] = bForce_correlation ? blockcount : -1;
+                var_nblock[evar]           = bForce_correlation ? get_ncorrelation(awh->forcecorr) : 0;
+                break;
+            case evarCORRTIME:
+                /* Currently not enabled. */
+                writer->var_to_block[evar] = -1;
+                var_nblock[evar]           = 0;
                 break;
             default:
                 /* Most variables need one block */
@@ -247,7 +263,7 @@ static void init_awh_writer(awh_writer_t *writer,
     }
 }
 
-awhbias_energywriter_t *init_awhbias_energywriter(int nstout,
+awhbias_energywriter_t *init_awhbias_energywriter(int nstout, bool bForce_correlation,
                                                   const t_awhbias *awhbias, const pull_params_t *pull_params)
 {
     double                 *data;
@@ -262,7 +278,7 @@ awhbias_energywriter_t *init_awhbias_energywriter(int nstout,
     snew(energywriter->writer, energywriter->nwriter);
     for (int k = 0; k < energywriter->nwriter; k++)
     {
-        init_awh_writer(&energywriter->writer[k], &awhbias->awh[k], pull_params);
+        init_awh_writer(&energywriter->writer[k], bForce_correlation, &awhbias->awh[k], pull_params);
     }
 
     /* Allocate space for flattened output data */
@@ -416,6 +432,25 @@ static void transfer_variable_point_data_to_writer(int evar, awh_writer_t *write
             break;
         case evarTARGET:
             block[b].data[m] =  awh->coord_point[m].target;
+            break;
+        case evarFORCECORRVOL:
+            block[b].data[m] = get_correlation_volelem(awh->forcecorr, m);
+            break;
+        case evarFRICTION:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < get_ncorrelation(awh->forcecorr); n++)
+            {
+                block[b].data[m] = get_correlation_timeintegral(awh->forcecorr, m, n);
+                b++;
+            }
+            break;
+        case evarCORRTIME:
+            /* Force correlation times */
+            for (int n = 0; n < get_ncorrelation(awh->forcecorr); n++)
+            {
+                block[b].data[m] = get_correlation_time(awh->forcecorr, m, n);
+                b++;
+            }
             break;
         default:
             gmx_incons("Unknown AWH output variable");

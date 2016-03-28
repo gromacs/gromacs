@@ -72,7 +72,7 @@ typedef struct awh_energyreader_t {
 } awh_energyreader_t;
 
 
-static void make_awh_legend(awh_params_t *awh_params, int nleg, char **leg)
+static void make_awh_legend(awh_params_t *awh_params, int nleg, char **leg, gmx_bool bForce_correlation)
 {
     int                i, d, ileg;
     char               buf[256];
@@ -103,6 +103,59 @@ static void make_awh_legend(awh_params_t *awh_params, int nleg, char **leg)
         i++;
     }
 
+    /* If there are still more legends to add, do it. */
+    if (ileg < nleg)
+    {
+        if (bForce_correlation)
+        {
+            int i0, i1;
+
+            leg[ileg] =  strdup("Force corr distr.");
+            ileg++;
+
+            if (ileg < nleg)
+            {
+                /* Want the 2 indices of the symmetric correlation matrix.
+                 * Only print half the elements */
+                for (i0 = 0; i0 < awh_params->ndim; i0++)
+                {
+                    for (i1 = 0; i1 <= i0; i1++)
+                    {
+                        if (awh_params->ndim > 1)
+                        {
+                            sprintf(buf, "Force corr friction %d, %d", i0, i1);
+                        }
+                        else
+                        {
+                            sprintf(buf, "Force corr friction");
+                        }
+
+                        leg[ileg] = strdup(buf);
+                        ileg++;
+                    }
+                }
+                /* Currently disabled:
+                   for (i0 = 0; i0 < awh_params->ndim; i0++)
+                   {
+                    for (i1 = 0; i1 <= i0; i1++)
+                    {
+                        if (awh_params->ndim > 1)
+                        {
+                            sprintf(buf, "Corr time %d, %d (ps)", i0, i1);
+                        }
+                        else
+                        {
+                            sprintf(buf, "Corr time (ps)");
+                        }
+
+                        leg[ileg] = strdup(buf);
+                        ileg++;
+                    }
+                   }
+                 */
+            }
+        }
+    }
     if (ileg != nleg)
     {
         gmx_incons("Mismatch between the number of legends requested for printing and the number present!");
@@ -141,9 +194,9 @@ static awh_energyreader_t *init_awh_energyreader(awhbias_params_t *awhbias_param
             awh_reader->nlegend = awh_reader->nsubblocks_out - 2;
 
             snew(awh_reader->legend, awh_reader->nlegend);
-            make_awh_legend(awh_params, awh_reader->nlegend, awh_reader->legend);
+            make_awh_legend(awh_params, awh_reader->nlegend, awh_reader->legend, awhbias_params->bForce_correlation);
 
-            awh_reader->ylabel = strdup("(k\\sB\\NT)");
+            awh_reader->ylabel = bMore && awhbias_params->bForce_correlation ? strdup("(k\\sB\\NT), (ps (nm or rad)\\S-2\\N)") : strdup("(k\\sB\\NT)");
             imin_sub          += awh_reader->nsubblocks;
         }
     }
