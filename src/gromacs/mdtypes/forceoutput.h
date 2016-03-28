@@ -74,7 +74,13 @@ class ForceWithVirial
             force_(force),
             computeVirial_(computeVirial)
         {
-            clear_mat(virial_);
+            for (int dim1 = 0; dim1 < DIM; dim1++)
+            {
+                for (int dim2 = 0; dim2 < DIM; dim2++)
+                {
+                    virial_[dim1][dim2] = 0;
+                }
+            }
         }
 
         /*! \brief Adds a virial contribution

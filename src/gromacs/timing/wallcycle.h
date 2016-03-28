@@ -55,7 +55,7 @@ enum {
     ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF,
     ewcWAIT_GPU_PME_SPREAD, ewcWAIT_GPU_PME_GATHER, ewcPME_GPU_F_REDUCTION,
     ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-    ewcVSITESPREAD, ewcPULLPOT,
+    ewcVSITESPREAD, ewcPULLPOT, ewcAWH,
     ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
     ewcTEST, ewcNR
 };
