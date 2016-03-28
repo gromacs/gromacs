@@ -74,18 +74,17 @@
 namespace gmx
 {
 
-void getPmf(const std::vector<PointState> &points,
-            std::vector<float>            *pmf)
+void BiasState::getPmf(std::vector<float>            *pmf) const
 {
     /* The PMF is just the negative of the log of the sampled PMF histogram.
      * Points with zero target weight are ignored, they will mostly contain noise.
      */
 
-    pmf->resize(points.size());
+    pmf->resize(points_.size());
 
-    for (size_t i = 0; i < points.size(); i++)
+    for (size_t i = 0; i < points_.size(); i++)
     {
-        (*pmf)[i] = points[i].inTargetRegion() ? -points[i].logPmfsum() : GMX_FLOAT_MAX;
+        (*pmf)[i] = points_[i].inTargetRegion() ? -points_[i].logPmfsum() : GMX_FLOAT_MAX;
     }
 }
 
@@ -191,17 +190,9 @@ static double biasedWeightFromPoint(const std::vector<DimParams>  &dimParams,
     return weight;
 }
 
-/*! \brief Convolves the given PMF using the given AWH bias.
- *
- * \param[in] dimParams     The bias dimensions parameters
- * \param[in] grid          The grid.
- * \param[in] points        The point state.
- * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
- */
-static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
-                                  const Grid                    &grid,
-                                  const std::vector<PointState> &points,
-                                  std::vector<float>            *convolvedPmf)
+void BiasState::calcConvolvedPmf(const std::vector<DimParams> &dimParams,
+                                 const Grid                   &grid,
+                                 std::vector<float>           *convolvedPmf) const
 {
     size_t             numPoints = grid.numPoints();
 
@@ -210,7 +201,7 @@ static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
     convolvedPmf->resize(numPoints);
 
     /* Get the PMF to convolve. */
-    getPmf(points, &pmf);
+    getPmf(&pmf);
 
     for (size_t m = 0; m < numPoints; m++)
     {
@@ -224,7 +215,7 @@ static void calculateConvolvedPmf(const std::vector<DimParams>  &dimParams,
             /* Add the convolved PMF weights for the neighbors of this point.
                Note that this function only adds point within the target > 0 region.
                Sum weights, take the logarithm last to get the free energy. */
-            freeEnergyWeights += biasedWeightFromPoint(dimParams, points, grid,
+            freeEnergyWeights += biasedWeightFromPoint(dimParams, points_, grid,
                                                        neighbor, biasNeighbor,
                                                        point.coordValue);
         }
@@ -302,7 +293,7 @@ int BiasState::checkHistograms(const Grid  &grid,
                                FILE        *fplog,
                                int          maxNumWarnings) const
 {
-    const double maxHistogramRatio = 0.5; /* Tolerance for printing a warning about the histogram ratios */
+    const double maxHistogramRatio = 0.5;  /* Tolerance for printing a warning about the histogram ratios */
 
     /* Sum up the histograms and get their normalization */
     double sumVisits = 0;
@@ -443,10 +434,10 @@ double BiasState::moveUmbrella(const std::vector<DimParams> &dimParams,
     for (size_t d = 0; d < dimParams.size(); d++)
     {
         /* clang thinks newForce[d] can be garbage */
-#ifndef __clang_analyzer__
+ #ifndef __clang_analyzer__
         /* Average of the current and new force */
         biasForce[d] = 0.5*(biasForce[d] + newForce[d]);
-#endif
+ #endif
     }
 
     return newPotential;
@@ -1092,25 +1083,24 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
     return std::log(weightSum);
 }
 
-double calcConvolvedBias(const std::vector<DimParams>  &dimParams,
-                         const Grid                    &grid,
-                         const std::vector<PointState> &points,
-                         const awh_dvec                &coordValue)
+double BiasState::calcConvolvedBias(const std::vector<DimParams> &dimParams,
+                                    const Grid                   &grid,
+                                    const awh_dvec               &coordValue) const
 {
     int              point      = grid.nearestIndex(coordValue);
     const GridPoint &gridPoint  = grid.point(point);
 
     /* Sum the probability weights from the neighborhood of the given point */
-    double weight_sum = 0;
+    double weightSum = 0;
     for (auto &neighbor : gridPoint.neighbor)
     {
-        weight_sum += biasedWeightFromPoint(dimParams, points, grid,
-                                            neighbor, points[neighbor].bias(),
-                                            coordValue);
+        weightSum += biasedWeightFromPoint(dimParams, points_, grid,
+                                           neighbor, points_[neighbor].bias(),
+                                           coordValue);
     }
 
     /* Returns -GMX_DOUBLE_MAX if no neighboring points were in the target region. */
-    return (weight_sum > 0) ? std::log(weight_sum) : -GMX_DOUBLE_MAX;
+    return (weightSum > 0) ? std::log(weightSum) : -GMX_DOUBLE_MAX;
 }
 
 void BiasState::sampleProbabilityWeights(const Grid                &grid,
@@ -1269,7 +1259,7 @@ void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>  &dimPa
 {
     std::vector<float> convolvedPmf;
 
-    calculateConvolvedPmf(dimParams, grid, points_, &convolvedPmf);
+    calcConvolvedPmf(dimParams, grid, &convolvedPmf);
 
     for (size_t m = 0; m < points_.size(); m++)
     {
