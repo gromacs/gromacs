@@ -55,6 +55,15 @@ struct pull_params_t;
 struct t_inputrec;
 struct t_commrec;
 
+/*! \brief Query if a point in the AWH grid has valid data that should be included in the output printing.
+ *
+ * \param[in] awh_bias         The AWH bias.
+ * \param[in] point_index Point index.
+ * \returns true if the data of the point should be included.
+ */
+bool write_point_to_output(const awh_bias_t *awh_bias, int point_index);
+
+
 /*! \brief Calculates the convolved bias at a point in the AWH grid.
  *
  * Note: if it turns out to be costly to calculate this pointwise
@@ -72,7 +81,7 @@ double calc_convolved_bias(const awh_bias_t *awh_bias, const awh_dvec coord_valu
  * \param[in] ms          Struct for multi-simulation communication, needed for bias sharing replicas.
  * \param[out] pmf        Array of the same length as the AWH grid to store the PMF in.
  */
-void get_pmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *pmf);
+void get_pmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, float *pmf);
 
 /*! \brief Convert internal coordinate units to external, user coordinate units.
  *
