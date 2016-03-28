@@ -239,9 +239,9 @@ double getInitialHistSizeEstimate(const std::vector<DimParams> &dimParams,
     }
     GMX_RELEASE_ASSERT(crossingTime > 0, "We need at least one dimension with non-zero length");
     double errorInitialInKT = beta*awhBiasParams.errorInitial;
-    double histSize         = gaussianGeometryFactor(x)/(crossingTime*gmx::square(errorInitialInKT)*samplingTimestep);
+    double histogramSize    = gaussianGeometryFactor(x)/(crossingTime*gmx::square(errorInitialInKT)*samplingTimestep);
 
-    return histSize;
+    return histogramSize;
 }
 
 /*! \brief Returns the number of simulations sharing bias updates.
@@ -289,8 +289,8 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? temperatureScaleFactor : 1),
-    // Estimate and initialize histSizeInitial, depends on the grid.
-    histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, beta, numStepsSampleCoord_*mdTimeStep)),
+    errorInitial(beta*awhBiasParams.errorInitial),
+    initialHistogramSize(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, beta, numStepsSampleCoord_*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)

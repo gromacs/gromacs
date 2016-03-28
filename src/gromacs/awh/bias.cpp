@@ -241,7 +241,7 @@ Bias::Bias(int                             biasIndexInCollection,
     dimParams_(dimParamsInit),
     grid_(dimParamsInit, awhBiasParams.dimParams),
     params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_.axis(), biasIndexInCollection),
-    state_(awhBiasParams, params_.histSizeInitial, dimParams_, grid_),
+    state_(awhBiasParams, params_.initialHistogramSize, dimParams_, grid_),
     thisRankDoesIO_(thisRankWillDoIO == ThisRankWillDoIO::Yes),
     tempWorkSpace_(),
     numWarningsIssued_(0)
@@ -250,6 +250,27 @@ Bias::Bias(int                             biasIndexInCollection,
     updateList_.reserve(grid_.numPoints());
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias);
+
+    if (thisRankDoesIO_)
+    {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+
+    return writer_->numBlocks();
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+
+    return writer_->writeToEnergySubblocks(*this, subblock);
 }
 
 } // namespace gmx

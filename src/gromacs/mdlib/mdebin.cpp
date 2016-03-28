@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/awh/awh.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -1245,7 +1246,8 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 gmx_int64_t step, double time,
                 int mode,
                 t_mdebin *md, t_fcdata *fcd,
-                gmx_groups_t *groups, t_grpopts *opts)
+                gmx_groups_t *groups, t_grpopts *opts,
+                gmx::Awh *awh)
 {
     /*static char **grpnms=NULL;*/
     char         buf[246];
@@ -1358,6 +1360,12 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 if (md->dhc)
                 {
                     mde_delta_h_coll_reset(md->dhc);
+                }
+
+                /* AWH bias blocks. */
+                if (awh != nullptr)  // TODO: add boolean in t_mdebin. See in mdebin.h.
+                {
+                    awh->writeToEnergyFrame(step, &fr);
                 }
 
                 /* do the actual I/O */
