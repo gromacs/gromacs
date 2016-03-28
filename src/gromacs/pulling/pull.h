@@ -70,6 +70,13 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 
+/*! \brief Returns if the pull coordinate is an angle
+ *
+ * \param[in] pcrd The pull coordinate to query the type for.
+ * \returns a boolean telling if the coordinate is of angle type.
+ */
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd);
+
 /*! \brief Returns the units of the pull coordinate.
  *
  * \param[in] pcrd The pull coordinate to query the units for.
