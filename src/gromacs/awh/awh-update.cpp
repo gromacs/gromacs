@@ -265,6 +265,13 @@ static bool do_at_step(int stepInterval, gmx_int64_t step)
     return (step % stepInterval == 0);
 }
 
+static gmx_bool prevStepExchangedCoords(int nstreplica_exchange, gmx_int64_t step)
+{
+    /* Replica exchange occurs at the end of the MD loop, after the AWH update. The AWH reaction to the coordinate swap therefore comes one
+       step later. */
+    return (nstreplica_exchange > 0) && (step > 0) && do_at_step(nstreplica_exchange, step - 1);
+}
+
 static void apply_bias_force_to_pull_coords(const awh_t        *awh,
                                             struct pull_t      *pull_work,
                                             const t_mdatoms    *mdatoms,
@@ -994,11 +1001,12 @@ static void update(awh_bias_t *awh_bias, int awh_id, const gmx_multisim_t *ms, d
     /* We update all points simultaneously either if 1) we covered (in the initial stage) since
        we don't want to keep track of when this happened and how it affects non-local points in future updates,
        or 2) we are updating the target distribution since its normalization has a global affect,
+       or 3) it's a replica exchange step (occurs after the AWH update, at the end of the MD integration).
      */
 
     /*  Make the update list. For a global update, just add all points. For a local update,
         the update list equals the local update list of touched points. */
-    if (updateTarget || haveCovered)
+    if (updateTarget || haveCovered || prevStepExchangedCoords(awh_bias->nstreplica_exchange, step))
     {
         /* Global update. */
         nupdate = 0;
@@ -1230,7 +1238,8 @@ static void do_awh_bias_step(awh_bias_t *awh_bias, int awh_id,
             calcUmbrellaForceAndPotential(awh_bias, awh_bias->k, awh_bias->coord_refvalue_index, awh_bias->bias_force);
 
         /* Moving the umbrella results in a force correction and a new potential. */
-        if (do_at_step(awh_bias->nstmove_refvalue, step))
+        if (do_at_step(awh_bias->nstmove_refvalue, step) ||
+            prevStepExchangedCoords(awh_bias->nstreplica_exchange, step))
         {
             newPotential = moveUmbrella(awh_bias, step, seed);
         }
