@@ -913,7 +913,8 @@ void register_bias_with_pull(const awh_t *awh, struct pull_t *pull_work)
 awh_t *init_awh(FILE                    *fplog,
                 const t_inputrec        *ir,
                 const t_commrec         *cr,
-                const awh_params_t      *awh_params)
+                const awh_params_t      *awh_params,
+                int                      nstreplica_exchange)
 {
     awh_t         *awh;
     const int      nstsample_coord        = awh_params->nstsample_coord;
@@ -933,6 +934,7 @@ awh_t *init_awh(FILE                    *fplog,
         /* Some things are common for all biases */
         awh->awh_bias[k].nstsample_coord          = nstsample_coord;
         awh->awh_bias[k].nstupdate_free_energy    = nstupdate_free_energy;
+        awh->awh_bias[k].nstreplica_exchange      = nstreplica_exchange;
 
         init_awh_bias(fplog, ir, cr, k, awh->nbias, &awh->awh_bias[k], &awh_params->awh_bias_params[k]);
     }
@@ -951,9 +953,10 @@ awh_t *init_awh_md(FILE                    *fplog,
                    const awh_params_t      *awh_params,
                    awh_history_t           *awh_history,
                    struct pull_t           *pull_work,
-                   bool                     startingFromCheckpoint)
+                   bool                     startingFromCheckpoint,
+                   int                      nstreplica_exchange)
 {
-    awh_t *awh = init_awh(fplog, ir, cr, awh_params);
+    awh_t *awh = init_awh(fplog, ir, cr, awh_params, nstreplica_exchange);
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     register_bias_with_pull(awh, pull_work);

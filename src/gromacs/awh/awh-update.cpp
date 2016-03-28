@@ -318,6 +318,20 @@ static bool do_at_step(int stepInterval, gmx_int64_t step)
 }
 
 /*! \brief
+ * Query if the system coordinates could have been exchanged with another simulation last step.
+ *
+ * \param[in] nstreplica_exchange   Step interval for exchange attempts.
+ * \param[in] step                  Current step.
+ * \returns true if previous step attempted exchange.
+ */
+static gmx_bool prevStepExchangedCoords(int nstreplica_exchange, gmx_int64_t step)
+{
+    /* Replica exchange occurs at the end of the MD loop, after the AWH update. The AWH reaction to the coordinate swap therefore comes one
+       step later. */
+    return (nstreplica_exchange > 0) && (step > 0) && do_at_step(nstreplica_exchange, step - 1);
+}
+
+/*! \brief
  * Set pull forces for the pull coordinates AWH is responsible for.
  *
  * \param[in] awh               AWH struct.
@@ -1550,7 +1564,7 @@ static void update(awh_bias_t *awh_bias, const gmx_multisim_t *ms, double t, gmx
        make any assumption on its form; or 3) the AWH parameters are such that we never attempt
        to skip non-local updates. */
     int nupdate;
-    if (updateTarget || haveCovered || !canSkipUpdates(awh_bias))
+    if (updateTarget || haveCovered || !canSkipUpdates(awh_bias) || prevStepExchangedCoords(awh_bias->nstreplica_exchange, step))
     {
         /* Global update, just add all points. */
         nupdate = 0;
@@ -1883,7 +1897,8 @@ static void do_awh_bias_step(awh_bias_t *awh_bias,
 
         /* Moving the umbrella results in a force correction and a new potential. The umbrella center is sampled as
            often as the coordinate so we know the probability weights needed for moving the umbrella are up-to-date. */
-        if (do_at_step(awh_bias->nstsample_coord, step))
+        if (do_at_step(awh_bias->nstsample_coord, step) ||
+            prevStepExchangedCoords(awh_bias->nstreplica_exchange, step))
         {
             newPotential = moveUmbrella(awh_bias, step, seed);
         }
