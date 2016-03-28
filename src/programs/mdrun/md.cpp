@@ -508,12 +508,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         fr->awh = init_awh_md(fplog, ir, cr, ir->awh_params,
                               &(state_global->awh_history), ir->pull_work,
-                              startingFromCheckpoint);
+                              startingFromCheckpoint, repl_ex_nst);
     }
 
     if (repl_ex_nst > 0 && MASTER(cr))
     {
-        repl_ex = init_replica_exchange(fplog, cr->ms, state_global, ir,
+        repl_ex = init_replica_exchange(fplog, cr->ms, state_global, ir, fr->awh,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
@@ -1032,6 +1032,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         bCPT = (((gs.set[eglsCHKPT] && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && (Flags & MD_CONFOUT))) &&
                 step > ir->init_step && !bRerunMD);
+
         if (bCPT)
         {
             gs.set[eglsCHKPT] = 0;
@@ -1684,7 +1685,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         bExchanged = FALSE;
         if (bDoReplEx)
         {
-            bExchanged = replica_exchange(fplog, cr, repl_ex,
+            bExchanged = replica_exchange(fplog, cr, repl_ex, fr->awh,
                                           state_global, enerd,
                                           state, step, t);
         }
