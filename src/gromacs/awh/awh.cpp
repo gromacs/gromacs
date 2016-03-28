@@ -71,6 +71,7 @@
 
 #include "bias.h"
 #include "biaswriter.h"
+#include "correlation-history.h"
 #include "grid.h"
 #include "internal.h"
 #include "pointstate.h"
@@ -276,6 +277,7 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
     {
         AwhBiasHistory *biasHistory = &awhHistory->bias[k];
         biasHistory->pointState.resize(biasCoupledToSystem_[k].bias()->pointState().size());
+        biasHistory->forcecorr = init_correlation_grid_history_from_state(&biasCoupledToSystem_[k].bias()->forcecorr());
     }
 }
 

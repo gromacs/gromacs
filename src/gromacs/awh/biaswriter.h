@@ -66,7 +66,7 @@ struct t_enxsubblock;
 //! Enum with the AWH variables to write
 enum {
     evarMETA, evarCOORDVALUE, evarPMF, evarBIAS, evarVISITS, evarWEIGHTS,
-    evarTARGET, evarNR
+    evarTARGET, evarFORCECORRVOL, evarFRICTION, evarCORRTIME, evarNR
 };
 
 //! Enum with the types of metadata to write
