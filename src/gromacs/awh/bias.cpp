@@ -65,6 +65,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "correlationgrid.h"
+#include "correlationhistory.h"
 #include "pointstate.h"
 
 namespace gmx
@@ -99,15 +101,15 @@ void Bias::doSkippedUpdatesForAllPoints()
     }
 }
 
-void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                  awh_dvec              biasForce,
-                                  double               *awhPotential,
-                                  double               *potentialJump,
-                                  const gmx_multisim_t *ms,
-                                  double                t,
-                                  gmx_int64_t           step,
-                                  gmx_int64_t           seed,
-                                  FILE                 *fplog)
+gmx::ArrayRef<const double>
+Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
+                             double               *awhPotential,
+                             double               *potentialJump,
+                             const gmx_multisim_t *ms,
+                             double                t,
+                             gmx_int64_t           step,
+                             gmx_int64_t           seed,
+                             FILE                 *fplog)
 {
     if (step < 0)
     {
@@ -136,6 +138,8 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
 
         if (sampleCoord)
         {
+            updateForceCorrelationGrid(probWeightNeighbor, t);
+
             state_.sampleCoordAndPmf(grid_, probWeightNeighbor, convolvedBias);
         }
     }
@@ -153,7 +157,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
     if (params_.convolveForce)
     {
         state_.calcConvolvedForce(dimParams_, grid_, probWeightNeighbor,
-                                  biasForce);
+                                  tempForce_, biasForce_);
 
         potential = -convolvedBias*params_.invBeta;
     }
@@ -163,7 +167,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
         GMX_RELEASE_ASSERT(state_.points()[coordState.umbrellaGridpoint()].inTargetRegion(),
                            "AWH bias grid point for the umbrella reference value is outside of the target region.");
         potential =
-            state_.calcUmbrellaForceAndPotential(dimParams_, grid_, coordState.umbrellaGridpoint(), biasForce);
+            state_.calcUmbrellaForceAndPotential(dimParams_, grid_, coordState.umbrellaGridpoint(), biasForce_);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -172,7 +176,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
          */
         if (moveUmbrella)
         {
-            double newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, biasForce, step, seed, params_.biasIndex);
+            double newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, biasForce_, step, seed, params_.biasIndex);
             *potentialJump      = newPotential - potential;
         }
     }
@@ -198,6 +202,8 @@ void Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
 
     /* Check the sampled histograms and potentially warn user if something is suspicious */
     warnForHistogramAnomalies(t, step, fplog);
+
+    return biasForce_;
 }
 
 void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
@@ -209,6 +215,11 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
+
+        if (forceCorrelationGrid_ != nullptr)
+        {
+            forceCorrelationGrid_->restoreStateFromHistory(biasHistory->forceCorrelationGrid);
+        }
     }
 
     if (PAR(cr))
@@ -222,6 +233,11 @@ void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
     state_.initHistoryFromState(biasHistory);
+
+    if (forceCorrelationGrid_ != nullptr)
+    {
+        biasHistory->forceCorrelationGrid = initCorrelationGridHistoryFromState(forceCorrelationGrid());
+    }
 }
 
 void Bias::updateHistory(AwhBiasHistory *biasHistory) const
@@ -229,6 +245,11 @@ void Bias::updateHistory(AwhBiasHistory *biasHistory) const
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
     state_.updateHistory(biasHistory, grid_);
+
+    if (forceCorrelationGrid_ != nullptr)
+    {
+        updateCorrelationGridHistory(&biasHistory->forceCorrelationGrid, forceCorrelationGrid());
+    }
 }
 
 Bias::Bias(int                             biasIndexInCollection,
@@ -246,7 +267,9 @@ Bias::Bias(int                             biasIndexInCollection,
     params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_.axis(), biasIndexInCollection),
     state_(awhBiasParams, params_.initialHistogramSize, dimParams_, grid_),
     thisRankDoesIO_(thisRankWillDoIO == ThisRankWillDoIO::Yes),
+    biasForce_(ndim()),
     alignedTempWorkSpace_(),
+    tempForce_(ndim()),
     numWarningsIssued_(0)
 {
     /* For a global update updateList covers all points, so reserve that */
@@ -256,7 +279,63 @@ Bias::Bias(int                             biasIndexInCollection,
 
     if (thisRankDoesIO_)
     {
+        /* Set up the force correlation object. */
+
+        /* We let the correlation init function set its parameters
+         * to something useful for now.
+         */
+        double blockLength = 0;
+        /* Construct the force correlation object. */
+        forceCorrelationGrid_ =
+            gmx::compat::make_unique<CorrelationGrid>(state_.points().size(), ndim(),
+                                                      blockLength, CorrelationGrid::BlockLengthMeasure::Time,
+                                                      awhParams.nstSampleCoord*mdTimeStep);
+
         writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+void Bias::printInitializationToLog(FILE *fplog) const
+{
+    if (fplog != nullptr && forceCorrelationGrid_ != nullptr)
+    {
+        std::string prefix =
+            gmx::formatString("\nawh%d:", params_.biasIndex + 1);
+
+        fprintf(fplog,
+                "%s initial force correlation block length = %g %s"
+                "%s force correlation number of blocks = %d",
+                prefix.c_str(), forceCorrelationGrid().getBlockLength(),
+                forceCorrelationGrid().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight ? "" : "ps",
+                prefix.c_str(), forceCorrelationGrid().getNumBlocks());
+    }
+}
+
+void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeighbor,
+                                      double                      t)
+{
+    if (forceCorrelationGrid_ == nullptr)
+    {
+        return;
+    }
+
+    const std::vector<int> &neighbor = grid_.point(state_.coordState().gridpointIndex()).neighbor;
+
+    gmx::ArrayRef<double>   forceFromNeighbor = tempForce_;
+    for (size_t n = 0; n < neighbor.size(); n++)
+    {
+        double weightNeighbor = probWeightNeighbor[n];
+        int    indexNeighbor  = neighbor[n];
+
+        /* Add the force data of this neighbor point. Note: the sum of these forces is the convolved force.
+
+           We actually add the force normalized by beta which has the units of 1/length. This means that the
+           resulting correlation time integral is directly in units of friction time/length^2 which is really what
+           we're interested in. */
+        state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, forceFromNeighbor);
+
+        /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
+        forceCorrelationGrid_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
     }
 }
 
