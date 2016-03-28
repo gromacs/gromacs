@@ -38,6 +38,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
@@ -58,21 +59,30 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct bias_reader_t {
-    int           nsubblocks;                /* Number of subblocks to read. */
-    int           nsubblocks_out;            /* Number of subblocks to print. */
-    int           nlegend;                   /* Number of legend strings. */
+struct outfile_t {
+    char          baseFileName[STRLEN];      /* Base output file name. */
+    char          title[STRLEN];             /* Title for the graph. */
+    int           startGraph;                /* Start index for the first graph */
+    int           numGraph;                  /* Number of graphs. */
     char        **legend;                    /* Legends for the output. */
-    char         *ylabel;                    /* Label for the y-axis. */
-} bias_reader_t;
+    const char   *ylabel;                    /* Label for the y-axis. */
+};
 
-typedef struct awh_reader_t {
+struct bias_reader_t {
+    int           nsubblocks;                /* Number of subblocks to read. */
+    outfile_t     awh;                       /* The standard AWH output file data */
+    outfile_t     tensor;                    /* The metric tensor output file data */
+};
+
+struct awh_reader_t {
     int               nbias;                  /* The number of AWH biases. */
     bias_reader_t    *bias_reader;            /* The readers, one for each AWH bias. */
-} awh_reader_t;
+    bool              outputMetricTensor;     /* Write metric tensor files */
+};
 
 
-static void make_legend(awh_bias_params_t *awh_bias_params, int nleg, char **leg)
+static void make_awh_legend(const awh_bias_params_t *awh_bias_params,
+                            int nleg, char **leg)
 {
     int                i, d, ileg;
     char               buf[256];
@@ -103,13 +113,75 @@ static void make_legend(awh_bias_params_t *awh_bias_params, int nleg, char **leg
         i++;
     }
 
+    /* If there are still more legends to add, do it. */
+    if (ileg < nleg)
+    {
+        leg[ileg] =  strdup("Force corr distr.");
+        ileg++;
+    }
+
     if (ileg != nleg)
     {
         gmx_incons("Mismatch between the number of legends requested for printing and the number present!");
     }
 }
 
-static awh_reader_t *init_awh_reader(awh_params_t *awh_params, t_enxframe *fr, gmx_bool bMore)
+static void make_tensor_legend(const awh_bias_params_t *awh_bias_params,
+                               int nleg, char **leg)
+{
+    /* Want the 2 indices of the symmetric correlation matrix.
+     * Only print half the elements */
+    int ileg = 0;
+    for (int i0 = 0; i0 < awh_bias_params->ndim; i0++)
+    {
+        for (int i1 = 0; i1 <= i0; i1++)
+        {
+            char buf[256];
+
+            sprintf(buf, "%d,%d", i0, i1);
+
+            leg[ileg] = strdup(buf);
+            ileg++;
+        }
+    }
+
+    if (ileg != nleg)
+    {
+        gmx_incons("Mismatch between the number of legends requested for printing and the number present!");
+    }
+}
+
+static void set_outfile_name_and_title(outfile_t *outfile,
+                                       const char *name,
+                                       const char *title,
+                                       int nbias, int biasIndex)
+{
+    char buf[STRLEN];
+
+    /* Store the input file name without extension in buf buf */
+    sprintf(buf, name);
+    char *ptr = strrchr(buf, '.');
+    if (ptr != NULL)
+    {
+        *ptr = '\0';
+    }
+
+    if (nbias == 1)
+    {
+        sprintf(outfile->baseFileName, "%s", buf);
+        sprintf(outfile->title, "%s", title);
+    }
+    else
+    {
+        sprintf(outfile->baseFileName, "%s%d", buf, biasIndex + 1);
+        sprintf(outfile->title, "%s %d", title, biasIndex + 1);
+    }
+}
+
+static awh_reader_t *init_awh_reader(awh_params_t *awh_params,
+                                     int nfile, const t_filenm fnm[],
+                                     gmx_bool bMore,
+                                     t_enxframe *fr)
 {
     awh_reader_t       *awh_reader       = NULL;
     t_enxblock         *block            = NULL;
@@ -125,30 +197,67 @@ static awh_reader_t *init_awh_reader(awh_params_t *awh_params, t_enxframe *fr, g
         awh_reader->nbias = awh_params->nbias;
         snew(awh_reader->bias_reader, awh_reader->nbias);
 
+        awh_reader->outputMetricTensor = opt2bSet("-mt", nfile, fnm);
+
         /* Keep track of the first subblock of this AWH */
         imin_sub = 0;
         for (int k = 0; k < awh_reader->nbias; k++)
         {
             awh_bias_params_t *awh_bias_params = &awh_params->awh_bias_params[k];
+            int                ndim            = awh_bias_params->ndim;
+            int                numTensorElem   = (ndim*(ndim + 1))/2;
+
             bias_reader_t     *bias_reader     = &awh_reader->bias_reader[k];
 
             bias_reader->nsubblocks = (int)block->sub[imin_sub].dval[0];
 
-            /* We at least print the grid point values (ndim) and the PMF (1) and the metadata (1). */
-            bias_reader->nsubblocks_out = bMore ? bias_reader->nsubblocks : awh_params->awh_bias_params[k].ndim + 2;
+            outfile_t *outf = &bias_reader->awh;
+            set_outfile_name_and_title(outf,
+                                       opt2fn("-o", nfile, fnm), "AWH",
+                                       awh_reader->nbias, k);
 
             /* The metadata and the grid point values (for the first dimension) do not get legends (-2) */
-            bias_reader->nlegend = bias_reader->nsubblocks_out - 2;
+            outf->startGraph = 2;
+            outf->numGraph   = bMore ? bias_reader->nsubblocks - 2 - numTensorElem : 1;
 
-            snew(bias_reader->legend, bias_reader->nlegend);
-            make_legend(awh_bias_params, bias_reader->nlegend, bias_reader->legend);
+            snew(outf->legend, outf->numGraph);
+            make_awh_legend(awh_bias_params, outf->numGraph, outf->legend);
+            outf->ylabel = bMore ? "(k\\sB\\NT), (nm\\S-1\\N or rad\\S-1\\N)" : "(k\\sB\\NT)";
 
-            bias_reader->ylabel = strdup("(k\\sB\\NT)");
-            imin_sub           += bias_reader->nsubblocks;
+            if (awh_reader->outputMetricTensor)
+            {
+                outfile_t *outf = &bias_reader->tensor;
+                set_outfile_name_and_title(outf,
+                                           opt2fn("-mt", nfile, fnm), "Metric tensor",
+                                           awh_reader->nbias, k);
+
+                outf->startGraph = bias_reader->nsubblocks - numTensorElem;
+                outf->numGraph   = numTensorElem;
+                snew(outf->legend, outf->numGraph);
+                make_tensor_legend(awh_bias_params, outf->numGraph, outf->legend);
+                outf->ylabel     = "(nm\\S2\\Nps or rad\\S2\\Nps)";
+            }
+
+            imin_sub               += bias_reader->nsubblocks;
         }
     }
 
     return awh_reader;
+}
+
+static FILE *open_awh_outfile(const outfile_t        *outfile,
+                              double                  t,
+                              const gmx_output_env_t *oenv)
+{
+    char filename[STRLEN];
+
+    sprintf(filename, "%s_t%g.xvg", outfile->baseFileName, t);
+
+    FILE *fp = xvgropen(filename, outfile->title,
+                        "(nm or deg)", outfile->ylabel, oenv);
+    xvgr_legend(fp, outfile->numGraph, (const char**)outfile->legend, oenv);
+
+    return fp;
 }
 
 static void do_awh_frame(t_enxframe *fr, awh_reader_t *awh_reader, int *frame_counter, int skip, const gmx_output_env_t *oenv)
@@ -168,47 +277,52 @@ static void do_awh_frame(t_enxframe *fr, awh_reader_t *awh_reader, int *frame_co
             imin_sub = 0;
             for (int k = 0; k < awh_reader->nbias; k++)
             {
-                int            i, j, npoints;
-                FILE          *out = NULL;
-                char           filename[STRLEN], title[STRLEN];
-                bias_reader_t *bias_reader = &awh_reader->bias_reader[k];
+                outfile_t *outf = &awh_reader->bias_reader[k].awh;
 
                 /* Each frame and AWH instance extracted generates one xvg file. */
-                if (awh_reader->nbias > 1)
-                {
-                    sprintf(filename, "awh%d_t%g.xvg", k + 1, fr->t);
-                    sprintf(title, "AWH %d",  k + 1);
-                }
-                else
-                {
-                    sprintf(filename, "awh_t%g.xvg", fr->t);
-                    sprintf(title, "AWH");
-                }
-
-                out = xvgropen(filename, title,
-                               "(nm or deg)", bias_reader->ylabel, oenv);
-                xvgr_legend(out, bias_reader->nlegend, (const char**)bias_reader->legend, oenv);
+                FILE *out = open_awh_outfile(outf, fr->t, oenv);
 
                 /* Now do the actual printing. Metadata in first subblock is treated separately. */
-                fprintf(out, "# AWH metadata: target error = %3.2f kT\n",
+                fprintf(out, "# AWH metadata: target error = %4.2f kT\n",
                         block->sub[imin_sub].dval[1]);
 
-                fprintf(out, "# AWH metadata: log sample weight = %3.2f \n",
+                fprintf(out, "# AWH metadata: log sample weight = %4.2f\n",
                         block->sub[imin_sub].dval[2]);
 
-                npoints = block->sub[imin_sub + 1].nr;
-                for (j = 0; j < npoints; j++)
+                int npoints = block->sub[imin_sub + 1].nr;
+                for (int j = 0; j < npoints; j++)
                 {
-                    for (i = imin_sub + 1; i < imin_sub + bias_reader->nsubblocks_out; i++)
+                    fprintf(out, "  %8.4f", block->sub[imin_sub + 1].dval[j]);
+
+                    for (int i = outf->startGraph; i < outf->startGraph + outf->numGraph; i++)
                     {
                         fprintf(out, "  %8.4f", block->sub[i].dval[j]);
                     }
-
                     fprintf(out, "\n");
                 }
 
                 gmx_ffclose(out);
-                imin_sub += bias_reader->nsubblocks;
+
+                if (awh_reader->outputMetricTensor)
+                {
+                    outfile_t *outf = &awh_reader->bias_reader[k].tensor;
+
+                    FILE      *out = open_awh_outfile(outf, fr->t, oenv);
+                    for (int j = 0; j < npoints; j++)
+                    {
+                        fprintf(out, "  %8.4f", block->sub[imin_sub + 1].dval[j]);
+
+                        for (int i = outf->startGraph; i < outf->startGraph + outf->numGraph; i++)
+                        {
+                            fprintf(out, "  %g", block->sub[i].dval[j]);
+                        }
+                        fprintf(out, "\n");
+                    }
+
+                    gmx_ffclose(out);
+                }
+
+                imin_sub += awh_reader->bias_reader[k].nsubblocks;
             }
         }
         (*frame_counter)++;
@@ -218,7 +332,12 @@ static void do_awh_frame(t_enxframe *fr, awh_reader_t *awh_reader, int *frame_co
 int gmx_awh(int argc, char *argv[])
 {
     const char         *desc[] = {
-        "[THISMODULE] extracts AWH data from an energy file.[PAR]",
+        "[THISMODULE] extracts AWH data from an energy file.",
+        "One file is output per AWH bias per time frame.",
+        "By default only the PMF is printed. With [TT]-more[tt] the bias,",
+        "and target, coordinate distributions and friction are also printed.",
+        "Option [TT]-mt[tt] prints all components of the friction metric",
+        "tensor to another set of files."
     };
     static gmx_bool     bMore_output = FALSE;
     static int          skip         = 0;
@@ -247,8 +366,10 @@ int gmx_awh(int argc, char *argv[])
     matrix             box;
 
     t_filenm           fnm[] = {
-        { efEDR, "-f",    NULL,      ffREAD  },
-        { efTPR, "-s",    NULL,      ffOPTRD },
+        { efEDR, "-f",    NULL,           ffREAD  },
+        { efTPR, "-s",    NULL,           ffOPTRD },
+        { efXVG, "-o",    "awh",          ffWRITE },
+        { efXVG, "-mt",   "metrictensor", ffOPTWR }
     };
 #define NFILE asize(fnm)
     int                npargs;
@@ -307,7 +428,9 @@ int gmx_awh(int argc, char *argv[])
                of subblocks and therefore the number of legends that way instead (TODO). */
             if (awh_reader == NULL)
             {
-                awh_reader = init_awh_reader(ir.awh_params, fr, bMore_output);
+                awh_reader = init_awh_reader(ir.awh_params,
+                                             NFILE, fnm, bMore_output,
+                                             fr);
             }
 
             do_awh_frame(fr, awh_reader, &awh_frame_counter, skip, oenv);
