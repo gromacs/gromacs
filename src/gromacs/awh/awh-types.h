@@ -53,6 +53,7 @@ typedef int awh_ivec[AWH_NDIM_MAX];
 
 struct t_awh_grid;
 struct awhbias_energywriter_t;
+struct correlation_grid_t;
 
 //! A coordinate point in the AWH grid.
 typedef struct awh_coord_point_t {
@@ -111,6 +112,10 @@ typedef struct t_awh {
     double   *prob_weight_neighbor;          /**< Probability weights for points neighboring the current coordinate value index */
     double    convolved_bias;                /**< The convolved bias for the current coordinate value. */
     awh_dvec  bias_force;                    /**< The bias force for the current coordinate value. */
+
+    /* Force correlation */
+    bool                bForce_correlation;            /**< Do force correlation statistics? */
+    correlation_grid_t *forcecorr;                     /**< Takes care of force correlation statistics. */
 } t_awh;
 
 //! A collection of AWH biases.

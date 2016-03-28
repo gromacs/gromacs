@@ -103,10 +103,11 @@ typedef struct awhbias_params_t {
     awh_params_t       *awh_params;                  /**< AWH bias parameters.*/
     gmx_int64_t         seed;                        /**< Random seed.*/
     int                 nstout;                      /**< Output step interval.*/
-    int                 nstsample_coord;             /**< Number of samples per coordinate sample (also used for PMF) */
+    int                 nstsample_coord;             /**< Number of samples per coordinate sample (also used for PMF and force correlation) */
     int                 nsamples_move_refvalue;      /**< Number of samples per moving the coordinate reference value. */
     int                 nsamples_update_free_energy; /**< Number of samples per free energy update. */
     gmx_bool            bConvolve_force;             /**< If true, convolved the bias force. Otherwise, apply harmonic potential force. */
+    gmx_bool            bForce_correlation;          /**< Calculate and output force correlation? */
 } awhbias_params_t;
 
 #endif /* GMX_MDTYPES_AWH_PARAMS_H */

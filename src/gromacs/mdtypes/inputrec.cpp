@@ -748,6 +748,8 @@ static void pr_awhbias(FILE *fp, int indent, awhbias_params_t *awhbias_params)
     PI(opt, awhbias_params->nsamples_update_free_energy);
     sprintf(opt, "%s-convolve-force", prefix);
     PS(opt, EBOOL(awhbias_params->bConvolve_force));
+    sprintf(opt, "%s-forcecorr", prefix);
+    PS(opt, EBOOL(awhbias_params->bForce_correlation));
 
     for (k = 0; k < awhbias_params->nawh; k++)
     {
