@@ -46,6 +46,7 @@
 
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -658,6 +659,78 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     }
 }
 
+static void pr_awh_bias_dim(FILE *fp, int indent, awh_dim_params_t *awh_dim_params, char *prefix)
+{
+    pr_indent(fp, indent);
+    indent++;
+    fprintf(fp,  "%s:\n", prefix);
+    PI("pull-coord", awh_dim_params->pull_coord_index + 1);
+    PR("diffusion", awh_dim_params->diffusion);
+    PR("start", awh_dim_params->origin);
+    PR("end", awh_dim_params->end);
+    PI("ninterval", awh_dim_params->ninterval);
+    PR("interval-overlap", awh_dim_params->interval_overlap);
+    PR("cover-diameter", awh_dim_params->coverDiameter);
+}
+
+static void pr_awh_bias(FILE *fp, int indent, awh_bias_params_t *awh_bias_params, char *prefix)
+{
+    char opt[STRLEN];
+
+    sprintf(opt, "%s-error-init", prefix);
+    PR(opt, awh_bias_params->error_initial);
+    sprintf(opt, "%s-growth", prefix);
+    PS(opt, EAWHGROWTH(awh_bias_params->eGrowth));
+    sprintf(opt, "%s-target", prefix);
+    PS(opt, EAWHTARGET(awh_bias_params->eTarget));
+    sprintf(opt, "%s-target-beta-scalng", prefix);
+    PR(opt, awh_bias_params->targetBetaScaling);
+    sprintf(opt, "%s-target-cutoff", prefix);
+    PR(opt, awh_bias_params->targetCutoff);
+    sprintf(opt, "%s-user-data", prefix);
+    PS(opt, EBOOL(awh_bias_params->bUser_data));
+    sprintf(opt, "%s-share", prefix);
+    PS(opt, EBOOL(awh_bias_params->bShare));
+    sprintf(opt, "%s-equilibrate-histogram", prefix);
+    PS(opt, EBOOL(awh_bias_params->equilibrateHistogram));
+    sprintf(opt, "%s-ndim", prefix);
+    PI(opt, awh_bias_params->ndim);
+
+    for (int d = 0; d < awh_bias_params->ndim; d++)
+    {
+        char prefixdim[STRLEN];
+        sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
+        pr_awh_bias_dim(fp, indent, &awh_bias_params->dim_params[d], prefixdim);
+    }
+}
+
+static void pr_awh(FILE *fp, int indent, awh_params_t *awh_params)
+{
+    int  k;
+    char opt[STRLEN], prefix[STRLEN];
+
+    sprintf(prefix, "%s", "awh");
+
+    sprintf(opt, "%s-potential", prefix);
+    PS(opt, EAWHPOTENTIAL(awh_params->ePotential));
+    sprintf(opt, "%s-seed", prefix);
+    PI(opt, awh_params->seed);
+    sprintf(opt, "%s-nstout", prefix);
+    PI(opt, awh_params->nstout);
+    sprintf(opt, "%s-nstsample", prefix);
+    PI(opt, awh_params->nstsample_coord);
+    sprintf(opt, "%s-nsamples-update", prefix);
+    PI(opt, awh_params->nsamples_update_free_energy);
+    sprintf(opt, "%s-nbias", prefix);
+    PI(opt, awh_params->nbias);
+
+    for (k = 0; k < awh_params->nbias; k++)
+    {
+        sprintf(prefix, "awh%d", k + 1);
+        pr_awh_bias(fp, indent, &awh_params->awh_bias_params[k], prefix);
+    }
+}
+
 static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
 {
     pr_indent(fp, indent);
@@ -932,6 +1005,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
             pr_pull(fp, indent, ir->pull);
         }
 
+        /* AWH BIASING */
+        PS("awh", EBOOL(ir->bDoAwh));
+        if (ir->bDoAwh)
+        {
+            pr_awh(fp, indent, ir->awh_params);
+        }
+
         /* ENFORCED ROTATION */
         PS("rotation", EBOOL(ir->bRot));
         if (ir->bRot)
@@ -1065,6 +1145,52 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
+}
+
+static void cmp_awh_dim_params(FILE *fp, const awh_dim_params_t *dimp1, const awh_dim_params_t *dimp2, int dimIndex, real ftol, real abstol)
+{
+    /* Note that we have double index here, but the compare functions only
+     * support one index, so here we only print the dim index and not the bias.
+     */
+    cmp_int(fp, "inputrec->awh_params->bias?->dim->pull_coord_index", dimIndex, dimp1->pull_coord_index, dimp2->pull_coord_index);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->period", dimIndex, dimp1->period, dimp2->period, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
+    cmp_int(fp, "inputrec->awh_params->bias?->dim->ninterval", dimIndex, dimp1->ninterval, dimp2->ninterval);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->interval_overlap", dimIndex, dimp1->interval_overlap, dimp2->interval_overlap, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->coord_value_init", dimIndex, dimp1->coord_value_init, dimp2->coord_value_init, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter, dimp2->coverDiameter, ftol, abstol);
+}
+
+static void cmp_awh_bias_params(FILE *fp, const awh_bias_params_t *bias1, const awh_bias_params_t *bias2, int biasIndex, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->awh_params->ndim", biasIndex, bias1->ndim, bias2->ndim);
+    cmp_int(fp, "inputrec->awh_params->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
+    cmp_double(fp, "inputrec->awh_params->biastargetBetaScaling", biasIndex, bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->biastargetCutoff", biasIndex, bias1->targetCutoff, bias2->targetCutoff, ftol, abstol);
+    cmp_int(fp, "inputrec->awh_params->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
+    cmp_bool(fp, "inputrec->awh_params->biasbUser_data", biasIndex, bias1->bUser_data, bias2->bUser_data);
+    cmp_double(fp, "inputrec->awh_params->biaserror_initial", biasIndex, bias1->error_initial, bias2->error_initial, ftol, abstol);
+    cmp_bool(fp, "inputrec->awh_params->biasbShare", biasIndex, bias1->bShare, bias2->bShare);
+}
+
+static void cmp_awh_params(FILE *fp, const awh_params_t *awh1, const awh_params_t *awh2, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->awh_params->nbias", -1, awh1->nbias, awh2->nbias);
+    cmp_int64(fp, "inputrec->awh_params->seed", awh1->seed, awh2->seed);
+    cmp_int(fp, "inputrec->awh_params->nstout", -1, awh1->nstout, awh2->nstout);
+    cmp_int(fp, "inputrec->awh_params->nstsample_coord", -1, awh1->nstsample_coord, awh2->nstsample_coord);
+    cmp_int(fp, "inputrec->awh_params->nsamples_update_free_energy", -1, awh1->nsamples_update_free_energy, awh2->nsamples_update_free_energy);
+    cmp_int(fp, "inputrec->awh_params->ePotential", -1, awh1->ePotential, awh2->ePotential);
+
+    if (awh1->nbias == awh2->nbias)
+    {
+        for (int bias = 0; bias < awh1->nbias; bias++)
+        {
+            cmp_awh_bias_params(fp, &awh1->awh_bias_params[bias], &awh2->awh_bias_params[bias], bias, ftol, abstol);
+        }
+    }
 }
 
 static void cmp_simtempvals(FILE *fp, const t_simtemp *simtemp1, const t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
@@ -1251,6 +1377,12 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     if (ir1->bPull && ir2->bPull)
     {
         cmp_pull(fp);
+    }
+
+    cmp_bool(fp, "inputrec->bDoAwh", -1, ir1->bDoAwh, ir2->bDoAwh);
+    if (ir1->bDoAwh && ir2->bDoAwh)
+    {
+        cmp_awh_params(fp, ir1->awh_params, ir2->awh_params, ftol, abstol);
     }
 
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
