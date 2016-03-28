@@ -66,6 +66,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "biaswriter.h"
 #include "grid.h"
 #include "internal.h"
 #include "math.h"
@@ -1603,4 +1604,27 @@ void Bias::broadcast(const t_commrec *cr)
     gmx_bcast(pointState_.size()*sizeof(PointState), pointState_.data(), cr);
 
     gmx_bcast(sizeof(BiasState), &state_, cr);
+}
+
+/* Prepare data for writing to energy frame. */
+void Bias::prepareOutput(const gmx_multisim_t *ms)
+{
+    if (params_.skipUpdates())
+    {
+        doSkippedUpdatesForAllPoints();
+    }
+
+    writer_->prepareBiasOutput(*this, ms);
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    return writer_->writeToEnergySubblocks(subblock);
 }
