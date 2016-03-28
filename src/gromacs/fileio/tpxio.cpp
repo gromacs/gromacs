@@ -723,6 +723,7 @@ static void do_awh(t_fileio *fio, awh_params_t *awh_params, gmx_bool bRead,
     gmx_fio_do_int(fio, awh_params->nsamples_move_refvalue);
     gmx_fio_do_int(fio, awh_params->nsamples_update_free_energy);
     gmx_fio_do_gmx_bool(fio, awh_params->bConvolve_force);
+    gmx_fio_do_gmx_bool(fio, awh_params->bForce_correlation);
 
     if (awh_params->nbias > 0)
     {
