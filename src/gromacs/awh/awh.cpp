@@ -55,6 +55,7 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/awh-history.h"
@@ -120,6 +121,7 @@ Awh::Awh(FILE              *fplog,
          pull_t            *pull_work) :
     seed_(awhParams.seed),
     thisRankDoesIO_(MASTER(cr)),
+    nstout_(awhParams.nstOut),
     potentialOffset_(0)
 {
     /* We already checked for this in grompp, but check again here. */
@@ -244,6 +246,15 @@ real Awh::applyBiasForcesAndUpdateBias(pull_t                 *pull_work,
         }
     }
 
+    if (nstout_ > 0 && step % nstout_ == 0)
+    {
+        /* Prepare AWH output data to later write to the energy file. */
+        for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+        {
+            biasCoupledToSystem.bias.prepareOutput();
+        }
+    }
+
     wallcycle_stop(wallcycle, ewcAWH);
 
     return MASTER(cr) ? static_cast<real>(awhPotential) : 0;
@@ -332,6 +343,39 @@ void Awh::registerAwhWithPull(const AwhParams &awhParams,
         {
             register_external_pull_potential(pull_work, biasParams.dimParams[d].coordIndex, Awh::externalPotentialString());
         }
+    }
+}
+
+/* Fill the AWH data block of an energy frame with data (if there is any). */
+void Awh::writeToEnergyframe(t_enxframe *frame) const
+{
+    if (biasCoupledToSystem_[0].bias.numEnergySubblocksToWrite() == 0)
+    {
+        return;
+    }
+
+    /* Get the total number of energy subblocks that AWH needs */
+    int numSubblocks  = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        numSubblocks += biasCoupledToSystem.bias.numEnergySubblocksToWrite();
+    }
+
+    /* Add 1 energy block */
+    add_blocks_enxframe(frame, frame->nblock + 1);
+
+    /* Take the block that was just added and set the number of subblocks. */
+    t_enxblock *awhenergyblock = &(frame->block[frame->nblock - 1]);
+    add_subblocks_enxblock(awhenergyblock, numSubblocks);
+
+    /* Claim it as an AWH block. */
+    awhenergyblock->id = enxAWH;
+
+    /* Transfer AWH data blocks to energy sub blocks */
+    int energySubblockCount = 0;
+    for (auto &biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        energySubblockCount += biasCoupledToSystem.bias.writeToEnergySubblocks(&(awhenergyblock->sub[energySubblockCount]));
     }
 }
 

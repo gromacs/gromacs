@@ -336,8 +336,19 @@ void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
     }
 }
 
-void xvgr_legend(FILE *out, int nsets, const char** setname,
-                 const gmx_output_env_t *oenv)
+static bool stringIsEmpty(const std::string s)
+{
+    return s.empty();
+}
+
+static bool stringIsEmpty(const char *s)
+{
+    return (s == nullptr || s[0] == '\0');
+}
+
+template <typename T>
+static void xvgr_legend(FILE *out, int nsets, const T * setname,
+                        const gmx_output_env_t *oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -352,7 +363,7 @@ void xvgr_legend(FILE *out, int nsets, const char** setname,
         fprintf(out, "@ legend length %d\n", 2);
         for (i = 0; (i < nsets); i++)
         {
-            if (setname[i])
+            if (!stringIsEmpty(setname[i]))
             {
                 if (output_env_get_xvg_format(oenv) == exvgXMGR)
                 {
@@ -367,6 +378,18 @@ void xvgr_legend(FILE *out, int nsets, const char** setname,
             }
         }
     }
+}
+
+void xvgrLegend(FILE                           *out,
+                const std::vector<std::string> &setNames,
+                const struct gmx_output_env_t  *oenv)
+{
+    xvgr_legend(out, setNames.size(), setNames.data(), oenv);
+}
+void xvgr_legend(FILE *out, int nsets, const char** setnames,
+                 const struct gmx_output_env_t *oenv)
+{
+    xvgr_legend<char const *>(out, nsets, setnames, oenv);
 }
 
 void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
