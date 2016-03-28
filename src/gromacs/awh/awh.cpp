@@ -64,6 +64,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation.h"
 #include "data-writer.h"
 #include "grid.h"
 #include "history.h"
@@ -205,7 +206,7 @@ int get_coord_value_index(const awh_bias_t *awh_bias)
 }
 
 static void print_log_init(const awh_bias_t *awh_bias, const awh_dim_params_t *awh_dim_params, int awh_id, FILE *fplog,
-                           int ndomains)
+                           bool bBlocklength_in_weight, int ndomains)
 {
     if (fplog != NULL)
     {
@@ -213,6 +214,15 @@ static void print_log_init(const awh_bias_t *awh_bias, const awh_dim_params_t *a
 
         sprintf(awhstr, "\nawh%d:", awh_id + 1);
 
+        if (awh_bias->bForce_correlation)
+        {
+            fprintf(fplog,
+                    "%s initial force correlation block length = %g %s"
+                    "%s force correlation number of blocks = %d",
+                    awhstr, get_blocklength(awh_bias->forcecorr),
+                    bBlocklength_in_weight ? "" : "ps",
+                    awhstr, get_nblocks(awh_bias->forcecorr));
+        }
         if (ndomains > 1)
         {
             int domain_imin, domain_imax;
@@ -716,7 +726,7 @@ static void init_awh(FILE                       *fplog,
             gmx_incons("Unknown AWH target type");
     }
 
-    /* The force constant k is needed for calculating the force. beta*k is
+    /* The force constant k is needed for calculating the force correlation and the convoluted umbrella force. beta*k is
      * basically the inverse variance of the coordinate and is e.g. used for defining the grid spacing */
     beta = 1./(BOLTZ*ir->opts.ref_t[0]);
     for (int d = 0; d < awh_bias->ndim; d++)
@@ -765,9 +775,23 @@ static void init_awh(FILE                       *fplog,
         partition_domain(awh_bias, awh_bias_params->dim_params, awh_bias->coord_value_index);
     }
 
+    bool blocklength_in_weight   = false;
+    if (awh_bias->bForce_correlation)
+    {
+        /* We let the correlation init function set its parameters to something useful for now. */
+        int    nblocks                 = 0;
+        double blocklength             = 0;
+
+        awh_bias->forcecorr = init_correlation_grid(awh_bias->npoints, awh_bias->ndim,
+                                                    nblocks, blocklength,
+                                                    blocklength_in_weight,
+                                                    ir->delta_t,
+                                                    awh_bias->nstsample_coord);
+    }
+
     /* Print information about AWH variables that are set internally but might be of interest to the user. */
     print_log_init(awh_bias, awh_bias_params->dim_params, awh_id, fplog,
-                   ndomains);
+                   blocklength_in_weight, ndomains);
 }
 
 static bool do_at_step(int nst, gmx_int64_t step)
@@ -816,6 +840,7 @@ awh_t *init_awh(FILE                    *fplog,
     const int      nstmove_refvalue       = awh_params->nsamples_move_refvalue*nstsample_coord;
     const int      nstupdate_free_energy  = awh_params->nsamples_update_free_energy*nstsample_coord;
     const bool     bConvolve_force        = awh_params->bConvolve_force;
+    const bool     bForce_correlation     = awh_params->bForce_correlation;
 
     snew(awh, 1);
 
@@ -832,6 +857,7 @@ awh_t *init_awh(FILE                    *fplog,
         awh->awh_bias[k].nstmove_refvalue         = nstmove_refvalue;
         awh->awh_bias[k].nstupdate_free_energy    = nstupdate_free_energy;
         awh->awh_bias[k].bConvolve_force          = bConvolve_force;
+        awh->awh_bias[k].bForce_correlation       = bForce_correlation;
 
         init_awh(fplog, ir, cr, k, awh->nbias, &awh->awh_bias[k], &awh_params->awh_bias_params[k]);
     }
@@ -839,6 +865,7 @@ awh_t *init_awh(FILE                    *fplog,
 
     /* Keep an array with the data to print to the energy file */
     awh->writer = init_awh_energywriter(awh_params->nstout,
+                                        awh_params->bForce_correlation,
                                         awh, ir->pull);
 
     return awh;
@@ -1058,6 +1085,29 @@ static void set_bias_force(const awh_bias_t *awh_bias, awh_dvec force, int *refv
                 force[d] = 0.5*(force[d] + new_force[d]);
             }
         }
+    }
+}
+
+static void update_force_correlation(correlation_grid_t *forcecorr, const awh_bias_t *awh_bias, double t)
+{
+    for (int n = 0; n < awh_bias->grid->point[awh_bias->coord_value_index].nneighbors; n++)
+    {
+        int      m_neighbor;
+        double   weight_neighbor;
+        awh_dvec force_from_neighbor;
+
+        weight_neighbor = awh_bias->prob_weight_neighbor[n];
+        m_neighbor      = awh_bias->grid->point[awh_bias->coord_value_index].neighbor[n];
+
+        /* Add the force data of this neighbor point. Note: the sum of these forces is the convolved force.
+
+           We actually add the force normalized by beta which has the units of 1/length. This means that the
+           resulting correlation time integral is directly in units of friction time/length^2 which is really what
+           we're interested in. */
+        calc_umbrella_force(awh_bias, awh_bias->betak, m_neighbor, force_from_neighbor);
+
+        /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
+        add_data_to_correlation_matrix(forcecorr, m_neighbor, weight_neighbor, force_from_neighbor, t);
     }
 }
 
@@ -1738,8 +1788,14 @@ static void sample_pmf(awh_bias_t *awh_bias)
     }
 }
 
-static void do_sampling(awh_bias_t *awh_bias)
+static void do_sampling(awh_bias_t *awh_bias, double t)
 {
+    /* Force correlation */
+    if (awh_bias->bForce_correlation)
+    {
+        update_force_correlation(awh_bias->forcecorr, awh_bias, t);
+    }
+
     /* Sampling-based deconvolution extracting the PMF */
     sample_pmf(awh_bias);
 
@@ -1766,7 +1822,7 @@ static void do_awh_step(awh_bias_t *awh_bias, int awh_id, const gmx_multisim_t *
 
         if (do_at_step(awh_bias->nstsample_coord, step))
         {
-            do_sampling(awh_bias);
+            do_sampling(awh_bias, t);
         }
     }
     /* The force on the coordinate resulting from the bias. */
