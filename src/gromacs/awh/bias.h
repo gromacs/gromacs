@@ -68,6 +68,7 @@ struct awh_bias_params_t;
 struct awh_dim_params_t;
 struct awh_params_t;
 class BiasWriter;
+struct CorrelationGrid;
 struct gmx_multisim_t;
 class Grid;
 struct GridAxis;
@@ -480,13 +481,23 @@ class Bias
         double newHistSizeInitialStage(double t, bool haveCovered, FILE *fplog);
 
         /*! \brief
+         * Collect samples for the force correlation analysis.
+         *
+         * \param[in] probWeightNeighbor  Probability weight of the neighboring points.
+         * \param[in] t                   Time.
+         */
+        void updateForceCorrelation(const std::vector<double> &probWeightNeighbor, double t);
+
+        /*! \brief
          * Sample observables for future updates or analysis.
          *
          * \param[in] probWeightNeighbor  Probability weights of the neighbors.
-         * \param[in]     convolvedBias   The convolved bias.
+         * \param[in] convolvedBias       The convolved bias.
+         * \param[in] t                   Time.
          */
         void doObservableSampling(const std::vector<double> &probWeightNeighbor,
-                                  double                     convolvedBias);
+                                  double                     convolvedBias,
+                                  double                     t);
 
         /*! \brief
          * Save the current probability weights for future updates and analysis.
@@ -500,6 +511,13 @@ class Bias
         void sampleProbabilityWeights(const std::vector<double> &probWeightNeighbor);
 
     public:
+        /*! \brief Return a const reference to the force correlation data.
+         */
+        const CorrelationGrid &forceCorr() const
+        {
+            return *forceCorr_.get();
+        }
+
         /*! \brief Prepare data for writing to energy frame.
          *
          * \param[in] ms    Struct for multi-simulation communication.
@@ -529,6 +547,9 @@ class Bias
         BiasState                    state_;       /**< The global state. */
         std::vector<PointState>      pointState_;  /**< Grid point states. */
         std::vector<int>             updateList_;  /**< List of points for update for temporary use (could be made another tempWorkSpace) */
+
+        /* Force correlation */
+        std::unique_ptr<CorrelationGrid> forceCorr_;   /**< Takes care of force correlation statistics. */
 
         /* I/O */
         std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */

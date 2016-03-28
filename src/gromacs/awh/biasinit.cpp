@@ -65,6 +65,7 @@
 
 #include "bias.h"
 #include "biaswriter.h"
+#include "correlation.h"
 #include "grid.h"
 #include "internal.h"
 #include "math.h"
@@ -217,7 +218,7 @@ static void printPartitioningDomainInit(const char              *awhPrefix,
 
     int         my_id = getDomainId(awhBiasParams, grid, bias.state().gridpointIndex);
 
-    if (fplog != NULL)
+    if (fplog != nullptr)
     {
         /* Print partitioning info for this simulation. */
         int domain_imin, domain_imax;
@@ -296,16 +297,29 @@ static void printPartitioningDomainInit(const char              *awhPrefix,
 /*! \brief
  * Print information about initialization to log file.
  *
- * \param[in] bias           The AWH bias.
- * \param[in] awhBiasParams  AWH bias parameters.
- * \param[in,out] fplog      Log file.
+ * \param[in] bias                        The AWH bias.
+ * \param[in] awhBiasParams               AWH bias parameters.
+ * \param[in] measureBlocklengthInWeight  True if correlation block length should be measured in weight, otherwise time.
+ * \param[in,out] fplog                   Log file.
  */
 static void printInitializationToLog(const Bias              &bias,
                                      const awh_bias_params_t &awhBiasParams,
+                                     bool                     measureBlocklengthInWeight,
                                      FILE                    *fplog)
 {
     char           awhstr[STRLEN];
     sprintf(awhstr, "\nawh%d:", bias.biasIndex + 1);
+
+    if (fplog != nullptr)
+    {
+        fprintf(fplog,
+                "%s initial force correlation block length = %g %s"
+                "%s force correlation number of blocks = %d",
+                awhstr, getBlockLength(bias.forceCorr()),
+                measureBlocklengthInWeight ? "" : "ps",
+                awhstr, getNumBlocks(bias.forceCorr()));
+    }
+
 
     printPartitioningDomainInit(awhstr, bias, awhBiasParams, fplog);
 }
@@ -875,11 +889,23 @@ Bias::Bias(FILE                          *fplog,
         params_.coverRadius[d] = spacing > 0 ?  static_cast<int>(std::round(coverRadius/spacing)) : 0;
     }
 
-    writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    bool blocklengthInWeight   = false;
+
+    /* We let the correlation init function set its parameters to something useful for now. */
+    double blockLength         = 0;
+
+    if (MASTER(cr))
+    {
+        forceCorr_ = std::unique_ptr<CorrelationGrid>(new CorrelationGrid(pointState_.size(), ndim(),
+                                                                         blockLength, blocklengthInWeight,
+                                                                         params_.numStepsSampleCoord*mdTimeStep));
+
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
 
     /* Print information about AWH variables that are set internally but might be of interest to the user. */
     if ((cr == NULL) || (MASTER(cr)))
     {
-        printInitializationToLog(*this, awhBiasParams, fplog);
+        printInitializationToLog(*this, awhBiasParams, blocklengthInWeight, fplog);
     }
 }
