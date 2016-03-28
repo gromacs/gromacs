@@ -49,6 +49,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+struct correlation_grid_history_t;
+
 /*! \cond INTERNAL */
 
 //! Coordinate point history data.
@@ -80,6 +82,10 @@ typedef struct awh_bias_history_t
     int                            in_initial;                /**< True if in the intial stage. */
     double                         histsize;                  /**< Size of reference weight histogram. */
     double                         log_relative_sampleweight; /**< Keep track of the weight of new samples relative to previous samples. */
+    /* Force correlation */
+    int                            bForce_correlation;        /**< Do force correlation statistics? */
+    correlation_grid_history_t    *forcecorr_hist;            /**< History for force correlation statistics. */
+
 } awh_bias_history_t;
 
 //! A collection of AWH bias history data. */
