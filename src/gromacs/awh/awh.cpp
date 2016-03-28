@@ -74,6 +74,7 @@
 
 #include "bias.h"
 #include "biassharing.h"
+#include "correlationgrid.h"
 #include "grid.h"
 #include "pointstate.h"
 
@@ -166,6 +167,8 @@ Awh::Awh(FILE              *fplog,
         /* Construct the bias and couple it to the system. */
         biasCoupledToSystem_.emplace_back(Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, ir.delta_t, numSharingSimulations, biasInitFilename, MASTER(cr)),
                                           pullCoordIndex);
+
+        biasCoupledToSystem_.back().bias.printInitializationToLog(fplog);
     }
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
@@ -269,7 +272,7 @@ void Awh::initHistoryFromState(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        biasCoupledToSystem_[k].bias.state().initHistoryFromState(&awhHistory->bias[k]);
+        biasCoupledToSystem_[k].bias.initHistoryFromState(&awhHistory->bias[k]);
     }
 }
 
@@ -307,8 +310,7 @@ void Awh::updateHistory(AwhHistory *awhHistory) const
 
     for (size_t k = 0; k < awhHistory->bias.size(); k++)
     {
-        const Bias &bias = biasCoupledToSystem_[k].bias;
-        bias.state().updateHistory(&awhHistory->bias[k], bias.grid());
+        biasCoupledToSystem_[k].bias.updateHistory(&awhHistory->bias[k]);
     }
 }
 
