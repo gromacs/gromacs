@@ -68,13 +68,15 @@ class Bias;
 //! Enum with the AWH variables to write.
 enum class AwhVar
 {
-    MetaData,           //!< Meta data.
-    CoordValue,         //!< Coordinate value.
-    Pmf,                //!< The pmf.
-    Bias,               //!< The bias.
-    Visits,             //!< The number of visits.
-    Weights,            //!< The weights.
-    Target              //!< The target distribition.
+    MetaData,               //!< Meta data.
+    CoordValue,             //!< Coordinate value.
+    Pmf,                    //!< The pmf.
+    Bias,                   //!< The bias.
+    Visits,                 //!< The number of visits.
+    Weights,                //!< The weights.
+    Target,                 //!< The target distribition.
+    ForceCorrelationVolume, //!< The volume of the force correlation tensor.
+    FrictionTensor          //!< The full friction tensor.
 };
 
 //! Enum with the types of metadata to write.
