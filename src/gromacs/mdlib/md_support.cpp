@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -621,6 +622,11 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     {
         snew(state->dfhist, 1);
         init_df_history(state->dfhist, ir->fepvals->n_lambda);
+    }
+    if (ir->bDoAwh)
+    {
+        snew(state->awh_history, 1);
+        init_awh_history(state->awh_history);
     }
     if (ir->eSwapCoords != eswapNO)
     {
