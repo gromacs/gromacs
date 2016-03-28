@@ -64,12 +64,11 @@ struct gmx_multisim_t;
 awh_energywriter_t *init_awh_energywriter(int nstout,
                                           const awh_t *awh, const awh_params_t *awh_params);
 
-
 /*! \brief Query if output should be written at the given step.
  *
  * \param[in,out] energywriter   The writer struct.
- * \param[in]     awh_params AWH parameters.
- * \param[in]     awh        AWH working struct.
+ * \param[in]     awh_params     AWH parameters.
+ * \param[in]     awh            AWH working struct.
  * \param[in]     ms             Struct for multi-simulation communication, needed for bias sharing replicas.
  */
 void prep_awh_output(awh_energywriter_t *energywriter, const awh_params_t *awh_params,
