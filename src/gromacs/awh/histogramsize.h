@@ -174,6 +174,13 @@ class HistogramSize
             return inInitialStage_;
         };
 
+        /*! \brief Returns The log of the current sample weight, scaled because of the histogram rescaling.
+         */
+        inline double logScaledSampleWeight() const
+        {
+            return logScaledSampleWeight_;
+        };
+
     private:
         gmx_int64_t numUpdates_; /**< The number of updates performed since the start of the simulation. */
 

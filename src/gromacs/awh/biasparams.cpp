@@ -302,7 +302,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? temperatureScaleFactor : 1),
-    // Estimate and initialize histSizeInitial, depends on the grid.
+    errorInitial(beta*awhBiasParams.errorInitial),
     histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, beta, numStepsSampleCoord_*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),

@@ -247,6 +247,41 @@ Bias::Bias(int                             biasIndexInCollection,
     updateList_.reserve(grid_.numPoints());
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias);
+
+    if (thisRankDoesIO_)
+    {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+/* Prepare data for writing to energy frame. */
+void Bias::prepareOutput()
+{
+    if (params_.skipUpdates())
+    {
+        doSkippedUpdatesForAllPoints();
+    }
+
+    if (writer_ != nullptr)
+    {
+        writer_->prepareBiasOutput(*this);
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    GMX_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+
+    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    GMX_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
+
+    return writer_->writeToEnergySubblocks(subblock);
 }
 
 } // namespace gmx
