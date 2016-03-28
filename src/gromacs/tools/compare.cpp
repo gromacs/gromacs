@@ -47,6 +47,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -75,11 +76,18 @@ static void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
     }
 }
 
-static void cmp_int64(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
+static void cmp_int64(FILE *fp, const char *s, int index, gmx_int64_t i1, gmx_int64_t i2)
 {
     if (i1 != i2)
     {
-        fprintf(fp, "%s (", s);
+        if (index != -1)
+        {
+            fprintf(fp, "%s[%d] (", s, index);
+        }
+        else
+        {
+            fprintf(fp, "%s (", s);
+        }
         fprintf(fp, "%" GMX_PRId64, i1);
         fprintf(fp, " - ");
         fprintf(fp, "%" GMX_PRId64, i2);
@@ -652,6 +660,51 @@ static void cmp_pull(FILE *fp)
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
 
+static void cmp_awh_dim_params(FILE *fp, const awh_dim_params_t *dimp1, const awh_dim_params_t *dimp2, int dimIndex, real ftol, real abstol)
+{
+    /* Note that we have double index here, but the compare functions only
+     * support one index, so here we only print the dim index and not the bias.
+     */
+    cmp_int(fp, "inputrec->awh_params->bias?->dim->pull_coord_index", dimIndex, dimp1->pull_coord_index, dimp2->pull_coord_index);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->period", dimIndex, dimp1->period, dimp2->period, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
+    cmp_int(fp, "inputrec->awh_params->bias?->dim->ninterval", dimIndex, dimp1->ninterval, dimp2->ninterval);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->interval_overlap", dimIndex, dimp1->interval_overlap, dimp2->interval_overlap, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->bias?->dim->coord_value_init", dimIndex, dimp1->coord_value_init, dimp2->coord_value_init, ftol, abstol);
+}
+
+static void cmp_awh_bias_params(FILE *fp, const awh_bias_params_t *bias1, const awh_bias_params_t *bias2, int biasIndex, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->awh_params->ndim", biasIndex, bias1->ndim, bias2->ndim);
+    cmp_int(fp, "inputrec->awh_params->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
+    cmp_double(fp, "inputrec->awh_params->biastargetBetaScaling", biasIndex, bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
+    cmp_double(fp, "inputrec->awh_params->biastargetCutoff", biasIndex, bias1->targetCutoff, bias2->targetCutoff, ftol, abstol);
+    cmp_int(fp, "inputrec->awh_params->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
+    cmp_bool(fp, "inputrec->awh_params->biasbUser_data", biasIndex, bias1->bUser_data, bias2->bUser_data);
+    cmp_double(fp, "inputrec->awh_params->biaserror_initial", biasIndex, bias1->error_initial, bias2->error_initial, ftol, abstol);
+    cmp_bool(fp, "inputrec->awh_params->biasbShare", biasIndex, bias1->bShare, bias2->bShare);
+}
+
+static void cmp_awh_params(FILE *fp, const awh_params_t *awh1, const awh_params_t *awh2, real ftol, real abstol)
+{
+    cmp_int(fp, "inputrec->awh_params->nbias", -1, awh1->nbias, awh2->nbias);
+    cmp_int64(fp, "inputrec->awh_params->seed", -1, awh1->seed, awh2->seed);
+    cmp_int(fp, "inputrec->awh_params->nstout", -1, awh1->nstout, awh2->nstout);
+    cmp_int(fp, "inputrec->awh_params->nstsample_coord", -1, awh1->nstsample_coord, awh2->nstsample_coord);
+    cmp_int(fp, "inputrec->awh_params->nsamples_update_free_energy", -1, awh1->nsamples_update_free_energy, awh2->nsamples_update_free_energy);
+    cmp_int(fp, "inputrec->awh_params->ePotential", -1, awh1->ePotential, awh2->ePotential);
+
+    if (awh1->nbias == awh2->nbias)
+    {
+        for (int bias = 0; bias < awh1->nbias; bias++)
+        {
+            cmp_awh_bias_params(fp, &awh1->awh_bias_params[bias], &awh2->awh_bias_params[bias], bias, ftol, abstol);
+        }
+    }
+}
+
 static void cmp_simtempvals(FILE *fp, const t_simtemp *simtemp1, const t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
 {
     int i;
@@ -740,8 +793,8 @@ static void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2,
      * #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s,ftol)
      */
     cmp_int(fp, "inputrec->eI", -1, ir1->eI, ir2->eI);
-    cmp_int64(fp, "inputrec->nsteps", ir1->nsteps, ir2->nsteps);
-    cmp_int64(fp, "inputrec->init_step", ir1->init_step, ir2->init_step);
+    cmp_int64(fp, "inputrec->nsteps", -1, ir1->nsteps, ir2->nsteps);
+    cmp_int64(fp, "inputrec->init_step", -1, ir1->init_step, ir2->init_step);
     cmp_int(fp, "inputrec->simulation_part", -1, ir1->simulation_part, ir2->simulation_part);
     cmp_int(fp, "inputrec->ePBC", -1, ir1->ePBC, ir2->ePBC);
     cmp_int(fp, "inputrec->bPeriodicMols", -1, ir1->bPeriodicMols, ir2->bPeriodicMols);
@@ -838,6 +891,12 @@ static void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2,
         cmp_pull(fp);
     }
 
+    cmp_bool(fp, "inputrec->bDoAwh", -1, ir1->bDoAwh, ir2->bDoAwh);
+    if (ir1->bDoAwh && ir2->bDoAwh)
+    {
+        cmp_awh_params(fp, ir1->awh_params, ir2->awh_params, ftol, abstol);
+    }
+
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
     cmp_int(fp, "inputrec->eDisreWeighting", -1, ir1->eDisreWeighting, ir2->eDisreWeighting);
@@ -858,7 +917,7 @@ static void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2,
     cmp_real(fp, "inputrec->LincsWarnAngle", -1, ir1->LincsWarnAngle, ir2->LincsWarnAngle, ftol, abstol);
     cmp_int(fp, "inputrec->nLincsIter", -1, ir1->nLincsIter, ir2->nLincsIter);
     cmp_real(fp, "inputrec->bd_fric", -1, ir1->bd_fric, ir2->bd_fric, ftol, abstol);
-    cmp_int64(fp, "inputrec->ld_seed", ir1->ld_seed, ir2->ld_seed);
+    cmp_int64(fp, "inputrec->ld_seed", -1, ir1->ld_seed, ir2->ld_seed);
     cmp_real(fp, "inputrec->cos_accel", -1, ir1->cos_accel, ir2->cos_accel, ftol, abstol);
     cmp_rvec(fp, "inputrec->deform(a)", -1, ir1->deform[XX], ir2->deform[XX], ftol, abstol);
     cmp_rvec(fp, "inputrec->deform(b)", -1, ir1->deform[YY], ir2->deform[YY], ftol, abstol);
@@ -1291,7 +1350,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                     s2 = &(b2->sub[i]);
 
                     cmp_int(stdout, buf, -1, (int)s1->type, (int)s2->type);
-                    cmp_int64(stdout, buf, s1->nr, s2->nr);
+                    cmp_int64(stdout, buf, -1, s1->nr, s2->nr);
 
                     if ((s1->type == s2->type) && (s1->nr == s2->nr))
                     {
@@ -1323,7 +1382,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
                             case xdr_datatype_int64:
                                 for (k = 0; k < s1->nr; k++)
                                 {
-                                    cmp_int64(stdout, buf,
+                                    cmp_int64(stdout, buf, i,
                                               s1->lval[k], s2->lval[k]);
                                 }
                                 break;
