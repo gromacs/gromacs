@@ -64,6 +64,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "bias.h"
+#include "biaswriter.h"
 #include "grid.h"
 #include "internal.h"
 #include "math.h"
@@ -216,7 +217,7 @@ static void printPartitioningDomainInit(const char              *awhPrefix,
 
     int         my_id = getDomainId(awhBiasParams, grid, bias.state().gridpointIndex);
 
-    if (fplog != NULL)
+    if (fplog != nullptr)
     {
         /* Print partitioning info for this simulation. */
         int domain_imin, domain_imax;
@@ -786,6 +787,8 @@ BiasParams::BiasParams(const awh_params_t           &awhParams,
         coverRadius[d]         = spacing > 0 ?  static_cast<int>(std::round(coverRadiusInNm/spacing)) : 0;
     }
 
+    errorInitial    = awhBiasParams.error_initial;
+
     /* Estimate and initialize histSizeInitial. The estimation depends on the grid. */
     histSizeInitial = getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord*mdTimeStep);
 }
@@ -815,6 +818,8 @@ Bias::Bias(FILE                          *fplog,
     params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, cr, grid_->axis_),
     tempWorkSpace_()
 {
+    GMX_RELEASE_ASSERT(cr != nullptr, "Bias should be called with a valid commrec");
+
     awh_dvec             coordValueInit;
 
     for (int d = 0; d < ndim(); d++)
@@ -872,9 +877,11 @@ Bias::Bias(FILE                          *fplog,
         params_.coverRadius[d] = spacing > 0 ?  static_cast<int>(std::round(coverRadius/spacing)) : 0;
     }
 
-    /* Print information about AWH variables that are set internally but might be of interest to the user. */
-    if ((cr == NULL) || (MASTER(cr)))
+    if (MASTER(cr))
     {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+
+        /* Print information about AWH variables that are set internally but might be of interest to the user. */
         printInitializationToLog(*this, awhBiasParams, fplog);
     }
 }
