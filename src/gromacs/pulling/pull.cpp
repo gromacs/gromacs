@@ -76,7 +76,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
     return (pcrd->eGeom == epullgANGLE ||
             pcrd->eGeom == epullgDIHEDRAL ||
