@@ -550,7 +550,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
             pcrd->init = 0;
         }
 
-        get_pull_coord_value(pull_work, c, &pbc, &value);
+        value  = get_pull_coord_value(pull_work, c, &pbc);
 
         value *= pull_conversion_factor_internal2userinput(pcrd);
         fprintf(stderr, " %10.3f %s", value, pull_coordinate_units(pcrd));
