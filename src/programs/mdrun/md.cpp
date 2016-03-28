@@ -1639,7 +1639,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
                        step, t,
-                       eprNORMAL, mdebin, fcd, groups, &(ir->opts));
+                       eprNORMAL, mdebin, fcd, groups, &(ir->opts), fr->awh);
 
             if (ir->bPull)
             {
@@ -1829,7 +1829,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (ir->nstcalcenergy > 0 && !bRerunMD)
         {
             print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
-                       eprAVER, mdebin, fcd, groups, &(ir->opts));
+                       eprAVER, mdebin, fcd, groups, &(ir->opts), fr->awh);
         }
     }
 
