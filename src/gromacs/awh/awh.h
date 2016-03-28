@@ -48,6 +48,7 @@
 
 #include <cstdio>
 
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -93,6 +94,7 @@ AwhBiasCollection *init_awh_md(FILE                    *fplog,
  * since AWH need the updated center-of-masses of the pull coordinates.
  *
  * \param[in,out] awh      AWH working struct.
+ * \param[in] awh_params   AWH input parameters.
  * \param[in,out] pull_work    Pull working struct.
  * \param[in]   mdatoms        Atom properties.
  * \param[in] ePBC             Type of periodic boundary conditions.
@@ -107,6 +109,7 @@ AwhBiasCollection *init_awh_md(FILE                    *fplog,
  * \returns the potential energy for the bias.
  */
 real update_awh(AwhBiasCollection      *awh,
+                const awh_params_t     *awh_params,
                 struct pull_t          *pull_work,
                 int                     ePBC,
                 const t_mdatoms        *mdatoms,
@@ -127,5 +130,12 @@ real update_awh(AwhBiasCollection      *awh,
  */
 void update_awh_history(awh_history_t            *awh_history,
                         const AwhBiasCollection  *awh);
+
+/*! \brief Fills the AWH data block of an energy frame with data at certain steps.
+ *
+ * \param[in,out] fr      Energy data frame.
+ * \param[in,out] awh     AWH working struct.
+ */
+void write_awh_to_energyframe(t_enxframe *fr, AwhBiasCollection *awh);
 
 #endif /* GMX_AWH_H */

@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -1931,6 +1932,7 @@ static void setAwhCoordValues(AwhBiasCollection *awh, struct pull_t *pull_work,
 
 /* Do an AWH biasing update. */
 real update_awh(AwhBiasCollection      *awh,
+                const awh_params_t     *awh_params,
                 struct pull_t          *pull_work,
                 int                     ePBC,
                 const t_mdatoms        *mdatoms,
@@ -1946,6 +1948,21 @@ real update_awh(AwhBiasCollection      *awh,
     double   bias_potential = 0;
 
     wallcycle_start(wallcycle, ewcAWH);
+
+    /* Prepare AWH output data to later print to the energy file */
+    if (awh_params->nstout > 0 && step % awh_params->nstout == 0)
+    {
+        /* Make sure bias is up to date globally. This will also update the free energy and weight histogram. */
+        for (auto &awhBias : awh->awhBias)
+        {
+            if (awhBias.params.canSkipUpdates())
+            {
+                do_skipped_updates_for_all_points(&awhBias, step);
+            }
+        }
+
+        prep_awh_output(awh, awh_params, ms);
+    }
 
     /* Update the AWH coordinate values with those of the corresponding pull coordinates. */
     setAwhCoordValues(awh, pull_work, ePBC, box);
@@ -1963,4 +1980,9 @@ real update_awh(AwhBiasCollection      *awh,
     wallcycle_stop(wallcycle, ewcAWH);
 
     return static_cast<real>(bias_potential);
+}
+
+void write_awh_to_energyframe(t_enxframe *fr, AwhBiasCollection *awh)
+{
+    write_awh_to_frame(fr, awh);
 }

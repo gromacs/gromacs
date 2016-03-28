@@ -1817,7 +1817,7 @@ AWH adaptive biasing
 
       Adaptively bias a reaction coordinate using the AWH method. The corresponding PMF is
       estimated at the same time and written to the energy file. The PMF and other AWH data
-      can be extracted with the ``gmx awh`` tool. The AWH coordinate can be
+      can be extracted with the :ref:`gmx awh` tool. The AWH coordinate can be
       multidimensional and is defined by mapping each dimension to a pull coordinate index.
       This is only allowed if :mdp:`pull-coord1-type` = :mdp-value:`external-potential` and
       :mdp:`pull-coord1-potential-provider` = ``awh`` for the concerned pull coordinate
@@ -1973,7 +1973,7 @@ AWH adaptive biasing
       each input file should contain the coordinate values, such that each row defines a point in
       coordinate space. Column :mdp:`awh1-ndim` + 1 should contain the PMF value for each point.
       The target distribution column can either follow the PMF (column  :mdp:`awh1-ndim` + 2) or
-      be in the same column as written by ``gmx awh``.
+      be in the same column as written by :ref:`gmx awh`.
 
 .. mdp:: awh1-share
 

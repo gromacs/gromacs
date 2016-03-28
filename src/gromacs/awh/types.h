@@ -63,6 +63,7 @@ typedef double awh_dvec[c_awhBiasMaxNumDim];
 typedef int awh_ivec[c_awhBiasMaxNumDim];
 
 struct Grid;
+struct BiasWriter;
 
 /*! \cond INTERNAL */
 
@@ -201,6 +202,9 @@ struct AwhBias
     std::vector<double> probWeightNeighbor;  /**< Probability weights for points neighboring the current coordinate value index */
     double              convolved_bias;      /**< The convolved bias for the current coordinate value. */
     awh_dvec            bias_force;          /**< The bias force for the current coordinate value. */
+
+    /* I/O */
+    std::unique_ptr<BiasWriter> writer;     /**< Takes care of AWH data output. */
 };
 
 //! A collection of AWH biases.

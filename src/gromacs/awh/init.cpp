@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -866,6 +867,8 @@ static void init_awh_bias(FILE                       *fplog,
         double spacing     = awh_bias->grid->axis[d].spacing;
         state->coverRadius[d] = spacing > 0 ?  static_cast<int>(std::round(coverRadius/spacing)) : 0;
     }
+
+    awh_bias->writer = std::unique_ptr<BiasWriter>(init_bias_writer(*awh_bias));
 
     /* Print information about AWH variables that are set internally but might be of interest to the user. */
     if ((cr == NULL) || (MASTER(cr)))

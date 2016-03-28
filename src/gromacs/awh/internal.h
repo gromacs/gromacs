@@ -76,7 +76,7 @@ struct t_commrec;
  * \param[in] coord_value    Coordinate value.
  * \returns the convolved bias >= -GMX_DOUBLE_MAX.
  */
-double calc_convolved_bias(const AwhBias *awh_bias, const awh_dvec coord_value);
+double calc_convolved_bias(const AwhBias &awh_bias, const awh_dvec coord_value);
 
 /*! \brief
  * Sets the given array with PMF values.
