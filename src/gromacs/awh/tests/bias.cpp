@@ -45,6 +45,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/awh/correlationgrid.h"
 #include "gromacs/awh/pointstate.h"
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/utility/stringutil.h"
@@ -227,13 +228,13 @@ TEST_P(BiasTest, ForcesBiasPmf)
     double              coordMaxValue = 0;
     double              potentialJump = 0;
     gmx_int64_t         step          = 0;
+    std::vector<double> biasForce(bias.ndim());
     for (auto &coord : coordinates_)
     {
         coordMaxValue = std::max(coordMaxValue, std::abs(coord));
 
         awh_dvec coordValue = { coord, 0, 0, 0 };
-        awh_dvec biasForce;
-        double   potential = 0;
+        double   potential  = 0;
         bias.calcForceAndUpdateBias(coordValue,
                                     biasForce, &potential, &potentialJump,
                                     nullptr, step, step, seed_, nullptr);
@@ -303,20 +304,20 @@ TEST(BiasTest, DetectsCovering)
      * coordinate range in a semi-realistic way. The period is 4*pi=12.57.
      * We get out of the initial stage after 4 coverings at step 300.
      */
-    const gmx_int64_t exitStepRef = 300;
-    const double      midPoint    = 0.5*(awhDimParams.end + awhDimParams.origin);
-    const double      halfWidth   = 0.5*(awhDimParams.end - awhDimParams.origin);
+    const gmx_int64_t   exitStepRef = 300;
+    const double        midPoint    = 0.5*(awhDimParams.end + awhDimParams.origin);
+    const double        halfWidth   = 0.5*(awhDimParams.end - awhDimParams.origin);
 
-    bool              inInitialStage = bias.state().inInitialStage();
+    bool                inInitialStage = bias.state().inInitialStage();
     /* Normally this loop exits at exitStepRef, but we extend with failure */
-    gmx_int64_t       step;
+    gmx_int64_t         step;
+    std::vector<double> biasForce(bias.ndim());
     for (step = 0; step <= 2*exitStepRef; step++)
     {
         double   t     = step*mdTimeStep;
         double   coord = midPoint + halfWidth*(0.5*std::sin(t) + 0.55*std::sin(1.5*t));
 
         awh_dvec coordValue    = { coord, 0, 0, 0 };
-        awh_dvec biasForce;
         double   potential     = 0;
         double   potentialJump = 0;
         bias.calcForceAndUpdateBias(coordValue,

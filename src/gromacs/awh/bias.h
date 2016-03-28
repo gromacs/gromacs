@@ -76,6 +76,7 @@ struct AwhBiasParams;
 struct AwhHistory;
 struct AwhParams;
 struct AwhPointStateHistory;
+class CorrelationGrid;
 class Grid;
 class GridAxis;
 class PointState;
@@ -172,6 +173,16 @@ class Bias
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
         /*! \brief
+         * Print information about initialization to log file.
+         *
+         * Prints information about AWH variables that are set internally
+         * but might be of interest to the user.
+         *
+         * \param[in,out] fplog  Log file, can be nullptr.
+         */
+        void printInitializationToLog(FILE *fplog) const;
+
+        /*! \brief
          * Evolves the bias at every step.
          *
          * At each step the bias step needs to:
@@ -180,7 +191,7 @@ class Bias
          * - reweight samples to extract the PMF.
          *
          * \param[in]     coordValue     The current coordinate value(s).
-         * \param[out]    biasForce      The bias force.
+         * \param[out]    biasForce      The bias force, the size should match the dimensionality of the bias (exception otherwise).
          * \param[out]    awhPotential   Bias potential.
          * \param[out]    potentialJump  Change in bias potential for this bias.
          * \param[in]     ms             Struct for multi-simulation communication.
@@ -190,7 +201,7 @@ class Bias
          * \param[in,out] fplog          Log file.
          */
         void calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                    awh_dvec              biasForce,
+                                    gmx::ArrayRef<double> biasForce,
                                     double               *awhPotential,
                                     double               *potentialJump,
                                     const gmx_multisim_t *ms,
@@ -301,7 +312,25 @@ class Bias
                                        gmx_int64_t  step,
                                        FILE        *fplog);
 
+        /*! \brief
+         * Collect samples for the force correlation analysis.
+         *
+         * \param[in] probWeightNeighbor  Probability weight of the neighboring points.
+         * \param[in] t                   The time.
+         */
+        void updateForceCorrelation(const std::vector<double>    &probWeightNeighbor,
+                                    double                        t);
+
     public:
+        /*! \brief Return a const reference to the force correlation data.
+         */
+        const CorrelationGrid &forceCorrelation() const
+        {
+            GMX_RELEASE_ASSERT(forceCorrelation_ != nullptr, "forceCorrelation() should only be called with a valid force correlation object");
+
+            return *forceCorrelation_.get();
+        }
+
         /*! \brief Return the number of data blocks that have been prepared for writing.
          */
         int numEnergySubblocksToWrite() const;
@@ -324,6 +353,9 @@ class Bias
         std::vector<int>             updateList_;        /**< List of points for update for temporary use (could be made another tempWorkSpace) */
 
         const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+
+        /* Force correlation */
+        std::unique_ptr<CorrelationGrid> forceCorrelation_;   /**< Takes care of force correlation statistics. */
 
         /* I/O */
         std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */

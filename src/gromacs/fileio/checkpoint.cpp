@@ -61,6 +61,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/awh-correlation-history.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -167,6 +168,7 @@ enum {
     eawhhUPDATELIST,
     eawhhLOGSCALEDSAMPLEWEIGHT,
     eawhhNUMUPDATES,
+    eawhhFORCECORRELATION,
     eawhhNR
 };
 
@@ -180,6 +182,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_updatelist",
     "awh_logScaledSampleWeight",
     "awh_numupdates"
+    "awh_forceCorrelation"
 };
 
 //! Higher level vector element type, only used for formatting checkpoint dumps
@@ -1500,6 +1503,39 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
     return 0;
 }
 
+static int do_cpt_correlation_grid(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
+                                   gmx::CorrelationGridHistory *corrGrid,
+                                   FILE *list, int eawhh)
+{
+    int ret = 0;
+
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->numCorrelationTensors), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->tensorSize), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrGrid->blockDataListSize), list);
+
+    if (bRead)
+    {
+        initCorrelationGridHistory(corrGrid, corrGrid->numCorrelationTensors, corrGrid->tensorSize, corrGrid->blockDataListSize);
+    }
+
+    for (gmx::CorrelationBlockDataHistory &blockData : corrGrid->blockDataBuffer)
+    {
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumWeight), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumSqrWeight), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumWeightX), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockSumWeightY), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksSqrBlockWeight), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksBlockSqrWeight), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksBlockWeightBlockWeightX), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.sumOverBlocksBlockWeightBlockWeightY), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.blockLength), list);
+        do_cpt_int_err(xd, eawhh_names[eawhh], &(blockData.previousBlockIndex), list);
+        do_cpt_double_err(xd, eawhh_names[eawhh], &(blockData.correlationIntegral), list);
+    }
+
+    return ret;
+}
+
 static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                            int fflags, gmx::AwhBiasHistory *biasHistory,
                            FILE *list)
@@ -1561,6 +1597,9 @@ static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
                     break;
                 case eawhhNUMUPDATES:
                     do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
+                    break;
+                case eawhhFORCECORRELATION:
+                    ret = do_cpt_correlation_grid(xd, bRead, fflags, &biasHistory->forceCorrelation, list, i);
                     break;
                 default:
                     gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
@@ -1843,7 +1882,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                         (1 << eawhhUMBRELLAGRIDPOINT) |
                         (1 << eawhhUPDATELIST) |
                         (1 << eawhhLOGSCALEDSAMPLEWEIGHT) |
-                        (1 << eawhhNUMUPDATES));
+                        (1 << eawhhNUMUPDATES) |
+                        (1 << eawhhFORCECORRELATION));
     }
 
     /* We can check many more things now (CPU, acceleration, etc), but
