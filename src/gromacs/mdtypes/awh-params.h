@@ -113,6 +113,7 @@ struct awh_params_t {
     int                      nbias;                       /**< The number of AWH biases.*/
     awh_bias_params_t       *awh_bias_params;             /**< AWH bias parameters.*/
     gmx_int64_t              seed;                        /**< Random seed.*/
+    int                      nstout;                      /**< Output step interval.*/
     int                      nstsample_coord;             /**< Number of samples per coordinate sample (also used for PMF) */
     int                      nsamples_move_refvalue;      /**< Number of samples per moving the coordinate reference value. */
     int                      nsamples_update_free_energy; /**< Number of samples per free energy update. */
