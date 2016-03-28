@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -337,7 +338,7 @@ static double get_initial_histsize_estimate(const awh_dvec betak, const awh_bias
 
 static void set_free_energy_to_convolved_pmf(awh_bias_t *awh_bias, const gmx_multisim_t *ms)
 {
-    double *convolvedPmf;
+    float *convolvedPmf;
 
     snew(convolvedPmf, awh_bias->npoints);
 
@@ -766,6 +767,10 @@ awh_t *init_awh(FILE                    *fplog,
 
         init_awh_bias(fplog, ir, cr, k, awh->nbias, &awh->awh_bias[k], &awh_params->awh_bias_params[k]);
     }
+
+
+    /* Keep an array with the data to print to the energy file */
+    awh->writer = init_awh_energywriter(awh_params->nstout, awh, awh_params);
 
     return awh;
 }
