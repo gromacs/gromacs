@@ -130,16 +130,16 @@ class BiasState
          * Allocate and initialize a bias history with the given bias state.
          *
          * This function will be called at the start of a new simulation.
-         * Note that this only sets the correct size and does produces
-         * a history object with all variables zero.
-         * History data is set by \ref updateHistory.
+         * Note that this only sets the correct size and does produce
+         * a valid history object, but with all data set to zero.
+         * Actual history data is set by \ref updateHistory.
          *
          * \param[in,out] biasHistory  AWH history to initialize.
          */
         void initHistoryFromState(AwhBiasHistory *biasHistory) const;
 
         /*! \brief
-         * Update the bias history with a new state.
+         * Update the bias state history with the current state.
          *
          * \param[out] biasHistory  Bias history struct.
          * \param[in]  grid         The bias grid.
@@ -226,7 +226,7 @@ class BiasState
         double calcUmbrellaForceAndPotential(const std::vector<DimParams> &dimParams,
                                              const Grid                   &grid,
                                              int                           point,
-                                             awh_dvec                      force) const;
+                                             gmx::ArrayRef<double>         force) const;
 
         /*! \brief
          * Calculates and sets the convolved force acting on the coordinate.
@@ -237,12 +237,14 @@ class BiasState
          * \param[in]     dimParams           The bias dimensions parameters.
          * \param[in]     grid                The grid.
          * \param[in]     probWeightNeighbor  Probability weights of the neighbors.
+         * \param[in]     forceWorkBuffer     Force work buffer, values only used internally.
          * \param[in,out] force               Bias force vector to set.
          */
         void calcConvolvedForce(const std::vector<DimParams> &dimParams,
                                 const Grid                   &grid,
                                 gmx::ArrayRef<const double>   probWeightNeighbor,
-                                awh_dvec                      force) const;
+                                gmx::ArrayRef<double>         forceWorkBuffer,
+                                gmx::ArrayRef<double>         force) const;
 
         /*! \brief
          * Move the center point of the umbrella potential.
@@ -265,7 +267,7 @@ class BiasState
         double moveUmbrella(const std::vector<DimParams> &dimParams,
                             const Grid                   &grid,
                             gmx::ArrayRef<const double>   probWeightNeighbor,
-                            awh_dvec                      biasForce,
+                            gmx::ArrayRef<double>         biasForce,
                             gmx_int64_t                   step,
                             gmx_int64_t                   seed,
                             int                           indexSeed);
@@ -527,8 +529,8 @@ class BiasState
         HistogramSize       histogramSize_;     /**< Global histogram size related values. */
 
         /* Track the part of the grid sampled since the last update. */
-        awh_ivec  originUpdatelist_;  /**< The origin of the rectangular region that has been sampled since last update. */
-        awh_ivec  endUpdatelist_;     /**< The end of the rectangular region that has been sampled since last update. */
+        awh_ivec            originUpdatelist_;  /**< The origin of the rectangular region that has been sampled since last update. */
+        awh_ivec            endUpdatelist_;     /**< The end of the rectangular region that has been sampled since last update. */
 };
 
 //! Linewidth used for warning output
