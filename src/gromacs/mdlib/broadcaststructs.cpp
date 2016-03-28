@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -61,6 +62,26 @@
 #define    snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
 /* Dirty macro with bAlloc not as an argument */
 #define nblock_abc(cr, nr, d) { if (bAlloc) {snew((d), (nr)); } nblock_bc(cr, (nr), (d)); }
+
+static void bc_cstring(const t_commrec *cr, char **s)
+{
+    int size = 0;
+
+    if (MASTER(cr) && *s != NULL)
+    {
+        /* Size of the char buffer is string length + 1 for '\0' */
+        size = strlen(*s) + 1;
+    }
+    block_bc(cr, size);
+    if (size > 0)
+    {
+        if (!MASTER(cr))
+        {
+            snew(*s, size);
+        }
+        nblock_bc(cr, size, *s);
+    }
+}
 
 static void bc_string(const t_commrec *cr, t_symtab *symtab, char ***s)
 {
@@ -480,6 +501,26 @@ static void bc_cosines(const t_commrec *cr, t_cosines *cs)
     }
 }
 
+static void bc_awh_bias(const t_commrec *cr, awh_bias_params_t *awh_bias_params)
+{
+    block_bc(cr, *awh_bias_params);
+
+    snew_bc(cr, awh_bias_params->dim_params, awh_bias_params->ndim);
+    nblock_bc(cr, awh_bias_params->ndim, awh_bias_params->dim_params);
+}
+
+static void bc_awh(const t_commrec *cr, awh_params_t *awh_params)
+{
+    int k;
+
+    block_bc(cr, *awh_params);
+    snew_bc(cr, awh_params->awh_bias_params, awh_params->nbias);
+    for (k = 0; k < awh_params->nbias; k++)
+    {
+        bc_awh_bias(cr, &awh_params->awh_bias_params[k]);
+    }
+}
+
 static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
 {
     block_bc(cr, *pgrp);
@@ -507,6 +548,13 @@ static void bc_pull(const t_commrec *cr, pull_params_t *pull)
     }
     snew_bc(cr, pull->coord, pull->ncoord);
     nblock_bc(cr, pull->ncoord, pull->coord);
+    for (int c = 0; c < pull->ncoord; c++)
+    {
+        if (pull->coord[c].eType == epullEXTERNAL)
+        {
+            bc_cstring(cr, &pull->coord[c].externalPotentialProvider);
+        }
+    }
 }
 
 static void bc_rotgrp(const t_commrec *cr, t_rotgrp *rotg)
@@ -681,6 +729,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->pull, 1);
         bc_pull(cr, inputrec->pull);
     }
+    if (inputrec->bDoAwh)
+    {
+        snew_bc(cr, inputrec->awh_params, 1);
+        bc_awh(cr, inputrec->awh_params);
+    }
+
     if (inputrec->bRot)
     {
         snew_bc(cr, inputrec->rot, 1);
