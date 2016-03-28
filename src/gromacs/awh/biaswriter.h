@@ -74,6 +74,8 @@ enum class AwhVar
     Visits,                 //!< The number of visits.
     Weights,                //!< The weights.
     Target,                 //!< The target distribition.
+    ForceCorrelationVolume, //!< The volume of the force correlation tensor.
+    FrictionTensor,         //!< The full friction tensor.
     Count                   //!< The number of enum value, not including Count.
 };
 
