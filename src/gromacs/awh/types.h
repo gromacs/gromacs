@@ -59,6 +59,7 @@ typedef double awh_dvec[AWH_NDIM_MAX];
 typedef int awh_ivec[AWH_NDIM_MAX];
 
 struct grid_t;
+struct awh_energywriter_t;
 
 /*! \cond INTERNAL */
 
@@ -123,10 +124,11 @@ typedef struct awh_bias_t {
 
 //! A collection of AWH biases.
 typedef struct awh_t {
-    int          nbias;            /**< Number of AWH biases. */
-    awh_bias_t  *awh_bias;         /**< AWH biases. */
-    gmx_int64_t  seed;             /**< Random seed. */
-    double       potential_offset; /**< The offset of the bias potential due to bias updates. */
+    int                 nbias;            /**< Number of AWH biases. */
+    awh_bias_t         *awh_bias;         /**< AWH biases. */
+    gmx_int64_t         seed;             /**< Random seed. */
+    double              potential_offset; /**< The offset of the bias potential due to bias updates. */
+    awh_energywriter_t *writer;           /**< Takes care of AWH data output. */
 } awh_t;
 
 /*! \endcond */
