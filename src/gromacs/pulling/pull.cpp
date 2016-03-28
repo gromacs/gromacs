@@ -80,7 +80,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
     return (pcrd->eGeom == epullgANGLE ||
             pcrd->eGeom == epullgDIHEDRAL ||
@@ -964,14 +964,13 @@ static double get_pull_coord_deviation(struct pull_t *pull,
     return dev;
 }
 
-void get_pull_coord_value(struct pull_t *pull,
-                          int            coord_ind,
-                          const t_pbc   *pbc,
-                          double        *value)
+double get_pull_coord_value(struct pull_t *pull,
+                            int            coord_ind,
+                            const t_pbc   *pbc)
 {
     get_pull_coord_distance(pull, coord_ind, pbc);
 
-    *value = pull->coord[coord_ind].value;
+    return pull->coord[coord_ind].value;
 }
 
 static void clear_pull_forces_coord(pull_coord_work_t *pcrd)
@@ -1650,11 +1649,11 @@ static void check_external_potential_registration(const struct pull_t *pull)
  * potential energy is added either to the pull term or to a term
  * specific to the external module.
  */
-void apply_external_pull_coord_force(struct pull_t *pull,
-                                     int coord_index,
-                                     double coord_force,
-                                     const t_mdatoms *mdatoms,
-                                     rvec *force, tensor virial)
+void apply_external_pull_coord_force(struct pull_t        *pull,
+                                     int                   coord_index,
+                                     double                coord_force,
+                                     const t_mdatoms      *mdatoms,
+                                     gmx::ForceWithVirial *forceWithVirial)
 {
     pull_coord_work_t *pcrd;
 
@@ -1675,9 +1674,15 @@ void apply_external_pull_coord_force(struct pull_t *pull,
         calc_pull_coord_vector_force(pcrd);
 
         /* Add the forces for this coordinate to the total virial and force */
-        add_virial_coord(virial, pcrd);
+        if (forceWithVirial->computeVirial_)
+        {
+            matrix virial = { { 0 } };
+            add_virial_coord(virial, pcrd);
+            forceWithVirial->addVirialContribution(virial);
+        }
 
-        apply_forces_coord(pull, coord_index, mdatoms, force);
+        apply_forces_coord(pull, coord_index, mdatoms,
+                           as_rvec_array(forceWithVirial->force_.data()));
     }
 
     pull->numExternalPotentialsStillToBeAppliedThisStep--;
