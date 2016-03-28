@@ -87,6 +87,7 @@ struct BiasReader
 {
     int           numSubblocks;         /**< Number of subblocks to read. */
     OutFile       awh;                  /**< The standard AWH output file data */
+    OutFile       tensor;               /**< The metric tensor output file data */
 };
 
 /*! \brief All options and meta-data needed for the AWH output */
@@ -94,6 +95,7 @@ struct AwhReader
 {
     int           nbias;                /**< The number of AWH biases. */
     BiasReader   *biasReader;           /**< The readers, one for each AWH bias. */
+    bool          outputFrictionTensor; /**< Write metric tensor files */
 };
 
 /*! \brief Constructs a legend for a standard awh output file */
@@ -107,7 +109,8 @@ static void make_awh_legend(const awh_bias_params_t *awh_bias_params,
         "Coord bias",
         "Coord distr",
         "Ref value distr",
-        "Target ref value distr"
+        "Target ref value distr",
+        "Friction metric"
     };
 
     int                legendIndex = 0;
@@ -128,11 +131,30 @@ static void make_awh_legend(const awh_bias_params_t *awh_bias_params,
         legendBaseIndex++;
     }
 
-    /* If there are still more legends to add, do it. */
-    if (legendIndex < numLegend)
+    if (legendIndex != numLegend)
     {
-        legend[legendIndex] =  strdup("Force corr distr.");
-        legendIndex++;
+        gmx_incons("Mismatch between the number of legends requested for printing and the number present!");
+    }
+}
+
+/*! \brief Constructs a legend for a metric tensor output file */
+static void make_tensor_legend(const awh_bias_params_t *awh_bias_params,
+                               int numLegend, char **legend)
+{
+    /* Want the 2 indices of the symmetric correlation matrix.
+     * Only print half the elements */
+    int legendIndex = 0;
+    for (int i0 = 0; i0 < awh_bias_params->ndim; i0++)
+    {
+        for (int i1 = 0; i1 <= i0; i1++)
+        {
+            char buf[256];
+
+            sprintf(buf, "%d,%d", i0, i1);
+
+            legend[legendIndex] = strdup(buf);
+            legendIndex++;
+        }
     }
 
     if (legendIndex != numLegend)
@@ -179,11 +201,13 @@ static AwhReader *initAwhReader(const awh_params_t *awh_params,
 {
     GMX_RELEASE_ASSERT(block != NULL, "NULL pointer passed to initAwhReader");
 
-    AwhReader *awhReader;
+    AwhReader       *awhReader;
 
     snew(awhReader, 1);
     awhReader->nbias = awh_params->nbias;
     snew(awhReader->biasReader, awhReader->nbias);
+
+    awhReader->outputFrictionTensor = opt2bSet("-fric", nfile, fnm);
 
     /* The first subblock of each AWH block has metadata has metadata about
      * the number of subblocks belonging to that AWH block.
@@ -196,6 +220,8 @@ static AwhReader *initAwhReader(const awh_params_t *awh_params,
     for (int k = 0; k < awhReader->nbias; k++)
     {
         awh_bias_params_t *awh_bias_params = &awh_params->awh_bias_params[k];
+        int                ndim            = awh_bias_params->ndim;
+        int                numTensorElem   = (ndim*(ndim + 1))/2;
 
         BiasReader        *biasReader      = &awhReader->biasReader[k];
 
@@ -208,7 +234,7 @@ static AwhReader *initAwhReader(const awh_params_t *awh_params,
 
         /* The first subblock with actual graph y-values is index 2 */
         outf->firstGraphSubblock = imin_sub + 2;
-        outf->numGraph           = moreGraphs ? biasReader->numSubblocks - 2 : 1;
+        outf->numGraph           = moreGraphs ? biasReader->numSubblocks - 2 - numTensorElem : 1;
 
         snew(outf->legend, outf->numGraph);
         make_awh_legend(awh_bias_params, outf->numGraph, outf->legend);
@@ -226,7 +252,22 @@ static AwhReader *initAwhReader(const awh_params_t *awh_params,
         }
         outf->yLabel = strdup(buf);
 
-        imin_sub    += biasReader->numSubblocks;
+        if (awhReader->outputFrictionTensor)
+        {
+            OutFile *outf = &biasReader->tensor;
+            setOutfileNameAndTitle(outf,
+                                   opt2fn("-fric", nfile, fnm), "Friction tensor",
+                                   awhReader->nbias, k);
+
+            outf->firstGraphSubblock = biasReader->numSubblocks - numTensorElem;
+            outf->numGraph           = numTensorElem;
+            snew(outf->legend, outf->numGraph);
+            make_tensor_legend(awh_bias_params, outf->numGraph, outf->legend);
+            outf->xLabel             = "(nm or deg)";
+            outf->yLabel             = "(nm\\S2\\Nps or rad\\S2\\Nps)";
+        }
+
+        imin_sub += biasReader->numSubblocks;
     }
 
     return awhReader;
@@ -286,6 +327,25 @@ static void processAwhFrame(const t_enxblock       *block,
 
         gmx_ffclose(out);
 
+        if (awhReader->outputFrictionTensor)
+        {
+            OutFile *outf = &awhReader->biasReader[k].tensor;
+
+            FILE    *out  = openBiasOutputFile(outf, t, oenv);
+            for (int j = 0; j < numPoints; j++)
+            {
+                fprintf(out, "  %8.4f", block->sub[imin_sub + 1].fval[j]);
+
+                for (int i = outf->firstGraphSubblock; i < outf->firstGraphSubblock + outf->numGraph; i++)
+                {
+                    fprintf(out, "  %g", block->sub[i].fval[j]);
+                }
+                fprintf(out, "\n");
+            }
+
+            gmx_ffclose(out);
+        }
+
         imin_sub += awhReader->biasReader[k].numSubblocks;
     }
 }
@@ -295,11 +355,17 @@ int gmx_awh(int argc, char *argv[])
 {
     const char         *desc[] = {
         "[THISMODULE] extracts AWH data from an energy file.",
-        "One file is written per AWH bias per time frame.",
+        "One or two files are written per AWH bias per time frame.",
         "The bias index, if more than one, is appended to the file, as well as",
         "the time of the frame. By default only the PMF is printed.",
         "With [TT]-more[tt] the bias, and target and coordinate distributions",
-        "are also printed.",
+        "are also printed, as well as the metric sqrt(det(friction_tensor))",
+        "normalized such that the average is 1.",
+        "Option [TT]-fric[tt] prints all components of the friction tensor",
+        "to an additional set of files. Note that the absolute values of",
+        "the friction tensor elements can be somewhat different from the real",
+        "friction due to the fact that we only have access to short parts",
+        "of the correlation time interval at each sampling point."
     };
     static gmx_bool     moreGraphs = FALSE;
     static int          skip       = 0;
@@ -320,7 +386,8 @@ int gmx_awh(int argc, char *argv[])
     t_filenm            fnm[] = {
         { efEDR, "-f",    NULL,           ffREAD  },
         { efTPR, "-s",    NULL,           ffREAD  },
-        { efXVG, "-o",    "awh",          ffWRITE }
+        { efXVG, "-o",    "awh",          ffWRITE },
+        { efXVG, "-fric", "friction",     ffOPTWR }
     };
     const int           nfile  = asize(fnm);
     if (!parse_common_args(&argc, argv,
