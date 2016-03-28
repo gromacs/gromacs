@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -91,7 +92,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 16;
+static const int cpt_version = 17;
 
 
 const char *est_names[estNR] =
@@ -149,18 +150,40 @@ const char *edfh_names[edfhNR] =
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
+/* AWH biasing */
+enum {
+    eawhhIN_INITIAL,
+    eawhhHISTSIZE, eawhhNDIM,
+    eawhhNPOINTS,
+    eawhhCOORDPOINT, eawhhCOORD_REFVALUE_INDEX,
+    eawhhUPDATELIST,
+    eawhhLOG_RELATIVE_SAMPLEWEIGHT,
+    eawhhNR
+};
+
+const char *eawhh_names[eawhhNR] =
+{
+    "awh_in_initial",
+    "awh_histsize", "awh_ndim",
+    "awh_npoints",
+    "awh_coordpoint", "awh_coord_refvalue_index",
+    "awh_updatelist",
+    "awh_log_relative_sampleweight",
+};
+
 enum {
     ecprREAL, ecprRVEC, ecprMATRIX
 };
 
 enum {
-    cptpEST, cptpEEKS, cptpEENH, cptpEDFH
+    cptpEST, cptpEEKS, cptpEENH, cptpEDFH, cptpEAWH
 };
 /* enums for the different components of checkpoint variables, replacing the hard coded ones.
    cptpEST - state variables.
    cptpEEKS - Kinetic energy state variables.
    cptpEENH - Energy history state variables.
    cptpEDFH - free energy history variables.
+   cptpEAWH - AWH history variables.
  */
 
 
@@ -172,6 +195,7 @@ static const char *st_names(int cptp, int ecpt)
         case cptpEEKS: return eeks_names[ecpt];
         case cptpEENH: return eenh_names[ecpt];
         case cptpEDFH: return edfh_names[ecpt];
+        case cptpEAWH: return eawhh_names[ecpt];
     }
 
     return NULL;
@@ -754,7 +778,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
                           int *nnodes, int *dd_nc, int *npme,
                           int *natoms, int *ngtc, int *nnhpres, int *nhchainlength,
                           int *nlambda, int *flags_state,
-                          int *flags_eks, int *flags_enh, int *flags_dfh,
+                          int *flags_eks, int *flags_enh, int *flags_dfh, int *flags_awhh,
                           int *nED, int *eSwapCoords,
                           FILE *list)
 {
@@ -886,7 +910,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     }
     else
     {
-        *flags_dfh = 0;
+        *flags_dfh  = 0;
     }
 
     if (*file_version >= 15)
@@ -897,9 +921,19 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     {
         *nED = 0;
     }
+
     if (*file_version >= 16)
     {
         do_cpt_int_err(xd, "swap", eSwapCoords, list);
+    }
+
+    if (*file_version >= 17)
+    {
+        do_cpt_int_err(xd, "AWH history flags", flags_awhh, list);
+    }
+    else
+    {
+        *flags_awhh = 0;
     }
 }
 
@@ -1363,6 +1397,100 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+static int do_cpt_awh_bias(XDR *xd, gmx_bool bRead,
+                           int fflags, awh_bias_history_t *bias_history,
+                           FILE *list)
+{
+    int ret = 0;
+
+    for (int i = 0; (i < eawhhNR && ret == 0); i++)
+    {
+        if (fflags & (1<<i))
+        {
+            switch (i)
+            {
+                case eawhhIN_INITIAL:
+                    do_cpt_int_err(xd, eawhh_names[i], &(bias_history->in_initial), list); break;
+                case eawhhHISTSIZE:
+                    do_cpt_double_err(xd, eawhh_names[i], &(bias_history->histsize), list); break;
+                case eawhhNDIM:
+                    do_cpt_int_err(xd, eawhh_names[i], &(bias_history->ndim), list); break;
+                case eawhhNPOINTS:
+                    do_cpt_int_err(xd, eawhh_names[i], &(bias_history->npoints), list); break;
+                case eawhhCOORDPOINT:
+                    if (bRead)
+                    {
+                        snew(bias_history->coordpoint, bias_history->npoints);
+                    }
+
+                    for (int j = 0; j < bias_history->npoints; j++)
+                    {
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].target), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].free_energy), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].bias), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].weightsum_iteration), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].weightsum_covering), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].weightsum_tot), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].weightsum_ref), list);
+                        do_cpt_int_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].last_update_index), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].log_pmfsum), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].visits_iteration), list);
+                        do_cpt_double_err(xd, eawhh_names[i], &(bias_history->coordpoint[j].visits_tot), list);
+                    }
+                    break;
+                case eawhhCOORD_REFVALUE_INDEX:
+                    do_cpt_int_err(xd, eawhh_names[i], &(bias_history->coord_refvalue_index), list); break;
+                case eawhhUPDATELIST:
+                    do_cpt_int_err(xd, eawhh_names[i], &(bias_history->origin_index_updatelist), list);
+                    do_cpt_int_err(xd, eawhh_names[i], &(bias_history->end_index_updatelist), list);
+                    break;
+                case eawhhLOG_RELATIVE_SAMPLEWEIGHT:
+                    do_cpt_double_err(xd, eawhh_names[i], &(bias_history->log_relative_sampleweight), list);
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
+            }
+        }
+    }
+
+    return ret;
+}
+
+static int do_cpt_awh(XDR *xd, gmx_bool bRead,
+                      int fflags, awh_history_t *awh_history,
+                      FILE *list)
+{
+    int ret = 0;
+
+    if (fflags != 0)
+    {
+        /* To be able to read and write the AWH data several parameters determining the layout of the AWH structs need to be known
+           (nbias, ndim, npoints, etc.). The best thing (?) would be to have these passed to this function. When writing to a checkpoint
+           these parameters are available in awh_history (after calling init_awh_history). When reading from a checkpoint though, there
+           is no initialized awh_history (it is initialized and set in this function). The AWH parameters have not always been read
+           at the time when this function is called for reading so I don't know how to pass them as input. Here, this is solved by
+           when writing a checkpoint, also storing parameters needed for future reading of the checkpoint.
+
+           Another issue is that some variables that AWH checkpoints don't have a registered enum and string (e.g. nbias below).
+           One difficulty is the multilevel structure of the data which would need to be represented somehow. */
+        do_cpt_int_err(xd, "awh_nbias", &(awh_history->nbias), list);
+
+        if (bRead)
+        {
+            snew(awh_history->bias, awh_history->nbias);
+        }
+        for (int k = 0; k < awh_history->nbias; k++)
+        {
+            ret = do_cpt_awh_bias(xd, bRead, fflags, &awh_history->bias[k], list);
+            if (ret)
+            {
+                return ret;
+            }
+        }
+        do_cpt_double_err(xd, "awh_convolved_bias_shift", &(awh_history->convolved_bias_shift), list);
+    }
+    return ret;
+}
 
 static int do_cpt_files(XDR *xd, gmx_bool bRead,
                         gmx_file_position_t **p_outputfiles, int *nfiles,
@@ -1477,7 +1605,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     gmx_file_position_t *outputfiles;
     int                  noutputfiles;
     char                *ftime;
-    int                  flags_eks, flags_enh, flags_dfh;
+    int                  flags_eks, flags_enh, flags_dfh, flags_awhh;
     t_fileio            *ret;
 
     if (DOMAINDECOMP(cr))
@@ -1570,6 +1698,17 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         flags_dfh = 0;
     }
 
+    flags_awhh = 0;
+    if (state->awh_history->nbias > 0)
+    {
+        flags_awhh |= ( (1<<eawhhIN_INITIAL) |
+                        (1<<eawhhHISTSIZE) | (1<<eawhhNDIM) |
+                        (1<<eawhhNPOINTS) |
+                        (1<<eawhhCOORDPOINT) | (1<<eawhhCOORD_REFVALUE_INDEX) |
+                        (1<<eawhhUPDATELIST) |
+                        (1<<eawhhLOG_RELATIVE_SAMPLEWEIGHT));
+    }
+
     /* We can check many more things now (CPU, acceleration, etc), but
      * it is highly unlikely to have two separate builds with exactly
      * the same version, user, time, and build host!
@@ -1590,7 +1729,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes,
                   DOMAINDECOMP(cr) ? domdecCells : NULL, &npmenodes,
                   &state->natoms, &state->ngtc, &state->nnhpres,
-                  &state->nhchainlength, &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &state->nhchainlength, &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh, &flags_awhh,
                   &state->edsamstate.nED, &state->swapstate.eSwapCoords,
                   NULL);
 
@@ -1605,6 +1744,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, state->enerhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, &state->edsamstate, NULL) < 0)      ||
+        (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awh_history, NULL) < 0)     ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, &state->swapstate, NULL) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, NULL,
                       file_version) < 0))
@@ -1844,7 +1984,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     char                 buf[STEPSTRSIZE];
     int                  eIntegrator_f, nppnodes_f, npmenodes_f;
     ivec                 dd_nc_f;
-    int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_dfh;
+    int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_dfh, flags_awhh;
     int                  d;
     int                  ret;
     gmx_file_position_t *outputfiles;
@@ -1875,7 +2015,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &eIntegrator_f, simulation_part, step, t,
                   &nppnodes_f, dd_nc_f, &npmenodes_f,
                   &natoms, &ngtc, &nnhpres, &nhchainlength, &nlambda,
-                  &fflags, &flags_eks, &flags_enh, &flags_dfh,
+                  &fflags, &flags_eks, &flags_enh, &flags_dfh, &flags_awhh,
                   &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
 
     if (bAppendOutputFiles &&
@@ -2050,6 +2190,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     }
 
     ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
+                     flags_awhh, state->awh_history, NULL);
+
     if (ret)
     {
         cp_error();
@@ -2270,7 +2418,7 @@ void read_checkpoint_part_and_step(const char  *filename,
     int       eIntegrator;
     int       nppnodes, npme;
     ivec      dd_nc;
-    int       flags_eks, flags_enh, flags_dfh;
+    int       flags_eks, flags_enh, flags_dfh, flags_awhh;
     double    t;
     t_state   state;
     t_fileio *fp;
@@ -2292,7 +2440,7 @@ void read_checkpoint_part_and_step(const char  *filename,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, simulation_part, step, &t, &nppnodes, dd_nc, &npme,
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
-                  &(state.dfhist.nlambda), &state.flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &(state.dfhist.nlambda), &state.flags, &flags_eks, &flags_enh, &flags_dfh, &flags_awhh,
                   &state.edsamstate.nED, &state.swapstate.eSwapCoords, NULL);
 
     gmx_fio_close(fp);
@@ -2308,7 +2456,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     int                  eIntegrator;
     int                  nppnodes, npme;
     ivec                 dd_nc;
-    int                  flags_eks, flags_enh, flags_dfh;
+    int                  flags_eks, flags_enh, flags_dfh, flags_awhh;
     int                  nfiles_loc;
     gmx_file_position_t *files_loc = NULL;
     int                  ret;
@@ -2317,7 +2465,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, simulation_part, step, t, &nppnodes, dd_nc, &npme,
                   &state->natoms, &state->ngtc, &state->nnhpres, &state->nhchainlength,
-                  &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh, &flags_awhh,
                   &state->edsamstate.nED, &state->swapstate.eSwapCoords, NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, NULL);
@@ -2343,6 +2491,13 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
 
     ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
+                     flags_awhh, state->awh_history, NULL);
     if (ret)
     {
         cp_error();
@@ -2461,7 +2616,7 @@ void list_checkpoint(const char *fn, FILE *out)
     double               t;
     ivec                 dd_nc;
     t_state              state;
-    int                  flags_eks, flags_enh, flags_dfh;
+    int                  flags_eks, flags_enh, flags_dfh, flags_awhh;
     int                  ret;
     gmx_file_position_t *outputfiles;
     int                  nfiles;
@@ -2474,7 +2629,7 @@ void list_checkpoint(const char *fn, FILE *out)
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes, dd_nc, &npme,
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &(state.dfhist.nlambda), &state.flags,
-                  &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED,
+                  &flags_eks, &flags_enh, &flags_dfh, &flags_awhh, &state.edsamstate.nED,
                   &state.swapstate.eSwapCoords, out);
     ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, out);
     if (ret)
@@ -2493,6 +2648,12 @@ void list_checkpoint(const char *fn, FILE *out)
     {
         ret = do_cpt_df_hist(gmx_fio_getxdr(fp),
                              flags_dfh, &state.dfhist, out);
+    }
+
+    if (ret == 0)
+    {
+        ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE,
+                         flags_awhh, state.awh_history, out);
     }
 
     if (ret == 0)
