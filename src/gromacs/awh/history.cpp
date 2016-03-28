@@ -51,6 +51,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation-history.h"
 #include "grid.h"
 #include "types.h"
 
@@ -64,6 +65,8 @@ static void init_awh_bias_history(awh_bias_history_t *awh_bias_history)
     awh_bias_history->coordpoint                = NULL;
     awh_bias_history->coord_refvalue_index      = 0;
     awh_bias_history->ndim                      = 0;
+    awh_bias_history->bForce_correlation        = FALSE;
+    awh_bias_history->forcecorr_hist            = NULL;
     awh_bias_history->log_relative_sampleweight = 0;
 }
 
@@ -73,8 +76,14 @@ static void init_awh_bias_history_from_state(awh_bias_history_t *awh_bias_histor
 
     awh_bias_history->npoints            = awh_bias->npoints;
     awh_bias_history->ndim               = awh_bias->ndim;
+    awh_bias_history->bForce_correlation = awh_bias->bForce_correlation;
 
     snew(awh_bias_history->coordpoint, awh_bias_history->npoints);
+
+    if (awh_bias_history->bForce_correlation)
+    {
+        awh_bias_history->forcecorr_hist = init_correlation_grid_history_from_state(awh_bias->forcecorr);
+    }
 }
 
 void init_awh_history(awh_history_t *awh_history)
@@ -127,6 +136,12 @@ static void update_awh_bias_history(awh_bias_history_t *awh_bias_history, awh_bi
     awh_bias_history->end_index_updatelist = multidim_gridindex_to_linear(awh_bias->grid,
                                                                           awh_bias->end_updatelist);
 
+    if (awh_bias->bForce_correlation)
+    {
+        GMX_RELEASE_ASSERT(awh_bias_history->forcecorr_hist != NULL, "AWH history force correlation not initialized when updating history");
+        update_correlation_grid_history(awh_bias_history->forcecorr_hist, awh_bias->forcecorr);
+    }
+
     awh_bias_history->log_relative_sampleweight  = awh_bias->log_relative_sampleweight;
 }
 
@@ -155,6 +170,11 @@ static void restore_awh_state_from_history(const awh_bias_history_t *awh_bias_hi
     linear_gridindex_to_multidim(awh_bias->grid, awh_bias_history->origin_index_updatelist, awh_bias->origin_updatelist);
     linear_gridindex_to_multidim(awh_bias->grid, awh_bias_history->end_index_updatelist, awh_bias->end_updatelist);
 
+    if (awh_bias->bForce_correlation)
+    {
+        restore_correlation_grid_state_from_history(awh_bias_history->forcecorr_hist, awh_bias->forcecorr);
+    }
+
     awh_bias->log_relative_sampleweight  = awh_bias_history->log_relative_sampleweight;
 }
 
@@ -179,6 +199,16 @@ static void broadcast_initialize_awh_bias_history(awh_bias_history_t *awh_bias_h
         snew(awh_bias_history->coordpoint, awh_bias_history->npoints);
     }
     gmx_bcast(sizeof(awh_coordpoint_history_t)*awh_bias_history->npoints, awh_bias_history->coordpoint, cr);
+
+    if (awh_bias_history->bForce_correlation)
+    {
+        correlation_grid_history_t *corrgrid_hist = init_correlation_grid_history_from_checkpoint(awh_bias_history->forcecorr_hist, cr);
+
+        if (!MASTER(cr))
+        {
+            awh_bias_history->forcecorr_hist = corrgrid_hist;
+        }
+    }
 }
 
 static void broadcast_initialize_awh_history(awh_history_t *awh_history, const t_commrec *cr)
