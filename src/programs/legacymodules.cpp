@@ -230,6 +230,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Analyze data sets");
     registerModule(manager, &gmx_g_angle, "angle",
                    "Calculate distributions and correlations for angles and dihedrals");
+    registerModule(manager, &gmx_awh, "awh",
+                   "Extract data from an accelerated weight histogram (AWH) run");
     registerModule(manager, &gmx_bar, "bar",
                    "Calculate free energy difference estimates through Bennett's acceptance ratio");
     registerObsoleteTool(manager, "bond");
@@ -404,6 +406,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Tools");
         group.addModule("analyze");
+        group.addModule("awh");
         group.addModule("dyndom");
         group.addModule("filter");
         group.addModule("lie");
