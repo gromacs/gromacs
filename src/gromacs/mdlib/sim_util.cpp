@@ -1483,7 +1483,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                wcycle);
         if (fr->bDoAwh)
         {
-            enerd->term[F_COM_PULL] += update_awh(fr->awh, inputrec->pull_work,
+            enerd->term[F_COM_PULL] += update_awh(fr->awh,  inputrec->awh_params, inputrec->pull_work,
                                                   inputrec->ePBC, mdatoms, box, f, vir_force,
                                                   cr->ms, t, step, wcycle, fplog);
         }
@@ -1873,7 +1873,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                                wcycle);
         if (inputrec->bDoAwh)
         {
-            enerd->term[F_COM_PULL] += update_awh(fr->awh, inputrec->pull_work,
+            enerd->term[F_COM_PULL] += update_awh(fr->awh, inputrec->awh_params, inputrec->pull_work,
                                                   inputrec->ePBC, mdatoms, box, f, vir_force,
                                                   cr->ms, t, step, wcycle, fplog);
         }
