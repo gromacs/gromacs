@@ -1462,7 +1462,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                wcycle);
         if (fr->bAwhbias)
         {
-            enerd->term[F_COM_PULL] += update_awhbias(fr->awhbias, inputrec->pull_work,
+            enerd->term[F_COM_PULL] += update_awhbias(fr->awhbias, inputrec->awhbias_params, inputrec->pull_work,
                                                       inputrec->ePBC, mdatoms, box, f, vir_force,
                                                       cr->ms, t, step, wcycle, fplog);
         }
@@ -1852,7 +1852,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                                wcycle);
         if (inputrec->bAwhbias)
         {
-            enerd->term[F_COM_PULL] += update_awhbias(fr->awhbias, inputrec->pull_work,
+            enerd->term[F_COM_PULL] += update_awhbias(fr->awhbias, inputrec->awhbias_params, inputrec->pull_work,
                                                       inputrec->ePBC, mdatoms, box, f, vir_force,
                                                       cr->ms, t, step, wcycle, fplog);
         }

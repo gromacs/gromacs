@@ -408,6 +408,16 @@ awhbias_params_t *read_awhbiasparams(int *ninp_p, t_inpfile **inp_p, const t_inp
         awhbias_params->seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the AWH bias MC random seed to %" GMX_PRId64 "\n", awhbias_params->seed);
     }
+
+    CTYPE("Number of steps per AWH printing");
+    sprintf(opt, "%s-nstout", prefix);
+    ITYPE(opt, awhbias_params->nstout, ir->nstenergy);
+    if (awhbias_params->nstout > 0 && (ir->nstenergy <= 0 || (awhbias_params->nstout % ir->nstenergy != 0)))
+    {
+        gmx_fatal(FARGS, "%s (%d) needs to be a multiple of nstenergy (%d)",
+                  opt, awhbias_params->nstout, ir->nstenergy);
+    }
+
     snew(awhbias_params->awh_params, awhbias_params->nawh);
 
     CTYPE("Number of steps per coordinate sample");

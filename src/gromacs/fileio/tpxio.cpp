@@ -717,6 +717,7 @@ static void do_awhbias(t_fileio *fio, awhbias_params_t *awhbias_params, gmx_bool
                        int gmx_unused file_version)
 {
     gmx_fio_do_int(fio, awhbias_params->nawh);
+    gmx_fio_do_int(fio, awhbias_params->nstout);
     gmx_fio_do_int64(fio, awhbias_params->seed);
     gmx_fio_do_int(fio, awhbias_params->nstsample_coord);
     gmx_fio_do_int(fio, awhbias_params->nsamples_move_refvalue);

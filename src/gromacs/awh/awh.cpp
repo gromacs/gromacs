@@ -45,6 +45,7 @@
 #include <algorithm>
 
 #include "gromacs/awh/history.h"
+#include "gromacs/awh/data-writer.h"
 #include "gromacs/awh/types.h"
 #include "gromacs/awh/math.h"
 #include "gromacs/awh/grid.h"
@@ -831,6 +832,10 @@ t_awhbias *init_awhbias(FILE                    *fplog,
 
         init_awh(fplog, ir, cr, k, awhbias->nawh, &awhbias->awh[k], &awhbias_params->awh_params[k]);
     }
+
+    /* Keep an array with the data to print to the energy file */
+    awhbias->writer = init_awhbias_energywriter(awhbias_params->nstout,
+                                                awhbias, ir->pull);
 
     return awhbias;
 }
@@ -1828,6 +1833,7 @@ static void update_convolved_bias_shift(const t_awhbias *awhbias, gmx_int64_t st
 }
 
 real update_awhbias(t_awhbias              *awhbias,
+                    const awhbias_params_t *awhbias_params,
                     struct pull_t          *pull_work,
                     int                     ePBC,
                     const t_mdatoms        *mdatoms,
@@ -1843,6 +1849,18 @@ real update_awhbias(t_awhbias              *awhbias,
     double   bias_potential;
 
     wallcycle_sub_start(wallcycle, ewcsPULL_AWH);
+
+    /* Prepare AWH output data to later print to the energy file */
+    if (time_to_write(step, awhbias->writer))
+    {
+        /* Make sure bias is up to date globally. This will also update the free energy and weight histogram. */
+        for (int k = 0; k < awhbias->nawh; k++)
+        {
+            do_skipped_updates_for_all_points(awhbias->awh, step);
+        }
+
+        prep_awhbias_output(awhbias->writer, awhbias_params, awhbias, ms);
+    }
 
     /* Update the AWH coordinate values with those of the corresponding pull coordinates. */
     set_awhbias_coord_value(awhbias, pull_work, ePBC, box);
@@ -1864,4 +1882,9 @@ real update_awhbias(t_awhbias              *awhbias,
     wallcycle_sub_stop(wallcycle, ewcsPULL_AWH);
 
     return static_cast<real>(bias_potential);
+}
+
+void write_awhbias_to_energyframe(t_enxframe *fr, const t_awhbias *awhbias)
+{
+    write_awhbias_to_frame(fr, awhbias->writer);
 }
