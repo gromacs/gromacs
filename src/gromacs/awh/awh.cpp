@@ -64,6 +64,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "data-writer.h"
 #include "grid.h"
 #include "history.h"
 #include "internal.h"
@@ -834,6 +835,11 @@ awh_t *init_awh(FILE                    *fplog,
 
         init_awh(fplog, ir, cr, k, awh->nbias, &awh->awh_bias[k], &awh_params->awh_bias_params[k]);
     }
+
+
+    /* Keep an array with the data to print to the energy file */
+    awh->writer = init_awh_energywriter(awh_params->nstout,
+                                        awh, ir->pull);
 
     return awh;
 }
@@ -1848,6 +1854,7 @@ static void update_convolved_bias_shift(const awh_t *awh, gmx_int64_t step, doub
 }
 
 real update_awh(awh_t                  *awh,
+                const awh_params_t     *awh_params,
                 struct pull_t          *pull_work,
                 int                     ePBC,
                 const t_mdatoms        *mdatoms,
@@ -1863,6 +1870,18 @@ real update_awh(awh_t                  *awh,
     double   bias_potential;
 
     wallcycle_sub_start(wallcycle, ewcsPULL_AWH);
+
+    /* Prepare AWH output data to later print to the energy file */
+    if (time_to_write(step, awh->writer))
+    {
+        /* Make sure bias is up to date globally. This will also update the free energy and weight histogram. */
+        for (int k = 0; k < awh->nbias; k++)
+        {
+            do_skipped_updates_for_all_points(awh->awh_bias, step);
+        }
+
+        prep_awh_output(awh->writer, awh_params, awh, ms);
+    }
 
     /* Update the AWH coordinate values with those of the corresponding pull coordinates. */
     set_awh_coord_value(awh, pull_work, ePBC, box);
@@ -1884,4 +1903,9 @@ real update_awh(awh_t                  *awh,
     wallcycle_sub_stop(wallcycle, ewcsPULL_AWH);
 
     return static_cast<real>(bias_potential);
+}
+
+void write_awh_to_energyframe(t_enxframe *fr, const awh_t *awh)
+{
+    write_awh_to_frame(fr, awh->writer);
 }
