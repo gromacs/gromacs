@@ -116,6 +116,9 @@ typedef struct t_awh {
     /* Force correlation */
     bool                bForce_correlation;            /**< Do force correlation statistics? */
     correlation_grid_t *forcecorr;                     /**< Takes care of force correlation statistics. */
+
+    /* Replica exchange */
+    int                     nstreplica_exchange;           /**< Replica exchange frequency (0 if no replica exchange) */
 } t_awh;
 
 //! A collection of AWH biases.
