@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdtypes/awh-correlation-history.h"
 #include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
@@ -157,6 +158,7 @@ enum {
     eawhhNPOINTS,
     eawhhCOORDPOINT, eawhhCOORD_REFVALUE_INDEX,
     eawhhUPDATELIST,
+    eawhhFORCECORR,
     eawhhLOG_RELATIVE_SAMPLEWEIGHT,
     eawhhNR
 };
@@ -169,6 +171,7 @@ const char *eawhh_names[eawhhNR] =
     "awh_coordpoint", "awh_coord_refvalue_index",
     "awh_updatelist",
     "awh_log_relative_sampleweight",
+    "awh_forcecorr",
 };
 
 enum {
@@ -1397,6 +1400,50 @@ static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+static int do_cpt_correlation_grid_hist(XDR *xd, gmx_bool bRead, gmx_unused int fflags,
+                                        correlation_grid_history_t *corrgrid_hist,
+                                        FILE *list, int eawhh)
+{
+    int j, k, l, ret;
+
+    ret = 0;
+
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrgrid_hist->ncorrmatrix), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrgrid_hist->ncorr), list);
+    do_cpt_int_err(xd, eawhh_names[eawhh], &(corrgrid_hist->nblockdata), list);
+
+    if (bRead)
+    {
+        init_correlation_grid_history(corrgrid_hist, corrgrid_hist->ncorrmatrix, corrgrid_hist->ncorr, corrgrid_hist->nblockdata);
+    }
+
+    for (j = 0; j < corrgrid_hist->ncorrmatrix; j++)
+    {
+        correlation_matrix_history_t *corrmatrix_hist = &corrgrid_hist->corrmatrix_hist[j];
+
+        for (k = 0; k < corrgrid_hist->ncorr; k++)
+        {
+            correlation_history_t *corr_hist = &corrmatrix_hist->corr_hist[k];
+
+            do_cpt_double_err(xd, eawhh_names[eawhh], &(corr_hist->covariance), list);
+
+            for (l = 0; l < corrgrid_hist->nblockdata; l++)
+            {
+                correlation_blockdata_history_t *blockdata_hist = &corr_hist->blockdata[l];
+
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata_hist->blocklength), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata_hist->correlation_integral), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata_hist->sum_wx), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata_hist->sum_wy), list);
+                do_cpt_double_err(xd, eawhh_names[eawhh], &(blockdata_hist->sum_w), list);
+                do_cpt_int_err(xd, eawhh_names[eawhh], &(blockdata_hist->blockindex_prev), list);
+            }
+        }
+    }
+
+    return ret;
+}
+
 static int do_cpt_awh_bias_history(XDR *xd, gmx_bool bRead,
                                    int fflags, awh_bias_history_t *awh_bias_history,
                                    FILE *list)
@@ -1443,6 +1490,17 @@ static int do_cpt_awh_bias_history(XDR *xd, gmx_bool bRead,
                 case eawhhUPDATELIST:
                     do_cpt_int_err(xd, eawhh_names[i], &(awh_bias_history->origin_index_updatelist), list);
                     do_cpt_int_err(xd, eawhh_names[i], &(awh_bias_history->end_index_updatelist), list);
+                    break;
+                case eawhhFORCECORR:
+                    do_cpt_int_err(xd, eawhh_names[i], &(awh_bias_history->bForce_correlation), list);
+                    if (awh_bias_history->bForce_correlation)
+                    {
+                        if (bRead)
+                        {
+                            snew(awh_bias_history->forcecorr_hist, 1);
+                        }
+                        ret = do_cpt_correlation_grid_hist(xd, bRead, fflags, awh_bias_history->forcecorr_hist, list, i);
+                    }
                     break;
                 case eawhhLOG_RELATIVE_SAMPLEWEIGHT:
                     do_cpt_double_err(xd, eawhh_names[i], &(awh_bias_history->log_relative_sampleweight), list);
@@ -1700,7 +1758,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                         (1<<eawhhNPOINTS) |
                         (1<<eawhhCOORDPOINT) | (1<<eawhhCOORD_REFVALUE_INDEX) |
                         (1<<eawhhUPDATELIST) |
-                        (1<<eawhhLOG_RELATIVE_SAMPLEWEIGHT));
+                        (1<<eawhhLOG_RELATIVE_SAMPLEWEIGHT) |
+                        (1<<eawhhFORCECORR));
     }
 
     /* We can check many more things now (CPU, acceleration, etc), but
