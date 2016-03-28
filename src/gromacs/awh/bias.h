@@ -60,11 +60,13 @@
 
 #include "biasparams.h"
 #include "biasstate.h"
+#include "biaswriter.h"
 #include "dimparams.h"
 #include "grid.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
+struct t_enxsubblock;
 
 namespace gmx
 {
@@ -183,6 +185,21 @@ class Bias
                                     FILE                 *fplog);
 
         /*! \brief
+         * Calculates the convolved bias for a given coordinate value.
+         *
+         * The convolved bias is the effective bias acting on the coordinate.
+         * Since the bias here has arbitrary normalization, this only makes
+         * sense as a relative, to other coordinate values, measure of the bias.
+         *
+         * \param[in] coordValue  The coordinate value.
+         * \returns the convolved bias >= -GMX_DOUBLE_MAX.
+         */
+        inline double calcConvolvedBias(const awh_dvec &coordValue) const
+        {
+            return state_.calcConvolvedBias(dimParams_, grid_, coordValue);
+        }
+
+        /*! \brief
          * Restore the bias state from history on the master rank and broadcast it.
          *
          * \param[in] biasHistory  Bias history struct, only allowed to be nullptr on non-master ranks.
@@ -246,6 +263,17 @@ class Bias
             return params_.biasIndex;
         }
 
+        /*! \brief Return the coordinate value for a grid point.
+         *
+         * \param[in] gridPointIndex  The index of the grid point.
+         */
+        inline const awh_dvec &getGridCoordValue(size_t gridPointIndex) const
+        {
+            GMX_ASSERT(gridPointIndex < grid_.numPoints(), "gridPointIndex should be in the range of the grid");
+
+            return grid_.point(gridPointIndex).coordValue;
+        }
+
     private:
         /*! \brief
          * Makes checks for the collected histograms and warns if issues are detected.
@@ -255,6 +283,22 @@ class Bias
          * \param[in,out] fplog    Output file for warnings.
          */
         void checkHistograms(double t, gmx_int64_t step, FILE *fplog);
+
+    public:
+        /*! \brief Prepare data for writing to energy frame.
+         */
+        void prepareOutput();
+
+        /*! \brief Return the number of data blocks that have been prepared for writing.
+         */
+        int numEnergySubblocksToWrite() const;
+
+        /*! \brief Write bias data blocks to energy subblocks.
+         *
+         * \param[in,out] subblock  Energy subblocks to write to.
+         * \returns the number of subblocks written.
+         */
+        int writeToEnergySubblocks(t_enxsubblock *subblock) const;
 
         /* Data members. */
     private:
@@ -267,6 +311,9 @@ class Bias
         std::vector<int>             updateList_;        /**< List of points for update for temporary use (could be made another tempWorkSpace) */
 
         const bool                   thisRankDoesIO_;    /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
+
+        /* I/O */
+        std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */
 
         /* Temporary working vector used during the update.
          * This only here to avoid allocation at every MD step.

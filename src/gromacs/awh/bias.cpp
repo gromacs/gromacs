@@ -62,7 +62,6 @@
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "math.h"
@@ -183,7 +182,7 @@ void Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
         if (params_.convolveForce)
         {
             /* The update results in a potential jump, so we need the new convolved potential. */
-            double newPotential = -calcConvolvedBias(dimParams_, grid_, state_.points(), coordinateState.coordValue())*params_.invBeta;
+            double newPotential = -calcConvolvedBias(coordinateState.coordValue())*params_.invBeta;
             *potentialJump      = newPotential - potential;
         }
     }
@@ -248,6 +247,37 @@ Bias::Bias(int                             biasIndexInCollection,
     updateList_.reserve(grid_.numPoints());
 
     state_.initGridPointState(awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias);
+
+    if (thisRankDoesIO_)
+    {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+    }
+}
+
+/* Prepare data for writing to energy frame. */
+void Bias::prepareOutput()
+{
+    if (params_.skipUpdates())
+    {
+        doSkippedUpdatesForAllPoints();
+    }
+
+    if (writer_ != nullptr)
+    {
+        writer_->prepareBiasOutput(*this);
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    return writer_->writeToEnergySubblocks(subblock);
 }
 
 } // namespace gmx
