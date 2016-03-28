@@ -71,6 +71,7 @@ struct t_enxframe;
  * \param[in,out] awhbiashist         AWH bias history to initialize.
  * \param[in,out] pull_work           Pull struct which AWH will register the bias into.
  * \param[in] startingFromCheckpoint  True if this this is a continuation run.
+ * \param[in] nstreplica_exchange     Replica exchange step interval.
  * \returns the initialized AWH struct.
  */
 t_awhbias *init_awhbias_md(FILE                    *fplog,
@@ -79,7 +80,8 @@ t_awhbias *init_awhbias_md(FILE                    *fplog,
                            const awhbias_params_t  *awhbias_params,
                            awhbiashistory_t        *awhbiashist,
                            struct pull_t           *pull_work,
-                           bool                     startingFromCheckpoint);
+                           bool                     startingFromCheckpoint,
+                           int                      nstreplica_exchange);
 
 /*! \brief Do an AWH biasing update.
  *

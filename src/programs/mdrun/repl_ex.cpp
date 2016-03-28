@@ -45,11 +45,13 @@
 
 #include <random>
 
+#include "gromacs/awh/exchange.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/main.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -68,9 +70,9 @@
 #define MSRANK(ms, nodeid)  (nodeid)
 
 enum {
-    ereTEMP, ereLAMBDA, ereENDSINGLE, ereTL, ereNR
+    ereTEMP, ereLAMBDA, ereAWHBIAS, ereENDSINGLE, ereTL, ereNR
 };
-const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "temperature and lambda"};
+const char *erename[ereNR] = { "temperature", "lambda", "awh bias", "end_single_marker", "temperature and lambda"};
 /* end_single_marker merely notes the end of single variable replica exchange. All types higher than
    it are multiple replica exchange methods */
 /* Eventually, should add 'pressure', 'temperature and pressure', 'lambda_and_pressure', 'temperature_lambda_pressure'?;
@@ -105,12 +107,12 @@ typedef struct gmx_repl_ex
     gmx_bool *bEx;
 
     /* helper arrays to hold the quantities that are exchanged */
-    real  *prob;
-    real  *Epot;
-    real  *beta;
-    real  *Vol;
-    real **de;
-
+    real            *prob;
+    real            *Epot;
+    real            *beta;
+    real            *Vol;
+    real           **de;
+    awh_replex_t    *awh_replex; /* Handles AWH bias replica exchange */
 } t_gmx_repl_ex;
 
 static gmx_bool repl_quantity(const gmx_multisim_t *ms,
@@ -152,13 +154,15 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
                                     const gmx_multisim_t *ms,
                                     const t_state *state,
                                     const t_inputrec *ir,
+                                    const t_awhbias *awhbias,
                                     int nst, int nex, int init_seed)
 {
     real                pres;
     int                 i, j, k;
     struct gmx_repl_ex *re;
     gmx_bool            bTemp;
-    gmx_bool            bLambda = FALSE;
+    gmx_bool            bLambda  = FALSE;
+    gmx_bool            bAwhbias = FALSE;
 
     fprintf(fplog, "\nInitializing Replica Exchange\n");
 
@@ -215,6 +219,13 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     if (ir->efep != efepNO)
     {
         bLambda = repl_quantity(ms, re, ereLAMBDA, (real)ir->fepvals->init_fep_state);
+    }
+    if (ir->bAwhbias)
+    {
+        /* Currently is assumed that the AWH are compatible with replica exchange, i.e. that they are set up identically.
+           Do not have a simple way of verifying this. Here, the difference between AWH replicas is taken simply to be their sim id.
+           The exchange is useful because different sims will obtain different biases over time. */
+        bAwhbias = repl_quantity(ms, re, ereAWHBIAS, (real)re->repl);
     }
     if (re->type == -1)  /* nothing was assigned */
     {
@@ -350,6 +361,15 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             }
             fprintf(fplog, "\n");
             break;
+        case ereAWHBIAS:
+            fprintf(fplog, "\nReplica exchange in AWH bias\n");
+            for (i = 0; i < re->nrepl; i++)
+            {
+                fprintf(fplog, " %5.1f", re->q[re->type][re->ind[i]]);
+            }
+            fprintf(fplog, "\n");
+            break;
+
         default:
             gmx_incons("Unknown replica exchange quantity");
     }
@@ -428,6 +448,11 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         snew(re->de[i], re->nrepl);
     }
     re->nex = nex;
+
+    /* Why is bMultiEx = re->nex > 1 (in test_for_replica_exchange) and not re->nex > 0? */
+    re->awh_replex = bAwhbias ? init_awhbias_replica_exchange(ir->awhbias_params, awhbias, ms,
+                                                              re->ind, (re->nex > 1)) : NULL;
+
     return re;
 }
 
@@ -844,6 +869,9 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
              + (beta_pb-beta_ap)(H_a(x_a) - H_b(x_b))  */
             delta = beta[bp]*(de[bp][a] - de[bp][b]) + beta[ap]*(de[ap][b] - de[ap][a]) - (beta[bp]-beta[ap])*(Epot[b]-Epot[a]);
             break;
+        case ereAWHBIAS:
+            delta = calc_awhbias_replica_exchange_delta(re->awh_replex, a, b, ap, bp);
+            break;
         default:
             gmx_incons("Unknown replica exchange quantity");
     }
@@ -868,6 +896,7 @@ static void
 test_for_replica_exchange(FILE                 *fplog,
                           const gmx_multisim_t *ms,
                           struct gmx_repl_ex   *re,
+                          const t_awhbias      *awhbias,
                           gmx_enerdata_t       *enerd,
                           real                  vol,
                           gmx_int64_t           step,
@@ -882,6 +911,8 @@ test_for_replica_exchange(FILE                 *fplog,
     gmx_bool                             bEpot    = FALSE;
     gmx_bool                             bDLambda = FALSE;
     gmx_bool                             bVol     = FALSE;
+    gmx_bool  bAwhbias                            = FALSE;
+    gmx_bool  bAwhbias_updated                    = FALSE;
     gmx::ThreeFry2x64<64>                rng(re->seed, gmx::RandomDomain::ReplicaExchange);
     gmx::UniformRealDistribution<real>   uniformRealDist;
     gmx::UniformIntDistribution<int>     uniformNreplDist(0, re->nrepl-1);
@@ -937,6 +968,12 @@ test_for_replica_exchange(FILE                 *fplog,
             re->de[i][re->repl] = (enerd->enerpart_lambda[(int)re->q[ereLAMBDA][i]+1]-enerd->enerpart_lambda[0]);
         }
     }
+    if (re->type == ereAWHBIAS)
+    {
+        /* Get AWH bias data needed for swap */
+        bAwhbias         = TRUE;
+        bAwhbias_updated = update_awhbias_replica_exchange_state(awhbias, re->awh_replex, ms);
+    }
 
     /* now actually do the communication */
     if (bVol)
@@ -961,6 +998,14 @@ test_for_replica_exchange(FILE                 *fplog,
         pind[i] = re->ind[i];
     }
 
+    if (bAwhbias && !bAwhbias_updated)
+    {
+        /* We abort this exchange if we didn't manage to update the data. We exit here after pind is set to equal
+           the current indices (that indicate no swap) before aborting */
+        fprintf(fplog, "Repl AWH bias exchange attempted but aborted. \n");
+        return;
+    }
+
     if (bMultiEx)
     {
         /* multiple random switch exchange */
@@ -977,7 +1022,8 @@ test_for_replica_exchange(FILE                 *fplog,
                more work that useful. */
             i0 = uniformNreplDist(rng);
             i1 = uniformNreplDist(rng);
-            if (i0 == i1)
+            if (i0 == i1 ||
+                (bAwhbias && !awhbias_replicas_can_exchange(re->awh_replex, re->ind[i0], re->ind[i1])) )
             {
                 nself++;
                 continue;  /* self-exchange, back up and do it again */
@@ -1263,6 +1309,7 @@ prepare_to_do_exchange(struct gmx_repl_ex *re,
 }
 
 gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *re,
+                          const t_awhbias *awhbias,
                           t_state *state, gmx_enerdata_t *enerd,
                           t_state *state_local, gmx_int64_t step, real time)
 {
@@ -1279,7 +1326,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     if (MASTER(cr))
     {
         replica_id  = re->repl;
-        test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
+        test_for_replica_exchange(fplog, cr->ms, re, awhbias, enerd, det(state_local->box), step, time);
         prepare_to_do_exchange(re, replica_id, &maxswap, &bThisReplicaExchanged);
     }
     /* Do intra-simulation broadcast so all processors belonging to

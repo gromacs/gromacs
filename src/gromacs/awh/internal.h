@@ -123,13 +123,14 @@ bool coord_value_is_in_grid(const t_awh *awh);
  * \param[in] ir                      General input parameters.
  * \param[in] cr                      Struct for communication (or NULL).
  * \param[in] awhbias_params          AWH input parameters.
+ * \param[in] nstreplica_exchange     Replica exchange step interval.
  * \returns the initialized AWH struct.
  */
 t_awhbias *init_awhbias(FILE                    *fplog,
                         const t_inputrec        *ir,
                         const t_commrec         *cr,
-                        const awhbias_params_t  *awhbias_params);
-
+                        const awhbias_params_t  *awhbias_params,
+                        int                      nstreplica_exchange);
 
 /*! \brief Register the AWH biased coordinates with pull.
  *

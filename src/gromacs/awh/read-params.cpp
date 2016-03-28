@@ -651,8 +651,8 @@ void set_state_dependent_awhbias_params(awhbias_params_t *awhbias_params,
     }
     check_input_consistency_awhinterval(awhbias_params, wi);
 
-    /* Make a temporary working awhbias (with NULL log file and commrec) and register
-       AWH as external potential with pull. */
-    t_awhbias     *awhbias = init_awhbias(NULL, inputrec, NULL, awhbias_params);
+    /* Make a temporary working awhbias (with NULL log file and commrec and no replica exchange)
+       and register AWH as external potential with pull. */
+    t_awhbias     *awhbias = init_awhbias(NULL, inputrec, NULL, awhbias_params, 0);
     register_bias_with_pull(awhbias, pull_work);
 }

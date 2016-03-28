@@ -799,6 +799,13 @@ static bool do_at_step(int nst, gmx_int64_t step)
     return (nst > 0) && (step % nst == 0);
 }
 
+static gmx_bool prev_step_had_replica_exchange(const t_awh *awh, gmx_int64_t step)
+{
+    /* Replica exchange occurs at the end of the MD loop, after the AWH update. The AWH reaction to the coordinate swap therefore comes one
+       step later. */
+    return (step > 0) && do_at_step(awh->nstreplica_exchange, step - 1);
+}
+
 static void apply_bias_force_to_pull_coords(const t_awhbias    *awhbias,
                                             struct pull_t      *pull_work,
                                             const t_mdatoms    *mdatoms,
@@ -833,7 +840,8 @@ void register_bias_with_pull(const t_awhbias *awhbias, struct pull_t *pull_work)
 t_awhbias *init_awhbias(FILE                    *fplog,
                         const t_inputrec        *ir,
                         const t_commrec         *cr,
-                        const awhbias_params_t  *awhbias_params)
+                        const awhbias_params_t  *awhbias_params,
+                        int                      nstreplica_exchange)
 {
     t_awhbias     *awhbias;
     const int      nstsample_coord            = awhbias_params->nstsample_coord;
@@ -858,6 +866,7 @@ t_awhbias *init_awhbias(FILE                    *fplog,
         awhbias->awh[k].nstupdate_free_energy    = nstupdate_free_energy;
         awhbias->awh[k].bConvolve_force          = bConvolve_force;
         awhbias->awh[k].bForce_correlation       = bForce_correlation;
+        awhbias->awh[k].nstreplica_exchange      = nstreplica_exchange;
 
         init_awh(fplog, ir, cr, k, awhbias->nawh, &awhbias->awh[k], &awhbias_params->awh_params[k]);
     }
@@ -876,9 +885,10 @@ t_awhbias *init_awhbias_md(FILE                    *fplog,
                            const awhbias_params_t  *awhbias_params,
                            awhbiashistory_t        *awhbiashist,
                            struct pull_t           *pull_work,
-                           bool                     startingFromCheckpoint)
+                           bool                     startingFromCheckpoint,
+                           int                      nstreplica_exchange)
 {
-    t_awhbias *awhbias = init_awhbias(fplog, ir, cr, awhbias_params);
+    t_awhbias *awhbias = init_awhbias(fplog, ir, cr, awhbias_params, nstreplica_exchange);
 
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     register_bias_with_pull(awhbias, pull_work);
@@ -1592,8 +1602,9 @@ static void update(t_awh *awh, int awh_id, const gmx_multisim_t *ms, double t, g
     /* We update all points simultaneously either if 1) we covered (in the initial stage) since
        we don't want to keep track of when this happened and how it affects non-local points in future updates,
        or 2) we are updating the target distribution since its normalization has a global affect,
+       or 3) it's a replica exchange step (occurs after the AWH update, at the end of the MD integration).
      */
-    bGlobal_update = bUpdate_target || bCovered;
+    bGlobal_update = bUpdate_target || bCovered || do_at_step(awh->nstreplica_exchange, step);
 
     /*  Make the update list */
     if (bGlobal_update)
