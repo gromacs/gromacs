@@ -421,6 +421,18 @@ awh_params_t *read_awh_params(int *ninp_p, t_inpfile **inp_p, const t_inputrec *
         awh_params->seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the AWH bias MC random seed to %" GMX_PRId64 "\n", awh_params->seed);
     }
+
+    CTYPE("Number of steps per AWH printing");
+    sprintf(opt, "%s-nstout", prefix);
+    ITYPE(opt, awh_params->nstout, 100000);
+    if (awh_params->nstout <= 0)
+    {
+        char buf[STRLEN];
+        sprintf(buf, "Not writing AWH output with AWH (%s = %d) does not make sense",
+                opt, awh_params->nstout);
+        warning_error(wi, buf);
+    }
+
     snew(awh_params->awh_bias_params, awh_params->nbias);
 
     CTYPE("Coordinate sampling interval in number of steps");

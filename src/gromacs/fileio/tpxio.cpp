@@ -717,6 +717,7 @@ static void do_awh(t_fileio *fio, awh_params_t *awh_params, gmx_bool bRead,
                    int gmx_unused file_version)
 {
     gmx_fio_do_int(fio, awh_params->nbias);
+    gmx_fio_do_int(fio, awh_params->nstout);
     gmx_fio_do_int64(fio, awh_params->seed);
     gmx_fio_do_int(fio, awh_params->nstsample_coord);
     gmx_fio_do_int(fio, awh_params->nsamples_update_free_energy);
