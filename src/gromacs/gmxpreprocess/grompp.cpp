@@ -48,6 +48,7 @@
 
 #include <sys/types.h>
 
+#include "gromacs/awh/read-params.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/fileio/confio.h"
@@ -2025,6 +2026,12 @@ int gmx_grompp(int argc, char *argv[])
      * should register those potentials here. finish_pull() will check
      * that providers have been registerd for all external potentials.
      */
+
+    if (ir->bDoAwh)
+    {
+        set_state_dependent_awh_params(ir->awh_params, ir->pull, pull, ir,
+                                       state->box, ir->ePBC, &ir->opts, wi);
+    }
 
     if (ir->bPull)
     {

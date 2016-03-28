@@ -3150,6 +3150,9 @@ void init_forcerec(FILE                *fp,
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
     }
+
+    /* The AWH bias is initialized after the pull struct has been initialized. */
+    fr->bDoAwh = false;
 }
 
 #define pr_real(fp, r) fprintf(fp, "%s: %e\n",#r, r)
