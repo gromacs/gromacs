@@ -45,6 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -452,6 +453,26 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
     }
 }
 
+static void bc_awhBias(const t_commrec *cr, gmx::AwhBiasParams *awhBiasParams)
+{
+    block_bc(cr, *awhBiasParams);
+
+    snew_bc(cr, awhBiasParams->dimParams, awhBiasParams->ndim);
+    nblock_bc(cr, awhBiasParams->ndim, awhBiasParams->dimParams);
+}
+
+static void bc_awh(const t_commrec *cr, gmx::AwhParams *awhParams)
+{
+    int k;
+
+    block_bc(cr, *awhParams);
+    snew_bc(cr, awhParams->awhBiasParams, awhParams->numBias);
+    for (k = 0; k < awhParams->numBias; k++)
+    {
+        bc_awhBias(cr, &awhParams->awhBiasParams[k]);
+    }
+}
+
 static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
 {
     block_bc(cr, *pgrp);
@@ -688,6 +709,12 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->pull, 1);
         bc_pull(cr, inputrec->pull);
     }
+    if (inputrec->bDoAwh)
+    {
+        snew_bc(cr, inputrec->awhParams, 1);
+        bc_awh(cr, inputrec->awhParams);
+    }
+
     if (inputrec->bRot)
     {
         snew_bc(cr, inputrec->rot, 1);
