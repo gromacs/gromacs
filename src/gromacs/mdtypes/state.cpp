@@ -45,6 +45,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -266,6 +267,7 @@ t_state::t_state() : natoms(0),
                      swapstate(nullptr),
                      dfhist(nullptr),
                      edsamstate(nullptr),
+                     awh_history(nullptr),
                      ddp_count(0),
                      ddp_count_cg_gl(0),
                      cg_gl()
