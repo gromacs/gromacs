@@ -164,6 +164,7 @@ class BiasParams
         const int     numSharedUpdate;            /**< The number of (multi-)simulations sharing the bias update */
         const double  updateWeight;               /**< The probability weight accumulated for each update. */
         const double  localWeightScaling;         /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
+        const double  errorInitial;               /**< Estimated initial free energy error. */
     private:
         double        histSizeInitial_;           /**< Initial reference weight histogram size. */
         awh_ivec      coverRadius_;               /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */

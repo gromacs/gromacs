@@ -62,9 +62,9 @@
 #include "gromacs/mdtypes/awh-params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "biaswriter.h"
 #include "grid.h"
 #include "math.h"
 #include "pointstate.h"
@@ -487,11 +487,39 @@ Bias::Bias(FILE                          *fplog,
         params_.setHistSizeInitial(newHistSizeInitial);
     }
 
-    /* Print information about AWH variables that are set internally but might be of interest to the user. */
     if ((cr == nullptr) || (MASTER(cr)))
     {
+        writer_ = std::unique_ptr<BiasWriter>(new BiasWriter(*this));
+
+        /* Print information about AWH variables that are set internally but might be of interest to the user. */
         printInitializationToLog(*this, awhBiasParams, fplog);
     }
+}
+
+/* Prepare data for writing to energy frame. */
+void Bias::prepareOutput(const gmx_multisim_t *ms)
+{
+    if (params_.skipUpdates())
+    {
+        doSkippedUpdatesForAllPoints();
+    }
+
+    if (writer_ != nullptr)
+    {
+        writer_->prepareBiasOutput(*this, ms);
+    }
+}
+
+/* Return the number of data blocks that have been prepared for writing. */
+int Bias::numEnergySubblocksToWrite() const
+{
+    return writer_->haveDataToWrite() ? writer_->numBlocks() : 0;
+}
+
+/* Write bias data blocks to energy subblocks. */
+int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+{
+    return writer_->writeToEnergySubblocks(subblock);
 }
 
 Bias::~Bias() = default;
