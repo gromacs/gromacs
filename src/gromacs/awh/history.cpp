@@ -51,6 +51,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation-history.h"
 #include "grid.h"
 #include "types.h"
 
@@ -64,6 +65,7 @@ static void init_bias_history(awh_bias_history_t *bias_history)
     bias_history->coordpoint                = NULL;
     bias_history->coord_refvalue_index      = 0;
     bias_history->ndim                      = 0;
+    bias_history->forcecorr                 = NULL;
     bias_history->log_relative_sampleweight = 0;
 }
 
@@ -75,6 +77,8 @@ static void init_bias_history_from_state(awh_bias_history_t *bias_history, const
     bias_history->ndim               = bias->ndim;
 
     snew(bias_history->coordpoint, bias_history->npoints);
+
+    bias_history->forcecorr = init_correlation_grid_history_from_state(bias->forcecorr);
 }
 
 void init_awh_history_from_state(awh_history_t *awh_history, const awh_t *awh)
@@ -120,6 +124,9 @@ static void update_bias_history(awh_bias_history_t *bias_history, awh_bias_t *bi
     bias_history->end_index_updatelist = multidim_gridindex_to_linear(bias->grid,
                                                                       bias->end_updatelist);
 
+    GMX_RELEASE_ASSERT(bias_history->forcecorr != NULL, "AWH history force correlation not initialized when updating history");
+    update_correlation_grid_history(bias_history->forcecorr, bias->forcecorr);
+
     bias_history->log_relative_sampleweight  = bias->log_relative_sampleweight;
 }
 
@@ -148,6 +155,8 @@ static void restore_bias_state_from_history(const awh_bias_history_t *bias_histo
     linear_gridindex_to_multidim(bias->grid, bias_history->origin_index_updatelist, bias->origin_updatelist);
     linear_gridindex_to_multidim(bias->grid, bias_history->end_index_updatelist, bias->end_updatelist);
 
+    restore_correlation_grid_state_from_history(bias_history->forcecorr, bias->forcecorr);
+
     bias->log_relative_sampleweight  = bias_history->log_relative_sampleweight;
 }
 
@@ -172,6 +181,14 @@ static void broadcast_initialize_bias_history(awh_bias_history_t *bias_history, 
         snew(bias_history->coordpoint, bias_history->npoints);
     }
     gmx_bcast(sizeof(awh_coordpoint_history_t)*bias_history->npoints, bias_history->coordpoint, cr);
+
+    correlation_grid_history_t *corrgrid_hist =
+        init_correlation_grid_history_from_checkpoint((MASTER(cr) ? bias_history->forcecorr : NULL), cr);
+
+    if (!MASTER(cr))
+    {
+        bias_history->forcecorr = corrgrid_hist;
+    }
 }
 
 static void broadcast_initialize_awh_history(awh_history_t *awh_history, const t_commrec *cr)
