@@ -463,6 +463,13 @@ class BiasState
             return histogramSize_.inInitialStage();
         };
 
+        /*! \brief Returns the current histogram size.
+         */
+        inline HistogramSize histogramSize() const
+        {
+            return histogramSize_;
+        };
+
         /* Data members */
     private:
         CoordinateState coordinateState_; /**< The Current coordinate state */

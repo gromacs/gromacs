@@ -218,6 +218,7 @@ BiasParams::BiasParams(const AwhParams              &awhParams,
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, cr)),
     updateWeight(numSamplesUpdateFreeEnergy*numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? targetParam : 1),
+    errorInitial(awhBiasParams.errorInitial),
     // Estimate and initialize histSizeInitial, depends on the grid.
     histSizeInitial(getInitialHistSizeEstimate(dimParams, awhBiasParams, gridAxis, numStepsSampleCoord*mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
