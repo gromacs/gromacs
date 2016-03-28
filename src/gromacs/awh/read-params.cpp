@@ -523,6 +523,14 @@ AwhParams *readAndCheckAwhParams(int *ninp_p, t_inpfile **inp_p, const t_inputre
                 opt, awhParams->nstOut);
         warning_error(wi, buf);
     }
+    /* This restriction can be removed by changing a flag of print_ebin() */
+    if (ir->nstenergy == 0 || awhParams->nstOut % ir->nstenergy != 0)
+    {
+        char buf[STRLEN];
+        sprintf(buf, "%s (%d) should be a multiple of nstenergy (%d)",
+                opt, awhParams->nstOut, ir->nstenergy);
+        warning_error(wi, buf);
+    }
 
     CTYPE("Coordinate sampling interval in number of steps");
     sprintf(opt, "%s-nstsample", prefix);
