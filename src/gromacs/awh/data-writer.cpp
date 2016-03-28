@@ -50,6 +50,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "correlation.h"
 #include "grid.h"
 #include "internal.h"
 #include "types.h"
@@ -61,7 +62,7 @@
 //! Enum with the AWH variables to write
 enum {
     evarMETA, evarCOORDVALUE, evarPMF, evarBIAS, evarVISITS, evarWEIGHTS,
-    evarTARGET, evarNR
+    evarTARGET, evarFORCECORRVOL, evarFRICTION, evarCORRTIME, evarNR
 };
 
 //! Enum with the types of metadata to write
@@ -124,6 +125,7 @@ static int get_normtype(int evar)
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normtype = enormtypeDISTRIBUTION; break;
         default:
             normtype = enormtypeNONE; break;
@@ -173,6 +175,7 @@ static double get_normvalue(int evar, const awh_bias_t *awh_bias, const pull_par
         case evarVISITS:
         case evarWEIGHTS:
         case evarTARGET:
+        case evarFORCECORRVOL:
             normvalue = get_distribution_normvalue(awh_bias, pull_params);
             break;
         default:
@@ -201,7 +204,7 @@ static void init_block(block_t *block, int npoints, int normtype, double normval
     block->normvalue = normvalue;
 }
 
-static void init_bias_writer(bias_writer_t *writer,
+static void init_bias_writer(bias_writer_t *writer, bool bForce_correlation,
                              const awh_bias_t *awh_bias, const pull_params_t *pull_params)
 {
     int blockcount;
@@ -218,6 +221,19 @@ static void init_bias_writer(bias_writer_t *writer,
             case evarCOORDVALUE:
                 writer->var_to_block[evar] = blockcount;
                 var_nblock[evar]           = awh_bias->ndim;
+                break;
+            case evarFORCECORRVOL:
+                writer->var_to_block[evar] = bForce_correlation ? blockcount : -1;
+                var_nblock[evar]           = bForce_correlation ? 1 : 0;
+                break;
+            case evarFRICTION:
+                writer->var_to_block[evar] = bForce_correlation ? blockcount : -1;
+                var_nblock[evar]           = bForce_correlation ? get_ncorrelation(awh_bias->forcecorr) : 0;
+                break;
+            case evarCORRTIME:
+                /* Currently not enabled. */
+                writer->var_to_block[evar] = -1;
+                var_nblock[evar]           = 0;
                 break;
             default:
                 /* Most variables need one block */
@@ -249,7 +265,7 @@ static void init_bias_writer(bias_writer_t *writer,
     }
 }
 
-awh_energywriter_t *init_awh_energywriter(int nstout,
+awh_energywriter_t *init_awh_energywriter(int nstout, bool bForce_correlation,
                                           const awh_t *awh, const pull_params_t *pull_params)
 {
     double                 *data;
@@ -264,7 +280,7 @@ awh_energywriter_t *init_awh_energywriter(int nstout,
     snew(energywriter->writer, energywriter->nwriter);
     for (int k = 0; k < energywriter->nwriter; k++)
     {
-        init_bias_writer(&energywriter->writer[k], &awh->awh_bias[k], pull_params);
+        init_bias_writer(&energywriter->writer[k], bForce_correlation, &awh->awh_bias[k], pull_params);
     }
 
     /* Allocate space for flattened output data */
@@ -418,6 +434,25 @@ static void transfer_variable_point_data_to_writer(int evar, bias_writer_t *writ
             break;
         case evarTARGET:
             block[b].data[m] =  awh_bias->coordpoint[m].target;
+            break;
+        case evarFORCECORRVOL:
+            block[b].data[m] = get_correlation_volelem(awh_bias->forcecorr, m);
+            break;
+        case evarFRICTION:
+            /* Store force correlation in units of friction, i.e. time/length^2 */
+            for (int n = 0; n < get_ncorrelation(awh_bias->forcecorr); n++)
+            {
+                block[b].data[m] = get_correlation_timeintegral(awh_bias->forcecorr, m, n);
+                b++;
+            }
+            break;
+        case evarCORRTIME:
+            /* Force correlation times */
+            for (int n = 0; n < get_ncorrelation(awh_bias->forcecorr); n++)
+            {
+                block[b].data[m] = get_correlation_time(awh_bias->forcecorr, m, n);
+                b++;
+            }
             break;
         default:
             gmx_incons("Unknown AWH output variable");

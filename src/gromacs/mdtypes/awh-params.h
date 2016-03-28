@@ -118,6 +118,7 @@ struct awh_params_t {
     int                      nsamples_move_refvalue;      /**< Number of samples per moving the coordinate reference value. */
     int                      nsamples_update_free_energy; /**< Number of samples per free energy update. */
     int                      ePotential;                  /**< Type of potential. */
+    gmx_bool                 bForce_correlation;          /**< Calculate and output force correlation? */
 };
 
 /*! \endcond */
