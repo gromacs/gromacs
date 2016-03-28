@@ -60,10 +60,12 @@
 
 #include "biasparams.h"
 #include "biasstate.h"
+#include "biaswriter.h"
 #include "dimparams.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
+struct t_enxsubblock;
 
 namespace gmx
 {
@@ -139,6 +141,7 @@ class Bias
          * \param[in] mdTimeStep             The MD time step.
          * \param[in] numSharingSimulations  The number of simulations to share the bias across.
          * \param[in] biasInitFilename       Name of file to read PMF and target from.
+         * \param[in] thisRankDoesIO         Tells whether this MPI rank will do I/O, normally (only) the master rank does I/O.
          * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
          */
         Bias(int                             biasIndexInCollection,
@@ -149,6 +152,7 @@ class Bias
              double                          mdTimeStep,
              int                             numSharingSimulations,
              const std::string              &biasInitFilename,
+             bool                            thisRankDoesIO,
              BiasParams::DisableUpdateSkips  disableUpdateSkips = BiasParams::DisableUpdateSkips::no);
 
         /*! \brief
@@ -241,6 +245,22 @@ class Bias
          */
         void checkHistograms(double t, gmx_int64_t step, FILE *fplog);
 
+    public:
+        /*! \brief Prepare data for writing to energy frame.
+         */
+        void prepareOutput();
+
+        /*! \brief Return the number of data blocks that have been prepared for writing.
+         */
+        int numEnergySubblocksToWrite() const;
+
+        /*! \brief Write bias data blocks to energy subblocks.
+         *
+         * \param[in,out] subblock  Energy subblocks to write to.
+         * \returns the number of subblocks written.
+         */
+        int writeToEnergySubblocks(t_enxsubblock *subblock) const;
+
         /* Data members. */
     private:
         const std::vector<DimParams> dimParams_;   /**< Parameters for each dimension. */
@@ -250,6 +270,9 @@ class Bias
 
         BiasState                    state_;       /**< The state, both global and of the grid points */
         std::vector<int>             updateList_;  /**< List of points for update for temporary use (could be made another tempWorkSpace) */
+
+        /* I/O */
+        std::unique_ptr<BiasWriter>  writer_;      /**< Takes care of AWH data output. */
 
         /* Temporary working vector used during the update.
          * This only here to avoid allocation at every MD step.
