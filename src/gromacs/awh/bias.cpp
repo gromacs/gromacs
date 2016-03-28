@@ -67,6 +67,8 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "biaswriter.h"
+#include "correlation.h"
+#include "correlation-history.h"
 #include "grid.h"
 #include "internal.h"
 #include "math.h"
@@ -1400,9 +1402,38 @@ void Bias::sampleProbabilityWeights(const std::vector<double> &probWeightNeighbo
     }
 }
 
+/* Collect samples for the force correlation analysis. */
+void Bias::updateForceCorrelation(const std::vector<double> &probWeightNeighbor, double t)
+{
+    if (forceCorr_ == nullptr)
+    {
+        return;
+    }
+
+    const std::vector<int> &neighbor = grid_->point(state_.gridpointIndex).neighbor;
+
+    for (size_t n = 0; n < neighbor.size(); n++)
+    {
+        double weightNeighbor = probWeightNeighbor[n];
+        int    indexNeighbor  = neighbor[n];
+
+        /* Add the force data of this neighbor point. Note: the sum of these forces is the convolved force.
+
+           We actually add the force normalized by beta which has the units of 1/length. This means that the
+           resulting correlation time integral is directly in units of friction time/length^2 which is really what
+           we're interested in. */
+        awh_dvec forceFromNeighbor;
+        calcUmbrellaForceAndPotential(*this, indexNeighbor, forceFromNeighbor);
+
+        /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
+        forceCorr_->corr[indexNeighbor].addData(weightNeighbor, forceFromNeighbor, forceCorr_->blockLengthInWeight, t);
+    }
+}
+
 /* Sample observables for future updates or analysis. */
 void Bias::doObservableSampling(const std::vector<double> &probWeightNeighbor,
-                                double                     convolvedBias)
+                                double                     convolvedBias,
+                                double                     t)
 {
     /* Sampling-based deconvolution extracting the PMF.
      * Update the PMF histogram with the current coordinate value.
@@ -1416,6 +1447,9 @@ void Bias::doObservableSampling(const std::vector<double> &probWeightNeighbor,
      * neither is true except in the long simulation time limit. Empirically however,
      * it works (mainly because how the PMF histogram is rescaled).
      */
+
+    /* Force correlation */
+    updateForceCorrelation(probWeightNeighbor, t);
 
     /* Only save coordinate data that is in range (the given index is always
      * in range even if the coordinate value is not).
@@ -1465,7 +1499,7 @@ void Bias::doStep(awh_dvec biasForce,
 
         if (step > 0 && sampleCoord)
         {
-            doObservableSampling(*probWeightNeighbor, convolvedBias);
+            doObservableSampling(*probWeightNeighbor, convolvedBias, t);
         }
     }
 
@@ -1572,6 +1606,9 @@ void Bias::updateHistory(AwhBiasHistory *biasHistory) const
     stateHistory->scaledSampleWeight      = state.scaledSampleWeight;
     stateHistory->maxScaledSampleWeight   = state.maxScaledSampleWeight;
     stateHistory->numUpdates              = state.numUpdates;
+
+    GMX_RELEASE_ASSERT(biasHistory->forcecorr != nullptr, "AWH history force correlation not initialized when updating history");
+    updateCorrelationGridHistory(biasHistory->forcecorr, forceCorr());
 }
 
 /* Restore the bias state from history. */
@@ -1596,6 +1633,8 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory)
     state_.scaledSampleWeight     = stateHistory.scaledSampleWeight;
     state_.maxScaledSampleWeight  = stateHistory.maxScaledSampleWeight;
     state_.numUpdates             = stateHistory.numUpdates;
+
+    restoreCorrelationGridStateFromHistory(*biasHistory->forcecorr, forceCorr_.get());
 }
 
 /* Broadcast the bias data over the MPI ranks in this simulation. */

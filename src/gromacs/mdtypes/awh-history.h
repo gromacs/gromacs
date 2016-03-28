@@ -51,6 +51,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+struct correlation_grid_history_t;
+
 /*! \cond INTERNAL */
 
 //! Grid point state history data.
@@ -102,10 +104,12 @@ struct AwhBiasHistory
     std::vector<AwhPointStateHistory> pointState; /**< History for grid coordinate points. */
 
     AwhBiasStateHistory               state;      /**< The global state of the AWH bias. */
+    correlation_grid_history_t       *forcecorr;  /**< History for force correlation statistics. */
 
     /*! \brief Constructor. */
     AwhBiasHistory() : pointState(),
-                       state()
+                       state(),
+                       forcecorr(nullptr)
     {
     }
 };
