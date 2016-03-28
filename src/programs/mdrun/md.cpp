@@ -50,6 +50,7 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
@@ -92,6 +93,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/awh-history.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -481,6 +483,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
     }
+    if (shellfc && ir->bDoAwh)
+    {
+        gmx_fatal(FARGS, "AWH biasing does not support shell particles.");
+    }
 
     if (inputrecDeform(ir))
     {
@@ -593,6 +599,24 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     if (constr && !DOMAINDECOMP(cr))
     {
         set_constraints(constr, top, ir, mdatoms, cr);
+    }
+
+    /* Initialize AWH and restore state from history in checkpoint if needed. */
+    if (ir->bDoAwh)
+    {
+        ir->awh = new gmx::Awh(fplog, *ir, cr, *ir->awhParams, opt2fn("-awh", nfile, fnm), ir->pull_work);
+
+        if (startingFromCheckpoint)
+        {
+            /* Restore the AWH history read from checkpoint */
+            ir->awh->restoreStateFromHistory(MASTER(cr) ? state_global->awhHistory.get() : nullptr, cr);
+        }
+        else if (MASTER(cr))
+        {
+            /* Initialize the AWH history here */
+            state_global->awhHistory = std::shared_ptr<AwhHistory>(new AwhHistory());
+            ir->awh->initHistoryFromState(state_global->awhHistory.get());
+        }
     }
 
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
@@ -1177,6 +1201,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
         else
         {
+            /* The AWH history need to be saved _before_ doing force calculations where the AWH bias is updated
+               (or the AWH update will be performed twice for one step when continuing). It would be best to
+               call this update function from do_md_trajectory_writing but that would occur after do_force.
+               One would have to divide the update_awh function into one function applying the AWH force
+               and one doing the AWH bias update. The update AWH bias function could then be called after
+               do_md_trajectory_writing (then containing update_awh_history).
+               The checkpointing will in the future probably moved to the start of the md loop which will
+               rid of this issue. */
+            if (ir->bDoAwh && bCPT && MASTER(cr))
+            {
+                ir->awh->updateHistory(state_global->awhHistory.get());
+            }
+
             /* The coordinates (x) are shifted (to get whole molecules)
              * in do_force.
              * This is parallellized as well, and does communication too.
@@ -1946,6 +1983,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     if (useReplicaExchange && MASTER(cr))
     {
         print_replica_exchange_statistics(fplog, repl_ex);
+    }
+
+    if (ir->bDoAwh)
+    {
+        delete ir->awh;
     }
 
     // Clean up swapcoords
