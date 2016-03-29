@@ -330,11 +330,18 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
         if (imask)
 #endif
         {
-            /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            /* Pre-load cj into local memory. We need a barrier after the load
+             * because we can't assume a SIMD-style execution width, hence,
+             * we keep it disabled for default use and prefetching should be
+             * considered when optimizing for specifica arch.
+             */
+#ifdef USE_CJ_PREFETCH
+            if (tidxj == 0 && tidxi < NBNXN_GPU_JGROUP_SIZE)
             {
-                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+                cjs[tidxi] = pl_cj4[j4].cj[tidxi];
             }
+            barrier(CLK_LOCAL_MEM_FENCE);
+#endif
 
             /* Unrolling this loop improves performance without pruning but
              * with pruning it leads to slowdown.
@@ -351,7 +358,11 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
+#ifdef USE_CJ_PREFETCH
+                    cj      = cjs[jm];
+#else
+                    cj      = pl_cj4[j4].cj[jm];
+#endif
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
@@ -390,6 +401,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                             /* vote.. should code shmem serialisation, wonder what the hit will be */
                             if (r2 < rlist_sq)
                                 warp_any[widx]=1;
+
+                            /* Note: in the general case, we need a mem fence here as we can't assume execution width. */
+                            barrier(CLK_LOCAL_MEM_FENCE);
 
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
