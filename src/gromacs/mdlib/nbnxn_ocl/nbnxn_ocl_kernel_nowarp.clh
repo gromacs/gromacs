@@ -46,6 +46,10 @@
  *  \ingroup module_mdlib
  */
 
+/* Currently we enable CJ prefetch for AMD/NVIDIA and disable it for the "nowarp" kernel
+ * Note that this should precede the kernel_utils include.
+ */
+#define USE_CJ_PREFETCH 0
 
 #include "nbnxn_ocl_kernel_utils.clh"
 
@@ -212,9 +216,14 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
     /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL=8 bits set */
     const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
 
+#define LOCAL_OFFSET xqib + NCL_PER_SUPERCL * CL_SIZE
+    __local int *cjs;
+#if USE_CJ_PREFETCH
     /* shmem buffer for cj, for both warps separately */
-    __local int *cjs       = (__local int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    cjs = (__local int *)(LOCAL_OFFSET);
+    #undef LOCAL_OFFSET
     #define LOCAL_OFFSET cjs + 2 * NBNXN_GPU_JGROUP_SIZE
+#endif
 
 #ifdef IATYPE_SHMEM
 #ifndef LJ_COMB
@@ -329,16 +338,13 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
         imask       = pl_cj4[j4].imei[widx].imask;
         wexcl       = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
 
+        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imask);
+        barrier(CLK_LOCAL_MEM_FENCE);
+
 #ifndef PRUNE_NBL
         if (imask)
 #endif
         {
-            /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 | tidxj == 4) & (tidxi < NBNXN_GPU_JGROUP_SIZE))
-            {
-                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
-            }
-
             /* Unrolling this loop improves performance without pruning but
              * with pruning it leads to slowdown.
              *
@@ -354,7 +360,7 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
+                    cj      = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
@@ -393,6 +399,9 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
                             /* vote.. should code shmem serialisation, wonder what the hit will be */
                             if (r2 < rlist_sq)
                                 warp_any[widx]=1;
+
+                            /* Note: in the general case, we need a mem fence here as we can't assume execution width. */
+                            barrier(CLK_LOCAL_MEM_FENCE);
 
                             /* If _none_ of the atoms pairs are in cutoff range,
                                the bit corresponding to the current
@@ -639,3 +648,4 @@ __global float *restrict fshift,            /* stores float3 values */     /* OU
 #undef LJ_EWALD
 
 #undef LJ_COMB
+#undef USE_CJ_PREFETCH
