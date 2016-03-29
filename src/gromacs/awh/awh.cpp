@@ -59,6 +59,8 @@
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -70,6 +72,8 @@
 #include "math.h"
 #include "types.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
 //! String for registering AWH as an external potential with pull.
 static const char *external_potential_string = "AWH";
 
@@ -77,6 +81,9 @@ static const char *external_potential_string = "AWH";
 enum {
     eawhweighthistREAL, eawhweighthistIDEAL, eawhweighthistNR
 };
+
+//! A value that can be passed to exp() with result 0, also with SIMD
+static const double c_largeNegativeExponent = -10000.0;
 
 //! Linewidth used for warning output
 static const int linewidth = 78;
@@ -260,7 +267,7 @@ static void partition_domain(awh_bias_t *awh_bias, const awh_dim_params_t *awh_d
             if (awh_bias->grid->point[m].index[d] < domain_imin_dim[d] || awh_bias->grid->point[m].index[d] > domain_imax_dim[d])
             {
                 coordpoint[m].target = 0;
-                coordpoint[m].bias   = -GMX_DOUBLE_MAX; /* the bias = log(target) + const = -infty */
+                coordpoint[m].bias   = -c_largeNegativeExponent; /* the bias = log(target) + const = -infty */
             }
         }
         target_sum += coordpoint[m].target;
@@ -309,14 +316,14 @@ static double get_initial_histsize_estimate(const awh_dvec betak, const awh_bias
     return histsize;
 }
 
-static double get_biased_weight_from_point(const awh_bias_t *awh_bias, int point_index, double bias, const awh_dvec value)
+static double get_biased_log_weight_from_point(const awh_bias_t *awh_bias, int point_index, double bias, const awh_dvec value)
 {
-    double weight = 0;
+    double log_weight = c_largeNegativeExponent;
 
     /* Only points in the target reigon have non-zero weight */
     if (in_target_region(&awh_bias->coordpoint[point_index]))
     {
-        double log_weight = bias;
+        log_weight = bias;
 
         /* Add potential for all parameter dimensions */
         for (int d = 0; d < awh_bias->ndim; d++)
@@ -324,11 +331,9 @@ static double get_biased_weight_from_point(const awh_bias_t *awh_bias, int point
             double dev = get_deviation_from_point_along_gridaxis(awh_bias->grid, d, point_index, value[d]);
             log_weight -= 0.5*awh_bias->betak[d]*dev*dev;
         }
-
-        weight = std::exp(log_weight);
     }
 
-    return weight;
+    return log_weight;
 }
 
 static void set_free_energy_to_convolved_pmf(awh_bias_t *awh_bias)
@@ -350,8 +355,9 @@ static void set_free_energy_to_convolved_pmf(awh_bias_t *awh_bias)
             /* Add the convolved PMF weights for the neighbors of this point.
                Note that this function only adds point within the target > 0 reggon.
                Sum weights, take the logarithm last to get the free energy. */
-            free_energy_weights += get_biased_weight_from_point(awh_bias, neighbor, neg_pmf_neighbor,
-                                                                gridpoints[m].value);
+            double log_weight    = get_biased_log_weight_from_point(awh_bias, neighbor, neg_pmf_neighbor,
+                                                                    gridpoints[m].value);
+            free_energy_weights += std::exp(log_weight);
         }
 
         GMX_RELEASE_ASSERT(free_energy_weights > 0, "Attempting to do log(< 0) in AWH convolved PMF calculation.");
@@ -728,8 +734,11 @@ static void init_awh_bias(FILE                       *fplog,
     awh_bias->grid        = init_grid(awh_bias->ndim, awh_bias->betak, grid_origin, grid_end, grid_period, &nneighbors_alloc);
     awh_bias->npoints     = awh_bias->grid->npoints;
 
-    /* The transition probability weights in a neighborhood of the current coordinate */
-    snew(awh_bias->prob_weight_neighbor, nneighbors_alloc);
+    /* The transition probability weights in a neighborhood of the current coordinate.
+     * We use this with SIMD, so we align and pad.
+     * We would like to use the aligned allocator, but this is still a C struct.
+     */
+    snew_aligned(awh_bias->prob_weight_neighbor, nneighbors_alloc + 8, 128);
 
     /* Estimate and initialize histsize_initial. The estimation depends on the grid. */
     awh_bias->histsize_initial = get_initial_histsize_estimate(awh_bias->betak, awh_bias_params, awh_bias->grid, awh_bias->nstsample_coord*ir->delta_t);
@@ -1629,25 +1638,52 @@ static void update(awh_bias_t *awh_bias, int awh_id, const gmx_multisim_t *ms, d
 
 static void update_transition_probability_and_convolved_bias(awh_bias_t *awh_bias)
 {
-    double      weight_sum, inv_weight_sum;
     double     *weight = awh_bias->prob_weight_neighbor;
     grid_t     *grid   = awh_bias->grid;
 
-    /* Sum of probability weights */
-    weight_sum = 0;
+    /* When using the convolved potential, this function is called every step.
+     * As we need to sum exponentials of log(weight) over many neighbor points
+     * in double precision, this takes significant computational time.
+     * Using SIMD parallelization accelerates this function significantly.
+     */
+#if GMX_SIMD_HAVE_DOUBLE
+    typedef SimdDouble PackType;
+    const int packSize = GMX_SIMD_DOUBLE_WIDTH;
+#else
+    typedef double PackType;
+    const int packSize = 1;
+#endif
 
     /* Only neighbors of the current coordinate value will have a non-negligible chance of getting sampled */
-    for (int n = 0; n < grid->point[awh_bias->coord_value_index].nneighbors; n++)
+    const int nneighbors = grid->point[awh_bias->coord_value_index].nneighbors;
+    PackType  weightSumPack(0.0);
+    for (int i = 0; i < nneighbors; i += packSize)
     {
-        int neighbor =  grid->point[awh_bias->coord_value_index].neighbor[n];
-        weight[n]   = get_biased_weight_from_point(awh_bias, neighbor, awh_bias->coordpoint[neighbor].bias,
-                                                   awh_bias->coord_value);
-        weight_sum += weight[n];
+        for (int n = i; n < i + packSize; n++)
+        {
+            if (n < nneighbors)
+            {
+                int neighbor = grid->point[awh_bias->coord_value_index].neighbor[n];
+                weight[n]    = get_biased_log_weight_from_point(awh_bias, neighbor, awh_bias->coordpoint[neighbor].bias,
+                                                                awh_bias->coord_value);
+            }
+            else
+            {
+                /* Pad with values that don't affect the result */
+                weight[n]    = c_largeNegativeExponent;
+            }
+        }
+        PackType weightPack = load(weight + i);
+        weightPack          = gmx::exp(weightPack);
+        weightSumPack       = weightSumPack + weightPack;
+        store(weight + i, weightPack);
     }
-    inv_weight_sum = 1./weight_sum;
+    /* Sum of probability weights */
+    double weight_sum     = reduce(weightSumPack);
+    double inv_weight_sum = 1./weight_sum;
 
     /* Normalize probabilities to 1 */
-    for (int n = 0; n < grid->point[awh_bias->coord_value_index].nneighbors; n++)
+    for (int n = 0; n < nneighbors; n++)
     {
         weight[n] *= inv_weight_sum;
     }
@@ -1669,9 +1705,9 @@ double calc_convolved_bias(const awh_bias_t *awh_bias, const awh_dvec coord_valu
     /* Sum the probability weights from the neighborhood of the given point */
     for (int n = 0; n < gridpoints[point].nneighbors; n++)
     {
-        int neighbor =  gridpoints[point].neighbor[n];
-        weight_sum += get_biased_weight_from_point(awh_bias, neighbor, coordpoints[neighbor].bias,
-                                                   coord_value);
+        int neighbor = gridpoints[point].neighbor[n];
+        weight_sum  += std::exp(get_biased_log_weight_from_point(awh_bias, neighbor, coordpoints[neighbor].bias,
+                                                                 coord_value));
     }
 
     /* Returns -GMX_DOUBLE_MAX if no neighboring points where in the target region. */
