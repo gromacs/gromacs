@@ -561,6 +561,14 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
   almost no performance gain when using NVIDIA GPUs.
   The issue affects NVIDIA driver versions up to 349 series, but it
   known to be fixed 352 and later driver releases.
+- The AMD APPSDK version 3.0 ships with OpenCL compiler/runtime components,
+  libamdocl12cl64.so and libamdocl64.so (only in earlier releases),
+  that conflict with newer fglrx GPU drivers which provide the same components.
+  This conflict manifests in kernel launch failures as, due to the library path
+  setup, the OpenCL runtime loads the APPSDK version of the aforementioned
+  libraries instead of the ones provided by the driver installer.
+  The recommended workaround is to remove or rename the APPSDK versions
+  offending libraries
 
 Limitations of interest to |Gromacs| developers:
 
