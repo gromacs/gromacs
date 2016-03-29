@@ -64,7 +64,7 @@ def do_build(context):
 
     context.build_target(target='manual', parallel=False,
             target_descr='PDF manual', continue_on_failure=True)
-    logfile = 'docs/manual/gromacs.log'
+    logfile = os.path.join(context.workspace.build_dir, 'docs/manual/gromacs.log')
     if os.path.isfile(logfile):
         with open(logfile, 'r') as f:
             manual_log = f.read()
@@ -83,7 +83,8 @@ def do_build(context):
         logs = []
         for target in ('check-source', 'doxygen-xml', 'doxygen-user',
                 'doxygen-lib', 'doxygen-full'):
-            logfile = 'docs/doxygen/{0}.log'.format(target)
+            logfile = os.path.join(context.workspace.build_dir,
+                    'docs/doxygen/{0}.log'.format(target))
             if os.path.isfile(logfile) and os.stat(logfile).st_size > 0:
                 context.mark_unstable('{0} produced warnings'.format(target))
             logs.append(logfile)
@@ -111,7 +112,8 @@ def do_build(context):
         context.build_target(target=target, parallel=False,
                 failure_string='Sphinx: {0} generation failed'.format(descr),
                 continue_on_failure=True)
-        logfile = 'docs/sphinx-{0}.log'.format(log)
+        logfile = os.path.join(context.workspace.build_dir,
+                'docs/sphinx-{0}.log'.format(log))
         if os.path.isfile(logfile) and os.stat(logfile).st_size > 0:
             context.mark_unstable('Sphinx: {0} generation produced warnings'.format(descr))
         logs.append(logfile)
