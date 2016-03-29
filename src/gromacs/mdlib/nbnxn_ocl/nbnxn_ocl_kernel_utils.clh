@@ -150,6 +150,69 @@ typedef struct {
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
+
+/*! Preload cjs for a whole wavefront */
+__INLINE__ __device__
+void preloadCj4(__local int        *sm_cjPreload,
+                const __global int *gm_cj,
+                int                 tidxi,
+                int                 tidxj,
+                bool                iMaskCond)
+
+{
+#ifndef USE_CJ_PREFETCH
+    return;
+#endif
+
+    const int c_clSize                   = CL_SIZE;
+    const int c_nbnxnGpuJgroupSize       = NBNXN_GPU_JGROUP_SIZE;
+    const int c_nbnxnGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
+
+#ifdef _WARPLESS_SOURCE_
+    if (tidxj == 0 && tidxi < c_nbnxnGpuJgroupSize)
+    {
+        sm_cjPreload[tidxi] = gm_cj[tidxi];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+#else //TODO add if _NVIDIA_SOURCE_
+    if (iMaskCond)
+    {
+        /* Pre-load cj into shared memory on both warps separately */
+        if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
+        {
+            sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = gm_cj[tidxi];
+        }
+    }
+#endif
+}
+
+__INLINE__ __device__
+int loadCj(__local int        *sm_cjPreload,
+           const __global int *gm_cj,
+           int                 jm,
+           int                 tidxi,
+           int                 tidxj)
+{
+    const int c_clSize                   = CL_SIZE;
+    const int c_nbnxnGpuJgroupSize       = NBNXN_GPU_JGROUP_SIZE;
+    const int c_nbnxnGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
+
+#ifdef _WARPLESS_SOURCE_
+    int warpLoadOffset = 0;
+#else //TODO add if _NVIDIA_SOURCE_
+    int warpLoadOffset = (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize;
+#endif
+
+#ifdef USE_CJ_PREFETCH
+    return sm_cjPreload[jm + warpLoadOffset];
+#else
+    return gm_cj[jm];
+#endif
+}
+
+
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 __INLINE__ __device__
 void convert_sigma_epsilon_to_c6_c12(const float  sigma,
