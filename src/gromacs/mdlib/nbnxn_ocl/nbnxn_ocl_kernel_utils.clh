@@ -150,6 +150,80 @@ typedef struct {
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
+
+/*! \brief Preload cj4 into local memory.
+ *
+ * - For AMD we load once for a wavefront of 64 threads (on 4 threads * NTHREAD_Z)
+ * - For NVIDIA once per warp (on 2x4 threads * NTHREAD_Z)
+ * - Same as AMD in the nowarp kernel; we do not assume execution width and therefore
+ *   the caller needs to sync.
+ *
+ * It is the caller's responsibility to make sure that data is consumed only when
+ * it's ready. This function does not call a barrier.
+ */
+__INLINE__ __device__
+void preloadCj4(__local int        *sm_cjPreload,
+                const __global int *gm_cj,
+                int                 tidxi,
+                int                 tidxj,
+                bool                iMaskCond)
+
+{
+#if !USE_CJ_PREFETCH
+    return;
+#endif
+
+    const int c_clSize                   = CL_SIZE;
+    const int c_nbnxnGpuJgroupSize       = NBNXN_GPU_JGROUP_SIZE;
+    const int c_nbnxnGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
+
+    /* Pre-load cj into shared memory */
+#if defined _NVIDIA_SOURCE_
+     /* on both warps separately for NVIDIA */
+    if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
+    {
+        sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = gm_cj[tidxi];
+    }
+#else // AMD or nowarp
+    /* Note that with "nowarp" / on hardware with wavefronts <64 a barrier is needed after preload. */
+    if (tidxj == 0 & tidxi < c_nbnxnGpuJgroupSize)
+    {
+        sm_cjPreload[tidxi] = gm_cj[tidxi];
+    }
+#endif
+}
+
+/* \brief Load a cj given a jm index.
+ *
+ * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
+ */
+__INLINE__ __device__
+int loadCj(__local int        *sm_cjPreload,
+           const __global int *gm_cj,
+           int                 jm,
+           int                 tidxi,
+           int                 tidxj)
+{
+    const int c_clSize                   = CL_SIZE;
+    const int c_nbnxnGpuJgroupSize       = NBNXN_GPU_JGROUP_SIZE;
+    const int c_nbnxnGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
+
+#if _NVIDIA_SOURCE_
+    int warpLoadOffset = (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize;
+#else // defined _WARPLESS_SOURCE_ || defined _AMD_SOURCE_
+    int warpLoadOffset = 0;
+#endif
+
+#if USE_CJ_PREFETCH
+    return sm_cjPreload[jm + warpLoadOffset];
+#else
+    return gm_cj[jm];
+#endif
+}
+
+
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 __INLINE__ __device__
 void convert_sigma_epsilon_to_c6_c12(const float  sigma,
