@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -1140,9 +1140,9 @@ class DocumentationSet(object):
                     dirobj = compound.get_directory()
                     if not dirobj:
                         continue
-                    abspath = compound.get_directory().get_path()
-                    abspath = os.path.join(abspath, compound.get_name())
-                    if abspath in filelist:
+                    relpath = compound.get_directory().get_name()
+                    relpath = os.path.join(relpath, compound.get_name())
+                    if relpath in filelist:
                         compound.load_details()
                         self._files[compound.get_path()] = compound
 
