@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,15 @@
  *  \ingroup module_mdlib
  */
 
+#ifndef _WARPLESS_SOURCE_
+/* Currently we enable CJ prefetch for AMD/NVIDIA and disable it for the "nowarp" kernel
+ * Note that this should precede the kernel_utils include.
+ */
+#define USE_CJ_PREFETCH 1
+#else
+#define USE_CJ_PREFETCH 0
+#endif
+
 #include "nbnxn_ocl_kernel_utils.clh"
 
 /* Note: the AMD compiler testing was done with (fglrx 15.12) performs best with wg
@@ -54,10 +63,6 @@
  *
  */
 #define NTHREAD_Z GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-
-#if !defined _AMD_SOURCE_ && ! defined _NVIDIA_SOURCE_
-    #error "The pruning kernel has not been tested on arch with execution width <32."
-#endif
 
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef HAVE_FRESH_LIST
@@ -116,12 +121,15 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
-    /* shmem buffer for i cj pre-loading */
     #define LOCAL_OFFSET xib + c_numClPerSupercl * c_clSize
-    __local int *cjs       = (((__local int *)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
+    /* shmem buffer for i cj pre-loading */
+    __local int *cjs;
+#if USE_CJ_PREFETCH
+    cjs = (((__local int *)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
     #undef LOCAL_OFFSET
     /* Offset calculated using xib because cjs depends on on tidxz! */
     #define LOCAL_OFFSET (((__local int *)(xib + c_numClPerSupercl * c_clSize)) + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
+#endif
 
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
@@ -177,14 +185,14 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
             imaskCheck = (imaskNew ^ imaskFull);
         }
 
+        preloadCj4(cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck);
+#if defined _NOWARP_SOURCE_ && USE_CJ_PREFETCH
+        /* can't assume wavefront width, need to sync before we can consume cj4 from local memory */
+        barrier(CLK_LOCAL_MEM_FENCE);
+#endif
+
         if (imaskCheck)
         {
-            /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 | tidxj == 4) & (tidxi < c_nbnxnGpuJgroupSize))
-            {
-                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
-            }
-
 #pragma unroll 4
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
@@ -192,8 +200,8 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
                 {
                     unsigned int mask_ji = (1U << (jm * c_numClPerSupercl));
 
-                    int cj      = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize];
-                    int aj      = cj * c_clSize + tidxj;
+                    int cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
+                    int aj = cj * c_clSize + tidxj;
 
                     /* load j atom data */
                     float4 tmp  = xq[aj];
@@ -256,3 +264,5 @@ __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
         }
     }
 }
+
+#undef USE_CJ_PREFETCH
