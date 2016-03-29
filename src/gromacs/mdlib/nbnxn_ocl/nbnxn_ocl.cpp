@@ -278,9 +278,11 @@ static inline int calc_shmem_required_nonbonded(int  vdwType,
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem  = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
-    /* cj in shared memory, for both warps separately */
-    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);           /* cjs  */
+    shmem  = c_numClPerSupercl * c_clSize * sizeof(float) * 4;                /* xqib */
+    /* cj in shared memory, for both warps separately
+     * TODO: in the "nowarp kernels we load cj only once  so the factor 2 is not needed.
+     */
+    shmem += c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int); /* cjs  */
     if (bPrefetchLjParam)
     {
         if (useLjCombRule(vdwType))
@@ -583,7 +585,10 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
 
     /* i-atom x in shared memory (for convenience we load all 4 components including q) */
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float)*4;
-    /* cj in shared memory, for each warp separately */
+    /* cj in shared memory, for each warp separately
+     * Note: only need to load once per wavefront, but to keep the code simple,
+     * for now we load twice on AMD.
+     */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
     /* Warp vote, requires one uint per warp/32 threads per block. */
     shmem += sizeof(cl_uint) * 2*num_threads_z;
