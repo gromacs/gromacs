@@ -65,9 +65,9 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/gmxassert.h"
 
 #include "nbnxn_ocl_types.h"
 
