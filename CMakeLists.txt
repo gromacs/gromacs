@@ -132,6 +132,11 @@ endif()
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
 
+# Permit the user to specify a particular standard library, e.g. with
+# "-lc++abi -lc++" to get clang's libcxx. It is likely also necessary
+# to modify CMAKE_CXX_FLAGS to pass "-stdlib=libc++" in that case.
+set(GMX_STDLIB "" CACHE STRING "Link a particular C++ standard library")
+mark_as_advanced(GMX_STDLIB)
 
 ########################################################################
 # Detect CXX11 support and flags
