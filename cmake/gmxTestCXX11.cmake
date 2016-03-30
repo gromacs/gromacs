@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,13 @@ MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
         set(CXX11_FLAG "")
     endif()
     set(CMAKE_REQUIRED_FLAGS "${CXX11_FLAG}")
+    if (GMX_STDLIB_CXX_FLAGS)
+        CHECK_CXX_COMPILER_FLAG("${GMX_STDLIB_CXX_FLAGS}" CXXFLAG_STDLIB)
+    endif()
+    if(CXXFLAG_STDLIB)
+        set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+    endif()
+    set(CMAKE_REQUIRED_LIBRARIES "${GMX_STDLIB_LIBRARIES}")
     check_cxx_source_compiles(
 "#include <map>
 #include <memory>
