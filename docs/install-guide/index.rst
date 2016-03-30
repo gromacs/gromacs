@@ -96,22 +96,27 @@ Getting good performance on an OS and architecture requires choosing a
 good compiler. In practice, many compilers struggle to do a good job
 optimizing the |Gromacs| architecture-optimized SIMD kernels.
 
-C++11 support requires both support in the compiler as well as in the
-C++ library. Multiple compilers do not provide their own library
-but use the system library. It is required to select a library with
-sufficient C++11 support. Both the Intel and clang compiler on Linux use
-the libstdc++ which comes with gcc as the default C++ library. 4.6.1 of
-that library is required. Also the C++ library version has to be
-supported by the compiler. To select the C++ library version use:
+C++11 support requires adequate support in both the compiler and the
+C++ library. The gcc compiler includes its own GNU standard library
+called libstdc++, which just works. Both the Intel and clang compiler
+on Linux use the libstdc++ which comes with gcc as the default C++
+library. Version 4.6.1 of that library is required to have enough
+language support for |Gromacs|, and the C++ library version must be
+supported by the compiler. To select a particular libstdc++ library,
+use:
 
-* For Intel: ``CXXFLAGS=-gcc-name=/path/to/gcc/binary`` or make sure
+* For Intel: ``-DCMAKE_CXX_FLAGS=-gcc-name=/path/to/gcc/binary`` or make sure
   that the correct gcc version is first in path (e.g. by loading the gcc
   module)
-* For clang: ``CFLAGS=--gcc-toolchain=/path/to/gcc/folder
-  CXXFLAGS=--gcc-toolchain=/path/to/gcc/folder``. This folder should
+* For clang: ``-DCMAKE_C_FLAGS=--gcc-toolchain=/path/to/gcc/folder
+  -DCMAKE_CXX_FLAGS=--gcc-toolchain=/path/to/gcc/folder``. This folder should
   contain ``include/c++``.
-* On Windows with e.g. Intel: at least MSVC 2015 is required. Load the
-  enviroment with vcvarsall.bat.
+
+On Windows with e.g. Intel, the MSVC standard library is used, and at
+least MSVC 2015 is required. Load the enviroment with vcvarsall.bat.
+
+To build with clang's libcxx standard library, use
+``-DGMX_STDLIB_CXX_FLAGS=-stdlib=libc++ -DGMX_STDLIB_LIBRARIES='-lc++abi -lc++'``.
 
 For best performance, the |Gromacs| team strongly recommends you get the
 most recent version of your preferred compiler for your platform.
