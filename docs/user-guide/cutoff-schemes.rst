@@ -11,8 +11,8 @@ particles. These groups of particles were originally charge-groups, which were
 necessary with plain cut-off electrostatics. With the use of PME (or
 reaction-field with a buffer), charge groups are no longer necessary
 (and are ignored in the Verlet scheme). In |Gromacs| 4.6 and later, the
-group-based cut-off scheme is still available, but is **deprecated in
-5.0 and 5.1**. It is still available mainly for backwards
+group-based cut-off scheme is still available, but is **deprecated since
+5.0**. It is still available mainly for backwards
 compatibility, to support the algorithms that have not yet been
 converted, and for the few cases where it may allow faster simulations
 with bio-molecular systems dominated by water.
@@ -68,7 +68,7 @@ Lennard-Jones PME                     yes          yes
 virtual sites                         yes          yes
 User-supplied tabulated interactions  yes          no
 Buckingham VdW interactions           yes          no
-rcoulomb != rvdw                      yes          no
+rcoulomb != rvdw                      yes          yes
 twin-range                            no           no
 ====================================  ============ =======
 

@@ -553,6 +553,8 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
+include(gmxManageTNG)
+
 # now that we have detected the dependencies, do the second GPU configure pass
 gmx_gpu_setup()
 
