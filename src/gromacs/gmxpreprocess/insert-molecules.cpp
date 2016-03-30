@@ -207,8 +207,9 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     set_pbc(&pbc, ePBC, box);
 
     /* With -ip, take nmol_insrt from file posfn */
-    double         **rpos = NULL;
-    if (!posfn.empty())
+    double     **rpos              = NULL;
+    const bool   insertAtPositions = !posfn.empty();
+    if (insertAtPositions)
     {
         int ncol;
         nmol_insrt = read_xvg(posfn.c_str(), &rpos, &ncol);
@@ -244,7 +245,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         // cppcheck 1.72 complains about uninitialized variables in the
         // assignments below otherwise...
         rvec offset_x = {0};
-        if (posfn.empty())
+        if (!insertAtPositions)
         {
             // Insert at random positions.
             offset_x[XX] = box[XX][XX] * dist(rng);
