@@ -298,7 +298,7 @@ node with other processes.
 
 ::
 
-    gmx mpirun_mpi -np 2
+    mpirun -np 2 gmx_mpi mdrun
 
 When using an :ref:`gmx mdrun` compiled with external MPI,
 this will start two ranks and as many OpenMP threads
@@ -309,7 +309,7 @@ MPI setup is restricted to one node, then the resulting
 Running mdrun on more than one node
 -----------------------------------
 This requires configuring GROMACS to build with an external MPI
-library. By default, this mdrun executable will be named
+library. By default, this mdrun executable is run with
 :ref:`mdrun_mpi`. All of the considerations for running single-node
 mdrun still apply, except that ``-ntmpi`` and ``-nt`` cause a fatal
 error, and instead the number of ranks is controlled by the
@@ -381,7 +381,7 @@ to choose the number of MPI ranks.
 
 ::
 
-    mpirun -np 16 gmx mdrun_mpi
+    mpirun -np 16 gmx_mpi mdrun
 
 Starts :ref:`mdrun_mpi` with 16 ranks, which are mapped to
 the hardware by the MPI library, e.g. as specified
@@ -392,7 +392,7 @@ such as ``OMP_NUM_THREADS``.
 
 ::
 
-    mpirun -np 16 gmx mdrun_mpi -npme 5
+    mpirun -np 16 gmx_mpi mdrun -npme 5
 
 Starts :ref:`mdrun_mpi` with 16 ranks, as above, and
 require that 5 of them are dedicated to the PME
@@ -400,7 +400,7 @@ component.
 
 ::
 
-    mpirun -np 11 gmx mdrun_mpi -ntomp 2 -npme 6 -ntomp_pme 1
+    mpirun -np 11 gmx_mpi mdrun -ntomp 2 -npme 6 -ntomp_pme 1
 
 Starts :ref:`mdrun_mpi` with 11 ranks, as above, and
 require that six of them are dedicated to the PME
@@ -428,7 +428,7 @@ on the same hardware.
 
 ::
 
-    mpirun -np 20 gmx mdrun_mpi -ntomp 4 -gpu_id 0
+    mpirun -np 20 gmx_mpi mdrun -ntomp 4 -gpu_id 0
 
 Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
 across ranks each to one OpenMP thread. This setup is likely to be
@@ -437,7 +437,7 @@ has two sockets.
 
 ::
 
-    mpirun -np 20 gmx mdrun_mpi -gpu_id 00
+    mpirun -np 20 gmx_mpi mdrun -gpu_id 00
 
 Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
 across ranks each to one OpenMP thread. This setup is likely to be
@@ -446,7 +446,7 @@ has two sockets.
 
 ::
 
-    mpirun -np 20 gmx mdrun_mpi -gpu_id 01
+    mpirun -np 20 gmx_mpi mdrun -gpu_id 01
 
 Starts :ref:`mdrun_mpi` with 20 ranks. This setup is likely
 to be suitable when there are ten nodes, each with two
@@ -454,7 +454,7 @@ GPUs.
 
 ::
 
-    mpirun -np 40 gmx mdrun_mpi -gpu_id 0011
+    mpirun -np 40 gmx_mpi mdrun -gpu_id 0011
 
 Starts :ref:`mdrun_mpi` with 40 ranks. This setup is likely
 to be suitable when there are ten nodes, each with two
