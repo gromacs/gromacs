@@ -68,7 +68,7 @@ function(gmx_suggest_simd _suggested_simd)
     message(STATUS "Detecting best SIMD instructions for this CPU")
 
     # Get CPU SIMD properties information
-    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE")
+    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS}")
 
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
@@ -77,6 +77,7 @@ function(gmx_suggest_simd _suggested_simd)
                 ${CMAKE_BINARY_DIR}
                 ${CMAKE_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp
                 COMPILE_DEFINITIONS ${_compile_definitions}
+                LINK_LIBRARIES ${GMX_STDLIB_LIBRARIES}
                 RUN_OUTPUT_VARIABLE OUTPUT_TMP
                 COMPILE_OUTPUT_VARIABLE GMX_CPUINFO_COMPILE_OUTPUT
                 ARGS "-features")
@@ -91,6 +92,7 @@ function(gmx_suggest_simd _suggested_simd)
             set(OUTPUT_TMP "None")
         endif(NOT GMX_CPUINFO_COMPILED)
 
+        set(OUTPUT_SIMD "None")
         if(GMX_TARGET_X86)
             if(OUTPUT_TMP MATCHES " avx512er ")
                 set(OUTPUT_SIMD "AVX_512_KNL")
