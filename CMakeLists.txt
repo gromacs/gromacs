@@ -553,6 +553,9 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
+# Note this relies on zlib detection having already run
+include(gmxManageTNG)
+
 # now that we have detected the dependencies, do the second GPU configure pass
 gmx_gpu_setup()
 
