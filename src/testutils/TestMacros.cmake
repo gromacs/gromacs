@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ function (gmx_build_unit_test NAME EXENAME)
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-        target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
         file(MAKE_DIRECTORY ${_temporary_files_path})
@@ -81,7 +81,7 @@ function (gmx_register_integration_test NAME EXENAME)
 
         # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
         # some point.
-        # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
+        # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
     endif()
 endfunction ()
 
@@ -125,7 +125,7 @@ function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
 
             # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
             # some point.
-            # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
+            # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
         elseif(GMX_THREAD_MPI)
             add_test(NAME ${NAME}
                 COMMAND
@@ -137,7 +137,7 @@ function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
 
             # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
             # some point.
-            # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
+            # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
         endif()
     endif()
 endfunction ()
