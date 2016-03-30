@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,9 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 add_executable(template template.cpp)
-target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
+set_target_properties(template PROPERTIES
+                      COMPILE_FLAGS "${GMX_STDLIB_CXX_FLAGS}")
+target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
 install(FILES CMakeLists.txt.template
         DESTINATION ${DATA_INSTALL_DIR}/template
         RENAME CMakeLists.txt
