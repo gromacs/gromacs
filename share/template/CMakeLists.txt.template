@@ -39,4 +39,6 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
 endif()
 
 add_executable(template template.cpp)
+set_target_properties(template PROPERTIES
+                      COMPILE_FLAGS "${GROMACS_CXX_FLAGS}")
 target_link_libraries(template ${GROMACS_LIBRARIES})
