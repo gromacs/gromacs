@@ -18,13 +18,13 @@ makes use of pkg-config to build the template program:
 $ source /path/to/GMXRC
 $ make -f Makefile.pkg
 
-You will need to make sure that you use a sufficiently similar C++
-compiler and C++ Standard Library as the one that was used for
-compiling GROMACS, preferably the same one.
+You will need to make sure that you use the same C++ compiler
+and C++ Standard Library as the one that was used for compiling
+GROMACS.
 See the Doxygen documentation for using GROMACS as a library for
 more details about the build system used to build the template, as
 well as its limitations (link to the latest development version):
-  <http://jenkins.gromacs.org/job/Documentation_Gerrit_Nightly/javadoc/doxygen/html-user/page_usinglibrary.xhtml>
+  <http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/doxygen/html-user/page_usinglibrary.xhtml>
 
 ----------------------------------------------------------
 
