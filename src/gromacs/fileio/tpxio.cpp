@@ -682,8 +682,8 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
 }
 
-static void do_awh(t_fileio *fio, awh_bias_params_t *awh_bias_params, gmx_bool bRead,
-                   int gmx_unused file_version)
+static void do_awh_bias(t_fileio *fio, awh_bias_params_t *awh_bias_params, gmx_bool bRead,
+                        int gmx_unused file_version)
 {
     gmx_fio_do_int(fio, awh_bias_params->eTarget);
     gmx_fio_do_double(fio, awh_bias_params->target_param);
@@ -732,7 +732,7 @@ static void do_awh(t_fileio *fio, awh_params_t *awh_params, gmx_bool bRead,
 
         for (int k = 0; k < awh_params->nbias; k++)
         {
-            do_awh(fio, &awh_params->awh_bias_params[k], bRead, file_version);
+            do_awh_bias(fio, &awh_params->awh_bias_params[k], bRead, file_version);
         }
     }
 }

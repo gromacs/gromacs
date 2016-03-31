@@ -56,25 +56,25 @@
 
 /* These are just dummy initializers used when initializing the state because all AWH parameters
    are not (readily) available then/there (if the awh struct hasn't been initialized). TODO. */
-static void init_awh_bias_history(awh_bias_history_t *awh_bias_history)
+static void init_bias_history(awh_bias_history_t *bias_history)
 {
-    awh_bias_history->in_initial                = 0;
-    awh_bias_history->histsize                  = 0;
-    awh_bias_history->npoints                   = 0;
-    awh_bias_history->coordpoint                = NULL;
-    awh_bias_history->coord_refvalue_index      = 0;
-    awh_bias_history->ndim                      = 0;
-    awh_bias_history->log_relative_sampleweight = 0;
+    bias_history->in_initial                = 0;
+    bias_history->histsize                  = 0;
+    bias_history->npoints                   = 0;
+    bias_history->coordpoint                = NULL;
+    bias_history->coord_refvalue_index      = 0;
+    bias_history->ndim                      = 0;
+    bias_history->log_relative_sampleweight = 0;
 }
 
-static void init_awh_bias_history_from_state(awh_bias_history_t *awh_bias_history, const awh_bias_t *awh_bias)
+static void init_bias_history_from_state(awh_bias_history_t *bias_history, const awh_bias_t *bias)
 {
-    init_awh_bias_history(awh_bias_history);
+    init_bias_history(bias_history);
 
-    awh_bias_history->npoints            = awh_bias->npoints;
-    awh_bias_history->ndim               = awh_bias->ndim;
+    bias_history->npoints            = bias->npoints;
+    bias_history->ndim               = bias->ndim;
 
-    snew(awh_bias_history->coordpoint, awh_bias_history->npoints);
+    snew(bias_history->coordpoint, bias_history->npoints);
 }
 
 void init_awh_history(awh_history_t *awh_history)
@@ -92,70 +92,70 @@ void init_awh_history_from_state(awh_history_t *awh_history, const awh_t *awh)
     snew(awh_history->awh_bias_history, awh_history->nbias);
     for (int k = 0; k < awh_history->nbias; k++)
     {
-        init_awh_bias_history_from_state(&awh_history->awh_bias_history[k], &awh->awh_bias[k]);
+        init_bias_history_from_state(&awh_history->awh_bias_history[k], &awh->awh_bias[k]);
     }
 }
 
-static void update_awh_bias_history(awh_bias_history_t *awh_bias_history, awh_bias_t *awh_bias)
+static void update_bias_history(awh_bias_history_t *bias_history, awh_bias_t *bias)
 {
-    GMX_RELEASE_ASSERT(awh_bias_history->coordpoint != NULL, "AWH history coord point not initialized when updating history");
-    GMX_RELEASE_ASSERT(awh_bias_history->npoints > 0, "AWH history number of points not initialized when updating history");
-    GMX_RELEASE_ASSERT(awh_bias_history->ndim > 0, "AWH history number of dimensions not initialized when updating history");
+    GMX_RELEASE_ASSERT(bias_history->coordpoint != NULL, "AWH history coord point not initialized when updating history");
+    GMX_RELEASE_ASSERT(bias_history->npoints > 0, "AWH history number of points not initialized when updating history");
+    GMX_RELEASE_ASSERT(bias_history->ndim > 0, "AWH history number of dimensions not initialized when updating history");
 
-    awh_bias_history->coord_refvalue_index = awh_bias->coord_refvalue_index;
+    bias_history->coord_refvalue_index = bias->coord_refvalue_index;
 
-    for (int m = 0; m < awh_bias_history->npoints; m++)
+    for (int m = 0; m < bias_history->npoints; m++)
     {
-        awh_bias_history->coordpoint[m].target                               = awh_bias->coordpoint[m].target;
-        awh_bias_history->coordpoint[m].free_energy                          = awh_bias->coordpoint[m].free_energy;
-        awh_bias_history->coordpoint[m].bias                                 = awh_bias->coordpoint[m].bias;
-        awh_bias_history->coordpoint[m].weightsum_iteration                  = awh_bias->coordpoint[m].weightsum_iteration;
-        awh_bias_history->coordpoint[m].weightsum_covering                   = awh_bias->coordpoint[m].weightsum_covering;
-        awh_bias_history->coordpoint[m].weightsum_tot                        = awh_bias->coordpoint[m].weightsum_tot;
-        awh_bias_history->coordpoint[m].weightsum_ref                        = awh_bias->coordpoint[m].weightsum_ref;
-        awh_bias_history->coordpoint[m].last_update_index                    = awh_bias->coordpoint[m].last_update_index;
-        awh_bias_history->coordpoint[m].log_pmfsum                           = awh_bias->coordpoint[m].log_pmfsum;
-        awh_bias_history->coordpoint[m].visits_iteration                     = awh_bias->coordpoint[m].visits_iteration;
-        awh_bias_history->coordpoint[m].visits_tot                           = awh_bias->coordpoint[m].visits_tot;
+        bias_history->coordpoint[m].target                               = bias->coordpoint[m].target;
+        bias_history->coordpoint[m].free_energy                          = bias->coordpoint[m].free_energy;
+        bias_history->coordpoint[m].bias                                 = bias->coordpoint[m].bias;
+        bias_history->coordpoint[m].weightsum_iteration                  = bias->coordpoint[m].weightsum_iteration;
+        bias_history->coordpoint[m].weightsum_covering                   = bias->coordpoint[m].weightsum_covering;
+        bias_history->coordpoint[m].weightsum_tot                        = bias->coordpoint[m].weightsum_tot;
+        bias_history->coordpoint[m].weightsum_ref                        = bias->coordpoint[m].weightsum_ref;
+        bias_history->coordpoint[m].last_update_index                    = bias->coordpoint[m].last_update_index;
+        bias_history->coordpoint[m].log_pmfsum                           = bias->coordpoint[m].log_pmfsum;
+        bias_history->coordpoint[m].visits_iteration                     = bias->coordpoint[m].visits_iteration;
+        bias_history->coordpoint[m].visits_tot                           = bias->coordpoint[m].visits_tot;
     }
 
-    awh_bias_history->in_initial             = awh_bias->in_initial;
-    awh_bias_history->histsize               = awh_bias->histsize;
+    bias_history->in_initial             = bias->in_initial;
+    bias_history->histsize               = bias->histsize;
 
-    awh_bias_history->origin_index_updatelist = multidim_gridindex_to_linear(awh_bias->grid,
-                                                                             awh_bias->origin_updatelist);
-    awh_bias_history->end_index_updatelist = multidim_gridindex_to_linear(awh_bias->grid,
-                                                                          awh_bias->end_updatelist);
+    bias_history->origin_index_updatelist = multidim_gridindex_to_linear(bias->grid,
+                                                                         bias->origin_updatelist);
+    bias_history->end_index_updatelist = multidim_gridindex_to_linear(bias->grid,
+                                                                      bias->end_updatelist);
 
-    awh_bias_history->log_relative_sampleweight  = awh_bias->log_relative_sampleweight;
+    bias_history->log_relative_sampleweight  = bias->log_relative_sampleweight;
 }
 
-static void restore_awh_state_from_history(const awh_bias_history_t *awh_bias_history, awh_bias_t *awh_bias)
+static void restore_bias_state_from_history(const awh_bias_history_t *bias_history, awh_bias_t *bias)
 {
-    awh_bias->coord_refvalue_index = awh_bias_history->coord_refvalue_index;
+    bias->coord_refvalue_index = bias_history->coord_refvalue_index;
 
-    for (int m = 0; m < awh_bias->npoints; m++)
+    for (int m = 0; m < bias->npoints; m++)
     {
-        awh_bias->coordpoint[m].target                                = awh_bias_history->coordpoint[m].target;
-        awh_bias->coordpoint[m].free_energy                           = awh_bias_history->coordpoint[m].free_energy;
-        awh_bias->coordpoint[m].bias                                  = awh_bias_history->coordpoint[m].bias;
-        awh_bias->coordpoint[m].weightsum_iteration                   = awh_bias_history->coordpoint[m].weightsum_iteration;
-        awh_bias->coordpoint[m].weightsum_covering                    = awh_bias_history->coordpoint[m].weightsum_covering;
-        awh_bias->coordpoint[m].weightsum_tot                         = awh_bias_history->coordpoint[m].weightsum_tot;
-        awh_bias->coordpoint[m].weightsum_ref                         = awh_bias_history->coordpoint[m].weightsum_ref;
-        awh_bias->coordpoint[m].last_update_index                     = awh_bias_history->coordpoint[m].last_update_index;
-        awh_bias->coordpoint[m].log_pmfsum                            = awh_bias_history->coordpoint[m].log_pmfsum;
-        awh_bias->coordpoint[m].visits_iteration                      = awh_bias_history->coordpoint[m].visits_iteration;
-        awh_bias->coordpoint[m].visits_tot                            = awh_bias_history->coordpoint[m].visits_tot;
+        bias->coordpoint[m].target                                = bias_history->coordpoint[m].target;
+        bias->coordpoint[m].free_energy                           = bias_history->coordpoint[m].free_energy;
+        bias->coordpoint[m].bias                                  = bias_history->coordpoint[m].bias;
+        bias->coordpoint[m].weightsum_iteration                   = bias_history->coordpoint[m].weightsum_iteration;
+        bias->coordpoint[m].weightsum_covering                    = bias_history->coordpoint[m].weightsum_covering;
+        bias->coordpoint[m].weightsum_tot                         = bias_history->coordpoint[m].weightsum_tot;
+        bias->coordpoint[m].weightsum_ref                         = bias_history->coordpoint[m].weightsum_ref;
+        bias->coordpoint[m].last_update_index                     = bias_history->coordpoint[m].last_update_index;
+        bias->coordpoint[m].log_pmfsum                            = bias_history->coordpoint[m].log_pmfsum;
+        bias->coordpoint[m].visits_iteration                      = bias_history->coordpoint[m].visits_iteration;
+        bias->coordpoint[m].visits_tot                            = bias_history->coordpoint[m].visits_tot;
     }
 
-    awh_bias->in_initial      = awh_bias_history->in_initial;
-    awh_bias->histsize        = awh_bias_history->histsize;
+    bias->in_initial      = bias_history->in_initial;
+    bias->histsize        = bias_history->histsize;
 
-    linear_gridindex_to_multidim(awh_bias->grid, awh_bias_history->origin_index_updatelist, awh_bias->origin_updatelist);
-    linear_gridindex_to_multidim(awh_bias->grid, awh_bias_history->end_index_updatelist, awh_bias->end_updatelist);
+    linear_gridindex_to_multidim(bias->grid, bias_history->origin_index_updatelist, bias->origin_updatelist);
+    linear_gridindex_to_multidim(bias->grid, bias_history->end_index_updatelist, bias->end_updatelist);
 
-    awh_bias->log_relative_sampleweight  = awh_bias_history->log_relative_sampleweight;
+    bias->log_relative_sampleweight  = bias_history->log_relative_sampleweight;
 }
 
 void update_awh_history(awh_history_t *awh_history, const awh_t *awh)
@@ -166,19 +166,19 @@ void update_awh_history(awh_history_t *awh_history, const awh_t *awh)
 
     for (int k = 0; k < awh_history->nbias; k++)
     {
-        update_awh_bias_history(&awh_history->awh_bias_history[k], &awh->awh_bias[k]);
+        update_bias_history(&awh_history->awh_bias_history[k], &awh->awh_bias[k]);
     }
 }
 
-static void broadcast_initialize_awh_bias_history(awh_bias_history_t *awh_bias_history, const t_commrec *cr)
+static void broadcast_initialize_bias_history(awh_bias_history_t *bias_history, const t_commrec *cr)
 {
-    gmx_bcast(sizeof(awh_bias_history_t), awh_bias_history, cr);
+    gmx_bcast(sizeof(awh_bias_history_t), bias_history, cr);
 
     if (!MASTER(cr))
     {
-        snew(awh_bias_history->coordpoint, awh_bias_history->npoints);
+        snew(bias_history->coordpoint, bias_history->npoints);
     }
-    gmx_bcast(sizeof(awh_coordpoint_history_t)*awh_bias_history->npoints, awh_bias_history->coordpoint, cr);
+    gmx_bcast(sizeof(awh_coordpoint_history_t)*bias_history->npoints, bias_history->coordpoint, cr);
 }
 
 static void broadcast_initialize_awh_history(awh_history_t *awh_history, const t_commrec *cr)
@@ -193,7 +193,7 @@ static void broadcast_initialize_awh_history(awh_history_t *awh_history, const t
 
     for (int k = 0; k < awh_history->nbias; k++)
     {
-        broadcast_initialize_awh_bias_history(&awh_history->awh_bias_history[k], cr);
+        broadcast_initialize_bias_history(&awh_history->awh_bias_history[k], cr);
     }
 }
 
@@ -219,6 +219,6 @@ void restore_awh_state_from_history(const awh_history_t *awh_history, awh_t *awh
 
     for (int k = 0; k < awh_history->nbias; k++)
     {
-        restore_awh_state_from_history(&awh_history->awh_bias_history[k], &awh->awh_bias[k]);
+        restore_bias_state_from_history(&awh_history->awh_bias_history[k], &awh->awh_bias[k]);
     }
 }

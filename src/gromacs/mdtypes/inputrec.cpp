@@ -687,7 +687,7 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     }
 }
 
-static void pr_awhdim(FILE *fp, int indent, awh_dim_params_t *awh_dim_params, char *prefix)
+static void pr_awh_bias_dim(FILE *fp, int indent, awh_dim_params_t *awh_dim_params, char *prefix)
 {
     pr_indent(fp, indent);
     indent++;
@@ -700,7 +700,7 @@ static void pr_awhdim(FILE *fp, int indent, awh_dim_params_t *awh_dim_params, ch
     PR("interval-overlap", awh_dim_params->interval_overlap);
 }
 
-static void pr_awh(FILE *fp, int indent, awh_bias_params_t *awh_bias_params, char *prefix)
+static void pr_awh_bias(FILE *fp, int indent, awh_bias_params_t *awh_bias_params, char *prefix)
 {
     int  d;
     char opt[STRLEN];
@@ -723,7 +723,7 @@ static void pr_awh(FILE *fp, int indent, awh_bias_params_t *awh_bias_params, cha
     {
         char prefixdim[STRLEN];
         sprintf(prefixdim, "%s-dim%d", prefix, d + 1);
-        pr_awhdim(fp, indent, &awh_bias_params->dim_params[d], prefixdim);
+        pr_awh_bias_dim(fp, indent, &awh_bias_params->dim_params[d], prefixdim);
     }
 }
 
@@ -750,7 +750,7 @@ static void pr_awh(FILE *fp, int indent, awh_params_t *awh_params)
     for (k = 0; k < awh_params->nbias; k++)
     {
         sprintf(prefix, "awh%d", k + 1);
-        pr_awh(fp, indent, &awh_params->awh_bias_params[k], prefix);
+        pr_awh_bias(fp, indent, &awh_params->awh_bias_params[k], prefix);
     }
 }
 

@@ -481,7 +481,7 @@ static void bc_cosines(const t_commrec *cr, t_cosines *cs)
     }
 }
 
-static void bc_awh(const t_commrec *cr, awh_bias_params_t *awh_bias_params)
+static void bc_awh_bias(const t_commrec *cr, awh_bias_params_t *awh_bias_params)
 {
     block_bc(cr, *awh_bias_params);
 
@@ -497,7 +497,7 @@ static void bc_awh(const t_commrec *cr, awh_params_t *awh_params)
     snew_bc(cr, awh_params->awh_bias_params, awh_params->nbias);
     for (k = 0; k < awh_params->nbias; k++)
     {
-        bc_awh(cr, &awh_params->awh_bias_params[k]);
+        bc_awh_bias(cr, &awh_params->awh_bias_params[k]);
     }
 }
 
