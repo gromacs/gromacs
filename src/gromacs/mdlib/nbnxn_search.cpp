@@ -2319,19 +2319,28 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
             nsp += nsp_cj4;
         }
 
-        /* Put the remaining cj4's in the last sci entry */
-        nbl->sci[sci].cj4_ind_end = cj4_end;
-
-        /* Possibly balance out the last two sci's
-         * by moving the last cj4 of the second last sci.
+        /* If the remaining pairs are fewer then half the target average,
+         * add them to the last list, otherwise put them in a new list.
          */
-        if (nsp_sci - nsp_cj4_e >= nsp + nsp_cj4_e)
+        if (2*nsp < nsp_target_av)
         {
-            nbl->sci[sci-1].cj4_ind_end--;
-            nbl->sci[sci].cj4_ind_start--;
+            nbl->sci[sci - 1].cj4_ind_end = cj4_end;
         }
+        else
+        {
+            nbl->sci[sci].cj4_ind_end = cj4_end;
 
-        nbl->nsci++;
+            /* Possibly balance out the last two sci's
+             * by moving the last cj4 of the second last sci.
+             */
+            if (nsp_sci - nsp_cj4_e >= nsp + nsp_cj4_e)
+            {
+                nbl->sci[sci - 1].cj4_ind_end--;
+                nbl->sci[sci].cj4_ind_start--;
+            }
+
+            nbl->nsci++;
+        }
     }
 }
 
