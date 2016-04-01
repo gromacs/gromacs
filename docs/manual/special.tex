@@ -2003,6 +2003,14 @@ and IMD client. Setting the keep rate loads every $N^\mathrm{th}$ frame into VMD
 of discarding them when a new one is received. The displayed energies are in SI units
 in contrast to energies displayed from NAMD simulations.
 
+\section{\normindex{Embedding proteins into the membranes}}
+\label{sec:membed}
+
+GROMACS is capable of inserting the protein into pre-equilibrated lipid bilayers with minimal perturbation of the lipids using the method, which was initially described as a ProtSqueeze technique \cite{Yesylevskyy2007} and later implemented as g_membed tool \cite{Wolf2010}.
+Currently the functionality of g_membed is available in mdrun as described in the user guide.
+
+This method works by first artificially shrinking the protein in the xy-plane, then it removes lipids that overlap with a much smaller core, after which we gradually push the protein atoms back to their initial positions, while using normal dynamics for the rest of the system so lipids adapt to the protein.
+
 
 % LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb
 % LocalWords:  posre grompp fs Verlet dihedrals hydrogens hydroxyl sulfhydryl
