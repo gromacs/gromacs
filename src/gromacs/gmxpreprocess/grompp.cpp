@@ -656,7 +656,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             mass[i] = atom->m;
         }
 
-        if (opts->seed == 0)
+        if (opts->seed == -1)
         {
             opts->seed = static_cast<int>(gmx::makeRandomSeed());
             fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
@@ -1585,13 +1585,13 @@ int gmx_grompp(int argc, char *argv[])
     }
     check_ir(mdparin, ir, opts, wi);
 
-    if (ir->ld_seed == 0)
+    if (ir->ld_seed == -1)
     {
         ir->ld_seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the LD random seed to %" GMX_PRId64 "\n", ir->ld_seed);
     }
 
-    if (ir->expandedvals->lmc_seed == 0)
+    if (ir->expandedvals->lmc_seed == -1)
     {
         ir->expandedvals->lmc_seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the lambda MC random seed to %d\n", ir->expandedvals->lmc_seed);
