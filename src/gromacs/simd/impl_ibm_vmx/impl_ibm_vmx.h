@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,13 +93,13 @@
 #define gmx_simd_setzero_f()       ((__vector float)vec_splat_u32(0))
 #define gmx_simd_add_f(a, b)       vec_add(a, b)
 #define gmx_simd_sub_f(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_f(a, b)       vec_mul(a, b)
+#define gmx_simd_mul_f(a, b)       vec_madd(a, b, ((__vector float)vec_splat_u32(0)))
 #define gmx_simd_fmadd_f(a, b, c)  vec_madd(a, b, c)
-#define gmx_simd_fmsub_f(a, b, c)  vec_sub(vec_mul(a, b), c)
+#define gmx_simd_fmsub_f(a, b, c)  vec_madd(a, b, -c)
 /* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
 #define gmx_simd_fnmadd_f(a, b, c) vec_nmsub(a, b, c)
 /* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
-#define gmx_simd_fnmsub_f(a, b, c) vec_sub(gmx_simd_setzero_f(), vec_madd(a, b, c))
+#define gmx_simd_fnmsub_f(a, b, c) (-vec_madd(a, b, c))
 #define gmx_simd_and_f(a, b)       vec_and(a, b)
 #define gmx_simd_andnot_f(a, b)    vec_andc(b, a)
 #define gmx_simd_or_f(a, b)        vec_or(a, b)
@@ -341,7 +341,7 @@ gmx_simd_reduce_f_ibm_vmx(gmx_simd_float_t x)
 static gmx_inline float
 gmx_simd4_dotproduct3_f_ibm_vmx(gmx_simd4_float_t a, gmx_simd4_float_t b)
 {
-    gmx_simd4_float_t c = vec_mul(a, b);
+    gmx_simd4_float_t c = vec_madd(a, b, ((__vector float)vec_splat_u32(0)));
     /* Keep only elements 0,1,2 by shifting in zero from right */
     c = vec_sld(c, gmx_simd_setzero_f(), 4);
     /* calculate sum */
