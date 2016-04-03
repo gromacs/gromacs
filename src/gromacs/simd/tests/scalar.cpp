@@ -40,6 +40,7 @@
 
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
@@ -98,6 +99,14 @@ TEST(SimdScalarTest, setZero)
     real val = setZero();
 
     EXPECT_EQ(0, val);
+}
+
+TEST(SimdScalarTest, andNot)
+{
+    real signBit = GMX_REAL_NEGZERO;
+
+    EXPECT_EQ(real(1), andNot(signBit, real(-1)));
+    EXPECT_EQ(real(2), andNot(signBit, real(2)));
 }
 
 TEST(SimdScalarTest, fma)

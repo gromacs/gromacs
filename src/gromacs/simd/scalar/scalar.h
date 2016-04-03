@@ -313,6 +313,33 @@ reduce(float a)
     return a;
 }
 
+/*! \brief Bitwise andnot for two scalar float variables.
+ *
+ * \param a data1
+ * \param b data2
+ * \return (~data1) & data2
+ *
+ * \note This function might be superficially meaningless, but it helps us to
+ *       write templated SIMD/non-SIMD code. For clarity it should not be used
+ *       outside such code.
+ */
+static inline float
+andNot(float a, float b)
+{
+    union
+    {
+        float         r;
+        std::uint32_t i;
+    } conv1, conv2;
+
+    conv1.r = a;
+    conv2.r = b;
+
+    conv1.i = (~conv1.i) & conv2.i;
+
+    return conv1.r;
+}
+
 /*! \brief Return true if any bits are set in the float variable.
  *
  * This function is used to handle bitmasks, mainly for exclusions in the
@@ -703,6 +730,33 @@ reduce(double a)
     return a;
 }
 
+/*! \brief Bitwise andnot for two scalar double variables.
+ *
+ * \param a data1
+ * \param b data2
+ * \return (~data1) & data2
+ *
+ * \note This function might be superficially meaningless, but it helps us to
+ *       write templated SIMD/non-SIMD code. For clarity it should not be used
+ *       outside such code.
+ */
+static inline double
+andNot(double a, double b)
+{
+    union
+    {
+        double        r;
+        std::uint64_t i;
+    } conv1, conv2;
+
+    conv1.r = a;
+    conv2.r = b;
+
+    conv1.i = (~conv1.i) & conv2.i;
+
+    return conv1.r;
+}
+
 /*! \brief Return true if any bits are set in the double variable.
  *
  * This function is used to handle bitmasks, mainly for exclusions in the
@@ -877,7 +931,7 @@ storeU(std::int32_t *m, std::int32_t a)
     *m = a;
 }
 
-/*! \brief Bitwise andnot for two scalar float variables.
+/*! \brief Bitwise andnot for two scalar integer variables.
  *
  * \param a data1
  * \param b data2
@@ -887,7 +941,7 @@ storeU(std::int32_t *m, std::int32_t a)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline float
+static inline std::int32_t
 andNot(std::int32_t a, std::int32_t b)
 {
     return ~a & b;
