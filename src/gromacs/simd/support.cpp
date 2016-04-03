@@ -123,8 +123,15 @@ simdSuggested(const CpuInfo &c)
                 }
                 else if (c.feature(CpuInfo::Feature::X86_Avx))
                 {
-                    // For vanilla Avx, we should use the 128-bit FMA flavor in Amd
-                    suggested = SimdType::X86_Avx128Fma;
+                    // Use 128-bit FMA SIMD if Fma4 flag is set, otherwise plain 256-bit AVX
+                    if (c.feature(CpuInfo::Feature::X86_Fma4))
+                    {
+                        suggested = SimdType::X86_Avx128Fma;
+                    }
+                    else
+                    {
+                        suggested = SimdType::X86_Avx;
+                    }
                 }
                 else if (c.feature(CpuInfo::Feature::X86_Sse4_1))
                 {
