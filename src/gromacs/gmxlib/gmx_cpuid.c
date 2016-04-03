@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1263,9 +1263,20 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
     }
     else if (gmx_cpuid_vendor(cpuid) == GMX_CPUID_VENDOR_AMD)
     {
-        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX))
+        if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX2))
         {
-            tmpsimd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
+            tmpsimd = GMX_CPUID_SIMD_X86_AVX2_256;
+        }
+        else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_AVX))
+        {
+            if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_FMA))
+            {
+                tmpsimd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
+            }
+            else
+            {
+                tmpsimd = GMX_CPUID_SIMD_X86_AVX_256;
+            }
         }
         else if (gmx_cpuid_feature(cpuid, GMX_CPUID_FEATURE_X86_SSE4_1))
         {
