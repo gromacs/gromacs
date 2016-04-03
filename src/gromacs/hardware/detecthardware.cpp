@@ -92,13 +92,9 @@ static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 static const bool gpuSharingSupport[] = { false, true, true };
 static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
 
-/* CUDA supports everything. Our current OpenCL implementation seems
- * to handle concurrency correctly with thread-MPI. The AMD OpenCL
- * runtime does not seem to support creating a context from more than
- * one real MPI rank on the same node (it segfaults when you try).
- */
+/* CUDA supports everything and now OpenCL works for all combinations too. */
 static const bool multiGpuSupport[] = {
-    false, true, GMX_THREAD_MPI
+    false, true, true
 };
 static const bool bMultiGpuPerNodeSupported = multiGpuSupport[GMX_GPU];
 
@@ -708,6 +704,10 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
      * the detection only on one MPI rank per node and broadcast the info.
      * Note that with thread-MPI only a single thread runs this code.
      *
+     * NOTE: We can't broadcast gpu_info with OpenCL as the device and platform
+     * ID stored in the structure are unique for each rank (even if a device
+     * is shared by multiple ranks).
+     *
      * TODO: We should also do CPU hardware detection only once on each
      * physical node and broadcast it, instead of do it on every MPI rank.
      */
@@ -726,7 +726,11 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
     rank_local = 0;
 #endif
 
-    if (rank_local == 0)
+    /*  With CUDA detect only on one rank per host, with OpenCL need do
+     *  the detection on all PP ranks */
+    bool isOpenclPpRank = ((GMX_GPU == GMX_GPU_OPENCL) && (cr->duty & DUTY_PP));
+
+    if (rank_local == 0 || isOpenclPpRank)
     {
         char detection_error[STRLEN] = "", sbuf[STRLEN];
 
@@ -748,24 +752,27 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
     }
 
 #if GMX_LIB_MPI
-    /* Broadcast the GPU info to the other ranks within this node */
-    MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalnode_comm);
-
-    if (hwinfo_g->gpu_info.n_dev > 0)
+    if (!isOpenclPpRank)
     {
-        int dev_size;
+        /* Broadcast the GPU info to the other ranks within this node */
+        MPI_Bcast(&hwinfo_g->gpu_info.n_dev, 1, MPI_INT, 0, physicalnode_comm);
 
-        dev_size = hwinfo_g->gpu_info.n_dev*sizeof_gpu_dev_info();
-
-        if (rank_local > 0)
+        if (hwinfo_g->gpu_info.n_dev > 0)
         {
-            hwinfo_g->gpu_info.gpu_dev =
-                (struct gmx_device_info_t *)malloc(dev_size);
+            int dev_size;
+
+            dev_size = hwinfo_g->gpu_info.n_dev*sizeof_gpu_dev_info();
+
+            if (rank_local > 0)
+            {
+                hwinfo_g->gpu_info.gpu_dev =
+                    (struct gmx_device_info_t *)malloc(dev_size);
+            }
+            MPI_Bcast(hwinfo_g->gpu_info.gpu_dev, dev_size, MPI_BYTE,
+                      0, physicalnode_comm);
+            MPI_Bcast(&hwinfo_g->gpu_info.n_dev_compatible, 1, MPI_INT,
+                      0, physicalnode_comm);
         }
-        MPI_Bcast(hwinfo_g->gpu_info.gpu_dev, dev_size, MPI_BYTE,
-                  0, physicalnode_comm);
-        MPI_Bcast(&hwinfo_g->gpu_info.n_dev_compatible, 1, MPI_INT,
-                  0, physicalnode_comm);
     }
 
     MPI_Comm_free(&physicalnode_comm);
