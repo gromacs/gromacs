@@ -2379,8 +2379,8 @@ int gmx_hbond(int argc, char *argv[])
         "bonds between atoms within the shell distance from the one atom are",
         "considered.[PAR]",
 
-        "With option -ac, rate constants for hydrogen bonding can be derived with the model of Luzar and Chandler",
-        "(Nature 394, 1996; J. Chem. Phys. 113:23, 2000) or that of Markovitz and Agmon (J. Chem. Phys 129, 2008).",
+        "With option -ac, rate constants for hydrogen bonding can be derived with the",
+        "model of Luzar and Chandler (Nature 379:55, 1996; J. Chem. Phys. 113:23, 2000).",
         "If contact kinetics are analyzed by using the -contact option, then",
         "n(t) can be defined as either all pairs that are not within contact distance r at time t",
         "(corresponding to leaving the -r2 option at the default value 0) or all pairs that",
