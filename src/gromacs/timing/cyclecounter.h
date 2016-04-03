@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,16 @@
 
 #ifdef _MSC_VER
 #include <intrin.h>
+#endif
+
+// For ARMv7-A we need posix jumps to catch possible illegal instruction signals
+#if defined(__ARM_ARCH_7A__) && defined(__GNUC__) && !defined(_MSC_VER)
+#include <signal.h>
+#endif
+
+// For ARMv7-A we need posix jumps to catch possible illegal instruction signals
+#if defined(__ARM_ARCH_7A__) && defined(__GNUC__) && !defined(_MSC_VER)
+#include <setjmp.h>
 #endif
 
 #ifdef __cplusplus
@@ -451,20 +461,48 @@ static __inline int gmx_cycles_have_counter(void)
     /* 64-bit ARM cycle counters with GCC inline assembly */
     return 1;
 }
-#elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
+#elif defined(__ARM_ARCH_7A__) && defined(__GNUC__) && !defined(_MSC_VER)
+
+// ARM-v7 is problematic since support has to be enabled by a kernel module. If this has not been
+// done, it appears to either return 0 or crash with an illegal instruction error, and we have not
+// found any simple way to check if the support is present.
+
+static jmp_buf mainloop_ARMv7A;
+static bool    success_ARMv7A  = true;
+
+static void sigillHandler_ARMv7A(int n)
+{
+    success_ARMv7A = false;
+    longjmp(mainloop_ARMv7A, n);
+}
+
 static __inline int gmx_cycles_have_counter(void)
 {
-    /* Armv7A can provide 64-bit cycles by returning two registers. However, it will not work unless
-     * the performance registers have been made available from user space by a kernel module -
-     * otherwise it returns 0.
-     */
-    gmx_cycles_t c0, c1;
+    static int  support = -1;
 
-    c0 = gmx_cycles_read();
-    c1 = gmx_cycles_read();
+    if (support == -1)
+    {
+        support = 0;
+        signal(SIGILL, sigillHandler_ARMv7A); // install signal handler
+        setjmp(mainloop_ARMv7A);              // return to this point if we get SIGILL
+        if (success_ARMv7A)
+        {
+            // Armv7A can provide 64-bit cycles by returning two registers.
+            // However, it will not work unless the performance registers have
+            // been made available from user space by a kernel module, and even
+            // if we are allowed to execute the instruction it might just
+            // return 0; if it does this for two calls we support is not present.
 
-    /* if both counters return 0, support is not present */
-    return (c0 != 0 || c1 != 0);
+            gmx_cycles_t c0, c1;
+
+            c0 = gmx_cycles_read();
+            c1 = gmx_cycles_read();
+
+            support = (c0 != 0 || c1 != 0);
+        }
+        signal(SIGILL, SIG_DFL); // uninstall signal handler
+    }
+    return support;
 }
 #elif (defined(_MSC_VER))
 static __inline int gmx_cycles_have_counter(void)
