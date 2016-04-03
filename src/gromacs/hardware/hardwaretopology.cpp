@@ -301,7 +301,7 @@ parseHwLocCache(const hwloc_topology_t             topo,
 
                 machine->caches.push_back( {
                                                static_cast<int>(cache->attr->cache.depth),
-                                               cache->attr->cache.size,
+                                               static_cast<std::size_t>(cache->attr->cache.size),
                                                static_cast<int>(cache->attr->cache.linesize),
                                                static_cast<int>(cache->attr->cache.associativity),
                                                std::max(static_cast<int>(hwThreads.size()), 1)
