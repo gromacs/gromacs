@@ -154,15 +154,10 @@ class TabulatedNormalDistribution
 
         /*! \brief Fill the table with values for the normal distribution
          *
-         *  This routine returns a new reference to a std::vector allocated on
-         *  the heap. It will only be called to generate the static
-         *  constant table data at initialization time. While it is technically
-         *  returning memory on the heap, this does not use/leak more memory
-         *  than what we would use by having the same table as a static member
-         *  of the class.
+         *  This routine returns a new a std::vector with the table data.
          */
-        static
-        std::vector<RealType> &
+        static const
+        std::vector<RealType>
         // cppcheck-suppress unusedPrivateFunction
         makeTable()
         {
@@ -174,7 +169,7 @@ class TabulatedNormalDistribution
             double                 factor           = std::sqrt(2.0*M_PI);
             double                 x                = 0.5*factor*invSize;
 
-            std::vector<RealType>* table  = new std::vector<RealType>(1ULL << tableBits);
+            std::vector<RealType>  table(1ULL << tableBits);
 
             for (std::size_t i = 0; i < halfSize; i++)
             {
@@ -195,10 +190,10 @@ class TabulatedNormalDistribution
                     }
                     x = x + dx;
                 }
-                table->at(halfSize-1-i) = -x;
-                table->at(halfSize+i)   =  x;
+                table.at(halfSize-1-i) = -x;
+                table.at(halfSize+i)   =  x;
             }
-            return *table;
+            return table;
         }
 
     public:
