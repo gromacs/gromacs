@@ -183,7 +183,11 @@ endif()
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
 # left behind in the cache.
-mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
+mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD # cmake 2.8.9 still spews these, check again when requirements change
+                 CUDA_SEPARABLE_COMPILATION      # not present at least with cmake 3.2, remove when required
+                 CUDA_USE_STATIC_CUDA_RUNTIME    # since cmake 3.3
+                 CUDA_dl_LIBRARY CUDA_rt_LIBRARY # - || -
+                 )
 if(NOT GMX_GPU)
     mark_as_advanced(CUDA_TOOLKIT_ROOT_DIR)
 endif()
