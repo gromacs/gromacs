@@ -2268,10 +2268,12 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
     }
 
     /* Since nsp_max is a maximum/cut-off (this avoids high outliers,
-     * which lead to load imbalance), not an average, we add half the
-     * number of pairs in a cj4 block to get the average about right.
+     * which lead to load imbalance), not an average, we add a quarter of
+     * the number of pairs in a cj4 block to get the average about right.
+     * Note that on average only half the number of pairs in a cj4 block
+     * are within range, so the quarter is half the average.
      */
-    nsp_max += c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize/2;
+    nsp_max += c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize/4;
 
     cj4_start = nbl->sci[nbl->nsci-1].cj4_ind_start;
     cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
@@ -2297,7 +2299,9 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
 
-            /* Check if we should split at this cj4 to get a list of size nsp */
+            /* Check if adding this cj4 with nsp_cj4 pairs gets us above
+             * the limit nsp_max, if so we need to split the list.
+             */
             if (nsp > 0 && nsp + nsp_cj4 > nsp_max)
             {
                 /* Split the list at cj4 */
