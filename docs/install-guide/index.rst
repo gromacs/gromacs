@@ -211,6 +211,19 @@ by |Gromacs|, but that requires at least CUDA 8 for an officially
 supported CUDA build. This will likely not occur before |Gromacs| 2016
 is released.
 
+If your main host compiler not supported by installed CUDA release you can use
+``-DCUDA_HOST_COMPILER=xxx`` where ``xxx`` should be C++ `Compiler`_ supported 
+by CUDA version including its full path (e.g. ``/usr/bin/g++-4.8``).
+When some of the C++ flags used by host compiler to compile |Gromacs|
+are not supported by the CUDA host compiler passed, CUDA compilation 
+code will fails with compiler flags unrecognized.
+In this case you will have to disable host C++ compiler flag propagation
+to cuda host compiler using ``-DCUDA_PROPAGATE_HOST_FLAGS=OFF`` (e.g. you want to compile |Gromacs| with icc-2016
+which is not supported by CUDA-7.5 but you have gcc-4.8 intalled on this system, then you can use g++-4.8 as CUDA host compiler
+and you need to disable propogation of host compiler flags to CUDA host compiler).
+
+Please note that C++ compiler used for CUDA code should be ABI-compatible with main host compiler!
+
 .. _mpi-support:
 
 MPI support
