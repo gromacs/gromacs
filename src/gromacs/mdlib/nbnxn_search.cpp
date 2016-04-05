@@ -79,6 +79,12 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
  */
 static const bool pbc_shift_backward = true;
 
+/* Since we can not split up individual j-entries, that contain multiple
+ * cluster pairs, we add a tolerance of 1/4 above the target to generate
+ * approximately the correct average size, instead of always smaller lists.
+ */
+static const int c_invRelativeNumPairTolerance = 4;
+
 
 static void nbs_cycle_clear(nbnxn_cycle_t *cc)
 {
@@ -745,11 +751,12 @@ static void check_cell_list_space_supersub(nbnxn_pairlist_t *nbl,
 {
     int ncj4_max, w;
 
-    /* We can have maximally nsupercell*c_gpuNumClusterPerCell sj lists */
-    /* We can store 4 j-subcell - i-supercell pairs in one struct.
-     * since we round down, we need one extra entry.
+    /* We can have maximally nsupercell*c_gpuNumClusterPerCell j entries.
+     * A cj4 entry consists of up to 4 j-entries, but the target list size
+     * can be a small as the size of one j-entry, so we could generate one
+     * list per j-entry.
      */
-    ncj4_max = ((nbl->work->cj_ind + ncell*c_gpuNumClusterPerCell + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize);
+    ncj4_max = nbl->work->cj_ind + ncell*c_gpuNumClusterPerCell;
 
     if (ncj4_max > nbl->cj4_nalloc)
     {
@@ -1284,6 +1291,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                                        gmx_bool sci_equals_scj,
                                        int stride, const real *x,
                                        real rl2, float rbb2,
+                                       int targetNumClusterPair,
                                        int *ndistc)
 {
     nbnxn_list_work_t *work   = nbl->work;
@@ -1313,16 +1321,9 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 
     for (int subc = 0; subc < gridj->nsubc[scj]; subc++)
     {
-        int          cj4_ind   = nbl->work->cj_ind/c_nbnxnGpuJgroupSize;
-        int          cj_offset = nbl->work->cj_ind - cj4_ind*c_nbnxnGpuJgroupSize;
-        nbnxn_cj4_t *cj4       = &nbl->cj4[cj4_ind];
+        int cj    = scj*c_gpuNumClusterPerCell + subc;
 
-        int          cj        = scj*c_gpuNumClusterPerCell + subc;
-
-        int          cj_gl     = gridj->cell0*c_gpuNumClusterPerCell + cj;
-
-        /* Initialize this j-subcell i-subcell list */
-        cj4->cj[cj_offset] = cj_gl;
+        int cj_gl = gridj->cell0*c_gpuNumClusterPerCell + cj;
 
         int ci1;
         if (sci_equals_scj)
@@ -1341,8 +1342,8 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
         *ndistc += c_nbnxnGpuClusterSize*2;
 #endif
 
-        int          npair = 0;
-        unsigned int imask = 0;
+        int          npair               = 0;
+        unsigned int imaskWithoutJOffset = 0;
         /* We use a fixed upper-bound instead of ci1 to help optimization */
         for (int ci = 0; ci < c_gpuNumClusterPerCell; ci++)
         {
@@ -1376,7 +1377,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 #endif
             {
                 /* Flag this i-subcell to be taken into account */
-                imask |= (1U << (cj_offset*c_gpuNumClusterPerCell + ci));
+                imaskWithoutJOffset |= (1U << ci);
 
 #if PRUNE_LIST_CPU_ONE
                 ci_last = ci;
@@ -1393,16 +1394,41 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
         if (npair == 1 && d2l[ci_last] >= rbb2 &&
             !clusterpair_in_range(work, ci_last, cj_gl, stride, x, rl2))
         {
-            imask &= ~(1U << (cj_offset*c_gpuNumClusterPerCell + ci_last));
+            imaskWithoutJOffset &= ~(1U << ci_last);
             npair--;
         }
 #endif
 
         if (npair > 0)
         {
-            /* We have a useful sj entry, close it now */
+            /* We have a useful j-cluster entry, close it now */
+            nbnxn_list_work_t *work    = nbl->work;
 
-            /* Set the exclucions for the ci== sj entry.
+            int                cj4_ind = work->cj_ind/c_nbnxnGpuJgroupSize;
+
+            GMX_ASSERT(work->npair_cj4 == 0 || work->cj_ind % c_nbnxnGpuJgroupSize > 0, "The pair-list work data is inconsistent: with an empty cj4 entry npair_cj4 should be 0");
+
+            /* If we would generate more cluster pairs in the current cj4
+             * entry than the target, we should start a new cj4 entry here,
+             * because split_sci_entry() will not split cj4 entries.
+             */
+            if ((work->npair_cj4 + npair)*c_invRelativeNumPairTolerance >
+                targetNumClusterPair*(c_invRelativeNumPairTolerance + 1))
+            {
+                GMX_ASSERT(work->cj_ind % c_nbnxnGpuJgroupSize > 0, "targetNumClusterPair >= c_gpuNumClusterPerCell should guarantee this assertion");
+
+                /* Start a new cj4 entry */
+                cj4_ind++;
+                work->cj_ind    = cj4_ind*c_nbnxnGpuJgroupSize;
+                work->npair_cj4 = 0;
+            }
+
+            int          cj_offset = work->cj_ind - cj4_ind*c_nbnxnGpuJgroupSize;
+            nbnxn_cj4_t *cj4       = &nbl->cj4[cj4_ind];
+
+            cj4->cj[cj_offset] = cj_gl;
+
+            /* Set the exclusions for the i-cluster==j-cluster entries.
              * Here we don't bother to check if this entry is actually flagged,
              * as it will nearly always be in the list.
              */
@@ -1414,10 +1440,18 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
             /* Copy the cluster interaction mask to the list */
             for (int w = 0; w < c_nbnxnGpuClusterpairSplit; w++)
             {
-                cj4->imei[w].imask |= imask;
+                cj4->imei[w].imask |= (imaskWithoutJOffset << (cj_offset*c_gpuNumClusterPerCell));
             }
 
-            nbl->work->cj_ind++;
+            work->npair_cj4 += npair;
+
+            work->cj_ind++;
+
+            if ((work->cj_ind & (c_nbnxnGpuJgroupSize - 1)) == 0)
+            {
+                /* We started a new cj4 entry here, clear its pair count */
+                work->npair_cj4 = 0;
+            }
 
             /* Keep the count */
             nbl->nci_tot += npair;
@@ -2236,11 +2270,11 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
  * both on nthread and our own thread index.
  */
 static void split_sci_entry(nbnxn_pairlist_t *nbl,
-                            int nsp_target_av,
+                            int targetNumClusterPair,
                             gmx_bool progBal, float nsp_tot_est,
                             int thread, int nthread)
 {
-    int nsp_max;
+    int maxNumClusterPair;
     int cj4_start, cj4_end, j4len;
     int sci;
     int nsp, nsp_sci, nsp_cj4, nsp_cj4_e, nsp_cj4_p;
@@ -2258,28 +2292,27 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
          * The last ci blocks should be smaller, to improve load balancing.
          * The factor 3/2 makes the first block 3/2 times the target average
          * and ensures that the total number of blocks end up equal to
-         * that of equally sized blocks of size nsp_target_av.
+         * that of equally sized blocks of size maxNumClusterPair.
          */
-        nsp_max = static_cast<int>(nsp_target_av*(nsp_tot_est*1.5/(nsp_est + nsp_tot_est)));
+        maxNumClusterPair = static_cast<int>(targetNumClusterPair*(nsp_tot_est*1.5/(nsp_est + nsp_tot_est)));
     }
     else
     {
-        nsp_max = nsp_target_av;
+        maxNumClusterPair = targetNumClusterPair;
     }
 
     /* Since nsp_max is a maximum/cut-off (this avoids high outliers,
-     * which lead to load imbalance), not an average, we add a quarter of
-     * the number of pairs in a cj4 block to get the average about right.
-     * Note that on average only half the number of pairs in a cj4 block
-     * are within range, so the quarter is half the average.
+     * which lead to load imbalance), not an average, we add half the
+     * number of pairs in a cj4 block to get the average about right.
      */
-    nsp_max += c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize/4;
+    maxNumClusterPair += std::min(c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize,
+                                  targetNumClusterPair)/c_invRelativeNumPairTolerance;
 
     cj4_start = nbl->sci[nbl->nsci-1].cj4_ind_start;
     cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
     j4len     = cj4_end - cj4_start;
 
-    if (j4len > 1 && j4len*c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize > nsp_max)
+    if (j4len > 1 && j4len*c_gpuNumClusterPerCell*c_nbnxnGpuJgroupSize > maxNumClusterPair)
     {
         /* Remove the last ci entry and process the cj4's again */
         nbl->nsci -= 1;
@@ -2299,10 +2332,8 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
 
-            /* Check if adding this cj4 with nsp_cj4 pairs gets us above
-             * the limit nsp_max, if so we need to split the list.
-             */
-            if (nsp > 0 && nsp + nsp_cj4 > nsp_max)
+            /* Check if we should split at this cj4 to get a list of size nsp */
+            if (nsp > 0 && nsp + nsp_cj4 > maxNumClusterPair)
             {
                 /* Split the list at cj4 */
                 nbl->sci[sci].cj4_ind_end = cj4;
@@ -2341,7 +2372,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
 
 /* Clost this super/sub list i entry */
 static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
-                                    int nsp_max_av,
+                                    int targetNumClusterPair,
                                     gmx_bool progBal, float nsp_tot_est,
                                     int thread, int nthread)
 {
@@ -2354,15 +2385,16 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
         /* We can only have complete blocks of 4 j-entries in a list,
          * so round the count up before closing.
          */
-        nbl->ncj4         = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
-        nbl->work->cj_ind = nbl->ncj4*c_nbnxnGpuJgroupSize;
+        nbl->ncj4            = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1)/c_nbnxnGpuJgroupSize;
+        nbl->work->cj_ind    = nbl->ncj4*c_nbnxnGpuJgroupSize;
+        nbl->work->npair_cj4 = 0;
 
         nbl->nsci++;
 
-        if (nsp_max_av > 0)
+        if (targetNumClusterPair > 0)
         {
             /* Measure the size of the new entry and potentially split it */
-            split_sci_entry(nbl, nsp_max_av, progBal, nsp_tot_est,
+            split_sci_entry(nbl, targetNumClusterPair, progBal, nsp_tot_est,
                             thread, nthread);
         }
     }
@@ -2373,8 +2405,9 @@ static void sync_work(nbnxn_pairlist_t *nbl)
 {
     if (!nbl->bSimple)
     {
-        nbl->work->cj_ind   = nbl->ncj4*c_nbnxnGpuJgroupSize;
-        nbl->work->cj4_init = nbl->ncj4;
+        nbl->work->cj_ind    = nbl->ncj4*c_nbnxnGpuJgroupSize;
+        nbl->work->npair_cj4 = 0;
+        nbl->work->cj4_init  = nbl->ncj4;
     }
 }
 
@@ -2621,16 +2654,15 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
                                 int                   iloc,
                                 real                  rlist,
                                 int                   min_ci_balanced,
-                                int                  *nsubpair_target,
+                                int                  *targetNumClusterPair,
                                 float                *nsubpair_tot_est)
 {
-    /* The target value of 36 seems to be the optimum for Kepler.
-     * Maxwell is less sensitive to the exact value.
-     */
-    const int           nsubpair_target_min = 36;
+    const int           c_minimumTargetNumClusterPair = c_gpuNumClusterPerCell;
     const nbnxn_grid_t *grid;
     rvec                ls;
     real                r_eff_sup, vol_est, nsp_est, nsp_est_nl;
+
+    GMX_ASSERT(c_minimumTargetNumClusterPair >= c_gpuNumClusterPerCell, "We should not requst fewer pairs than a full minimal j-list element");
 
     grid = &nbs->grid[0];
 
@@ -2642,9 +2674,9 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
      */
     if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
     {
-        /* nsubpair_target==0 signals no balancing */
-        *nsubpair_target  = 0;
-        *nsubpair_tot_est = 0;
+        /* targetNumClusterPair==0 signals no balancing */
+        *targetNumClusterPair = 0;
+        *nsubpair_tot_est     = 0;
 
         return;
     }
@@ -2695,7 +2727,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
          * all cells interacting with all 3^3 direct neighbors (3^3-1)/2+1=14.
          * This might be a slight overestimate for small non-periodic groups of
          * atoms as will occur for a local domain with DD, but for small
-         * groups of atoms we'll anyhow be limited by nsubpair_target_min,
+         * groups of atoms we'll anyhow be limited by c_gpuNumClusterPerCell,
          * so this overestimation will not matter.
          */
         nsp_est = std::max(nsp_est, grid->nsubc_tot*static_cast<real>(14));
@@ -2715,14 +2747,14 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
      * Since there is overhead, we shouldn't make the lists too small
      * (and we can't chop up j-groups) so we use a minimum target size of 36.
      */
-    *nsubpair_target  = std::max(nsubpair_target_min,
-                                 static_cast<int>(nsp_est/min_ci_balanced + 0.5));
-    *nsubpair_tot_est = static_cast<int>(nsp_est);
+    *targetNumClusterPair = std::max(c_minimumTargetNumClusterPair,
+                                     static_cast<int>(nsp_est/min_ci_balanced + 0.5));
+    *nsubpair_tot_est     = static_cast<int>(nsp_est);
 
     if (debug)
     {
-        fprintf(debug, "nbl nsp estimate %.1f, nsubpair_target %d\n",
-                nsp_est, *nsubpair_target);
+        fprintf(debug, "nbl total count pair estimate %.1f, target cluster pair count %d\n",
+                nsp_est, *targetNumClusterPair);
     }
 }
 
@@ -3139,7 +3171,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      int nb_kernel_type,
                                      int ci_block,
                                      gmx_bool bFBufferFlag,
-                                     int nsubpair_max,
+                                     int targetNumClusterPair,
                                      gmx_bool progBal,
                                      float nsubpair_tot_est,
                                      int th, int nth,
@@ -3184,6 +3216,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     nbl->na_ci = gridj->na_c;
     nbl->na_cj = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
     na_cj_2log = get_2log(nbl->na_cj);
+
+    assert(nbl->work->cj_ind % c_nbnxnGpuJgroupSize == 0);
+    assert(nbl->work->npair_cj4 == 0);
 
     nbl->rlist  = rlist;
 
@@ -3647,6 +3682,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                            (gridi == gridj && shift == CENTRAL && ci == cj),
                                                                            nbat->xstride, nbat->x,
                                                                            rl2, rbb2,
+                                                                           targetNumClusterPair,
                                                                            &ndistc);
                                             }
                                             break;
@@ -3714,7 +3750,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     else
                     {
                         close_ci_entry_supersub(nbl,
-                                                nsubpair_max,
+                                                targetNumClusterPair,
                                                 progBal, nsubpair_tot_est,
                                                 th, nth);
                     }

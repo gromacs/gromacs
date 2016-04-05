@@ -200,6 +200,7 @@ typedef struct nbnxn_list_work {
     real                   *x_ci;            /* The coordinates, pbc shifted, for each atom       */
     real                   *x_ci_simd;       /* aligned pointer to 4*DIM*GMX_SIMD_REAL_WIDTH floats */
     int                     cj_ind;          /* The current cj_ind index for the current list     */
+    int                     npair_cj4;       /* The cluster pair count for the current cj4 */ 
     int                     cj4_init;        /* The first unitialized cj4 block                   */
 
     float                  *d2;              /* Bounding box distance work array                  */
