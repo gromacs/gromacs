@@ -69,6 +69,9 @@ endif()
 
 # We need to call find_package even when we've already done the detection/setup
 if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
+    if (NOT CUDA_FOUND AND NOT DEFINED CUDA_USE_STATIC_CUDA_RUNTIME)
+        set(CUDA_USE_STATIC_CUDA_RUNTIME_AUTO TRUE CACHE INTERNAL "Static linking against the CUDA runtime will be decided automatically")
+    endif()
     if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
         # Stay quiet when detection has occured and found no GPU.
         # Noise is acceptable when there is a GPU or the user required one.
