@@ -96,6 +96,21 @@ if (UNIX AND GMX_PREFER_STATIC_LIBS)
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
 
+# With CMake >=v3.2 static linking against the CUDA runtime is supported,
+# but it is "on" by default (ATM cmake <=v3.4). To keep the behavior in sync
+# with the rest of the code, we enable it if static libs are preferred and
+# disable it otherwise.
+#
+# NOTE: we rely on having CUDA_USE_STATIC_CUDA_RUNTIME defined when the feature
+# is supported by FindCUDA, so this should be executed after FindCUDA is called.
+if (DEFINED CUDA_USE_STATIC_CUDA_RUNTIME AND CUDA_USE_STATIC_CUDA_RUNTIME_AUTO)
+    if (GMX_PREFER_STATIC_LIBS)
+        set_property(CACHE CUDA_USE_STATIC_CUDA_RUNTIME PROPERTY VALUE ON)
+    else()
+        set_property(CACHE CUDA_USE_STATIC_CUDA_RUNTIME PROPERTY VALUE OFF)
+    endif()
+endif()
+
 # ==========
 # Only things for managing shared libraries and build types on Windows follow
 
