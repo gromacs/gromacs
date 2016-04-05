@@ -92,9 +92,10 @@ enum {
 enum {
     hbNo, hbDist, hbHB, hbNR, hbR2
 };
-enum {
-    noDA, ACC, DON, DA, INGROUP
-};
+static const unsigned char c_acceptorMask = (1 << 0);
+static const unsigned char c_donorMask    = (1 << 1);
+static const unsigned char c_inGroupMask  = (1 << 2);
+
 
 static const char *grpnames[grNR] = {"0", "1", "I" };
 
@@ -107,12 +108,12 @@ static gmx_bool    bDebug = FALSE;
 #define HB_NR (1<<2)
 #define MAXHYDRO 4
 
-#define ISHB(h)   (((h) & 2) == 2)
-#define ISDIST(h) (((h) & 1) == 1)
-#define ISDIST2(h) (((h) & 4) == 4)
-#define ISACC(h)  (((h) & 1) == 1)
-#define ISDON(h)  (((h) & 2) == 2)
-#define ISINGRP(h) (((h) & 4) == 4)
+#define ISHB(h)    ((h) & 2)
+#define ISDIST(h)  ((h) & 1)
+#define ISDIST2(h) ((h) & 4)
+#define ISACC(h)   ((h) & c_acceptorMask)
+#define ISDON(h)   ((h) & c_donorMask)
+#define ISINGRP(h) ((h) & c_inGroupMask)
 
 typedef struct {
     int      nr;
@@ -594,7 +595,7 @@ static void gen_datable(int *index, int isize, unsigned char *datable, int natom
         {
             gmx_fatal(FARGS, "Atom has index %d larger than number of atoms %d.", index[i], natoms);
         }
-        datable[index[i]] |= INGROUP;
+        datable[index[i]] |= c_inGroupMask;
     }
 }
 
@@ -602,12 +603,11 @@ static void clear_datable_grp(unsigned char *datable, int size)
 {
     /* Clears group information from the table */
     int        i;
-    const char mask = !(char)INGROUP;
     if (size > 0)
     {
         for (i = 0; i < size; i++)
         {
-            datable[i] &= mask;
+            datable[i] &= !c_inGroupMask;
         }
     }
 }
@@ -641,7 +641,7 @@ static void search_acceptors(const t_topology *top, int isize,
                   (bNitAcc && ((*top->atoms.atomname[n])[0] == 'N')))) &&
                 ISINGRP(datable[n]))
             {
-                datable[n] |= ACC; /* set the atom's acceptor flag in datable. */
+                datable[n] |= c_acceptorMask;
                 add_acc(a, n, grp);
             }
         }
@@ -750,7 +750,7 @@ static void search_donors(const t_topology *top, int isize, const int *index,
         {
             for (i = 0; (i < isize); i++)
             {
-                datable[index[i]] |= DON;
+                datable[index[i]] |= c_donorMask;
                 add_dh(ddd, index[i], -1, grp, datable);
             }
         }
@@ -788,12 +788,12 @@ static void search_donors(const t_topology *top, int isize, const int *index,
                     {
                         if (ISINGRP(datable[nr2]))
                         {
-                            datable[nr1] |= DON;
+                            datable[nr1] |= c_donorMask;
                             add_dh(ddd, nr1, nr1+1, grp, datable);
                         }
                         if (ISINGRP(datable[nr3]))
                         {
-                            datable[nr1] |= DON;
+                            datable[nr1] |= c_donorMask;
                             add_dh(ddd, nr1, nr1+2, grp, datable);
                         }
                     }
@@ -809,7 +809,7 @@ static void search_donors(const t_topology *top, int isize, const int *index,
                              (*top->atoms.atomname[nr2][0] == 'N')) &&
                             ISINGRP(datable[nr1]) && ISINGRP(datable[nr2]))
                         {
-                            datable[nr2] |= DON;
+                            datable[nr2] |= c_donorMask;
                             add_dh(ddd, nr2, nr1, grp, datable);
                         }
                     }
@@ -851,7 +851,7 @@ static void search_donors(const t_topology *top, int isize, const int *index,
                                        ( *top->atoms.atomname[nr2][0] == 'N') ) &&
                             ISINGRP(datable[nr1]) && ISINGRP(datable[nr2]))
                         {
-                            datable[nr2] |= DON;
+                            datable[nr2] |= c_donorMask;
                             add_dh(ddd, nr2, nr1, grp, datable);
                         }
                     }
@@ -2590,7 +2590,6 @@ int gmx_hbond(int argc, char *argv[])
     snew(isize, grNR);
     /* Make Donor-Acceptor table */
     snew(datable, top.atoms.nr);
-    gen_datable(index[0], isize[0], datable, top.atoms.nr);
 
     if (bSelected)
     {
@@ -2638,6 +2637,9 @@ int gmx_hbond(int argc, char *argv[])
         {
             printf("Checking for overlap in atoms between %s and %s\n",
                    grpnames[0], grpnames[1]);
+
+            gen_datable(index[0], isize[0], datable, top.atoms.nr);
+
             for (i = 0; i < isize[1]; i++)
             {
                 if (ISINGRP(datable[index[1][i]]))
@@ -2646,15 +2648,6 @@ int gmx_hbond(int argc, char *argv[])
                               grpnames[0], grpnames[1]);
                 }
             }
-            /*
-               printf("Checking for overlap in atoms between %s and %s\n",
-               grpnames[0],grpnames[1]);
-               for (i=0; i<isize[0]; i++)
-               for (j=0; j<isize[1]; j++)
-               if (index[0][i] == index[1][j])
-               gmx_fatal(FARGS,"Partial overlap between groups '%s' and '%s'",
-               grpnames[0],grpnames[1]);
-             */
         }
         if (bTwo)
         {
