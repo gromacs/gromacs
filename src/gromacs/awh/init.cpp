@@ -560,8 +560,11 @@ static void init_awh_bias(FILE                       *fplog,
     awh_bias->grid        = init_grid(awh_bias->ndim, awh_bias->betak, grid_origin, grid_end, grid_period, &nneighbors_alloc);
     awh_bias->npoints     = awh_bias->grid->npoints;
 
-    /* The transition probability weights in a neighborhood of the current coordinate */
-    snew(awh_bias->prob_weight_neighbor, nneighbors_alloc);
+    /* The transition probability weights in a neighborhood of the current coordinate.
+     * We use this with SIMD, so we align and pad.
+     * We would like to use the aligned allocator, but this is still a C struct.
+     */
+    snew_aligned(awh_bias->prob_weight_neighbor, nneighbors_alloc + 8, 128);
 
     /* Estimate and initialize histsize_initial. The estimation depends on the grid. */
     awh_bias->histsize_initial = get_initial_histsize_estimate(awh_bias->betak, awh_bias_params, awh_bias->grid, awh_bias->nstsample_coord*ir->delta_t);

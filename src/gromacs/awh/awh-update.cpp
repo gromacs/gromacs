@@ -55,6 +55,8 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/simd_math.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -65,6 +67,7 @@
 #include "math.h"
 #include "types.h"
 
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 //! A value that can be passed to exp() with result 0, also with SIMD
 static const double c_largeNegativeExponent = -10000.0;
@@ -124,14 +127,14 @@ static double get_f_min(const awh_bias_t *awh_bias)
 
     return f_min;
 }
-static double get_biased_weight_from_point(const awh_bias_t *awh_bias, int point_index, double bias, const awh_dvec value)
+static double get_biased_log_weight_from_point(const awh_bias_t *awh_bias, int point_index, double bias, const awh_dvec value)
 {
-    double weight = 0;
+    double log_weight = c_largeNegativeExponent;
 
     /* Only points in the target reigon have non-zero weight */
     if (in_target_region(&awh_bias->coordpoint[point_index]))
     {
-        double log_weight = bias;
+        log_weight = bias;
 
         /* Add potential for all parameter dimensions */
         for (int d = 0; d < awh_bias->ndim; d++)
@@ -139,11 +142,9 @@ static double get_biased_weight_from_point(const awh_bias_t *awh_bias, int point
             double dev = get_deviation_from_point_along_gridaxis(awh_bias->grid, d, point_index, value[d]);
             log_weight -= 0.5*awh_bias->betak[d]*dev*dev;
         }
-
-        weight = std::exp(log_weight);
     }
 
-    return weight;
+    return log_weight;
 }
 
 void getConvolvedPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, double *convolvedPmf)
@@ -169,8 +170,8 @@ void getConvolvedPmf(const awh_bias_t *awh_bias, const gmx_multisim_t *ms, doubl
             /* Add the convolved PMF weights for the neighbors of this point.
                Note that this function only adds point within the target > 0 region.
                Sum weights, take the logarithm last to get the free energy. */
-            freeEnergyWeights += get_biased_weight_from_point(awh_bias, neighbor, biasNeighbor,
-                                                              gridpoints[m].value);
+            double logWeight   = get_biased_log_weight_from_point(awh_bias, neighbor, biasNeighbor, gridpoints[m].value);
+            freeEnergyWeights += std::exp(logWeight);
         }
 
         GMX_RELEASE_ASSERT(freeEnergyWeights > 0, "Attempting to do log(< 0) in AWH convolved PMF calculation.");
@@ -1025,25 +1026,52 @@ static void update(awh_bias_t *awh_bias, int awh_id, const gmx_multisim_t *ms, d
 
 static void update_transition_probability_and_convolved_bias(awh_bias_t *awh_bias)
 {
-    double      weight_sum, inv_weight_sum;
     double     *weight = awh_bias->prob_weight_neighbor;
     grid_t     *grid   = awh_bias->grid;
 
-    /* Sum of probability weights */
-    weight_sum = 0;
+    /* When using the convolved potential, this function is called every step.
+     * As we need to sum exponentials of log(weight) over many neighbor points
+     * in double precision, this takes significant computational time.
+     * Using SIMD parallelization accelerates this function significantly.
+     */
+#if GMX_SIMD_HAVE_DOUBLE
+    typedef SimdDouble PackType;
+    const int packSize = GMX_SIMD_DOUBLE_WIDTH;
+#else
+    typedef double PackType;
+    const int packSize = 1;
+#endif
 
     /* Only neighbors of the current coordinate value will have a non-negligible chance of getting sampled */
-    for (int n = 0; n < grid->point[awh_bias->coord_value_index].nneighbors; n++)
+    const int nneighbors = grid->point[awh_bias->coord_value_index].nneighbors;
+    PackType  weightSumPack(0.0);
+    for (int i = 0; i < nneighbors; i += packSize)
     {
-        int neighbor =  grid->point[awh_bias->coord_value_index].neighbor[n];
-        weight[n]   = get_biased_weight_from_point(awh_bias, neighbor, awh_bias->coordpoint[neighbor].bias,
-                                                   awh_bias->coord_value);
-        weight_sum += weight[n];
+        for (int n = i; n < i + packSize; n++)
+        {
+            if (n < nneighbors)
+            {
+                int neighbor = grid->point[awh_bias->coord_value_index].neighbor[n];
+                weight[n]    = get_biased_log_weight_from_point(awh_bias, neighbor, awh_bias->coordpoint[neighbor].bias,
+                                                                awh_bias->coord_value);
+            }
+            else
+            {
+                /* Pad with values that don't affect the result */
+                weight[n]    = c_largeNegativeExponent;
+            }
+        }
+        PackType weightPack = load(weight + i);
+        weightPack          = gmx::exp(weightPack);
+        weightSumPack       = weightSumPack + weightPack;
+        store(weight + i, weightPack);
     }
-    inv_weight_sum = 1./weight_sum;
+    /* Sum of probability weights */
+    double weight_sum     = reduce(weightSumPack);
+    double inv_weight_sum = 1./weight_sum;
 
     /* Normalize probabilities to 1 */
-    for (int n = 0; n < grid->point[awh_bias->coord_value_index].nneighbors; n++)
+    for (int n = 0; n < nneighbors; n++)
     {
         weight[n] *= inv_weight_sum;
     }
@@ -1065,9 +1093,9 @@ double calc_convolved_bias(const awh_bias_t *awh_bias, const awh_dvec coord_valu
     /* Sum the probability weights from the neighborhood of the given point */
     for (int n = 0; n < gridpoints[point].nneighbors; n++)
     {
-        int neighbor =  gridpoints[point].neighbor[n];
-        weight_sum += get_biased_weight_from_point(awh_bias, neighbor, coordpoints[neighbor].bias,
-                                                   coord_value);
+        int    neighbor  = gridpoints[point].neighbor[n];
+        double logWeight = get_biased_log_weight_from_point(awh_bias, neighbor, coordpoints[neighbor].bias, coord_value);
+        weight_sum      += std::exp(logWeight);
     }
 
     /* Returns -GMX_DOUBLE_MAX if no neighboring points where in the target region. */
