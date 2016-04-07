@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,31 @@
 #define    snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
 /* Dirty macro with bAlloc not as an argument */
 #define nblock_abc(cr, nr, d) { if (bAlloc) {snew((d), (nr)); } nblock_bc(cr, (nr), (d)); }
+
+static void bc_cstring(const t_commrec *cr, char **s)
+{
+    int size = 0;
+
+    if (MASTER(cr) && *s != NULL)
+    {
+        /* Size of the char buffer is string length + 1 for '\0' */
+        size = strlen(*s) + 1;
+    }
+    block_bc(cr, size);
+    if (size > 0)
+    {
+        if (!MASTER(cr))
+        {
+            srenew(*s, size);
+        }
+        nblock_bc(cr, size, *s);
+    }
+    else if (!MASTER(cr) && *s != NULL)
+    {
+        sfree(*s);
+        *s = NULL;
+    }
+}
 
 static void bc_string(const t_commrec *cr, t_symtab *symtab, char ***s)
 {
@@ -507,6 +532,17 @@ static void bc_pull(const t_commrec *cr, pull_params_t *pull)
     }
     snew_bc(cr, pull->coord, pull->ncoord);
     nblock_bc(cr, pull->ncoord, pull->coord);
+    for (int c = 0; c < pull->ncoord; c++)
+    {
+        if (!MASTER(cr))
+        {
+            pull->coord[c].externalPotentialProvider = NULL;
+        }
+        if (pull->coord[c].eType == epullEXTERNAL)
+        {
+            bc_cstring(cr, &pull->coord[c].externalPotentialProvider);
+        }
+    }
 }
 
 static void bc_rotgrp(const t_commrec *cr, t_rotgrp *rotg)
