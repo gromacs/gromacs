@@ -324,7 +324,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                 setname[nsets] = gmx_strdup(buf);
                 nsets++;
                 if (pull->params.bPrintRefValue &&
-                    pull->coord[c].params.eType == epullEXTERNAL)
+                    pull->coord[c].params.eType != epullEXTERNAL)
                 {
                     sprintf(buf, "%d ref", c+1);
                     setname[nsets] = gmx_strdup(buf);
