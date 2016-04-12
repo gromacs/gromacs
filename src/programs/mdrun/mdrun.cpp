@@ -67,6 +67,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "mdrun_main.h"
 #include "runner.h"
@@ -449,6 +450,7 @@ int gmx_mdrun(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, 0, NULL, &oenv))
     {
+        sfree(cr);
         return 0;
     }
 
