@@ -1137,6 +1137,7 @@ int gmx_pme_error(int argc, char *argv[])
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
                            0, NULL, &oenv))
     {
+        sfree(cr);
         return 0;
     }
 
