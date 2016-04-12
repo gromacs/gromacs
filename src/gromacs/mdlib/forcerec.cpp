@@ -3231,6 +3231,8 @@ void free_gpu_resources(const t_forcerec     *fr,
     {
         /* free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+        /* stop the GPU profiler (only CUDA) */
+        stopGpuProfiler();
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
          * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
