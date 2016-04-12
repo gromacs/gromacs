@@ -76,6 +76,7 @@
 #include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sighandler.h"
@@ -164,6 +165,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     if (use_GPU(nbv))
     {
         nbnxn_gpu_reset_timings(nbv);
+        resetGpuProfiler();
     }
 
     wallcycle_stop(wcycle, ewcRUN);
