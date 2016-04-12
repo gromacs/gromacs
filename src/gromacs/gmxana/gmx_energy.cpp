@@ -2052,6 +2052,7 @@ int gmx_energy(int argc, char *argv[])
                            PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 
