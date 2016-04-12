@@ -1,7 +1,8 @@
+#!/bin/bash
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,13 +33,19 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Custom build type "ASAN", to be used to run the
-# AddressSanatizer memory checker.
-
-set(_flags "-O1 -g -fsanitize=address -fno-omit-frame-pointer")
-
-foreach(_language C CXX)
-    string(REPLACE "X" "+" _human_readable_language ${_language})
-    set(CMAKE_${_language}_FLAGS_ASAN ${_flags} CACHE STRING "${_human_readable_language} flags for address sanitizer")
-    mark_as_advanced(CMAKE_${_language}_FLAGS_ASAN)
-endforeach()
+while [[ "$1" != "--" ]] ; do
+    extra_opts="$extra_opts $1"
+    shift
+done
+for opt in $ASAN_OPTIONS ; do
+    if [[ "$opt" == log_path=* ]] ; then
+        # CTest gives errors if the file does not exist, but AddressSanitizer
+        # only produces it if it finds issues...
+        log_path="${opt#log_path=}"
+        log_path="${log_path%\"}"
+        log_path="${log_path#\"}"
+        touch ${log_path}.99999
+    fi
+done
+export ASAN_OPTIONS="$ASAN_OPTIONS $extra_opts"
+exec "$@"
