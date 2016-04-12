@@ -328,6 +328,7 @@ int gmx_dos(int argc, char *argv[])
                            NFILE, fnm, npargs, ppa, asize(desc), desc,
                            asize(bugs), bugs, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 
