@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -64,8 +64,10 @@ endfunction ()
 
 function (gmx_register_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+        gmx_get_test_prefix_cmd(_prefix_cmd)
         add_test(NAME ${NAME}
-                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
+                 COMMAND ${_prefix_cmd} $<TARGET_FILE:${EXENAME}>
+                     --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set_tests_properties(${NAME} PROPERTIES LABELS "GTest;UnitTest")
         add_dependencies(tests ${EXENAME})
     endif()
@@ -74,8 +76,10 @@ endfunction ()
 # Use this function to register a test binary as an integration test
 function (gmx_register_integration_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+        gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         add_test(NAME ${NAME}
-                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
+                 COMMAND ${_prefix_cmd} $<TARGET_FILE:${EXENAME}>
+                     --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set_tests_properties(${testname} PROPERTIES LABELS "IntegrationTest")
         add_dependencies(tests ${EXENAME})
 
@@ -127,11 +131,10 @@ function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
             # some point.
             # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES})
         elseif(GMX_THREAD_MPI)
+            gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
             add_test(NAME ${NAME}
-                COMMAND
-                $<TARGET_FILE:${EXENAME}> -nt ${NUMPROC}
-                --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml
-                )
+                     COMMAND ${_prefix_cmd} $<TARGET_FILE:${EXENAME}> -nt ${NUMPROC}
+                         --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
             set_tests_properties(${testname} PROPERTIES LABELS "MpiIntegrationTest")
             add_dependencies(tests ${EXENAME})
 

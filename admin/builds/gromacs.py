@@ -140,7 +140,7 @@ def do_build(context):
     else:
         context.build_target(target='tests', keep_going=True)
 
-        context.run_ctest(args=['--output-on-failure'])
+        context.run_ctest(args=['--output-on-failure'], memcheck=context.opts.asan)
 
         if not context.opts.mdrun_only:
             context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
