@@ -158,7 +158,10 @@ def do_build(context):
     else:
         context.build_target(target='tests', keep_going=True)
 
-        context.run_ctest(args=['--output-on-failure'])
+        # FIXME: This needs to go to releng once things are working properly
+        if context.opts.asan:
+            context.env.set_env_var('ASAN_SYMBOLIZER_PATH', '/opt/clang/3.8/bin/llvm-symbolizer')
+        context.run_ctest(args=['--output-on-failure'], memcheck=context.opts.asan)
 
         context.build_target(target='install')
         # TODO: Consider what could be tested about the installed binaries.
@@ -198,4 +201,6 @@ def do_build(context):
                 cmd += ' -nt 2'
             if context.opts.double:
                 cmd += ' -double'
+            if context.opts.asan:
+                context.env.set_env_var('ASAN_OPTIONS', 'detect_leaks=0')
             context.run_cmd(cmd, shell=True, failure_message='Regression tests failed to execute')
