@@ -56,6 +56,7 @@
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/functions.h"
@@ -164,6 +165,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     if (use_GPU(nbv))
     {
         nbnxn_gpu_reset_timings(nbv);
+        resetGpuProfiler();
     }
 
     wallcycle_stop(wcycle, ewcRUN);
