@@ -220,6 +220,14 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
     return settled;
 }
 
+void settle_free(gmx_settledata_t settled)
+{
+    sfree(settled->ow1);
+    sfree(settled->hw2);
+    sfree(settled->hw3);
+    sfree(settled);
+}
+
 void settle_set_constraints(gmx_settledata_t  settled,
                             const t_ilist    *il_settle,
                             const t_mdatoms  *mdatoms)

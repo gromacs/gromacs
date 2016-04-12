@@ -110,6 +110,12 @@ def do_build(context):
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
 
+    # At least hwloc on Jenkins produces a massive amount of reports about
+    # memory leaks, which cannot be reasonably suppressed because ASAN cannot
+    # produce a reasonable stack trace for them.
+    if context.opts.asan:
+        cmake_opts['GMX_HWLOC'] = 'OFF'
+
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 
     if context.job_type == JobType.RELEASE:
@@ -158,7 +164,10 @@ def do_build(context):
     else:
         context.build_target(target='tests', keep_going=True)
 
-        context.run_ctest(args=['--output-on-failure'])
+        # FIXME: This needs to go to releng once things are working properly
+        if context.opts.asan:
+            context.env.set_env_var('ASAN_SYMBOLIZER_PATH', '/opt/clang/3.8/bin/llvm-symbolizer')
+        context.run_ctest(args=['--output-on-failure'], memcheck=context.opts.asan)
 
         context.build_target(target='install')
         # TODO: Consider what could be tested about the installed binaries.
@@ -198,4 +207,6 @@ def do_build(context):
                 cmd += ' -nt 2'
             if context.opts.double:
                 cmd += ' -double'
+            if context.opts.asan:
+                context.env.set_env_var('ASAN_OPTIONS', 'detect_leaks=0')
             context.run_cmd(cmd, shell=True, failure_message='Regression tests failed to execute')

@@ -1620,6 +1620,7 @@ int gmx_dipoles(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 
