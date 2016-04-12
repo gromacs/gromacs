@@ -1,0 +1,2 @@
+leak:hwloc_topology_load
+leak:lt__malloc

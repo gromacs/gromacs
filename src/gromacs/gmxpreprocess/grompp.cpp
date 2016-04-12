@@ -1628,18 +1628,18 @@ int gmx_grompp(int argc, char *argv[])
           "Renumber atomtypes and minimize number of atomtypes" }
     };
 
-    /* Initiate some variables */
-    gmx::MDModules mdModules;
-    ir = mdModules.inputrec();
-    snew(opts, 1);
-    init_ir(ir, opts);
-
     /* Parse the command line */
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
+
+    /* Initiate some variables */
+    gmx::MDModules mdModules;
+    ir = mdModules.inputrec();
+    snew(opts, 1);
+    init_ir(ir, opts);
 
     wi = init_warning(TRUE, maxwarn);
 
