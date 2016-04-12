@@ -158,7 +158,7 @@ def do_build(context):
     else:
         context.build_target(target='tests', keep_going=True)
 
-        context.run_ctest(args=['--output-on-failure'])
+        context.run_ctest(args=['--output-on-failure'], memcheck=context.opts.asan)
 
         context.build_target(target='install')
         # TODO: Consider what could be tested about the installed binaries.
