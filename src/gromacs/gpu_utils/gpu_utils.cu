@@ -48,6 +48,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <cuda_profiler_api.h>
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/pmalloc_cuda.h"
 #include "gromacs/hardware/gpu_hw_info.h"
@@ -782,4 +784,44 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
         *nb_alloc = NULL;
         *nb_free  = NULL;
     }
+}
+
+void startGpuProfiler(void)
+{
+    /* The NVPROF_ID environment variable is set by nvprof and indicates that
+       mdrun is executed in the CUDA profiler.
+       If nvprof was run is with "--profile-from-start off", the profiler will
+       be started here. This way we can avoid tracing the CUDA events from the
+       first part of the run. Starting the profiler again does nothing.
+     */
+    if (getenv("NVPROF_ID") != NULL)
+    {
+        cudaError_t stat;
+        stat = cudaProfilerStart();
+        CU_RET_ERR(stat, "cudaProfilerStart failed");
+    }
+}
+
+void stopGpuProfiler(void)
+{
+    /* Stopping the nvidia here allows us to eliminate the subsequent
+       API calls from the trace, e.g. uninitialization and cleanup. */
+    if (getenv("NVPROF_ID") != NULL)
+    {
+        cudaError_t stat;
+        stat = cudaProfilerStop();
+        CU_RET_ERR(stat, "cudaProfilerStop failed");
+    }
+}
+
+void resetGpuProfiler(void)
+{
+    /* With CUDA <=7.5 the profiler can't be properly reset; we can only start
+     *  the profiling here (can't stop it) which will achieve the desired effect if
+     *  the run was started with the profiling disabled.
+     *
+     * TODO: add a stop (or replace it with reset) when this will work correctly in CUDA.
+     * stopGpuProfiler();
+     */
+    startGpuProfiler();
 }
