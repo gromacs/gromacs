@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -268,10 +268,6 @@ if (MAN_PAGE_DIR)
         DESTINATION ${MAN_INSTALL_DIR}/man1
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.1")
-    install(DIRECTORY ${MAN_PAGE_DIR}/
-        DESTINATION ${MAN_INSTALL_DIR}/man7
-        COMPONENT man OPTIONAL
-        FILES_MATCHING PATTERN "*.7")
 endif()
 gmx_cpack_add_generated_source_directory(man)
 
