@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ int gmx_sans(int argc, char *argv[])
     };
     static gmx_bool      bPBC     = TRUE;
     static gmx_bool      bNORM    = FALSE;
-    static real          binwidth = 0.2, grid = 0.05; /* bins shouldnt be smaller then smallest bond (~0.1nm) length */
+    static real          binwidth = 0.2, grid = 0.05; /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
     static real          start_q  = 0.0, end_q = 2.0, q_step = 0.01;
     static real          mcover   = -1;
     static unsigned int  seed     = 0;

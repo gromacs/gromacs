@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -185,7 +185,7 @@ void do_conect(const char *fn, int n, rvec x[])
     {
         if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
         {
-            fprintf(stderr, "Warning dot %d has no conections\n", i+1);
+            fprintf(stderr, "Warning dot %d has no connections\n", i+1);
         }
         fprintf(fp, "CONECT%5d%5d%5d\n", i+1, c[i].aa+1, c[i].ab+1);
     }

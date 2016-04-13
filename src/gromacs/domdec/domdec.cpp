@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -9478,7 +9478,7 @@ void dd_partition_system(FILE                *fplog,
          * Box scaling happens at the end of the MD step,
          * after the DD partitioning.
          * We therefore have to do DLB in the first partitioning
-         * after an MD step where P-coupling occured.
+         * after an MD step where P-coupling occurred.
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */

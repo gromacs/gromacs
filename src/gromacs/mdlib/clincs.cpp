@@ -2617,7 +2617,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
         /* This bWarn var can be updated by multiple threads
          * at the same time. But as we only need to detect
-         * if a warning occured or not, this is not an issue.
+         * if a warning occurred or not, this is not an issue.
          */
         bWarn = FALSE;
 

@@ -267,7 +267,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
                     }
                     iFound = eFoundDDStr;
                 }
-                /* Catch a few errors that might have occured: */
+                /* Catch a few errors that might have occurred: */
                 else if (str_starts(line, "There is no domain decomposition for"))
                 {
                     fclose(fp);
@@ -356,7 +356,7 @@ static int parse_logfile(const char *logfile, const char *errfile,
             {
                 if (fgets(line, STRLEN, fp) != NULL)
                 {
-                    fprintf(stderr, "\nWARNING: An error occured during this benchmark:\n"
+                    fprintf(stderr, "\nWARNING: An error occurred during this benchmark:\n"
                             "%s\n", line);
                 }
                 fclose(fp);
@@ -1484,7 +1484,7 @@ static void do_the_tests(
         "Number of PP ranks has a prime factor that is too large.",
         "The number of PP ranks did not suit the number of GPUs.",
         "Some GPUs were not detected or are incompatible.",
-        "An error occured."
+        "An error occurred."
     };
     char        str_PME_f_load[13];
 

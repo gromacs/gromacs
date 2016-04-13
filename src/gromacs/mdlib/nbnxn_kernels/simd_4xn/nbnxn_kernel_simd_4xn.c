@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -337,7 +337,7 @@ nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     {
         if (ic->ljpme_comb_rule == eljpmeLB)
         {
-            gmx_incons("The nbnxn SIMD kernels don't suport LJ-PME with LB");
+            gmx_incons("The nbnxn SIMD kernels don't support LJ-PME with LB");
         }
         vdwkt = vdwktLJEWALDCOMBGEOM;
     }

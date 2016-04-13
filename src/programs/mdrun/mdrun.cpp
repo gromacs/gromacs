@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -214,8 +214,8 @@ int gmx_mdrun(int argc, char *argv[])
         "the [TT]mdrun[tt] process that is the parent of the others.",
         "[PAR]",
         "Interactive molecular dynamics (IMD) can be activated by using at least one",
-        "of the three IMD switches: The [TT]-imdterm[tt] switch allows to terminate the",
-        "simulation from the molecular viewer (e.g. VMD). With [TT]-imdwait[tt],",
+        "of the three IMD switches: The [TT]-imdterm[tt] switch allows to terminate",
+        "the simulation from the molecular viewer (e.g. VMD). With [TT]-imdwait[tt],",
         "[TT]mdrun[tt] pauses whenever no IMD client is connected. Pulling from the",
         "IMD remote can be turned on by [TT]-imdpull[tt].",
         "The port [TT]mdrun[tt] listens to can be altered by [TT]-imdport[tt].The",

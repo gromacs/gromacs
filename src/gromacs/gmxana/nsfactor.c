@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ void check_binwidth(real binwidth)
     real smallest_bin = 0.1;
     if (binwidth < smallest_bin)
     {
-        gmx_fatal(FARGS, "Binwidth shouldnt be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
+        gmx_fatal(FARGS, "Binwidth shouldn't be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
     }
 }
 

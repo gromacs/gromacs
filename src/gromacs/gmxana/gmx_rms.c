@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -129,7 +129,7 @@ int gmx_rms(int argc, char *argv[])
         "otherwise the masses will be deduced from the [TT]atommass.dat[tt] file in",
         "[TT]GMXLIB[tt]. This is fine for proteins, but not",
         "necessarily for other molecules. A default mass of 12.011 amu (carbon)",
-        "is assigned to unknown atoms. You can check whether this happend by",
+        "is assigned to unknown atoms. You can check whether this happened by",
         "turning on the [TT]-debug[tt] flag and inspecting the log file.[PAR]",
 
         "With [TT]-f2[tt], the 'other structures' are taken from a second",

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -701,7 +701,7 @@ int gmx_make_edi(int argc, char *argv[])
         { "-flood",  FALSE, etSTR, {&evSelections[2]},
           "Indices of eigenvectors for flooding"},
         { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-          "Freqency (in steps) of writing output in [REF].xvg[ref] file" },
+          "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
         { "-slope", FALSE, etREAL, { &edi_params.slope},
           "Minimal slope in acceptance radius expansion"},
         { "-linstep", FALSE, etSTR, {&evParams[0]},
