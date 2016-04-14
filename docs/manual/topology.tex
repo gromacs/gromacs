@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -408,6 +408,23 @@ In the {\tt ffbonded.itp} file, you can add bonded parameters. If you
 want to include parameters for new atom types, make sure you define
 them in {\tt atomtypes.atp} as well.
 
+For most interaction types, bonded parameters are searched and assigned
+using an exact match for all type names and allowing only a single set
+of parameters. The exception to this rule are \normindex{dihedral} parameters.
+For {\tt [ dihedraltypes ]} wildcard atom type names can be specified
+with the letter {\tt X} in one or more of the four positions. Thus one
+can for example assign proper dihedral parameters based on the types of
+the middle two atoms. The parameters for the entry with the most exact matches,
+i.e. the least wildcard matches, will be used. Note that {\gromacs} versions
+older than 5.1.3 used the first match, which means that a full match would be
+ignored if it is preceded by an entry that matches on wildcards. Thus it
+is suggested to put wildcard entries at the end, in case someone might
+use a forcefield with older versions of {\gromacs}.
+In addition there is a dihedral type 9 which adds the possibility of
+assigning multiple dihedral potentials, useful for combining terms with
+different multiplicities. The different dihedral potential parameter
+sets should be on directly adjacent lines in the {\tt [ dihedraltypes ]}
+section.
 
 \section{Molecule definition\index{molecule definition}}
 

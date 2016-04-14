@@ -543,12 +543,23 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
             if (bSettleErrorHasOccurred)
             {
-                dump_confs(fplog, step, constr->warn_mtop, start, homenr, cr, x, xprime, box);
+                char buf[256];
+                sprintf(buf,
+                        "\nstep " "%" GMX_PRId64 ": One or more water molecules can not be settled.\n"
+                        "Check for bad contacts and/or reduce the timestep if appropriate.\n",
+                        step);
+                if (fplog)
+                {
+                    fprintf(fplog, "%s", buf);
+                }
+                fprintf(stderr, "%s", buf);
+                constr->warncount_settle++;
+                if (constr->warncount_settle > constr->maxwarn)
+                {
+                    too_many_constraint_warnings(-1, constr->warncount_settle);
+                }
+                bDump = TRUE;
 
-                gmx_fatal(FARGS,
-                          "\nstep " "%" GMX_PRId64 ": One or more water molecules can not be settled.\n"
-                          "Check for bad contacts and/or reduce the timestep if appropriate.\n",
-                          step);
             }
         }
     }

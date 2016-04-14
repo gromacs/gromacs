@@ -1041,12 +1041,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             wallcycle_start(wcycle, ewcMOVEX);
             dd_move_x(cr->dd, box, x);
-
-            /* When we don't need the total dipole we sum it in global_stat */
-            if (bStateChanged && inputrecNeedMutot(inputrec))
-            {
-                gmx_sumd(2*DIM, mu, cr);
-            }
             wallcycle_stop(wcycle, ewcMOVEX);
 
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
