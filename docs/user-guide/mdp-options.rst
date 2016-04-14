@@ -1410,7 +1410,7 @@ Bonds
 Energy group exclusions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mdp:: energygrp-excl:
+.. mdp:: energygrp-excl
 
    Pairs of energy groups for which all non-bonded interactions are
    excluded. An example: if you have two energy groups ``Protein`` and
@@ -1612,7 +1612,7 @@ applicable pulling coordinate.
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
    2010).
 
-.. mdp:: pull-coord1-type:
+.. mdp:: pull-coord1-type
 
    .. mdp-value:: umbrella
 
@@ -2395,7 +2395,7 @@ Expanded Ensemble calculations
    minimum number of samples that each state that are allowed before
    the min-variance strategy is activated if selected.
 
-.. mdp:: init-lambda-weights:
+.. mdp:: init-lambda-weights
 
    The initial weights (free energies) used for the expanded ensemble
    states. Default is a vector of zero weights. format is similar to
@@ -2565,7 +2565,7 @@ Electric fields
    nm^-1, the third number: the phase of the cosine, you can enter any
    number here since a cosine of frequency zero has no phase.
 
-.. mdp:: E-xt; E-yt; E-zt:
+.. mdp:: E-xt; E-yt; E-zt
 
    Here you can specify a pulsed alternating electric field. The field
    has the form of a gaussian laser pulse:
