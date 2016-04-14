@@ -269,10 +269,6 @@ if (MAN_PAGE_DIR)
         DESTINATION ${MAN_INSTALL_DIR}/man1
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.1")
-    install(DIRECTORY ${MAN_PAGE_DIR}/
-        DESTINATION ${MAN_INSTALL_DIR}/man7
-        COMPONENT man OPTIONAL
-        FILES_MATCHING PATTERN "*.7")
 endif()
 gmx_cpack_add_generated_source_directory(man)
 

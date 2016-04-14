@@ -875,7 +875,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   "but %s was compiled without threads or MPI enabled"
 #else
 #if GMX_THREAD_MPI
-                  "but the number of threads (option -nt) is 1"
+                  "but the number of MPI-threads (option -ntmpi) is not set or is 1"
 #else
                   "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec"
 #endif
