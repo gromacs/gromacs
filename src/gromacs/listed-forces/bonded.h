@@ -55,8 +55,6 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/pbcutil/pbc-simd.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -128,7 +126,7 @@ void
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index);
 
-#if GMX_SIMD_HAVE_REAL
+/* TODO these declarations should be internal to the module */
 
 /* As angles(), but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
@@ -164,8 +162,6 @@ void
                        real gmx_unused lambda,
                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                        int gmx_unused *global_atom_index);
-
-#endif // GMX_SIMD_HAVE_REAL
 
 //! \endcond
 
