@@ -55,6 +55,17 @@
 #include "gromacs/mdtypes/pull-params.h"
 
 
+/* This determines up to what local atom count a group gets processed
+ * without OpenMP threading. We set this to 1 with debug to catch bugs.
+ * On Haswell with GCC 5 the cross-over point is around 400 atoms,
+ * independent of thread count and hyper-threading.
+ */
+#ifdef NDEBUG
+static const int c_pullMaxNumLocalAtomsSingleThreaded = 400;
+#else
+static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
+#endif
+
 enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
 };
@@ -106,6 +117,24 @@ typedef struct
 }
 pull_coord_work_t;
 
+/* Struct for sums over (local) atoms in a pull group */
+struct pull_sum_com_t {
+    /* For normal weighting */
+    double sum_wm;    /* Sum of weight*mass        */
+    double sum_wwm;   /* Sum of weight*weight*mass */
+    dvec   sum_wmx;   /* Sum of weight*mass*x      */
+    dvec   sum_wmxp;  /* Sum of weight*mass*xp     */
+
+    /* For cosine weighting */
+    double sum_cm;    /* Sum of cos(x)*mass          */
+    double sum_sm;    /* Sum of sin(x)*mass          */
+    double sum_ccm;   /* Sum of cos(x)*cos(x)*mass   */
+    double sum_csm;   /* Sum of cos(x)*sin(x)*mass   */
+    double sum_ssm;   /* Sum of sin(x)*sin(x)*mass   */
+    double sum_cmp;   /* Sum of cos(xp)*sin(xp)*mass */
+    double sum_smp;   /* Sum of sin(xp)*sin(xp)*mass */
+};
+
 typedef struct {
     gmx_bool    bParticipateAll; /* Do all ranks always participate in pulling? */
     gmx_bool    bParticipate;    /* Does our rank participate in pulling? */
@@ -145,6 +174,9 @@ struct pull_t
     gmx_bool           bCylinder;    /* Is group 0 a cylinder group? */
 
     gmx_bool           bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
+
+    int                nthreads;     /* Number of threads used by the pull code */
+    pull_sum_com_t   **sum_com;      /* Work array for summing for COM, 1 entry per thread */
 
     pull_comm_t        comm;         /* Communication parameters, communicator and buffers */
 
