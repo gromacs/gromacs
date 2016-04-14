@@ -58,6 +58,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -374,41 +375,62 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
     return fp;
 }
 
+/* Apply forces in a mass weighted fashion for part of the pull group */
+static void apply_forces_grp_part(const pull_group_work_t *pgrp,
+                                  int ind_start, int ind_end,
+                                  const t_mdatoms *md,
+                                  const dvec f_pull, int sign, rvec *f)
+{
+    double inv_wm = pgrp->mwscale;
+
+    for (int i = ind_start; i < ind_end; i++)
+    {
+        int    ii    = pgrp->ind_loc[i];
+        double wmass = md->massT[ii];
+        if (pgrp->weight_loc)
+        {
+            wmass *= pgrp->weight_loc[i];
+        }
+
+        for (int d = 0; d < DIM; d++)
+        {
+            f[ii][d] += sign * wmass * f_pull[d] * inv_wm;
+        }
+    }
+}
+
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(const pull_group_work_t *pgrp,
                              const t_mdatoms *md,
-                             const dvec f_pull, int sign, rvec *f)
+                             const dvec f_pull, int sign, rvec *f,
+                             int nthreads)
 {
-    int    i, ii, m;
-    double wmass, inv_wm;
-
-    inv_wm = pgrp->mwscale;
-
     if (pgrp->params.nat == 1 && pgrp->nat_loc == 1)
     {
         /* Only one atom and our rank has this atom: we can skip
          * the mass weighting, which means that this code also works
          * for mass=0, e.g. with a virtual site.
          */
-        for (m = 0; m < DIM; m++)
+        for (int d = 0; d < DIM; d++)
         {
-            f[pgrp->ind_loc[0]][m] += sign*f_pull[m];
+            f[pgrp->ind_loc[0]][d] += sign*f_pull[d];
         }
     }
     else
     {
-        for (i = 0; i < pgrp->nat_loc; i++)
+        if (pgrp->nat_loc <= c_pullMaxNumLocalAtomsSingleThreaded)
         {
-            ii    = pgrp->ind_loc[i];
-            wmass = md->massT[ii];
-            if (pgrp->weight_loc)
+            apply_forces_grp_part(pgrp, 0, pgrp->nat_loc, md, f_pull, sign, f);
+        }
+        else
+        {
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+            for (int th = 0; th < nthreads; th++)
             {
-                wmass *= pgrp->weight_loc[i];
-            }
-
-            for (m = 0; m < DIM; m++)
-            {
-                f[ii][m] += sign * wmass * f_pull[m] * inv_wm;
+                int ind_start = (pgrp->nat_loc*(th + 0))/nthreads;
+                int ind_end   = (pgrp->nat_loc*(th + 1))/nthreads;
+                apply_forces_grp_part(pgrp, ind_start, ind_end,
+                                      md, f_pull, sign, f);
             }
         }
     }
@@ -416,32 +438,34 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
 
 /* Apply forces in a mass weighted fashion to a cylinder group */
 static void apply_forces_cyl_grp(const pull_group_work_t *pgrp,
-                                 double dv_corr,
+                                 const double dv_corr,
                                  const t_mdatoms *md,
                                  const dvec f_pull, double f_scal,
-                                 int sign, rvec *f)
+                                 int sign, rvec *f,
+                                 int gmx_unused nthreads)
 {
-    int    i, ii, m;
-    double mass, weight, inv_wm, dv_com;
+    double inv_wm = pgrp->mwscale;
 
-    inv_wm = pgrp->mwscale;
-
-    for (i = 0; i < pgrp->nat_loc; i++)
+    /* The cylinder group is always a slab in the system, thus large.
+     * Therefore we always thread-parallelize this group.
+     */
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+    for (int i = 0; i < pgrp->nat_loc; i++)
     {
-        ii     = pgrp->ind_loc[i];
-        mass   = md->massT[ii];
-        weight = pgrp->weight_loc[i];
+        int    ii     = pgrp->ind_loc[i];
+        double mass   = md->massT[ii];
+        double weight = pgrp->weight_loc[i];
         /* The stored axial distance from the cylinder center (dv) needs
          * to be corrected for an offset (dv_corr), which was unknown when
          * we calculated dv.
          */
-        dv_com = pgrp->dv[i] + dv_corr;
+        double dv_com = pgrp->dv[i] + dv_corr;
 
         /* Here we not only add the pull force working along vec (f_pull),
          * but also a radial component, due to the dependence of the weights
          * on the radial distance.
          */
-        for (m = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             f[ii][m] += sign*inv_wm*(mass*weight*f_pull[m] +
                                      pgrp->mdw[i][m]*dv_com*f_scal);
@@ -481,8 +505,10 @@ static void apply_forces_vec_torque(const struct pull_t     *pull,
     }
 
     /* Apply the force to the groups defining the vector using opposite signs */
-    apply_forces_grp(&pull->group[pcrd->params.group[2]], md, f_perp, -1, f);
-    apply_forces_grp(&pull->group[pcrd->params.group[3]], md, f_perp,  1, f);
+    apply_forces_grp(&pull->group[pcrd->params.group[2]], md,
+                     f_perp, -1, f, pull->nthreads);
+    apply_forces_grp(&pull->group[pcrd->params.group[3]], md,
+                     f_perp,  1, f, pull->nthreads);
 }
 
 /* Apply forces in a mass weighted fashion */
@@ -490,24 +516,28 @@ static void apply_forces_coord(struct pull_t * pull, int coord,
                                const t_mdatoms * md,
                                rvec *f)
 {
-    const pull_coord_work_t *pcrd;
+    /* Here is would be more efficient to use one large thread-parallel
+     * region instead of potential parallel regions within apply_forces_grp.
+     * But there could be overlap between pull groups and this would lead
+     * to data races.
+     */
 
-    pcrd = &pull->coord[coord];
+    const pull_coord_work_t *pcrd = &pull->coord[coord];
 
     if (pcrd->params.eGeom == epullgCYL)
     {
-        dvec f_tot;
-        int  m;
-
         apply_forces_cyl_grp(&pull->dyna[coord], pcrd->cyl_dev, md,
-                             pcrd->f01, pcrd->f_scal, -1, f);
+                             pcrd->f01, pcrd->f_scal, -1, f,
+                             pull->nthreads);
 
         /* Sum the force along the vector and the radial force */
-        for (m = 0; m < DIM; m++)
+        dvec f_tot;
+        for (int m = 0; m < DIM; m++)
         {
             f_tot[m] = pcrd->f01[m] + pcrd->f_scal*pcrd->ffrad[m];
         }
-        apply_forces_grp(&pull->group[pcrd->params.group[1]], md, f_tot, 1, f);
+        apply_forces_grp(&pull->group[pcrd->params.group[1]], md,
+                         f_tot, 1, f, pull->nthreads);
     }
     else
     {
@@ -521,19 +551,25 @@ static void apply_forces_coord(struct pull_t * pull, int coord,
 
         if (pull->group[pcrd->params.group[0]].params.nat > 0)
         {
-            apply_forces_grp(&pull->group[pcrd->params.group[0]], md, pcrd->f01, -1, f);
+            apply_forces_grp(&pull->group[pcrd->params.group[0]], md,
+                             pcrd->f01, -1, f, pull->nthreads);
         }
-        apply_forces_grp(&pull->group[pcrd->params.group[1]], md, pcrd->f01, 1, f);
+        apply_forces_grp(&pull->group[pcrd->params.group[1]], md,
+                         pcrd->f01, 1, f, pull->nthreads);
 
         if (pcrd->params.ngroup >= 4)
         {
-            apply_forces_grp(&pull->group[pcrd->params.group[2]], md, pcrd->f23, -1, f);
-            apply_forces_grp(&pull->group[pcrd->params.group[3]], md, pcrd->f23,  1, f);
+            apply_forces_grp(&pull->group[pcrd->params.group[2]], md,
+                             pcrd->f23, -1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd->params.group[3]], md,
+                             pcrd->f23,  1, f, pull->nthreads);
         }
         if (pcrd->params.ngroup >= 6)
         {
-            apply_forces_grp(&pull->group[pcrd->params.group[4]], md, pcrd->f45, -1, f);
-            apply_forces_grp(&pull->group[pcrd->params.group[5]], md, pcrd->f45,  1, f);
+            apply_forces_grp(&pull->group[pcrd->params.group[4]], md,
+                             pcrd->f45, -1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd->params.group[5]], md,
+                             pcrd->f45,  1, f, pull->nthreads);
         }
     }
 }
@@ -2344,6 +2380,16 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 }
             }
         }
+    }
+
+    /* The gmx_omp_nthreads module might not be initialized here, so max(1,) */
+    pull->nthreads = std::max(1, gmx_omp_nthreads_get(emntDefault));
+    snew(pull->sum_com, pull->nthreads);
+    /* Allocate summation buffer on each thread for cache locality */
+#pragma omp parallel for num_threads(pull->nthreads) schedule(static)
+    for (int t = 0; t < pull->nthreads; t++)
+    {
+        snew(pull->sum_com[t], 1);
     }
 
     comm = &pull->comm;
