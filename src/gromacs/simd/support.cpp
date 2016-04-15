@@ -98,7 +98,15 @@ simdSuggested(const CpuInfo &c)
         switch (c.vendor())
         {
             case CpuInfo::Vendor::Intel:
-                if (c.feature(CpuInfo::Feature::X86_Avx2))
+                if (c.feature(CpuInfo::Feature::X86_Avx512ER))
+                {
+                    suggested = SimdType::X86_Avx512Knl;
+                }
+                else if (c.feature(CpuInfo::Feature::X86_Avx512F))
+                {
+                    suggested = SimdType::X86_Avx512;
+                }
+                else if (c.feature(CpuInfo::Feature::X86_Avx2))
                 {
                     suggested = SimdType::X86_Avx2;
                 }
