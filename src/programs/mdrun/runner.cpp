@@ -1367,6 +1367,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         tMPI_Finalize();
     }
 #endif
+  
+    if (pmedata)
+    {
+        gmx_pme_destroy(pmedata);
+        pmedata = NULL;
+    }
 
     return rc;
 }
