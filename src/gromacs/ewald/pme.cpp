@@ -150,24 +150,15 @@ static void setup_coordinate_communication(pme_atomcomm_t *atc)
     }
 }
 
-int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
+int gmx_pme_destroy(struct gmx_pme_t **pmedata)
 {
-    int i;
-
-    if (NULL != log)
-    {
-        fprintf(log, "Destroying PME data structures.\n");
-    }
-
     sfree((*pmedata)->nnx);
     sfree((*pmedata)->nny);
     sfree((*pmedata)->nnz);
 
-    for (i = 0; i < (*pmedata)->ngrids; ++i)
+    for (int i = 0; i < (*pmedata)->ngrids; ++i)
     {
         pmegrids_destroy(&(*pmedata)->pmegrid[i]);
-        sfree((*pmedata)->fftgrid[i]);
-        sfree((*pmedata)->cfftgrid[i]);
         gmx_parallel_3dfft_destroy((*pmedata)->pfft_setup[i]);
     }
 
