@@ -150,38 +150,6 @@ static void setup_coordinate_communication(pme_atomcomm_t *atc)
     }
 }
 
-int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
-{
-    int i;
-
-    if (NULL != log)
-    {
-        fprintf(log, "Destroying PME data structures.\n");
-    }
-
-    sfree((*pmedata)->nnx);
-    sfree((*pmedata)->nny);
-    sfree((*pmedata)->nnz);
-
-    for (i = 0; i < (*pmedata)->ngrids; ++i)
-    {
-        pmegrids_destroy(&(*pmedata)->pmegrid[i]);
-        sfree((*pmedata)->fftgrid[i]);
-        sfree((*pmedata)->cfftgrid[i]);
-        gmx_parallel_3dfft_destroy((*pmedata)->pfft_setup[i]);
-    }
-
-    sfree((*pmedata)->lb_buf1);
-    sfree((*pmedata)->lb_buf2);
-
-    pme_free_all_work(&(*pmedata)->solve_work, (*pmedata)->nthread);
-
-    sfree(*pmedata);
-    *pmedata = NULL;
-
-    return 0;
-}
-
 /*! \brief Round \p n up to the next multiple of \p f */
 static int mult_up(int n, int f)
 {
@@ -264,6 +232,48 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         snew(atc->spline[thread].thread_one, pme->nthread);
         atc->spline[thread].thread_one[thread] = 1;
     }
+}
+
+/*! \brief Destroy an atom communication data structure and its child structs */
+static void destroy_atomcomm(pme_atomcomm_t *atc)
+{
+    sfree(atc->pd);
+    if (atc->nslab > 1)
+    {
+        sfree(atc->node_dest);
+        sfree(atc->node_src);
+        for (int i = 0; i < atc->nthread; i++)
+        {
+            sfree(atc->count_thread[i]);
+        }
+        sfree(atc->count_thread);
+        sfree(atc->rcount);
+        sfree(atc->buf_index);
+
+        sfree(atc->x);
+        sfree(atc->coefficient);
+        sfree(atc->f);
+    }
+    sfree(atc->idx);
+    sfree(atc->fractx);
+
+    sfree(atc->thread_idx);
+    for (int i = 0; i < atc->nthread; i++)
+    {
+        if (atc->nthread > 1)
+        {
+            int *n_ptr = atc->thread_plist[i].n - gmxCacheLineSize;
+            sfree(n_ptr);
+            sfree(atc->thread_plist[i].i);
+        }
+        sfree(atc->spline[i].thread_one);
+        sfree(atc->spline[i].ind);
+    }
+    if (atc->nthread > 1)
+    {
+        sfree(atc->thread_plist);
+    }
+    sfree(atc->spline);
 }
 
 /*! \brief Initialize data structure for communication */
@@ -1610,5 +1620,41 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             *energy_lj = 0;
         }
     }
+    return 0;
+}
+
+int gmx_pme_destroy(struct gmx_pme_t **pmedata)
+{
+    struct gmx_pme_t *pme = *pmedata;
+
+    sfree(pme->nnx);
+    sfree(pme->nny);
+    sfree(pme->nnz);
+
+    for (int i = 0; i < pme->ngrids; ++i)
+    {
+        pmegrids_destroy(&pme->pmegrid[i]);
+        gmx_parallel_3dfft_destroy(pme->pfft_setup[i]);
+    }
+
+    for (int i = 0; i < pme->ndecompdim; i++)
+    {
+        destroy_atomcomm(&pme->atc[i]);
+    }
+
+    sfree(pme->lb_buf1);
+    sfree(pme->lb_buf2);
+
+    sfree(pme->bufv);
+    sfree(pme->bufr);
+
+    pme_free_all_work(&pme->solve_work, pme->nthread);
+
+    sfree(pme->sum_qgrid_tmp);
+    sfree(pme->sum_qgrid_dd_tmp);
+
+    sfree(*pmedata);
+    *pmedata = NULL;
+
     return 0;
 }
