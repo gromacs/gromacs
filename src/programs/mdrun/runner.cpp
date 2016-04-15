@@ -1330,6 +1330,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     wallcycle_stop(wcycle, ewcRUN);
 
+    if (pmedata)
+    {
+        gmx_pme_destroy(pmedata);
+        pmedata = NULL;
+    }
+
     /* Finish up, write some stuff
      * if rerunMD, don't write last frame again
      */
