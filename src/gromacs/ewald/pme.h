@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,11 +76,11 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible, int nthread);
 
-/*! \brief Destroy the pme data structures resepectively.
+/*! \brief Destroy the PME data structures respectively.
  *
  * \return 0 indicates all well, non zero is an error code.
  */
-int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata);
+int gmx_pme_destroy(struct gmx_pme_t **pmedata);
 
 //@{
 /*! \brief Flag values that control what gmx_pme_do() will calculate

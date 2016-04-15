@@ -768,18 +768,13 @@ void pmegrids_init(pmegrids_t *grids,
 
 void pmegrids_destroy(pmegrids_t *grids)
 {
-    int t;
-
     if (grids->grid.grid != NULL)
     {
         sfree(grids->grid.grid);
 
         if (grids->nthread > 0)
         {
-            for (t = 0; t < grids->nthread; t++)
-            {
-                sfree(grids->grid_th[t].grid);
-            }
+            sfree_aligned(grids->grid_all);
             sfree(grids->grid_th);
         }
     }
@@ -864,6 +859,7 @@ void reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid)
     if (newgrid->grid_th != NULL && newgrid->nthread == oldgrid->nthread)
     {
         sfree_aligned(newgrid->grid_all);
+        newgrid->grid_all = oldgrid->grid_all;
         for (t = 0; t < newgrid->nthread; t++)
         {
             newgrid->grid_th[t].grid = oldgrid->grid_th[t].grid;
