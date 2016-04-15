@@ -768,18 +768,13 @@ void pmegrids_init(pmegrids_t *grids,
 
 void pmegrids_destroy(pmegrids_t *grids)
 {
-    int t;
-
     if (grids->grid.grid != NULL)
     {
         sfree(grids->grid.grid);
 
         if (grids->nthread > 0)
         {
-            for (t = 0; t < grids->nthread; t++)
-            {
-                sfree(grids->grid_th[t].grid);
-            }
+            sfree_aligned(grids->grid_all);
             sfree(grids->grid_th);
         }
     }
