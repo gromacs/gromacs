@@ -925,6 +925,7 @@ TEST_F(SelectionCollectionDataTest, HandlesCharge)
     {
         top_->atoms.atom[i].q = i / 10.0;
     }
+    top_->atoms.atom[5].q = 0.5; //gurantee binary identical
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
