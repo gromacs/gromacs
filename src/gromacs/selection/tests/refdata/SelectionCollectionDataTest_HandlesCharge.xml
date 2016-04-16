@@ -3,8 +3,8 @@
 <ReferenceData>
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
-      <String Name="Input">charge &lt; 0.5</String>
-      <String Name="Text">charge &lt; 0.5</String>
+      <String Name="Input">charge &lt; 0.49</String>
+      <String Name="Text">charge &lt; 0.49</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
   </ParsedSelections>

@@ -917,7 +917,7 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
 TEST_F(SelectionCollectionDataTest, HandlesCharge)
 {
     static const char * const selections[] = {
-        "charge < 0.5"
+        "charge < 0.49"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
