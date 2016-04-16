@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: John Eblen <jeblen@acm.org>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Sat, 16 Apr 2016 11:24:02 +0200
+Reviewed-on: https://gerrit.gromacs.org/5809
+Project: gromacs
+Branch: refs/heads/master
