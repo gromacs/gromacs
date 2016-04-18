@@ -1309,9 +1309,8 @@ void MyMol::CalcMultipoles()
     dip_calc = norm(mu);
 }
 
-void MyMol::computeForces(FILE *fplog, t_commrec *cr)
+void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
 {
-    rvec            mu_tot;
     tensor          force_vir;
     t_nrnb          my_nrnb;
     gmx_wallcycle_t wcycle = wallcycle_init(debug, 0, cr);
@@ -1365,29 +1364,27 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
     }
 }
 
-double MyMol::computeIsoPolarizability(double efield, double ref_mu,
-				       FILE *fplog, t_commrec *cr)
+std::vector<double> MyMol::computePolarizability(double efield,
+				                 FILE *fplog, t_commrec *cr)
 {
 
   const double unit_factor = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
 
-  int m;
-  double isopol = 0.0;
-  double sum_of_mus = 0.0;
+  rvec   mu_tot;
+  int    dim;
+  rvec   mu_ref;
+  std::vector<double> pols;
 
-  for (m = 0; (m < DIM); m++)
-  {
-    snew(inputrec_->ex[m].a, efield);
-    computeForces(fplog, cr);
-    // how to extract dipole moment for each efield?
-    sfree(inputrec_->ex[m].a);
-  }
+  computeForces(fplog, cr, mu_ref);
 
-  if (fabs(sum_of_mus) > (DIM*ref_mu))
+  for (dim = 0; (dim < DIM); dim++)
   {
-    isopol = (((fabs(sum_of_mus) - (DIM*ref_mu))/(efield))/3.0)*(unit_factor);
+    inputrec_->ex[dim].a[0] = efield;
+    computeForces(fplog, cr, mu_tot);
+    pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
+    inputrec_->ex[dim].a[0] = 0;
   }
-  return isopol;
+  return pols;
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
@@ -1402,6 +1399,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  t_commrec                 *cr,
                                  const char                *tabfn)
 {
+    rvec      mu_tot;
     immStatus imm       = immOK;
     real      tolerance = 1e-8;
     int       maxiter   = 1000;
@@ -1493,7 +1491,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
                 if (nullptr != shellfc_)
                 {
-                    computeForces(NULL, cr);
+		  computeForces(NULL, cr, mu_tot);
                 }
                 gr_.calcPot();
                 EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);

@@ -102,6 +102,7 @@ set(ALEXANDRIA_SOURCES
         tune_dip.cpp
         tune_fc.cpp
         tune_pol.cpp
+	optparam.cpp
 #        gen_ff.cpp
 	)
 	

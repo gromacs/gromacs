@@ -94,6 +94,7 @@
 #include "qgen_eem.h"
 #include "regression.h"
 #include "stringutil.h"
+#include "optparam.h"
 
 /*! \brief Write a csv file containing molecule names and bond energy
  *
@@ -399,32 +400,52 @@ void ForceConstants::dump(FILE *fp) const
     }
 }
 
-class OptParam : public MolDip
+class OptPrep : public MolDip
 {
+    using param_type = std::vector<double>;
+
     private:
-        std::vector<ForceConstants> ForceConstants_;
-        std::vector<double>         param_, orig_, best_, lower_, upper_, psigma_;
-
     public:
-        OptParam() {};
 
-        ~OptParam() {};
+        std::vector<ForceConstants> ForceConstants_;
+        param_type  param_, lower_, upper_, best_, orig_, psigma_, pmean_;
 
-        void InitOpt(FILE *fplog,
-                     bool bOpt[ebtsNR],
-                     real factor);
+        /*! \brief
+	 *
+	 * Constructor
+	 */
+        OptPrep() {};
 
-        /*! \brief Check whether molecules are supported by the force field
-         *
-         * Check whether all the atomtypes in the molecules are present
-         * in the force field file. If not the molecules are removed.
-         *
-         * Routine also divides molecules over processors.
-         */
-        void checkSupport(FILE *fp,
-                          bool  bOpt[]);
-        /*! \brief Compute the dissociation energies for all the bonds
-         *
+        /*! \brief
+	 *
+	 * Destructor
+	 */
+        ~OptPrep() {};
+
+         /*! \brief 
+	  * 
+	  * Check whether molecules are supported by the force field.
+	  * Check whether all the atomtypes in the molecules are present
+	  * in the force field file. If not the molecules are removed.
+	  *
+	  * Routine also divides molecules over processors.
+	  */
+        void checkSupport(FILE *fp, bool  bOpt[]);
+
+         /*! \brief
+	 * Fill parameter list from ForceConstants
+	 */
+        void opt2List();
+
+        /*! \brief 
+	 *
+	 * Copy the optimized parameters back to Poldata
+	 */
+        void list2Opt();
+
+        /*! \brief 
+	 *
+	 * Compute the dissociation energies for all the bonds.
          * Given all the bonds and the enthalpies of formation of all
          * molecules, we can approximate the dissociation enthalpy (D0 in the
          * Morse potential by least squares fitting the D0 to reproduce the
@@ -434,248 +455,232 @@ class OptParam : public MolDip
          * energy is the largest contribution to the molecular energy.
          */
         void getDissociationEnergy(FILE *fplog);
-
-        //! Fill parameter list from ForceConstants
-        void Opt2List();
-
-        //! Copy optimized parameters back to Poldata
-        void List2Opt();
+        void InitOpt(FILE *fplog, bool bOpt[ebtsNR], real factor);
+        void guessAll(int iter, real stepsize, bool bRandom, gmx_rng_t rng);
+        void optRun(FILE *fp, FILE *fplog, int maxiter, //real tol,
+		    int nrun, real stepsize, int seed,
+		    bool bRandom, const gmx_output_env_t *oenv,
+		    int nprint, const char *xvgconv, const char *xvgepot,
+		    real temperature, bool bBound);
         void Print(FILE *fp);
-        double CalcDeviation();
-        double EnergyFunction(double v[]);
-        void GuessAll(int iter, real stepsize,
-                      bool bRandom, gmx_rng_t rng);
-        void Optimize(FILE *fp, FILE *fplog,
-                      int maxiter, //real tol,
-                      int nrun, real stepsize, int seed,
-                      bool bRandom, const gmx_output_env_t *oenv,
-                      int nprint,
-                      const char *xvgconv, const char *xvgepot,
-                      real temperature);
-        void Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
-                   int nprint,
-                   double step,
-                   unsigned int seed,
-                   real temperature,
-                   int    maxiter,
-                   double *chi2,
-                   const gmx_output_env_t *oenv);
-        void PrintSpecs(FILE *fp, char *title,
+        void printSpecs(FILE *fp, char *title,
                         const char *xvg, const gmx_output_env_t *oenv,
                         bool bCheckOutliers);
+
+        double calcDeviation();
+        double objFunction(double v[]);
 };
 
-void OptParam::Opt2List()
+void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
 {
-    param_.clear();
-    for (auto &fc : ForceConstants_)
+  int ntotal  = _mymol.size();
+  int nlocal  = 0;
+  
+  for (auto mymol = _mymol.begin(); mymol < _mymol.end(); )
     {
-        for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
+      if (mymol->eSupp != eSupportLocal)
         {
-            for (const auto &p : b->paramValues())
-            {
-                param_.push_back(p);
-            }
+	  continue;
         }
-    }
-}
-
-void OptParam::List2Opt()
-{
-    int n = 0;
-    for (auto &fc : ForceConstants_)
-    {
-        for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
+      bool bSupport = true;
+      
+      for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
         {
-            char buf[STRLEN];
-            buf[0] = '\0';
-
-            for (size_t p = 0; (p < b->nParams()); p++)
+	  int  ft;
+	  if (bOpt[bt])
             {
-                strncat(buf, " ", sizeof(buf)-1);
-                strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
-            }
-            b->setParamString(buf);
-            const std::vector<std::string> bondtypes =
-                gmx::splitString(b->name());
-
-            switch (fc.interactionType())
-            {
-                case InteractionType_BONDS:
-                    {
-                        auto fb = pd_.findBond(bondtypes[0], bondtypes[1], 0);
-                        if (pd_.getBondEnd() != fb)
-                        {
-                            fb->setParams(buf);
-                        }
-                    }
-                    break;
-                case InteractionType_ANGLES:
-                    {
-                        auto fa = pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2]);
-                        if (pd_.getAngleEnd() != fa)
-                        {
-                            fa->setParams(buf);
-                        }
-                    }
-                    break;
-                case InteractionType_PDIHS:
-                case InteractionType_IDIHS:
-                    {
-                        int egd = (fc.interactionType() == InteractionType_PDIHS) ? egdPDIHS : egdIDIHS;
-                        auto fd = pd_.findDihedral(egd, bondtypes[0], bondtypes[1],
-                                                   bondtypes[2], bondtypes[3]);
-                        if (pd_.getDihedralEnd(egd) != fd)
-                        {
-                            fd->setParams(buf);
-                        }
-                    }
-                    break;
-                default:
-                    gmx_fatal(FARGS, "Unsupported InteractionType %d", 
-                              static_cast<int>(fc.interactionType()));
-            }
-        }
-    }
-}
-
-void OptParam::checkSupport(FILE *fp,
-                            bool  bOpt[])
-{
-    int ntotal  = _mymol.size();
-    int nlocal  = 0;
-
-    for (auto mymol = _mymol.begin(); mymol < _mymol.end(); )
-    {
-        if (mymol->eSupp != eSupportLocal)
-        {
-            continue;
-        }
-        bool bSupport = true;
-
-        for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
-        {
-            int  ft;
-            if (bOpt[bt])
-            {
-                switch (bt)
+	      switch (bt)
                 {
-                    case ebtsBONDS:
-                        ft = pd_.getBondFtype();
-                        break;
-                    case ebtsANGLES:
-                        ft = pd_.getAngleFtype();
-                        break;
-                    case ebtsPDIHS:
-                        ft = pd_.getDihedralFtype(egdPDIHS);
-                        break;
-                    case ebtsIDIHS:
-                        ft = pd_.getDihedralFtype( egdIDIHS);
-                        break;
-                    default:
-                        gmx_fatal(FARGS, "Boe");
+		case ebtsBONDS:
+		  ft = pd_.getBondFtype();
+		  break;
+		case ebtsANGLES:
+		  ft = pd_.getAngleFtype();
+		  break;
+		case ebtsPDIHS:
+		  ft = pd_.getDihedralFtype(egdPDIHS);
+		  break;
+		case ebtsIDIHS:
+		  ft = pd_.getDihedralFtype( egdIDIHS);
+		  break;
+		default:
+		  gmx_fatal(FARGS, "Boe");
                 }
-                bSupport = (mymol->ltop_ != nullptr);
-                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
+	      bSupport = (mymol->ltop_ != nullptr);
+	      for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
                 {
-                    int         ai, aj, ak, al;
-                    std::string aai, aaj, aak, aal;
-
-                    ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
-                    aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    if (!(pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                          pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
+		  int         ai, aj, ak, al;
+		  std::string aai, aaj, aak, aal;
+		  
+		  ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
+		  aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
+		  if (!(pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+			pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
                     {
-                        bSupport = false;
+		      bSupport = false;
                     }
-                    switch (bt)
+		  switch (bt)
                     {
-                        case ebtsBONDS:
-                        {
-                            if (pd_.findBond(aai, aaj, 0) == pd_.getBondEnd())
-                            {
-                                bSupport = false;
-                                if (debug)
-                                {
-                                    fprintf(debug, "Cannot find bond %s-%s\n", aai.c_str(), aaj.c_str());
-                                }
-                            }
-                            break;
-                        }
-                        case ebtsANGLES:
-                        {
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            if (!pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
-                            {
-                                bSupport = false;
-                            }
-                            else
-                            {
-                                if (pd_.findAngle(aai, aaj, aak) == pd_.getAngleEnd())
-                                {
-                                    bSupport = false;
-                                    if (debug)
-                                    {
-                                        fprintf(debug, "Cannot find angle %s-%s-%s\n", 
-                                                aai.c_str(), aaj.c_str(), aak.c_str());
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                        case ebtsPDIHS:
-                        case ebtsIDIHS:
-                        {
-                            ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            if (!(pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
-                                  pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
-                            {
-                                bSupport = false;
-                            }
-                            else
-                            {
-                                int egd = (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
-                                if (pd_.findDihedral(egd, aai, aaj, aak, aal) == pd_.getDihedralEnd(egd))
-                                {
-                                    bSupport = false;
-                                    if (debug)
-                                    {
-                                        fprintf(debug, "Cannot find dihedral %s-%s-%s-%s\n", 
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
-                                    }
-                                }
-                            }
-                            break;
-                        }
+		    case ebtsBONDS:
+		      {
+			if (pd_.findBond(aai, aaj, 0) == pd_.getBondEnd())
+			  {
+			    bSupport = false;
+			    if (debug)
+			      {
+				fprintf(debug, "Cannot find bond %s-%s\n", aai.c_str(), aaj.c_str());
+			      }
+			  }
+			break;
+		      }
+		    case ebtsANGLES:
+		      {
+			ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
+			if (!pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
+			  {
+			    bSupport = false;
+			  }
+			else
+			  {
+			    if (pd_.findAngle(aai, aaj, aak) == pd_.getAngleEnd())
+			      {
+				bSupport = false;
+				if (debug)
+				  {
+				    fprintf(debug, "Cannot find angle %s-%s-%s\n", 
+					    aai.c_str(), aaj.c_str(), aak.c_str());
+				  }
+			      }
+			  }
+		      }
+		      break;
+		    case ebtsPDIHS:
+		    case ebtsIDIHS:
+		      {
+			ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
+			al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
+			if (!(pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak) &&
+			      pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
+			  {
+			    bSupport = false;
+			  }
+			else
+			  {
+			    int egd = (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
+			    if (pd_.findDihedral(egd, aai, aaj, aak, aal) == pd_.getDihedralEnd(egd))
+			      {
+				bSupport = false;
+				if (debug)
+				  {
+				    fprintf(debug, "Cannot find dihedral %s-%s-%s-%s\n", 
+					    aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+				  }
+			      }
+			  }
+			break;
+		      }
                     }
                 }
             }
         }
-        if (!bSupport)
+      if (!bSupport)
         {
-            fprintf(stderr, "No force field support for %s\n",
-                    mymol->molProp()->getMolname().c_str());
-            mymol = _mymol.erase(mymol);
+	  fprintf(stderr, "No force field support for %s\n",
+		  mymol->molProp()->getMolname().c_str());
+	  mymol = _mymol.erase(mymol);
         }
-        else
+      else
         {
-            mymol++;
-            nlocal++;
+	  mymol++;
+	  nlocal++;
         }
     }
-    if (PAR(_cr))
+  if (PAR(_cr))
     {
-        gmx_sumi(1, &nlocal, _cr);
+      gmx_sumi(1, &nlocal, _cr);
     }
-    if (NULL != fp)
+  if (NULL != fp)
     {
-        fprintf(fp, "%d out of %d molecules have support in the force field.\n",
-                nlocal, ntotal);
+      fprintf(fp, "%d out of %d molecules have support in the force field.\n",
+	      nlocal, ntotal);
     }
 }
 
-void OptParam::getDissociationEnergy(FILE *fplog)
+void OptPrep::opt2List()
+{
+  param_.clear();
+  for (auto &fc : ForceConstants_)
+    {
+      for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
+        {
+	  for (const auto &p : b->paramValues())
+            {
+	      param_.push_back(p);
+            }
+        }
+    }
+}
+
+void OptPrep::list2Opt()
+{
+  int n = 0;
+  for (auto &fc : ForceConstants_)
+    {
+      for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
+        {
+	  char buf[STRLEN];
+	  buf[0] = '\0';
+	  
+	  for (size_t p = 0; (p < b->nParams()); p++)
+            {
+	      strncat(buf, " ", sizeof(buf)-1);
+	      strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
+            }
+	  b->setParamString(buf);
+	  const std::vector<std::string> bondtypes =
+	    gmx::splitString(b->name());
+	  
+	  switch (fc.interactionType())
+            {
+	    case InteractionType_BONDS:
+	      {
+		auto fb = pd_.findBond(bondtypes[0], bondtypes[1], 0);
+		if (pd_.getBondEnd() != fb)
+		  {
+		    fb->setParams(buf);
+		  }
+	      }
+	      break;
+	    case InteractionType_ANGLES:
+	      {
+		auto fa = pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2]);
+		if (pd_.getAngleEnd() != fa)
+		  {
+		    fa->setParams(buf);
+		  }
+	      }
+	      break;
+	    case InteractionType_PDIHS:
+	    case InteractionType_IDIHS:
+	      {
+		int egd = (fc.interactionType() == InteractionType_PDIHS) ? egdPDIHS : egdIDIHS;
+		auto fd = pd_.findDihedral(egd, bondtypes[0], bondtypes[1],
+					   bondtypes[2], bondtypes[3]);
+		if (pd_.getDihedralEnd(egd) != fd)
+		  {
+		    fd->setParams(buf);
+		  }
+	      }
+	      break;
+	    default:
+	      gmx_fatal(FARGS, "Unsupported InteractionType %d", 
+			static_cast<int>(fc.interactionType()));
+            }
+        }
+    }
+}
+
+void OptPrep::getDissociationEnergy(FILE *fplog)
 {
     double                    **a;
     std::vector<double>         rhs;
@@ -799,54 +804,55 @@ void OptParam::getDissociationEnergy(FILE *fplog)
     }
 }
 
-void OptParam::InitOpt(FILE *fplog,
-                       bool  bOpt[ebtsNR],
-                       real  factor)
+void OptPrep::InitOpt(FILE *fplog, bool bOpt[ebtsNR],
+		    real  factor)
 {
-    std::vector<int> fts;
-    fts.push_back(pd_.getBondFtype());
-    fts.push_back(pd_.getAngleFtype());
-    fts.push_back(pd_.getDihedralFtype(egdPDIHS));
-    fts.push_back(pd_.getDihedralFtype(egdIDIHS));
-
-    for (size_t bt = 0; (bt < fts.size()); bt++)
+  std::vector<int> fts;
+  fts.push_back(pd_.getBondFtype());
+  fts.push_back(pd_.getAngleFtype());
+  fts.push_back(pd_.getDihedralFtype(egdPDIHS));
+  fts.push_back(pd_.getDihedralFtype(egdIDIHS));
+  
+  for (size_t bt = 0; (bt < fts.size()); bt++)
     {
-        ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), bOpt[bt]);
-        fc.analyzeIdef(_mymol, pd_);
-        fc.makeReverseIndex();
-        fc.dump(fplog);
-        ForceConstants_.push_back(fc);
+      ForceConstants fc(bt, fts[bt], static_cast<InteractionType>(bt), bOpt[bt]);
+      fc.analyzeIdef(_mymol, pd_);
+      fc.makeReverseIndex();
+      fc.dump(fplog);
+      ForceConstants_.push_back(fc);
     }
-
-    Opt2List();
-    getDissociationEnergy(fplog);
-    Opt2List();
-    List2Opt();
-
-    best_.resize(param_.size(), 0);
-    orig_.resize(param_.size(), 0);
-    lower_.resize(param_.size(), 0);
-    upper_.resize(param_.size(), 0);
-    psigma_.resize(param_.size(), 0);
-    if (factor < 1)
+  
+  opt2List();
+  getDissociationEnergy(fplog);
+  opt2List();
+  list2Opt();
+  
+  orig_.resize(param_.size(), 0);
+  best_.resize(param_.size(), 0);
+  lower_.resize(param_.size(), 0);
+  upper_.resize(param_.size(), 0);
+  psigma_.resize(param_.size(), 0);
+  pmean_.resize(param_.size(), 0);
+  
+  if (factor < 1)
     {
-        factor = 1/factor;
+      factor = 1/factor;
     }
-    for (size_t i = 0; (i < param_.size()); i++)
+  for (size_t i = 0; (i < param_.size()); i++)
     {
-        best_[i]  = orig_[i] = param_[i];
-        lower_[i] = orig_[i]/factor;
-        upper_[i] = orig_[i]*factor;
+      best_[i]  = orig_[i] = param_[i];
+      lower_[i] = orig_[i]/factor;
+      upper_[i] = orig_[i]*factor;
     }
 }
 
-void OptParam::Print(FILE *fp)
+void OptPrep::Print(FILE *fp)
 {
-    fprintf(fp, "Param        Orig        Best\n");
-    for (size_t k = 0; (k < param_.size()); k++)
+  fprintf(fp, "Param        Orig        Best\n");
+  for (size_t k = 0; (k < param_.size()); k++)
     {
-        fprintf(fp, "%-5d  %10g  %10g\n", static_cast<int>(k),
-                orig_[k], best_[k]);
+      fprintf(fp, "%-5d  %10g  %10g\n", static_cast<int>(k),
+	      orig_[k], best_[k]);
     }
 }
 
@@ -896,136 +902,138 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
     }
 }
 
-double OptParam::CalcDeviation()
+double OptPrep::calcDeviation()
 {
-    int             j;
-    double          ener;
-    FILE           *dbcopy;
+  rvec    mu_tot;
+  int     j;
+  double  ener;
+  FILE   *dbcopy;
 
-    if (PAR(_cr))
+  if (PAR(_cr))
     {
-        gmx_bcast(sizeof(_bDone), &_bDone, _cr);
-        gmx_bcast(sizeof(_bFinal), &_bFinal, _cr);
+      gmx_bcast(sizeof(_bDone), &_bDone, _cr);
+      gmx_bcast(sizeof(_bFinal), &_bFinal, _cr);
     }
-    if (_bDone)
+  if (_bDone)
     {
-        return _ener[ermsTOT];
+      return _ener[ermsTOT];
     }
-    if (NULL != debug)
+  if (NULL != debug)
     {
-        fprintf(debug, "Begin communicating force parameters\n");
-        fflush(debug);
+      fprintf(debug, "Begin communicating force parameters\n");
+      fflush(debug);
     }
-    if (PAR(_cr))
+  if (PAR(_cr))
     {
-        pd_.broadcast(_cr);
+      pd_.broadcast(_cr);
     }
-    if (NULL != debug)
+  if (NULL != debug)
     {
-        fprintf(debug, "Done communicating force parameters\n");
-        fflush(debug);
+      fprintf(debug, "Done communicating force parameters\n");
+      fflush(debug);
     }
-
-    for (j = 0; (j < ermsNR); j++)
+  
+  for (j = 0; (j < ermsNR); j++)
     {
-        _ener[j] = 0;
+      _ener[j] = 0;
     }
-    for (auto &mymol : _mymol)
+  for (auto &mymol : _mymol)
     {
-        if ((mymol.eSupp == eSupportLocal) ||
-            (_bFinal && (mymol.eSupp == eSupportRemote)))
+      if ((mymol.eSupp == eSupportLocal) ||
+	  (_bFinal && (mymol.eSupp == eSupportRemote)))
         {
-            /* Update topology for this molecule */
-            for (const auto fc : ForceConstants_)
+	  /* Update topology for this molecule */
+	  for (const auto fc : ForceConstants_)
             {
-                if (fc.nbad() > 0)
+	      if (fc.nbad() > 0)
                 {
-                    mymol.UpdateIdef(pd_, fc.interactionType());
+		  mymol.UpdateIdef(pd_, fc.interactionType());
                 }
             }
-
-            /* Now compute energy */
-            atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0,
-                     mymol.mdatoms_);
-
-            for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+	  
+	  /* Now compute energy */
+	  atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0,
+		   mymol.mdatoms_);
+	  
+	  for (j = 0; (j < mymol.molProp()->NAtom()); j++)
             {
-                clear_rvec(mymol.f_[j]);
+	      clear_rvec(mymol.f_[j]);
             }
-
-            /* Now optimize the shell positions */
-            dbcopy = debug;
-            debug  = NULL;
-            mymol.computeForces(debug, _cr);
-            debug         = dbcopy;
-            mymol.Force2  = 0;
-            for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+	  
+	  /* Now optimize the shell positions */
+	  dbcopy = debug;
+	  debug  = NULL;
+	  mymol.computeForces(debug, _cr, mu_tot);
+	  debug         = dbcopy;
+	  mymol.Force2  = 0;
+	  for (j = 0; (j < mymol.molProp()->NAtom()); j++)
             {
-                mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+	      mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
             }
-            mymol.Force2      /= mymol.molProp()->NAtom();
-            _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
-            mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
-            ener               = gmx::square(mymol.Ecalc-mymol.Emol);
-            _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
-
-            if (NULL != debug)
+	  mymol.Force2      /= mymol.molProp()->NAtom();
+	  _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
+	  mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
+	  ener               = gmx::square(mymol.Ecalc-mymol.Emol);
+	  _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+	  
+	  if (NULL != debug)
             {
-                fprintf(debug, "%s ener %g Epot %g Force2 %g\n",
-                        mymol.molProp()->getMolname().c_str(), ener,
-                        mymol.Ecalc, mymol.Force2);
+	      fprintf(debug, "%s ener %g Epot %g Force2 %g\n",
+		      mymol.molProp()->getMolname().c_str(), ener,
+		      mymol.Ecalc, mymol.Force2);
             }
         }
     }
-    /* Compute E-bounds */
-    for (size_t j = 0; (j < param_.size()); j++)
+  /* Compute E-bounds */
+  for (size_t j = 0; (j < param_.size()); j++)
     {
-        if (param_[j] < lower_[j])
+      if (param_[j] < lower_[j])
         {
-            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-lower_[j]);
+	  _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-lower_[j]);
         }
-        else if (param_[j] > upper_[j])
+      else if (param_[j] > upper_[j])
         {
-            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-upper_[j]);
+	  _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-upper_[j]);
         }
     }
-
-    for (j = 0; (j < ermsTOT); j++)
+  
+  for (j = 0; (j < ermsTOT); j++)
     {
-        _ener[ermsTOT] += _ener[j];
+      _ener[ermsTOT] += _ener[j];
     }
-
-    if (debug)
+  
+  if (debug)
     {
-        fprintf(debug, "ENER:");
-        for (j = 0; (j < ermsNR); j++)
+      fprintf(debug, "ENER:");
+      for (j = 0; (j < ermsNR); j++)
         {
-            fprintf(debug, "  %8.3f", _ener[j]);
+	  fprintf(debug, "  %8.3f", _ener[j]);
         }
-        fprintf(debug, "\n");
+      fprintf(debug, "\n");
     }
-    /* Global sum energies */
-    if (PAR(_cr))
+  /* Global sum energies */
+  if (PAR(_cr))
     {
 #if GMX_DOUBLE
-        gmx_sumd(ermsNR, _ener, _cr);
+      gmx_sumd(ermsNR, _ener, _cr);
 #else
-        gmx_sumf(ermsNR, _ener, _cr);
+      gmx_sumf(ermsNR, _ener, _cr);
 #endif
     }
-    return _ener[ermsTOT];
+  return _ener[ermsTOT];
 }
 
-double OptParam::EnergyFunction(double v[])
+double OptPrep::objFunction(double v[])
 {
-    /* Copy parameters to topologies */
-    for (size_t i = 0; (i < param_.size()); i++)
+  double rms = 0;
+  for (size_t i = 0; (i < param_.size()); i++)
     {
-        param_[i] = v[i];
+      param_[i] = v[i];
     }
-    List2Opt();
-
-    return CalcDeviation();
+  list2Opt(); /* Copy parameters to topologies */
+  rms = calcDeviation();
+  
+  return rms;
 }
 
 static real guess_new_param(real x, real step, real x0, real x1, gmx_rng_t rng,
@@ -1056,7 +1064,7 @@ static real guess_new_param(real x, real step, real x0, real x1, gmx_rng_t rng,
     }
 }
 
-void OptParam::GuessAll(int iter, real stepsize,
+void OptPrep::guessAll(int iter, real stepsize,
                         bool bRandom, gmx_rng_t rng)
 {
     double   ppp, xxx;
@@ -1088,199 +1096,101 @@ void OptParam::GuessAll(int iter, real stepsize,
     }
 }
 
-void OptParam::Bayes(FILE *fplog, const char *xvgconv, const char *xvgepot,
-                     int nprint,
-                     double step,
-                     unsigned int seed,
-                     real temperature,
-                     int    maxiter,
-                     double *chi2,
-                     const gmx_output_env_t *oenv)
+
+void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
+		     int nrun, real stepsize, int seed,
+		     bool bRandom, const gmx_output_env_t *oenv,
+		     int nprint, const char *xvgconv, const char *xvgepot,
+		     real temperature, bool bBound)
 {
-    int       iter, j, nsum, cur = 0;
-    double    ds, sorig, DE, E[2] = {0, 0}, beta;
-    double   *ssum, *s2sum;
-#define prev (1-cur)
-    gmx_rng_t rng;
-    FILE     *fpc = NULL, *fpe = NULL;
 
-    beta = 1/(BOLTZ*temperature);
-    if (NULL != xvgconv)
-    {
-        fpc = xvgropen(xvgconv, "Parameter convergence", "iteration", "", oenv);
-    }
-    if (NULL != xvgepot)
-    {
-        fpe = xvgropen(xvgepot, "Parameter energy", "iteration", "kT", oenv);
-    }
-    rng = gmx_rng_init(seed);
+  std::vector<double> optx, opts, optm;
+  double              chi2, chi2_min;
+  int                 n, start = 0;
+  gmx_bool            bMinimum = FALSE;
+  gmx_rng_t           rng;
+  
 
-    E[prev] = EnergyFunction(param_.data());
-    *chi2   = E[prev];
-    snew(ssum, param_.size());
-    snew(s2sum, param_.size());
-    nsum = 0;
-    for (j = iter = 0; (iter < maxiter); iter++)
+  auto func = [&] (double v[]) {return objFunction(v);};  
+  
+  if (MASTER(_cr))
     {
-        if ((NULL != fpc) && ((j % nprint) == 0))
+      rng = gmx_rng_init(seed);
+      guessAll(start, stepsize, bRandom, rng);
+      Bayes <double> TuneFc(func, param_, lower_, upper_);
+      TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
+		  temperature, bBound);
+      chi2 = chi2_min = GMX_REAL_MAX;
+      for (n = 0; (n < nrun); n++)
         {
-            fprintf(fpc, "%5d", iter);
-            for (size_t k = 0; (k < param_.size()); k++)
+	  if ((NULL != fp) && (0 == n))
             {
-                fprintf(fpc, "  %10g", param_[k]);
+	      fprintf(fp, "\nStarting run %d out of %d\n", n+1, nrun);
             }
-            fprintf(fpc, "\n");
-        }
-        if ((NULL != fpe) && ((j % nprint) == 0))
-        {
-            fprintf(fpe, "%5d  %10g\n", iter, E[prev]);
-        }
-        ds         = (2*gmx_rng_uniform_real(rng)-1)*step*fabs(param_[j]);
-        sorig      = param_[j];
-        param_[j] += ds;
-        E[cur]     = EnergyFunction(param_.data());
-        DE         = E[cur]-E[prev];
-        if (NULL != debug)
-        {
-            fprintf(debug, "DE = %g ds = %g\n", DE, ds);
-        }
-        if ((DE < 0) || (exp(-beta*DE) > gmx_rng_uniform_real(rng)))
-        {
-            if (NULL != debug)
+	  
+	  TuneFc.simulate();
+	  optx = TuneFc.getBestParam();
+	  opts = TuneFc.getPsigma();
+	  
+	  if (chi2 < chi2_min)
             {
-                fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
-                        j, sorig, param_[j], beta*DE);
-            }
-            *chi2 = E[cur];
-            cur   = prev;
-        }
-        else
-        {
-            param_[j] = sorig;
-        }
-        if (iter >= maxiter/2)
-        {
-            for (size_t k = 0; (k < param_.size()); k++)
-            {
-                ssum[k]  += param_[k];
-                s2sum[k] += gmx::square(param_[k]);
-            }
-            nsum++;
-        }
-        j = (j+1) % param_.size();
-    }
-    gmx_rng_destroy(rng);
-    if (NULL != fpc)
-    {
-        xvgrclose(fpc);
-    }
-    if (NULL != fpe)
-    {
-        xvgrclose(fpe);
-    }
-    if (nsum > 0)
-    {
-        for (size_t k = 0; (k < param_.size()); k++)
-        {
-            ssum[k]  /= nsum;
-            s2sum[k] /= nsum;
-        }
-    }
-    if (NULL != fplog)
-    {
-        fprintf(fplog, "Average and standard deviation of parameters\n");
-        for (size_t k = 0; (k < param_.size()); k++)
-        {
-            psigma_[k] = sqrt(s2sum[k]-gmx::square(ssum[k]));
-            fprintf(fplog, "%5d  %10g  %10g\n",
-                    static_cast<int>(k), ssum[k], psigma_[k]);
-            param_[k] = ssum[k];
-        }
-    }
-    sfree(ssum);
-    sfree(s2sum);
-}
-
-void OptParam::Optimize(FILE *fp, FILE *fplog,
-                        int maxiter,
-                        int nrun, real stepsize, int seed,
-                        bool bRandom, const gmx_output_env_t *oenv,
-                        int nprint,
-                        const char *xvgconv, const char *xvgepot,
-                        real temperature)
-{
-    double    chi2, chi2_min;
-    int       n;
-    gmx_bool  bMinimum = FALSE;
-    gmx_rng_t rng;
-
-    if (MASTER(_cr))
-    {
-        rng = gmx_rng_init(seed);
-
-        chi2 = chi2_min = GMX_REAL_MAX;
-        for (n = 0; (n < nrun); n++)
-        {
-            if ((NULL != fp) && (0 == n))
-            {
-                fprintf(fp, "\nStarting run %d out of %d\n", n+1, nrun);
-            }
-
-            GuessAll(n, stepsize, bRandom, rng);
-
-            Bayes(fplog, xvgconv, xvgepot, nprint,
-                  stepsize, seed, temperature, maxiter, &chi2, oenv);
-
-            if (chi2 < chi2_min)
-            {
-                bMinimum = TRUE;
-                /* Print convergence if needed */
-                for (size_t k = 0; (k < param_.size()); k++)
+	      bMinimum = TRUE;
+	      /* Print convergence if needed */
+	      for (size_t k = 0; (k < param_.size()); k++)
                 {
-                    best_[k] = param_[k];
+		  best_[k]   = optx[k];
+                  psigma_[k] = opts[k];
+		  pmean_[k]  = optm[k];
                 }
-                chi2_min   = chi2;
+	      chi2_min = chi2;
             }
-
-            if (NULL != fp)
+	  
+	  if (NULL != fp)
             {
-                fprintf(fp, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+	      fprintf(fp, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
             }
-            if (NULL != fplog)
+	  if (NULL != fplog)
             {
-                fprintf(fplog, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
-                fflush(fplog);
+	      fprintf(fplog, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+	      fflush(fplog);
             }
+	  guessAll(n+1, stepsize, bRandom, rng);
+	  TuneFc.setParam(param_);
         }
-
-        if (bMinimum)
+      
+      if (bMinimum)
         {
-            param_ = best_;
-
-            double emin = EnergyFunction(best_.data());
-            if (fplog)
+	  param_ = best_;	  
+	  double emin = objFunction(best_.data());
+	  if (fplog)
             {
-                fprintf(fplog, "\nMinimum chi^2 value during optimization: %.3f.\n",
-                        chi2_min);
-                fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f (kJ/mol).\n",
-                        emin);
-                //print_opt(fplog,opt);
+	      fprintf(fplog, "\nMinimum chi^2 value during optimization: %.3f.\n",
+		      chi2_min);
+	      fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f (kJ/mol).\n",
+		      emin);
+	      fprintf(fplog, "Average and standard deviation of parameters\n");
+	      for (size_t k = 0; (k < param_.size()); k++)
+		{
+		  fprintf(fplog, "%5d  %10g  %10g\n",
+			  static_cast<int>(k), pmean_[k], psigma_[k]);
+		}
+	      //print_opt(fplog,opt);
             }
         }
-        CalcDeviation();
-        _bDone = TRUE;
-        gmx_rng_destroy(rng);
+      calcDeviation();
+      _bDone = TRUE;
+      gmx_rng_destroy(rng);
     }
-    else
+  else
     {
-        /* Slave calculators */
-        do
+      /* Slave calculators */
+      do
         {
-            CalcDeviation();
+	  calcDeviation();
         }
-        while (!_bDone);
+      while (!_bDone);
     }
-    CalcDeviation();
+  calcDeviation();
 }
 
 static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
@@ -1324,7 +1234,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
     }
 }
 
-void OptParam::PrintSpecs(FILE *fp, char *title,
+void OptPrep::printSpecs(FILE *fp, char *title,
                           const char *xvg, const gmx_output_env_t *oenv,
                           bool bCheckOutliers)
 {
@@ -1437,7 +1347,7 @@ int alex_tune_fc(int argc, char *argv[])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
@@ -1513,6 +1423,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
+	{ "-bound", FALSE, etBOOL, {&bBound},
+          "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
         { "-weight", FALSE, etBOOL, {&bWeighted},
           "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
         { "-compress", FALSE, etBOOL, {&compress},
@@ -1557,7 +1469,7 @@ int alex_tune_fc(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
-    alexandria::OptParam      opt;
+    alexandria::OptPrep       opt;
     ChargeDistributionModel   iDistributionModel         = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
@@ -1580,6 +1492,8 @@ int alex_tune_fc(int argc, char *argv[])
              false, bPol,
              opt2fn_null("-tab", NFILE, fnm));
 
+    printf("I am out of opt.read()\n");
+
     opt.checkSupport(fp, bOpt);
 
     fprintf(fp, "In the total data set of %d molecules we have:\n",
@@ -1589,21 +1503,21 @@ int alex_tune_fc(int argc, char *argv[])
     opt.InitOpt(fp, bOpt, factor);
 
     print_moldip_mols(fp, opt._mymol, FALSE, FALSE);
-    opt.CalcDeviation();
+    opt.calcDeviation();
     if (MASTER(cr))
     {
-        opt.PrintSpecs(fp, (char *)"Before optimization", NULL, oenv, false);
+        opt.printSpecs(fp, (char *)"Before optimization", NULL, oenv, false);
     }
-    opt.Optimize(MASTER(cr) ? stderr : NULL, fp,
-                 maxiter, nrun, step, seed,
-                 bRandom, oenv, nprint,
-                 opt2fn("-conv", NFILE, fnm),
-                 opt2fn("-epot", NFILE, fnm),
-                 temperature);
+    opt.optRun(MASTER(cr) ? stderr : NULL, fp,
+	       maxiter, nrun, step, seed,
+	       bRandom, oenv, nprint,
+	       opt2fn("-conv", NFILE, fnm),
+	       opt2fn("-epot", NFILE, fnm),
+	       temperature, bBound);
     if (MASTER(cr))
     {
         print_moldip_mols(fp, opt._mymol, TRUE, FALSE);
-        opt.PrintSpecs(fp, (char *)"After optimization",
+        opt.printSpecs(fp, (char *)"After optimization",
                        opt2fn("-x", NFILE, fnm), oenv, true);
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
