@@ -100,6 +100,7 @@ TEST(TabulatedNormalDistributionTest, OutputDouble14)
     {
         result.push_back(dist(rng));
     }
+    checker.setDefaultTolerance(test::ulpTolerance(15)); //compiler usage of FMA in makeTable can cause higher difference
     checker.checkSequence(result.begin(), result.end(), "TabulatedNormalDistributionDouble14");
 }
 
