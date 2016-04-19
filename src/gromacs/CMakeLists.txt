@@ -70,28 +70,39 @@ function (gmx_write_installed_header_list)
 endfunction()
 
 if(GMX_USE_TNG)
-    option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS."
-           OFF)
-    # Detect TNG if GMX_EXTERNAL_TNG is explicitly ON
+    option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS." OFF)
+    option(GMX_EXTERNAL_ZLIB "Use external ZLIB instead of compiling the version shipped with GROMACS as part of TNG." OFF)
+
+    # Detect zlib if the user requires us to use an external
+    # version. If found, it can be used by TNG.
+    if(GMX_EXTERNAL_ZLIB)
+        find_package(ZLIB QUIET)
+        if(NOT ZLIB_FOUND)
+            message(FATAL_ERROR "External zlib compression library was required but could not be found. Set GMX_EXTERNAL_ZLIB to compile zlib as part of GROMACS.")
+        endif()
+        include(gmxTestZLib)
+        gmx_test_zlib(HAVE_ZLIB)
+        if(NOT HAVE_ZLIB)
+            message(FATAL_ERROR "External zlib compression library was required but could not compile and link. Set GMX_EXTERNAL_ZLIB to compile zlib as part of GROMACS.")
+        endif()
+    endif()
+    # Should internal TNG build its internal version of zlib?
+    set(BUILD_OWN_ZLIB 1)
+    if(HAVE_ZLIB AND NOT GMX_EXTERNAL_ZLIB)
+        set(BUILD_OWN_ZLIB 0)
+    endif()
+
+    # Detect TNG if GMX_EXTERNAL_TNG is explicitly ON.
     if(GMX_EXTERNAL_TNG)
-        find_package(TNG_IO 1.6.0)
+        find_package(TNG_IO 1.7.9 QUIET)
         if(NOT TNG_IO_FOUND)
-            message(FATAL_ERROR
-                "TNG >= 1.6.0 not found. "
-                "You can set GMX_EXTERNAL_TNG=OFF to compile TNG.")
+            message(FATAL_ERROR "TNG >= 1.7.9 not found. You can set GMX_EXTERNAL_TNG=OFF to compile TNG as part of GROMACS.")
         endif()
         include_directories(SYSTEM ${TNG_IO_INCLUDE_DIRS})
-    endif()
-    if(NOT GMX_EXTERNAL_TNG)
+    else()
         include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
-        tng_get_source_list(TNG_SOURCES TNG_IO_DEFINITIONS)
+        tng_get_source_list(${BUILD_OWN_ZLIB} TNG_SOURCES TNG_IO_DEFINITIONS)
         list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
-        tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
-
-        if (HAVE_ZLIB)
-            list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
-            include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
-        endif()
     endif()
 else()
     # We still need to get tng/tng_io_fwd.h from somewhere!
