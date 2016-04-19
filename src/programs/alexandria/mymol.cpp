@@ -2128,15 +2128,17 @@ void MyMol::addShells(const Poldata &pd,
     inv_renum.resize(topology_->atoms.nr*2, -1);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
+        renum.push_back(i+ns);
+        inv_renum[i+ns] = i;
         if (pd.getAtypePol(*topology_->atoms.atomtype[i],
                            &pol, &sigpol) && 
-            (pol > 0))
+            (pol > 0) &&
+            (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
         {
-            renum.push_back(i+ns);
-            inv_renum[i+ns] = i;
             ns++;
             p.a[0] = renum[i];
             p.a[1] = renum[i]+1;
+            // TODO remove number 0.001
             p.c[0] = 0.001*pol;
             add_param_to_plist(plist_, F_POLARIZATION, InteractionType_Polarization, p);
         }
