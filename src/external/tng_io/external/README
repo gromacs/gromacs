@@ -1,0 +1,3 @@
+The libraries included in the external directory are not supported by the TNG developers.
+
+zlib: version 1.2.8, with content not necessary for TNG build removed.
