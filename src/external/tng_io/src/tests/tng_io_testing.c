@@ -1134,7 +1134,6 @@ tng_function_status tng_test_utility_functions(tng_trajectory_t traj, const char
                __FILE__, __LINE__);
         return(TNG_FAILURE);
     }
-
     stat = tng_util_trajectory_close(&traj);
     if(stat != TNG_SUCCESS)
     {

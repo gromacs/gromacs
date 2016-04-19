@@ -9,7 +9,7 @@
  * modify it under the terms of the Revised BSD License.
  */
 
-#include "../../include/tng_io.h"
+#include "tng/tng_io.h"
 
 /* The following is for calling the library from fortran */
 

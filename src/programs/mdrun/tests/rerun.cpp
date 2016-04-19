@@ -82,7 +82,7 @@ TEST_P(MdrunRerun, WithDifferentInputFormats)
  * version. */
 const char *trajectoryFileNames[] = {
     "../../../gromacs/gmxana/legacytests/spc2-traj.trr",
-#if defined GMX_USE_TNG && HAVE_ZLIB
+#if defined GMX_USE_TNG
     "../../../gromacs/gmxana/legacytests/spc2-traj.tng",
 #endif
     "../../../gromacs/gmxana/legacytests/spc2-traj.xtc",
