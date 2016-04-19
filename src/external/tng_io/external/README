@@ -1,0 +1,10 @@
+The libraries included in the external directory are not supported by the TNG developers.
+
+zlib: version 1.2.8, with content not necessary for TNG build removed.
+
+Modifications within source files were
+* minor refactoring in crc32.c to make clear that some code should sometimes be unreachable
+* replacing some undefined behaviour (-1L << 16) with well defined value (~0xFFFFL) in inflate.c
+* commenting out unused zlibCompileFlags() declaration and definition
+* removing unnecessary configurability from zconf.h
+* removing #include of unused gzguts.h

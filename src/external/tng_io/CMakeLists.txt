@@ -20,27 +20,33 @@ option(TNG_BUILD_EXAMPLES "Build examples showing usage of the TNG API" ON)
 option(TNG_BUILD_TEST "Build TNG testing binary." ON)
 option(TNG_BUILD_COMPRESSION_TESTS "Build tests of the TNG compression library" OFF)
 
-find_package(ZLIB QUIET)
-option(TNG_BUILD_WITH_ZLIB "Build TNG with zlib compression" ${ZLIB_FOUND})
+option(TNG_BUILD_OWN_ZLIB "Build and use the internal zlib library" OFF)
+if(NOT TNG_BUILD_OWN_ZLIB)
+  find_package(ZLIB QUIET)
+endif()
+
+if (ZLIB_FOUND AND NOT TNG_BUILD_OWN_ZLIB)
+  list(APPEND EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  set(BUILD_OWN_ZLIB OFF)
+else()
+  set(BUILD_OWN_ZLIB ON)
+endif()
 
 include(CheckIncludeFile)
 check_include_file(inttypes.h   HAVE_INTTYPES_H)
 
 include(BuildTNG.cmake)
-tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS)
-
-tng_set_source_properties(WITH_ZLIB ${ZLIB_FOUND})
+tng_get_source_list(${BUILD_OWN_ZLIB} TNG_SOURCES TNG_COMPILE_DEFS)
 
 add_library(tng_io ${TNG_SOURCES})
-
-if (ZLIB_FOUND)
-  list(APPEND EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
-  include_directories(${ZLIB_INCLUDE_DIRS})
-endif()
 
 if (UNIX)
   list(APPEND EXTRA_LIBRARIES m)
 endif()
+
+# Use GNUInstallDirs to set paths on multiarch systems
+include(GNUInstallDirs)
 
 target_link_libraries(tng_io ${EXTRA_LIBRARIES})
 
@@ -53,9 +59,6 @@ configure_file(              src/lib/tng_io-config.cmake.in
 configure_file(              src/lib/tng_io-configVersion.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/cmake/tng_io-configVersion.cmake" @ONLY)
 
-# Use GNUInstallDirst to set paths on multiarch systems
-include(GNUInstallDirs)
-
 # Install the tng_ioConfig.cmake and tng_ioConfigVersion.cmake
 install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/cmake/tng_io-config.cmake"
@@ -63,8 +66,8 @@ install(FILES
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/tng_io")
 
 install(TARGETS tng_io
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 install(FILES include/tng/tng_io.h include/tng/tng_io_fwd.h ${CMAKE_CURRENT_BINARY_DIR}/include/tng/version.h
         DESTINATION include/tng)
