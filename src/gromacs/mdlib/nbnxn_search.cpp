@@ -323,7 +323,7 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
     nbs->a           = NULL;
     nbs->a_nalloc    = 0;
 
-    nbs->nthread_max = nthread_max;
+    nbs->nthread_max = std::max(nthread_max, gmx_omp_nthreads_get(emntNonbonded));
 
     /* Initialize the work data structures for each thread */
     snew(nbs->work, nbs->nthread_max);
@@ -892,7 +892,8 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     snew(nbl_list->nbl, nbl_list->nnbl);
     snew(nbl_list->nbl_fep, nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
-#pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
+    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
     for (int i = 0; i < nbl_list->nnbl; i++)
     {
         try
@@ -2907,7 +2908,8 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
 
     assert(gmx_omp_nthreads_get(emntNonbonded) == nnbl);
 
-#pragma omp parallel for schedule(static) num_threads(nnbl)
+    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for schedule(static) num_threads(nthreads)
     for (int th = 0; th < nnbl; th++)
     {
         try
@@ -4032,7 +4034,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
              */
             progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
 
-#pragma omp parallel for num_threads(nnbl) schedule(static)
+            int nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
             for (int th = 0; th < nnbl; th++)
             {
                 try
@@ -4112,7 +4115,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         }
         else
         {
-#pragma omp parallel for num_threads(nnbl) schedule(static)
+            int nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
             for (int th = 0; th < nnbl; th++)
             {
                 try
