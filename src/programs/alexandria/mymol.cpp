@@ -1196,6 +1196,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     ftb = F_BONDS;
     if (immOK == imm)
     {
+        int lengthUnit = string2unit(pd.getLengthUnit().c_str());
         memset(&b, 0, sizeof(b));
         for (alexandria::BondIterator bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
         {
@@ -1209,11 +1210,19 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                 std::string pp = bb->getParams();
                 std::vector<double> dd = getDoubles(pp);
                 int ii = 0;
-                // TODO FIX THIS 0.001
-                b.c[ii++] = 0.001*bb->getLength();
+                b.c[ii++] = convert2gmx(bb->getLength(), lengthUnit);
                 for(auto &d : dd)
                 {
                     b.c[ii++] = d;
+                }
+                add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
+            }
+            else 
+            {
+                // Insert dummy bond to be replaced later
+                for(int i=0; i < MAXFORCEPARAM; i++)
+                {
+                    b.c[i] = 0;
                 }
                 add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
             }
@@ -2113,7 +2122,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
 void MyMol::addShells(const Poldata &pd, 
                       ChargeDistributionModel iModel)
 {
-    int              i, j, k, iat, shell, ns = 0;
+    int              i, j, k, iat, shell, nshell = 0;
     std::vector<int> renum, inv_renum;
     char             buf[32], **newname;
     t_param          p;
@@ -2126,30 +2135,30 @@ void MyMol::addShells(const Poldata &pd,
     srenew(x_, maxatom);
     memset(&p, 0, sizeof(p));
     inv_renum.resize(topology_->atoms.nr*2, -1);
+    int polarUnit = string2unit(pd.getPolarUnit().c_str());
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        renum.push_back(i+ns);
-        inv_renum[i+ns] = i;
+        renum.push_back(i+nshell);
+        inv_renum[i+nshell] = i;
         if (pd.getAtypePol(*topology_->atoms.atomtype[i],
                            &pol, &sigpol) && 
             (pol > 0) &&
             (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
         {
-            ns++;
+            nshell++;
             p.a[0] = renum[i];
             p.a[1] = renum[i]+1;
-            // TODO remove number 0.001
-            p.c[0] = 0.001*pol;
+            p.c[0] = convert2gmx(pol, polarUnit);
             add_param_to_plist(plist_, F_POLARIZATION, InteractionType_Polarization, p);
         }
     }
     renum.resize(1+topology_->atoms.nr, 0);
-    renum[topology_->atoms.nr] = topology_->atoms.nr + ns;
+    renum[topology_->atoms.nr] = topology_->atoms.nr + nshell;
     if (NULL != debug)
     {
-        fprintf(debug, "added %d shells\n", ns);
+        fprintf(debug, "added %d shells\n", nshell);
     }
-    if (ns > 0)
+    if (nshell > 0)
     {
         t_atom          *shell_atom;
         snew(shell_atom, 1);
@@ -2157,9 +2166,9 @@ void MyMol::addShells(const Poldata &pd,
 
         /* Make new atoms and x arrays */
         snew(newa, 1);
-        init_t_atoms(newa, topology_->atoms.nr+ns, TRUE);
-        snew(newa->atomtype, topology_->atoms.nr+ns);
-        snew(newa->atomtypeB, topology_->atoms.nr+ns);
+        init_t_atoms(newa, topology_->atoms.nr+nshell, TRUE);
+        snew(newa->atomtype, topology_->atoms.nr+nshell);
+        snew(newa->atomtypeB, topology_->atoms.nr+nshell);
         newa->nres = topology_->atoms.nres;
         snew(newx, newa->nr);
         snew(newname, newa->nr);
