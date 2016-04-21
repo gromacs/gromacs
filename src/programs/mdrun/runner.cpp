@@ -96,6 +96,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -1108,6 +1109,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Check and update hw_opt for the number of MPI ranks */
     check_and_update_hw_opt_3(hw_opt);
 
+    char* sts_threads = getenv("GMX_STS_THREADS");
+    if (sts_threads!=nullptr)
+    {
+        STS::startup(atoi(sts_threads));
+    }
+    else
+    {
+        STS::startup(1);
+    }
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
@@ -1387,6 +1397,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                fr ? fr->nbv : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
+    STS::shutdown();
 
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);

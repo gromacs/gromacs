@@ -46,6 +46,7 @@
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/sts/sts.h"
 
 #ifdef GMX_NBNXN_SIMD_2XNN
 
@@ -277,7 +278,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                coulkt, vdwkt = 0;
-    int                nb, nthreads;
+    int                nthreads;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -350,8 +351,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     }
     // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntNonbonded);
-#pragma omp parallel for schedule(static) num_threads(nthreads)
-    for (nb = 0; nb < nnbl; nb++)
+    STS::getInstance("sts")->parallel_for("nonbonded_2xnn", 0, nnbl, [=](size_t nb)
     {
         // Presently, the kernels do not call C++ code that can throw, so
         // no need for a try/catch pair in this OpenMP region.
@@ -428,7 +428,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
                                   out->VSvdw, out->VSc,
                                   out->Vvdw, out->Vc);
         }
-    }
+    });
 
     if (force_flags & GMX_FORCE_ENERGY)
     {

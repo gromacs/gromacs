@@ -91,6 +91,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
@@ -783,6 +784,57 @@ static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
     }
 }
 
+void sts_init_and_assign_threads_for_force_cutsVERLET()
+{
+    const double ratioThreadsForNB = 0.8;
+    const int nthreads = STS::getNumThreads();
+    // const int nthreadsNB = nthreads * ratioThreadsForNB;
+    // const int nthreadsB = nthreads - nthreadsNB;
+    const int nthreadsNB = STS::getNumThreads();
+    const int nthreadsB = STS::getNumThreads();
+    // For now, only a single STS instance exists that is created on the first
+    // call and lasts the entire program.
+    static STS* sts = nullptr;
+    if (sts == nullptr) {
+        sts = new STS("sts");
+    }
+    sts->clearAssignments();
+
+    // First half of threads do nonbonded
+    sts->assign("nonbonded", 0);
+    for (int t=0; t<nthreadsNB; t++) {
+        sts->assign("nonbonded_2xnn", t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+        // sts->assign("stdreduce",      t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+        // sts->assign("nbat_f_to_f",    t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+    }
+
+    // Second half of threads do bonded
+    // sts->assign("bonded", nthreadsNB);
+    sts->assign("bonded", 0);
+    for (int t=nthreadsNB, numer=0; t<nthreads; t++, numer++) {
+        // sts->assign("PME1", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+        // sts->assign("PME2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+        // sts->assign("PME3", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+        // sts->assign("PME4", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+        sts->assign("listed_forces2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+        sts->assign("listed_forces1", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+        // sts->assign("corr",           t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+    }
+
+    // Unassigned tasks (done serially by invoking thread)
+    // sts->assign("listed_manage1", t, {{t, denom},{t+1, denom}});
+    // sts->assign("listed_manage2", t, {{t, denom},{t+1, denom}});
+    // sts->assign("nbnxn_grid",     t, {{t, denom},{t+1, denom}});
+    // sts->assign("nonbonded_4xn",  t, {{t, denom},{t+1, denom}});
+    // sts->assign("nbnxn_search1",  t, {{t, denom},{t+1, denom}});
+    // sts->assign("nbnxn_search2",  t, {{t, denom},{t+1, denom}});
+    // sts->assign("nbnxn_search3",  t, {{t, denom},{t+1, denom}});
+    // sts->assign("nbnxn_search4",  t, {{t, denom},{t+1, denom}});
+    // sts->assign("nbnxn_search5",  t, {{t, denom},{t+1, denom}});
+
+    sts->nextStep();
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1026,6 +1078,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
+    /* Do bonded and nonbonded force calculations */
+    sts_init_and_assign_threads_for_force_cutsVERLET();
+
     if (bUseGPU)
     {
         wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
@@ -1233,6 +1288,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
      * decomposition load balancing.
      */
 
+    STS::getInstance("sts")->run("nonbonded", [&]{
     if (!bUseOrEmulGPU)
     {
         /* Maybe we should move this into do_force_lowlevel */
@@ -1290,7 +1346,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         cycles_force += wallcycle_stop(wcycle, ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
+        nbnxn_atomdata_reduce_nbat_f(nbv->nbs, nbv->grp[aloc].nbat);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
@@ -1311,14 +1367,21 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
     }
+    }); // End Nonbonded Lambda
 
     /* Compute the bonded and non-bonded energies and optionally forces */
+    STS::getInstance("sts")->run("bonded", [&] {
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
+    }); // End Bonded Lambda
+    // TODO: Fix STS and async to work (or not work) properly for GPU (others?)
+    // TODO: Fix cycle counting (final add is now excluded)
+    STS::getInstance("sts")->wait();
+    nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[0].nbat, f);
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1357,6 +1420,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
+                nbnxn_atomdata_reduce_nbat_f(nbv->nbs, nbv->grp[eintNonlocal].nbat);
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
                                                nbv->grp[eintNonlocal].nbat, f);
             }
@@ -1453,6 +1517,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+        nbnxn_atomdata_reduce_nbat_f(nbv->nbs, nbv->grp[eintLocal].nbat);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
                                        nbv->grp[eintLocal].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
