@@ -70,6 +70,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1742,8 +1743,7 @@ void update_coords(FILE             *fplog,
 
     int nth = gmx_omp_nthreads_get(emntUpdate);
 
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (int th = 0; th < nth; th++)
+    STS::getInstance("default")->parallel_for("update_coords", 0, nth, [&](int th)
     {
         try
         {
@@ -1821,8 +1821,8 @@ void update_coords(FILE             *fplog,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 
+    });
 }
 
 

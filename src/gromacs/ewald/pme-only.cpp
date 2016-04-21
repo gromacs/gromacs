@@ -75,6 +75,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
@@ -228,12 +229,17 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         clear_mat(vir_q);
         clear_mat(vir_lj);
 
+        STS *sts = STS::getInstance("force");
+        sts->nextStep();
+        sts->run("PME", [&]{
         gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
                    chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
                    cr, maxshift_x, maxshift_y, mynrnb, wcycle,
                    vir_q, vir_lj,
                    &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
                    GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+        });
+        sts->wait();
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
