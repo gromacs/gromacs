@@ -69,7 +69,7 @@
  * and after a switch point doesn't change too much.
  */
 
-static const bool bHasOmpSupport = GMX_OPENMP;
+static const bool bHasOmpSupport = GMX_STS;
 
 #if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,

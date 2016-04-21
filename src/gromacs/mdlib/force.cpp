@@ -66,6 +66,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -404,8 +405,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 ir->ewald_geometry != eewg3D ||
                 ir->epsilon_surface != 0)
             {
-                int nthreads, t;
-
                 wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
 
                 if (fr->n_tpi > 0)
@@ -413,9 +412,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     gmx_fatal(FARGS, "TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
                 }
 
-                nthreads = fr->nthread_ewc;
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-                for (t = 0; t < nthreads; t++)
+                int nthreads = fr->nthread_ewc;
+                STS::getInstance("force")->parallel_for("corr", 0, nthreads, [&](int t)
                 {
                     try
                     {
@@ -466,7 +464,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                            dvdlt_q, dvdlt_lj);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 if (nthreads > 1)
                 {
                     reduce_thread_energies(fr->vir_el_recip, fr->vir_lj_recip,

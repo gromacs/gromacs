@@ -91,6 +91,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
@@ -490,6 +491,13 @@ static void do_nb_verlet(t_forcerec *fr,
     }
 
     nbvg = &fr->nbv->grp[ilocality];
+    std::string stsKernelLoopName;
+    if (ilocality == eintLocal) {
+         stsKernelLoopName = "nonbonded_loop_local";
+    }
+    else {
+        stsKernelLoopName = "nonbonded_loop_nonlocal";
+    }
 
     /* GPU kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
@@ -529,7 +537,8 @@ static void do_nb_verlet(t_forcerec *fr,
                                   enerd->grpp.ener[egCOULSR],
                                   fr->bBHAM ?
                                   enerd->grpp.ener[egBHAMSR] :
-                                  enerd->grpp.ener[egLJSR]);
+                                  enerd->grpp.ener[egLJSR],
+                                  stsKernelLoopName);
             break;
         case nbnxnk4xN_SIMD_2xNN:
             nbnxn_kernel_simd_2xnn(&nbvg->nbl_lists,
@@ -542,7 +551,8 @@ static void do_nb_verlet(t_forcerec *fr,
                                    enerd->grpp.ener[egCOULSR],
                                    fr->bBHAM ?
                                    enerd->grpp.ener[egBHAMSR] :
-                                   enerd->grpp.ener[egLJSR]);
+                                   enerd->grpp.ener[egLJSR],
+                                   stsKernelLoopName);
             break;
 
         case nbnxnk8x8x8_GPU:
@@ -1026,6 +1036,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
+    /* Do bonded and nonbonded force calculations */
     if (bUseGPU)
     {
         wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
@@ -1233,6 +1244,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
      * decomposition load balancing.
      */
 
+    STS::getInstance("force")->nextStep();
+    STS::getInstance("force")->run("nonbonded", [&]{
     if (!bUseOrEmulGPU)
     {
         /* Maybe we should move this into do_force_lowlevel */
@@ -1290,7 +1303,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         cycles_force += wallcycle_stop(wcycle, ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
+        nbnxn_atomdata_reduce_nbat_f(nbv->nbs, nbv->grp[aloc].nbat);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
@@ -1311,14 +1324,21 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
     }
+    }); // End Nonbonded Lambda
 
     /* Compute the bonded and non-bonded energies and optionally forces */
+    STS::getInstance("force")->run("bonded", [&] {
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
+    }); // End Bonded Lambda
+    // TODO: Fix STS and async to work (or not work) properly for GPU (others?)
+    // TODO: Fix cycle counting (final add is now excluded)
+    STS::getInstance("force")->wait();
+    nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[0].nbat, f);
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1357,6 +1377,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* skip the reduction if there was no non-local work to do */
             if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
+                nbnxn_atomdata_reduce_nbat_f(nbv->nbs, nbv->grp[eintNonlocal].nbat);
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
                                                nbv->grp[eintNonlocal].nbat, f);
             }
@@ -1453,6 +1474,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
+        nbnxn_atomdata_reduce_nbat_f(nbv->nbs, nbv->grp[eintLocal].nbat);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
                                        nbv->grp[eintLocal].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
