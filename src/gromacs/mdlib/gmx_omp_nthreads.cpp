@@ -39,12 +39,19 @@
 
 #include "config.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <numeric> // iota
+#include <vector>
+
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/sts/sts.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -114,7 +121,7 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     char      *env;
     int        nth;
 
-    const bool bOMP = GMX_OPENMP;
+    const bool bOMP = GMX_STS;
 
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
@@ -136,11 +143,11 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
         }
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
-         * OMP_NUM_THREADS also has to be set */
-        if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == NULL)
+         * GMX_STS_THREADS also has to be set */
+        if (bFullOmpSupport && getenv("GMX_STS_THREADS") == NULL)
         {
             gmx_warning("%s=%d is set, the default number of threads also "
-                        "needs to be set with OMP_NUM_THREADS!",
+                        "needs to be set with GMX_STS_THREADS!",
                         modth_env_var[m], nth);
         }
 
@@ -183,19 +190,19 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 
     GMX_RELEASE_ASSERT(nthreads_omp, "nthreads_omp must be a non-NULL pointer");
 
-    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
+    if ((env = getenv("GMX_STS_THREADS")) != NULL)
     {
         int nt_omp;
 
         sscanf(env, "%d", &nt_omp);
         if (nt_omp <= 0)
         {
-            gmx_fatal(FARGS, "OMP_NUM_THREADS is invalid: '%s'", env);
+            gmx_fatal(FARGS, "GMX_STS_THREADS is invalid: '%s'", env);
         }
 
         if (bCommandLineSetNthreadsOMP && nt_omp != *nthreads_omp)
         {
-            gmx_fatal(FARGS, "Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, *nthreads_omp);
+            gmx_fatal(FARGS, "Environment variable GMX_STS_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, *nthreads_omp);
         }
 
         /* Setting the number of OpenMP threads. */
@@ -203,7 +210,7 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 
         /* Output the results */
         sprintf(buffer,
-                "The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n",
+                "The number of OpenMP threads was set by environment variable GMX_STS_THREADS to %d%s\n",
                 nt_omp,
                 bCommandLineSetNthreadsOMP ? " (and the command-line setting agreed with that)" : "");
         if (bIsSimMaster)
@@ -221,6 +228,9 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
             fputs(buffer, debug);
         }
     }
+    else if (!bCommandLineSetNthreadsOMP) {
+        gmx_fatal(FARGS, "Either GMX_STS_THREADS must be set or number of threads given on the command line with -ntomp");
+    }
 }
 
 /*! \brief Helper function for parsing various input about the number
@@ -229,17 +239,14 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
                                             const t_commrec     *cr,
                                             bool                 bOMP,
-                                            int                  nthreads_hw_avail,
+                                            int      gmx_unused  nthreads_hw_avail,
                                             int                  omp_nthreads_req,
                                             int                  omp_nthreads_pme_req,
                                             gmx_bool gmx_unused  bThisNodePMEOnly,
                                             gmx_bool             bFullOmpSupport,
-                                            int                  nppn,
+                                            int      gmx_unused  nppn,
                                             gmx_bool             bSepPME)
 {
-    int      nth;
-    char    *env;
-
 #if GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety, the
      * detection is done on the master only. It is not thread-safe
@@ -264,55 +271,26 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
     /* With full OpenMP support (verlet scheme) set the number of threads
      * per process / default:
      * - 1 if not compiled with OpenMP or
-     * - OMP_NUM_THREADS if the env. var is set, or
+     * - GMX_STS_THREADS if the env. var is set, or
      * - omp_nthreads_req = #of threads requested by the user on the mdrun
      *   command line, otherwise
      * - take the max number of available threads and distribute them
      *   on the processes/tMPI threads.
      * ~ The GMX_*_NUM_THREADS env var overrides the number of threads of
      *   the respective module and it has to be used in conjunction with
-     *   OMP_NUM_THREADS.
+     *   GMX_STS_THREADS.
      *
      * With the group scheme OpenMP multithreading is only supported in PME,
      * for all other modules nthreads is set to 1.
      * The number of PME threads is equal to:
      * - 1 if not compiled with OpenMP or
      * - GMX_PME_NUM_THREADS if defined, otherwise
-     * - OMP_NUM_THREADS if defined, otherwise
+     * - GMX_STS_THREADS if defined, otherwise
      * - 1
      */
-    nth = 1;
-    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
-    {
-        if (!bOMP && (std::strncmp(env, "1", 1) != 0))
-        {
-            gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
-                        gmx::getProgramContext().displayName());
-        }
-        else
-        {
-            nth = gmx_omp_get_max_threads();
-        }
-    }
-    else if (omp_nthreads_req > 0)
-    {
-        nth = omp_nthreads_req;
-    }
-    else if (bFullOmpSupport && bOMP)
-    {
-        /* max available threads per node */
-        nth = nthreads_hw_avail;
-
-        /* divide the threads among the MPI processes/tMPI threads */
-        if (nth >= nppn)
-        {
-            nth /= nppn;
-        }
-        else
-        {
-            nth = 1;
-        }
-    }
+    // Simplify greatly for STS
+    int nth = omp_nthreads_req;
+    gmx_omp_nthreads_read_env(&nth, true);
 
     /* now we have the global values, set them:
      * - 1 if not compiled with OpenMP and for the group scheme
@@ -508,6 +486,703 @@ issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
     }
 }
 
+const  int NUM_WORK_GAPS = 10;
+static int numNLNBGaps; // Number of 'N's in gapTaskType array. Must be 1-4.
+                        // Needed to compute nbr. list counts for L and N gaps.
+static char gapTaskType[NUM_WORK_GAPS]; // E: empty (no task done during this gap)
+                                        // L: local nonbonded forces
+                                        // N: nonlocal nonbonded forces
+                                        // R: reduce forces
+static int gapNblCount[NUM_WORK_GAPS];  // number of nbr. lists per gap
+
+/*! \brief
+ * Return whether threads should yield at the given yield point
+ *
+ * Note: Only the main thread should call this function since it modifies internal
+ * state (the static "fftCommNo" variable).
+ *
+ * This function is necessary because the task schedule does not indicate when
+ * "high priority" tasks (yield targets) should be run. That information is
+ * only encoded in the "gapTaskType".
+ *
+ * \return whether to yield, based on user-configured schedule
+ */
+static int fftCommNo = 0; // FFT comm no. for current step (reset after each step)
+bool shouldYield() {
+    fftCommNo++;
+    if (fftCommNo < 5) {
+        return (gapTaskType[fftCommNo+3] != 'E');
+    }
+    return false;
+}
+
+/*! \brief
+ * Call this function before each simulation step to reset STS variables
+ */
+void markStepStart() {
+    fftCommNo = 0;
+}
+
+// Sets the granularity of the nbr. list portions. (Portions are multiples of
+// units of size 1/nblDenom.)
+const int nblDenom = 1000;
+
+static bool haveNBOnlyThreads;
+static int  nthreadsLL;
+static int  nthreadsOnlyNB;
+static int  numNbls;
+static bool adjustNBs;
+
+// Mechanism for storing and retrieving computed portions
+static std::vector<Ratio> nblPortionsLocal;
+static std::vector<Ratio> nblPortionsNonlocal;
+Range<Ratio> getNblWorkPortion(int nblId, int iloc)
+{
+    std::vector<Ratio> &v = iloc == eintLocal ? nblPortionsLocal : nblPortionsNonlocal;
+    return { v[nblId], v[nblId+1] };
+}
+
+
+enum TimeType {start,end};
+
+struct STSGapBoundary {
+    TimeType type;
+    int stbegin; // First subtask that works in this gap
+    int stend;   // Last subtask that works in this gap
+    long time;   // Absolute time that boundary occurred, averaged across subtasks
+    STSGapBoundary(TimeType tt, int b, int e, long t)
+                   :type(tt), stbegin(b), stend(e), time(t) {}
+};
+
+/*! \brief
+ * For a given task, get data about work gap boundaries on the previous step.
+ *
+ * \param[in]  taskName  name of task
+ * \param[out] gapBounds vector to store gap bounds data
+ *             Contains gap boundaries (starts and ends) sorted by time 
+ *
+ * \return     total amount of work done in previous step
+ */
+long getGapData(std::string taskName, std::vector<STSGapBoundary>& gapBounds) {
+    STS* sts = STS::getInstance("force");
+    // -1 because thread 0 does not do NB or reduction
+    std::vector<const SubTask*> st = sts->getTask(taskName)->getSubTasks();
+    gapBounds.clear();
+    long totalWork = 0;
+
+    // Use current time as end boundary time for unbounded gaps
+    auto tpnow = time_point_cast<microseconds>(sts_clock::now());
+    long maxTime = tpnow.time_since_epoch().count();
+
+    const SubTask* stPME = STS::getInstance("force")->getSubTask(0, "PME1");
+    std::vector<long> fftCommEndTime = stPME->getAuxTimes("fft_comm");
+
+    // Gap for NB-only threads, which is unbounded on the end because these
+    // threads have no other work to do.
+    // Note that this gap is not one of the NUM_WORK_GAPS gaps, which are
+    // used by the other, non-dedicated threads.
+    if (haveNBOnlyThreads) {
+        long startTime = 0;
+        for (int sti=0; sti<nthreadsOnlyNB; sti++) {
+            startTime += st[sti]->getRunStartTime();
+            totalWork += st[sti]->getRunEndTime() - st[sti]->getRunStartTime();
+        }
+        gapBounds.emplace_back(start,0,nthreadsOnlyNB,startTime/nthreadsOnlyNB);
+        gapBounds.emplace_back(end,  0,nthreadsOnlyNB,maxTime);
+    }
+
+    char taskCode;
+    if (taskName == "nonbonded_loop_local") {
+        taskCode = 'L';
+    }
+    else if (taskName == "nonbonded_loop_nonlocal") {
+        taskCode = 'N';
+    }
+    else if (taskName == "stdreduce") {
+        taskCode = 'R';
+    }
+    else {
+        assert(false);
+        return -1;
+    }
+
+    // Which gaps are used for the given task?
+    std::vector<int> relevantGaps;
+    for (int i=0; i<NUM_WORK_GAPS; i++) {
+        if (gapTaskType[i] == taskCode) {
+            relevantGaps.push_back(i);
+        }
+    }
+
+    int stbegin = nthreadsOnlyNB;
+    int stend = stbegin + nthreadsLL-1;
+    for (int gapNum : relevantGaps) {
+        long endTime = 0;
+        switch (gapNum) {
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+                endTime = fftCommEndTime[gapNum-4];
+                break;
+            case 9:
+                endTime = maxTime;
+                break;
+            default:
+                endTime = st[stbegin]->getNextRunAvailTime();
+                for (int sti=stbegin+1; sti<stend; sti++) {
+                    endTime = std::min(endTime, st[sti]->getNextRunAvailTime());
+                }
+        }
+        long startTime = 0;
+        for (int sti=stbegin; sti<stend; sti++) {
+            startTime += st[sti]->getRunStartTime();
+            totalWork += st[sti]->getRunEndTime() - st[sti]->getRunStartTime();
+        }
+
+        long avgStartTime = startTime/(nthreadsLL-1);
+        gapBounds.emplace_back(start,stbegin,stend,avgStartTime);
+        // Watch out for negative or zero gap sizes and compensate for overruns
+        endTime = std::max(avgStartTime+1, endTime);
+        gapBounds.emplace_back(end,stbegin,stend,endTime);
+
+        stbegin += (nthreadsLL-1);
+        stend   += (nthreadsLL-1);
+    }
+    
+    std::sort(gapBounds.begin(), gapBounds.end(),
+        [](const STSGapBoundary& gb1, const STSGapBoundary& gb2) -> bool
+        {
+            return gb1.time < gb2.time;
+        }
+    );
+    return totalWork;
+}
+
+/*! \brief
+ * Create a vector of work distributions as units of time (microseconds) for
+ * each subtask.
+ *
+ * The distribution is based on how much time each subtask had available for
+ * work in the previous step.
+ *
+ * \param[in]  taskName name of task to distribute
+ * \param[out] stWork   vector to store work distributions
+ * \return     total amount of work done in previous step
+ */
+long distributeWork(const std::string& taskName, std::vector<long>& stWork) {
+    std::vector<STSGapBoundary> gapBounds;
+    const long totalWork = getGapData(taskName,gapBounds);
+
+    // Iterate through the intervals, "pouring" work into the threads that are
+    // active for that interval until all work has been assigned.
+    std::set<int> availSTs;
+
+    long istart = 0;
+    long iend = gapBounds[0].time;
+    long remWork = totalWork;
+    size_t numsts = STS::getInstance("force")->getTask(taskName)->getSubTasks().size();
+    stWork.assign(numsts,0);
+    for (size_t gb = 0; gb < gapBounds.size()-1; gb++) {
+        istart = iend;
+        iend = gapBounds[gb+1].time;
+        if (gapBounds[gb].type == start) {
+            for (int st=gapBounds[gb].stbegin; st<gapBounds[gb].stend; st++) {
+                availSTs.insert(st);
+            }
+        }
+        else {
+            for (int st=gapBounds[gb].stbegin; st<gapBounds[gb].stend; st++) {
+                availSTs.erase(st);
+            }
+        }
+        long gapWork = std::min((iend - istart)*((long)availSTs.size()), remWork);
+        for (int ast : availSTs) {
+            stWork[ast] += (gapWork / availSTs.size());
+        }
+        remWork -= gapWork;
+        if (remWork <= 0) {
+            break;
+        }
+    }
+
+    return totalWork;
+}
+
+//! \brief Helper function to evenly divide units over a range of "slots"
+template<typename Iter>
+void dist_units_evenly(Iter start, Iter end, int nunits) {
+    int nslots = std::distance(start,end);
+    int p = nunits / nslots;
+    int r = nunits % nslots;
+    for (int s=0; s<nslots; s++)
+    {
+        *(start + s) = (s < r ? p+1 : p);
+    }
+}
+
+//! \brief Helper function to evenly divide a ratio interval over a range of "slots"
+template<typename Iter>
+void dist_work_evenly(Iter start, Iter end, int numerStart, int numerEnd, int denom) {
+    int nslots = std::distance(start,end)-1;
+    int nunits = numerEnd - numerStart;
+    int p = nunits / nslots;
+    int r = nunits % nslots;
+    int numer = numerStart;
+    for (int s=0; s<=nslots; s++)
+    {
+        *(start + s) = {numer,denom};
+        numer += (s < r ? p+1 : p);
+    }
+}
+
+//! \brief Set initial nbr. list portions
+void sts_init_nbl_portions() {
+    nblPortionsLocal.resize(numNbls+1);
+    nblPortionsNonlocal.resize(numNbls+1);
+    dist_work_evenly(nblPortionsLocal.begin(), nblPortionsLocal.end(), 0, nblDenom, nblDenom);
+    dist_work_evenly(nblPortionsNonlocal.begin(), nblPortionsNonlocal.end(), 0, nblDenom, nblDenom);
+}
+
+//! \brief Print nbr. list portions
+void sts_report_nbl_portions() {
+    for (int p = 0; p < numNbls; p++) {
+        std::cerr << "Portion " << p << " " << getNblWorkPortion(p, eintNonlocal).toString() << std::endl;
+    }
+}
+
+/*! \brief
+ * Compute nbr. list portions given a time duration for each subtask
+ *
+ * \param[in] subTaskTimes vector of time durations in microseconds, one per subtask
+ * \param[in] totalWork total amount of work to be done in microseconds
+ * \param[in] taskName name of task
+ */
+void setNblPortions(const std::vector<long> &subTaskTimes, long totalWork,
+                          std::string taskName, std::vector<Ratio> &intervals) {
+    std::vector<double> subTaskDist;
+    for (long t : subTaskTimes) {
+        subTaskDist.push_back(t * 1.0 / totalWork);
+    }
+
+    // AU: assigned units. Must assign exactly nblDenom units to nbr. lists
+    int totalAUs = 0;
+    size_t auSize = taskName == "stdreduce" ? subTaskDist.size() : numNbls;
+    std::vector<int> au(auSize,0);
+
+    // Setting portions for reduction is simpler because there is no mapping of
+    // subtasks to nbr. lists
+    if (taskName == "stdreduce") {
+        // Zero reduction work for subtasks of hidden NB-only threads.
+        size_t startST = haveNBOnlyThreads ? 0 : nthreadsOnlyNB;
+        for (size_t sti=startST; sti<subTaskDist.size(); sti++) {
+            au[sti] = std::max(1.0, round(subTaskDist[sti] * nblDenom));
+            totalAUs += au[sti];
+        }
+    }
+
+    else {
+        bool isLocal = taskName == "nonbonded_loop_local" ? true : false;
+        // Which gaps are used for the given task?
+        std::vector<int> relevantGaps;
+        for (int i=0; i<NUM_WORK_GAPS; i++) {
+            if (gapTaskType[i] == (isLocal ? 'L' : 'N')) {
+                relevantGaps.push_back(i);
+            }
+        }
+
+        // Nbr. lists for NB-only threads
+        if (haveNBOnlyThreads) {
+            for (int sti=0; sti<nthreadsOnlyNB; sti++) {
+                au[sti] = std::max(1.0, round(subTaskDist[sti] * nblDenom));
+                totalAUs += au[sti];
+            }
+        }
+
+        // Nbr. lists for LL threads. Each subtask (gap) may process multiple nbr.
+        // lists, as indicated in "gapNblCount." So extra logic is needed to look
+        // up the value and then divide the units.
+        int nbli = haveNBOnlyThreads ? nthreadsOnlyNB : 0;
+        for (size_t sti=nthreadsOnlyNB; sti < subTaskTimes.size(); sti++) {
+            // -1 in denominator because thread 0 does not do NB
+            int gapNum = (sti - nthreadsOnlyNB) / (nthreadsLL - 1);
+            assert(gapNum < relevantGaps.size());
+            int numNblsInGap = gapNblCount[relevantGaps[gapNum]];
+            assert(numNblsInGap > 0); // Force gaps must have at least one nbr. list.
+            int units = std::max(1.0, round(subTaskDist[sti] * nblDenom / numNblsInGap));
+            for (int i=0; i < numNblsInGap; i++) {
+                au[nbli] = units;
+                totalAUs += units;
+                nbli++;
+            }
+        }
+    }
+
+    // Adjust AUs so that exactly nblDenom are assigned
+    // Will not terminate if au.size() > nblDenom, due to forced minimum AU of 1
+    assert(au.size() <= nblDenom);
+    int i=0;
+    int skip = 0;
+    
+    // Zero reduction work for subtasks of hidden NB-only threads.
+    if (taskName == "stdreduce" && !haveNBOnlyThreads) {
+        skip = nthreadsOnlyNB;
+    }
+    while (totalAUs != nblDenom) {
+        int j = i % (au.size() - skip) + skip;
+        if (totalAUs < nblDenom) {
+            au[j]++;
+            totalAUs++;
+        }
+        else if (au[j] > 1) {
+            au[j]--;
+            totalAUs--;
+        }
+        i++;
+    }
+
+    // Finally, convert AUs to a set of ranges
+    intervals.assign(1,0);
+    int numer = 0;
+    for (int u : au) {
+        numer += u;
+        intervals.push_back( {numer, nblDenom} );
+    }
+    assert(numer == nblDenom);
+}
+
+//! \brief Main entry point to readjust nbr. list sizes (portions)
+void sts_adjust_nbl_portions() {
+    if (!adjustNBs) {
+        return;
+    }
+
+    wallcycle_sub_start(wcycle, ewcsSTS);
+    std::vector<long> subTaskTimes;
+
+    long totalWork = distributeWork("nonbonded_loop_local", subTaskTimes);
+    setNblPortions(subTaskTimes, totalWork, "nonbonded_loop_local", nblPortionsLocal);
+
+    totalWork = distributeWork("nonbonded_loop_nonlocal", subTaskTimes);
+    setNblPortions(subTaskTimes, totalWork, "nonbonded_loop_nonlocal", nblPortionsNonlocal);
+
+    totalWork = distributeWork("stdreduce", subTaskTimes);
+    std::vector<Ratio> redPortions;
+    setNblPortions(subTaskTimes, totalWork, "stdreduce", redPortions);
+    STS::getInstance("force")->setTaskRanges("stdreduce", redPortions);
+    wallcycle_sub_stop(wcycle, ewcsSTS);
+}
+
+void sts_report_force_timings(int rank) {
+    int num_ranks;
+    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+    STS* sts = STS::getInstance("force");
+    for (int r=0; r<=num_ranks; r++) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (r==rank) {
+            for(int t=0; t<STS::getNumThreads(); t++) {
+                dprintf(2, "RANK %d: Thread %d\n", rank, t);
+                for (int s = 0; s<sts->getNumSubTasks(t); s++) {
+                    const SubTask* st = sts->getSubTask(t,s);
+                    std::cerr << "RANK " << rank << ": " << st->getTask()->getLabel() << " " << st->getWaitStartTime() << " " << st->getRunStartTime() << " " << st->getRunEndTime() << std::endl;
+                    if (t==0 && st->getTask()->getLabel() == "PME1") {
+                        int comm_id = 0;
+                        for (long t : st->getAuxTimes("fft_comm")) {
+                            std::cerr << "RANK " << rank << ": " << "fft_comm" << comm_id << " " << t << std::endl;
+                            comm_id++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+//! \brief Creates the STS schedule for computing forces.
+void sts_create_schedule_for_force_compute(const t_commrec *cr, bool doInit,
+       SchedType stype, double ratioThreadsForNB, char* gapTask, int ndecompdim,
+       bool haveNBThreads)
+{
+    // Initialize if and only if this is the first call. Note that doInit is
+    // not really needed but makes the difference between the first call and
+    // subsequent calls explicit.
+    static bool firstCall = true;
+    assert(firstCall == doInit);
+    firstCall = false;
+
+    // Ratio and schedule type are set permanently by the first call.
+    // Can only change thread counts before thread initialization (and before MD starts)
+    // Thread counts for nonbonded, bonded, and PME cannot change during run.
+    static SchedType schedType = SchedType::DEFAULT;
+    if (doInit) {
+        schedType = stype;
+    }
+
+    // Schedule for force computations. Note that STS caches the instance for us.
+    STS* sts;
+    if (doInit) {
+        sts = new STS("force");
+    }
+    else {
+        sts = STS::getInstance("force");
+    }
+    sts->clearAssignments();
+
+    const int nthreads = STS::getNumThreads();
+    if (schedType == SchedType::DEFAULT || nthreads == 1) {
+        sts->setDefaultSchedule();
+        if (doInit) {
+            new MMBarrier(nthreads, "fft");
+        }
+        // Note: Static, file-level variable
+        numNbls = nthreads;
+        sts_init_nbl_portions();
+        // Note: Static, file-level variable
+        adjustNBs = false;
+        // TODO: We should also set the env. variables in this case, even
+        // though the current default is to use all threads.
+        return;
+    }
+
+    // Set gap data
+
+    int numGapsL  = 0;
+    int numGapsNL = 0;
+    for (int i=0; i<NUM_WORK_GAPS; i++) {
+      if (gapTask[i] == 'L') numGapsL++;
+      if (gapTask[i] == 'N') numGapsNL++;
+      gapTaskType[i] = gapTask[i];
+    }
+
+    // Compute number of nbr. lists for each gap (non-zero only for NB gaps)
+    // Nbr. lists are separate for local and nonlocal NB but the totals must
+    // be equal. Thus, some NB gaps may have more than one nbr. list.
+    int numNblBoth = std::max(numGapsL, numGapsNL);
+    std::vector<int> nblCountL (numGapsL, 0);
+    std::vector<int> nblCountNL(numGapsNL,0);
+    dist_units_evenly(nblCountL.begin(),  nblCountL.end(),  numNblBoth);
+    dist_units_evenly(nblCountNL.begin(), nblCountNL.end(), numNblBoth);
+
+    int gapIdxL  = 0;
+    int gapIdxNL = 0;
+    int numRedGaps = 0;
+    for (int i=0; i<NUM_WORK_GAPS; i++)
+    {
+        switch(gapTaskType[i]) {
+        case 'L':
+            gapNblCount[i] = nblCountL[gapIdxL];
+            gapIdxL++;
+            break;
+        case 'N':
+            gapNblCount[i] = nblCountNL[gapIdxNL];
+            gapIdxNL++;
+            break;
+        case 'R':
+            numRedGaps++;
+            break;
+        default:
+            gapNblCount[i] = 0; 
+        }
+    }
+
+    // Set various constants
+
+    // Threads that do non-NB force computations (low-level (LL) forces)
+    const int  mainThreadLL = 0;
+    // Need at least 2 LL threads but leave one thread for NB.
+    int nthreadsLLTmp = std::max(2.0, (1.0-ratioThreadsForNB) * nthreads);
+    nthreadsLLTmp = std::min(nthreadsLLTmp, nthreads-1);
+    // If no NB threads, ignore the computed value and use all threads but one.
+    // (Remaining thread is the "hidden" (from user) NB management thread.)
+    // Note: static, file-level variables
+    nthreadsLL  = haveNBThreads ? nthreadsLLTmp : (nthreads-1);
+    haveNBOnlyThreads = haveNBThreads;
+    nthreadsOnlyNB = nthreads-nthreadsLL;
+
+    // Note that main NB thread is not thread 1 but first non-LL thread
+    const int  mainThreadNB = nthreadsLL;
+    // All threads except 0 do some NB work
+    const int nthreadsNB = nthreads-1;
+    // Threads that do both LL and NB (threadsLL without thread 0)
+    const int  nthreadsBoth = nthreadsLL-1;
+    const bool doPP  = (cr->duty & DUTY_PP);
+    const bool doPME = (cr->duty & DUTY_PME);
+    // PME is done by the lowlevel threads unless this is a PME-only process.
+    // Then all threads are used for PME.
+    const int firstThreadPME = doPP ? mainThreadLL : 0;
+    const int nthreadsPME = doPME ? (doPP ? nthreadsLL : nthreads) : 0;
+
+    // One nbr. list per NB thread, except for "both" threads to support
+    // alternating between NB and LL work (could be avoided if coroutines
+    // were supported). These threads receive additional nbr. lists based on
+    // the number of gaps assigned to NB work.
+    // Hidden thread does no nbr. list processing, so do not include if present.
+    const int numNblsOnlyNB = (haveNBThreads ? nthreadsOnlyNB : 0);
+    // Note: Static, file-level variable
+    numNbls = numNblBoth * nthreadsBoth + numNblsOnlyNB;
+    sts_init_nbl_portions();
+    // Note: Static, file-level variable
+    adjustNBs = true;
+
+    // Various thread sets
+    std::vector<int> threadsLL(nthreadsLL);
+    std::iota(threadsLL.begin(),threadsLL.end(), mainThreadLL);
+    std::vector<int> threadsNB(nthreadsNB);
+    std::iota(threadsNB.begin(), threadsNB.end(), 1);
+    std::vector<int> threadsOnlyNB(nthreadsOnlyNB);
+    std::iota(threadsOnlyNB.begin(), threadsOnlyNB.end(), mainThreadNB);
+    std::vector<int> threadsBoth(nthreadsBoth);
+    std::iota(threadsBoth.begin(), threadsBoth.end(), mainThreadLL+1);
+    std::vector<int> threadsPME(nthreadsPME);
+    std::iota(threadsPME.begin(), threadsPME.end(), firstThreadPME);
+
+    // Now do actual assignment of threads
+    if (DOMAINDECOMP(cr)) {
+        sts->assign_run("xcomm", mainThreadLL);
+    }
+
+    // Assign NB-only threads.
+    sts->assign_run("nonbonded", mainThreadNB);
+    // Hidden thread should do no work in the compute kernel.
+    sts->assign_loop("nonbonded_loop_local", threadsOnlyNB,
+                                             { 0, {numNblsOnlyNB,numNbls} });
+    if (DOMAINDECOMP(cr)) {
+        sts->assign_loop("nonbonded_loop_nonlocal", threadsOnlyNB,
+                                                    { 0, {numNblsOnlyNB,numNbls} });
+    }
+    if (numNbls > 1) {
+        // Initially assign all reduction work to dedicated NB threads
+        if (haveNBOnlyThreads) {
+            sts->assign_loop("stdreduce", threadsOnlyNB);
+        }
+        // If no dedicated threads, admin thread does no loops
+        else {
+            sts->assign_loop("stdreduce", threadsOnlyNB, {0,0});
+        }
+        // sts->assign_loop("nbat_f_to_f", threadsNB);
+    }
+
+    int nblStartL  = numNblsOnlyNB;
+    int nblStartNL = numNblsOnlyNB;
+    int redGapNum  = 0;
+    for (int gapNum = 0; gapNum < NUM_WORK_GAPS; gapNum++) {
+        // Assign non-gap tasks done prior to this gap
+        switch(gapNum) {
+            case 1:
+                if (DOMAINDECOMP(cr)) {
+                    sts->assign_loop("nbat_x_to_x", threadsLL, {0,1});
+                }
+                sts->assign_run("lowlevel", 0);
+                sts->assign_loop("listed_forces2", threadsLL);
+                sts->assign_loop("listed_forces1", threadsLL);
+                sts->assign_loop("calc_pidx_wrapper_1", threadsLL);
+                break;
+            case 2:
+                // TODO: If ndecompdim > 2, then we are not using comm gaps between these
+                // additional calls to calc_pidx_wrapper.
+                for (int d=2; d<=ndecompdim; d++) {
+                    sts->assign_loop("calc_pidx_wrapper_" + std::to_string(d), threadsLL);
+                }
+                break;
+            case 3:
+                sts->assign_loop("calc_splines", threadsPME);
+                sts->assign_loop("pme_spread", threadsPME);
+                if (nthreadsPME > 1) {
+                    sts->assign_loop("pme_spread2", threadsPME);
+                }
+                break;
+            case 4:
+                sts->assign_loop("PME1", threadsPME);
+                break;
+            case 9:
+                sts->assign_loop("gather_f_bsplines", threadsPME);
+                break;
+        }
+
+        // Assign gap tasks
+        switch (gapTaskType[gapNum]) {
+            case 'E':
+                // nothing to do
+                break;
+            case 'L': {
+                int nblEndL = nblStartL + gapNblCount[gapNum]*nthreadsBoth;
+                sts->assign_loop("nonbonded_loop_local", threadsBoth,
+                    { {nblStartL, numNbls}, {nblEndL, numNbls} });
+                nblStartL = nblEndL;
+                break;
+            }
+            case 'N': {
+                int nblEndNL = nblStartNL + gapNblCount[gapNum]*nthreadsBoth;
+                sts->assign_loop("nonbonded_loop_nonlocal", threadsBoth,
+                    { {nblStartNL, numNbls}, {nblEndNL, numNbls} });
+                nblStartNL = nblEndNL;
+                break;
+            }
+            case 'R': {
+                // With dedicated threads, let them do all the work initially
+                if (haveNBOnlyThreads) {
+                    sts->assign_loop("stdreduce", threadsBoth, {0,0});
+                }
+                // Otherwise, divide the work evenly among the R gaps
+                else {
+                    int numerStart = redGapNum*nthreadsBoth;
+                    int numerEnd   = numerStart+nthreadsBoth;
+                    int denom      = numRedGaps*nthreadsBoth;
+                    sts->assign_loop("stdreduce", threadsBoth, 
+                            { {numerStart, denom}, {numerEnd, denom} });
+                }
+                redGapNum++;
+                break;
+            }
+            default:
+                assert(false);
+        }
+    }
+
+    // Tasks not yet assigned (done either serially or with all threads if the
+    // default schedule is used. Also, some tasks are not done at all based on
+    // GROMACS configuration.)
+    // PME2, PME3, PME4, corr
+    // listed_manage1, listed_manage2, nbnxn_grid
+    // nbnxn_search1, nbnxn_search2, nbnxn_search3, nbnxn_search4, nbnxn_search5
+
+    // Set these tasks as yield targets, so they will run inside PME comm windows
+    sts->setHighPriority("nonbonded_loop_local"); // Normally complete before PME comm,
+                                                  // and so normally this has no effect.
+    sts->setHighPriority("nonbonded_loop_nonlocal");
+    sts->setHighPriority("stdreduce");
+
+    // Create STS barrier used by FFT library.
+    // We create it here because we know the number of threads.
+    if (doInit) {
+        new MMBarrier(nthreadsPME, "fft");
+    }
+
+    // Can only set env. variables during init. They cannot be changed after
+    // simulation starts.
+    if (!doInit) {
+        return;
+    }
+
+    // Adjust thread counts to match STS schedule
+    // For portability, use putenv and use static buffers that are never deallocated.
+    // (See putenv man page for details)
+    static char nb_env_string[40];
+    strcpy(nb_env_string, "GMX_NONBONDED_NUM_THREADS=");
+    strcat(nb_env_string, std::to_string(numNbls).c_str());
+    putenv(nb_env_string);
+
+    static char listed_env_string[40];
+    strcpy(listed_env_string, "GMX_LISTED_FORCES_NUM_THREADS=");
+    strcat(listed_env_string, std::to_string(nthreadsLL).c_str());
+    putenv(listed_env_string);
+
+    static char pme_env_string[40];
+    strcpy(pme_env_string, "GMX_PME_NUM_THREADS=");
+    strcat(pme_env_string, std::to_string(nthreadsPME).c_str());
+    putenv(pme_env_string);
+}
+
 void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
@@ -518,7 +1193,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
     int        nppn;
     gmx_bool   bSepPME;
 
-    const bool bOMP = GMX_OPENMP;
+    const bool bOMP = GMX_STS;
 
     /* number of MPI processes/threads per physical node */
     nppn = cr->nrank_intranode;

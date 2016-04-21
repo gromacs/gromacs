@@ -39,6 +39,7 @@
 #include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/sts/range.h"
 
 struct t_commrec;
 
@@ -56,6 +57,23 @@ typedef enum module_nth
     emntBonded, emntPME,  emntUpdate, emntVSITE, emntLINCS, emntSETTLE,
     emntNR
 } module_nth_t;
+
+bool shouldYield();
+void markStepStart();
+Range<Ratio> getNblWorkPortion(int nblId, int iloc);
+void sts_adjust_nbl_portions();
+void sts_report_nbl_portions();
+void sts_report_force_timings(int rank);
+
+// Types of force schedules available
+// DEFAULT:   No async. Apply all threads to all parallel loops.
+// ASYNC:     Async. Overlap force computations and communications.
+enum class SchedType {DEFAULT, ASYNC};
+
+//! \brief Create STS schedule for force computations
+void sts_create_schedule_for_force_compute(const t_commrec *cr, bool doInit,
+       SchedType stype, double ratioThreadsForNB, char* gapTask, int ndecompdim,
+       bool haveNBThreads);
 
 /*! \brief
  * Initializes the per-module thread count.

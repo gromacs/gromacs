@@ -67,6 +67,8 @@ static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 #include "gromacs/utility/fatalerror.h"
 #endif
 
+gmx_wallcycle_t wcycle;
+
 typedef struct
 {
     int          n;
@@ -108,7 +110,7 @@ static const char *wcn[ewcNR] =
     "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force",
     "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
+    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test", "NB Force"
 };
 
 static const char *wcsn[ewcsNR] =
@@ -124,6 +126,9 @@ static const char *wcsn[ewcsNR] =
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
+    "STS ops.",
+    "Exp. Comm.",
+    "Exp. Comm. 2",
 };
 
 gmx_bool wallcycle_have_counter(void)

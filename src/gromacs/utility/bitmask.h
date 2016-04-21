@@ -52,7 +52,7 @@
 
 /*! \brief Size of bitmask. Has to be 32 or multiple of 64. */
 #ifndef BITMASK_SIZE
-#define BITMASK_SIZE GMX_OPENMP_MAX_THREADS
+#define BITMASK_SIZE GMX_STS_MAX_THREADS
 #endif
 
 #if BITMASK_SIZE != 32 && BITMASK_SIZE%64 != 0

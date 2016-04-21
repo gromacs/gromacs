@@ -37,6 +37,8 @@
  * kernel type 2xnn.
  */
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -53,7 +55,8 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
                        int                         clearF,
                        real                       *fshift,
                        real                       *Vc,
-                       real                       *Vvdw);
+                       real                       *Vvdw,
+                       std::string                 stsKernelLoopName);
 
 /* Need an #include guard so that sim_util.c can include all
  * such files. */

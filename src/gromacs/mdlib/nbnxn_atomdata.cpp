@@ -60,6 +60,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
@@ -1143,7 +1144,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      nbnxn_atomdata_t    *nbat)
 {
     int g0 = 0, g1 = 0;
-    int nth, th;
 
     switch (locality)
     {
@@ -1166,10 +1166,10 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
         nbat->natoms_local = nbs->grid[0].nc*nbs->grid[0].na_sc;
     }
 
-    nth = gmx_omp_nthreads_get(emntPairsearch);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (th = 0; th < nth; th++)
+    int nth = gmx_omp_nthreads_get(emntNonbonded);
+    // We use the current instance here because this function is called inside
+    // both the "default" schedule and the "force" schedule.
+    STS::getCurrentInstance()->parallel_for("nbat_x_to_x", 0, nth, [&](int th)
     {
         try
         {
@@ -1209,7 +1209,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 }
 
 static void
@@ -1412,7 +1412,7 @@ static gmx_inline unsigned char reverse_bits(unsigned char b)
     return (b * 0x0202020202ULL & 0x010884422010ULL) % 1023;
 }
 
-static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nbat,
+static void nbnxn_atomdata_nbat_f_treereduce(const nbnxn_atomdata_t *nbat,
                                                       int                     nth)
 {
     const nbnxn_buffer_flags_t *flags = &nbat->buffer_flags;
@@ -1423,15 +1423,15 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 
     memset(nbat->syncStep, 0, sizeof(*(nbat->syncStep))*nth);
 
-#pragma omp parallel num_threads(nth)
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for (int th = 0; th < nth; th++)
     {
         try
         {
             int   b0, b1, b;
             int   i0, i1;
-            int   group_size, th;
-
-            th = gmx_omp_get_thread_num();
+            int   group_size;
 
             for (group_size = 2; group_size < 2*next_pow2; group_size *= 2)
             {
@@ -1539,70 +1539,84 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 }
 
 
-static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nbat,
-                                                     int                     nth)
+static void nbnxn_atomdata_nbat_f_stdreduce(const nbnxn_atomdata_t *nbat)
 {
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (int th = 0; th < nth; th++)
+    const nbnxn_buffer_flags_t *flags = &nbat->buffer_flags;
+    STS::getInstance("force")->parallel_for("stdreduce", 0, flags->nflag, [&](int b)
     {
         try
         {
-            const nbnxn_buffer_flags_t *flags;
-            int   nfptr;
+            int i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+            int i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+
+            int nfptr = 0;
             real *fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
-
-            flags = &nbat->buffer_flags;
-
-            /* Calculate the cell-block range for our thread */
-            int b0 = (flags->nflag* th   )/nth;
-            int b1 = (flags->nflag*(th+1))/nth;
-
-            for (int b = b0; b < b1; b++)
+            for (int out = 1; out < nbat->nout; out++)
             {
-                int i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-                int i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-
-                nfptr = 0;
-                for (int out = 1; out < nbat->nout; out++)
+                if (bitmask_is_set(flags->flag[b], out))
                 {
-                    if (bitmask_is_set(flags->flag[b], out))
-                    {
-                        fptr[nfptr++] = nbat->out[out].f;
-                    }
+                    fptr[nfptr++] = nbat->out[out].f;
                 }
-                if (nfptr > 0)
-                {
+            }
+            if (nfptr > 0)
+            {
 #if GMX_SIMD
-                    nbnxn_atomdata_reduce_reals_simd
+                nbnxn_atomdata_reduce_reals_simd
 #else
-                    nbnxn_atomdata_reduce_reals
+                nbnxn_atomdata_reduce_reals
 #endif
-                        (nbat->out[0].f,
-                        bitmask_is_set(flags->flag[b], 0),
-                        fptr, nfptr,
-                        i0, i1);
-                }
-                else if (!bitmask_is_set(flags->flag[b], 0))
-                {
-                    nbnxn_atomdata_clear_reals(nbat->out[0].f,
-                                               i0, i1);
-                }
+                    (nbat->out[0].f,
+                    bitmask_is_set(flags->flag[b], 0),
+                    fptr, nfptr,
+                    i0, i1);
+            }
+            else if (!bitmask_is_set(flags->flag[b], 0))
+            {
+                nbnxn_atomdata_clear_reals(nbat->out[0].f,
+                                           i0, i1);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 }
 
-/* Add the force array(s) from nbnxn_atomdata_t to f */
+/* Reduce the force array(s) from nbnxn_atomdata_t to nbat[0] */
+void nbnxn_atomdata_reduce_nbat_f(const nbnxn_search_t    nbs,
+                                  const nbnxn_atomdata_t *nbat)
+{
+    nbs_cycle_start(&nbs->cc[enbsCCreducef]);
+
+    int nth = gmx_omp_nthreads_get(emntNonbonded);
+
+    if (nbat->nout > 1)
+    {
+        /* Reduce the force thread output buffers into buffer 0 */
+        if (nbat->bUseTreeReduce)
+        {
+            nbnxn_atomdata_nbat_f_treereduce(nbat, nth);
+        }
+        else
+        {
+            nbnxn_atomdata_nbat_f_stdreduce(nbat);
+        }
+    }
+
+    nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
+}
+
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
                                     rvec                   *f)
 {
-    int a0 = 0, na = 0;
-
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);
 
+    if (nbat->nout > 1 && locality != eatAll)
+    {
+        gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
+    }
+
+    int a0 = 0, na = 0;
     switch (locality)
     {
         case eatAll:
@@ -1620,28 +1634,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
     }
 
     int nth = gmx_omp_nthreads_get(emntNonbonded);
-
-    if (nbat->nout > 1)
-    {
-        if (locality != eatAll)
-        {
-            gmx_incons("add_f_to_f called with nout>1 and locality!=eatAll");
-        }
-
-        /* Reduce the force thread output buffers into buffer 0, before adding
-         * them to the, differently ordered, "real" force buffer.
-         */
-        if (nbat->bUseTreeReduce)
-        {
-            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
-        }
-        else
-        {
-            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
-        }
-    }
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (int th = 0; th < nth; th++)
+    STS::getInstance("default")->parallel_for("nbat_f_to_f", 0, nth, [&](int th)
     {
         try
         {
@@ -1653,7 +1646,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                                 f);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 }

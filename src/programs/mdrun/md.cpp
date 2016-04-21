@@ -71,6 +71,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdebin.h"
@@ -787,10 +788,21 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
     {
-
         /* Determine if this is a neighbor search step */
         bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
 
+        // TODO: Add smarter criteria for when to adjust nbls.
+        if (step > 0 && bNStList) {
+            sts_adjust_nbl_portions();
+        }
+
+        static int rank = -1;
+        if (rank < 0) MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (step >= 1980 && step <= 1990) {
+            dprintf(2, "STS Report %d %ld\n", rank, step);
+            // sts_report_nbl_portions();
+            sts_report_force_timings(rank);
+        }
         if (bPMETune && bNStList)
         {
             /* PME grid + cut-off optimization with GPUs or PME nodes */

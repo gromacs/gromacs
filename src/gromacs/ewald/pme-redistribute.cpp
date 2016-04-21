@@ -41,9 +41,11 @@
 #include "config.h"
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -110,14 +112,13 @@ static void pme_calc_pidx(int start, int end,
 }
 
 static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
-                                  pme_atomcomm_t *atc)
+                                  pme_atomcomm_t *atc, std::string taskName)
 {
     int nthread, thread, slab;
 
     nthread = atc->nthread;
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    STS::getInstance("force")->parallel_for(taskName, 0, nthread, [&](int thread)
     {
         try
         {
@@ -126,7 +127,7 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
                           recipbox, x, atc, atc->count_thread[thread]);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
     /* Non-parallel reduction, since nslab is small */
 
     for (thread = 1; thread < nthread; thread++)
@@ -465,7 +466,9 @@ do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr
             atc->pd_nalloc = over_alloc_dd(atc->npd);
             srenew(atc->pd, atc->pd_nalloc);
         }
-        pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc);
+        int wrap_number = pme->ndecompdim - d;
+        std::string wrap_task_name = "calc_pidx_wrapper_" + std::to_string(wrap_number);
+        pme_calc_pidx_wrapper(n_d, pme->recipbox, x_d, atc, wrap_task_name);
         where();
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
         if (DOMAINDECOMP(cr))

@@ -108,7 +108,11 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                      rvec                *x,
                                      nbnxn_atomdata_t    *nbat);
 
-/* Add the forces stored in nbat to f, zeros the forces in nbat */
+/* Reduce the forces stored in nbat to nbat[0], zeros the forces in nbat */
+void nbnxn_atomdata_reduce_nbat_f(const nbnxn_search_t    nbs,
+                                  const nbnxn_atomdata_t *nbat);
+
+/* Add the forces stored in nbat[0] to f */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                     int                     locality,
                                     const nbnxn_atomdata_t *nbat,
