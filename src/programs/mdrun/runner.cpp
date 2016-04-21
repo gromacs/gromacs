@@ -52,7 +52,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cstdlib>
+
 #include <algorithm>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -97,6 +100,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -691,6 +695,160 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
+//! \brief Creates the STS schedule for computing bonded and nonbonded forces.
+void sts_create_schedule_for_force_compute(const t_commrec *cr, bool bUseDefaultSchedule, double ratioThreadsForNB = 0.8)
+{
+    const int nthreads   = STS::getNumThreads();
+    const int nthreadsNB = nthreads * ratioThreadsForNB;
+    const bool bSepXCommThread = DOMAINDECOMP(cr) && nthreadsNB > 2;
+    const int nthreadsNBKernel = bSepXCommThread ? nthreadsNB-1 : nthreadsNB;
+    const int nthreadsB  = nthreads - nthreadsNB;
+    const bool doPP  = (cr->duty & DUTY_PP);
+    const bool doPME = (cr->duty & DUTY_PME);
+    STS *sts = new STS("force");
+    sts->clearAssignments();
+
+    if (bUseDefaultSchedule || nthreads == 1) {
+        sts->setDefaultSchedule();
+        new MMBarrier(nthreads, "fft");
+        // TODO: We should also set the env. variables in this case, even
+        // though the current default is to use all threads.
+        return;
+    }
+
+    if (doPP) {
+        // First half of threads do nonbonded
+        if (bSepXCommThread) {
+            sts->assign_run("xcomm", nthreadsNBKernel);
+            sts->assign_loop("nbat_x_to_x", nthreadsNBKernel, {0,1});
+        }
+        else if (DOMAINDECOMP(cr)) {
+            sts->assign_run("xcomm", 0);
+            for (int t=0; t<nthreads; t++) {
+                sts->assign_loop("nbat_x_to_x", t, {{t, nthreads},{t+1, nthreads}});
+            }
+        }
+        else {
+            // No X communication done if there is no domain decomposition
+        }
+        sts->assign_run("nonbonded", 0);
+        for (int t=0; t<nthreadsNBKernel; t++) {
+            sts->assign_loop("nonbonded_loop_local", t, {{t, nthreadsNBKernel},{t+1, nthreadsNBKernel}});
+            if (DOMAINDECOMP(cr)) {
+                sts->assign_loop("nonbonded_loop_nonlocal", t, {{t, nthreadsNBKernel},{t+1, nthreadsNBKernel}});
+            }
+            if (nthreadsNBKernel > 1) {
+                sts->assign_loop("stdreduce", t, {{t, nthreadsNBKernel},{t+1, nthreadsNBKernel}});
+                // sts->assign_loop("nbat_f_to_f",    t, {{t, nthreadsNBKernel},{t+1, nthreadsNBKernel}});
+            }
+        }
+
+        // Second half of threads do bonded
+        sts->assign_run("bonded", nthreadsNB);
+        for (int t=nthreadsNB, numer=0; t<nthreads; t++, numer++) {
+            sts->assign_loop("listed_forces2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+            sts->assign_loop("listed_forces1", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+            if (doPME) {
+                sts->assign_loop("calc_splines", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                sts->assign_loop("pme_spread", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                if (nthreadsB > 1) {
+                  sts->assign_loop("pme_spread2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                }
+                sts->assign_loop("PME1", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                sts->assign_loop("gather_f_bsplines", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign_loop("PME2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign_loop("PME3", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign_loop("PME4", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign_loop("corr", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+            }
+        }
+
+        // Create STS barrier used by FFT library.
+        // We create it here because we know the number of threads.
+        new MMBarrier(nthreadsB, "fft");
+    }
+
+    if (!doPP && doPME) {
+        sts->assign_run("PME", 0);
+        for (int t=0; t<nthreads; t++) {
+            sts->assign_loop("calc_splines", t, {{t, nthreads},{t+1, nthreads}});
+            sts->assign_loop("pme_spread", t, {{t, nthreads},{t+1, nthreads}});
+            if (nthreads > 1) {
+                sts->assign_loop("pme_spread2", t, {{t, nthreads},{t+1, nthreads}});
+            }
+            sts->assign_loop("PME1", t, {{t, nthreads},{t+1, nthreads}});
+            sts->assign_loop("gather_f_bsplines", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign_loop("PME2", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign_loop("PME3", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign_loop("PME4", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign_loop("corr", t, {{t, nthreads},{t+1, nthreads}});
+        }
+
+        // Create STS barrier used by FFT library.
+        // We create it here because we know the number of threads.
+        new MMBarrier(nthreads, "fft");
+    }
+
+    // Tasks not yet assigned (done either serially or with all threads if the
+    // default schedule is used).
+    // listed_manage1, listed_manage2, nbnxn_grid
+    // nbnxn_search1, nbnxn_search2, nbnxn_search3, nbnxn_search4, nbnxn_search5
+    // calc_splines, pme_spread, pme_spread2, gather_f_bsplines
+
+    // Adjust thread counts to match STS schedule
+    // For portability, use putenv and use static buffers that are never deallocated.
+    // (See putenv man page for details)
+    static char nb_env_string[40];
+    strcpy(nb_env_string, "GMX_NONBONDED_NUM_THREADS=");
+    strcat(nb_env_string, std::to_string(nthreadsNBKernel).c_str());
+    putenv(nb_env_string);
+
+    static char listed_env_string[40];
+    strcpy(listed_env_string, "GMX_LISTED_FORCES_NUM_THREADS=");
+    strcat(listed_env_string, std::to_string(nthreadsB).c_str());
+    putenv(listed_env_string);
+
+    static char pme_env_string[40];
+    strcpy(pme_env_string, "GMX_PME_NUM_THREADS=");
+    int pmeThreads = doPME ? (doPP ? nthreadsB : nthreads) : 0;
+    strcat(pme_env_string, std::to_string(pmeThreads).c_str());
+    putenv(pme_env_string);
+}
+
+void sts_create_schedule_for_constrain_compute(bool bUseDefaultSchedule, double stsConstrainRatio = 0.8)
+{
+    const int nthreads = STS::getNumThreads();
+    int nthreadsLINCS  = nthreads * stsConstrainRatio;
+    int nthreadsSETTLE = nthreads - nthreadsLINCS;
+    if (bUseDefaultSchedule || nthreadsLINCS >= nthreads || nthreadsLINCS <= 0) {
+        nthreadsLINCS  = nthreads;
+        nthreadsSETTLE = nthreads;
+    }
+    STS* sts = new STS("constrain");
+    sts->clearAssignments();
+
+    if (nthreads == nthreadsLINCS) {
+        sts->setDefaultSchedule();
+        new MMBarrier(nthreads, "lincs");
+    }
+    else {
+        sts->assign_run("lincs", 0);
+        for (int t=0; t<nthreadsLINCS; t++) {
+            sts->assign_loop("lincs_loop", t, {{t, nthreadsLINCS},{t+1, nthreadsLINCS}});
+        }
+        new MMBarrier(nthreadsLINCS, "lincs");
+        sts->assign_run("settle", nthreadsLINCS);
+        for (int t=nthreadsLINCS, numer=0; t<nthreads; t++, numer++) {
+            sts->assign_loop("settle_loop", t, {{numer, nthreadsSETTLE},{numer+1, nthreadsSETTLE}});
+        }
+    }
+
+    static char constrain_env_string[40];
+    strcpy(constrain_env_string, "GMX_LINCS_NUM_THREADS=");
+    strcat(constrain_env_string, std::to_string(nthreadsLINCS).c_str());
+    putenv(constrain_env_string);
+}
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -720,7 +878,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_vsite_t              *vsite         = NULL;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
-    gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
     gmx_int64_t               reset_counters;
@@ -1115,6 +1272,33 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Check and update hw_opt for the number of MPI ranks */
     check_and_update_hw_opt_3(hw_opt);
 
+    char* sts_threads = getenv("GMX_STS_THREADS");
+    if (sts_threads!=nullptr)
+    {
+        STS::startup(atoi(sts_threads));
+    }
+    else
+    {
+        STS::startup(1);
+    }
+    char* sts_force_ratio = getenv("GMX_STS_FORCE_RATIO");
+    char* sts_constrain_ratio = getenv("GMX_STS_CONSTRAIN_RATIO");
+    if (sts_force_ratio!=nullptr)
+    {
+        sts_create_schedule_for_force_compute(cr, false, atof(sts_force_ratio));
+    }
+    else
+    {
+        sts_create_schedule_for_force_compute(cr, false);
+    }
+    if (sts_constrain_ratio!=nullptr)
+    {
+        sts_create_schedule_for_constrain_compute(false, atof(sts_constrain_ratio));
+    }
+    else
+    {
+        sts_create_schedule_for_constrain_compute(false);
+    }
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
@@ -1278,7 +1462,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* threads on this MPI process or TMPI thread */
         if (cr->duty & DUTY_PP)
         {
-            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+            nthread_local = gmx_omp_nthreads_get(emntDefault);
         }
         else
         {
@@ -1418,6 +1602,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         pmedata = NULL;
     }
 
+    STS::shutdown();
+    
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
 
