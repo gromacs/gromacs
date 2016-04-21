@@ -81,15 +81,17 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
     {
         i.resize(nfft, 0);
     }
-    #pragma omp parallel
+
+    // cppcheck-suppress unreadVariable
+    int gmx_unused nthreads  = gmx_omp_get_max_threads();
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+    for (int thread_id = 0; thread_id < nthreads; thread_id++)
     {
         try
         {
             gmx_fft_t         fft1;
             std::vector<real> in, out;
 
-            int               nthreads  = gmx_omp_get_max_threads();
-            int               thread_id = gmx_omp_get_thread_num();
             int               i0        = (thread_id*nfunc)/nthreads;
             int               i1        = std::min(nfunc, ((thread_id+1)*nfunc)/nthreads);
 

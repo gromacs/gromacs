@@ -54,6 +54,7 @@
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -379,8 +380,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     /* Determine to which blocks each thread's bonded force calculation
      * contributes. Store this as a mask for each thread.
      */
-#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (int t = 0; t < bt->nthreads; t++)
+    STS::getInstance("default")->parallel_for("listed_manage1", 0, bt->nthreads, [=](size_t t)
     {
         try
         {
@@ -388,7 +388,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
                                        idef, t, bt->nthreads);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     /* Reduce the masks over the threads and determine which blocks
      * we need to reduce over.
@@ -471,8 +471,7 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
     bt->nthreads = gmx_omp_nthreads_get(emntBonded);
 
     snew(bt->f_t, bt->nthreads);
-#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (int t = 0; t < bt->nthreads; t++)
+    STS::getInstance("default")->parallel_for("listed_manage2", 0, bt->nthreads, [=](size_t t)
     {
         try
         {
@@ -489,7 +488,7 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     bt->nblock_used  = 0;
     bt->block_index  = NULL;
