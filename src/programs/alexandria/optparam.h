@@ -44,6 +44,13 @@
 #include <random>
 #include <vector>
 
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
+
 namespace alexandria
 {
 
