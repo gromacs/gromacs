@@ -37,8 +37,6 @@
 
 #include "nbnxn_search.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <string.h>
 
@@ -66,6 +64,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
@@ -324,7 +323,7 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
     nbs->a           = NULL;
     nbs->a_nalloc    = 0;
 
-    nbs->nthread_max = nthread_max;
+    nbs->nthread_max = std::max(nthread_max, gmx_omp_nthreads_get(emntNonbonded));
 
     /* Initialize the work data structures for each thread */
     snew(nbs->work, nbs->nthread_max);
@@ -898,8 +897,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     }
     snew(nbl_list->nbl_fep, nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
-#pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
-    for (int i = 0; i < nbl_list->nnbl; i++)
+    STS::getInstance("default")->parallel_for("nbnxn_search1", 0, nbl_list->nnbl, [=](size_t i)
     {
         try
         {
@@ -927,7 +925,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
             nbnxn_init_pairlist_fep(nbl_list->nbl_fep[i]);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 }
 
 /* Print statistics of a pair list, used for debug output */
@@ -2830,13 +2828,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#if GMX_OPENMP && !(defined __clang_analyzer__)
-    // cppcheck-suppress unreadVariable
-    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
-#endif
-
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int n = 0; n < nnbl; n++)
+    STS::getInstance("default")->parallel_for("nbnxn_search2", 0, nnbl, [=](int n)
     {
         try
         {
@@ -2879,7 +2871,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     for (int n = 0; n < nnbl; n++)
     {
@@ -2919,8 +2911,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
 
     assert(gmx_omp_nthreads_get(emntNonbonded) == nnbl);
 
-#pragma omp parallel for schedule(static) num_threads(nnbl)
-    for (int th = 0; th < nnbl; th++)
+    STS::getInstance("default")->parallel_for("nbnxn_search3", 0, nnbl, [=](size_t th)
     {
         try
         {
@@ -2946,7 +2937,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
             clear_pairlist_fep(nbl);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     /* Loop over the source lists and assign and copy i-entries */
     th_dest = 0;
@@ -3901,10 +3892,8 @@ static void rebalanceSimpleLists(int                              numLists,
     }
     int ncjTarget = (ncjTotal + numLists - 1)/numLists;
 
-#pragma omp parallel num_threads(numLists)
+    STS::getInstance("default")->parallel_for("rebalance simple lists", 0, numLists, [=](int t)
     {
-        int t       = gmx_omp_get_thread_num();
-
         int cjStart = ncjTarget* t;
         int cjEnd   = ncjTarget*(t + 1);
 
@@ -3965,7 +3954,7 @@ static void rebalanceSimpleLists(int                              numLists,
         }
 
         dest->ncjInUse = dest->ncj;
-    }
+    });
 
 #ifndef NDEBUG
     int ncjTotalNew = 0;
@@ -4221,8 +4210,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
              */
             progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
 
-#pragma omp parallel for num_threads(nnbl) schedule(static)
-            for (int th = 0; th < nnbl; th++)
+            STS::getInstance("default")->parallel_for("nbnxn_search4", 0, nnbl, [=](size_t th)
             {
                 try
                 {
@@ -4254,7 +4242,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                                              nbl_list->nbl_fep[th]);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            }
+            });
             nbs_cycle_stop(&nbs->cc[enbsCCsearch]);
 
             np_tot = 0;
@@ -4313,15 +4301,14 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         }
         else
         {
-#pragma omp parallel for num_threads(nnbl) schedule(static)
-            for (int th = 0; th < nnbl; th++)
+	    STS::getInstance("default")->parallel_for("nbnxn_search5", 0, nnbl, [=](size_t th)
             {
                 try
                 {
                     sort_sci(nbl[th]);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            }
+            });
         }
     }
 

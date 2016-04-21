@@ -70,6 +70,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1614,7 +1615,7 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr)
 {
     gmx_bool          bNH, bPR, bDoConstr = FALSE;
-    double            dt, alpha;
+    double            dt;
     int               start, homenr, nrend;
     int               nth, th;
 
@@ -1654,8 +1655,7 @@ void update_coords(FILE             *fplog,
 
     nth = gmx_omp_nthreads_get(emntUpdate);
 
-#pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
-    for (th = 0; th < nth; th++)
+    STS::getInstance("default")->parallel_for("update_coords", 0, nth, [&](int th)
     {
         try
         {
@@ -1712,18 +1712,18 @@ void update_coords(FILE             *fplog,
                     break;
                 case (eiVV):
                 case (eiVVAK):
-                    alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
                     switch (UpdatePart)
                     {
                         case etrtVELOCITY1:
-                        case etrtVELOCITY2:
+                        case etrtVELOCITY2: {
+                            double alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
                             do_update_vv_vel(start_th, end_th, dt,
                                              inputrec->opts.acc, inputrec->opts.nFreeze,
                                              md->invmass, md->ptype,
                                              md->cFREEZE, md->cACC,
                                              state->v, f,
                                              (bNH || bPR), state->veta, alpha);
-                            break;
+                        } break;
                         case etrtPOSITION:
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
@@ -1739,8 +1739,8 @@ void update_coords(FILE             *fplog,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 
+    });
 }
 
 
