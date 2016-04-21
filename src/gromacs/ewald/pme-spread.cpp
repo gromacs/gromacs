@@ -46,6 +46,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -871,8 +872,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #endif
     if (bCalcSplines)
     {
-#pragma omp parallel for num_threads(nthread) schedule(static)
-        for (thread = 0; thread < nthread; thread++)
+        STS::getInstance("force")->parallel_for("calc_splines", 0, nthread, [&](int thread)
         {
             try
             {
@@ -887,7 +887,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
                 calc_interpolation_idx(pme, atc, start, grid_index, end, thread);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
+        });
     }
 #ifdef PME_TIME_THREADS
     c1   = omp_cyc_end(c1);
@@ -897,8 +897,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #ifdef PME_TIME_THREADS
     c2 = omp_cyc_start();
 #endif
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    STS::getInstance("force")->parallel_for("pme_spread", 0, nthread, [&](int thread)
     {
         try
         {
@@ -960,7 +959,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 #ifdef PME_TIME_THREADS
     c2   = omp_cyc_end(c2);
     cs2 += (double)c2;
@@ -971,8 +970,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_start();
 #endif
-#pragma omp parallel for num_threads(grids->nthread) schedule(static)
-        for (thread = 0; thread < grids->nthread; thread++)
+        STS::getInstance("force")->parallel_for("pme_spread2", 0, grids->nthread, [&](int thread)
         {
             try
             {
@@ -983,7 +981,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
                                           grid_index);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
+        });
 #ifdef PME_TIME_THREADS
         c3   = omp_cyc_end(c3);
         cs3 += (double)c3;
