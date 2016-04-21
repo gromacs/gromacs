@@ -162,10 +162,16 @@ void MyMol::getForceConstants(const Poldata &pd)
                     {
                         int    ntrain;
                         double bo = 0;
+                        int    lengthUnit;
+                        
+                        if (-1 == (lengthUnit = string2unit(pd.getLengthUnit().c_str())))
+                        {
+                            gmx_fatal(FARGS, "Unknown length unit %s for bonds", pd.getLengthUnit().c_str());
+                        }
                         if (!pd.searchBond(cai, caj,
                                            &xx, &sx, &ntrain, &bo, params))
                         {
-                            j->c[0] = convert2gmx(xx, eg2cPm);
+                            j->c[0] = convert2gmx(xx, lengthUnit);
                             std::vector<std::string> ptr = gmx::splitString(params);
                             n = 0;
                             for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
@@ -1064,7 +1070,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             myunit = string2unit((char *)cai->getUnit().c_str());
             if (myunit == -1)
             {
-                gmx_fatal(FARGS, "Unknown unit '%s' for atom coords",
+                gmx_fatal(FARGS, "Unknown length unit '%s' for atom coordinates",
                           cai->getUnit().c_str());
             }
             cai->getCoords(&xx, &yy, &zz);
@@ -1197,6 +1203,10 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (immOK == imm)
     {
         int lengthUnit = string2unit(pd.getLengthUnit().c_str());
+        if (-1 == lengthUnit)
+        {
+            gmx_fatal(FARGS, "No such length unit '%s' for bonds", pd.getLengthUnit().c_str());
+        }
         memset(&b, 0, sizeof(b));
         for (alexandria::BondIterator bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
         {
@@ -1467,11 +1477,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                     int vu = string2unit(epi->getVunit().c_str());
                     if (-1 == xu)
                     {
-                        xu = eg2cAngstrom;
+                        gmx_fatal(FARGS, "No such length unit '%s' for potential",
+                                  epi->getXYZunit().c_str());
                     }
                     if (-1 == vu)
                     {
-                        vu = eg2cHartree_e;
+                        gmx_fatal(FARGS, "No such potential unit '%s' for potential",
+                                  epi->getVunit().c_str());
                     }
                     gr_.addEspPoint(convert2gmx(epi->getX(), xu),
                                     convert2gmx(epi->getY(), xu),
@@ -2136,6 +2148,11 @@ void MyMol::addShells(const Poldata &pd,
     memset(&p, 0, sizeof(p));
     inv_renum.resize(topology_->atoms.nr*2, -1);
     int polarUnit = string2unit(pd.getPolarUnit().c_str());
+    if (-1 == polarUnit)
+    {
+        gmx_fatal(FARGS, "No such polarizability unit '%s'",
+                  pd.getPolarUnit().c_str());
+    }
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
         renum.push_back(i+nshell);
@@ -2505,6 +2522,11 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     double       value;
 
     lu = string2unit(pd.getLengthUnit().c_str());
+    if (-1 == lu)
+    {
+        gmx_fatal(FARGS, "Unknown length unit '%s' for bonds", 
+                  pd.getLengthUnit().c_str());
+    }
     switch (iType)
     {
     case InteractionType_BONDS:
