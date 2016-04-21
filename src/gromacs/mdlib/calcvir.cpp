@@ -48,6 +48,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/gmxassert.h"
 
 #define XXXX    0
@@ -120,10 +121,9 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
          * We use 2 extra elements (=18 reals) per thread to separate thread
          * local data by at least a cache line. Element 0 is not used.
          */
-        matrix xf_buf[GMX_OPENMP_MAX_THREADS*3];
+        matrix xf_buf[GMX_STS_MAX_THREADS*3];
 
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-        for (int thread = 0; thread < nthreads; thread++)
+STS::getInstance("default")->parallel_for("calcvir", 0, nthreads, [&](int thread)
         {
             int start = (nxf*thread)/nthreads;
             int end   = std::min(nxf*(thread + 1)/nthreads, nxf);
@@ -131,7 +131,7 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
             calc_x_times_f(end - start, x + start, f + start, bScrewPBC, box,
                            // cppcheck-suppress uninitvar
                            thread == 0 ? x_times_f : xf_buf[thread*3]);
-        }
+        });
 
         for (int thread = 1; thread < nthreads; thread++)
         {

@@ -46,7 +46,11 @@
 #include <string.h>
 
 #include <algorithm>
+#include <string>
 
+#include "gromacs/sts/barrier.h"
+#include "gromacs/sts/sts.h"
+#include "gromacs/sts/thread.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -989,7 +993,6 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     *C       = plan->C, *P = plan->P, **iNin = plan->iNin, **oNin = plan->oNin, **iNout = plan->iNout, **oNout = plan->oNout;
     int    s = 0, tstart, tend, bParallelDim;
 
-
 #if GMX_FFT_FFTW3
     if (plan->p3d)
     {
@@ -1101,7 +1104,16 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                 tstart /= C[s];
                 splitaxes(lout2, lout, N[s], M[s], K[s], pM[s], P[s], C[s], iNout[s], oNout[s], tstart%pM[s], tstart/pM[s], tend%pM[s], tend/pM[s]);
             }
-#pragma omp barrier /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
+
+            STS* sts = STS::getInstance("force");
+            // TODO: Global thread 0 must be the main thread. Here we dangerously
+            // assume it will always be task thread 0. For now, we use an
+            // assert, but ultimately we need a way to include the scheduling
+            // strategy in this logic.
+            bool isMainThread = (sts->getTaskThreadId() == 0 ? true : false);
+            assert(Thread::getId() > 0 || isMainThread);
+
+            MMBarrier::getInstance("fft")->enter(); /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
 #ifdef NOGMX
             if (times != NULL && thread == 0)
             {
@@ -1111,8 +1123,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 
             /* ---------- END SPLIT , START TRANSPOSE------------ */
 
-            if (thread == 0)
-            {
+            if (isMainThread) {
 #ifdef NOGMX
                 if (times != 0)
                 {
@@ -1144,10 +1155,14 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                 }
 #else
                 wallcycle_stop(times, ewcPME_FFTCOMM);
+                sts->recordTime("fft_comm");
 #endif
-            } /*master*/
-        }     /* bPrallelDim */
-#pragma omp barrier  /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
+            }
+            else {
+                sts->yield();
+            }
+        }       /* bParallelDim */
+        MMBarrier::getInstance("fft")->enter(); /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
 
         /* ---------- END SPLIT + TRANSPOSE------------ */
 

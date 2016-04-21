@@ -70,6 +70,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -921,7 +922,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     int           g;
     t_grp_tcstat *tcstat  = ekind->tcstat;
     t_grp_acc    *grpstat = ekind->grpstat;
-    int           nthread, thread;
+    int           nthread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
        an option, but not supported now.
@@ -948,8 +949,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     ekind->dekindl_old = ekind->dekindl;
     nthread            = gmx_omp_nthreads_get(emntUpdate);
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    STS::getInstance("default")->parallel_for("copy_xprime", 0, nthread, [&](int thread)
     {
         // This OpenMP only loops over arrays and does not call any functions
         // or memory allocation. It should not be able to throw, so for now
@@ -1006,10 +1006,10 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
                     0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
             }
         }
-    }
+    });
 
     ekind->dekindl = 0;
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         for (g = 0; g < opts->ngtc; g++)
         {
@@ -1587,14 +1587,13 @@ void update_constraints(FILE             *fplog,
             rvec *xp = as_rvec_array(upd->xp.data());
 #ifndef __clang_analyzer__
             // cppcheck-suppress unreadVariable
-            nth = gmx_omp_nthreads_get(emntUpdate);
+            //nth = gmx_omp_nthreads_get(emntUpdate);
 #endif
-#pragma omp parallel for num_threads(nth) schedule(static)
-            for (int i = start; i < nrend; i++)
+            STS::getInstance("default")->parallel_for("copy_xprime", 0, nrend, [&](int i)
             {
                 // Trivial statement, does not throw
                 copy_rvec(xp[i], state->x[i]);
-            }
+            });
         }
         wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1742,8 +1741,7 @@ void update_coords(FILE             *fplog,
 
     int nth = gmx_omp_nthreads_get(emntUpdate);
 
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (int th = 0; th < nth; th++)
+    STS::getInstance("default")->parallel_for("update_coords", 0, nth, [&](int th)
     {
         try
         {
@@ -1821,8 +1819,8 @@ void update_coords(FILE             *fplog,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
 
+    });
 }
 
 
