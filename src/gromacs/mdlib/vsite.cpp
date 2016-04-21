@@ -629,11 +629,11 @@ void construct_vsites(const gmx_vsite_t *vsite,
     }
     else
     {
-#pragma omp parallel num_threads(vsite->nthreads)
+#pragma omp parallel for num_threads(vsite->nthreads) schedule(static)
+        for (int th = 0; th < vsite->nthreads; th++)
         {
             try
             {
-                int th = gmx_omp_get_thread_num();
                 construct_vsites_thread(vsite,
                                         x, dt, v,
                                         ip, vsite->tData[th]->ilist,
@@ -1608,13 +1608,15 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                               vsite->tData[vsite->nthreads]->ilist,
                               g, pbc_null);
 
-#pragma omp parallel num_threads(vsite->nthreads)
+        // TODO: Restore parallelism when file is converted to STS
+        // Cannot convert this loop to OMP parallel for because of the
+        // nested barrier.
+// #pragma omp parallel for num_threads(vsite->nthreads) schedule(static)
+        for (int thread = 0; thread < vsite->nthreads; thread++)
         {
             try
             {
-                int          thread = gmx_omp_get_thread_num();
                 VsiteThread *tData  = vsite->tData[thread];
-
                 rvec        *fshift_t;
                 if (thread == 0 || fshift == NULL)
                 {
@@ -1663,7 +1665,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                     /* We need a barrier before reducing forces below
                      * that have been produced by a different thread above.
                      */
-#pragma omp barrier
+// #pragma omp barrier
 
                     /* Loop over all thread task and reduce forces they
                      * produced on atoms that fall in our range.
@@ -2357,11 +2359,14 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         }
     }
 
-#pragma omp parallel num_threads(vsite->nthreads)
+    // TODO: Restore parallelism when file is converted to STS
+    // Cannot convert this loop to OMP parallel for because of the
+    // nested barrier.
+// #pragma omp parallel for num_threads(vsite->nthreads)
+    for (int thread = 0; thread < vsite->nthreads; thread++)
     {
         try
         {
-            int          thread = gmx_omp_get_thread_num();
             VsiteThread *tData  = vsite->tData[thread];
 
             /* Clear the buffer use flags that were set before */
@@ -2442,7 +2447,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                 InterdependentTask *idTask = &tData->idTask;
 
                 /* Ensure assignVsitesToThread finished on other threads */
-#pragma omp barrier
+// #pragma omp barrier
 
                 idTask->spreadTask.resize(0);
                 idTask->reduceTask.resize(0);

@@ -68,7 +68,8 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &fplog, t_commrec *cr,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bCurrNodePMEOnly,
-                           gmx_bool bFullOmpSupport);
+                           gmx_bool bFullOmpSupport,
+                           int nthreadsPME);
 
 /*! \brief
  * Returns the number of threads to be used in the given module \p mod. */
