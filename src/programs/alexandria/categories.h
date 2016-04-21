@@ -45,7 +45,6 @@
  *
  * \author David van der Spoel <david.vanderspoel@gmail.com>
  * \inpublicapi
- * \ingroup module_alexandria
  */
 #ifndef CATEGORIES_H
 #define CATEGORIES_H

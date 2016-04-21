@@ -1014,36 +1014,6 @@ MyMol::MyMol() : gvt_(egvtALL)
     fill_inputrec(inputrec_);
 }
 
-MyMol::~MyMol()
-{
-    return;
-    if (nullptr != cgnr_)
-    {
-        sfree(cgnr_);
-        cgnr_ = nullptr;
-    }
-    if (nullptr != atype_)
-    {
-        done_atomtype(atype_);
-        atype_ = nullptr;
-    }
-    if (nullptr != inputrec_)
-    {
-        sfree(inputrec_);
-        inputrec_ = nullptr;
-    }
-    for (auto &pw : plist_)
-    {
-        pw.eraseParams();
-    }
-    if (nullptr != symtab_)
-    {
-        done_symtab(symtab_);
-        sfree(symtab_);
-        symtab_ = nullptr;
-    }
-}
-
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
                                const char               *lot,
                                ChargeDistributionModel   iChargeDistributionModel)

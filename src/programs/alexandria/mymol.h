@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2012-2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,12 +95,12 @@ namespace alexandria
 class MyMol
 {
     private:
-       /*! \brief 
-	* The molprop
-        */
+        /*! \brief
+         * The molprop
+         */
         MolProp         *mp_;
-	/*! \brief 
-	 * Gromacs structures
+        /*! \brief
+         * Gromacs structures
          */
         int              nexcl_;
         std::vector<int> symmetric_charges_;
@@ -116,54 +116,54 @@ class MyMol
         double           EspRms_;
         bool IsSymmetric(real toler);
 
-        /*! \brief 
-	 * Generate Atoms based on quantum calculation with specified level of theory
-	 *
-	 * \param[in] ap      Gromacs atom properties
-	 * \param[in] lot     Level of theory used for QM calculations 
-	 * \param[in] iModel  The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-	 */
+        /*! \brief
+         * Generate Atoms based on quantum calculation with specified level of theory
+         *
+         * \param[in] ap      Gromacs atom properties
+         * \param[in] lot     Level of theory used for QM calculations
+         * \param[in] iModel  The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         */
         immStatus GenerateAtoms(gmx_atomprop_t            ap,
                                 const char               *lot,
                                 ChargeDistributionModel   iModel);
 
-        /*! \brief 
-	 * Generate angles, dihedrals, exclusions etc.
-	 *
-	 * \param[in] bPairs
-	 * \param[in] bDihs
-	 */
-        void MakeAngles(bool bPairs, 
+        /*! \brief
+         * Generate angles, dihedrals, exclusions etc.
+         *
+         * \param[in] bPairs
+         * \param[in] bDihs
+         */
+        void MakeAngles(bool bPairs,
                         bool bDihs);
 
-        /*! \brief 
-	 * Generate virtual sites or linear angles
-	 *
-	 * \param[in] bUseVsites
-	 */
+        /*! \brief
+         * Generate virtual sites or linear angles
+         *
+         * \param[in] bUseVsites
+         */
         void MakeSpecialInteractions(const Poldata &pd,
-                                    bool bUseVsites);
- 
-	/*! \brief 
-	 * Add shell particles
-	 *
-	 * \param[in] pd       Data structure containing atomic properties
-	 * \param[in] iModel   The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-	 */
+                                     bool           bUseVsites);
+
+        /*! \brief
+         * Add shell particles
+         *
+         * \param[in] pd       Data structure containing atomic properties
+         * \param[in] iModel   The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         */
         void addShells(const Poldata &pd, ChargeDistributionModel iModel);
 
-	/*! \brief 
-	 * Check whether atom types exist in the force field
-	 *
-	 * \param[in] pd
-	 */
+        /*! \brief
+         * Check whether atom types exist in the force field
+         *
+         * \param[in] pd
+         */
         immStatus checkAtoms(const Poldata &pd);
 
-	/*! \brief 
-	 * Fetch the force constants
-	 *
-	 * \param[in] pd
-	 */
+        /*! \brief
+         * Fetch the force constants
+         *
+         * \param[in] pd
+         */
         void getForceConstants(const Poldata &pd);
     public:
         rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
@@ -187,34 +187,29 @@ class MyMol
         t_mdatoms                *mdatoms_;
         t_topology               *topology_;
 
-        /*! \brief 
-	 * Constructor
-	 */
+        /*! \brief
+         * Constructor
+         */
         MyMol();
 
-        /*! \brief 
-	 * Destructor
-	 */
-        ~MyMol();
-
-        /*! \brief 
-	 * Return my inner molprop
-	 */
+        /*! \brief
+         * Return my inner molprop
+         */
         MolProp *molProp() const { return mp_; }
 
         /*! \brief
-	 * It generates the topology structure which will be used to print the topology file. 
-	 *
-	 * \param[in] ap          Gromacs atom properties
-	 * \param[in] pd          Data structure containing atomic properties
-	 * \param[in] lot         The level of theory used for QM calculation
-	 * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-	 * \param[in] nexcl       Number of Exclusions
-	 * \param[in] bUseVsites  Add virtual sites to the topology structure 
-	 * \param[in] bPairs      Add pairs to the topology structure
-	 * \param[in] bDih        Add dihedrals to the topology structure
-	 * \param[in] bAddShells  Add shells to the topology structure
-	 */
+         * It generates the topology structure which will be used to print the topology file.
+         *
+         * \param[in] ap          Gromacs atom properties
+         * \param[in] pd          Data structure containing atomic properties
+         * \param[in] lot         The level of theory used for QM calculation
+         * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] nexcl       Number of Exclusions
+         * \param[in] bUseVsites  Add virtual sites to the topology structure
+         * \param[in] bPairs      Add pairs to the topology structure
+         * \param[in] bDih        Add dihedrals to the topology structure
+         * \param[in] bAddShells  Add shells to the topology structure
+         */
         immStatus GenerateTopology(gmx_atomprop_t            ap,
                                    const Poldata            &pd,
                                    const char               *lot,
@@ -223,148 +218,148 @@ class MyMol
                                    bool                      bPairs,
                                    bool                      bDih,
                                    bool                      bAddShells);
-	/*! \brief
-	 *  Computes isotropic polarizability at the presence of external
-	 *  electric field (under construction!!!)
-	 *
-	 * \param[in]  efield   Strenght of the external electric field
-	 * \param[in]  fplog
-	 * \param[in]  cr
-	 * \param[out] isoPol   Isotropic polarizability
-	 */
-	std::vector<double> computePolarizability(double efield, FILE *fplog, t_commrec *cr);
+        /*! \brief
+         *  Computes isotropic polarizability at the presence of external
+         *  electric field (under construction!!!)
+         *
+         * \param[in]  efield   Strenght of the external electric field
+         * \param[in]  fplog
+         * \param[in]  cr
+         * \param[out] isoPol   Isotropic polarizability
+         */
+        std::vector<double> computePolarizability(double efield, FILE *fplog, t_commrec *cr);
 
         /*! \brief
-	 * Generate atomic partial charges
-	 * 
-	 * \param[in] pd                             Data structure containing atomic properties
-	 * \param[in] ap                             Gromacs atom properties
-	 * \param[in] iModel                         The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-	 * \param[in] iChargeGenerationAlgorithm     The algorithm calculating the partial charge (e.x. ESP, RESP)
-	 * \param[in] watoms
-	 * \param[in] hfac
-	 * \param[in] lot                            The level of theory used for QM calculation
-	 * \param[in] bSymmetricCharges              Consider molecular symmetry to calculate partial charge
-	 * \param[in] symm_string                    The type of molecular symmetry
-	 * \param[in] cr
-	 * \param[in] tabfn
-	 */
-        immStatus GenerateCharges(const Poldata             &pd, 
+         * Generate atomic partial charges
+         *
+         * \param[in] pd                             Data structure containing atomic properties
+         * \param[in] ap                             Gromacs atom properties
+         * \param[in] iModel                         The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] iChargeGenerationAlgorithm     The algorithm calculating the partial charge (e.x. ESP, RESP)
+         * \param[in] watoms
+         * \param[in] hfac
+         * \param[in] lot                            The level of theory used for QM calculation
+         * \param[in] bSymmetricCharges              Consider molecular symmetry to calculate partial charge
+         * \param[in] symm_string                    The type of molecular symmetry
+         * \param[in] cr
+         * \param[in] tabfn
+         */
+        immStatus GenerateCharges(const Poldata             &pd,
                                   gmx_atomprop_t             ap,
-                                  ChargeDistributionModel    iModel, 
+                                  ChargeDistributionModel    iModel,
                                   ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
                                   real                       watoms,
                                   real                       hfac,
                                   const char                *lot,
-                                  bool                       bSymmetricCharges, 
+                                  bool                       bSymmetricCharges,
                                   const char                *symm_string,
                                   t_commrec                 *cr,
                                   const char                *tabfn);
 
-	/*! \brief
-	 * Return the root-mean square deviation of 
-	 * the generated ESP from the QM ESP. 
-	 *
-	 */
+        /*! \brief
+         * Return the root-mean square deviation of
+         * the generated ESP from the QM ESP.
+         *
+         */
         double espRms() const { return EspRms_; }
-        
-	/*! \brief
-	 * Collect the experimental properties 
-	 *
-	 * \param[in] bQM
-	 * \param[in] bZero
-	 * \param[in] lot      The level of theory used for QM calculation
-	 * \param[in] gap      Gaussian atom property
-	 */
+
+        /*! \brief
+         * Collect the experimental properties
+         *
+         * \param[in] bQM
+         * \param[in] bZero
+         * \param[in] lot      The level of theory used for QM calculation
+         * \param[in] gap      Gaussian atom property
+         */
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
                               alexandria::GaussAtomProp &gap);
 
-	/*! \brief
-	 * Print the topology that was generated previously in GROMACS format.
-	 *
-	 * \param[in] fn        A File pointer opened previously.
-	 * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-	 * \param[in] bVerbose  Verobse   
-	 * \param[in] pd        Data structure containing atomic properties
-	 * \param[in] aps       Gromacs atom properties
-	 */
+        /*! \brief
+         * Print the topology that was generated previously in GROMACS format.
+         *
+         * \param[in] fn        A File pointer opened previously.
+         * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] bVerbose  Verobse
+         * \param[in] pd        Data structure containing atomic properties
+         * \param[in] aps       Gromacs atom properties
+         */
         void PrintTopology(const char             *fn,
                            ChargeDistributionModel iModel,
                            bool                    bVerbose,
-                           const Poldata          &pd,  
+                           const Poldata          &pd,
                            gmx_atomprop_t          aps);
- 
-	/*! \brief
-	 *  Compute or derive global info about the molecule
-	 *
-	 * \param[in] pd   Data structure containing atomic properties
-	 */
+
+        /*! \brief
+         *  Compute or derive global info about the molecule
+         *
+         * \param[in] pd   Data structure containing atomic properties
+         */
         void CalcQPol(const Poldata &pd);
 
-	/*! \brief
-	 * Relax the shells (if any) or compute the forces in the molecule
-	 *
-	 * \param[in] fplog   
-	 * \param[in] cr
-	 * \param[in] mu_tot
-	 */
+        /*! \brief
+         * Relax the shells (if any) or compute the forces in the molecule
+         *
+         * \param[in] fplog
+         * \param[in] cr
+         * \param[in] mu_tot
+         */
         void computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot);
 
-	/*! \brief
-	 * Set the force field
-	 *
-	 * \param[in] ff   Force field   
-	 */
+        /*! \brief
+         * Set the force field
+         *
+         * \param[in] ff   Force field
+         */
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 
-	/*! \brief
-	 * Update internal structures for bondtype due to changes in pd
-	 *
-	 * \param[in] pd      Data structure containing atomic properties
-	 * \param[in] iType   Interaction type
-	 */
+        /*! \brief
+         * Update internal structures for bondtype due to changes in pd
+         *
+         * \param[in] pd      Data structure containing atomic properties
+         * \param[in] iType   Interaction type
+         */
         void UpdateIdef(const Poldata   &pd,
                         InteractionType  iType);
 
-	/*! \brief
-	 * Get the force field 
-	 *
-	 * \param[out] forcefield_     Force field
-	 */
+        /*! \brief
+         * Get the force field
+         *
+         * \param[out] forcefield_     Force field
+         */
         std::string getForceField() { return forcefield_; }
-	
-	/*! \brief
-	 * Calculate multipoles 
-	 */
+
+        /*! \brief
+         * Calculate multipoles
+         */
         void CalcMultipoles();
 
-	/*! \brief
-	 * Generate Charge Groups
-	 *
-	 * \param[in] ecg
-	 * \param[in] bUsePDBcharge
-	 */
+        /*! \brief
+         * Generate Charge Groups
+         *
+         * \param[in] ecg
+         * \param[in] bUsePDBcharge
+         */
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
-        immStatus GenerateGromacs(t_commrec *cr,
+        immStatus GenerateGromacs(t_commrec  *cr,
                                   const char *tabfn);
 
-	/*! \brief
-	 * Generate cube
-	 *
-	 * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
-	 * \param[in] pd          Data structure containing atomic properties
-	 * \param[in] spacing     The grid space
-	 * \param[in] reffn
-	 * \param[in] pcfn
-	 * \param[in] pdbdifffn
-	 * \param[in] potfn
-	 * \param[in] rhofn
-	 * \param[in] hisfn
-	 * \param[in] difffn
-	 * \param[in] diffhistfn
-	 * \param[in] oenv
-	 */
+        /*! \brief
+         * Generate cube
+         *
+         * \param[in] iModel      The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] pd          Data structure containing atomic properties
+         * \param[in] spacing     The grid space
+         * \param[in] reffn
+         * \param[in] pcfn
+         * \param[in] pdbdifffn
+         * \param[in] potfn
+         * \param[in] rhofn
+         * \param[in] hisfn
+         * \param[in] difffn
+         * \param[in] diffhistfn
+         * \param[in] oenv
+         */
         void GenerateCube(ChargeDistributionModel iModel,
                           const Poldata          &pd,
                           real                    spacing,
@@ -379,10 +374,10 @@ class MyMol
                           const gmx_output_env_t *oenv);
 
         /*! \brief
-	 * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
-	 *
-	 * \param[in] fn A File pointer opened previously.
-	 */
+         * Print the coordinates corresponding to topology after adding shell particles and/or vsites.
+         *
+         * \param[in] fn A File pointer opened previously.
+         */
         void PrintConformation(const char *fn);
 };
 
