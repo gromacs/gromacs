@@ -45,6 +45,7 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -109,12 +110,13 @@ static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE}
  */
 static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
                                  gmx_bool bFullOmpSupport,
-                                 gmx_bool bSepPME)
+                                 gmx_bool bSepPME,
+                                 int nthreadsPME)
 {
     char      *env;
     int        nth;
 
-    const bool bOMP = GMX_OPENMP;
+    const bool bOMP = GMX_STS;
 
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
@@ -136,11 +138,11 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
         }
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
-         * OMP_NUM_THREADS also has to be set */
-        if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == NULL)
+         * GMX_STS_THREADS also has to be set */
+        if (bFullOmpSupport && getenv("GMX_STS_THREADS") == NULL)
         {
             gmx_warning("%s=%d is set, the default number of threads also "
-                        "needs to be set with OMP_NUM_THREADS!",
+                        "needs to be set with GMX_STS_THREADS!",
                         modth_env_var[m], nth);
         }
 
@@ -168,7 +170,16 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     {
         /* pick the global PME node nthreads if we are setting the number
          * of threads in separate PME nodes  */
-        nth = (bSepPME && m == emntPME) ? modth.gnth_pme : modth.gnth;
+        if (m != emntPME) {
+            nth = modth.gnth;
+        }
+        // TODO: May need to change when STS support for separate PME nodes is added.
+        else if (bSepPME) {
+            nth = modth.gnth_pme;
+        }
+        else {
+            nth = nthreadsPME;
+        }
     }
 
     gmx_omp_nthreads_set(m, nth);
@@ -183,19 +194,19 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 
     GMX_RELEASE_ASSERT(nthreads_omp, "nthreads_omp must be a non-NULL pointer");
 
-    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
+    if ((env = getenv("GMX_STS_THREADS")) != NULL)
     {
         int nt_omp;
 
         sscanf(env, "%d", &nt_omp);
         if (nt_omp <= 0)
         {
-            gmx_fatal(FARGS, "OMP_NUM_THREADS is invalid: '%s'", env);
+            gmx_fatal(FARGS, "GMX_STS_THREADS is invalid: '%s'", env);
         }
 
         if (bCommandLineSetNthreadsOMP && nt_omp != *nthreads_omp)
         {
-            gmx_fatal(FARGS, "Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, *nthreads_omp);
+            gmx_fatal(FARGS, "Environment variable GMX_STS_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, *nthreads_omp);
         }
 
         /* Setting the number of OpenMP threads. */
@@ -203,7 +214,7 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 
         /* Output the results */
         sprintf(buffer,
-                "The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n",
+                "The number of OpenMP threads was set by environment variable GMX_STS_THREADS to %d%s\n",
                 nt_omp,
                 bCommandLineSetNthreadsOMP ? " (and the command-line setting agreed with that)" : "");
         if (bIsSimMaster)
@@ -221,6 +232,9 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
             fputs(buffer, debug);
         }
     }
+    else if (!bCommandLineSetNthreadsOMP) {
+        gmx_fatal(FARGS, "Either GMX_STS_THREADS must be set or number of threads given on the command line with -ntomp");
+    }
 }
 
 /*! \brief Helper function for parsing various input about the number
@@ -235,9 +249,9 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
                                             gmx_bool gmx_unused  bThisNodePMEOnly,
                                             gmx_bool             bFullOmpSupport,
                                             int                  nppn,
-                                            gmx_bool             bSepPME)
+                                            gmx_bool             bSepPME,
+                                            int                  nthreadsPME)
 {
-    int      nth;
     char    *env;
 
 #if GMX_THREAD_MPI
@@ -264,55 +278,27 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
     /* With full OpenMP support (verlet scheme) set the number of threads
      * per process / default:
      * - 1 if not compiled with OpenMP or
-     * - OMP_NUM_THREADS if the env. var is set, or
+     * - GMX_STS_THREADS if the env. var is set, or
      * - omp_nthreads_req = #of threads requested by the user on the mdrun
      *   command line, otherwise
      * - take the max number of available threads and distribute them
      *   on the processes/tMPI threads.
      * ~ The GMX_*_NUM_THREADS env var overrides the number of threads of
      *   the respective module and it has to be used in conjunction with
-     *   OMP_NUM_THREADS.
+     *   GMX_STS_THREADS.
      *
      * With the group scheme OpenMP multithreading is only supported in PME,
      * for all other modules nthreads is set to 1.
      * The number of PME threads is equal to:
      * - 1 if not compiled with OpenMP or
      * - GMX_PME_NUM_THREADS if defined, otherwise
-     * - OMP_NUM_THREADS if defined, otherwise
+     * - GMX_STS_THREADS if defined, otherwise
      * - 1
      */
-    nth = 1;
-    if ((env = getenv("OMP_NUM_THREADS")) != NULL)
-    {
-        if (!bOMP && (std::strncmp(env, "1", 1) != 0))
-        {
-            gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
-                        gmx::getProgramContext().displayName());
-        }
-        else
-        {
-            nth = gmx_omp_get_max_threads();
-        }
-    }
-    else if (omp_nthreads_req > 0)
-    {
-        nth = omp_nthreads_req;
-    }
-    else if (bFullOmpSupport && bOMP)
-    {
-        /* max available threads per node */
-        nth = nthreads_hw_avail;
-
-        /* divide the threads among the MPI processes/tMPI threads */
-        if (nth >= nppn)
-        {
-            nth /= nppn;
-        }
-        else
-        {
-            nth = 1;
-        }
-    }
+    // Simplify greatly for STS
+    int nth = omp_nthreads_req;
+    gmx_omp_nthreads_read_env(&nth, true);
+    STS::startup(nth);
 
     /* now we have the global values, set them:
      * - 1 if not compiled with OpenMP and for the group scheme
@@ -345,15 +331,15 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
 
     /* now set the per-module values */
     modth.nth[emntDefault] = modth.gnth;
-    pick_module_nthreads(mdlog, emntDomdec, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntPairsearch, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntNonbonded, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntBonded, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntPME, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntUpdate, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntVSITE, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntLINCS, bFullOmpSupport, bSepPME);
-    pick_module_nthreads(mdlog, emntSETTLE, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntDomdec, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntPairsearch, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntNonbonded, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntBonded, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntPME, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntUpdate, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntVSITE, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntLINCS, bFullOmpSupport, bSepPME, nthreadsPME);
+    pick_module_nthreads(mdlog, emntSETTLE, bFullOmpSupport, bSepPME, nthreadsPME);
 
     /* set the number of threads globally */
     if (bOMP)
@@ -513,12 +499,13 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
                            gmx_bool bThisNodePMEOnly,
-                           gmx_bool bFullOmpSupport)
+                           gmx_bool bFullOmpSupport,
+                           int nthreadsPME)
 {
     int        nppn;
     gmx_bool   bSepPME;
 
-    const bool bOMP = GMX_OPENMP;
+    const bool bOMP = GMX_STS;
 
     /* number of MPI processes/threads per physical node */
     nppn = cr->nrank_intranode;
@@ -530,7 +517,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                                     nthreads_hw_avail,
                                     omp_nthreads_req, omp_nthreads_pme_req,
                                     bThisNodePMEOnly, bFullOmpSupport,
-                                    nppn, bSepPME);
+                                    nppn, bSepPME, nthreadsPME);
 #if GMX_THREAD_MPI
     /* Non-master threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain

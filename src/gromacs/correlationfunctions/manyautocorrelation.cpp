@@ -57,7 +57,10 @@
 
 int many_auto_correl(int nfunc, int ndata, int nfft, real **c)
 {
-    #pragma omp parallel
+    int nthreads  = gmx_omp_get_max_threads();
+
+    #pragma omp parallel for num_threads(nthreads) schedule(static)
+    for (int thread_id = 0; thread_id < nthreads; thread_id++)
     {
         try
         {
@@ -66,10 +69,7 @@ int many_auto_correl(int nfunc, int ndata, int nfft, real **c)
             gmx_fft_t    fft1;
             complex     *in, *out;
             int          i0, i1;
-            int          nthreads, thread_id;
 
-            nthreads  = gmx_omp_get_max_threads();
-            thread_id = gmx_omp_get_thread_num();
             if ((0 == thread_id))
             {
                 // fprintf(stderr, "There are %d threads for correlation functions\n", nthreads);

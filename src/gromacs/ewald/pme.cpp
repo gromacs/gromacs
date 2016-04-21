@@ -95,6 +95,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -922,7 +923,6 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     gmx_parallel_3dfft_t pfft_setup;
     real              *  fftgrid;
     t_complex          * cfftgrid;
-    int                  thread;
     gmx_bool             bFirst, bDoSplines;
     int                  fep_state;
     int                  fep_states_lj           = pme->bFEP_lj ? 2 : 1;
@@ -1089,11 +1089,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         }
 
         /* Here we start a large thread parallel region */
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+        STS* sts = STS::getInstance("force");
+        sts->parallel_for("PME1", 0, pme->nthread, [&](int thread)
         {
             try
             {
-                thread = gmx_omp_get_thread_num();
                 if (flags & GMX_PME_SOLVE)
                 {
                     int loop_count;
@@ -1173,7 +1173,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
                 }
             } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
+        });
         /* End of thread parallel section.
          * With MPI we have to synchronize here before gmx_sum_qgrid_dd.
          */
@@ -1205,7 +1205,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             lambda  = grid_index < DO_Q ? lambda_q : lambda_lj;
             bClearF = (bFirst && PAR(cr));
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
-            for (thread = 0; thread < pme->nthread; thread++)
+            for (int thread = 0; thread < pme->nthread; thread++)
             {
                 try
                 {
@@ -1357,11 +1357,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
                 }
                 /*Here we start a large thread parallel region*/
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+                STS* sts = STS::getInstance("force");
+                sts->parallel_for("PME2", 0, pme->nthread, [&](int thread)
                 {
                     try
                     {
-                        thread = gmx_omp_get_thread_num();
                         if (flags & GMX_PME_SOLVE)
                         {
                             /* do 3d-fft */
@@ -1380,18 +1380,18 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 bFirst = FALSE;
             }
             if (flags & GMX_PME_SOLVE)
             {
                 /* solve in k-space for our local cells */
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+                STS* sts = STS::getInstance("force");
+                sts->parallel_for("PME3", 0, pme->nthread, [&](int thread)
                 {
                     try
                     {
                         int loop_count;
-                        thread = gmx_omp_get_thread_num();
                         if (thread == 0)
                         {
                             wallcycle_start(wcycle, ewcLJPME);
@@ -1410,7 +1410,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
             }
 
             if (bCalcEnerVir)
@@ -1434,11 +1434,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     grid       = pmegrid->grid.grid;
                     calc_next_lb_coeffs(pme, local_sigma);
                     where();
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+                    STS* sts = STS::getInstance("force");
+                    sts->parallel_for("PME4", 0, pme->nthread, [&](int thread)
                     {
                         try
                         {
-                            thread = gmx_omp_get_thread_num();
                             /* do 3d-invfft */
                             if (thread == 0)
                             {
@@ -1466,7 +1466,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                             copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
                         }
                         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                    } /*#pragma omp parallel*/
+                    }); /* STS parallel_for */
 
                     /* distribute local grid to all nodes */
 #if GMX_MPI
@@ -1488,7 +1488,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         scale  *= lb_scale_factor[grid_index-2];
 
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
-                        for (thread = 0; thread < pme->nthread; thread++)
+                        for (int thread = 0; thread < pme->nthread; thread++)
                         {
                             try
                             {
