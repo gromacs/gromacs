@@ -47,6 +47,7 @@
 
 #include <algorithm>
 
+#include "gromacs/sts/barrier.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -1101,7 +1102,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                 tstart /= C[s];
                 splitaxes(lout2, lout, N[s], M[s], K[s], pM[s], P[s], C[s], iNout[s], oNout[s], tstart%pM[s], tstart/pM[s], tend%pM[s], tend/pM[s]);
             }
-#pragma omp barrier /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
+            MMBarrier::getInstance("fft")->enter(); /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
 #ifdef NOGMX
             if (times != NULL && thread == 0)
             {
@@ -1147,7 +1148,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #endif
             } /*master*/
         }     /* bPrallelDim */
-#pragma omp barrier  /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
+        MMBarrier::getInstance("fft")->enter(); /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
 
         /* ---------- END SPLIT + TRANSPOSE------------ */
 
