@@ -58,6 +58,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -1249,8 +1250,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 
     nthread = gmx_omp_nthreads_get(emntPairsearch);
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
+    STS::getInstance("default")->parallel_for("nbnxn_grid", 0, nthread, [=](size_t thread)
     {
         try
         {
@@ -1258,7 +1258,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
                                 nbs->cell, nbs->work[thread].cxy_na);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     /* Make the cell index as a function of x and y */
     ncz_max          = 0;

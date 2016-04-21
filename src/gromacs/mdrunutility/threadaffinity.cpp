@@ -52,6 +52,7 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -269,15 +270,16 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
     // To avoid warnings from the static analyzer we initialize nth_affinity_set
     // to zero outside the OpenMP block, and then add to it inside the block.
     // The value will still always be 0 or 1 from each thread.
-    int nth_affinity_set = 0;
-#pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
+    STS *sts = STS::getInstance("default");
+    TaskReduction<int> red = sts->createTaskReduction("default", 0);
+    sts->parallel_for("set affinity", 0, nthread_local, [&](int gmx_unused i)
     {
         try
         {
             int      thread_id, thread_id_node;
             int      index, core;
 
-            thread_id      = gmx_omp_get_thread_num();
+            thread_id      = Thread::getId();
             thread_id_node = thread0_id_node + thread_id;
             index          = offset + thread_id_node*core_pinning_stride;
             if (localityOrder != nullptr)
@@ -292,16 +294,20 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
             const bool ret = affinityAccess->setCurrentThreadAffinityToCore(core);
 
             /* store the per-thread success-values of the setaffinity */
-            nth_affinity_set += (ret ? 1 : 0);
+            if (ret) {
+                sts->collect(1);
+            }
 
             if (debug)
             {
                 fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
-                        cr->nodeid, gmx_omp_get_thread_num(), index, core, ret ? 1 : 0);
+                        cr->nodeid, Thread::getId(), index, core, ret ? 1 : 0);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    }, &red);
+
+    int nth_affinity_set = red.getResult();
 
     if (nth_affinity_set > nthread_local)
     {
