@@ -67,6 +67,8 @@ static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 #include "gromacs/utility/fatalerror.h"
 #endif
 
+gmx_wallcycle_t wcycle;
+
 typedef struct
 {
     int          n;
@@ -124,6 +126,7 @@ static const char *wcsn[ewcsNR] =
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
+    "STS ops.",
 };
 
 gmx_bool wallcycle_have_counter(void)

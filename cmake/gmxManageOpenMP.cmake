@@ -67,11 +67,11 @@ if(GMX_OPENMP)
         set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif()
 endif()
-gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
+gmx_dependent_cache_variable(GMX_STS_MAX_THREADS
     "Maximum number of OpenMP Threads supported. Has to be 32 or a multiple of 64."
-    STRING 32 GMX_OPENMP)
-mark_as_advanced(GMX_OPENMP_MAX_THREADS)
-math(EXPR MAX_THREAD_MOD "${GMX_OPENMP_MAX_THREADS} % 64")
-if (NOT GMX_OPENMP_MAX_THREADS EQUAL 32 AND NOT ${MAX_THREAD_MOD} EQUAL 0)
-    message(FATAL_ERROR "Only 32 or multiples of 64 supported for GMX_OPENMP_MAX_THREADS.")
+    STRING 32 GMX_STS)
+mark_as_advanced(GMX_STS_MAX_THREADS)
+math(EXPR MAX_THREAD_MOD "${GMX_STS_MAX_THREADS} % 64")
+if (NOT GMX_STS_MAX_THREADS EQUAL 32 AND NOT ${MAX_THREAD_MOD} EQUAL 0)
+    message(FATAL_ERROR "Only 32 or multiples of 64 supported for GMX_STS_MAX_THREADS.")
 endif()
