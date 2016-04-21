@@ -279,6 +279,8 @@ mark_as_advanced(GMX_LOAD_PLUGINS)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
+option(GMX_STS "Enable STS-based multithreading" ON)
+
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
