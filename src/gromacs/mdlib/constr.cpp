@@ -62,6 +62,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/topology/mtop_util.h"
@@ -290,7 +291,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
-    int         nth, th;
+    int         nth;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
@@ -443,8 +444,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         switch (econq)
         {
             case econqCoord:
-#pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
+                STS::getInstance("default")->parallel_for("constrain", 0, nth, [&](int th)
                 {
                     try
                     {
@@ -463,7 +463,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                                 th == 0 ? &bSettleErrorHasOccurred : &constr->bSettleErrorHasOccurred[th]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
                 if (v != NULL)
                 {
@@ -478,8 +478,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             case econqDeriv:
             case econqForce:
             case econqForceDispl:
-#pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
+                STS::getInstance("default")->parallel_for("constrain2", 0, nth, [&](int th)
                 {
                     try
                     {
@@ -514,7 +513,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 /* This is an overestimate */
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
                 break;

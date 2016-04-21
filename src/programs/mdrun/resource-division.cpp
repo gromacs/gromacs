@@ -69,7 +69,7 @@
  * and after a switch point doesn't change too much.
  */
 
-static const bool bHasOmpSupport = GMX_OPENMP;
+static const bool bHasOmpSupport = GMX_STS;
 
 #if GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
@@ -149,7 +149,7 @@ static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
         nth *= nthreads_omp_faster_gpu_fac;
     }
 
-    nth = std::min(nth, GMX_OPENMP_MAX_THREADS);
+    nth = std::min(nth, GMX_STS_MAX_THREADS);
 
     return nth;
 }
