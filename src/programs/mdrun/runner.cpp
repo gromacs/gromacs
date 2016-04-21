@@ -53,6 +53,8 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cstdlib>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -96,6 +98,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -689,6 +692,99 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
+//! \brief Creates the STS schedule for computing bonded and nonbonded forces.
+void sts_create_schedule_for_force_compute(const t_commrec *cr, bool bUseDefaultSchedule)
+{
+    const double ratioThreadsForNB = 0.9;
+    const int nthreads   = STS::getNumThreads();
+    const int nthreadsNB = nthreads * ratioThreadsForNB;
+    const int nthreadsB  = nthreads - nthreadsNB;
+    const bool doPP  = (cr->duty & DUTY_PP);
+    const bool doPME = (cr->duty & DUTY_PME);
+    STS *sts = new STS("force");
+    sts->clearAssignments();
+
+    if (bUseDefaultSchedule || nthreads == 1) {
+        sts->setDefaultSchedule();
+        new MMBarrier(nthreads, "fft");
+        return;
+    }
+
+    if (doPP) {
+        // First half of threads do nonbonded
+        sts->assign("nonbonded", 0);
+        for (int t=0; t<nthreadsNB; t++) {
+            sts->assign("nonbonded_loop_local", t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+            if (DOMAINDECOMP(cr)) {
+                // Two nonbonded loops for both local and nonlocal forces
+                sts->assign("nonbonded_loop_nonlocal", t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+            }
+            if (nthreadsNB > 1) {
+                sts->assign("stdreduce",      t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+            }
+            // sts->assign("nbat_f_to_f",    t, {{t, nthreadsNB},{t+1, nthreadsNB}});
+        }
+
+        // Second half of threads do bonded
+        // sts->assign("bonded", nthreadsNB);
+        sts->assign("bonded", nthreadsNB);
+        for (int t=nthreadsNB, numer=0; t<nthreads; t++, numer++) {
+            sts->assign("listed_forces2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+            sts->assign("listed_forces1", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+            if (doPME) {
+                sts->assign("calc_splines", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                sts->assign("pme_spread", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                if (nthreadsB > 1) {
+                  sts->assign("pme_spread2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                }
+                sts->assign("PME1", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                sts->assign("gather_f_bsplines", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign("PME2", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign("PME3", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign("PME4", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+                // sts->assign("corr", t, {{numer, nthreadsB},{numer+1, nthreadsB}});
+            }
+        }
+
+        // Create STS barrier used by FFT library.
+        // We create it here because we know the number of threads.
+        new MMBarrier(nthreadsB, "fft");
+    }
+
+    if (!doPP && doPME) {
+        sts->assign("PME", 0);
+        for (int t=0; t<nthreads; t++) {
+            sts->assign("calc_splines", t, {{t, nthreads},{t+1, nthreads}});
+            sts->assign("pme_spread", t, {{t, nthreads},{t+1, nthreads}});
+            if (nthreads > 1) {
+                sts->assign("pme_spread2", t, {{t, nthreads},{t+1, nthreads}});
+            }
+            sts->assign("PME1", t, {{t, nthreads},{t+1, nthreads}});
+            sts->assign("gather_f_bsplines", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign("PME2", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign("PME3", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign("PME4", t, {{t, nthreads},{t+1, nthreads}});
+            // sts->assign("corr", t, {{t, nthreads},{t+1, nthreads}});
+        }
+
+        // Create STS barrier used by FFT library.
+        // We create it here because we know the number of threads.
+        new MMBarrier(nthreads, "fft");
+    }
+
+    // Tasks not yet assigned (done either serially or with all threads if the
+    // default schedule is used).
+    // listed_manage1, listed_manage2, nbnxn_grid
+    // nbnxn_search1, nbnxn_search2, nbnxn_search3, nbnxn_search4, nbnxn_search5
+    // calc_splines, pme_spread, pme_spread2, gather_f_bsplines
+
+    // Adjust thread counts to match STS schedule
+    setenv("GMX_NONBONDED_NUM_THREADS", std::to_string(nthreadsNB).c_str(), 0);
+    setenv("GMX_LISTED_FORCES_NUM_THREADS", std::to_string(nthreadsB).c_str(), 0);
+    int pmeThreads = doPME ? (doPP ? nthreadsB : nthreads) : 0;
+    setenv("GMX_PME_NUM_THREADS", std::to_string(pmeThreads).c_str(), 0);
+}
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -1108,6 +1204,16 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Check and update hw_opt for the number of MPI ranks */
     check_and_update_hw_opt_3(hw_opt);
 
+    char* sts_threads = getenv("GMX_STS_THREADS");
+    if (sts_threads!=nullptr)
+    {
+        STS::startup(atoi(sts_threads));
+    }
+    else
+    {
+        STS::startup(1);
+    }
+    sts_create_schedule_for_force_compute(cr, false);
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
@@ -1257,7 +1363,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* threads on this MPI process or TMPI thread */
         if (cr->duty & DUTY_PP)
         {
-            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+            nthread_local = gmx_omp_nthreads_get(emntDefault);
         }
         else
         {
@@ -1387,6 +1493,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                fr ? fr->nbv : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
+    STS::shutdown();
 
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);

@@ -63,6 +63,9 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/sts/barrier.h"
+#include "gromacs/sts/sts.h"
+#include "gromacs/sts/thread.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -191,7 +194,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
 
         if (lincsd->bTaskDep)
         {
-#pragma omp barrier
+            MMBarrier::getInstance("lincs")->enter();
         }
         for (b = b0; b < b1; b++)
         {
@@ -231,7 +234,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
              * We could avoid this barrier by introducing two extra rhs
              * arrays for the triangle constraints only.
              */
-#pragma omp barrier
+            MMBarrier::getInstance("lincs")->enter();
         }
 
         /* Constraints involved in a triangle are ensured to be in the same
@@ -279,7 +282,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
              * but constraints in one triangle cross thread task borders.
              * We could probably avoid this with more advanced setup code.
              */
-#pragma omp barrier
+            MMBarrier::getInstance("lincs")->enter();
         }
     }
 }
@@ -410,8 +413,12 @@ static void lincs_update_atoms(struct gmx_lincsdata *li, int th,
             /* Update the constraints that operate on atoms
              * in multiple thread atom blocks on the master thread.
              */
-#pragma omp barrier
-#pragma omp master
+            MMBarrier::getInstance("lincs")->enter();
+            // TODO: Assumes thread 0 is assigned to this region, which is
+            // true currently since we are using the default sts.
+            // We need some way to identify the master thread for a
+            // parallel region.
+            if (Thread::getId() == 0)
             {
                 lincs_update_atoms_ind(li->task[li->ntask].nind,
                                        li->task[li->ntask].ind,
@@ -595,7 +602,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
         /* We need a barrier, since the matrix construction below
          * can access entries in r of other threads.
          */
-#pragma omp barrier
+        MMBarrier::getInstance("lincs")->enter();
     }
 
     /* Construct the (sparse) LINCS matrix */
@@ -990,7 +997,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         /* We need a barrier, since the matrix construction below
          * can access entries in r of other threads.
          */
-#pragma omp barrier
+        MMBarrier::getInstance("lincs")->enter();
     }
 
     /* Construct the (sparse) LINCS matrix */
@@ -1036,8 +1043,12 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     {
         if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints))
         {
-#pragma omp barrier
-#pragma omp master
+            MMBarrier::getInstance("lincs")->enter();
+            // TODO: Assumes thread 0 is assigned to this region, which is
+            // true currently since we are using the default sts.
+            // We need some way to identify the master thread for a
+            // parallel region.
+            if (Thread::getId() == 0)
             {
                 /* Communicate the corrected non-local coordinates */
                 if (DOMAINDECOMP(cr))
@@ -1045,11 +1056,11 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                     dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
                 }
             }
-#pragma omp barrier
+            MMBarrier::getInstance("lincs")->enter();
         }
         else if (lincsd->bTaskDep)
         {
-#pragma omp barrier
+            MMBarrier::getInstance("lincs")->enter();
         }
 
 #if GMX_SIMD_HAVE_REAL
@@ -1101,7 +1112,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         if (lincsd->bTaskDep)
         {
             /* In lincs_update_atoms threads might cross-read mlambda */
-#pragma omp barrier
+            MMBarrier::getInstance("lincs")->enter();
         }
 
         /* Only account for local atoms */
@@ -2419,13 +2430,16 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
          */
         bWarn = FALSE;
 
-        /* The OpenMP parallel region of constrain_lincs for coords */
-#pragma omp parallel num_threads(lincsd->ntask)
+        /* The STS parallel region of constrain_lincs for coords */
+
+        STS* sts = STS::getInstance("default");
+        if (MMBarrier::getInstance("lincs") == nullptr) {
+            new MMBarrier(STS::getNumThreads(), "lincs");
+        }
+        sts->parallel_for("lincs1", 0, lincsd->ntask, [&](int th)
         {
             try
             {
-                int th = gmx_omp_get_thread_num();
-
                 clear_mat(lincsd->task[th].vir_r_m_dr);
 
                 do_lincs(x, xprime, box, pbc, lincsd, th,
@@ -2436,7 +2450,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
+        });
 
         if (bLog && fplog && lincsd->nc > 0)
         {
@@ -2515,19 +2529,21 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     }
     else
     {
-        /* The OpenMP parallel region of constrain_lincs for derivatives */
-#pragma omp parallel num_threads(lincsd->ntask)
+        /* The STS parallel region of constrain_lincs for derivatives */
+        STS* sts = STS::getInstance("default");
+        if (MMBarrier::getInstance("lincs") == nullptr) {
+            new MMBarrier(STS::getNumThreads(), "lincs");
+        }
+        sts->parallel_for("lincs2", 0, lincsd->ntask, [&](int th)
         {
             try
             {
-                int th = gmx_omp_get_thread_num();
-
                 do_lincsp(x, xprime, min_proj, pbc, lincsd, th,
                           md->invmass, econq, bCalcDHDL,
                           bCalcVir, th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        }
+        });
     }
 
     if (bCalcDHDL)
