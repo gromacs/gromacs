@@ -144,9 +144,6 @@ class AtomNum
          */
         AtomNum(std::string catom, int cnumber) { SetAtom(catom); SetNumber(cnumber); }
 
-        //! Destructor
-        ~AtomNum() {};
-
         //! Return the name of the atom for this AtomNum
         const std::string &getAtom() const { return _catom; }
 
@@ -211,9 +208,6 @@ class MolecularComposition
          * \param[in] compname  Name of the composition type
          */
         MolecularComposition(std::string compname) { _compname = compname; }
-
-        //! Destructor
-        ~MolecularComposition() {}
 
         //! Return the composition name
         const std::string &getCompName() const { return _compname; }
@@ -309,9 +303,6 @@ class GenericProperty
         GenericProperty(std::string type, std::string unit, double T, ePhase ep)
         { SetType(type); SetUnit(unit); setTemperature(T); setPhase(ep); }
 
-        //! Destructor
-        ~GenericProperty() {};
-
         //! Return the property type
         const std::string &getType() const { return type_; }
 
@@ -377,9 +368,6 @@ class MolecularQuadrupole : public GenericProperty
         MolecularQuadrupole(std::string type, std::string unit, double T,
                             double xx, double yy, double zz,
                             double xy, double xz, double yz) : GenericProperty(type, unit, T, epGAS) { Set(xx, yy, zz, xy, xz, yz); };
-
-        //! Destructor
-        ~MolecularQuadrupole() {};
 
         //! Set all the elements of the qudrupole tensor
         void Set(double xx, double yy, double zz, double xy, double xz, double yz) { xx_ = xx; yy_ = yy; zz_ = zz; xy_ = xy; xz_ = xz; yz_ = yz; };
@@ -449,9 +437,6 @@ class MolecularPolarizability : public GenericProperty
                                 double xx, double yy, double zz,
                                 double xy, double xz, double yz,
                                 double average, double error) : GenericProperty(type, unit, T, epGAS) { Set(xx, yy, zz, xy, xz, yz, average, error); };
-
-        //! Destructor
-        ~MolecularPolarizability() {};
 
         //! Set all the elements of the polarizability tensor
         void Set(double xx, double yy, double zz,
@@ -534,9 +519,6 @@ class MolecularEnergy : public GenericProperty
         //! Constructor storing all properties related to this energy term
         MolecularEnergy(std::string type, std::string unit, double T, ePhase ep, double value, double error) : GenericProperty(type, unit, T, ep) { Set(value, error); };
 
-        //! Destructor
-        ~MolecularEnergy() {};
-
         //! Set the value and error for the energy
         void Set(double value, double error) { _value = value; _error = error; };
 
@@ -594,9 +576,6 @@ class MolecularDipole : public GenericProperty
         //! Constructor storing all properties related to this dipole
         MolecularDipole(std::string type, std::string unit, double T,
                         double x, double y, double z, double aver, double error) : GenericProperty(type, unit, T, epGAS) { Set(x, y, z, aver, error); }
-
-        //! Destructor
-        ~MolecularDipole() {};
 
         //! Set all properties related to this dipole
         void Set(double x, double y, double z, double aver, double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
@@ -665,9 +644,6 @@ class ElectrostaticPotential
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         ElectrostaticPotential(const char *xyz_unit, const char *V_unit, int espid, double x, double y, double z, double V) { Set(xyz_unit, V_unit, espid, x, y, z, V); };
-
-        //! Destructor
-        ~ElectrostaticPotential() {};
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         void Set(std::string xyz_unit, std::string V_unit, int espid, double x, double y, double z, double V) { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
@@ -750,14 +726,11 @@ class Bond
         //! Constructor setting the ids of the atoms and the bondorder
         Bond(int ai, int aj, int bondorder) { Set(ai, aj, bondorder); }
 
-        //! Destructor
-        ~Bond() {};
-
         //! Sets the ids of the atoms and the bondorder
         void Set(int ai, int aj, int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder; };
 
         //! Returns the ids of the atoms and the bondorder
-        void get(int *ai, int *aj, int *bondorder) const 
+        void get(int *ai, int *aj, int *bondorder) const
         { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
 
         //! Returns the first atom id
@@ -809,9 +782,6 @@ class AtomicCharge : public GenericProperty
 
         //! Constructor setting type, unit and charge itself
         AtomicCharge(std::string type, std::string unit, double T, double q) : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
-
-        //! Destructor
-        ~AtomicCharge() {};
 
         //! Set the charge to q
         void SetQ(double q) { _q = q; };
@@ -872,9 +842,6 @@ class CalcAtom
             name_ = name; obType_ = obtype; atomID_ = atomid;
         };
 
-        //! Destructur
-        ~CalcAtom() {};
-
 
         //! Function returning true if the two atoms are equal
         bool Equal(CalcAtom ca);
@@ -910,7 +877,7 @@ class CalcAtom
         void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
 
         //! Return all the coordinates of the atom
-        void getCoords(double *x, double *y, double *z) const 
+        void getCoords(double *x, double *y, double *z) const
         { *x = x_; *y = y_; *z = z_; }
 
         //! Return the X coordinate of the atom
@@ -994,9 +961,6 @@ class Experiment
             _program(program), _method(method), _basisset(basisset),
             _datafile(datafile)
         {}
-
-        //! Default destructor
-        ~Experiment() {};
 
         //! Return the type of data
         DataSource dataSource() const { return dataSource_; }
@@ -1155,9 +1119,6 @@ class MolProp
         //! Construct a number MolProp object
         MolProp() { _index = -1; _mass = 0; _charge = 0; _multiplicity = 0; }
 
-        //! Destructor
-        ~MolProp() {}
-
         /*! \brief
          * Check the internal consistency of this object
          *
@@ -1241,13 +1202,13 @@ class MolProp
         //! Return IUPAC name or, if not found, the molname
         const std::string &getIupac() const
         {
-            if (_iupac.size() > 0) 
+            if (_iupac.size() > 0)
             {
-                return _iupac; 
-            } 
+                return _iupac;
+            }
             else
             {
-                return _molname; 
+                return _molname;
             }
         }
 
@@ -1314,7 +1275,7 @@ class MolProp
         //! Add a composition entry
         void AddComposition(MolecularComposition mc);
 
-        std::vector<MolecularComposition> &MolComp() 
+        std::vector<MolecularComposition> &MolComp()
         { return _mol_comp; }
 
         const std::vector<MolecularComposition> &MolComp() const
@@ -1380,9 +1341,9 @@ class MolProp
         //! Return pointer to the last inserted experiment or NULL if the number of experiments is zero
         Experiment *LastExperiment()
         {
-            if (NExperiment() > 0) 
-            { 
-                return &(_exper.back()); 
+            if (NExperiment() > 0)
+            {
+                return &(_exper.back());
             }
             else
             {

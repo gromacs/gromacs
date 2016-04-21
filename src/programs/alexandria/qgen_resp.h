@@ -44,7 +44,6 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 
@@ -60,43 +59,41 @@ namespace alexandria
 {
 class EspPoint
 {
- public:
- EspPoint(gmx::RVec esp, double v) : esp_(esp), v_(v) 
-    {
-        vCalc_ = 0;
-        rho_ = 0;
-    }
-    const gmx::RVec &esp() const { return esp_; }
-    
-    double v() const { return v_; }
-    
-    void setV(double v) { v_ = v; }
-    
-    double vCalc() const { return vCalc_; }
-    
-    void setVCalc(double vcalc) { vCalc_ = vcalc; }
-    
-    double rho() const { return rho_; }
-    
-    void setRho(double rho) { rho_ = rho; }
-    
- private:
-    //! The coordinates of a point
-    gmx::RVec esp_;
-    //! The measured potential
-    double v_;
-    //! The calculated potential
-    double vCalc_;
-    //! The electron density in the point
-    double rho_;
+    public:
+        EspPoint(gmx::RVec esp, double v) : esp_(esp), v_(v)
+        {
+            vCalc_ = 0;
+            rho_   = 0;
+        }
+        const gmx::RVec &esp() const { return esp_; }
+
+        double v() const { return v_; }
+
+        void setV(double v) { v_ = v; }
+
+        double vCalc() const { return vCalc_; }
+
+        void setVCalc(double vcalc) { vCalc_ = vcalc; }
+
+        double rho() const { return rho_; }
+
+        void setRho(double rho) { rho_ = rho; }
+
+    private:
+        //! The coordinates of a point
+        gmx::RVec esp_;
+        //! The measured potential
+        double    v_;
+        //! The calculated potential
+        double    vCalc_;
+        //! The electron density in the point
+        double    rho_;
 };
 
 class QgenResp
 {
     public:
         QgenResp();
-
-        ~QgenResp();
 
         ChargeDistributionModel chargeDistributionModel()
         { return _iDistributionModel; }
@@ -108,9 +105,9 @@ class QgenResp
          */
         void setChargeDistributionModel(ChargeDistributionModel c)
         { _iDistributionModel = c; }
-        
+
         void setAtomWeight(real watoms) { _watoms = watoms; }
-        
+
         real getMolecularCharge() const { return _qtot; }
 
         void setMolecularCharge(int qtot) { _qtot = qtot; }
@@ -150,7 +147,7 @@ class QgenResp
         void setAtomInfo(t_atoms       *atoms,
                          const Poldata &pd,
                          const rvec     x[]);
-                         
+
         void updateAtomCoords(const rvec x[]);
 
         const std::string &getStoichiometry() const { return _stoichiometry; }
@@ -239,7 +236,6 @@ class QgenResp
         bool                      _bAXpRESP;
         ivec                      _nxyz;
         real                      _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
-        gmx_rng_t                 rnd_;
         int                       uniqueQ_;
         int                       fitQ_;
         int                       nAtom_;

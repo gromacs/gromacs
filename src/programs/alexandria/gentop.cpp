@@ -52,7 +52,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -146,7 +145,7 @@ int alex_gentop(int argc, char *argv[])
         { efDAT, "-q",    "qout", ffOPTWR },
         { efDAT, "-mpdb", "molprops", ffOPTRD },
         { efDAT, "-d",    "gentop", ffOPTRD },
-        { efXVG, "-table","table",  ffOPTRD },
+        { efXVG, "-table", "table",  ffOPTRD },
         { efCUB, "-pot",  "potential", ffOPTWR },
         { efCUB, "-ref",  "refpot", ffOPTRD },
         { efCUB, "-diff", "diffpot", ffOPTWR },

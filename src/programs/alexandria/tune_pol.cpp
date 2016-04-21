@@ -38,16 +38,17 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <random>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
@@ -76,7 +77,6 @@ class pType
         gmx_stats_t polstats;
     public:
         pType(std::string name, const bool bUse, const int nCopies);
-        ~pType();
         bool bUse() { return bUse_; }
         void setUse(bool bUse) { bUse_ = bUse; }
         void checkUse(int mindata) { bUse_ = (nCopies_ > mindata); }
@@ -93,11 +93,6 @@ pType::pType(std::string name, const bool bUse, const int nCopies)
     bUse_    = bUse;
     nCopies_ = nCopies;
     polstats = gmx_stats_init();
-}
-
-pType::~pType()
-{
-    //gmx_stats_free(polstats);
 }
 
 bool check_matrix(double **a, double *x, unsigned int nrow,
@@ -261,7 +256,6 @@ static int decompose_frag(FILE *fplog,
                           const alexandria::MolSelect &gms,
                           gmx_bool bZero, gmx_bool bForceFit,
                           int nBootStrap, real fractionBootStrap,
-                          int seed,
                           std::vector<std::string> zeropol,
                           const gmx_output_env_t *oenv)
 {
@@ -486,11 +480,9 @@ static int decompose_frag(FILE *fplog,
 
     // Now loop over the number of bootstrap loops
     int nUseBootStrap = std::min(nusemol, (unsigned int)(1+floor(fractionBootStrap*nusemol)));
-    if (seed <= 0)
-    {
-        seed = gmx_rng_make_seed();
-    }
-    gmx_rng_t rng = gmx_rng_init(seed);
+    std::random_device              rd;
+    std::mt19937                    gen(rd());
+    std::uniform_int_distribution<> dis(0, nUseBootStrap-1);
     for (int kk = 0; (kk < nBootStrap); kk++)
     {
         fprintf(stderr, "\rBootStrap %d", 1+kk);
@@ -503,7 +495,7 @@ static int decompose_frag(FILE *fplog,
         for (int ii = 0; (ii < nUseBootStrap); ii++)
         {
             // Pick random molecule uu out of stack
-            unsigned int uu = gmx_rng_uniform_uint32(rng) % nUseBootStrap;
+            int uu = dis(gen);
 
             for (unsigned int jj = 0; (jj < ptypes.size()); jj++)
             {
@@ -767,7 +759,7 @@ int alex_tune_pol(int argc, char *argv[])
     nalexandria_atypes = decompose_frag(fplog, opt2fn("-his", NFILE, fnm),
                                         pd, mp, bQM, lot, mindata,
                                         gms, bZero, bForceFit,
-                                        nBootStrap, fractionBootStrap, seed,
+                                        nBootStrap, fractionBootStrap,
                                         zpol, oenv);
     fprintf(fplog, "There are %d alexandria atom types\n", nalexandria_atypes);
 

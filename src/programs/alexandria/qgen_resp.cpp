@@ -57,7 +57,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
@@ -85,7 +84,6 @@ namespace alexandria
 
 QgenResp::QgenResp()
 {
-    rnd_                = nullptr;
     _bAXpRESP           = false;
     _qfac               = 1e-3;
     _bHyper             = 0.1;
@@ -106,11 +104,6 @@ QgenResp::QgenResp()
     _bRandQ             = false;
 }
 
-QgenResp::~QgenResp()
-{
-    gmx_rng_destroy(rnd_);
-}
-
 void QgenResp::updateAtomCoords(const rvec x[])
 {
     for (size_t i = 0; (i < ra_.size()); i++)
@@ -123,7 +116,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
                            const rvec                 x[])
 {
-    nAtom_ = 0;
+    nAtom_  = 0;
     nShell_ = 0;
     // First add all the atom types
     for (int i = 0; (i < atoms->nr); i++)
@@ -133,17 +126,17 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
                          (strncmp(*atoms->atomtype[i], *atoms->atomtype[i+1], strlen(*atoms->atomtype[i])) == 0) &&
                          (atoms->atom[i].ptype == eptAtom) &&
                          (atoms->atom[i+1].ptype == eptShell));
-        switch(atoms->atom[i].ptype) 
+        switch (atoms->atom[i].ptype)
         {
-        case eptAtom:
-            nAtom_ += 1;
-            break;
-        case eptShell:
-            nShell_ += 1;
-            break;
-        default:
-            fprintf(stderr, "Oh dear, particle %d is a %s\n", 
-                    i, ptype_str[atoms->atom[i].ptype]);
+            case eptAtom:
+                nAtom_ += 1;
+                break;
+            case eptShell:
+                nShell_ += 1;
+                break;
+            default:
+                fprintf(stderr, "Oh dear, particle %d is a %s\n",
+                        i, ptype_str[atoms->atom[i].ptype]);
         }
         if (findRAT(atoms->atom[i].type) == endRAT())
         {
@@ -159,11 +152,11 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
     {
         // Now compute starting charge for atom, taking into account
         // the charges of the other "shells".
-        auto rat = findRAT(atoms->atom[i].type);
+        auto   rat = findRAT(atoms->atom[i].type);
         GMX_RELEASE_ASSERT(rat != endRAT(), "Inconsistency setting atom info");
         double q    = rat->beginRZ()->q();
         // q is the variable charge. For precision we determine what the
-        // "rest" of the charge on a particle is such that we fit charges to 
+        // "rest" of the charge on a particle is such that we fit charges to
         // the residual electrostatic potential only.
         double qref = 0;
         if (rat->hasShell())
@@ -175,7 +168,7 @@ void QgenResp::setAtomInfo(t_atoms                   *atoms,
         }
         else
         {
-            for(auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
+            for (auto ra = rat->beginRZ()+1; ra < rat->endRZ(); ++ra)
             {
                 qref -= ra->q();
             }
@@ -212,13 +205,13 @@ void QgenResp::setAtomSymmetry(const std::vector<int> &symmetricAtoms)
 {
     GMX_RELEASE_ASSERT(!ra_.empty(), "RespAtom vector not initialized");
     GMX_RELEASE_ASSERT(!ratype_.empty(), "RespAtomType vector not initialized");
-    GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 || 
-                       symmetricAtoms.size() == nAtom(), 
+    GMX_RELEASE_ASSERT(symmetricAtoms.size() == 0 ||
+                       symmetricAtoms.size() == nAtom(),
                        "Please pass me a correct symmetric atoms vector");
 
     if (symmetricAtoms.size() == 0)
     {
-        for(size_t i = 0; i < nAtom(); i++)
+        for (size_t i = 0; i < nAtom(); i++)
         {
             symmetricAtoms_.push_back(i);
         }
@@ -447,7 +440,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
     int                 natom, nxyz[DIM] = { 0, 0, 0 };
     double              space[DIM] = { 0, 0, 0 };
     std::vector<double> pot;
-    
+
     gmx::TextReader     tr(fn);
     std::string         tmp;
     int                 line = 0;
@@ -520,7 +513,7 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
                     ra_[m].setAtomnumber(anr);
                     ra_[m].setQ(qq);
                 }
-                RVec xx;
+                gmx::RVec xx;
                 xx[XX] = convert2gmx(lx, eg2cBohr);
                 xx[YY] = convert2gmx(ly, eg2cBohr);
                 xx[ZZ] = convert2gmx(lz, eg2cBohr);
@@ -677,7 +670,7 @@ void QgenResp::calcRho()
 
 void QgenResp::calcPot()
 {
-    for(auto &ep : ep_)
+    for (auto &ep : ep_)
     {
         ep.setVCalc(0);
     }
@@ -949,7 +942,7 @@ void QgenResp::optimizeCharges()
     {
         int                  atype = ra_[ii].atype();
         RespAtomTypeIterator rat   = findRAT(atype);
-        RVec                 rx    = ra_[ii].x();
+        gmx::RVec            rx    = ra_[ii].x();
 
         for (size_t j = 0; j < nEsp(); j++)
         {

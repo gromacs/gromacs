@@ -1,13 +1,49 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2011-2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
 
-#include <ctype.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+#include <random>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -22,7 +58,6 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/random/random.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atomprop.h"
@@ -441,7 +476,7 @@ static double dipole_function(void *params, double v[])
         }
         EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, name);
         GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Can not find eemprops");
-        
+
         ei->setRowZetaQ(rowstr, zstr, qstr);
         ei->setJ0(J0);
         ei->setChi0(chi0);
@@ -474,18 +509,20 @@ static double dipole_function(void *params, double v[])
     return md->_ener[ermsTOT];
 }
 
-static real guess_new_param(real x, real step, real x0, real x1, gmx_rng_t rng,
+static real guess_new_param(real     x,
+                            real     step,
+                            real     x0,
+                            real     x1,
+                            real     randomNumber,
                             gmx_bool bRandom)
 {
-    real r = gmx_rng_uniform_real(rng);
-
     if (bRandom)
     {
-        x = x0+(x1-x0)*r;
+        x = x0+(x1-x0)*randomNumber;
     }
     else
     {
-        x = x*(1-step+2*step*r);
+        x = x*(1-step+2*step*randomNumber);
     }
 
     if (x < x0)
@@ -504,7 +541,9 @@ static real guess_new_param(real x, real step, real x0, real x1, gmx_rng_t rng,
 
 static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
                            int run, int iter, real stepsize,
-                           gmx_bool bRandom, gmx_rng_t rng,
+                           gmx_bool bRandom,
+                           std::mt19937 &gen,
+                           std::uniform_real_distribution<> dis,
                            double orig_param[], double test_param[])
 {
     double           J00, xxx, chi0, zeta;
@@ -524,7 +563,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
         if (bStart)
         {
             J00 = md->pd_.getJ00( md->_iChargeDistributionModel, name);
-            xxx = guess_new_param(J00, stepsize, md->_J0_0, md->_J0_1, rng, bRand);
+            xxx = guess_new_param(J00, stepsize, md->_J0_0, md->_J0_1, dis(gen), bRand);
             if (bRand)
             {
                 orig_param[k] = xxx;
@@ -537,7 +576,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
         }
         else
         {
-            J00 = guess_new_param(orig_param[k], stepsize, md->_J0_0, md->_J0_1, rng, bRand);
+            J00 = guess_new_param(orig_param[k], stepsize, md->_J0_0, md->_J0_1, dis(gen), bRand);
         }
         test_param[k++] = J00;
 
@@ -546,7 +585,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
         {
             if (bStart)
             {
-                xxx = guess_new_param(chi0, stepsize, md->_Chi0_0, md->_Chi0_1, rng, bRand);
+                xxx = guess_new_param(chi0, stepsize, md->_Chi0_0, md->_Chi0_1, dis(gen), bRand);
                 if (bRand)
                 {
                     orig_param[k] = xxx;
@@ -559,7 +598,7 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             }
             else
             {
-                chi0 = guess_new_param(orig_param[k], stepsize, md->_Chi0_0, md->_Chi0_1, rng, bRand);
+                chi0 = guess_new_param(orig_param[k], stepsize, md->_Chi0_0, md->_Chi0_1, dis(gen), bRand);
             }
             test_param[k++] = chi0;
         }
@@ -582,13 +621,13 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             {
                 if (bStart)
                 {
-                    xxx           = guess_new_param(zeta, stepsize, md->_w_0, md->_w_1, rng, bRand);
+                    xxx           = guess_new_param(zeta, stepsize, md->_w_0, md->_w_1, dis(gen), bRand);
                     orig_param[k] = (bRand) ? xxx : zeta;
                     zeta          = xxx;
                 }
                 else
                 {
-                    zeta = guess_new_param(orig_param[k], stepsize, md->_w_0, md->_w_1, rng, bRand);
+                    zeta = guess_new_param(orig_param[k], stepsize, md->_w_0, md->_w_1, dis(gen), bRand);
                 }
                 test_param[k++] = zeta;
             }
@@ -613,25 +652,26 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
 
 static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                             alexandria::MolDip *md, int maxiter, real tol,
-                            int nrun, real stepsize, int seed,
+                            int nrun, real stepsize,
                             gmx_bool bRandom, const gmx_output_env_t * oenv)
 {
-    FILE       *cfp = NULL;
-    double      chi2, chi2_min;
-    int         nzeta, zz;
-    int         i, k, n, nparam;
-    double     *test_param, *orig_param, *best_param, *start;
-    gmx_bool    bMinimum = FALSE;
-    double      J00, chi0, zeta;
-    std::string name;
-    std::string qstr, rowstr;
-    char        zstr[STRLEN], buf[STRLEN];
-    gmx_rng_t   rng;
+    FILE                            *cfp = NULL;
+    double                           chi2, chi2_min;
+    int                              nzeta, zz;
+    int                              i, k, n, nparam;
+    double                          *test_param, *orig_param, *best_param, *start;
+    gmx_bool                         bMinimum = FALSE;
+    double                           J00, chi0, zeta;
+    std::string                      name;
+    std::string                      qstr, rowstr;
+    char                             zstr[STRLEN], buf[STRLEN];
+    std::random_device               rd;
+    std::mt19937                     gen(rd());
+    std::uniform_real_distribution<> dis(0, 1);
+
 
     if (MASTER(md->_cr))
     {
-        rng = gmx_rng_init(seed);
-
         nparam = 0;
         name   = opt_index_count(md->_ic);
         while (name.size() != 0)
@@ -687,7 +727,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                 fflush(cfp);
             }
 
-            k = guess_all_param(fplog, md, n, 0, stepsize, bRandom, rng,
+            k = guess_all_param(fplog, md, n, 0, stepsize, bRandom, gen, dis,
                                 orig_param, test_param);
             if (k != nparam)
             {
@@ -1009,10 +1049,6 @@ int alex_tune_dip(int argc, char *argv[])
             J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
             fc_bound, fc_mu, fc_quad, fc_charge,
             fc_esp, 1, 1, fixchi, bOptHfac, hfac, bPol, bFitZeta);
-    if (0 == seed)
-    {
-        seed = gmx_rng_make_seed();
-    }
     md.Read(fp ? fp : (debug ? debug : NULL),
             opt2fn("-f", NFILE, fnm),
             opt2fn_null("-d", NFILE, fnm),
@@ -1024,7 +1060,7 @@ int alex_tune_dip(int argc, char *argv[])
     printf("Read %d molecules\n", (int)md._mymol.size());
 
     optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
-                    &md, maxiter, tol, nrun, step, seed,
+                    &md, maxiter, tol, nrun, step,
                     bRandom, oenv);
     if (MASTER(cr))
     {

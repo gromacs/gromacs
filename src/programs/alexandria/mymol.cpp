@@ -163,7 +163,7 @@ void MyMol::getForceConstants(const Poldata &pd)
                         int    ntrain;
                         double bo = 0;
                         int    lengthUnit;
-                        
+
                         if (-1 == (lengthUnit = string2unit(pd.getLengthUnit().c_str())))
                         {
                             gmx_fatal(FARGS, "Unknown length unit %s for bonds", pd.getLengthUnit().c_str());
@@ -227,59 +227,59 @@ void MyMol::getForceConstants(const Poldata &pd)
                 break;
             case InteractionType_PDIHS:
             case InteractionType_IDIHS:
+            {
+                int egd = egdPDIHS;
+                if (pw->getFtype() == InteractionType_IDIHS)
                 {
-                    int egd = egdPDIHS;
-                    if (pw->getFtype() == InteractionType_IDIHS)
+                    egd = egdIDIHS;
+                }
+                for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
+                {
+                    std::string cai, caj, cak, cal;
+                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], cal))
                     {
-                        egd = egdIDIHS;
-                    }
-                    for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
-                    {
-                        std::string cai, caj, cak, cal;
-                        if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
-                            pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
-                            pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak) &&
-                            pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], cal))
+                        int ntrain;
+                        if (pd.searchDihedral(egd, cai, caj, cak, cal,
+                                              &xx, &sx, &ntrain, params))
                         {
-                            int ntrain;
-                            if (pd.searchDihedral(egd, cai, caj, cak, cal,
-                                                  &xx, &sx, &ntrain, params))
+                            j->c[0] = xx;
+                            std::vector<std::string> ptr = gmx::splitString(params);
+                            n = 0;
+                            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                             {
-                                j->c[0] = xx;
-                                std::vector<std::string> ptr = gmx::splitString(params);
-                                n = 0;
-                                for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
                                 {
-                                    if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                                    {
-                                        j->c[1+n] = atof(pi->c_str());
-                                        n++;
-                                    }
+                                    j->c[1+n] = atof(pi->c_str());
+                                    n++;
                                 }
                             }
                         }
-                        else if (pw->getFtype() == InteractionType_PDIHS)
-                        {
-                            // Default dihedral parameters
-                            j->c[0] = 0;
-                            j->c[1] = 5;
-                            j->c[2] = 0;
-                        }
-                        else
-                        {
-                            // Default improper dihedral parameters
-                            j->c[0] = 0;
-                            j->c[1] = 5;
-                        }
+                    }
+                    else if (pw->getFtype() == InteractionType_PDIHS)
+                    {
+                        // Default dihedral parameters
+                        j->c[0] = 0;
+                        j->c[1] = 5;
+                        j->c[2] = 0;
+                    }
+                    else
+                    {
+                        // Default improper dihedral parameters
+                        j->c[0] = 0;
+                        j->c[1] = 5;
                     }
                 }
-                break;
-        case InteractionType_Polarization:
-        case InteractionType_LJ14:
-        case InteractionType_VSITE2:
-        case InteractionType_LINEAR_ANGLES:
-        case InteractionType_CONSTR:
+            }
             break;
+            case InteractionType_Polarization:
+            case InteractionType_LJ14:
+            case InteractionType_VSITE2:
+            case InteractionType_LINEAR_ANGLES:
+            case InteractionType_CONSTR:
+                break;
         }
     }
 }
@@ -354,61 +354,61 @@ static void mv_plists(const Poldata             &pd,
                       std::vector<PlistWrapper> &plist,
                       bool                       toPoldataFtype)
 {
-    for(auto &p : plist)
+    for (auto &p : plist)
     {
         switch (p.interactionType())
         {
-        case InteractionType_BONDS:
-            if (toPoldataFtype)
-            {
-                p.setFtype(pd.getBondFtype());
-            }
-            else
-            {
-                p.setFtype(F_BONDS);
-            }
-            break;
-        case InteractionType_ANGLES:
-            if (toPoldataFtype)
-            {
-                p.setFtype(pd.getAngleFtype());
-            }
-            else
-            {
-                p.setFtype(F_ANGLES);
-            }
-            break;
-        case InteractionType_PDIHS:
-            if (toPoldataFtype)
-            {
-                p.setFtype(pd.getDihedralFtype(egdPDIHS));
-            }
-            else
-            {
-                p.setFtype(F_PDIHS);
-            }
-            break;
-        case InteractionType_IDIHS:
-            if (toPoldataFtype)
-            {
-                p.setFtype(pd.getDihedralFtype(egdIDIHS));
-            }
-            else
-            {
-                p.setFtype(F_IDIHS);
-            }
-            break;
-        case InteractionType_LJ14:
-        case InteractionType_Polarization:
-        case InteractionType_LINEAR_ANGLES:
-        case InteractionType_CONSTR:
-        case InteractionType_VSITE2:
-            break;
+            case InteractionType_BONDS :
+                if (toPoldataFtype)
+                {
+                    p.setFtype(pd.getBondFtype());
+                }
+                else
+                {
+                    p.setFtype(F_BONDS);
+                }
+                break;
+            case InteractionType_ANGLES:
+                if (toPoldataFtype)
+                {
+                    p.setFtype(pd.getAngleFtype());
+                }
+                else
+                {
+                    p.setFtype(F_ANGLES);
+                }
+                break;
+            case InteractionType_PDIHS:
+                if (toPoldataFtype)
+                {
+                    p.setFtype(pd.getDihedralFtype(egdPDIHS));
+                }
+                else
+                {
+                    p.setFtype(F_PDIHS);
+                }
+                break;
+            case InteractionType_IDIHS:
+                if (toPoldataFtype)
+                {
+                    p.setFtype(pd.getDihedralFtype(egdIDIHS));
+                }
+                else
+                {
+                    p.setFtype(F_IDIHS);
+                }
+                break;
+            case InteractionType_LJ14:
+            case InteractionType_Polarization:
+            case InteractionType_LINEAR_ANGLES:
+            case InteractionType_CONSTR:
+            case InteractionType_VSITE2:
+                break;
         }
     }
 }
 
-static void cp_plist(t_params                  *plist, 
+static void cp_plist(t_params                  *plist,
                      int                        ftype,
                      InteractionType            itype,
                      std::vector<PlistWrapper> &plist_)
@@ -592,8 +592,8 @@ static void getLjParams(const Poldata     &pd,
                         double            *cn)
 {
     std::vector<double> vdwi, vdwj;
-    
-    auto fai = pd.findAtype(ai);
+
+    auto                fai = pd.findAtype(ai);
     if (fai != pd.getAtypeEnd())
     {
         vdwi  = getDoubles(fai->getVdwparams());
@@ -650,8 +650,8 @@ static void getBhamParams(const Poldata     &pd,
                           double            *c)
 {
     std::vector<double> vdwi, vdwj;
-    
-    auto fai = pd.findAtype(ai);
+
+    auto                fai = pd.findAtype(ai);
     if (fai != pd.getAtypeEnd())
     {
         vdwi  = getDoubles(fai->getVdwparams());
@@ -762,10 +762,10 @@ static void plist_to_mtop(const Poldata             &pd,
     }
 }
 
-static void do_init_mtop(const Poldata &pd,
-                         gmx_mtop_t    *mtop_,
-                         char         **molname,
-                         t_atoms       *atoms,
+static void do_init_mtop(const Poldata            &pd,
+                         gmx_mtop_t               *mtop_,
+                         char                    **molname,
+                         t_atoms                  *atoms,
                          std::vector<PlistWrapper> plist)
 {
     init_mtop(mtop_);
@@ -782,7 +782,7 @@ static void do_init_mtop(const Poldata &pd,
 
     mtop_->natoms = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
-    for(int i = 0; i < atoms->nr; i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
         mtop_->moltype[0].atoms.atom[i] = atoms->atom[i];
     }
@@ -1111,7 +1111,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             // First set the atomtype
             topology_->atoms.atomtype[natom]      =
                 topology_->atoms.atomtypeB[natom] = put_symtab(symtab_, cai->getObtype().c_str());
-            
+
             natom++;
         }
         for (int i = 0; (i < natom); i++)
@@ -1217,20 +1217,20 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   0);
             if (bb != pd.getBondEnd())
             {
-                std::string pp = bb->getParams();
+                std::string         pp = bb->getParams();
                 std::vector<double> dd = getDoubles(pp);
-                int ii = 0;
+                int                 ii = 0;
                 b.c[ii++] = convert2gmx(bb->getLength(), lengthUnit);
-                for(auto &d : dd)
+                for (auto &d : dd)
                 {
                     b.c[ii++] = d;
                 }
                 add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
             }
-            else 
+            else
             {
                 // Insert dummy bond to be replaced later
-                for(int i=0; i < MAXFORCEPARAM; i++)
+                for (int i = 0; i < MAXFORCEPARAM; i++)
                 {
                     b.c[i] = 0;
                 }
@@ -1243,7 +1243,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             imm = immGenBonds;
         }
     }
-    //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+    //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
     //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     if (immOK == imm)
     {
@@ -1251,7 +1251,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
-        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
         MakeSpecialInteractions(pd, bUseVsites);
 
@@ -1259,7 +1259,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         /* Move the plist_ to the correct function */
         mv_plists(pd, plist_, true);
-        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
 
         snew(mtop_, 1);
@@ -1267,13 +1267,13 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
-        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__, 
+        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     }
     if (imm == immOK)
     {
         char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
-        
+
         do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_);
 
         excls_to_blocka(topology_->atoms.nr, excls_,
@@ -1333,11 +1333,11 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
     tensor          force_vir;
     t_nrnb          my_nrnb;
     gmx_wallcycle_t wcycle = wallcycle_init(debug, 0, cr);
-    double          t = 0;
-    
+    double          t      = 0;
+
     init_nrnb(&my_nrnb);
     clear_mat (force_vir);
-    for(int i = 0; i < mtop_->natoms; i++)
+    for (int i = 0; i < mtop_->natoms; i++)
     {
         mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
         if (nullptr != debug)
@@ -1345,7 +1345,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
         }
     }
-    ltop_ = gmx_mtop_generate_local_top(mtop_, false);
+    ltop_                = gmx_mtop_generate_local_top(mtop_, false);
     ltop_->idef.nthreads = 1;
     setup_bonded_threading(fr_, &ltop_->idef);
 
@@ -1377,33 +1377,33 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
                  NULL, mu_tot, t, NULL, NULL, FALSE,
                  flags);
     }
-        for(int i = 0; i < mtop_->natoms; i++)
+    for (int i = 0; i < mtop_->natoms; i++)
     {
         copy_rvec(state_->x[i], x_[i]);
     }
 }
 
 std::vector<double> MyMol::computePolarizability(double efield,
-				                 FILE *fplog, t_commrec *cr)
+                                                 FILE *fplog, t_commrec *cr)
 {
 
-  const double unit_factor = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
+    const double        unit_factor = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
 
-  rvec   mu_tot;
-  int    dim;
-  rvec   mu_ref;
-  std::vector<double> pols;
+    rvec                mu_tot;
+    int                 dim;
+    rvec                mu_ref;
+    std::vector<double> pols;
 
-  computeForces(fplog, cr, mu_ref);
+    computeForces(fplog, cr, mu_ref);
 
-  for (dim = 0; (dim < DIM); dim++)
-  {
-    inputrec_->ex[dim].a[0] = efield;
-    computeForces(fplog, cr, mu_tot);
-    pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
-    inputrec_->ex[dim].a[0] = 0;
-  }
-  return pols;
+    for (dim = 0; (dim < DIM); dim++)
+    {
+        inputrec_->ex[dim].a[0] = efield;
+        computeForces(fplog, cr, mu_tot);
+        pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
+        inputrec_->ex[dim].a[0] = 0;
+    }
+    return pols;
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
@@ -1496,11 +1496,11 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                             static_cast<int>(gr_.nEsp()));
                 }
             }
-            
+
             bool   converged = false;
-            double chi2[2] = { 1e8, 1e8 };
-            real   rrms = 0, wtot;
-            int    cur = 0;
+            double chi2[2]   = { 1e8, 1e8 };
+            real   rrms      = 0, wtot;
+            int    cur       = 0;
             do
             {
                 gr_.updateAtomCoords(x_);
@@ -1512,13 +1512,13 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
                 if (nullptr != shellfc_)
                 {
-		  computeForces(NULL, cr, mu_tot);
+                    computeForces(NULL, cr, mu_tot);
                 }
                 gr_.calcPot();
                 EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
                 printf("RESP: RMS %g\n", chi2[cur]);
                 converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-6) || (nullptr == shellfc_);
-                cur = 1-cur;
+                cur       = 1-cur;
             }
             while (!converged);
             // Now copy to topology for printing
@@ -1545,9 +1545,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             }
         }
         break;
-    default:
-        gmx_fatal(FARGS, "Not implemented");
-        break;
+        default:
+            gmx_fatal(FARGS, "Not implemented");
+            break;
     }
 
     return imm;
@@ -1561,7 +1561,7 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
     {
         snew(f_, nalloc);
     }
-    if (nullptr == fr_ )
+    if (nullptr == fr_)
     {
         fr_ = mk_forcerec();
     }
@@ -1824,7 +1824,7 @@ static void write_top2(FILE *out, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds2(out, d_bonds, 
+        print_bondeds2(out, d_bonds,
                        pd.getBondFtype(),
                        pd.getBondFtype(),
                        plist_);
@@ -1832,7 +1832,7 @@ static void write_top2(FILE *out, char *molname,
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds2(out, d_angles, pd.getAngleFtype(), 
+        print_bondeds2(out, d_angles, pd.getAngleFtype(),
                        pd.getAngleFtype(), plist_);
         print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES,
                        plist_);
@@ -1987,11 +1987,11 @@ void MyMol::PrintTopology(const char             *fn,
 
     if (bVerbose)
     {
-        for(auto &p : plist_)
+        for (auto &p : plist_)
         {
             if (p.nParam() > 0)
             {
-                printf("There are %4d %s interactions\n", p.nParam(), 
+                printf("There are %4d %s interactions\n", p.nParam(),
                        interaction_function[p.getFtype()].name);
             }
         }
@@ -2131,7 +2131,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void MyMol::addShells(const Poldata &pd, 
+void MyMol::addShells(const Poldata          &pd,
                       ChargeDistributionModel iModel)
 {
     int              i, j, k, iat, shell, nshell = 0;
@@ -2143,7 +2143,7 @@ void MyMol::addShells(const Poldata &pd,
     rvec            *newx;
     double           pol, sigpol;
 
-    int      maxatom = topology_->atoms.nr*2+2;
+    int              maxatom = topology_->atoms.nr*2+2;
     srenew(x_, maxatom);
     memset(&p, 0, sizeof(p));
     inv_renum.resize(topology_->atoms.nr*2, -1);
@@ -2158,7 +2158,7 @@ void MyMol::addShells(const Poldata &pd,
         renum.push_back(i+nshell);
         inv_renum[i+nshell] = i;
         if (pd.getAtypePol(*topology_->atoms.atomtype[i],
-                           &pol, &sigpol) && 
+                           &pol, &sigpol) &&
             (pol > 0) &&
             (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
         {
@@ -2207,7 +2207,7 @@ void MyMol::addShells(const Poldata &pd,
             {
                 // Now add the exclusions from the nucleus to the shell.
                 // We know that the nuclues is 0 since we just made the list
-                int i0 = inv_renum[j->a[0]];
+                int  i0 = inv_renum[j->a[0]];
                 char buf[256];
                 snprintf(buf, sizeof(buf), "Uninitialized inv_renum entry for atom %d (%d) shell %d (%d)",
                          j->a[0], inv_renum[j->a[0]],
@@ -2524,12 +2524,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     lu = string2unit(pd.getLengthUnit().c_str());
     if (-1 == lu)
     {
-        gmx_fatal(FARGS, "Unknown length unit '%s' for bonds", 
+        gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
                   pd.getLengthUnit().c_str());
     }
     switch (iType)
     {
-    case InteractionType_BONDS:
+        case InteractionType_BONDS:
         {
             int ftb = pd.getBondFtype();
             for (int i = 0; (i < ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
@@ -2547,8 +2547,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     if (pd.searchBond(aai, aaj, &value, &sigma, &ntrain, &bondorder, params))
                     {
                         mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
-                        
-                        std::vector<std::string> ptr = splitString(params);
+
+                        std::vector<std::string> ptr = gmx::splitString(params);
                         int n = 0;
                         for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
@@ -2574,7 +2574,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             }
         }
         break;
-    case InteractionType_ANGLES:
+        case InteractionType_ANGLES:
         {
             int fta = pd.getAngleFtype();
             for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
@@ -2595,7 +2595,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     {
                         mtop_->ffparams.iparams[tp].harmonic.rA     =
                             mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                        std::vector<std::string> ptr = splitString(params);
+                        auto ptr = gmx::splitString(params);
                         for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
@@ -2613,8 +2613,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             }
         }
         break;
-    case InteractionType_PDIHS:
-    case InteractionType_IDIHS:
+        case InteractionType_PDIHS:
+        case InteractionType_IDIHS:
         {
             for (int dd = 0; (dd < egdNR); dd++)
             {
@@ -2637,7 +2637,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                         if ((gt = pd.searchDihedral(dd, aai, aaj, aak, aal,
                                                     &value, &sigma, &ntrain, params)) != 0)
                         {
-                            std::vector<std::string> ptr = splitString(params);
+                            std::vector<std::string> ptr = gmx::splitString(params);
                             if (dd == egdPDIHS)
                             {
                                 mtop_->ffparams.iparams[tp].pdihs.phiA = value;
@@ -2673,12 +2673,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
             }
         }
         break;
-    case InteractionType_LJ14:
-    case InteractionType_Polarization:
-    case InteractionType_VSITE2:
-    case InteractionType_LINEAR_ANGLES:
-    case InteractionType_CONSTR:
-        break;
+        case InteractionType_LJ14:
+        case InteractionType_Polarization:
+        case InteractionType_VSITE2:
+        case InteractionType_LINEAR_ANGLES:
+        case InteractionType_CONSTR:
+            break;
     }
 }
 

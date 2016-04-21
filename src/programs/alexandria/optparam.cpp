@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,70 +34,70 @@
  */
 /*! \internal \brief
  * Implements part of the alexandria program.
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Mohammad Mehdi Ghahremanpour <m.ghahremanpour@hotmail.com>
  */
+
+#include "optparam.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <functional>
 #include <string>
 #include <vector>
-#include <functional> 
 
+#include "gromacs/random.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "optparam.h"
 
 namespace alexandria
 {
 
-  OptParam::OptParam(){};
+OptParam::OptParam(){};
 
-  void OptParam::Init(const char *xvgconv, const char *xvgepot, const gmx_output_env_t *oenv, real seed, 
-		      real step, int maxiter, int nprint, real temperature, gmx_bool bBound)
-  {
+void OptParam::Init(const char *xvgconv, const char *xvgepot, const gmx_output_env_t *oenv, real seed,
+                    real step, int maxiter, int nprint, real temperature, gmx_bool bBound)
+{
 
     xvgconv_     = xvgconv;
     xvgepot_     = xvgepot;
     oenv_        = oenv;
     bBound_      = bBound;
     seed_        = seed;
-    step_        = step; 
+    step_        = step;
     maxiter_     = maxiter;
-    nprint_      = nprint; 
+    nprint_      = nprint;
     temperature_ = temperature;
-  }
-
-  void OptParam::setSeed(real seed)
-  {
-    seed_ = seed;
-  }
-  
-  void OptParam::setMaxiter(int maxiter)
-  {
-    maxiter_ = maxiter;
-  }
-  
-  void OptParam::setNprint(int nprint)
-  {
-    nprint_ = nprint;
-  }
-
-  void OptParam::setStep(real step)
-  {
-    step_ = step;
-  }
-  
-  void OptParam::setTemperature(real temperature)
-  {
-    temperature_ = temperature;
-  }
 }
 
+void OptParam::setSeed(real seed)
+{
+    seed_ = seed;
+}
+
+void OptParam::setMaxiter(int maxiter)
+{
+    maxiter_ = maxiter;
+}
+
+void OptParam::setNprint(int nprint)
+{
+    nprint_ = nprint;
+}
+
+void OptParam::setStep(real step)
+{
+    step_ = step;
+}
+
+void OptParam::setTemperature(real temperature)
+{
+    temperature_ = temperature;
+}
+}

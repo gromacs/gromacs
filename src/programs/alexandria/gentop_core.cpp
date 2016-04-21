@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/random.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
@@ -56,7 +57,6 @@
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
@@ -383,7 +383,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                                 hsmin = hs.back();
                             }
                         }
-                        if ((static_cast<int>(hs.size()) == symcharges->getNumattach()) && 
+                        if ((static_cast<int>(hs.size()) == symcharges->getNumattach()) &&
                             (hsmin != -1))
                         {
                             for (int j = 0; (j < symcharges->getNumattach()); j++)
