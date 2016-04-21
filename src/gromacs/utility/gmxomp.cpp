@@ -51,6 +51,11 @@
 #include <omp.h>
 #endif
 
+#if GMX_STS
+#include "gromacs/sts/sts.h"
+#include "gromacs/sts/thread.h"
+#endif
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -60,7 +65,9 @@
 
 int gmx_omp_get_max_threads(void)
 {
-#if GMX_OPENMP
+#if GMX_STS
+    return STS::getNumThreads();
+#elif GMX_OPENMP
     return omp_get_max_threads();
 #else
     return 1;
@@ -78,7 +85,9 @@ int gmx_omp_get_num_procs(void)
 
 int gmx_omp_get_thread_num(void)
 {
-#if GMX_OPENMP
+#if GMX_STS
+	return Thread::getId();
+#elif GMX_OPENMP
     return omp_get_thread_num();
 #else
     return 0;
@@ -87,6 +96,7 @@ int gmx_omp_get_thread_num(void)
 
 void gmx_omp_set_num_threads(int num_threads)
 {
+    // STS does not allow changing threads after startup, so assume for OMP
 #if GMX_OPENMP
     omp_set_num_threads(num_threads);
 #else
@@ -99,7 +109,10 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
     bool shouldSetAffinity = true;
 
     *message = NULL;
-#if GMX_OPENMP
+    /* If STS is being used, assume that we always want to set affinity. */
+#if GMX_STS
+    shouldSetAffinity = true;
+#elif GMX_OPENMP
     /* We assume that the affinity setting is available on all platforms
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
      * will only get a warning. */

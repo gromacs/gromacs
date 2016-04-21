@@ -44,6 +44,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -116,8 +117,7 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
 
     nthread = atc->nthread;
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    STS::getInstance("force")->parallel_for("calc_pidx_wrapper", 0, nthread, [&](int thread)
     {
         try
         {
@@ -126,7 +126,7 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
                           recipbox, x, atc, atc->count_thread[thread]);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
     /* Non-parallel reduction, since nslab is small */
 
     for (thread = 1; thread < nthread; thread++)

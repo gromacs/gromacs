@@ -52,7 +52,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cstdlib>
+
 #include <algorithm>
+#include <numeric>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -97,6 +101,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -691,6 +696,40 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
     return builder.build();
 }
 
+void sts_create_schedule_for_constrain_compute(bool bUseDefaultSchedule, double stsConstrainRatio = 0.8)
+{
+    const int nthreads = STS::getNumThreads();
+    int nthreadsLINCS  = nthreads * stsConstrainRatio;
+    int nthreadsSETTLE = nthreads - nthreadsLINCS;
+    if (bUseDefaultSchedule || nthreadsLINCS >= nthreads || nthreadsLINCS <= 0) {
+        nthreadsLINCS  = nthreads;
+        nthreadsSETTLE = nthreads;
+    }
+    STS* sts = new STS("constrain");
+    sts->clearAssignments();
+
+    if (nthreads == nthreadsLINCS) {
+        sts->setDefaultSchedule();
+        new MMBarrier(nthreads, "lincs");
+    }
+    else {
+        sts->assign_run("lincs", 0);
+        for (int t=0; t<nthreadsLINCS; t++) {
+            sts->assign_loop("lincs_loop", t, {{t, nthreadsLINCS},{t+1, nthreadsLINCS}});
+        }
+        new MMBarrier(nthreadsLINCS, "lincs");
+        sts->assign_run("settle", nthreadsLINCS);
+        for (int t=nthreadsLINCS, numer=0; t<nthreads; t++, numer++) {
+            sts->assign_loop("settle_loop", t, {{numer, nthreadsSETTLE},{numer+1, nthreadsSETTLE}});
+        }
+    }
+
+    static char constrain_env_string[40];
+    strcpy(constrain_env_string, "GMX_LINCS_NUM_THREADS=");
+    strcat(constrain_env_string, std::to_string(nthreadsLINCS).c_str());
+    putenv(constrain_env_string);
+}
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
@@ -720,7 +759,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_vsite_t              *vsite         = NULL;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
-    gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = NULL;
     int                       rc;
     gmx_int64_t               reset_counters;
@@ -1115,13 +1153,67 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Check and update hw_opt for the number of MPI ranks */
     check_and_update_hw_opt_3(hw_opt);
 
+    char* sts_threads = getenv("GMX_STS_THREADS");
+    if (sts_threads!=nullptr)
+    {
+        STS::startup(atoi(sts_threads));
+    }
+    else
+    {
+        STS::startup(1);
+    }
+
+    SchedType stype = SchedType::ASYNC;
+    char* sts_force_sched   = getenv("GMX_STS_FORCE_SCHED");
+    if (sts_force_sched != nullptr) {
+        if (strncasecmp(sts_force_sched, "async", 5) == 0) {
+            stype = SchedType::ASYNC;
+        }
+        else if (strncasecmp(sts_force_sched, "def", 3) == 0) {
+            stype = SchedType::DEFAULT;
+        }
+    }
+
+    // Parse and check env. variable describing tasks to be done per gap
+    const int NUM_GAPS = 7;
+    char gapTask[NUM_GAPS] = {'L','L','N','N','R','R','R'};
+    char* envGapTask = getenv("GMX_STS_GAP_TASKS");
+    if (envGapTask != nullptr) {
+      assert(strlen(envGapTask) == NUM_GAPS);
+      for (int i=0; i<NUM_GAPS; i++) {
+          char c = envGapTask[i];
+          // TODO: Add more assertions - not all permutations are allowed:
+          assert(c == 'E' || c == 'L' || c == 'N' || c == 'R');
+          gapTask[i] = envGapTask[i];
+      }
+    }
+
+    float forceRatio = 0.2;
+    char* sts_force_ratio   = getenv("GMX_STS_FORCE_RATIO");
+    if (sts_force_ratio != nullptr) {
+        forceRatio = atof(sts_force_ratio);
+    }
+
+    sts_create_schedule_for_force_compute(cr, true, stype, forceRatio, gapTask);
+    
+    char* sts_constrain_ratio = getenv("GMX_STS_CONSTRAIN_RATIO");
+    if (sts_constrain_ratio!=nullptr) {
+        sts_create_schedule_for_constrain_compute(false, atof(sts_constrain_ratio));
+    }
+    else {
+        sts_create_schedule_for_constrain_compute(false);
+    }
     gmx_omp_nthreads_init(mdlog, cr,
                           hwinfo->nthreads_hw_avail,
                           hw_opt->nthreads_omp,
                           hw_opt->nthreads_omp_pme,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
-
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+        STS::getInstance("force")->printAssignments();
+    }
 #ifndef NDEBUG
     if (EI_TPI(inputrec->eI) &&
         inputrec->cutoff_scheme == ecutsVERLET)
@@ -1278,7 +1370,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* threads on this MPI process or TMPI thread */
         if (cr->duty & DUTY_PP)
         {
-            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+            nthread_local = gmx_omp_nthreads_get(emntDefault);
         }
         else
         {
@@ -1418,6 +1510,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         pmedata = NULL;
     }
 
+    STS::shutdown();
+    
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
 
