@@ -192,6 +192,19 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     if (ngpu > 0)
     {
         nrank = ngpu;
+
+        /* When the user sets nthreads_omp, we can end up oversubscribing CPU cores
+         * if we simply start as many ranks as GPUs. To avoid this, we start as few
+         * tMPI ranks as necessary to avoid oversubscription and instead leave GPUs idle.
+         * If the user does not set the number of OpenMP threads, nthreads_omp==0 and
+         * this code has no effect.
+         */
+        GMX_RELEASE_ASSERT(hw_opt->nthreads_omp >= 0, "nthreads_omp is negative, but previous checks should have prevented this");
+        while (nrank*hw_opt->nthreads_omp > hwinfo->nthreads_hw_avail && nrank > 1)
+        {
+            nrank--;
+        }
+
         if (nthreads_tot < nrank)
         {
             /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
@@ -622,11 +635,18 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
-                               const t_commrec *cr)
+                               const t_commrec *cr,
+                               int              nPmeRanks)
 {
     /* Currently hw_opt only contains default settings or settings supplied
      * by the user on the command line.
-     * Check for OpenMP settings stored in environment variables, which can
+     */
+    if (hw_opt->nthreads_omp < 0)
+    {
+        gmx_fatal(FARGS, "The number of OpenMP threads supplied on the command line is %d, which is negative and not allowed", hw_opt->nthreads_omp);
+    }
+
+    /* Check for OpenMP settings stored in environment variables, which can
      * potentially be different on different MPI ranks.
      */
     gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, SIMMASTER(cr));
@@ -656,7 +676,7 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
 
         if (hw_opt->nthreads_omp_pme >= 1 &&
             hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
-            cr->npmenodes <= 0)
+            nPmeRanks <= 0)
         {
             /* This can result in a fatal error on many MPI ranks,
              * but since the thread count can differ per rank,

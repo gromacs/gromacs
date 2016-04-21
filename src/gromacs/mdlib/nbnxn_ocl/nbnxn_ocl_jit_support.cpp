@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,6 +90,8 @@ static const char * kernel_electrostatic_family_definitions[] =
 static const char * kernel_VdW_family_definitions[] =
 {
     " -DVDWNAME=_VdwLJ",
+    " -DLJ_COMB_GEOM -DVDWNAME=_VdwLJCombGeom",
+    " -DLJ_COMB_LB  -DVDWNAME=_VdwLJCombLB",
     " -DLJ_FORCE_SWITCH -DVDWNAME=_VdwLJFsw",
     " -DLJ_POT_SWITCH -DVDWNAME=_VdwLJPsw",
     " -DLJ_EWALD_COMB_GEOM -DVDWNAME=_VdwLJEwCombGeom",
@@ -190,17 +192,22 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     }
 
     device_id        = nb->dev_info->ocl_gpu_id.ocl_device_id;
-    context          = nb->dev_info->context;
+    context          = nb->dev_rundata->context;
 
+    /* Here we pass macros and static const int variables defined in include
+     * files outside the nbnxn_ocl as macros, to avoid including those files
+     * in the JIT compilation that happens at runtime.
+     */
     sprintf(runtime_consts,
-            "-DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s",
+            "-DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_AVOID_SING_R2_INC=%s %s",
             CENTRAL,                                    /* Defined in ishift.h */
-            NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER,        /* Defined in nbnxn_consts.h */
-            NBNXN_GPU_CLUSTER_SIZE,                     /* Defined in nbnxn_consts.h */
-            NBNXN_GPU_JGROUP_SIZE,                      /* Defined in nbnxn_consts.h */
+            c_nbnxnGpuNumClusterPerSupercluster,        /* Defined in nbnxn_pairlist.h */
+            c_nbnxnGpuClusterSize,                      /* Defined in nbnxn_pairlist.h */
+            c_nbnxnGpuJgroupSize,                       /* Defined in nbnxn_pairlist.h */
             STRINGIFY_MACRO(NBNXN_AVOID_SING_R2_INC)    /* Defined in nbnxn_consts.h */
                                                         /* NBNXN_AVOID_SING_R2_INC passed as string to avoid
                                                            floating point representation problems with sprintf */
+            , (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
             );
 
     /* Need to catch std::bad_alloc here and during compilation string
@@ -230,5 +237,5 @@ nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    nb->dev_info->program = program;
+    nb->dev_rundata->program = program;
 }

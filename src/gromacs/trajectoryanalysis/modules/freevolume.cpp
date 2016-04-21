@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,8 @@
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -88,7 +89,7 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
         FreeVolume();
-        virtual ~FreeVolume();
+        virtual ~FreeVolume() {};
 
         virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
@@ -109,7 +110,7 @@ class FreeVolume : public TrajectoryAnalysisModule
         double                            mtot_;
         double                            cutoff_;
         double                            probeRadius_;
-        gmx_rng_t                         rng_;
+        gmx::DefaultRandomEngine          rng_;
         int                               seed_, ninsert_;
         AnalysisNeighborhood              nb_;
         //! The van der Waals radius per atom
@@ -129,24 +130,12 @@ FreeVolume::FreeVolume()
     data_.setColumnCount(0, 2);
     // Tell the analysis framework that this component exists
     registerAnalysisDataset(&data_, "freevolume");
-    rng_         = NULL;
     nmol_        = 0;
     mtot_        = 0;
     cutoff_      = 0;
     probeRadius_ = 0;
-    seed_        = -1;
+    seed_        = 0;
     ninsert_     = 1000;
-}
-
-
-FreeVolume::~FreeVolume()
-{
-    // Destroy C structures where there is no automatic memory release
-    // C++ takes care of memory in classes (hopefully)
-    if (NULL != rng_)
-    {
-        gmx_rng_destroy(rng_);
-    }
 }
 
 
@@ -205,7 +194,7 @@ FreeVolume::initOptions(IOptionsContainer          *options,
     // Add option for the random number seed and initialize it to
     // generate a value automatically
     options->addOption(IntegerOption("seed").store(&seed_)
-                           .description("Seed for random number generator."));
+                           .description("Seed for random number generator (0 means generate)."));
 
     // Add option to determine number of insertion trials per frame
     options->addOption(IntegerOption("ninsert").store(&ninsert_)
@@ -301,6 +290,11 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
         fprintf(stderr, "Could not determine VDW radius for %d particles. These were set to zero.\n", nnovdw);
     }
 
+    if (seed_ == 0)
+    {
+        seed_ = static_cast<int>(gmx::makeRandomSeed());
+    }
+
     // Print parameters to output. Maybe should make dependent on
     // verbosity flag?
     printf("cutoff       = %g nm\n", cutoff_);
@@ -309,7 +303,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     printf("ninsert      = %d probes per nm^3\n", ninsert_);
 
     // Initiate the random number generator
-    rng_ = gmx_rng_init(seed_);
+    rng_.seed(seed_);
 
     // Initiate the neighborsearching code
     nb_.setCutoff(cutoff_);
@@ -319,8 +313,9 @@ void
 FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                          TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh   = pdata->dataHandle(data_);
-    const Selection         &sel  = pdata->parallelSelection(sel_);
+    AnalysisDataHandle                   dh   = pdata->dataHandle(data_);
+    const Selection                     &sel  = pdata->parallelSelection(sel_);
+    gmx::UniformRealDistribution<real>   dist;
 
     GMX_RELEASE_ASSERT(NULL != pbc, "You have no periodic boundary conditions");
 
@@ -343,7 +338,8 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int m = 0; (m < DIM); m++)
         {
             // Generate random number between 0 and 1
-            rand[m] = gmx_rng_uniform_real(rng_);
+            // cppcheck-suppress uninitvar
+            rand[m] = dist(rng_);
         }
         // Generate random 3D position within the box
         mvmul(fr.box, rand, ins);

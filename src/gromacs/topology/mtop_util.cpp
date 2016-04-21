@@ -407,11 +407,11 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
     {
         if (mb >= 0)
         {
-            /* cppcheck-suppress nullPointer #6330*/
+            /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
             if (atoms->nres <= mtop->maxres_renum)
             {
                 /* Single residue molecule, keep counting */
-                /* cppcheck-suppress nullPointer #6330*/
+                /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
                 maxresnr += mtop->molblock[mb].nmol*atoms->nres;
             }
         }
@@ -1193,7 +1193,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     return top;
 }
 
-std::vector<size_t> get_atom_index(gmx_mtop_t *mtop)
+std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop)
 {
 
     std::vector<size_t>       atom_index;

@@ -925,6 +925,8 @@ TEST_F(SelectionCollectionDataTest, HandlesCharge)
     {
         top_->atoms.atom[i].q = i / 10.0;
     }
+    //ensure exact representation of 0.5 is used, so the test is always reproducible
+    top_->atoms.atom[5].q = 0.5;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 

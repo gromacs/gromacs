@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,19 +95,19 @@ void p_graph(FILE *log, const char *title, t_graph *g);
 /* Print a graph to log */
 
 void mk_mshift(FILE *log, t_graph *g, int ePBC,
-               matrix box, const rvec x[]);
+               const matrix box, const rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
-void shift_x(const t_graph *g, matrix box, const rvec x[], rvec x_s[]);
+void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[]);
 /* Add the shift vector to x, and store in x_s (may be same array as x) */
 
-void shift_self(const t_graph *g, matrix box, rvec x[]);
+void shift_self(const t_graph *g, const matrix box, rvec x[]);
 /* Id. but in place */
 
-void unshift_x(const t_graph *g, matrix box, rvec x[], const rvec x_s[]);
+void unshift_x(const t_graph *g, const matrix box, rvec x[], const rvec x_s[]);
 /* Subtract the shift vector from x_s, and store in x (may be same array) */
 
-void unshift_self(const t_graph *g, matrix box, rvec x[]);
+void unshift_self(const t_graph *g, const matrix box, rvec x[]);
 /* Id, but in place */
 
 #ifdef __cplusplus

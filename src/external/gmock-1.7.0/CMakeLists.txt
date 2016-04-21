@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,11 @@ if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5")
     if(HAS_NO_UNUSED_VARIABLE)
         set(GMOCK_COMPILE_FLAGS "-Wno-unused-variable")
     endif()
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "6")
+    # Work around a bug in gmock-1.7 that is triggered in gcc-6
+    set(GMOCK_COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS} -fno-delete-null-pointer-checks")
 endif()
 
 # GTest/GMock suggest linking with pthreads when available for thread safety

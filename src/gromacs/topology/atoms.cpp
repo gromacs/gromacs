@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,8 @@
 
 #include <cstdio>
 #include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
@@ -162,7 +164,19 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
     }
 }
 
-t_atoms *copy_t_atoms(t_atoms *src)
+void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo)
+{
+    pdbinfo->type         = epdbATOM;
+    pdbinfo->atomnr       = 0;
+    pdbinfo->altloc       = ' ';
+    pdbinfo->atomnm[0]    = '\0';
+    pdbinfo->occup        = 1.0;
+    pdbinfo->bfac         = 0.0;
+    pdbinfo->bAnisotropic = FALSE;
+    std::fill(pdbinfo->uij, pdbinfo->uij+6, 0.0);
+}
+
+t_atoms *copy_t_atoms(const t_atoms *src)
 {
     t_atoms *dst;
     int      i;
@@ -235,7 +249,7 @@ static void pr_atom(FILE *fp, int indent, const char *title, const t_atom *atom,
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
+            fprintf(fp, "%s[%6d]={type=%3hu, typeB=%3hu, ptype=%8s, m=%12.5e, "
                     "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
                     title, i, atom[i].type, atom[i].typeB, ptype_str[atom[i].ptype],
                     atom[i].m, atom[i].q, atom[i].mB, atom[i].qB,

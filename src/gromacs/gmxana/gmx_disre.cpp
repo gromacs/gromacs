@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,7 +156,7 @@ static void print5(FILE *fp)
 
 static void check_viol(FILE *log,
                        t_ilist *disres, t_iparams forceparams[],
-                       rvec x[], rvec f[],
+                       rvec x[], rvec4 f[],
                        t_pbc *pbc, t_graph *g, t_dr_result dr[],
                        int clust_id, int isize, int index[], real vvindex[],
                        t_fcdata *fcd)
@@ -313,7 +313,7 @@ static void dump_dump(FILE *log, int ndr, t_dr_stats drs[])
             nrestr    = 0;
             for (i = 0; (i < ndr); i++)
             {
-                if (!bCore || (bCore && drs[i].bCore))
+                if (!bCore || drs[i].bCore)
                 {
                     switch (kkk)
                     {
@@ -527,7 +527,7 @@ static void init_dr_res(t_dr_result *dr, int ndr)
 }
 
 static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
-                              int nsteps, t_idef *idef, gmx_mtop_t *mtop,
+                              int nsteps, t_idef *idef, const gmx_mtop_t *mtop,
                               real max_dr, int nlevels, gmx_bool bThird)
 {
     FILE      *fp;
@@ -701,7 +701,8 @@ int gmx_disre(int argc, char *argv[])
     int               ntopatoms, natoms, i, j, kkk;
     t_trxstatus      *status;
     real              t;
-    rvec             *x, *f, *xav = NULL;
+    rvec             *x, *xav = NULL;
+    rvec4            *f;
     matrix            box;
     gmx_bool          bPDB;
     int               isize;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,6 +109,8 @@ enum tpxv {
     tpxv_RemoveAdress,                                       /**< removed support for AdResS */
     tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
+    tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
+    tpxv_PullExternalPotential,                              /**< Added pull type external potential */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -279,19 +281,48 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
     gmx_fio_do_int(fio, pgrp->pbcatom);
 }
 
-static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
+static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
+                          gmx_bool bRead, int file_version,
                           int ePullOld, int eGeomOld, ivec dimOld)
 {
     if (file_version >= tpxv_PullCoordNGroup)
     {
         gmx_fio_do_int(fio,  pcrd->eType);
+        if (file_version >= tpxv_PullExternalPotential)
+        {
+            if (pcrd->eType == epullEXTERNAL)
+            {
+                if (bRead)
+                {
+                    char buf[STRLEN];
+
+                    gmx_fio_do_string(fio, buf);
+                    pcrd->externalPotentialProvider = gmx_strdup(buf);
+                }
+                else
+                {
+                    gmx_fio_do_string(fio, pcrd->externalPotentialProvider);
+                }
+            }
+            else
+            {
+                pcrd->externalPotentialProvider = NULL;
+            }
+        }
+        else
+        {
+            if (bRead)
+            {
+                pcrd->externalPotentialProvider = NULL;
+            }
+        }
         /* Note that we try to support adding new geometries without
          * changing the tpx version. This requires checks when printing the
          * geometry string and a check and fatal_error in init_pull.
          */
         gmx_fio_do_int(fio,  pcrd->eGeom);
         gmx_fio_do_int(fio,  pcrd->ngroup);
-        if (pcrd->ngroup <= PULL_COORD_NGROUP_MAX)
+        if (pcrd->ngroup <= c_pullCoordNgroupMax)
         {
             gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
         }
@@ -678,18 +709,23 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM1);
+        gmx_fio_do_int(fio, pull->bPrintCOM);
         /* With file_version < 95 this value is set below */
     }
-    if (file_version >= tpxv_PullCoordTypeGeom)
+    if (file_version >= tpxv_ReplacePullPrintCOM12)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM2);
+        gmx_fio_do_int(fio, pull->bPrintRefValue);
+        gmx_fio_do_int(fio, pull->bPrintComp);
+    }
+    else if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        int idum;
+        gmx_fio_do_int(fio, idum); /* used to be bPrintCOM2 */
         gmx_fio_do_int(fio, pull->bPrintRefValue);
         gmx_fio_do_int(fio, pull->bPrintComp);
     }
     else
     {
-        pull->bPrintCOM2     = FALSE;
         pull->bPrintRefValue = FALSE;
         pull->bPrintComp     = TRUE;
     }
@@ -724,7 +760,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             }
         }
 
-        pull->bPrintCOM1 = (pull->group[0].nat > 0);
+        pull->bPrintCOM = (pull->group[0].nat > 0);
     }
     else
     {
@@ -735,7 +771,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
         for (g = 0; g < pull->ncoord; g++)
         {
             do_pull_coord(fio, &pull->coord[g],
-                          file_version, ePullOld, eGeomOld, dimOld);
+                          bRead, file_version, ePullOld, eGeomOld, dimOld);
         }
     }
 }
@@ -3629,12 +3665,15 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
 }
 
 void write_tpx_state(const char *fn,
-                     t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
+                     const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop)
 {
     t_fileio *fio;
 
     fio = open_tpx(fn, "w");
-    do_tpx(fio, FALSE, ir, state, mtop, FALSE);
+    do_tpx(fio, FALSE,
+           const_cast<t_inputrec *>(ir),
+           const_cast<t_state *>(state),
+           const_cast<gmx_mtop_t *>(mtop), FALSE);
     close_tpx(fio);
 }
 

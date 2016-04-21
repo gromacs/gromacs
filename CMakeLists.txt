@@ -193,9 +193,9 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
 # Decide on GPU settings based on user-settings and GPU/CUDA detection.
-# GCC 4.6 requires CUDA 5.0 and VS2013 requires CUDA 6.5
+# GCC 4.6 requires CUDA 5.0 and VS2015 requires CUDA 8.0
 if(MSVC)
-    set(REQUIRED_CUDA_VERSION 6.5)
+    set(REQUIRED_CUDA_VERSION 8.0)
 else()
     set(REQUIRED_CUDA_VERSION 5.0)
 endif()
@@ -230,7 +230,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX_512F AVX_512ER MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
 if(GMX_TARGET_MIC)
     set(GMX_FFT_LIBRARY_DEFAULT "mkl")
@@ -469,15 +469,15 @@ gmx_test_zlib(HAVE_ZLIB)
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
 # next.
-if(DEFINED LIBXML2_LIBRARIES)
-  set(LibXml2_FIND_QUIETLY TRUE)
-endif()
-find_package(LibXml2)
-include(gmxTestLibXml2)
-gmx_test_libxml2(HAVE_LIBXML2)
-option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
-set(PKG_XML "")
-mark_as_advanced(GMX_XML)
+#if(DEFINED LIBXML2_LIBRARIES)
+#  set(LibXml2_FIND_QUIETLY TRUE)
+#endif()
+#find_package(LibXml2)
+#include(gmxTestLibXml2)
+#gmx_test_libxml2(HAVE_LIBXML2)
+#option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
+#set(PKG_XML "")
+#mark_as_advanced(GMX_XML)
 # Don't actually do anything, since libxml2 is currently not used by libgromacs
 #if(GMX_XML AND NOT HAVE_LIBXML2)
 #    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
@@ -528,6 +528,25 @@ if (GMX_ALEXANDRIA)
     message(FATAL_ERROR "OpenBabel2 library not found.")
   endif(OPENBABEL2_FOUND)
 endif (GMX_ALEXANDRIA)
+
+if(DEFINED HWLOC_LIBRARIES)
+  set(Hwloc_FIND_QUIETLY TRUE)
+endif()
+find_package(Hwloc 1.5)
+if(HWLOC_FOUND)
+    set(GMX_HWLOC_DEFAULT ON)
+else()
+    set(GMX_HWLOC_DEFAULT OFF)
+endif()
+option(GMX_HWLOC "Add support for hwloc Portable Hardware locality library" ${GMX_HWLOC_DEFAULT})
+if(GMX_HWLOC)
+    if(HWLOC_FOUND)
+        include_directories(${HWLOC_INCLUDE_DIRS})
+        list(APPEND GMX_EXTRA_LIBRARIES ${HWLOC_LIBRARIES})
+    else()
+        message(FATAL_ERROR "Hwloc package support requested, but not found.")
+    endif()
+endif()
 
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
@@ -593,17 +612,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
     endif()
 endif()
 
-if(NOT DEFINED GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
-    message(WARNING "libxml2 not found. Will build GROMACS without unit-tests. This is not recommended, because the unit-tests help to verify that GROMACS functions correctly. Most likely you are missing the libxml2-dev(el) package. After you installed it, set GMX_BUILD_UNITTESTS=ON.")
-endif()
-option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${HAVE_LIBXML2})
+option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING" ON)
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
-if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
-    message(FATAL_ERROR
-        "Cannot build unit tests without libxml2. "
-        "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
-endif()
 
 ########################################################################
 # Our own GROMACS tests

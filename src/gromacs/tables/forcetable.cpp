@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1388,7 +1388,7 @@ t_forcetable *make_tables(FILE *out,
         read_tables(out, fn, etiNR, 0, td);
         if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY))
         {
-            table->n   = td[0].nx;
+            table->n = td[0].nx;
         }
         else
         {
@@ -1564,4 +1564,48 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
     done_tabledata(&td);
 
     return tab;
+}
+
+t_forcetable *makeDispersionCorrectionTable(FILE *fp,
+                                            t_forcerec *fr, real rtab,
+                                            const char *tabfn)
+{
+    t_forcetable *dispersionCorrectionTable = NULL;
+
+    if (tabfn == NULL)
+    {
+        if (debug)
+        {
+            fprintf(debug, "No table file name passed, can not read table, can not do non-bonded interactions\n");
+        }
+        return dispersionCorrectionTable;
+    }
+
+    t_forcetable *fullTable = make_tables(fp, fr, tabfn, rtab, 0);
+    /* Copy the contents of the table to one that has just dispersion
+     * and repulsion, to improve cache performance. We want the table
+     * data to be aligned to 32-byte boundaries. The pointers could be
+     * freed but currently aren't. */
+    snew(dispersionCorrectionTable, 1);
+    dispersionCorrectionTable->interaction   = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
+    dispersionCorrectionTable->format        = fullTable->format;
+    dispersionCorrectionTable->r             = fullTable->r;
+    dispersionCorrectionTable->n             = fullTable->n;
+    dispersionCorrectionTable->scale         = fullTable->scale;
+    dispersionCorrectionTable->formatsize    = fullTable->formatsize;
+    dispersionCorrectionTable->ninteractions = 2;
+    dispersionCorrectionTable->stride        = dispersionCorrectionTable->formatsize * dispersionCorrectionTable->ninteractions;
+    snew_aligned(dispersionCorrectionTable->data, dispersionCorrectionTable->stride*(dispersionCorrectionTable->n+1), 32);
+
+    for (int i = 0; i <= fullTable->n; i++)
+    {
+        for (int j = 0; j < 8; j++)
+        {
+            dispersionCorrectionTable->data[8*i+j] = fullTable->data[12*i+4+j];
+        }
+    }
+    sfree_aligned(fullTable->data);
+    sfree(fullTable);
+
+    return dispersionCorrectionTable;
 }

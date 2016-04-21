@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,5 +91,11 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
 
 /* Return a table for GB calculations */
 t_forcetable *make_gb_table(const t_forcerec              *fr);
+
+/*! \brief Construct and return tabulated dispersion and repulsion interactions
+ *
+ * This table can be used to compute long-range dispersion corrections */
+t_forcetable *makeDispersionCorrectionTable(FILE *fp, t_forcerec *fr,
+                                            real rtab, const char *tabfn);
 
 #endif  /* GMX_TABLES_FORCETABLE_H */

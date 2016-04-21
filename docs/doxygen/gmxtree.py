@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -845,7 +845,7 @@ class GromacsTree(object):
         self._docset = xml.DocumentationSet(xmldir, self._reporter)
         if only_files:
             if isinstance(only_files, collections.Iterable):
-                filelist = [x.get_abspath() for x in only_files]
+                filelist = [x.get_relpath() for x in only_files]
                 self._docset.load_file_details(filelist)
             else:
                 self._docset.load_file_details()

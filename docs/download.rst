@@ -5,7 +5,8 @@ Downloads
 
 Source code
 -----------
-* |gmx-source-package|
+* |gmx-source-package-ftp|
+* |gmx-source-package-http|
 * (md5sum |SOURCE_MD5SUM|)
 
 Other source code versions may be found at the

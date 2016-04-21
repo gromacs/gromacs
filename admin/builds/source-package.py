@@ -32,24 +32,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-import os
-import re
+import os.path
 
 build_out_of_source = True
 
 def do_build(context):
     cmake_opts = {
             'GMX_BUILD_HELP': 'ON',
-            # TODO: Consider encapsulating this within releng.
-            # The environment variable is intended to be set as a build
-            # parameter (or otherwise in the Jenkins job configuration).
-            'GMX_BUILD_TARBALL': os.getenv('RELEASE', None),
             'CMAKE_BUILD_TYPE': 'Debug',
             'GMX_SIMD': 'None',
             'GMX_THREAD_MPI': 'OFF',
             'GMX_OPENMP': 'OFF',
             'GMX_GPU': 'OFF'
         }
+    if context.params.get('RELEASE', Parameter.bool):
+        cmake_opts['GMX_BUILD_TARBALL'] = 'ON'
 
     context.run_cmake(cmake_opts)
     context.build_target(target='gmx')

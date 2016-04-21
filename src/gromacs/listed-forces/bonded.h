@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,8 +55,6 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/pbcutil/pbc-simd.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -85,7 +83,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 /*! \brief Do an update of the forces for dihedral potentials */
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
-                rvec m, rvec n, rvec f[], rvec fshift[],
+                rvec m, rvec n, rvec4 f[], rvec fshift[],
                 const struct t_pbc *pbc, const struct t_graph *g,
                 const rvec *x, int t1, int t2, int t3);
 
@@ -97,7 +95,7 @@ real
     cmap_dihs(int nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const gmx_cmap_t *cmap_grid,
-              const rvec x[], rvec f[], rvec fshift[],
+              const rvec x[], rvec4 f[], rvec fshift[],
               const struct t_pbc *pbc, const struct t_graph *g,
               real gmx_unused lambda, real gmx_unused *dvdlambda,
               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
@@ -121,14 +119,14 @@ t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres
 void
     pdihs_noener(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
-                 const rvec x[], rvec f[],
+                 const rvec x[], rvec4 f[],
                  const struct t_pbc gmx_unused *pbc,
                  const struct t_graph gmx_unused *g,
                  real lambda,
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index);
 
-#if GMX_SIMD_HAVE_REAL
+/* TODO these declarations should be internal to the module */
 
 /* As angles(), but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
@@ -136,7 +134,7 @@ void
 void
     angles_noener_simd(int nbonds,
                        const t_iatom forceatoms[], const t_iparams forceparams[],
-                       const rvec x[], rvec f[],
+                       const rvec x[], rvec4 f[],
                        const struct t_pbc *pbc,
                        const struct t_graph gmx_unused *g,
                        real gmx_unused lambda,
@@ -147,7 +145,7 @@ void
 void
     pdihs_noener_simd(int nbonds,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
-                      const rvec x[], rvec f[],
+                      const rvec x[], rvec4 f[],
                       const struct t_pbc *pbc,
                       const struct t_graph gmx_unused *g,
                       real gmx_unused lambda,
@@ -158,14 +156,12 @@ void
 void
     rbdihs_noener_simd(int nbonds,
                        const t_iatom forceatoms[], const t_iparams forceparams[],
-                       const rvec x[], rvec f[],
+                       const rvec x[], rvec4 f[],
                        const struct t_pbc *pbc,
                        const struct t_graph gmx_unused *g,
                        real gmx_unused lambda,
                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                        int gmx_unused *global_atom_index);
-
-#endif // GMX_SIMD_HAVE_REAL
 
 //! \endcond
 

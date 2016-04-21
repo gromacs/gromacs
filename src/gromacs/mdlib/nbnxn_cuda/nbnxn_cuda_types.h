@@ -56,9 +56,9 @@
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
 /*! \brief number of clusters per supercluster. */
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
+static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+static const int c_clSize          = c_nbnxnGpuClusterSize;
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,7 +92,7 @@ enum eelCu {
  * should match the order of enumerated types below.
  */
 enum evdwCu {
-    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
+    evdwCuCUT, evdwCuCUTCOMBGEOM, evdwCuCUTCOMBLB, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -138,6 +138,7 @@ struct cu_atomdata
 
     int      ntypes;            /**< number of atom types                         */
     int     *atom_types;        /**< atom type indices, size natoms               */
+    float2  *lj_comb;           /**< sqrt(c6),sqrt(c12) size natoms               */
 
     float3  *shift_vec;         /**< shifts                                       */
     bool     bShiftVecUploaded; /**< true if the shift vector has been uploaded   */

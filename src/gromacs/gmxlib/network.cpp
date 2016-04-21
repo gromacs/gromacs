@@ -288,13 +288,13 @@ void gmx_init_intranode_counters(t_commrec *cr)
     if (debug)
     {
         char sbuf[STRLEN];
-        if (cr->duty & DUTY_PP && cr->duty & DUTY_PME)
+        if ((cr->duty & DUTY_PP) && (cr->duty & DUTY_PME))
         {
             sprintf(sbuf, "PP+PME");
         }
         else
         {
-            sprintf(sbuf, "%s", cr->duty & DUTY_PP ? "PP" : "PME");
+            sprintf(sbuf, "%s", (cr->duty & DUTY_PP) ? "PP" : "PME");
         }
         fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
                 "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",

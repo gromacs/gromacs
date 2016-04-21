@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -493,7 +493,7 @@ void init_edx(struct edix *edx)
 }
 
 void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                int igro[], rvec *x, const char* structure)
+                int igro[], const rvec *x, const char* structure)
 {
 /* filter2edx copies coordinates from x to edx which are given in index
  */
@@ -518,7 +518,7 @@ void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
     }
 }
 
-void get_structure(t_atoms *atoms, const char *IndexFile,
+void get_structure(const t_atoms *atoms, const char *IndexFile,
                    const char *StructureFile, struct edix *edx, int nfit,
                    int ifit[], int nav, int index[])
 {
@@ -685,7 +685,7 @@ int gmx_make_edi(int argc, char *argv[])
         { "-flood",  FALSE, etSTR, {&evSelections[2]},
           "Indices of eigenvectors for flooding"},
         { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-          "Freqency (in steps) of writing output in [REF].xvg[ref] file" },
+          "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
         { "-slope", FALSE, etREAL, { &edi_params.slope},
           "Minimal slope in acceptance radius expansion"},
         { "-linstep", FALSE, etSTR, {&evParams[0]},

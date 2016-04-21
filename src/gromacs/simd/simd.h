@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,10 @@
 #    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif GMX_SIMD_X86_MIC
 #    include "impl_x86_mic/impl_x86_mic.h"
+#elif GMX_SIMD_X86_AVX_512
+#    include "impl_x86_avx_512/impl_x86_avx_512.h"
+#elif GMX_SIMD_X86_AVX_512_KNL
+#    include "impl_x86_avx_512_knl/impl_x86_avx_512_knl.h"
 #elif GMX_SIMD_ARM_NEON
 #    include "impl_arm_neon/impl_arm_neon.h"
 #elif GMX_SIMD_ARM_NEON_ASIMD
@@ -122,6 +126,13 @@
 #else
 #    include "impl_none/impl_none.h"
 #endif
+
+// The scalar SIMD-mimicking functions are always included so we can use
+// templated functions even without SIMD support.
+#include "gromacs/simd/scalar/scalar.h"
+#include "gromacs/simd/scalar/scalar_math.h"
+#include "gromacs/simd/scalar/scalar_util.h"
+
 
 #if GMX_DOUBLE
 #    define GMX_SIMD_HAVE_REAL                                     GMX_SIMD_HAVE_DOUBLE
@@ -353,18 +364,232 @@ typedef Simd4FBool                Simd4Bool;
  * \{
  */
 
-#if GMX_SIMD_HAVE_REAL
+class SimdLoadFProxyInternal;
+
+static inline const SimdLoadFProxyInternal gmx_simdcall
+load(const float *m);
+
+/*! \libinternal \brief Proxy object to enable load() for SIMD and float types
+ *
+ * This object is returned by the load() function that takes a single pointer
+ * to a float. When the result is assigned to either SimdFloat or float,
+ * the appropriate conversion method will be executed, which in turn calls
+ * the correct low-level load function.
+ * In pratice this simply means you can use load() regardless for both SIMD
+ * and non-SIMD floating point data in templated functions.
+ *
+ * This is an internal class you should never touch or create objects of. The
+ * only reason the constructor isn't private is that the load() function must
+ * be static to enable aggressive inlining.
+ */
+class SimdLoadFProxyInternal
+{
+    public:
+        //! \brief Conversion method that will execute load of scalar float
+        operator float() const { return *m_; }
+#if GMX_SIMD_HAVE_FLOAT
+        //! \brief Conversion method that will execute load of SimdFloat
+        operator SimdFloat() const { return simdLoad(m_); }
+#endif
+    private:
+        //! \brief Private constructor can only be called from load()
+        SimdLoadFProxyInternal(const float *m) : m_(m) {}
+
+        friend const SimdLoadFProxyInternal gmx_simdcall
+        load(const float *m);
+
+        const float * const m_; //!< The pointer used to load memory
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadFProxyInternal);
+};
+
+/*! \brief Load function that returns proxy object for SimdFloat and float
+ *
+ * \param m Pointer to load memory
+ * \return Proxy object that will call the actual load for either SimdFloat
+ *         or float when you assign it and the conversion method is called.
+ */
+static inline const SimdLoadFProxyInternal gmx_simdcall
+load(const float *m)
+{
+    return {
+               m
+    };
+}
+
+
+class SimdLoadUFProxyInternal;
+
+static inline const SimdLoadUFProxyInternal gmx_simdcall
+loadU(const float *m);
+
+/*! \libinternal \brief Proxy object to enable loadU() for SIMD and float types
+ *
+ * This object is returned by the load() function that takes a single pointer
+ * to a float. When the result is assigned to either SimdFloat or float,
+ * the appropriate conversion method will be executed, which in turn calls
+ * the correct low-level load function.
+ * In pratice this simply means you can use load() regardless for both SIMD
+ * and non-SIMD floating point data in templated functions.
+ *
+ * This is an internal class you should never touch or create objects of. The
+ * only reason the constructor isn't private is that the load() function must
+ * be static to enable aggressive inlining.
+ */
+class SimdLoadUFProxyInternal
+{
+    public:
+        //! \brief Conversion method that will execute load of scalar float
+        operator float() const { return *m_; }
+#if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_LOADU
+        //! \brief Conversion method that will execute load of SimdFloat
+        operator SimdFloat() const { return simdLoadU(m_); }
+#endif
+    private:
+        //! \brief Private constructor can only be called from load()
+        SimdLoadUFProxyInternal(const float *m) : m_(m) {}
+
+        friend const SimdLoadUFProxyInternal gmx_simdcall
+        loadU(const float *m);
+
+        const float * const m_; //!< The pointer used to load memory
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUFProxyInternal);
+};
+
+
+/*! \brief LoadU function that returns proxy object for SimdFloat and float
+ *
+ * \param m Pointer to loadU memory
+ * \return Proxy object that will call the actual loadU for either SimdFloat
+ *         or float when you assign it and the conversion method is called.
+ */
+static inline const SimdLoadUFProxyInternal gmx_simdcall
+loadU(const float *m)
+{
+    return {
+               m
+    };
+}
+
+class SimdLoadDProxyInternal;
+
+static inline const SimdLoadDProxyInternal gmx_simdcall
+load(const double *m);
+
+/*! \libinternal \brief Proxy object to enable load() for SIMD and double types
+ *
+ * This object is returned by the load() function that takes a single pointer
+ * to a double. When the result is assigned to either SimdDouble or double,
+ * the appropriate conversion method will be executed, which in turn calls
+ * the correct low-level load function.
+ * In pratice this simply means you can use load() regardless for both SIMD
+ * and non-SIMD floating point data in templated functions.
+ *
+ * This is an internal class you should never touch or create objects of. The
+ * only reason the constructor isn't private is that the load() function must
+ * be static to enable aggressive inlining.
+ */
+class SimdLoadDProxyInternal
+{
+    public:
+        //! \brief Conversion method that will execute load of scalar double
+        operator double() const { return *m_; }
+#if GMX_SIMD_HAVE_DOUBLE
+        //! \brief Conversion method that will execute load of SimdDouble
+        operator SimdDouble() const { return simdLoad(m_); }
+#endif
+    private:
+        //! \brief Private constructor can only be called from load()
+        SimdLoadDProxyInternal(const double *m) : m_(m) {}
+
+        friend const SimdLoadDProxyInternal gmx_simdcall
+        load(const double *m);
+
+        const double * const m_; //!< The pointer used to load memory
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadDProxyInternal);
+};
+
+/*! \brief Load function that returns proxy object for SimdDouble and double
+ *
+ * \param m Pointer to load memory
+ * \return Proxy object that will call the actual load for either SimdDouble
+ *         or double when you assign it and the conversion method is called.
+ */
+static inline const SimdLoadDProxyInternal gmx_simdcall
+load(const double *m)
+{
+    return {
+               m
+    };
+}
+
+class SimdLoadUDProxyInternal;
+
+static inline const SimdLoadUDProxyInternal gmx_simdcall
+loadU(const double *m);
+
+/*! \libinternal \brief Proxy object to enable loadU() for SIMD and double types
+ *
+ * This object is returned by the load() function that takes a single pointer
+ * to a double. When the result is assigned to either SimdDouble or double,
+ * the appropriate conversion method will be executed, which in turn calls
+ * the correct low-level load function.
+ * In pratice this simply means you can use load() regardless for both SIMD
+ * and non-SIMD floating point data in templated functions.
+ *
+ * This is an internal class you should never touch or create objects of. The
+ * only reason the constructor isn't private is that the load() function must
+ * be static to enable aggressive inlining.
+ */
+class SimdLoadUDProxyInternal
+{
+    public:
+        //! \brief Conversion method that will execute load of scalar double
+        operator double() const { return *m_; }
+#if GMX_SIMD_HAVE_DOUBLE && GMX_SIMD_HAVE_LOADU
+        //! \brief Conversion method that will execute load of SimdDouble
+        operator SimdDouble() const { return simdLoadU(m_); }
+#endif
+    private:
+        //! \brief Private constructor can only be called from load()
+        SimdLoadUDProxyInternal(const double *m) : m_(m) {}
+
+        friend const SimdLoadUDProxyInternal gmx_simdcall
+        loadU(const double *m);
+
+        const double * const m_; //!< The pointer used to load memory
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUDProxyInternal);
+};
+
+/*! \brief Load function that returns proxy object for SimdDouble and double
+ *
+ * \param m Pointer to load memory
+ * \return Proxy object that will call the actual load for either SimdDouble
+ *         or double when you assign it and the conversion method is called.
+ */
+static inline const SimdLoadUDProxyInternal gmx_simdcall
+loadU(const double *m)
+{
+    return {
+               m
+    };
+}
+
+
 class SimdLoadIProxyInternal;
 
 static inline const SimdLoadIProxyInternal gmx_simdcall
 load(const std::int32_t *m);
 
-/*! \libinternal \brief Proxy object to enable load() for SimdFInt32 & SImdDInt32
+/*! \libinternal \brief Proxy object load() for SimdFInt32, SImdDInt32, and int32
  *
  * This object is returned by the load() function that takes a single pointer
- * to an integer. When the result is assigned to either SimdFInt32 or SimdDInt32
- * the appropriate conversion method will be executed, which in turn calls
- * the correct low-level load function.
+ * to an integer. When the result is assigned to either SimdFInt32, SimdDInt32,
+ * or std::int32_t, the appropriate conversion method will be executed, which in
+ * turn calls the correct low-level load function.
  * In pratice this simply means you can use load() regardless of the type.
  *
  * This is an internal class you should never touch or create objects of. The
@@ -374,13 +599,15 @@ load(const std::int32_t *m);
 class SimdLoadIProxyInternal
 {
     public:
+        //! \brief Conversion method that will execute load of scalar int32
+        operator std::int32_t() const { return *m_; }
 #if GMX_SIMD_HAVE_FLOAT
         //! \brief Conversion method that will execute load of SimdFInt32
-        operator SimdFInt32() const { return loadFI(m_); };
+        operator SimdFInt32() const { return simdLoadFI(m_); }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
         //! \brief Conversion method that will execute load of SimdDInt32
-        operator SimdDInt32() const { return loadDI(m_); };
+        operator SimdDInt32() const { return simdLoadDI(m_); }
 #endif
     private:
         //! \brief Private constructor can only be called from load()
@@ -394,7 +621,7 @@ class SimdLoadIProxyInternal
         GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadIProxyInternal);
 };
 
-/*! \brief Integer load function that returns proxy object for SimdFInt32 & SImdDInt32
+/*! \brief Integer load function (proxy object) for SimdFInt32, SImdDInt32, and int32.
  *
  * \param m Pointer to load memory
  * \return Proxy object that will call the actual load for either SimdFInt32
@@ -408,27 +635,28 @@ load(const std::int32_t *m)
     };
 }
 
-#if GMX_SIMD_HAVE_LOADU
 
 class SimdLoadUIProxyInternal;
 
 static inline const SimdLoadUIProxyInternal gmx_simdcall
 loadU(const std::int32_t *m);
 
-/*! \libinternal \brief Proxy object to enable loadU() for SimdFInt32 & SImdDInt32
+/*! \libinternal \brief Proxy object - loadU() for SimdFInt32, SImdDInt32, and int32
  *
  * \copydetails SimdLoadIProxyInternal
  */
 class SimdLoadUIProxyInternal
 {
     public:
-#if GMX_SIMD_HAVE_FLOAT
+        //! \brief Conversion method that will execute unaligned load of scalar int32
+        operator std::int32_t() const { return *m_; }
+#if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_LOADU
         //!\brief Conversion method that will execute unaligned load of SimdFInt32
-        operator SimdFInt32() const { return loadUFI(m_); };
+        operator SimdFInt32() const { return simdLoadUFI(m_); }
 #endif
-#if GMX_SIMD_HAVE_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_SIMD_HAVE_LOADU
         //!\brief Conversion method that will execute unaligned load of SimdDInt32
-        operator SimdDInt32() const { return loadUDI(m_); };
+        operator SimdDInt32() const { return simdLoadUDI(m_); }
 #endif
     private:
         //! \brief Private constructor can only be called from loadU()
@@ -442,7 +670,7 @@ class SimdLoadUIProxyInternal
         GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUIProxyInternal);
 };
 
-/*! \brief Integer loadU function that returns proxy object for SimdFInt32 & SImdDInt32
+/*! \brief Integer loadU function (proxy object) for SimdFInt32, SImdDInt32, and int32.
  *
  * \param m Pointer to load memory
  * \return Proxy object that will call the actual load for either SimdFInt32
@@ -456,15 +684,13 @@ loadU(const std::int32_t *m)
     };
 }
 
-#endif  // GMX_SIMD_HAVE_LOADU
-
 
 class SimdSetZeroProxyInternal;
 
 static inline const SimdSetZeroProxyInternal gmx_simdcall
 setZero();
 
-/*! \libinternal \brief Proxy object to enable setZero() for all SIMD types.
+/*! \libinternal \brief Proxy object to enable setZero() for SIMD and real types.
  *
  * This object is returned by setZero(), and depending on what type you assign
  * the result to the conversion method will call the right low-level function.
@@ -472,25 +698,31 @@ setZero();
 class SimdSetZeroProxyInternal
 {
     public:
+        //!\brief Conversion method that returns 0.0 as float
+        operator float() const { return 0.0f; }
+        //!\brief Conversion method that returns 0.0 as double
+        operator double() const { return 0.0; }
+        //!\brief Conversion method that returns 0.0 as int32
+        operator std::int32_t() const { return 0; }
 #if GMX_SIMD_HAVE_FLOAT
         //!\brief Conversion method that will execute setZero() for SimdFloat
-        operator SimdFloat() const { return setZeroF(); };
+        operator SimdFloat() const { return setZeroF(); }
         //!\brief Conversion method that will execute setZero() for SimdFInt32
-        operator SimdFInt32() const { return setZeroFI(); };
+        operator SimdFInt32() const { return setZeroFI(); }
 #endif
 #if GMX_SIMD4_HAVE_FLOAT
         //!\brief Conversion method that will execute setZero() for Simd4Float
-        operator Simd4Float() const { return simd4SetZeroF(); };
+        operator Simd4Float() const { return simd4SetZeroF(); }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
         //!\brief Conversion method that will execute setZero() for SimdDouble
-        operator SimdDouble() const { return setZeroD(); };
+        operator SimdDouble() const { return setZeroD(); }
         //!\brief Conversion method that will execute setZero() for SimdDInt32
-        operator SimdDInt32() const { return setZeroDI(); };
+        operator SimdDInt32() const { return setZeroDI(); }
 #endif
 #if GMX_SIMD4_HAVE_DOUBLE
         //!\brief Conversion method that will execute setZero() for Simd4Double
-        operator Simd4Double() const { return simd4SetZeroD(); };
+        operator Simd4Double() const { return simd4SetZeroD(); }
 #endif
 
     private:
@@ -503,9 +735,9 @@ class SimdSetZeroProxyInternal
         GMX_DISALLOW_COPY_AND_ASSIGN(SimdSetZeroProxyInternal);
 };
 
-/*! \brief Proxy object to set any SIMD variable to zero
+/*! \brief Proxy object to set any SIMD or scalar variable to zero
  *
- * \return Proxy object that will call the actual function to set a SIMD
+ * \return Proxy object that will call the actual function to set a SIMD/scalar
  *         variable to zero based on the conversion function called when you
  *         assign the result.
  */
@@ -515,9 +747,6 @@ setZero()
     return {};
 }
 //! \}  end of name-group proxy objects
-
-
-#endif // GMX_SIMD_HAVE_REAL
 
 }      // namespace gmx
 

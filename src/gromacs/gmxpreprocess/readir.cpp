@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -315,10 +315,21 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
         }
+
+        // We don't (yet) have general Verlet kernels for rcoulomb!=rvdw
         if (ir->rcoulomb != ir->rvdw)
         {
-            warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
+            // Since we have PME coulomb + LJ cut-off kernels with rcoulomb>rvdw
+            // for PME load balancing, we can support this exception.
+            bool bUsesPmeTwinRangeKernel = (EEL_PME_EWALD(ir->coulombtype) &&
+                                            ir->vdwtype == evdwCUT &&
+                                            ir->rcoulomb > ir->rvdw);
+            if (!bUsesPmeTwinRangeKernel)
+            {
+                warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported (except for rcoulomb>rvdw with PME electrostatics)");
+            }
         }
+
         if (ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwSWITCH)
         {
             if (ir->vdw_modifier == eintmodNONE ||
@@ -616,10 +627,10 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 (int)fep->sc_r_power);
         CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
 
-        sprintf(err_buf, "Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
+        sprintf(err_buf, "Can't use positive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state > 0) ||  (fep->init_lambda > 0)));
 
-        sprintf(err_buf, "Can't use postive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
+        sprintf(err_buf, "Can't use positive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
 
         sprintf(err_buf, "Can only use expanded ensemble with md-vv (for now)");
@@ -1786,6 +1797,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("adress_do_hybridpairs");
     REM_TYPE("rlistlong");
     REM_TYPE("nstcalclr");
+    REM_TYPE("pull-print-com2");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1794,6 +1806,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REPL_TYPE("nstxtcout", "nstxout-compressed");
     REPL_TYPE("xtc-grps", "compressed-x-grps");
     REPL_TYPE("xtc-precision", "compressed-x-precision");
+    REPL_TYPE("pull-print-com1", "pull-print-com");
 
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");
@@ -4063,7 +4076,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         {
             sprintf(err_buf, "all tau_t must currently be equal using Andersen temperature control, violated for group %d", i);
             CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
-            sprintf(err_buf, "all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
+            sprintf(err_buf, "all tau_t must be positive using Andersen temperature control, tau_t[%d]=%10.6f",
                     i, ir->opts.tau_t[i]);
             CHECK(ir->opts.tau_t[i] < 0);
         }

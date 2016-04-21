@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,10 @@ void AtomsBuilder::reserve(int atomCount, int residueCount)
     srenew(atoms_->atom,     atomCount);
     srenew(atoms_->atomname, atomCount);
     srenew(atoms_->resinfo,  residueCount);
+    if (atoms_->pdbinfo != nullptr)
+    {
+        srenew(atoms_->pdbinfo, atomCount);
+    }
     nrAlloc_   = atomCount;
     nresAlloc_ = residueCount;
 }
@@ -114,6 +118,17 @@ void AtomsBuilder::addAtom(const t_atoms &atoms, int i)
     atoms_->atom[index]        = atoms.atom[i];
     atoms_->atomname[index]    = symtabString(atoms.atomname[i]);
     atoms_->atom[index].resind = currentResidueIndex_;
+    if (atoms_->pdbinfo != nullptr)
+    {
+        if (atoms.pdbinfo != nullptr)
+        {
+            atoms_->pdbinfo[index]  = atoms.pdbinfo[i];
+        }
+        else
+        {
+            gmx_pdbinfo_init_default(&atoms_->pdbinfo[index]);
+        }
+    }
     ++atoms_->nr;
 }
 
@@ -192,6 +207,11 @@ AtomsRemover::AtomsRemover(const t_atoms &atoms)
 
 AtomsRemover::~AtomsRemover()
 {
+}
+
+void AtomsRemover::refreshAtomCount(const t_atoms &atoms)
+{
+    removed_.resize(atoms.nr, 0);
 }
 
 void AtomsRemover::markAll()

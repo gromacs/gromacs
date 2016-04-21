@@ -65,6 +65,7 @@
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
@@ -89,13 +90,13 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -109,7 +110,6 @@
 
 #include "deform.h"
 #include "md.h"
-#include "membed.h"
 #include "repl_ex.h"
 #include "resource-division.h"
 
@@ -317,6 +317,11 @@ const int           nstlist_try[] = { 20, 25, 40 };
 static const float  nbnxn_cpu_listfac_ok    = 1.05;
 //! Too high performance ratio beween force calc and neighbor searching
 static const float  nbnxn_cpu_listfac_max   = 1.09;
+/* CPU: pair-search is about a factor 2-3 slower than the non-bonded kernel */
+//! Max OK performance ratio beween force calc and neighbor searching
+static const float  nbnxn_knl_listfac_ok    = 1.22;
+//! Too high performance ratio beween force calc and neighbor searching
+static const float  nbnxn_knl_listfac_max   = 1.3;
 /* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
 //! Max OK performance ratio beween force calc and neighbor searching
 static const float  nbnxn_gpu_listfac_ok    = 1.20;
@@ -327,7 +332,7 @@ static const float  nbnxn_gpu_listfac_max   = 1.30;
 static void increase_nstlist(FILE *fp, t_commrec *cr,
                              t_inputrec *ir, int nstlist_cmdline,
                              const gmx_mtop_t *mtop, matrix box,
-                             gmx_bool bGPU)
+                             gmx_bool bGPU, const gmx::CpuInfo &cpuinfo)
 {
     float                  listfac_ok, listfac_max;
     int                    nstlist_orig, nstlist_prev;
@@ -407,6 +412,11 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     {
         listfac_ok  = nbnxn_gpu_listfac_ok;
         listfac_max = nbnxn_gpu_listfac_max;
+    }
+    else if (cpuinfo.feature(gmx::CpuInfo::Feature::X86_Avx512ER))
+    {
+        listfac_ok  = nbnxn_knl_listfac_ok;
+        listfac_max = nbnxn_knl_listfac_max;
     }
     else
     {
@@ -537,10 +547,13 @@ static void prepare_verlet_scheme(FILE                           *fplog,
                                   int                             nstlist_cmdline,
                                   const gmx_mtop_t               *mtop,
                                   matrix                          box,
-                                  gmx_bool                        bUseGPU)
+                                  gmx_bool                        bUseGPU,
+                                  const gmx::CpuInfo             &cpuinfo)
 {
     /* For NVE simulations, we will retain the initial list buffer */
-    if (ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
+    if (EI_DYNAMICS(ir->eI) &&
+        ir->verletbuf_tol > 0 &&
+        !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
         /* Update the Verlet buffer size for the current run setup */
         verletbuf_list_setup_t ls;
@@ -575,7 +588,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         /* Set or try nstlist values */
-        increase_nstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, bUseGPU);
+        increase_nstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, bUseGPU, cpuinfo);
     }
 }
 
@@ -696,7 +709,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
     int                       nthreads_pme = 1;
-    gmx_membed_t             *membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
     gmx_bool                  bUseGPU            = FALSE;
@@ -763,7 +775,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
-                                  bUseGPU);
+                                  bUseGPU, *hwinfo->cpuInfo);
         }
         else
         {
@@ -794,7 +806,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(hw_opt, cr);
+    check_and_update_hw_opt_1(hw_opt, cr, npme);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(fplog, cr,
@@ -843,18 +855,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
     /* END OF CAUTION: cr is now reliable */
-
-    /* g_membed initialisation *
-     * Because we change the mtop, init_membed is called before the init_parallel *
-     * (in case we ever want to make it run in parallel) */
-    if (opt2bSet("-membed", nfile, fnm))
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "Initializing membed");
-        }
-        membed = init_membed(fplog, nfile, fnm, mtop, inputrec, state, cr, &cpt_period);
-    }
 
     if (PAR(cr))
     {
@@ -1010,6 +1010,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_bcast(sizeof(box), box, cr);
     }
 
+    // TODO This should move to do_md(), because it only makes sense
+    // with dynamical integrators, but there is no test coverage and
+    // it interacts with constraints, somehow.
     /* Essential dynamics */
     if (opt2bSet("-ei", nfile, fnm))
     {
@@ -1288,15 +1291,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, state->x, box, mtop, oenv,
+            init_rot(fplog, inputrec, nfile, fnm, cr, state->x, state->box, mtop, oenv,
                      bVerbose, Flags);
-        }
-
-        if (inputrec->eSwapCoords != eswapNO)
-        {
-            /* Initialize ion swapping code */
-            init_swapcoords(fplog, bVerbose, inputrec, opt2fn_master("-swap", nfile, fnm, cr),
-                            mtop, state->x, state->box, &state->swapstate, cr, oenv, Flags);
         }
 
         constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
@@ -1320,20 +1316,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      fcd, state,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                                     membed,
                                      cpt_period, max_hours,
                                      imdport,
                                      Flags,
                                      walltime_accounting);
 
-        if (inputrec->bPull)
-        {
-            finish_pull(inputrec->pull_work);
-        }
-
         if (inputrec->bRot)
         {
             finish_rot(inputrec->rot);
+        }
+
+        if (inputrec->bPull)
+        {
+            finish_pull(inputrec->pull_work);
         }
 
     }
@@ -1358,11 +1353,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
-
-    if (membed != nullptr)
-    {
-        free_membed(membed);
-    }
 
     gmx_hardware_info_free(hwinfo);
 

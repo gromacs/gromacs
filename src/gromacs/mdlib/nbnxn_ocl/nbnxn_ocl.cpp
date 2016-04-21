@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_mdlib
  */
 #include "gmxpre.h"
@@ -70,16 +71,17 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "nbnxn_ocl_internal.h"
 #include "nbnxn_ocl_types.h"
 
 #if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
 #endif
 
-/*! \brief Convenience defines */
+/*! \brief Convenience constants */
 //@{
-#define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
+static const int c_clSize          = c_nbnxnGpuClusterSize;
 //@}
 
 /*! \brief Always/never run the energy/pruning kernels -- only for benchmarking purposes */
@@ -148,46 +150,47 @@ static inline void validate_global_work_size(size_t *global_work_size, int work_
 /*! \brief Force-only kernel function names. */
 static const char* nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] =
 {
-    { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_opencl"        },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_opencl"      }
+    { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_opencl"            },
+    { "nbnxn_kernel_ElecRF_VdwLJ_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_opencl"             },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_opencl"        },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_opencl"             },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_opencl"      }
 };
 
 /*! \brief Force + energy kernel function pointers. */
 static const char* nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] =
 {
-    { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_opencl"              },
-    { "nbnxn_kernel_ElecRF_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_opencl"               },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_opencl"          },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_opencl"     },
-    { "nbnxn_kernel_ElecEw_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_opencl"               },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_opencl"        }
+    { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_opencl"            },
+    { "nbnxn_kernel_ElecRF_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_opencl"             },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_opencl"        },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_opencl"             },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_opencl"      }
 };
 
 /*! \brief Force + pruning kernel function pointers. */
 static const char* nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] =
 {
-    { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl",              "nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl",         "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_opencl"        },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_opencl",  "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl",              "nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl",       "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_opencl"      }
+    { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_opencl"             },
+    { "nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_opencl"              },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_opencl"         },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_opencl"  },
+    { "nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_opencl"              },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_opencl"       }
 };
 
 /*! \brief Force + energy + pruning kernel function pointers. */
 static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
 {
-    { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_opencl"        },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl"      }
+    { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_opencl"            },
+    { "nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_opencl"             },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_opencl"        },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_opencl"             },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl"      }
 };
+
 
 /*! \brief Return a pointer to the kernel version to be executed at the current step.
  *  OpenCL kernel objects are cached in nb. If the requested kernel is not
@@ -235,7 +238,7 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
 
     if (NULL == kernel_ptr[0])
     {
-        *kernel_ptr = clCreateKernel(nb->dev_info->program, kernel_name_to_run, &cl_error);
+        *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
         assert(cl_error == CL_SUCCESS);
     }
     // TODO: handle errors
@@ -245,31 +248,34 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
 
 /*! \brief Calculates the amount of shared memory required by the OpenCL kernel in use.
  */
-static inline int calc_shmem_required()
+static inline int calc_shmem_required(int  vdwType,
+                                      bool bPrefetchLjParam)
 {
     int shmem;
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float) * 4; /* xqib */
+    shmem  = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately */
-    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);       /* cjs  */
-#ifdef IATYPE_SHMEM
-    /* FIXME: this should not be compile-time decided but rather at runtime.
-     * This issue propagated from the CUDA code where due to the source to source
-     * compilation there was confusion the way to set up arch-dependent launch parameters.
-     * Here too this should be converted to a hardware/arch/generation dependent
-     * conditional when re-evaluating the need for i atom type preloading.
-     */
-    /* i-atom types in shared memory */
-    #pragma error "Should not be defined"
-    shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);       /* atib */
-#endif
+    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);           /* cjs  */
+    if (bPrefetchLjParam)
+    {
+        if (useLjCombRule(vdwType))
+        {
+            /* i-atom LJ combination parameters in shared memory */
+            shmem += c_numClPerSupercl * c_clSize * 2*sizeof(float); /* atib abused for ljcp, float2 */
+        }
+        else
+        {
+            /* i-atom types in shared memory */
+            shmem += c_numClPerSupercl * c_clSize * sizeof(int); /* atib */
+        }
+    }
     /* force reduction buffers in shared memory */
-    shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float); /* f_buf */
+    shmem += c_clSize * c_clSize * 3 * sizeof(float);    /* f_buf */
     /* Warp vote. In fact it must be * number of warps in block.. */
-    shmem += sizeof(cl_uint) * 2;                   /* warp_any */
+    shmem += sizeof(cl_uint) * 2;                        /* warp_any */
     return shmem;
 }
 
@@ -507,8 +513,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
                                     plist->bDoPrune || always_prune);
 
     /* kernel launch config */
-    local_work_size[0] = CL_SIZE;
-    local_work_size[1] = CL_SIZE;
+    local_work_size[0] = c_clSize;
+    local_work_size[1] = c_clSize;
     local_work_size[2] = 1;
 
     global_work_size[0] = plist->nsci * local_work_size[0];
@@ -517,7 +523,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     validate_global_work_size(global_work_size, 3, nb->dev_info);
 
-    shmem     = calc_shmem_required();
+    shmem     = calc_shmem_required(nbp->vdwtype, nb->bPrefetchLjParam);
 
 #ifdef DEBUG_OCL
     {
@@ -531,7 +537,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
             if (NULL == nb->debug_buffer)
             {
-                nb->debug_buffer = clCreateBuffer(nb->dev_info->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                nb->debug_buffer = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                                                   debug_buffer_size, debug_buffer_h, &cl_error);
 
                 assert(CL_SUCCESS == cl_error);
@@ -546,21 +552,32 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
         fprintf(debug, "GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
-                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c);
+                (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci*c_numClPerSupercl,
+                c_numClPerSupercl, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
 
     arg_no    = 0;
-    cl_error  = clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &(adat->ntypes));
+    cl_error  = CL_SUCCESS;
+    if (!useLjCombRule(nb->nbparam->vdwtype))
+    {
+        cl_error  = clSetKernelArg(nb_kernel, arg_no++, sizeof(int), &(adat->ntypes));
+    }
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(nbparams_params), &(nbparams_params));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->xq));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->f));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->e_lj));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->e_el));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->fshift));
-    cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->atom_types));
+    if (useLjCombRule(nb->nbparam->vdwtype))
+    {
+        cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->lj_comb));
+    }
+    else
+    {
+        cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->atom_types));
+    }
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(adat->shift_vec));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(nbp->nbfp_climg2d));
     cl_error |= clSetKernelArg(nb_kernel, arg_no++, sizeof(cl_mem), &(nbp->nbfp_comb_climg2d));
@@ -637,259 +654,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
     }
 #endif
 }
-
-/*! \brief Debugging helper function */
-void dump_compare_results_cj4(nbnxn_cj4_t* results, int cnt, char* out_file, char* ref_file)
-{
-    FILE *pf;
-
-    pf = fopen(out_file, "wt");
-    assert(pf != NULL);
-
-    fprintf(pf, "%20s%20s%20s%20s%20s%20s%20s%20s\n",
-            "cj[0]", "cj[1]", "cj[2]", "cj[3]",
-            "imei[0].excl_ind", "imei[0].imask",
-            "imei[1].excl_ind", "imei[1].imask");
-
-    for (int index = 0; index < cnt; index++)
-    {
-        fprintf(pf, "%20d%20d%20d%20d%20d%20u%20d%20u\n",
-                results[index].cj[0], results[index].cj[1], results[index].cj[2], results[index].cj[3],
-                results[index].imei[0].excl_ind, results[index].imei[0].imask,
-                results[index].imei[1].excl_ind, results[index].imei[1].imask);
-    }
-
-    fclose(pf);
-
-    printf("\nWrote results to %s", out_file);
-
-    pf = fopen(ref_file, "rt");
-    if (pf)
-    {
-        char c;
-        int  diff = 0;
-        printf("\n%s file found. Comparing results...", ref_file);
-
-        /* Skip the first line */
-        c = 0;
-        while (c != '\n')
-        {
-            if (1 != fscanf(pf, "%c", &c))
-            {
-                break;
-            }
-        }
-
-        for (int index = 0; index < cnt; index++)
-        {
-            int          ref_val;
-            unsigned int u_ref_val;
-
-            for (int j = 0; j < 4; j++)
-            {
-                if (1 != fscanf(pf, "%20d", &ref_val))
-                {
-                    break;
-                }
-
-                if (ref_val != results[index].cj[j])
-                {
-                    printf("\nDifference for cj[%d] at index %d computed value = %d reference value = %d",
-                           j, index, results[index].cj[j], ref_val);
-
-                    diff++;
-                }
-            }
-
-            for (int j = 0; j < 2; j++)
-            {
-                if (1 != fscanf(pf, "%20d", &ref_val))
-                {
-                    break;
-                }
-
-                if (ref_val != results[index].imei[j].excl_ind)
-                {
-                    printf("\nDifference for imei[%d].excl_ind at index %d computed value = %d reference value = %d",
-                           j, index, results[index].imei[j].excl_ind, ref_val);
-
-                    diff++;
-                }
-
-                if (1 != fscanf(pf, "%20u", &u_ref_val))
-                {
-                    break;
-                }
-
-                if (u_ref_val != results[index].imei[j].imask)
-                {
-                    printf("\nDifference for imei[%d].imask at index %d computed value = %u reference value = %u",
-                           j, index, results[index].imei[j].imask, u_ref_val);
-
-                    diff++;
-                }
-
-            }
-        }
-
-        printf("\nFinished comparing results. Total number of differences: %d", diff);
-        fclose(pf);
-    }
-    else
-    {
-        printf("\n%s file not found. No comparison performed.", ref_file);
-    }
-}
-
-/*! \brief Debugging helper function */
-void dump_compare_results_f(float* results, int cnt, char* out_file, char* ref_file)
-{
-    FILE *pf;
-    float cmp_eps = 0.001f;
-
-    pf = fopen(out_file, "wt");
-    assert(pf != NULL);
-
-    for (int index = 0; index < cnt; index++)
-    {
-        fprintf(pf, "%15.5f\n", results[index]);
-    }
-
-    fclose(pf);
-
-    printf("\nWrote results to %s", out_file);
-
-    pf = fopen(ref_file, "rt");
-    if (pf)
-    {
-        int diff = 0;
-        printf("\n%s file found. Comparing results...", ref_file);
-        for (int index = 0; index < cnt; index++)
-        {
-            float ref_val;
-            if (1 != fscanf(pf, "%20f", &ref_val))
-            {
-                break;
-            }
-
-            if (((ref_val - results[index]) > cmp_eps) ||
-                ((ref_val - results[index]) < -cmp_eps))
-            {
-                printf("\nDifference at index %d computed value = %15.5f reference value = %15.5f",
-                       index, results[index], ref_val);
-
-                diff++;
-            }
-        }
-
-        printf("\nFinished comparing results. Total number of differences: %d", diff);
-        fclose(pf);
-    }
-    else
-    {
-        printf("\n%s file not found. No comparison performed.", ref_file);
-    }
-}
-
-/*! \brief
- * Debug function for dumping cj4, f and fshift buffers.
- * By default this function does nothing. To enable debugging for any of these
- * buffers, uncomment the corresponding definition inside the function:
- * DEBUG_DUMP_CJ4_OCL, DEBUG_DUMP_F_OCL, DEBUG_DUMP_FSHIFT_OCL.
- */
-static
-void debug_dump_cj4_f_fshift(gmx_nbnxn_ocl_t               gmx_unused *nb,
-                             const struct nbnxn_atomdata_t gmx_unused *nbatom,
-                             cl_command_queue              gmx_unused  stream,
-                             int                           gmx_unused  adat_begin,
-                             int                           gmx_unused  adat_len)
-{
-/* Uncomment this define to enable cj4 debugging for the first kernel run */
-//#define DEBUG_DUMP_CJ4_OCL
-#ifdef DEBUG_DUMP_CJ4_OCL
-    {
-        static int run_step = 1;
-
-        if (DEBUG_RUN_STEP == run_step)
-        {
-            nbnxn_cj4_t *temp_cj4;
-            int          cnt;
-            size_t       size;
-            char         ocl_file_name[256]  = {0};
-            char         cuda_file_name[256] = {0};
-
-            cnt      = nb->plist[0]->ncj4;
-            size     = cnt * sizeof(nbnxn_cj4_t);
-            temp_cj4 = (nbnxn_cj4_t*)malloc(size);
-
-            ocl_copy_D2H_async(temp_cj4, nb->plist[0]->cj4, 0,
-                               size, stream, NULL);
-
-            // Make sure all data has been transfered back from device
-            clFinish(stream);
-
-            sprintf(ocl_file_name, "ocl_cj4_%d.txt", DEBUG_RUN_STEP);
-            sprintf(cuda_file_name, "cuda_cj4_%d.txt", DEBUG_RUN_STEP);
-            dump_compare_results_cj4(temp_cj4, cnt, ocl_file_name, cuda_file_name);
-
-            free(temp_cj4);
-        }
-
-        run_step++;
-    }
-#endif
-
-/* Uncomment this define to enable f debugging for the first kernel run */
-//#define DEBUG_DUMP_F_OCL
-#ifdef DEBUG_DUMP_F_OCL
-    {
-        static int run_step = 1;
-
-        if (DEBUG_RUN_STEP == run_step)
-        {
-            char ocl_file_name[256]  = {0};
-            char cuda_file_name[256] = {0};
-
-            // Make sure all data has been transfered back from device
-            clFinish(stream);
-
-            sprintf(ocl_file_name, "ocl_f_%d.txt", DEBUG_RUN_STEP);
-            sprintf(cuda_file_name, "cuda_f_%d.txt", DEBUG_RUN_STEP);
-
-            dump_compare_results_f(nbatom->out[0].f + adat_begin * 3, (adat_len) * 3,
-                                   ocl_file_name, cuda_file_name);
-        }
-
-        run_step++;
-    }
-#endif
-
-/* Uncomment this define to enable fshift debugging for the first kernel run */
-//#define DEBUG_DUMP_FSHIFT_OCL
-#ifdef DEBUG_DUMP_FSHIFT_OCL
-    {
-        static int run_step = 1;
-
-        if (DEBUG_RUN_STEP == run_step)
-        {
-            char ocl_file_name[256]  = {0};
-            char cuda_file_name[256] = {0};
-
-            // Make sure all data has been transfered back from device
-            clFinish(stream);
-
-            sprintf(ocl_file_name, "ocl_fshift_%d.txt", DEBUG_RUN_STEP);
-            sprintf(cuda_file_name, "cuda_fshift_%d.txt", DEBUG_RUN_STEP);
-
-            dump_compare_results_f((float*)(nb->nbst.fshift), SHIFTS * 3,
-                                   ocl_file_name, cuda_file_name);
-        }
-
-        run_step++;
-    }
-#endif
-}
-
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
@@ -1009,8 +773,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
                                sizeof(float), stream, bDoTime ? &(t->nb_d2h_e_el[iloc]) : NULL);
         }
     }
-
-    debug_dump_cj4_f_fshift(nb, nbatom, stream, adat_begin, adat_len);
 }
 
 /*! \brief

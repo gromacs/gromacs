@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,10 +61,10 @@ __constant sampler_t generic_sampler     = CLK_NORMALIZED_COORDS_FALSE  /* Natur
 
 #define __device__
 
-#define WARP_SIZE_POW2_EXPONENT     (5)
-#define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
-#define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
-#define FBUF_STRIDE                 (CL_SIZE_SQ)
+#define WARP_SIZE_LOG2  (5)
+#define CL_SIZE_LOG2    (3)  /* change this together with CL_SIZE !*/
+#define CL_SIZE_SQ      (CL_SIZE * CL_SIZE)
+#define FBUF_STRIDE     (CL_SIZE_SQ)
 
 #define ONE_SIXTH_F     0.16666667f
 #define ONE_TWELVETH_F  0.08333333f
@@ -149,6 +149,22 @@ typedef struct {
 
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
+
+/*! Convert LJ sigma,epsilon parameters to C6,C12. */
+static __INLINE__ __device__
+void convert_sigma_epsilon_to_c6_c12(const float  sigma,
+                                     const float  epsilon,
+                                     float       *c6,
+                                     float       *c12)
+{
+    float sigma2, sigma6;
+
+    sigma2 = sigma * sigma;
+    sigma6 = sigma2 *sigma2 * sigma2;
+    *c6    = epsilon * sigma6;
+    *c12   = *c6 * sigma6;
+}
+
 
 /*! Apply force switch,  force + energy version. */
  __INLINE__ __device__
@@ -401,8 +417,8 @@ interpolate_coulomb_force_r(__constant float *coulomb_tab_climg2d,
     float   fract2     = normalized - index;
     float   fract1     = 1.0f - fract2;
 
-    /* sigma and epsilon are scaled to give 6*C6 */
-    return coulomb_tab_climg2d[index]*coulomb_tab_climg2d[index];
+    return fract1*coulomb_tab_climg2d[index] +
+           fract2*coulomb_tab_climg2d[index + 1];
 }
 
 /*! Calculate analytical Ewald correction term. */
@@ -513,7 +529,7 @@ void reduce_force_i_pow2(volatile __local float *f_buf, __global float *fout,
      * Can't just use i as loop variable because than nvcc refuses to unroll.
      */
     i = CL_SIZE/2;
-    for (j = CL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
@@ -576,7 +592,7 @@ void reduce_energy_pow2(volatile __local float  *buf,
     i = WARP_SIZE/2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
-    for (j = WARP_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = WARP_SIZE_LOG2 - 1; j > 0; j--)
     {
         if (tidx < i)
         {

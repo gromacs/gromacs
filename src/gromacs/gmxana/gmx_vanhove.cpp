@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -296,24 +297,27 @@ int gmx_vanhove(int argc, char *argv[])
         {
             fprintf(stderr, "\rProcessing frame %d", f);
         }
-        /* Scale all the configuration to the average box */
-        gmx::invertBoxMatrix(sbox[f], corr);
-        mmul_ur0(avbox, corr, corr);
-        for (i = 0; i < isize; i++)
+        if (ePBC != epbcNONE)
         {
-            mvmul_ur0(corr, sx[f][i], sx[f][i]);
-            if (f > 0)
+            /* Scale all the configuration to the average box */
+            gmx::invertBoxMatrix(sbox[f], corr);
+            mmul_ur0(avbox, corr, corr);
+            for (i = 0; i < isize; i++)
             {
-                /* Correct for periodic jumps */
-                for (m = DIM-1; m >= 0; m--)
+                mvmul_ur0(corr, sx[f][i], sx[f][i]);
+                if (f > 0)
                 {
-                    while (sx[f][i][m] - sx[f-1][i][m] > 0.5*avbox[m][m])
+                    /* Correct for periodic jumps */
+                    for (m = DIM-1; m >= 0; m--)
                     {
-                        rvec_dec(sx[f][i], avbox[m]);
-                    }
-                    while (sx[f][i][m] - sx[f-1][i][m] <= -0.5*avbox[m][m])
-                    {
-                        rvec_inc(sx[f][i], avbox[m]);
+                        while (sx[f][i][m] - sx[f-1][i][m] > 0.5*avbox[m][m])
+                        {
+                            rvec_dec(sx[f][i], avbox[m]);
+                        }
+                        while (sx[f][i][m] - sx[f-1][i][m] <= -0.5*avbox[m][m])
+                        {
+                            rvec_inc(sx[f][i], avbox[m]);
+                        }
                     }
                 }
             }

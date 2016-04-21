@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if __APPLE__
+#ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
 
@@ -339,29 +339,12 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 //! This function is documented in the header file
 void free_gpu_info(const gmx_gpu_info_t gmx_unused *gpu_info)
 {
-    if (gpu_info)
+    if (gpu_info == NULL)
     {
-        for (int i = 0; i < gpu_info->n_dev; i++)
-        {
-            cl_int gmx_unused cl_error;
-
-            if (gpu_info->gpu_dev[i].context)
-            {
-                cl_error                     = clReleaseContext(gpu_info->gpu_dev[i].context);
-                gpu_info->gpu_dev[i].context = NULL;
-                assert(CL_SUCCESS == cl_error);
-            }
-
-            if (gpu_info->gpu_dev[i].program)
-            {
-                cl_error                     = clReleaseProgram(gpu_info->gpu_dev[i].program);
-                gpu_info->gpu_dev[i].program = NULL;
-                assert(CL_SUCCESS == cl_error);
-            }
-        }
-
-        sfree(gpu_info->gpu_dev);
+        return;
     }
+
+    sfree(gpu_info->gpu_dev);
 }
 
 //! This function is documented in the header file

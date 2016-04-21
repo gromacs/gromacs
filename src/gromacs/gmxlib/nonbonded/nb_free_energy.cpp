@@ -118,16 +118,16 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoffAll;
     gmx_bool      bEwald, bEwaldLJ;
     real          rcutoff_max2;
-    const real *  tab_ewald_F_lj;
-    const real *  tab_ewald_V_lj;
+    const real *  tab_ewald_F_lj = nullptr;
+    const real *  tab_ewald_V_lj = nullptr;
     real          d, d2, sw, dsw, rinvcorr;
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     gmx_bool      bConvertEwaldToCoulomb, bConvertLJEwaldToLJ6;
     gmx_bool      bComputeVdwInteraction, bComputeElecInteraction;
-    const real *  ewtab;
+    const real *  ewtab = nullptr;
     int           ewitab;
-    real          ewrt, eweps, ewtabscale, ewtabhalfspace, sh_ewald;
+    real          ewrt, eweps, ewtabscale = 0, ewtabhalfspace = 0, sh_ewald = 0;
 
     const real    onetwelfth  = 1.0/12.0;
     const real    onesixth    = 1.0/6.0;
@@ -137,13 +137,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real    two         = 2.0;
     const real    six         = 6.0;
     const real    fourtyeight = 48.0;
-
-    sh_ewald            = fr->ic->sh_ewald;
-    ewtab               = fr->ic->tabq_coul_FDV0;
-    ewtabscale          = fr->ic->tabq_scale;
-    ewtabhalfspace      = half/ewtabscale;
-    tab_ewald_F_lj      = fr->ic->tabq_vdw_F;
-    tab_ewald_V_lj      = fr->ic->tabq_vdw_V;
 
     x                   = xx[0];
     f                   = ff[0];
@@ -267,6 +260,16 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
     bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
     bEwaldLJ        = (ivdw == GMX_NBKERNEL_VDW_LJEWALD);
+
+    if (bEwald || bEwaldLJ)
+    {
+        sh_ewald       = fr->ic->sh_ewald;
+        ewtab          = fr->ic->tabq_coul_FDV0;
+        ewtabscale     = fr->ic->tabq_scale;
+        ewtabhalfspace = half/ewtabscale;
+        tab_ewald_F_lj = fr->ic->tabq_vdw_F;
+        tab_ewald_V_lj = fr->ic->tabq_vdw_V;
+    }
 
     /* For Ewald/PME interactions we cannot easily apply the soft-core component to
      * reciprocal space. When we use vanilla (not switch/shift) Ewald interactions, we

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -212,8 +212,10 @@ typedef struct t_forcerec {
     rvec   mu_tot[2];
 
     /* Dispersion correction stuff */
-    int  eDispCorr;
-    int  numAtomsForDispersionCorrection;
+    int                  eDispCorr;
+    int                  numAtomsForDispersionCorrection;
+    struct t_forcetable *dispersionCorrectionTable;
+
     /* The shift of the shift or user potentials */
     real enershiftsix;
     real enershifttwelve;
@@ -237,7 +239,8 @@ typedef struct t_forcerec {
     gmx_bool             bcoultab;
     gmx_bool             bvdwtab;
     /* The normal tables are in the nblists struct(s) below */
-    struct t_forcetable *tab14; /* for 1-4 interactions only */
+
+    struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* PPPM & Shifting stuff */
     int   coulomb_modifier;
@@ -277,15 +280,15 @@ typedef struct t_forcerec {
     rvec        *shift_vec;
 
     /* The neighborlists including tables */
-    int                               nnblists;
-    int                              *gid2nblists;
-    struct t_nblists                 *nblists;
+    int                        nnblists;
+    int                       *gid2nblists;
+    struct t_nblists          *nblists;
 
-    int                               cutoff_scheme; /* group- or Verlet-style cutoff */
-    gmx_bool                          bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-    struct nonbonded_verlet_t        *nbv;
+    int                        cutoff_scheme; /* group- or Verlet-style cutoff */
+    gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    struct nonbonded_verlet_t *nbv;
 
-    /* The wall tables (if used). A 2D array of pointers to tables. */
+    /* The wall tables (if used) */
     int                    nwall;
     struct t_forcetable ***wall_tab;
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,6 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+
 /*! \internal \file
  *  This header has the sole purpose of generating kernels for the combinations of
  *  supported electrostatics types (cut-off, reaction-field, analytical and
@@ -44,7 +46,17 @@
  *  (otherwise, by default rcoul == rvdw).
  *
  *  NOTE: No include fence as it is meant to be included multiple times.
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \author Berk Hess <hess@kth.se>
+ *  \ingroup module_mdlib
  */
+
+#if GMX_PTX_ARCH >= 300
+#define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#else
+#define FLAVOR_LEVEL_GENERATOR "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_fermi.cuh"
+#endif
 
 /* Analytical plain cut-off electrostatics kernels
  */
@@ -52,30 +64,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJ ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJEwCombGeom ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJEwCombLB ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJFsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_VdwLJPsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -88,30 +112,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJ ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJEwCombGeom ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJEwCombLB ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJFsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_VdwLJPsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -124,30 +160,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJ ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJEwCombGeom ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJEwCombLB ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJFsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJPsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -161,30 +209,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJ ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJEwCombGeom ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJEwCombLB ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJFsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_VdwLJPsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -197,30 +257,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJ ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJEwCombGeom ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJEwCombLB ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJFsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJPsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
@@ -233,30 +305,42 @@
 
 /* cut-off + V shift LJ */
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJ ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#define LJ_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJCombGeom ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#define LJ_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJCombLB ## __VA_ARGS__
+#include FLAVOR_LEVEL_GENERATOR
+#undef LJ_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w geometric combination rules */
 #define LJ_EWALD_COMB_GEOM
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJEwCombGeom ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_GEOM
 #undef NB_KERNEL_FUNC_NAME
 /* LJ-Ewald w LB combination rules */
 #define LJ_EWALD_COMB_LB
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJEwCombLB ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_EWALD_COMB_LB
 #undef NB_KERNEL_FUNC_NAME
 /* F switch LJ */
 #define LJ_FORCE_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJFsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_FORCE_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 /* V switch LJ */
 #define LJ_POT_SWITCH
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_VdwLJPsw ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#include FLAVOR_LEVEL_GENERATOR
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 

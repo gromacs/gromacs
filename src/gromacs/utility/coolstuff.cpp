@@ -76,7 +76,7 @@ bool beCool(void)
 template <typename T>
 const T &getRandomElement(gmx::ConstArrayRef<T> arrayRef)
 {
-    std::default_random_engine            generator;
+    std::random_device                    generator;
     std::uniform_int_distribution<size_t> distribution(0, arrayRef.size()-1);
     return arrayRef[distribution(generator)];
 }
@@ -412,7 +412,7 @@ std::string getCoolQuote()
         { "I'll Match Your DNA", "Red Hot Chili Peppers" },
         { "All I Ever Wanted Was Your Life", "Red Hot Chili Peppers" },
         { "Just a Minute While I Reinvent Myself", "Red Hot Chili Peppers" },
-        { "There's Still Time to Change the Rope You're On", "Led Zeppelin" },
+        { "There's Still Time to Change the Road You're On", "Led Zeppelin" },
         { "Baby, It Aint Over Till It's Over", "Lenny Kravitz" },
         { "It Just Tastes Better", "Burger King" },
         { "'Nay. We are but men.' Rock!", "Tenacious D" },

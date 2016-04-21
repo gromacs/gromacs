@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -92,7 +93,7 @@ static double u_corr(double nu, double T)
     }
 }
 
-static size_t get_nharm_mt(gmx_moltype_t *mt)
+static size_t get_nharm_mt(const gmx_moltype_t *mt)
 {
     static int   harm_func[] = { F_BONDS };
     int          i, ft;
@@ -122,7 +123,7 @@ static size_t get_nvsite_mt(gmx_moltype_t *mt)
     return nh;
 }
 
-static int get_nharm(gmx_mtop_t *mtop)
+static int get_nharm(const gmx_mtop_t *mtop)
 {
     int nh = 0;
 
@@ -138,7 +139,7 @@ static void
 nma_full_hessian(real                      *hess,
                  int                        ndim,
                  gmx_bool                   bM,
-                 t_topology                *top,
+                 const t_topology          *top,
                  const std::vector<size_t> &atom_index,
                  int                        begin,
                  int                        end,
@@ -199,7 +200,7 @@ nma_full_hessian(real                      *hess,
 static void
 nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
                    gmx_bool                   bM,
-                   t_topology                *top,
+                   const t_topology          *top,
                    const std::vector<size_t> &atom_index,
                    int                        neig,
                    real                      *eigenvalues,
@@ -443,6 +444,7 @@ int gmx_nmeig(int argc, char *argv[])
     }
     else
     {
+        assert(sparse_hessian);
         /* Sparse memory storage, allocate memory for eigenvectors */
         snew(eigenvectors, ncol*end);
         nma_sparse_hessian(sparse_hessian, bM, &top, atom_index, end, eigenvalues, eigenvectors);

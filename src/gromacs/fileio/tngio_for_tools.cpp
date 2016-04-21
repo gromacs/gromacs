@@ -187,7 +187,7 @@ void gmx_prepare_tng_writing(const char              *filename,
 }
 
 void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
-                                 t_trxframe             *frame,
+                                 const t_trxframe       *frame,
                                  int                     natoms)
 {
 #if GMX_USE_TNG
@@ -226,12 +226,13 @@ convert_array_to_real_array(void       *from,
                             const int   nValues,
                             const char  datatype)
 {
-    int i, j;
+    int        i, j;
 
+    const bool useDouble = GMX_DOUBLE;
     switch (datatype)
     {
         case TNG_FLOAT_DATA:
-            if (sizeof(real) == sizeof(float))
+            if (!useDouble)
             {
                 if (fact == 1)
                 {

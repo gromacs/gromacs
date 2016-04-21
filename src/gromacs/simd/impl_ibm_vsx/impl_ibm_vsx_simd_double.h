@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,7 +114,7 @@ class SimdDIBool
 // to stick to gcc...
 
 static inline SimdDouble gmx_simdcall
-load(const double *m)
+simdLoad(const double *m)
 {
     return {
                *reinterpret_cast<const __vector double *>(m)
@@ -128,7 +128,7 @@ store(double *m, SimdDouble a)
 }
 
 static inline SimdDouble gmx_simdcall
-loadU(const double *m)
+simdLoadU(const double *m)
 {
 #if defined(__ibmxl__) || defined(__xlC__)
     return {
@@ -160,7 +160,7 @@ setZeroD()
 }
 
 static inline SimdDInt32 gmx_simdcall
-loadDI(const std::int32_t * m)
+simdLoadDI(const std::int32_t * m)
 {
     __vector signed int          t0, t1;
     const __vector unsigned char perm = { 0, 1, 2, 3, 0, 1, 2, 3, 16, 17, 18, 19, 16, 17, 18, 19 };
@@ -180,9 +180,9 @@ store(std::int32_t * m, SimdDInt32 gmx_unused x)
 }
 
 static inline SimdDInt32 gmx_simdcall
-loadUDI(const std::int32_t *m)
+simdLoadUDI(const std::int32_t *m)
 {
-    return loadDI(m);
+    return simdLoadDI(m);
 }
 
 static inline void gmx_simdcall
@@ -421,7 +421,6 @@ trunc(SimdDouble x)
 static inline SimdDouble
 frexp(SimdDouble value, SimdDInt32 * exponent)
 {
-    // Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds
     const __vector double     exponentMask = reinterpret_cast<__vector double>(vec_splats(0x7FF0000000000000ULL));
     const __vector signed int exponentBias = vec_splats(1022);
     const __vector double     half         = vec_splats(0.5);

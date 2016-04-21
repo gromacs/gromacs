@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -197,7 +197,7 @@ $Z_{spring}$ is the location of the spring.}
 \label{fig:pull} 
 \end{figure}
 
-Three different types of calculation are supported,
+Several different pull types, i.e. ways to apply the pull force, are supported,
 and in all cases the reference distance can be constant
 or linearly changing with time.
 \begin{enumerate}
@@ -216,9 +216,13 @@ Thus, the potential is linear.
 In this case there is no reference distance of pull rate.
 \item{\textbf{Flat bottom pulling}}
 Like umbrella pulling, but the potential and force are zero for
-negative deviations. This is useful for restraining the distance
-between e.g. two molecules to a certain maximum distance.
+coordinate values below ({\tt pull-coord?-type = flat-bottom}) or above
+({\tt pull-coord?-type = flat-bottom-high}) a reference value.
+This is useful for restraining e.g. the distance
+between two molecules to a certain region.
 \end{enumerate}
+In addition, there are different types of reaction coordinates, so-called pull geometries.
+These are set with the {\tt .mdp} option {\tt pull-coord?-geometry}.
 
 \subsubsection{Definition of the center of mass}
 
@@ -322,6 +326,20 @@ Since the potential now depends on the coordinates of two additional groups defi
 \label{fig:pulldirrel} 
 \end{figure}   
 
+\subsubsection{Definition of the angle and dihedral pull geometries}
+Four pull groups are required for {\tt pull-coord?-geometry = angle}. In the same way as for geometries with two groups, each consecutive pair of groups
+$i$ and $i+1$ define a vector connecting the COMs of groups $i$ and $i+1$. The angle is defined as the angle between the two resulting vectors.
+E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4} defines the angle between the vector from the COM of group 1 to the COM of group 2
+and the vector from the COM of group 2 to the COM of group 4.
+The angle takes values in the closed interval [0, 180] deg.
+For {\tt pull-coord?-geometry = angle-axis} the angle is defined with respect to a reference axis given by {\tt pull-coord?-vec} and only two groups need to be given.
+The dihedral geometry requires six pull groups. These pair up in the same way as described above and so define three vectors. The dihedral angle is defined as the angle between the two
+planes spanned by the two first and the two last vectors. Equivalently, the dihedral angle can be seen as the angle between the first and the third
+vector when these vectors are projected onto a plane normal to the second vector (the axis vector).
+As an example, consider a dihedral angle involving four groups: 1, 5, 8 and 9. Here, the {\tt .mdp} option
+{\tt pull-coord?-groups = 8 1 1 5 5 9} specifies the three vectors that define the dihedral angle:
+the first vector is the COM distance vector from group 8 to 1, the second vector is the COM distance vector from group 1 to 5, and the third vector is the COM distance vector from group 5 to 9.
+The dihedral angle takes values in the interval (-180, 180] deg and has periodic boundaries.
 
 \subsubsection{Limitations}
 There is one theoretical limitation:

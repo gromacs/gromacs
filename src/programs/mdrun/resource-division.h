@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
-                               const t_commrec *cr);
+                               const t_commrec *cr,
+                               int              nPmeRanks);
 
 /* Checks we can do when we know the cut-off scheme */
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,

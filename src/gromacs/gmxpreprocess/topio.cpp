@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cassert>
 #include <cmath>
 
 #include <sys/types.h>
@@ -81,8 +82,10 @@ static void free_nbparam(t_nbparam **param, int nr)
 {
     int i;
 
+    assert(param);
     for (i = 0; i < nr; i++)
     {
+        assert(param[i]);
         sfree(param[i]);
     }
     sfree(param);
@@ -100,6 +103,7 @@ static int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr)
     {
         for (j = 0; j <= i; j++)
         {
+            assert(param);
             if (param[i][j].bSet)
             {
                 for (f = 0; f < nrfp; f++)
@@ -540,6 +544,7 @@ static void make_atoms_sys(int nmolb, const gmx_molblock_t *molb,
 
     for (mb = 0; mb < nmolb; mb++)
     {
+        assert(molb);
         mol_atoms = &molinfo[molb[mb].type].atoms;
 
         srenew(atoms->atom, atoms->nr + molb[mb].nmol*mol_atoms->nr);
@@ -1123,7 +1128,7 @@ char **do_top(gmx_bool          bVerbose,
               int              *nrmols,
               t_molinfo       **molinfo,
               t_molinfo       **intermolecular_interactions,
-              t_inputrec       *ir,
+              const t_inputrec *ir,
               int              *nmolblock,
               gmx_molblock_t  **molblock,
               gmx_bool          bGenborn,

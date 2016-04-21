@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,31 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 struct gmx_domdec_zones_t;
 
+
+/* The number of clusters in a pair-search cell, used for GPU */
+static const int c_gpuNumClusterPerCellZ = 2;
+static const int c_gpuNumClusterPerCellY = 2;
+static const int c_gpuNumClusterPerCellX = 2;
+static const int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
+
+
+/* Strides for x/f with xyz and xyzq coordinate (and charge) storage */
+#define STRIDE_XYZ         3
+#define STRIDE_XYZQ        4
+/* Size of packs of x, y or z with SIMD packed coords/forces */
+static const int c_packX4 = 4;
+static const int c_packX8 = 8;
+/* Strides for a pack of 4 and 8 coordinates/forces */
+#define STRIDE_P4         (DIM*c_packX4)
+#define STRIDE_P8         (DIM*c_packX8)
+
+/* Returns the index in a coordinate array corresponding to atom a */
+template<int packSize> static gmx_inline int atom_to_x_index(int a)
+{
+    return DIM*(a & ~(packSize - 1)) + (a & (packSize - 1));
+}
+
+
 #if GMX_SIMD
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
 #define NBNXN_MEM_ALIGN  (GMX_SIMD_REAL_WIDTH*sizeof(real))
@@ -61,10 +86,11 @@ struct gmx_domdec_zones_t;
  * This uses less (cache-)memory and SIMD is faster, at least on x86.
  */
 #if GMX_SIMD4_HAVE_FLOAT
-#    define NBNXN_SEARCH_BB_SIMD4
+#    define NBNXN_SEARCH_BB_SIMD4      1
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
 #    define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH*sizeof(float))
 #else
+#    define NBNXN_SEARCH_BB_SIMD4      0
 /* No alignment required, but set it so we can call the same routines */
 #    define NBNXN_SEARCH_BB_MEM_ALIGN  32
 #endif
@@ -83,37 +109,33 @@ struct gmx_domdec_zones_t;
 #define BB_Z  2
 
 
-#ifdef NBNXN_SEARCH_BB_SIMD4
+#if NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
 
 #    if !GMX_DOUBLE
 /* Single precision BBs + coordinates, we can also load coordinates with SIMD */
-#        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
-#    endif
-
-#    if defined NBNXN_SEARCH_SIMD4_FLOAT_X_BB && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
-/* Store bounding boxes with x, y and z coordinates in packs of 4 */
-#        define NBNXN_PBB_SIMD4
+#        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB  1
+#    else
+#        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB  0
 #    endif
 
 /* The packed bounding box coordinate stride is always set to 4.
  * With AVX we could use 8, but that turns out not to be faster.
  */
-#    define STRIDE_PBB       4
+#    define STRIDE_PBB       GMX_SIMD4_WIDTH
 #    define STRIDE_PBB_2LOG  2
 
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
-#    define NBNXN_BBXXXX
+#    define NBNXN_BBXXXX  1
 /* Size of bounding box corners quadruplet */
 #    define NNBSBB_XXXX  (NNBSBB_D*DIM*STRIDE_PBB)
 
+#else  /* NBNXN_SEARCH_BB_SIMD4 */
+
+#    define NBNXN_SEARCH_SIMD4_FLOAT_X_BB  0
+#    define NBNXN_BBXXXX                   0
+
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
-
-
-/* This macro is a lazy way to avoid interdependence of the grid
- * and searching data structures.
- */
-#define NBNXN_NA_SC_MAX  (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 
 /* Bounding box for a nbnxn atom cluster */
@@ -201,7 +223,6 @@ typedef struct nbnxn_list_work {
 typedef void
     gmx_icell_set_x_t (int ci,
                        real shx, real shy, real shz,
-                       int na_c,
                        int stride, const real *x,
                        nbnxn_list_work_t *work);
 
@@ -211,9 +232,6 @@ static gmx_icell_set_x_t icell_set_x_simple_simd_4xn;
 static gmx_icell_set_x_t icell_set_x_simple_simd_2xnn;
 #endif
 static gmx_icell_set_x_t icell_set_x_supersub;
-#ifdef NBNXN_SEARCH_SSE
-static gmx_icell_set_x_t icell_set_x_supersub_sse8;
-#endif
 
 /* Local cycle count struct for profiling */
 typedef struct {
@@ -278,12 +296,6 @@ typedef struct nbnxn_search {
     int                  nthread_max; /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
 } nbnxn_search_t_t;
-
-
-/* This define is a lazy way to avoid interdependence of the grid
- * and searching data structures.
- */
-#define NBNXN_NA_SC_MAX  (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
 
 static void nbs_cycle_start(nbnxn_cycle_t *cc)

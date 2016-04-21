@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,7 +168,7 @@ static void print_data(FILE *fp, real time, rvec x[], real *mass, gmx_bool bCom,
     }
 }
 
-static void write_trx_x(t_trxstatus *status, t_trxframe *fr, real *mass, gmx_bool bCom,
+static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, gmx_bool bCom,
                         int ngrps, int isize[], int **index)
 {
     static rvec    *xav   = NULL;
@@ -176,8 +176,6 @@ static void write_trx_x(t_trxstatus *status, t_trxframe *fr, real *mass, gmx_boo
     t_trxframe      fr_av;
     int             i;
 
-    fr->bV = FALSE;
-    fr->bF = FALSE;
     if (bCom)
     {
         if (xav == NULL)
@@ -663,7 +661,7 @@ int gmx_traj(int argc, char *argv[])
     int               ePBC;
     real             *mass, time;
     const char       *indexfn;
-    t_trxframe        fr, frout;
+    t_trxframe        fr;
     int               flags, nvhisto = 0, *vhisto = NULL;
     rvec             *xtop, *xp = NULL;
     rvec             *sumx = NULL, *sumv = NULL, *sumf = NULL;
@@ -968,12 +966,14 @@ int gmx_traj(int argc, char *argv[])
         }
         if (bOXT && fr.bX)
         {
-            frout = fr;
+            t_trxframe frout = fr;
             if (!frout.bAtoms)
             {
                 frout.atoms  = &top.atoms;
                 frout.bAtoms = TRUE;
             }
+            frout.bV = FALSE;
+            frout.bF = FALSE;
             write_trx_x(status_out, &frout, mass, bCom, ngroups, isize, index);
         }
         if (bOV && fr.bV)

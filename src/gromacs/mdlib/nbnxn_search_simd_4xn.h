@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,14 +45,13 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 static gmx_inline void
 icell_set_x_simd_4xn(int ci,
                      real shx, real shy, real shz,
-                     int gmx_unused na_c,
                      int gmx_unused stride, const real *x,
                      nbnxn_list_work_t *work)
 {
     int    ia;
     real  *x_ci_simd = work->x_ci_simd;
 
-    ia = X_IND_CI_SIMD_4XN(ci);
+    ia = x_ind_ci_simd_4xn(ci);
 
     store(x_ci_simd +  0*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0*STRIDE_S    ] + shx) );
     store(x_ci_simd +  1*GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1*STRIDE_S    ] + shy) );
@@ -110,8 +109,8 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     int                                xind_f, xind_l, cj;
 
     /* cppcheck-suppress selfAssignment . selfAssignment for width 4.*/
-    cjf = CI_TO_CJ_SIMD_4XN(cjf);
-    cjl = CI_TO_CJ_SIMD_4XN(cjl+1) - 1;
+    cjf = ci_to_cj_simd_4xn(cjf);
+    cjl = ci_to_cj_simd_4xn(cjl + 1) - 1;
 
     bb_ci = nbl->work->bb_ci;
 
@@ -138,7 +137,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            xind_f  = X_IND_CJ_SIMD_4XN(CI_TO_CJ_SIMD_4XN(gridj->cell0) + cjf);
+            xind_f  = x_ind_cj_simd_4xn(ci_to_cj_simd_4xn(gridj->cell0) + cjf);
 
             jx_S  = load(x_j+xind_f+0*STRIDE_S);
             jy_S  = load(x_j+xind_f+1*STRIDE_S);
@@ -209,7 +208,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            xind_l  = X_IND_CJ_SIMD_4XN(CI_TO_CJ_SIMD_4XN(gridj->cell0) + cjl);
+            xind_l  = x_ind_cj_simd_4xn(ci_to_cj_simd_4xn(gridj->cell0) + cjl);
 
             jx_S  = load(x_j+xind_l+0*STRIDE_S);
             jy_S  = load(x_j+xind_l+1*STRIDE_S);
@@ -259,7 +258,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         for (cj = cjf; cj <= cjl; cj++)
         {
             /* Store cj and the interaction mask */
-            nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_4XN(gridj->cell0) + cj;
+            nbl->cj[nbl->ncj].cj   = ci_to_cj_simd_4xn(gridj->cell0) + cj;
             nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }

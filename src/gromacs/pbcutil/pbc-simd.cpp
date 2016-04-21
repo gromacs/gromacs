@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ void set_pbc_simd(const t_pbc gmx_unused *pbc,
                   real gmx_unused        *pbc_simd)
 {
 #if GMX_SIMD_HAVE_REAL
-    if (pbc != NULL)
+    if (pbc != NULL && pbc->ePBC != epbcNONE)
     {
         rvec inv_box_diag = {0, 0, 0};
 
@@ -75,9 +75,10 @@ void set_pbc_simd(const t_pbc gmx_unused *pbc,
     }
     else
     {
+        /* Setting inv_box_diag to zero leads to no PBC being applied */
         for (int i = 0; i < (DIM + DIM*(DIM+1)/2); i++)
         {
-            store(pbc_simd + i*GMX_SIMD_REAL_WIDTH, setZero());
+            store(pbc_simd + i*GMX_SIMD_REAL_WIDTH, SimdReal(0));
         }
     }
 #endif

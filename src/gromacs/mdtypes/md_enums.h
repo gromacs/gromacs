@@ -507,7 +507,7 @@ extern const char *ewt_names[ewtNR+1];
 
 //! Pulling algorithm.
 enum {
-    epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullFLATBOTTOM, epullNR
+    epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullFLATBOTTOM, epullFLATBOTTOMHIGH, epullEXTERNAL, epullNR
 };
 //! String for pulling algorithm
 extern const char *epull_names[epullNR+1];
@@ -516,7 +516,7 @@ extern const char *epull_names[epullNR+1];
 
 //! Control of pull groups
 enum {
-    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgDIRRELATIVE, epullgNR
+    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgDIRRELATIVE, epullgANGLE, epullgDIHEDRAL, epullgANGLEAXIS, epullgNR
 };
 //! String for pull groups
 extern const char *epullg_names[epullgNR+1];

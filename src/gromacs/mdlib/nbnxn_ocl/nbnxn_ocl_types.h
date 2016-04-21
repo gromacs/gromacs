@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ enum eelOcl {
  * should match the order of enumerated types below.
  */
 enum evdwOcl {
-    evdwOclCUT, evdwOclFSWITCH, evdwOclPSWITCH, evdwOclEWALDGEOM, evdwOclEWALDLB, evdwOclNR
+    evdwOclCUT, evdwOclCUTCOMBGEOM, evdwOclCUTCOMBLB, evdwOclFSWITCH, evdwOclPSWITCH, evdwOclEWALDGEOM, evdwOclEWALDLB, evdwOclNR
 };
 
 /*! \internal
@@ -135,6 +135,7 @@ typedef struct cl_atomdata
 
     int         ntypes;              /**< number of atom types                           */
     cl_mem      atom_types;          /**< int buffer with atom type indices, size natoms */
+    cl_mem      lj_comb;             /**< float2 buffer with sqrt(c6),sqrt(c12), size natoms */
 
     cl_mem      shift_vec;           /**< float3 buffer with shifts values               */
     size_t      shift_vec_elem_size; /**< Size in bytes for one element of shift_vec buffer */
@@ -270,7 +271,8 @@ typedef struct cl_timers
  */
 struct gmx_nbnxn_ocl_t
 {
-    struct gmx_device_info_t *dev_info;        /**< OpenCL device information                                  */
+    struct gmx_device_info_t         *dev_info;    /**< OpenCL device information                              */
+    struct gmx_device_runtime_data_t *dev_rundata; /**< OpenCL runtime data (context, kernels)                 */
 
     /**< Pointers to non-bonded kernel functions
      * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
@@ -280,6 +282,8 @@ struct gmx_nbnxn_ocl_t
     cl_kernel           kernel_noener_prune_ptr[eelOclNR][evdwOclNR];
     cl_kernel           kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
     ///@}
+
+    bool bPrefetchLjParam; /**< true if prefetching fg i-atom LJ parameters should be used in the kernels */
 
     /**< auxiliary kernels implementing memset-like functions */
     ///@{

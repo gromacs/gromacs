@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@
 char atp[7] = "HCNOSX";
 #define NATP (asize(atp)-1)
 
-real blen[NATP][NATP] = {
+double blen[NATP][NATP] = {
     {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
     {  0.108, 0.15,  0.14,  0.14, 0.16, 0.14 },
     {  0.105, 0.14,  0.14,  0.14, 0.16, 0.14 },
@@ -102,7 +102,7 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
 }
 
 void mk_bonds(int nnm, t_nm2type nmt[],
-              t_atoms *atoms, rvec x[], t_params *bond, int nbond[],
+              t_atoms *atoms, const rvec x[], t_params *bond, int nbond[],
               gmx_bool bPBC, matrix box)
 {
     t_param b;
@@ -275,7 +275,7 @@ void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRoun
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
+void calc_angles_dihs(t_params *ang, t_params *dih, const rvec x[], gmx_bool bPBC,
                       matrix box)
 {
     int    i, ai, aj, ak, al, t1, t2, t3;

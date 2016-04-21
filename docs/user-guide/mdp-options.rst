@@ -399,9 +399,10 @@ Neighbor searching
       automatically set based on :mdp:`verlet-buffer-tolerance`,
       unless this is set to -1, in which case :mdp:`rlist` will be
       used. This option has an explicit, exact cut-off at :mdp:`rvdw`
-      equal to :mdp:`rcoulomb`. Currently only cut-off,
-      reaction-field, PME electrostatics and plain LJ are
-      supported. Some :ref:`gmx mdrun` functionality is not yet
+      equal to :mdp:`rcoulomb`, unless PME or Ewald is used, in which
+      case :mdp:`rcoulomb` > :mdp:`rvdw` is allowed. Currently only
+      cut-off, reaction-field, PME or Ewald electrostatics and plain
+      LJ are supported. Some :ref:`gmx mdrun` functionality is not yet
       supported with the :mdp:`Verlet` scheme, but :ref:`gmx grompp`
       checks for this. Native GPU acceleration is only supported with
       :mdp:`Verlet`. With GPU-accelerated PME or with separate PME
@@ -1393,7 +1394,7 @@ Bonds
 
 .. mdp:: lincs-warnangle
 
-   (30) \[degrees\]
+   (30) \[deg\]
    maximum angle that a bond can rotate before LINCS will complain
 
 .. mdp:: morse
@@ -1526,25 +1527,15 @@ applicable pulling coordinate.
    (1e-6)
    the relative constraint tolerance for constraint pulling
 
-.. mdp:: pull-print-com1
+.. mdp:: pull-print-com
 
    .. mdp-value:: no
 
-      do not print the COM of the first group in each pull coordinate
+      do not print the COM for any group
 
    .. mdp-value:: yes
 
-      print the COM of the first group in each pull coordinate
-
-.. mdp:: pull-print-com2
-
-   .. mdp-value:: no
-
-      do not print the COM of the second group in each pull coordinate
-
-   .. mdp-value:: yes
-
-      print the COM of the second group in each pull coordinate
+      print the COM of all groups for all pull coordinates
 
 .. mdp:: pull-print-ref-value
 
@@ -1645,8 +1636,23 @@ applicable pulling coordinate.
 
    .. mdp-value:: flat-bottom
 
-      At distances beyond :mdp:`pull-coord1-init` a harmonic potential
+      At distances above :mdp:`pull-coord1-init` a harmonic potential
       is applied, otherwise no potential is applied.
+
+   .. mdp-value:: flat-bottom-high
+
+      At distances below :mdp:`pull-coord1-init` a harmonic potential
+      is applied, otherwise no potential is applied.
+
+   .. mdp-value:: external-potential
+
+      An external potential that needs to be provided by another
+      module.
+
+.. mdp:: pull-coord1-potential-provider
+
+      The name of the external module that provides the potential for
+      the case where :mdp:`pull-coord1-type` is external-potential.
 
 .. mdp:: pull-coord1-geometry
 
@@ -1697,15 +1703,38 @@ applicable pulling coordinate.
       component. This geometry is not supported with constraint
       pulling.
 
+   .. mdp-value:: angle
+
+      Pull along an angle defined by four groups. The angle is
+      defined as the angle between two vectors: the vector connecting
+      the COM of the first group to the COM of the second group and
+      the vector connecting the COM of the third group to the COM of
+      the fourth group.
+
+   .. mdp-value:: angle-axis
+
+      As :mdp-value:`angle` but the second vector is given by :mdp:`pull-coord1-vec`.
+      Thus, only the two groups that define the first vector need to be given.
+
+   .. mdp-value:: dihedral
+
+      Pull along a dihedral angle defined by six groups. These pairwise
+      define three vectors: the vector connecting the COM of group 1
+      to the COM of group 2, the COM of group 3 to the COM of group 4,
+      and the COM of group 5 to the COM group 6. The dihedral angle is
+      then defined as the angle between two planes: the plane spanned by the
+      the two first vectors and the plane spanned the two last vectors.
+
+
 .. mdp:: pull-coord1-groups
 
-   The two groups indices should be given on which this pull
-   coordinate will operate. The first index can be 0, in which case an
+   The group indices on which this pull coordinate will operate.
+   The number of group indices required is geometry dependent.
+   The first index can be 0, in which case an
    absolute reference of :mdp:`pull-coord1-origin` is used. With an
    absolute reference the system is no longer translation invariant
    and one should think about what to do with the center of mass
-   motion. Note that (only) for :mdp:`pull-coord1-geometry` =
-   :mdp-value:`direction-relative` four groups are required.
+   motion.
 
 .. mdp:: pull-coord1-dim
 
@@ -1743,25 +1772,27 @@ applicable pulling coordinate.
 
 .. mdp:: pull-coord1-init
 
-   (0.0) \[nm\]
+   (0.0) \[nm\] / \[deg\]
    The reference distance at t=0.
 
 .. mdp:: pull-coord1-rate
 
-   (0) \[nm/ps\]
+   (0) \[nm/ps\] / \[deg/ps\]
    The rate of change of the reference position.
 
 .. mdp:: pull-coord1-k
 
-   (0) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\]
+   (0) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\] / \[kJ mol-1 rad-2\] / \[kJ mol-1 rad-1\]
    The force constant. For umbrella pulling this is the harmonic force
-   constant in kJ mol-1 nm-2. For constant force pulling this is the
+   constant in kJ mol-1 nm-2 (or kJ mol-1 rad-2 for angles). For constant force pulling this is the
    force constant of the linear potential, and thus the negative (!)
-   of the constant force in kJ mol-1 nm-1.
+   of the constant force in kJ mol-1 nm-1 (or kJ mol-1 rad-1 for angles).
+   Note that for angles the force constant is expressed in terms of radians
+   (while :mdp:`pull-coord1-init` and :mdp:`pull-coord1-rate` are expressed in degrees).
 
 .. mdp:: pull-coord1-kB
 
-   (pull-k1) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\]
+   (pull-k1) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\] / \[kJ mol-1 rad-2\] / \[kJ mol-1 rad-1\]
    As :mdp:`pull-coord1-k`, but for state B. This is only used when
    :mdp:`free-energy` is turned on. The force constant is then (1 -
    lambda) * :mdp:`pull-coord1-k` + lambda * :mdp:`pull-coord1-kB`.

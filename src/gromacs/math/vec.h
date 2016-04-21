@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,8 @@
    void rvec_dec(rvec a,rvec b)                     a -= b
    void copy_rvec(const rvec a,rvec b)              b = a (reals)
    void copy_dvec(const dvec a,dvec b)              b = a (reals)
+   void copy_rvec_to_dvec(const rvec a,dvec b)      b = a (reals)
+   void copy_dvec_to_rvec(const dvec a,rvec b)      b = a (reals)
    void copy_ivec(const ivec a,ivec b)              b = a (integers)
    void ivec_sub(const ivec a,const ivec b,ivec c)  c = a - b
    void svmul(real a,rvec v1,rvec v2)               v2 = a * v1
@@ -68,7 +70,7 @@
    real norm(rvec a)                                = | a |
    double dnorm(dvec a)                             = | a |
    void cprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
-   void dprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
+   void dcprod(dvec a,dvec b,dvec c)                c = a x b (cross product)
    void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
    real cos_angle(rvec a,rvec b)
    real distance2(rvec v1, rvec v2)                 = | v2 - v1 |^2
@@ -208,6 +210,20 @@ static inline void rvec_dec(rvec a, const rvec b)
 }
 
 static inline void copy_rvec(const rvec a, rvec b)
+{
+    b[XX] = a[XX];
+    b[YY] = a[YY];
+    b[ZZ] = a[ZZ];
+}
+
+static inline void copy_rvec_to_dvec(const rvec a, dvec b)
+{
+    b[XX] = a[XX];
+    b[YY] = a[YY];
+    b[ZZ] = a[ZZ];
+}
+
+static inline void copy_dvec_to_rvec(const dvec a, rvec b)
 {
     b[XX] = a[XX];
     b[YY] = a[YY];
@@ -451,7 +467,20 @@ static inline real gmx_angle(const rvec a, const rvec b)
     wlen  = norm(w);
     s     = iprod(a, b);
 
-    return atan2(wlen, s);
+    return std::atan2(wlen, s);
+}
+
+static inline double gmx_angle_between_dvecs(const dvec a, const dvec b)
+{
+    dvec   w;
+    double wlen, s;
+
+    dcprod(a, b, w);
+
+    wlen  = dnorm(w);
+    s     = diprod(a, b);
+
+    return std::atan2(wlen, s);
 }
 
 static inline void mmul_ur0(const matrix a, const matrix b, matrix dest)

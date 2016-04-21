@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -448,11 +448,15 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
-                          real bfac_max, t_atoms *atoms,
+                          real bfac_max, const t_atoms *atoms,
                           gmx_bool bDo_jc, const char *fn,
                           const gmx_output_env_t *oenv)
 {
     /* also gets 3J couplings and order parameters S2 */
+    // Avoid warnings about narrowing conversions from double to real
+#ifdef _MSC_VER
+#pragma warning(disable: 4838)
+#endif
     t_karplus kkkphi[] = {
         { "J_NHa1",    6.51, -1.76,  1.6, -M_PI/3,   0.0,  0.0 },
         { "J_NHa2",    6.51, -1.76,  1.6,  M_PI/3,   0.0,  0.0 },
@@ -467,6 +471,9 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
         { "JHaHb2",       9.5, -1.6, 1.8, -M_PI/3, 0,  0.0 },
         { "JHaHb3",       9.5, -1.6, 1.8, 0, 0,  0.0 }
     };
+#ifdef _MSC_VER
+#pragma warning(default: 4838)
+#endif
 #define NKKKPHI asize(kkkphi)
 #define NKKKPSI asize(kkkpsi)
 #define NKKKCHI asize(kkkchi1)
@@ -562,7 +569,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                         bBfac  = bBfac  && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
                         bOccup = bOccup && (atoms->pdbinfo[index[n]].occup == 1);
                     }
-                    if (bOccup && ((bfac_max <= 0) || ((bfac_max > 0) && bBfac)))
+                    if (bOccup && ((bfac_max <= 0) || bBfac))
                     {
                         hindex = static_cast<int>(((dih[j][0]+M_PI)*nbin)/(2*M_PI));
                         range_check(hindex, 0, nbin);
@@ -1059,7 +1066,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
 static void order_params(FILE *log,
                          const char *fn, int maxchi, int nlist, t_dlist dlist[],
                          const char *pdbfn, real bfac_init,
-                         t_atoms *atoms, rvec x[], int ePBC, matrix box,
+                         t_atoms *atoms, const rvec x[], int ePBC, matrix box,
                          gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const gmx_output_env_t *oenv)
 {
     FILE *fp;

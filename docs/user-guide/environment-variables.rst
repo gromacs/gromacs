@@ -132,6 +132,10 @@ Performance and Run Control
         to performance loss due to a known CUDA driver bug present in API v5.0 NVIDIA drivers (pre-30x.xx).
         Cannot be set simultaneously with ``GMX_NO_CUDA_STREAMSYNC``.
 
+``GMX_DISABLE_CUDALAUNCH``
+        disable the use of the lower-latency cudaLaunchKernel API even when supported (CUDA >=v7.0).
+        Should only be used for benchmarking purposes.
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
@@ -219,9 +223,10 @@ Performance and Run Control
 ``GMX_NB_MIN_CI``
         neighbor list balancing parameter used when running on GPU. Sets the
         target minimum number pair-lists in order to improve multi-processor load-balance for better
-        performance with small simulation systems. Must be set to a positive integer, the default value
-        is optimized for NVIDIA Fermi and Kepler GPUs, therefore changing it is not necessary for
-        normal usage, but it can be useful on future architectures.
+        performance with small simulation systems. Must be set to a non-negative integer,
+        the 0 value disables list splitting.
+        The default value is optimized for supported GPUs (NVIDIA Fermi to Maxwell),
+        therefore changing it is not necessary for normal usage, but it can be useful on future architectures.
 
 ``GMX_NBLISTCG``
         use neighbor list and kernels based on charge groups.
@@ -251,6 +256,10 @@ Performance and Run Control
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
+
+``GMX_NO_LJ_COMB_RULE``
+        force the use of LJ paremeter lookup instead of using combination rules
+        in the non-bonded kernels.
 
 ``GMX_NO_CUDA_STREAMSYNC``
         the opposite of ``GMX_CUDA_STREAMSYNC``. Disables the use of the
@@ -406,6 +415,14 @@ compilation of OpenCL kernels, but they are also used in device selection.
         exists only for debugging purposes. Do not expect |Gromacs| to
         function properly with this option on, it is solely for the
         simplicity of stepping in a kernel and see what is happening.
+
+``GMX_OCL_DISABLE_I_PREFETCH``
+        Disables i-atom data (type or LJ parameter) prefetch allowig
+        testing.
+
+``GMX_OCL_ENABLE_I_PREFETCH``
+        Enables i-atom data (type or LJ parameter) prefetch allowig
+        testing on platforms where this behavior is not default.
 
 ``GMX_OCL_NB_ANA_EWALD``
         Forces the use of analytical Ewald kernels. Equivalent of

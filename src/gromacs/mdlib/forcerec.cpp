@@ -58,6 +58,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -89,6 +90,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -1535,15 +1537,6 @@ gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
         return FALSE;
     }
 
-    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
-    {
-        /* LJ PME with LB combination rule does 7 mesh operations.
-         * This so slow that we don't compile GPU non-bonded kernels for that.
-         */
-        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with GPUs, falling back to CPU only\n");
-        return FALSE;
-    }
-
     return TRUE;
 }
 
@@ -1852,7 +1845,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_vdw_F);
     sfree_aligned(ic->tabq_vdw_V);
 
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
+    if (EEL_PME_EWALD(ic->eeltype))
     {
         /* Create the original table data in FDV0 */
         snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
@@ -1876,7 +1869,7 @@ void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
                                    real                 rtab)
 {
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
+    if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
         init_ewald_f_table(ic, rtab);
 
@@ -2153,7 +2146,10 @@ static void init_nb_verlet(FILE                *fp,
 
             bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type);
 
-            if (bSimpleList && (fr->vdwtype == evdwCUT && (fr->vdw_modifier == eintmodNONE || fr->vdw_modifier == eintmodPOTSHIFT)))
+            if (fr->vdwtype == evdwCUT &&
+                (fr->vdw_modifier == eintmodNONE ||
+                 fr->vdw_modifier == eintmodPOTSHIFT) &&
+                getenv("GMX_NO_LJ_COMB_RULE") == NULL)
             {
                 /* Plain LJ cut-off: we can optimize with combination rules */
                 enbnxninitcombrule = enbnxninitcombruleDETECT;
@@ -2230,9 +2226,9 @@ static void init_nb_verlet(FILE                *fp,
             char *end;
 
             nbv->min_ci_balanced = strtol(env, &end, 10);
-            if (!end || (*end != 0) || nbv->min_ci_balanced <= 0)
+            if (!end || (*end != 0) || nbv->min_ci_balanced < 0)
             {
-                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, positive integer required", env);
+                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
             }
 
             if (debug)
@@ -2281,7 +2277,7 @@ void init_forcerec(FILE              *fp,
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
-    gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
+    gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
     int           *nm_ind, egp_flags;
 
@@ -2614,7 +2610,7 @@ void init_forcerec(FILE              *fp,
     fr->rcoulomb         = cutoff_inf(ir->rcoulomb);
     fr->rcoulomb_switch  = ir->rcoulomb_switch;
 
-    fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype == eelEWALD);
+    fr->bEwald     = EEL_PME_EWALD(fr->eeltype);
 
     fr->reppow     = mtop->ffparams.reppow;
 
@@ -2930,37 +2926,23 @@ void init_forcerec(FILE              *fp,
     /*This now calculates sum for q and c6*/
     set_chargesum(fp, fr, mtop);
 
-    /* if we are using LR electrostatics, and they are tabulated,
-     * the tables will contain modified coulomb interactions.
-     * Since we want to use the non-shifted ones for 1-4
-     * coulombic interactions, we must have an extra set of tables.
-     */
-
-    /* Construct tables.
-     * A little unnecessary to make both vdw and coul tables sometimes,
-     * but what the heck... */
-
-    bMakeTables = fr->bcoultab || fr->bvdwtab || fr->bEwald ||
-        (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
-
-    bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
-                             fr->coulomb_modifier != eintmodNONE ||
-                             fr->vdw_modifier != eintmodNONE ||
-                             fr->bBHAM || fr->bEwald) &&
-                            (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-                             gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
-                             gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
+    /* Construct tables for the group scheme. A little unnecessary to
+     * make both vdw and coul tables sometimes, but what the
+     * heck. Note that both cutoff schemes construct Ewald tables in
+     * init_interaction_const_tables. */
+    needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP &&
+                             (fr->bcoultab || fr->bvdwtab));
 
     negp_pp   = ir->opts.ngener - ir->nwall;
     negptable = 0;
-    if (!bMakeTables)
+    if (!needGroupSchemeTables)
     {
         bSomeNormalNbListsAreInUse = TRUE;
         fr->nnblists               = 1;
     }
     else
     {
-        bSomeNormalNbListsAreInUse = (ir->eDispCorr != edispcNO);
+        bSomeNormalNbListsAreInUse = FALSE;
         for (egi = 0; egi < negp_pp; egi++)
         {
             for (egj = egi; egj < negp_pp; egj++)
@@ -3001,16 +2983,12 @@ void init_forcerec(FILE              *fp,
      */
     rtab = ir->rlist + ir->tabext;
 
-    if (bMakeTables)
+    if (needGroupSchemeTables)
     {
         /* make tables for ordinary interactions */
         if (bSomeNormalNbListsAreInUse)
         {
             make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
-            if (!bMakeSeparate14Table)
-            {
-                fr->tab14 = fr->nblists[0].table_elec_vdw;
-            }
             m = 1;
         }
         else
@@ -3047,22 +3025,24 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
-    else if ((fr->eDispCorr != edispcNO) &&
-             ((fr->vdw_modifier == eintmodPOTSWITCH) ||
-              (fr->vdw_modifier == eintmodFORCESWITCH) ||
-              (fr->vdw_modifier == eintmodPOTSHIFT)))
+
+    /* Tables might not be used for the potential modifier
+     * interactions per se, but we still need them to evaluate
+     * switch/shift dispersion corrections in this case. */
+    if (fr->eDispCorr != edispcNO)
     {
-        /* Tables might not be used for the potential modifier interactions per se, but
-         * we still need them to evaluate switch/shift dispersion corrections in this case.
-         */
-        make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
+        fr->dispersionCorrectionTable = makeDispersionCorrectionTable(fp, fr, rtab, tabfn);
     }
 
-    if (bMakeSeparate14Table)
+    /* We want to use unmodified tables for 1-4 coulombic
+     * interactions, so we must in general have an extra set of
+     * tables. */
+    if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
+        gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
+        gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
     {
-        /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp, fr, tabpfn, rtab,
-                                GMX_MAKETABLES_14ONLY);
+        fr->pairsTable = make_tables(fp, fr, tabpfn, rtab,
+                                     GMX_MAKETABLES_14ONLY);
     }
 
     /* Wall stuff */
@@ -3152,9 +3132,15 @@ void init_forcerec(FILE              *fp,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        if (ir->rcoulomb != ir->rvdw)
+        // We checked the cut-offs in grompp, but double-check here.
+        // We have PME+LJcutoff kernels for rcoulomb>rvdw.
+        if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == eelCUT)
         {
-            gmx_fatal(FARGS, "With Verlet lists rcoulomb and rvdw should be identical");
+            GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw, "With Verlet lists and PME we should have rcoulomb>=rvdw");
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
         init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
@@ -3252,10 +3238,16 @@ void free_gpu_resources(const t_forcerec     *fr,
     {
         /* free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+        /* stop the GPU profiler (only CUDA) */
+        stopGpuProfiler();
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
-         * destroying the context in free_gpu() as some ranks may be sharing
+         * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
          * GPU and context.
+         *
+         * This is not a concern in OpenCL where we use one context per rank which
+         * is freed in nbnxn_gpu_free().
+         *
          * Note: as only PP ranks need to free GPU resources, so it is safe to
          * not call the barrier on PME ranks.
          */

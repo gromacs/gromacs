@@ -1001,7 +1001,6 @@ namespace gmx
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -1021,7 +1020,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
              gmx_edsam_t gmx_unused ed,
              t_forcerec *fr,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
-             gmx_membed_t gmx_unused *membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              int imdport,
              unsigned long gmx_unused Flags,
@@ -1126,7 +1124,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
      * we either converge or reach the max number of steps.
      */
     converged = FALSE;
-    for (step = 0; (number_steps < 0 || (number_steps >= 0 && step <= number_steps)) && !converged; step++)
+    for (step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
     {
 
         /* start taking steps in a new direction
@@ -1648,7 +1646,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -1668,7 +1665,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 gmx_edsam_t gmx_unused ed,
                 t_forcerec *fr,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
-                gmx_membed_t gmx_unused *membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 int imdport,
                 unsigned long gmx_unused Flags,
@@ -1886,7 +1882,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     /* Set the gradient from the force */
     converged = FALSE;
-    for (step = 0; (number_steps < 0 || (number_steps >= 0 && step <= number_steps)) && !converged; step++)
+    for (step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
     {
 
         /* Write coordinates if necessary */
@@ -2476,7 +2472,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -2496,7 +2491,6 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 gmx_edsam_t gmx_unused  ed,
                 t_forcerec *fr,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
-                gmx_membed_t gmx_unused *membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 int imdport,
                 unsigned long gmx_unused Flags,
@@ -2734,7 +2728,6 @@ double do_steep(FILE *fplog, t_commrec *cr,
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -2754,7 +2747,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
              gmx_edsam_t  gmx_unused ed,
              t_forcerec *fr,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
-             gmx_membed_t gmx_unused *membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              int imdport,
              unsigned long gmx_unused Flags,

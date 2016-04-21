@@ -1,0 +1,14 @@
+; This file is based on regressiontests complex/nbnxn_vsite
+
+; Include forcefield parameters
+#include "amber99.ff/forcefield.itp"
+
+#include "alanine_vsite.itp"
+
+[ system ]
+; Name
+Alanine dipeptide in vacuo
+
+[ molecules ]
+; Compound        #mols
+Alanine_dipeptide 1

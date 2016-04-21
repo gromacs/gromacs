@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -54,15 +55,6 @@ struct t_symtab;
 struct t_topology;
 
 typedef struct gmx_conect_t *gmx_conect;
-
-/* Enumerated type for pdb records. The other entries are ignored
- * when reading a pdb file
- */
-enum PDB_record {
-    epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
-    epdbMODEL,  epdbENDMDL, epdbTER,    epdbHEADER, epdbTITLE, epdbREMARK,
-    epdbCONECT, epdbNR
-};
 
 /* Write a PDB line with an ATOM or HETATM record directly to a file pointer.
  *
@@ -94,20 +86,20 @@ void pdb_use_ter(gmx_bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
    This function is fundamentally broken as far as thread-safety is concerned.*/
 
-void gmx_write_pdb_box(FILE *out, int ePBC, matrix box);
+void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box);
 /* write the box in the CRYST1 record,
  * with ePBC=-1 the pbc is guessed from the box
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
-void write_pdbfile_indexed(FILE *out, const char *title, struct t_atoms *atoms,
-                           rvec x[], int ePBC, matrix box, char chain,
+void write_pdbfile_indexed(FILE *out, const char *title, const t_atoms *atoms,
+                           const rvec x[], int ePBC, const matrix box, char chain,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains);
 /* REALLY low level */
 
-void write_pdbfile(FILE *out, const char *title, struct t_atoms *atoms,
-                   rvec x[], int ePBC, matrix box, char chain,
+void write_pdbfile(FILE *out, const char *title, const t_atoms *atoms,
+                   const rvec x[], int ePBC, const matrix box, char chain,
                    int model_nr, gmx_conect conect, gmx_bool bTerSepChains);
 /* Low level pdb file writing routine.
  *
@@ -122,7 +114,7 @@ void write_pdbfile(FILE *out, const char *title, struct t_atoms *atoms,
  * which may be useful for visualization purposes.
  */
 
-void get_pdb_atomnumber(struct t_atoms *atoms, struct gmx_atomprop *aps);
+void get_pdb_atomnumber(const t_atoms *atoms, struct gmx_atomprop *aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
@@ -158,7 +150,7 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj);
 void gmx_conect_add(gmx_conect conect, int ai, int aj);
 /* Add a connection between ai and aj (numbered from 0 to natom-1) */
 
-gmx_conect gmx_conect_generate(struct t_topology *top);
+gmx_conect gmx_conect_generate(const t_topology *top);
 /* Generate a conect structure from a topology */
 
 gmx_conect gmx_conect_init(void);

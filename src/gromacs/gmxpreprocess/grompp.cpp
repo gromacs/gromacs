@@ -81,7 +81,8 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
+#include "gromacs/pulling/pull.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
@@ -110,7 +111,7 @@ static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 }
 
 static int check_atom_names(const char *fn1, const char *fn2,
-                            gmx_mtop_t *mtop, t_atoms *at)
+                            gmx_mtop_t *mtop, const t_atoms *at)
 {
     int      mb, m, i, j, nmismatch;
     t_atoms *tat;
@@ -647,7 +648,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         real                   *mass;
         gmx_mtop_atomloop_all_t aloop;
         t_atom                 *atom;
-        unsigned int            useed;
 
         snew(mass, state->natoms);
         aloop = gmx_mtop_atomloop_all_init(sys);
@@ -656,13 +656,12 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             mass[i] = atom->m;
         }
 
-        useed = opts->seed;
         if (opts->seed == -1)
         {
-            useed = (int)gmx_rng_make_seed();
-            fprintf(stderr, "Setting gen_seed to %u\n", useed);
+            opts->seed = static_cast<int>(gmx::makeRandomSeed());
+            fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
         }
-        maxwell_speed(opts->tempi, useed, sys, state->v);
+        maxwell_speed(opts->tempi, opts->seed, sys, state->v);
 
         stop_cm(stdout, state->natoms, mass, state->x, state->v);
         sfree(mass);
@@ -1588,13 +1587,13 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->ld_seed == -1)
     {
-        ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+        ir->ld_seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the LD random seed to %" GMX_PRId64 "\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)
     {
-        ir->expandedvals->lmc_seed = (int)gmx_rng_make_seed();
+        ir->expandedvals->lmc_seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the lambda MC random seed to %d\n", ir->expandedvals->lmc_seed);
     }
 
@@ -2015,9 +2014,21 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
+    struct pull_t *pull = NULL;
+
     if (ir->bPull)
     {
-        set_pull_init(ir, sys, state->x, state->box, state->lambda[efptMASS], oenv);
+        pull = set_pull_init(ir, sys, state->x, state->box, state->lambda[efptMASS], oenv);
+    }
+
+    /* Modules that supply external potential for pull coordinates
+     * should register those potentials here. finish_pull() will check
+     * that providers have been registerd for all external potentials.
+     */
+
+    if (ir->bPull)
+    {
+        finish_pull(pull);
     }
 
     if (ir->bRot)

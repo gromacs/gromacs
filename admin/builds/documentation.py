@@ -34,7 +34,6 @@
 
 import os
 import re
-import shutil
 
 build_out_of_source = True
 
@@ -65,7 +64,7 @@ def do_build(context):
 
     context.build_target(target='manual', parallel=False,
             target_descr='PDF manual', continue_on_failure=True)
-    logfile = 'docs/manual/gromacs.log'
+    logfile = os.path.join(context.workspace.build_dir, 'docs/manual/gromacs.log')
     if os.path.isfile(logfile):
         with open(logfile, 'r') as f:
             manual_log = f.read()
@@ -73,21 +72,25 @@ def do_build(context):
             context.mark_unstable('undefined references in PDF manual')
     context.publish_logs([logfile])
 
-    context.build_target(target='doxygen-all', parallel=False,
-            target_descr='Doxygen documentation', continue_on_failure=True)
+    # check-source is not necessary for a release build, and building these
+    # separately causes many of the Doxygen targets to get built twice if run
+    # from a tarball.
     if not release:
+        context.build_target(target='doxygen-all', parallel=False,
+                target_descr='Doxygen documentation', continue_on_failure=True)
         context.build_target(target='check-source', parallel=False,
                 failure_string='check-source failed to run', continue_on_failure=True)
-    logs = []
-    for target in ('check-source', 'doxygen-xml', 'doxygen-user',
-            'doxygen-lib', 'doxygen-full'):
-        logfile = 'docs/doxygen/{0}.log'.format(target)
-        if os.path.isfile(logfile) and os.stat(logfile).st_size > 0:
-            context.mark_unstable('{0} produced warnings'.format(target))
-        logs.append(logfile)
-    context.publish_logs(logs, category='doxygen')
-    if context.failed:
-        return
+        logs = []
+        for target in ('check-source', 'doxygen-xml', 'doxygen-user',
+                'doxygen-lib', 'doxygen-full'):
+            logfile = os.path.join(context.workspace.build_dir,
+                    'docs/doxygen/{0}.log'.format(target))
+            if os.path.isfile(logfile) and os.stat(logfile).st_size > 0:
+                context.mark_unstable('{0} produced warnings'.format(target))
+            logs.append(logfile)
+        context.publish_logs(logs, category='doxygen')
+        if context.failed:
+            return
 
     context.build_target(target='sphinx-input', parallel=False,
             failure_string='Generating Sphinx input failed',
@@ -109,7 +112,8 @@ def do_build(context):
         context.build_target(target=target, parallel=False,
                 failure_string='Sphinx: {0} generation failed'.format(descr),
                 continue_on_failure=True)
-        logfile = 'docs/sphinx-{0}.log'.format(log)
+        logfile = os.path.join(context.workspace.build_dir,
+                'docs/sphinx-{0}.log'.format(log))
         if os.path.isfile(logfile) and os.stat(logfile).st_size > 0:
             context.mark_unstable('Sphinx: {0} generation produced warnings'.format(descr))
         logs.append(logfile)
@@ -133,6 +137,4 @@ def do_build(context):
         version_info = context.read_cmake_variable_file('VersionInfo.cmake')
         version = version_info['GMX_VERSION_STRING']
         package_name = 'website-' + version
-        shutil.move('docs/html', package_name)
-        context.make_archive(package_name, root_dir=package_name)
-        shutil.move(package_name, 'docs/html')
+        context.make_archive(package_name, root_dir='docs/html', prefix=package_name)

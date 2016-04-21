@@ -1,0 +1,28 @@
+; This file is identical with regressiontests complex/nbnxn_vsite
+
+; Include forcefield parameters
+#include "amber99.ff/forcefield.itp"
+
+#include "alanine_vsite.itp"
+
+; Include water topology
+#include "amber99.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "amber99.ff/ions.itp"
+
+[ system ]
+; Name
+Alanine dipeptide in water
+
+[ molecules ]
+; Compound        #mols
+Alanine_dipeptide 1
+SOL               298

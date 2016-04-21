@@ -54,7 +54,8 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -121,9 +122,8 @@ static gmx_bool is_charge(real charge)
 
 
 /* calculate charge density */
-static void calc_q2all(
-        gmx_mtop_t *mtop,   /* molecular topology */
-        real *q2all, real *q2allnr)
+static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
+                       real *q2all, real *q2allnr)
 {
     int             imol, iatom; /* indices for loops */
     real            q2_all = 0;  /* Sum of squared charges */
@@ -430,35 +430,33 @@ static real estimate_reciprocal(
         int                nr,  /* number of charges = size of the charge array */
         FILE  gmx_unused  *fp_out,
         gmx_bool           bVerbose,
-        unsigned int       seed,     /* The seed for the random number generator */
+        int                seed,     /* The seed for the random number generator */
         int               *nsamples, /* Return the number of samples used if Monte Carlo
                                       * algorithm is used for self energy error estimate */
         t_commrec         *cr)
 {
-    real     e_rec   = 0; /* reciprocal error estimate */
-    real     e_rec1  = 0; /* Error estimate term 1*/
-    real     e_rec2  = 0; /* Error estimate term 2*/
-    real     e_rec3  = 0; /* Error estimate term 3 */
-    real     e_rec3x = 0; /* part of Error estimate term 3 in x */
-    real     e_rec3y = 0; /* part of Error estimate term 3 in y */
-    real     e_rec3z = 0; /* part of Error estimate term 3 in z */
-    int      i, ci;
-    int      nx, ny, nz;  /* grid coordinates */
-    real     q2_all = 0;  /* sum of squared charges */
-    rvec     gridpx;      /* reciprocal grid point in x direction*/
-    rvec     gridpxy;     /* reciprocal grid point in x and y direction*/
-    rvec     gridp;       /* complete reciprocal grid point in 3 directions*/
-    rvec     tmpvec;      /* template to create points from basis vectors */
-    rvec     tmpvec2;     /* template to create points from basis vectors */
-    real     coeff  = 0;  /* variable to compute coefficients of the error estimate */
-    real     coeff2 = 0;  /* variable to compute coefficients of the error estimate */
-    real     tmp    = 0;  /* variables to compute different factors from vectors */
-    real     tmp1   = 0;
-    real     tmp2   = 0;
-    gmx_bool bFraction;
+    real      e_rec   = 0; /* reciprocal error estimate */
+    real      e_rec1  = 0; /* Error estimate term 1*/
+    real      e_rec2  = 0; /* Error estimate term 2*/
+    real      e_rec3  = 0; /* Error estimate term 3 */
+    real      e_rec3x = 0; /* part of Error estimate term 3 in x */
+    real      e_rec3y = 0; /* part of Error estimate term 3 in y */
+    real      e_rec3z = 0; /* part of Error estimate term 3 in z */
+    int       i, ci;
+    int       nx, ny, nz;  /* grid coordinates */
+    real      q2_all = 0;  /* sum of squared charges */
+    rvec      gridpx;      /* reciprocal grid point in x direction*/
+    rvec      gridpxy;     /* reciprocal grid point in x and y direction*/
+    rvec      gridp;       /* complete reciprocal grid point in 3 directions*/
+    rvec      tmpvec;      /* template to create points from basis vectors */
+    rvec      tmpvec2;     /* template to create points from basis vectors */
+    real      coeff  = 0;  /* variable to compute coefficients of the error estimate */
+    real      coeff2 = 0;  /* variable to compute coefficients of the error estimate */
+    real      tmp    = 0;  /* variables to compute different factors from vectors */
+    real      tmp1   = 0;
+    real      tmp2   = 0;
+    gmx_bool  bFraction;
 
-    /* Random number generator */
-    gmx_rng_t rng     = NULL;
     int      *numbers = NULL;
 
     /* Index variables for parallel work distribution */
@@ -472,7 +470,14 @@ static real estimate_reciprocal(
     double t1 = 0.0;
 #endif
 
-    rng = gmx_rng_init(seed);
+    if (seed == 0)
+    {
+        seed = static_cast<int>(gmx::makeRandomSeed());
+    }
+    fprintf(stderr, "Using random seed %d.\n", seed);
+
+    gmx::DefaultRandomEngine           rng(seed);
+    gmx::UniformIntDistribution<int>   dist(0, nr-1);
 
     clear_rvec(gridpx);
     clear_rvec(gridpxy);
@@ -655,7 +660,7 @@ static real estimate_reciprocal(
         {
             for (i = 0; i < xtot; i++)
             {
-                numbers[i] = static_cast<int>(std::floor(gmx_rng_uniform_real(rng) * nr));
+                numbers[i] = dist(rng); // [0,nr-1]
             }
         }
         /* Broadcast the random number array to the other nodes */
@@ -806,7 +811,7 @@ static void create_info(t_inputinfo *info)
 /* Allocate and fill an array with coordinates and charges,
  * returns the number of charges found
  */
-static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_commrec *cr)
+static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec x_orig[], t_commrec *cr)
 {
     int                     i;
     int                     nq; /* number of charged particles */
@@ -916,8 +921,8 @@ static void bcast_info(t_inputinfo *info, t_commrec *cr)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(t_inputinfo *info, t_state *state,
-                               gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
+static void estimate_PME_error(t_inputinfo *info, const t_state *state,
+                               const gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
                                t_commrec *cr)
 {
     rvec *x     = NULL; /* The coordinates */
@@ -1144,13 +1149,19 @@ int gmx_pme_error(int argc, char *argv[])
     create_info(&info);
     info.fourier_sp[0] = fs;
 
-    /* Read in the tpr file and open logfile for reading */
     if (MASTER(cr))
     {
+        /* Read in the tpr file */
         snew(ir, 1);
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, ir, user_beta, fracself);
-
+        /* Open logfile for reading */
         fp = fopen(opt2fn("-o", NFILE, fnm), "w");
+
+        /* Determine the volume of the simulation box */
+        info.volume = det(state.box);
+        calc_recipbox(state.box, info.recipbox);
+        info.natoms = mtop.natoms;
+        info.bTUNE  = bTUNE;
     }
 
     /* Check consistency if the user provided fourierspacing */
@@ -1169,15 +1180,6 @@ int gmx_pme_error(int argc, char *argv[])
     }
 
     /* Estimate (S)PME force error */
-
-    /* Determine the volume of the simulation box */
-    if (MASTER(cr))
-    {
-        info.volume = det(state.box);
-        calc_recipbox(state.box, info.recipbox);
-        info.natoms = mtop.natoms;
-        info.bTUNE  = bTUNE;
-    }
 
     if (PAR(cr))
     {

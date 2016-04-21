@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -594,9 +595,9 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
             dhh += psr->X.fontsize+2*DDD;
         }
         if ( /* fool emacs auto-indent */
-            (elegend == elBoth && (mat[0].legend[0] || mat2[0].legend[0])) ||
+            (elegend == elBoth && (mat[0].legend[0] || (mat2 && mat2[0].legend[0]))) ||
             (elegend == elFirst && mat[0].legend[0]) ||
-            (elegend == elSecond && mat2[0].legend[0]) )
+            (elegend == elSecond && (mat2 && mat2[0].legend[0])) )
         {
             dhh += 2*(psr->legfontsize*FUDGE+2*DDD);
         }
@@ -973,6 +974,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                         }
                         else
                         {
+                            assert(mat2);
                             ps_rgb_nbox(out, &(mat2[i].map[col].rgb), nexty-y);
                         }
                     }
@@ -1030,6 +1032,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             }
             else
             {
+                assert(mat2);
                 leg_bicontinuous(out, x0+w/2, w, DDD, mat[0].legend, mat2[0].legend,
                                  psr->legfontsize, psr->legfont, nmap1, map1, nmap2, map2);
             }

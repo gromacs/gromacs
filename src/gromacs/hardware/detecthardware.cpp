@@ -86,10 +86,10 @@ static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
  * array entry. */
 
-/* CUDA supports everything. Our current OpenCL implementation only
- * supports using exactly one GPU per PP rank, so sharing is
- * impossible */
-static const bool gpuSharingSupport[] = { false, true, false };
+/* Both CUDA and OpenCL (on the supported/tested platforms) supports
+ * GPU device sharing.
+ */
+static const bool gpuSharingSupport[] = { false, true, true };
 static const bool bGpuSharingSupported = gpuSharingSupport[GMX_GPU];
 
 /* CUDA supports everything. Our current OpenCL implementation seems
@@ -963,9 +963,10 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
 static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                                             bool                 bFullCpuInfo)
 {
-    std::string         s;
+    std::string                  s;
 
-    const gmx::CpuInfo &cpuInfo = *hwinfo_g->cpuInfo;
+    const gmx::CpuInfo          &cpuInfo = *hwinfo_g->cpuInfo;
+    const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
     s  = gmx::formatString("\n");
     s += gmx::formatString("Running on %d node%s with total",
@@ -1074,6 +1075,96 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 
     s += gmx::formatString("    SIMD instructions selected at GROMACS compile time: %s\n",
                            gmx::simdString(gmx::simdCompiled()).c_str());
+
+    s += gmx::formatString("\n");
+
+    s += gmx::formatString("  Hardware topology: ");
+    switch (hwTop.supportLevel())
+    {
+        case gmx::HardwareTopology::SupportLevel::None:
+            s += gmx::formatString("None\n");
+            break;
+        case gmx::HardwareTopology::SupportLevel::LogicalProcessorCount:
+            s += gmx::formatString("Only logical processor count\n");
+            break;
+        case gmx::HardwareTopology::SupportLevel::Basic:
+            s += gmx::formatString("Basic\n");
+            break;
+        case gmx::HardwareTopology::SupportLevel::Full:
+            s += gmx::formatString("Full\n");
+            break;
+        case gmx::HardwareTopology::SupportLevel::FullWithDevices:
+            s += gmx::formatString("Full, with devices\n");
+            break;
+    }
+
+    if (bFullCpuInfo)
+    {
+        if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
+        {
+            s += gmx::formatString("    Sockets, cores, and logical processors:\n");
+
+            for (auto &socket : hwTop.machine().sockets)
+            {
+                s += gmx::formatString("      Socket %2d:", socket.id);
+                for (auto &c : socket.cores)
+                {
+                    s += gmx::formatString(" [");
+                    for (auto &t : c.hwThreads)
+                    {
+                        s += gmx::formatString(" %3d", t.logicalProcessorId);
+                    }
+                    s += gmx::formatString("]");
+                }
+                s += gmx::formatString("\n");
+            }
+        }
+        if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Full)
+        {
+            s += gmx::formatString("    Numa nodes:\n");
+            for (auto &n : hwTop.machine().numa.nodes)
+            {
+                s += gmx::formatString("      Node %2d (%" GMX_PRIu64 " bytes mem):", n.id, n.memory);
+                for (auto &l : n.logicalProcessorId)
+                {
+                    s += gmx::formatString(" %3d", l);
+                }
+                s += gmx::formatString("\n");
+            }
+            s += gmx::formatString("      Latency:\n          ");
+            for (std::size_t j = 0; j < hwTop.machine().numa.nodes.size(); j++)
+            {
+                s += gmx::formatString(" %5d", j);
+            }
+            s += gmx::formatString("\n");
+            for (std::size_t i = 0; i < hwTop.machine().numa.nodes.size(); i++)
+            {
+                s += gmx::formatString("     %5d", i);
+                for (std::size_t j = 0; j < hwTop.machine().numa.nodes.size(); j++)
+                {
+                    s += gmx::formatString(" %5.2f", hwTop.machine().numa.relativeLatency[i][j]);
+                }
+                s += gmx::formatString("\n");
+            }
+
+
+            s += gmx::formatString("    Caches:\n");
+            for (auto &c : hwTop.machine().caches)
+            {
+                s += gmx::formatString("      L%d: %" GMX_PRIu64 " bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
+                                       c.level, c.size, c.linesize, c.associativity, c.shared);
+            }
+        }
+        if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::FullWithDevices)
+        {
+            s += gmx::formatString("    PCI devices:\n");
+            for (auto &d : hwTop.machine().devices)
+            {
+                s += gmx::formatString("      %04x:%02x:%02x.%1x  Id: %04x:%04x  Class: 0x%04x  Numa: %d\n",
+                                       d.domain, d.bus, d.dev, d.func, d.vendorId, d.deviceId, d.classId, d.numaNodeId);
+            }
+        }
+    }
 
     if (bGPUBinary && (hwinfo->ngpu_compatible_tot > 0 ||
                        hwinfo->gpu_info.n_dev > 0))

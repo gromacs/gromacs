@@ -96,10 +96,10 @@
 #cmakedefine01 GMX_SIMD_X86_MIC
 
 /* AVX-512F foundation level instruction SIMD */
-#cmakedefine01 GMX_SIMD_X86_AVX_512F
+#cmakedefine01 GMX_SIMD_X86_AVX_512
 
 /* AVX-512ER foundation level instruction SIMD */
-#cmakedefine01 GMX_SIMD_X86_AVX_512ER
+#cmakedefine01 GMX_SIMD_X86_AVX_512_KNL
 
 /* 32-bit ARM NEON SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_ARM_NEON
@@ -164,6 +164,9 @@
 
 /* Use OpenMP multithreading */
 #cmakedefine01 GMX_OPENMP
+
+/* Use the Portable Hardware Locality package (hwloc) */
+#cmakedefine01 GMX_HWLOC
 
 /* Can and should use nice(3) to set priority */
 #cmakedefine01 GMX_USE_NICE

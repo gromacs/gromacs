@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,8 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -69,19 +70,13 @@ class SurfaceAreaTest : public ::testing::Test
 {
     public:
         SurfaceAreaTest()
-            : rng_(NULL), area_(0.0), volume_(0.0),
+            : rng_(12345), area_(0.0), volume_(0.0),
               atomArea_(NULL), dotCount_(0), dots_(NULL)
         {
-            // TODO: Handle errors.
-            rng_ = gmx_rng_init(12345);
             clear_mat(box_);
         }
         ~SurfaceAreaTest()
         {
-            if (rng_ != NULL)
-            {
-                gmx_rng_destroy(rng_);
-            }
             sfree(atomArea_);
             sfree(dots_);
         }
@@ -100,11 +95,13 @@ class SurfaceAreaTest : public ::testing::Test
         void generateRandomPosition(rvec x, real *radius)
         {
             rvec fx;
-            fx[XX]  = gmx_rng_uniform_real(rng_);
-            fx[YY]  = gmx_rng_uniform_real(rng_);
-            fx[ZZ]  = gmx_rng_uniform_real(rng_);
+            gmx::UniformRealDistribution<real> dist;
+
+            fx[XX]  = dist(rng_);
+            fx[YY]  = dist(rng_);
+            fx[ZZ]  = dist(rng_);
             mvmul(box_, fx, x);
-            *radius = 1.5*gmx_rng_uniform_real(rng_) + 0.5;
+            *radius = 1.5*dist(rng_) + 0.5;
         }
 
         void addDummySpheres(int count)
@@ -226,16 +223,16 @@ class SurfaceAreaTest : public ::testing::Test
             return 0;
         }
 
-        gmx_rng_t               rng_;
-        std::vector<gmx::RVec>  x_;
-        std::vector<real>       radius_;
-        std::vector<int>        index_;
+        gmx::DefaultRandomEngine rng_;
+        std::vector<gmx::RVec>   x_;
+        std::vector<real>        radius_;
+        std::vector<int>         index_;
 
-        real                    area_;
-        real                    volume_;
-        real                   *atomArea_;
-        int                     dotCount_;
-        real                   *dots_;
+        real                     area_;
+        real                     volume_;
+        real                    *atomArea_;
+        int                      dotCount_;
+        real                    *dots_;
 };
 
 TEST_F(SurfaceAreaTest, ComputesSinglePoint)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -83,7 +84,7 @@ static gmx_inline int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
              * Any value should work for the pair-search and atomdata code.
              * The kernels, of course, might require a particular value.
              */
-            return NBNXN_GPU_CLUSTER_SIZE;
+            return c_nbnxnGpuClusterSize;
         default:
             gmx_incons("unknown kernel type");
     }

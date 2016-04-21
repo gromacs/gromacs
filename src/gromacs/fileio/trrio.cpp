@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -256,10 +256,10 @@ gmx_bool gmx_trr_read_frame_header(t_fileio *fio, gmx_trr_header_t *header, gmx_
 }
 
 void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
-                                rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
+                                const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "w");
-    do_trr_frame(fio, false, &step, &t, &lambda, box, &natoms, x, v, f);
+    do_trr_frame(fio, false, &step, &t, &lambda, const_cast<rvec *>(box), &natoms, const_cast<rvec *>(x), const_cast<rvec *>(v), const_cast<rvec *>(f));
     gmx_trr_close(fio);
 }
 
@@ -272,9 +272,9 @@ void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
 }
 
 void gmx_trr_write_frame(t_fileio *fio, int step, real t, real lambda,
-                         rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
+                         const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
-    if (!do_trr_frame(fio, false, &step, &t, &lambda, box, &natoms, x, v, f))
+    if (!do_trr_frame(fio, false, &step, &t, &lambda, const_cast<rvec *>(box), &natoms, const_cast<rvec *>(x), const_cast<rvec *>(v), const_cast<rvec *>(f)))
     {
         gmx_file("Cannot write trajectory frame; maybe you are out of disk space?");
     }
