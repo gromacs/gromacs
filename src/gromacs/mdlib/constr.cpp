@@ -62,6 +62,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -292,7 +293,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
-    int         nth, th;
+    int         nth;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
@@ -383,8 +384,11 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
     }
 
+    STS *sts = STS::getInstance("constrain");
+    sts->nextStep();
     if (constr->lincsd != NULL)
     {
+        sts->run("lincs", [&]{
         bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
@@ -400,6 +404,11 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             }
             bDump = TRUE;
         }
+        });
+    }
+    else
+    {
+        sts->skipTask("lincs");
     }
 
     if (constr->nblocks > 0)
@@ -442,11 +451,11 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     {
         bool bSettleErrorHasOccurred = false;
 
+        sts->run("settle", [&] {
         switch (econq)
         {
             case econqCoord:
-#pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
+                STS::getInstance("constrain")->parallel_for("settle_loop", 0, nth, [&](int th)
                 {
                     try
                     {
@@ -465,7 +474,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                                 th == 0 ? &bSettleErrorHasOccurred : &constr->bSettleErrorHasOccurred[th]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
                 if (v != NULL)
                 {
@@ -480,8 +489,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             case econqDeriv:
             case econqForce:
             case econqForceDispl:
-#pragma omp parallel for num_threads(nth) schedule(static)
-                for (th = 0; th < nth; th++)
+                STS::getInstance("constrain")->parallel_for("settle_loop", 0, nth, [&](int th)
                 {
                     try
                     {
@@ -516,7 +524,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 /* This is an overestimate */
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
                 break;
@@ -525,7 +533,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 break;
             default:
                 gmx_incons("Unknown constraint quantity for settle");
-        }
+        }});
 
         if (vir != NULL)
         {
@@ -566,6 +574,11 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             }
         }
     }
+    else
+    {
+        sts->skipTask("settle");
+    }
+    sts->wait();
 
     if (vir != NULL)
     {

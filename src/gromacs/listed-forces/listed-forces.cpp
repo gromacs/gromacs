@@ -67,6 +67,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/sts/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
@@ -153,8 +154,7 @@ reduce_thread_forces(int n, rvec *f,
      * which means that threads mostly reduce their own data which increases
      * the number of cache hits.
      */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int b = 0; b < bt->nblock_used; b++)
+    STS::getInstance("force")->parallel_for("listed_forces1", 0, bt->nblock_used, [=](size_t b)
     {
         try
         {
@@ -187,7 +187,7 @@ reduce_thread_forces(int n, rvec *f,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 }
 
 /*! \brief Reduce thread-local forces, shift forces and energies */
@@ -202,6 +202,10 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
     {
         /* Reduce the bonded force buffer */
         reduce_thread_forces(n, f, bt, bt->nthreads);
+    }
+    else
+    {
+        STS::getInstance("force")->skipTask("listed_forces1");
     }
 
     /* When necessary, reduce energy and virial using one thread only */
@@ -411,7 +415,6 @@ void calc_listed(const t_commrec             *cr,
        of lambda, which will be thrown away in the end */
     real                       dvdl[efptNR];
     const  t_pbc              *pbc_null;
-    int                        thread;
 
     bt = fr->bonded_threading;
 
@@ -483,8 +486,7 @@ void calc_listed(const t_commrec             *cr,
     }
 
     wallcycle_sub_start(wcycle, ewcsLISTED);
-#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (thread = 0; thread < bt->nthreads; thread++)
+    STS::getInstance("force")->parallel_for("listed_forces2", 0, bt->nthreads, [=,&dvdl](size_t thread)
     {
         try
         {
@@ -529,7 +531,7 @@ void calc_listed(const t_commrec             *cr,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
     wallcycle_sub_stop(wcycle, ewcsLISTED);
 
     wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
