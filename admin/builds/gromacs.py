@@ -103,13 +103,15 @@ def do_build(context):
     if context.opts.x11:
         cmake_opts['GMX_X11'] = 'ON'
 
+    regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
+
     if context.job_type == JobType.RELEASE:
         # TODO: Consider using REGRESSIONTEST_DOWNLOAD here, after refactoring
         # it to make that possible.  Or use some other mechanism to check the
         # MD5 of the regressiontests tarball (also taking into account the -dev
         # builds where the hardcoded value in gmxVersionInfo.cmake is not
         # accurate).
-        cmake_opts['REGRESSIONTEST_PATH'] = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
+        cmake_opts['REGRESSIONTEST_PATH'] = regressiontests_path
     else:
         if context.opts.mdrun_only:
             cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
@@ -133,7 +135,16 @@ def do_build(context):
             context.build_target(target=None, keep_going=True)
             context.build_target(target='check', keep_going=True)
             context.build_target(target='install')
-        # TODO: Run regression tests against the installed version.
+        gmxrc_cmd = '. ' + os.path.join(context.workspace.install_dir, 'bin', 'GMXRC')
+        context.env.run_env_script(gmxrc_cmd)
+        cmd = [os.path.join(regressiontests_path, 'gmxtest.pl'), '-nosuffix', 'all']
+        if context.opts.mpi:
+            cmd += ['-np', '1']
+        if context.opts.double:
+            cmd += ['-double']
+        if context.opts.mdrun_only:
+            cmd += ['-mdrun', 'mdrun']
+        context.run_cmd(cmd, failure_message='Regression tests failed to execute')
         # TODO: Add testing for building the template.
         # TODO: Generalize the machinery here such that it can easily be used
         # also for non-release builds.
@@ -142,9 +153,12 @@ def do_build(context):
 
         context.run_ctest(args=['--output-on-failure'])
 
+        context.build_target(target='install')
+        # TODO: Consider what could be tested about the installed binaries.
+
         if not context.opts.mdrun_only:
             context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
-            context.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
+            context.chdir(regressiontests_path)
 
             if not context.opts.mpi and context.opts.thread_mpi is not False:
                 use_tmpi = True
