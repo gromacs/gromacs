@@ -243,7 +243,7 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
  *  Note that this is implemented only for the CUDA API.
  */
 CUDA_FUNC_QUALIFIER
-void startGpuProfiler(void) GPU_FUNC_TERM
+void startGpuProfiler(void) CUDA_FUNC_TERM
 
 
 /*! \brief Resets the GPU profiler if mdrun is being profiled.
@@ -257,7 +257,7 @@ void startGpuProfiler(void) GPU_FUNC_TERM
  * Note that this is implemented only for the CUDA API.
  */
 CUDA_FUNC_QUALIFIER
-void resetGpuProfiler(void) GPU_FUNC_TERM
+void resetGpuProfiler(void) CUDA_FUNC_TERM
 
 
 /*! \brief Stops the CUDA profiler if mdrun is being profiled.
@@ -269,7 +269,7 @@ void resetGpuProfiler(void) GPU_FUNC_TERM
  *  Note that this is implemented only for the CUDA API.
  */
 CUDA_FUNC_QUALIFIER
-void stopGpuProfiler(void) GPU_FUNC_TERM
+void stopGpuProfiler(void) CUDA_FUNC_TERM
 
 
 #endif
