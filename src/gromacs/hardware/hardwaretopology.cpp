@@ -575,6 +575,8 @@ detectLogicalProcessorCount()
         count = sysconf(_SC_NPROCESSORS_ONLN);
 #    elif defined(_SC_NPROC_ONLN)
         count = sysconf(_SC_NPROC_ONLN);
+#    else
+#       warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
 #    endif      // End of check for sysconf argument values
 
 #else
