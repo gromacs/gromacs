@@ -1111,24 +1111,24 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
     std::vector<double>              optx, opts, optm;
     double                           chi2, chi2_min;
-    int                              n, start = 0;
     gmx_bool                         bMinimum = FALSE;
     std::random_device               rd;
     std::mt19937                     gen;
     std::uniform_real_distribution<> dis;
 
     auto func = [&] (double v[]) {
-            return objFunction(v);
-        };
-
+      return objFunction(v);
+    };
+    
     if (MASTER(_cr))
     {
-        guessAll(start, stepsize, bRandom, gen, dis);
+      int n = 0;
+        guessAll(n++, stepsize, bRandom, gen, dis);
         Bayes <double> TuneFc(func, param_, lower_, upper_);
         TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
                     temperature, bBound);
         chi2 = chi2_min = GMX_REAL_MAX;
-        for (n = 0; (n < nrun); n++)
+        for (; (n < nrun); n++)
         {
             if ((NULL != fp) && (0 == n))
             {
@@ -1161,7 +1161,7 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                 fprintf(fplog, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
-            guessAll(n+1, stepsize, bRandom, gen, dis);
+            guessAll(n, stepsize, bRandom, gen, dis);
             TuneFc.setParam(param_);
         }
 
