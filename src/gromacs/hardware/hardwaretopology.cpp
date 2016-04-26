@@ -627,4 +627,22 @@ HardwareTopology::HardwareTopology()
 {
 }
 
+int HardwareTopology::numberOfCores() const
+{
+    if (supportLevel() >= SupportLevel::Basic)
+    {
+        // We assume all sockets have the same number of cores as socket 0.
+        // Since topology information is present, we can assume there is at least one socket.
+        return machine().sockets.size() * machine().sockets[0].cores.size();
+    }
+    else if (supportLevel() >= SupportLevel::LogicalProcessorCount)
+    {
+        return machine().logicalProcessorCount;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,6 @@ typedef struct gmx_hw_info_t
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
 
-    int                   ncore;                   /* Number of cores, will be 0 when not detected */
     int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
                                                       is based on the number of CPUs reported as available
                                                       by the OS at the time of detection. */
