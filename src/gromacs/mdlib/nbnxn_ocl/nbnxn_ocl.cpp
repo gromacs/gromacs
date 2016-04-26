@@ -206,8 +206,8 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
     cl_kernel  *kernel_ptr;
     cl_int      cl_error;
 
-    assert(eeltype < eelOclNR);
-    assert(evdwtype < eelOclNR);
+    assert(eeltype  < eelOclNR);
+    assert(evdwtype < evdwOclNR);
 
     if (bDoEne)
     {
