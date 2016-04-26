@@ -604,18 +604,6 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     return uniq_count;
 }
 
-static int get_ncores(const gmx::HardwareTopology &hwTop)
-{
-    if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::None)
-    {
-        return hwTop.machine().logicalProcessorCount;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
 /* Return the number of hardware threads supported by the current CPU.
  * We assume that this is equal with the number of "processors"
  * reported to be online by the OS at the time of the call. The
@@ -782,16 +770,16 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 
 static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 {
+    const int ncore = hwinfo_g->hardwareTopology->numberOfCores();
 #if GMX_LIB_MPI
-    int  rank_id;
-    int  nrank, rank, ncore, nhwthread, ngpu, i;
-    int  gpu_hash;
-    int *buf, *all;
+    int       rank_id;
+    int       nrank, rank, nhwthread, ngpu, i;
+    int       gpu_hash;
+    int      *buf, *all;
 
     rank_id   = gmx_physicalnode_id_hash();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nrank);
-    ncore     = hwinfo_g->ncore;
     nhwthread = hwinfo_g->nthreads_hw_avail;
     ngpu      = hwinfo_g->gpu_info.n_dev_compatible;
     /* Create a unique hash of the GPU type(s) in this node */
@@ -896,9 +884,9 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     /* All ranks use the same pointer, protect it with a mutex */
     tMPI_Thread_mutex_lock(&hw_info_lock);
     hwinfo_g->nphysicalnode       = 1;
-    hwinfo_g->ncore_tot           = hwinfo_g->ncore;
-    hwinfo_g->ncore_min           = hwinfo_g->ncore;
-    hwinfo_g->ncore_max           = hwinfo_g->ncore;
+    hwinfo_g->ncore_tot           = ncore;
+    hwinfo_g->ncore_min           = ncore;
+    hwinfo_g->ncore_max           = ncore;
     hwinfo_g->nhwthread_tot       = hwinfo_g->nthreads_hw_avail;
     hwinfo_g->nhwthread_min       = hwinfo_g->nthreads_hw_avail;
     hwinfo_g->nhwthread_max       = hwinfo_g->nthreads_hw_avail;
@@ -931,9 +919,6 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
         hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
-
-        /* get the number of cores, will be 0 when not detected */
-        hwinfo_g->ncore             = get_ncores(*hwinfo_g->hardwareTopology);
 
         /* detect number of hardware threads */
         hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);

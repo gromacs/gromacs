@@ -227,6 +227,14 @@ class HardwareTopology
         const Machine &
         machine() const { return machine_; }
 
+        /*! \brief Returns the number of cores.
+         *
+         * You can always call this routine, but if sufficient support is not
+         * available, it may return the logical processor count or zero instead
+         * of the physical core count.
+         */
+        int numberOfCores() const;
+
     private:
 
         HardwareTopology();
