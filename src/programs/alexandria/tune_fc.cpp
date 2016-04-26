@@ -1117,12 +1117,12 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
     std::uniform_real_distribution<> dis;
 
     auto func = [&] (double v[]) {
-      return objFunction(v);
-    };
-    
+            return objFunction(v);
+        };
+
     if (MASTER(_cr))
     {
-      int n = 0;
+        int            n = 0;
         guessAll(n++, stepsize, bRandom, gen, dis);
         Bayes <double> TuneFc(func, param_, lower_, upper_);
         TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
