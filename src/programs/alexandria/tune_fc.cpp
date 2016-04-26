@@ -1494,8 +1494,6 @@ int alex_tune_fc(int argc, char *argv[])
              false, bPol,
              opt2fn_null("-tab", NFILE, fnm));
 
-    printf("I am out of opt.read()\n");
-
     opt.checkSupport(fp, bOpt);
 
     fprintf(fp, "In the total data set of %d molecules we have:\n",
