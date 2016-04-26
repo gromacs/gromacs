@@ -607,39 +607,17 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     return uniq_count;
 }
 
-/* Return the number of hardware threads supported by the current CPU.
- * We assume that this is equal with the number of "processors"
- * reported to be online by the OS at the time of the call. The
- * definition of "processor" is according to an old POSIX standard.
- *
- * On e.g. Arm, the Linux kernel can use advanced power saving features where
+/* On e.g. Arm, the Linux kernel can use advanced power saving features where
  * processors are brought online/offline dynamically. This will cause
  * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
- * reason we now first try to use the number of configured processors, but
- * also warn if they mismatch.
- *
- * Note that the number of hardware threads is generally greater than
- * the number of cores (e.g. x86 hyper-threading, Power). Managing the
- * mapping of software threads to hardware threads is managed
- * elsewhere.
+ * reason we now warn if this mismatches with the detected core count.
  */
-static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
+static void check_nthreads_hw_avail(const t_commrec gmx_unused *cr,
+                                    FILE gmx_unused *fplog, int nthreads)
 {
-    int ret = 0;
-
-#if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
-    /* Windows */
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo( &sysinfo );
-    ret = sysinfo.dwNumberOfProcessors;
-#elif defined HAVE_SYSCONF
-    /* We are probably on Unix.
-     * Now check if we have the argument to use before executing the call
-     */
-#if defined(_SC_NPROCESSORS_CONF)
-    ret = sysconf(_SC_NPROCESSORS_CONF);
-#    if defined(_SC_NPROCESSORS_ONLN)
-    if (ret != sysconf(_SC_NPROCESSORS_ONLN))
+// Now check if we have the argument to use before executing the call
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+    if (nthreads != sysconf(_SC_NPROCESSORS_ONLN))
     {
         md_print_warn(cr, fplog,
                       "%d CPUs configured, but only %d of them are online.\n"
@@ -647,40 +625,24 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
                       "off to save power, and will turn them back on later when the load increases.\n"
                       "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
                       "will likely see much better performance by forcing all cores to be online, and\n"
-                      "making sure they run at their full clock frequency.", ret, sysconf(_SC_NPROCESSORS_ONLN));
+                      "making sure they run at their full clock frequency.", nthreads, sysconf(_SC_NPROCESSORS_ONLN));
     }
-#    endif
-#elif defined(_SC_NPROC_CONF)
-    ret = sysconf(_SC_NPROC_CONF);
-#elif defined(_SC_NPROCESSORS_ONLN)
-    ret = sysconf(_SC_NPROCESSORS_ONLN);
-#elif defined(_SC_NPROC_ONLN)
-    ret = sysconf(_SC_NPROC_ONLN);
-#else
-#    warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
-#endif /* End of check for sysconf argument values */
-
-#else
-    /* Neither windows nor Unix. No fscking idea how many hardware threads we have! */
-    ret = -1;
 #endif
 
     if (debug)
     {
-        fprintf(debug, "Detected %d hardware threads to use.\n", ret);
+        fprintf(debug, "Detected %d hardware threads to use.\n", nthreads);
     }
 
 #if GMX_OPENMP
-    if (ret != gmx_omp_get_num_procs())
+    if (nthreads != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
                       "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
                       "Consider setting the launch configuration manually!",
-                      ret, gmx_omp_get_num_procs());
+                      nthreads, gmx_omp_get_num_procs());
     }
 #endif
-
-    return ret;
 }
 
 static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
@@ -912,8 +874,9 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
         hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
 
-        /* detect number of hardware threads */
-        hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
+        // TODO: Get rid of this altogether.
+        hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
+        check_nthreads_hw_avail(cr, fplog, hwinfo_g->nthreads_hw_avail);
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;
