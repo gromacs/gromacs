@@ -98,6 +98,6 @@ void OptParam::setStep(real step)
 
 void OptParam::setTemperature(real temperature)
 {
-  temperature_ = temperature;
+    temperature_ = temperature;
 }
 }
