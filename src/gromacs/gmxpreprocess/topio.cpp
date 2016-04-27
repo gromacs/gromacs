@@ -168,6 +168,10 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
             }
 
             pairs->param[i].c[j]      = scaling*nbs->param[i].c[j];
+            /* NOTE: this should be cleat to the compiler, but some gcc 5.2 versions
+             *  issue false positive warnings for the pairs->param.c[] indexing below.
+             */
+            assert(2*nrfp <= MAXFORCEPARAM);
             pairs->param[i].c[nrfp+j] = scaling*nbs->param[i].c[j];
         }
     }
