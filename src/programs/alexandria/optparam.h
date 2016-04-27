@@ -123,14 +123,14 @@ template <class T> class Bayes : public OptParam
 
     private:
 
-        func_t func_;
-        parm_t param_;
-        parm_t psigma_;
-        parm_t pmean_;
-        parm_t lowerBound_;
-        parm_t upperBound_;
-        parm_t bestParam_;
-	T      *minEval_;
+        func_t  func_;
+        parm_t  param_;
+        parm_t  psigma_;
+        parm_t  pmean_;
+        parm_t  lowerBound_;
+        parm_t  upperBound_;
+        parm_t  bestParam_;
+        T      *minEval_;
 
     public:
 
@@ -173,8 +173,8 @@ template <class T> class Bayes : public OptParam
 };
 
 template <class T>
-  Bayes<T>::Bayes(func_t func, parm_t param, parm_t lowerBound, parm_t upperBound, T *minEval)
-  : func_(func), param_(param), lowerBound_(lowerBound), upperBound_(upperBound), bestParam_(param), minEval_(minEval)
+Bayes<T>::Bayes(func_t func, parm_t param, parm_t lowerBound, parm_t upperBound, T *minEval)
+    : func_(func), param_(param), lowerBound_(lowerBound), upperBound_(upperBound), bestParam_(param), minEval_(minEval)
 {}
 
 template <class T>
