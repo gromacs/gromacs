@@ -130,10 +130,11 @@ template <class T> class Bayes : public OptParam
         parm_t lowerBound_;
         parm_t upperBound_;
         parm_t bestParam_;
+	T      *minEval_;
 
     public:
 
-        Bayes(func_t func_, parm_t param_, parm_t lowerBound_, parm_t upperBound_);
+        Bayes(func_t func_, parm_t param_, parm_t lowerBound_, parm_t upperBound_, T *minEval_);
 
         void setParam(parm_t param);
 
@@ -172,8 +173,8 @@ template <class T> class Bayes : public OptParam
 };
 
 template <class T>
-Bayes<T>::Bayes(func_t func, parm_t param, parm_t lowerBound, parm_t upperBound)
-    : func_(func), param_(param), lowerBound_(lowerBound), upperBound_(upperBound), bestParam_(param)
+  Bayes<T>::Bayes(func_t func, parm_t param, parm_t lowerBound, parm_t upperBound, T *minEval)
+  : func_(func), param_(param), lowerBound_(lowerBound), upperBound_(upperBound), bestParam_(param), minEval_(minEval)
 {}
 
 template <class T>
@@ -243,7 +244,6 @@ void Bayes<T>::simulate()
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
     double                           deltaEval;
-    double                           minEval;
     double                           randProbability;
     double                           mcProbability;
     double                           beta;
@@ -269,8 +269,8 @@ void Bayes<T>::simulate()
     pmean_.resize(param_.size(), 0);
     psigma_.resize(param_.size(), 0);
 
-    prevEval = func_(param_.data());
-    minEval  = prevEval;
+    prevEval  = func_(param_.data());
+    *minEval_ = prevEval;
 
     for (j = iter = 0; (iter < maxiter_); iter++)
     {
@@ -300,10 +300,10 @@ void Bayes<T>::simulate()
                 fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
                         j, storeParam, param_[j], beta*deltaEval);
             }
-            if (currEval < minEval)
+            if (currEval < *minEval_)
             {
                 bestParam_ = param_;
-                minEval    = currEval;
+                *minEval_  = currEval;
             }
             prevEval = currEval;
         }

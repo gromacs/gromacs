@@ -1122,22 +1122,23 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
     if (MASTER(_cr))
     {
+        chi2 = chi2_min  = GMX_REAL_MAX;
         int            n = 0;
         guessAll(n++, stepsize, bRandom, gen, dis);
-        Bayes <double> TuneFc(func, param_, lower_, upper_);
+        Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
         TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
                     temperature, bBound);
-        chi2 = chi2_min = GMX_REAL_MAX;
-        for (; (n < nrun); n++)
+        for (; (n <= nrun); n++)
         {
             if ((NULL != fp) && (0 == n))
             {
-                fprintf(fp, "\nStarting run %d out of %d\n", n+1, nrun);
+                fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
 
             TuneFc.simulate();
             optx = TuneFc.getBestParam();
             opts = TuneFc.getPsigma();
+	    optm = TuneFc.getPmean();
 
             if (chi2 < chi2_min)
             {
