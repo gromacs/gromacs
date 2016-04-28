@@ -1369,6 +1369,20 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     }
 
+    if (ir->bQMMM)
+    {
+        if (ir->cutoff_scheme != ecutsGROUP)
+        {
+            warning_error(wi, "QMMM is currently only supported with cutoff-scheme=group");
+        }
+        if (!EI_DYNAMICS(ir->eI))
+        {
+            char buf[STRLEN];
+            sprintf(buf, "QMMM is only supported with dynamics, not with integrator %s", ei_names[ir->eI]);
+            warning_error(wi, buf);
+        }
+    }
+
     if (ir->bAdress)
     {
         gmx_fatal(FARGS, "AdResS simulations are no longer supported");
