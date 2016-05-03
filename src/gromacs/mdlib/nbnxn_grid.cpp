@@ -1256,21 +1256,31 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     int   n0, n1;
     int   cx, cy, cxy, ncz_max, ncz;
     int   nthread;
-    int   cxy_na_i;
 
     nthread = gmx_omp_nthreads_get(emntPairsearch);
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
+#pragma omp parallel num_threads(nthread) if (nthread>6)
     {
-        try
+#pragma omp for schedule(static)
+        for (int thread = 0; thread < nthread; thread++)
         {
-            calc_column_indices(grid, a0, a1, x, dd_zone, move, thread, nthread,
-                                nbs->cell, nbs->work[thread].cxy_na);
+            try
+            {
+                calc_column_indices(grid, a0, a1, x, dd_zone, move, thread, nthread,
+                                    nbs->cell, nbs->work[thread].cxy_na);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+#pragma omp for schedule(static)
+        for (int i = 0; i < grid->ncx*grid->ncy+1; i++)
+        {
+            grid->cxy_na[i] = nbs->work[0].cxy_na[i];
+            for (int thread = 1; thread < nthread; thread++)
+            {
+                grid->cxy_na[i] += nbs->work[thread].cxy_na[i];
+            }
+        }
     }
-
     /* Make the cell index as a function of x and y */
     ncz_max          = 0;
     ncz              = 0;
@@ -1285,12 +1295,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         {
             ncz_max = ncz;
         }
-        cxy_na_i = nbs->work[0].cxy_na[i];
-        for (int thread = 1; thread < nthread; thread++)
-        {
-            cxy_na_i += nbs->work[thread].cxy_na[i];
-        }
-        ncz = (cxy_na_i + grid->na_sc - 1)/grid->na_sc;
+        ncz = (grid->cxy_na[i] + grid->na_sc - 1)/grid->na_sc;
         if (nbat->XFormat == nbatX8)
         {
             /* Make the number of cell a multiple of 2 */
