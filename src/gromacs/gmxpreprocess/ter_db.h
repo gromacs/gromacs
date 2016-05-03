@@ -43,7 +43,8 @@
 
 
 int read_ter_db(const char *ffdir, char ter,
-                t_hackblock **tbptr, gpp_atomtype_t atype);
+                t_hackblock **tbptr, gpp_atomtype_t atype,
+                gmx_bool bDrude);
 /* Read database for N&C terminal hacking */
 
 t_hackblock **filter_ter(int nrtp, t_restp rtp[],

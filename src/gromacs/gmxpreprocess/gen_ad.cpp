@@ -1139,201 +1139,6 @@ void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_
     }  
 }
 
-static void gen_drude_ssbonds_excl(t_atoms *atoms, t_excls *excls,
-                                   int nssbonds, t_ssbond *ssbonds, 
-                                   gmx_bool bAllowMissing)
-{
-
-    int         i, ri, rj;
-    int         ai, aj;
-
-    /* loop over all special bonds and use those atoms to generate exclusions */ 
-    for (i = 0; (i < nssbonds); i++)
-    {
-        ri = ssbonds[i].res1;
-        rj = ssbonds[i].res2;
-        ai = search_res_atom(ssbonds[i].a1, ri, atoms,
-                             "check", bAllowMissing);
-        aj = search_res_atom(ssbonds[i].a2, rj, atoms,
-                             "check", bAllowMissing);
-        if ((ai == -1) || (aj == -1))
-        {
-            gmx_fatal(FARGS, "Trying to make impossible exclusion (%s-%s)!",
-                      ssbonds[i].a1, ssbonds[i].a2);
-        }
-
-        /* only do this for disulfides */
-        if ((strncmp(*(atoms->atomname[ai]),"SG",2)==0) &&
-            (strncmp(*(atoms->atomname[aj]),"SG",2)==0))
-        {
-            /* Exclusions within each residue are handled in .rtp entry, but those
-             *  between the CYS residues need to be added separately, after the
-             *  disulfides have been detected and added.  Need to exclude (D)SG from
-             *  LPSA, LPSB, DSG, SG, CB, and DCB in linked residue */
-
-            /* 1SG - 2SG */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = aj;
-            excls[ai].nr++;
-
-            /* 1SG - 2DSG */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = aj+1;
-            excls[ai].nr++;
-
-            /* 1SG - 2LPSA */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = aj+2;
-            excls[ai].nr++;
-
-            /* 1SG - 2LPSB */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = aj+3;
-            excls[ai].nr++;
-
-            /* 1SG - 2CB */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = aj-4;
-            excls[ai].nr++;
-
-            /* 1SG - 2DCB */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = aj-3;
-            excls[ai].nr++;
-
-            /* 1DSG - 2SG */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj;
-            excls[ai+1].nr++;
-
-            /* 1DSG - 2DSG */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj+1;
-            excls[ai+1].nr++;
-
-            /* 1DSG - 2LPSA */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj+2;
-            excls[ai+1].nr++;
-
-            /* 1DSG - 2LPSB */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj+3;
-            excls[ai+1].nr++;
-
-            /* 1DSG - 2CB */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj-4;
-            excls[ai+1].nr++;
-
-            /* 1DSG - 2DCB */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj-3;
-            excls[ai+1].nr++;
-
-            /* 1CB - 2SG */
-            srenew(excls[ai-4].e, excls[ai-4].nr+1);
-            excls[ai-4].e[excls[ai-4].nr] = aj;
-            excls[ai-4].nr++;
-
-            /* 1CB - 2DSG */
-            srenew(excls[ai-4].e, excls[ai-4].nr+1);
-            excls[ai-4].e[excls[ai-4].nr] = aj+1;
-            excls[ai-4].nr++;
-
-            /* 1CB - 2LPSA */
-            srenew(excls[ai-4].e, excls[ai-4].nr+1);
-            excls[ai-4].e[excls[ai-4].nr] = aj+2;
-            excls[ai-4].nr++;
-
-            /* 1CB - 2LPSB */
-            srenew(excls[ai-4].e, excls[ai-4].nr+1);
-            excls[ai-4].e[excls[ai-4].nr] = aj+3;
-            excls[ai-4].nr++;
-
-            /* 1DCB - 2SG */
-            srenew(excls[ai-3].e, excls[ai-3].nr+1);
-            excls[ai-3].e[excls[ai-3].nr] = aj;
-            excls[ai-3].nr++;
-
-            /* 1DCB - 2DSG */
-            srenew(excls[ai-3].e, excls[ai-3].nr+1);
-            excls[ai-3].e[excls[ai-3].nr] = aj+1;
-            excls[ai-3].nr++;
-
-            /* 1DCB - 2LPSA */
-            srenew(excls[ai-3].e, excls[ai-3].nr+1);
-            excls[ai-3].e[excls[ai-3].nr] = aj+2;
-            excls[ai-3].nr++;
-
-            /* 1DCB - 2LPSB */
-            srenew(excls[ai-3].e, excls[ai-3].nr+1);
-            excls[ai-3].e[excls[ai-3].nr] = aj+3;
-            excls[ai-3].nr++;
-
-            /* 1LPSA - 2LPSA */
-            srenew(excls[ai+2].e, excls[ai+2].nr+1);
-            excls[ai+2].e[excls[ai+2].nr] = aj+2;
-            excls[ai+2].nr++;
-
-            /* 1LPSA - 2LPSB */
-            srenew(excls[ai+2].e, excls[ai+2].nr+1);
-            excls[ai+2].e[excls[ai+2].nr] = aj+3;
-            excls[ai+2].nr++;
-
-            /* 1LPSB - 2LPSA */
-            srenew(excls[ai+3].e, excls[aj+2].nr+1);
-            excls[ai+3].e[excls[ai+3].nr] = aj+2;
-            excls[ai+3].nr++;
-
-            /* 1LPSB - 2LPSB */
-            srenew(excls[ai+3].e, excls[ai+3].nr+1);
-            excls[ai+3].e[excls[ai+3].nr] = aj+3;
-            excls[ai+3].nr++;
-
-            /* 2LPSA - 1SG */
-            srenew(excls[aj+2].e, excls[aj+2].nr+1);
-            excls[aj+2].e[excls[aj+2].nr] = ai;
-            excls[aj+2].nr++;
-
-            /* 2LPSA - 1DSG */
-            srenew(excls[aj+2].e, excls[aj+2].nr+1);
-            excls[aj+2].e[excls[aj+2].nr] = ai+1;
-            excls[aj+2].nr++;
-
-            /* 2LPSA - 1CB */
-            srenew(excls[aj+2].e, excls[aj+2].nr+1);
-            excls[aj+2].e[excls[aj+2].nr] = ai-4;
-            excls[aj+2].nr++;
-
-            /* 2LPSA - 1DCB */
-            srenew(excls[aj+2].e, excls[aj+2].nr+1);
-            excls[aj+2].e[excls[aj+2].nr] = ai-3;
-            excls[aj+2].nr++;
-
-            /* 2LPSB - 1SG */
-            srenew(excls[aj+3].e, excls[aj+3].nr+1);
-            excls[aj+3].e[excls[aj+3].nr] = ai;
-            excls[aj+3].nr++;
-
-            /* 2LPSB - 1DSG */
-            srenew(excls[aj+3].e, excls[aj+3].nr+1);
-            excls[aj+3].e[excls[aj+3].nr] = ai+1;
-            excls[aj+3].nr++;
-
-            /* 2LPSB - 1CB */
-            srenew(excls[aj+3].e, excls[aj+3].nr+1);
-            excls[aj+3].e[excls[aj+3].nr] = ai-4;
-            excls[aj+3].nr++;
-
-            /* 2LPSB - 1DCB */
-            srenew(excls[aj+3].e, excls[aj+3].nr+1);
-            excls[aj+3].e[excls[aj+3].nr] = ai-3;
-            excls[aj+3].nr++;
-        }
-    }
-}
-
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
                       int nssbonds, t_ssbond *ssbonds,
                       gmx_bool bAllowMissing, gmx_bool bDrude)
@@ -1398,14 +1203,6 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
 
             astart = a+1;
         }
-    }
-
-    /* Consider moving, may be unnecessary in light of gen_drude_lp_excl(), which
-     * should cover -S-S- bridges */
-    /* special Drude exclusions in case of disulfides */
-    if (bDrude)
-    {
-        gen_drude_ssbonds_excl(atoms, excls, nssbonds, ssbonds, bAllowMissing);
     }
 
     for (a = 0; a < atoms->nr; a++)
@@ -1739,9 +1536,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     t_rbondeds *hbang, *hbdih;
     char      **anm;
     const char *p;
+    char       *ts;     /* For Thole parameters */
     int         res, minres, maxres;
     int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
-    int         ninc, maxang, maxdih, maxpai;
+    int         ninc, maxang, maxdih, maxpai, maxthole;
     int         nang, ndih, npai, nimproper, nbd;
     int         nthole, naniso, npol, nvsites = 0;
     int         nFound;
@@ -1755,7 +1553,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     npai   = 0;
     ndih   = 0;
     ninc   = 500;
-    maxang = maxdih = maxpai = ninc;
+    maxang = maxdih = maxpai = maxthole = ninc;
     snew(ang, maxang);
     snew(dih, maxdih);
     snew(pai, maxpai);
@@ -1764,17 +1562,14 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     if (bDrude)
     {
         snew(thole, ninc);
+        snew(ts, STRLEN);
         snew(aniso, ninc);
         snew(pol, ninc);
         snew(vsites, ninc);
 
         /* Must be populated here because we need plist to generate pairs.
          * Call a generalized routine here to get bondeds from hackblocks
-         * and add them to plist. */
-        fprintf(stderr, "Generating Thole pairs...");
-        nthole = get_tdb_bonded(atoms, hb, &thole, F_THOLE_POL);
-        fprintf(stderr, "wrote %d pairs.\n", nthole);
-
+         * and add them to plist. Thole will be generated below. */
         fprintf(stderr, "Generating anisotropic polarization...");
         naniso = get_tdb_bonded(atoms, hb, &aniso, F_ANISO_POL);
         fprintf(stderr, "wrote %d entries.\n", naniso);
@@ -1787,7 +1582,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
         nvsites = get_tdb_bonded(atoms, hb, &vsites, F_VSITE3);
         fprintf(stderr, "wrote %d virtual sites.\n", nvsites);
 
-        cppar(thole, nthole, plist, F_THOLE_POL);
         cppar(aniso, naniso, plist, F_ANISO_POL);
         cppar(pol, npol, plist, F_POLARIZATION);
         cppar(vsites, nvsites, plist, F_VSITE3);
@@ -1824,6 +1618,30 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
         {
             /* For all first neighbours */
             j1 = nnb->a[i][1][j];
+
+            /* 1-2 Thole interactions for bonded atoms */
+            if (bDrude)
+            {
+                /* Add Thole pair if we find two polarizable atoms */
+                if ((atoms->atom[i].alpha != 0) && (atoms->atom[j1].alpha != 0))
+                {
+                    if (nthole == maxthole)
+                    {
+                        maxthole += ninc;
+                        srenew(thole, maxthole);
+                    }
+                    thole[nthole].ai() = i;     /* atom */
+                    thole[nthole].aj() = i+1;   /* Drude */
+                    thole[nthole].ak() = j1;    /* atom */
+                    thole[nthole].al() = j1+1;  /* Drude */
+                    thole[nthole].c0() = NOTSET;
+                    thole[nthole].c1() = NOTSET;
+                    sprintf(ts, "%10.6f %10.6f %8.4f %8.4f", atoms->atom[i].alpha, atoms->atom[j1].alpha,
+                            atoms->atom[i].thole, atoms->atom[j1].thole);
+                    set_p_string(&(thole[nthole]), ts);
+                    nthole++;
+                }
+            }
             for (k = 0; (k < nnb->nrexcl[j1][1]); k++)
             {
                 /* For all first neighbours of j1 */
@@ -1844,6 +1662,31 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         ang[nang].c0() = NOTSET;
                         ang[nang].c1() = NOTSET;
                         set_p_string(&(ang[nang]), "");
+
+                        /* 1-3 Thole interactions for atoms in angle */
+                        if (bDrude)
+                        {
+                            /* Add Thole pair if we find two polarizable atoms */
+                            if ((atoms->atom[i].alpha != 0) && (atoms->atom[k1].alpha != 0))
+                            {
+                                if (nthole == maxthole)
+                                {
+                                    maxthole += ninc;
+                                    srenew(thole, maxthole);
+                                }
+                                thole[nthole].ai() = i;     /* atom */
+                                thole[nthole].aj() = i+1;   /* Drude */
+                                thole[nthole].ak() = k1;    /* atom */
+                                thole[nthole].al() = k1+1;  /* Drude */
+                                thole[nthole].c0() = NOTSET;
+                                thole[nthole].c1() = NOTSET;
+                                sprintf(ts, "%10.6f %10.6f %8.4f %8.4f", atoms->atom[i].alpha, atoms->atom[k1].alpha,
+                                        atoms->atom[i].thole, atoms->atom[k1].thole);
+                                set_p_string(&(thole[nthole]), ts);
+                                nthole++;
+                            }
+                        }
+
                         if (hb)
                         {
                             minres = atoms->atom[ang[nang].a[0]].resind;
@@ -2050,6 +1893,15 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                 }
             }
         }
+    }
+
+    /* At this point, the Thole pairs are generated, but this is a convenient
+     * place to put the output */
+    if (bDrude)
+    {
+        fprintf(stderr, "Generating Thole pairs...wrote %d pairs.\n", nthole);
+        /* ...and actually save the parameters */
+        cppar(thole, nthole, plist, F_THOLE_POL);
     }
 
     if (hb)

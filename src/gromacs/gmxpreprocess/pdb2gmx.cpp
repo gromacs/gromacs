@@ -1771,7 +1771,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     restp = NULL;
     for (i = 0; i < nrtpf; i++)
     {
-        read_resall(rtpf[i], &nrtp, &restp, atype, &symtab, FALSE);
+        read_resall(rtpf[i], &nrtp, &restp, atype, &symtab, FALSE, bDrude);
         sfree(rtpf[i]);
     }
     sfree(rtpf);
@@ -1787,8 +1787,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
     nah = read_h_db(ffdir, &ah);
 
     /* Read Termini database... */
-    nNtdb = read_ter_db(ffdir, 'n', &ntdb, atype);
-    nCtdb = read_ter_db(ffdir, 'c', &ctdb, atype);
+    nNtdb = read_ter_db(ffdir, 'n', &ntdb, atype, bDrude);
+    nCtdb = read_ter_db(ffdir, 'c', &ctdb, atype, bDrude);
 
     top_fn   = ftp2fn(efTOP, NFILE, fnm);
     top_file = gmx_fio_fopen(top_fn, "w");

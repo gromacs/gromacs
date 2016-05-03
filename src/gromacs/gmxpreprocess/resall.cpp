@@ -131,11 +131,13 @@ static void print_resatoms(FILE *out, gpp_atomtype_t atype, t_restp *rtp)
 }
 
 static gmx_bool read_atoms(FILE *in, char *line,
-                           t_restp *r0, t_symtab *tab, gpp_atomtype_t atype)
+                           t_restp *r0, t_symtab *tab, gpp_atomtype_t atype,
+                           gmx_bool bDrude)
 {
     int    i, j, cg, maxentries;
     char   buf[256], buf1[256];
     double q;
+    double alpha, thole;
 
     /* Read Atoms */
     maxentries   = 0;
@@ -145,9 +147,30 @@ static gmx_bool read_atoms(FILE *in, char *line,
     i            = 0;
     while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == NULL))
     {
-        if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
+        if (bDrude)
         {
-            return FALSE;
+            /* Polarizable atoms will have 6 entries */
+            if (sscanf(line, "%s%s%lf%d%lf%lf", buf, buf1, &q, &cg, &alpha, &thole) != 6)
+            {
+                /* Non-polarizable (H) and LP will have the normal 4 entries,
+                 * so it's only a problem if we find something else on a line */
+                if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
+                {
+                    return FALSE;
+                }
+                else
+                {
+                    alpha = 0;
+                    thole = 0;
+                }
+            }
+        }
+        else
+        {
+            if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
+            {
+                return FALSE;
+            }
         }
         if (i >= maxentries)
         {
@@ -159,6 +182,11 @@ static gmx_bool read_atoms(FILE *in, char *line,
         r0->atomname[i] = put_symtab(tab, buf);
         r0->atom[i].q   = q;
         r0->cgnr[i]     = cg;
+        if (bDrude)
+        {
+            r0->atom[i].alpha = alpha;
+            r0->atom[i].thole = thole;
+        }
         j               = get_atomtype_type(buf1, atype);
         if (j == NOTSET)
         {
@@ -329,9 +357,10 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
     }
 }
 
+/* TODO: modify for alpha and Thole */
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                  gpp_atomtype_t atype, t_symtab *tab,
-                 gmx_bool bAllowOverrideRTP)
+                 gmx_bool bAllowOverrideRTP, gmx_bool bDrude)
 {
     FILE         *in;
     char          filebase[STRLEN], line[STRLEN], header[STRLEN];
@@ -475,7 +504,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                 else if (gmx_strncasecmp("atoms", header, 5) == 0)
                 {
                     /* header is the atoms directive */
-                    bError = !read_atoms(in, line, &(rrtp[nrtp]), tab, atype);
+                    bError = !read_atoms(in, line, &(rrtp[nrtp]), tab, atype, bDrude);
                 }
                 else
                 {

@@ -71,6 +71,8 @@ typedef struct t_atom
     real           mB, qB;      /* Mass and charge for Free Energy calc */
     unsigned short type;        /* Atom type                            */
     unsigned short typeB;       /* Atom type for Free Energy calc       */
+    real           alpha;       /* polarizability                       */
+    real           thole;       /* Thole screening factor               */
     int            ptype;       /* Particle type                        */
     int            resind;      /* Index into resinfo (in t_atoms)      */
     int            atomnumber;  /* Atomic Number or 0                   */

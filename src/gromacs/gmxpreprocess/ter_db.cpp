@@ -86,20 +86,43 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
 
+/* TODO: adjust function to include Thole and alpha */
 static void read_atom(char *line, gmx_bool bAdd,
-                      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
+                      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr,
+                      gmx_bool bDrude)
 {
     int    nr, i;
-    char   buf[5][30];
+    char   buf[7][30];
     double m, q;
+    double alpha, thole;
 
     /* This code is messy, because of support for different formats:
+     * Additive (non-polarizable):
      * for replace: [new name] <atom type> <m> <q> [cgnr (old format)]
      * for add:                <atom type> <m> <q> [cgnr]
+     * Drude (polarizable):
+     * Old format supported, cgnr will be discarded
+     * for replace: [new name] <atom type> <m> <q> [cgnr (old format)] <alpha> <thole>
+     * for add:                <atom type> <m> <q> [cgnr] <alpha> <thole>
      */
-    nr = sscanf(line, "%s %s %s %s %s", buf[0], buf[1], buf[2], buf[3], buf[4]);
+    if (bDrude)
+    {
+        /* we can have polarizable (7) or non-polarizable (4) lines */
+        nr = sscanf(line, "%s %s %s %s %s %s %s", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
+        if (nr != 7)
+        {
+            /* H, LP (non-polarizable) or we aren't changing alpha and thole */
+            nr = sscanf(line, "%s %s %s %s %s", buf[0], buf[1], buf[2], buf[3], buf[4]);
+            alpha = 0;
+            thole = 0;
+        }
+    }
+    else
+    {
+        nr = sscanf(line, "%s %s %s %s %s", buf[0], buf[1], buf[2], buf[3], buf[4]);
+    }
 
-    /* Here there an ambiguity due to the old replace format with cgnr,
+    /* Here there is an ambiguity due to the old replace format with cgnr,
      * which was read for years, but ignored in the rest of the code.
      * We have to assume that the atom type does not start with a digit
      * to make a line with 4 entries uniquely interpretable.
@@ -109,14 +132,25 @@ static void read_atom(char *line, gmx_bool bAdd,
         nr = 3;
     }
 
-    if (nr < 3 || nr > 4)
+    if (bDrude)
     {
-        gmx_fatal(FARGS, "Reading Termini Database: expected %d or %d items of atom data in stead of %d on line\n%s", 3, 4, nr, line);
+        /* cannot issue fatal error if H, LP, or atom that doesn't change alpha and thole */
+        if (nr < 3 || nr > 7)
+        {
+            gmx_fatal(FARGS, "Reading Termini Database: expected %d or %d items of atom data instead of %d on line\n%s", 4, 7, nr, line);
+        }
+    }
+    else
+    {
+        if (nr < 3 || nr > 4)
+        {
+            gmx_fatal(FARGS, "Reading Termini Database: expected %d or %d items of atom data instead of %d on line\n%s", 3, 4, nr, line);
+        }
     }
     i = 0;
     if (!bAdd)
     {
-        if (nr == 4)
+        if (nr >= 4)
         {
             *nname = gmx_strdup(buf[i++]);
         }
@@ -130,13 +164,26 @@ static void read_atom(char *line, gmx_bool bAdd,
     a->m = m;
     sscanf(buf[i++], "%lf", &q);
     a->q = q;
-    if (bAdd && nr == 4)
+    if (bAdd && nr >= 4)
     {
         sscanf(buf[i++], "%d", cgnr);
     }
     else
     {
         *cgnr = NOTSET;
+    }
+    /* only read alpha and thole if it's a polarizable atom */
+    if (bDrude && nr > 4)
+    {
+        if (!bAdd)
+        {
+            sscanf(buf[i++], "%d", cgnr);   /* we don't need this */
+            *cgnr = NOTSET;                 /* so throw it away */
+        }
+        sscanf(buf[i++], "%lf", &alpha);
+        a->alpha = alpha;
+        sscanf(buf[i++], "%lf", &thole);
+        a->thole = thole;
     }
 }
 
@@ -244,7 +291,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
 
 static void read_ter_db_file(char *fn,
                              int *ntbptr, t_hackblock **tbptr,
-                             gpp_atomtype_t atype)
+                             gpp_atomtype_t atype, gmx_bool bDrude)
 {
     char         filebase[STRLEN], *ptr;
     FILE        *in;
@@ -344,9 +391,10 @@ static void read_ter_db_file(char *fn,
                 if (kwnr == ekwRepl || kwnr == ekwAdd)
                 {
                     snew(tb[nb].hack[nh].atom, 1);
+                    /* TODO: modify function and this line to read Thole and alpha */
                     read_atom(line+n, kwnr == ekwAdd,
                               &tb[nb].hack[nh].nname, tb[nb].hack[nh].atom, atype,
-                              &tb[nb].hack[nh].cgnr);
+                              &tb[nb].hack[nh].cgnr, bDrude);
                     if (tb[nb].hack[nh].nname == NULL)
                     {
                         if (tb[nb].hack[nh].oname != NULL)
@@ -408,7 +456,8 @@ static void read_ter_db_file(char *fn,
 }
 
 int read_ter_db(const char *ffdir, char ter,
-                t_hackblock **tbptr, gpp_atomtype_t atype)
+                t_hackblock **tbptr, gpp_atomtype_t atype,
+                gmx_bool bDrude)
 {
     char   ext[STRLEN];
     int    ntdbf, f;
@@ -425,7 +474,7 @@ int read_ter_db(const char *ffdir, char ter,
     *tbptr = NULL;
     for (f = 0; f < ntdbf; f++)
     {
-        read_ter_db_file(tdbf[f], &ntb, tbptr, atype);
+        read_ter_db_file(tdbf[f], &ntb, tbptr, atype, bDrude);
         sfree(tdbf[f]);
     }
     sfree(tdbf);

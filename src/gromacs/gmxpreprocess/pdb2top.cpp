@@ -471,7 +471,8 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr,
-                     t_restp restp[], gmx_residuetype_t *rt)
+                     t_restp restp[], gmx_residuetype_t *rt,
+                     gmx_bool bDrude)
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
@@ -521,6 +522,11 @@ static int name2type(t_atoms *at, int **cgnr,
             at->atom[i].type = restp[resind].atom[j].type;
             at->atom[i].q    = restp[resind].atom[j].q;
             at->atom[i].m    = restp[resind].atom[j].m;
+            if (bDrude)
+            {
+                at->atom[i].alpha = restp[resind].atom[j].alpha;
+                at->atom[i].thole = restp[resind].atom[j].thole;
+            }
             cg               = restp[resind].cgnr[j];
             /* A charge group number -1 signals a separate charge group
              * for this atom.
@@ -767,7 +773,7 @@ void write_top(FILE *out, char *pr, char *molname,
 }
 
 
-/* adds vsite, aniso, and exclusion parameters to topology after
+/* adds vsite construction parameters to topology after
  * special bonds have been made */
 static void add_drude_lp_ssbonds(t_params *psv, int ai, int aj)
 {
@@ -776,6 +782,7 @@ static void add_drude_lp_ssbonds(t_params *psv, int ai, int aj)
     char ss_lpa[] = "4   -0.135847248   -0.131015228   -2.467798394";
     char ss_lpb[] = "4   -0.135847248   -0.131015228    2.467798394";
 
+    /* TODO: this is ugly and makes assumptions about atom order! */
     /* add vsite parameters for both sulfurs - two LP added to each */
     add_vsite3_rtp_param(psv, ai+2, ai, ai-4, aj, ss_lpa);
     add_vsite3_rtp_param(psv, ai+3, ai, ai-4, aj, ss_lpb);
@@ -788,46 +795,45 @@ static void add_drude_ssbonds_thole(t_atoms *atoms, int nssbonds, t_ssbond *ssbo
                                     t_params *ps, gmx_bool bAllowMissing) 
 {
 
-    fprintf(stderr, "Generating Thole interactions for disulfides...\n");
+    fprintf(stderr, "Generating Thole screening for disulfides...\n");
 
     int             i, ri, rj;
-    int             ai, aj;
+    int             sg1, sg2, cb1, cb2;
     char            buf[STRLEN];
-    enum            { etSG, etCB };
-    const real      alpha[] = { 0.001888, 0.002686 };
-    const real      tfac[] = { 1.082, 1.067 };
 
     /* loop over all special bonds to add Thole screening to these */ 
     for (i = 0; (i < nssbonds); i++)
     {
-        ri = ssbonds[i].res1;
-        rj = ssbonds[i].res2;
-        ai = search_res_atom(ssbonds[i].a1, ri, atoms,
-                             "check", bAllowMissing);
-        aj = search_res_atom(ssbonds[i].a2, rj, atoms,
-                             "check", bAllowMissing);
-        if ((ai == -1) || (aj == -1))
+        ri  = ssbonds[i].res1;
+        rj  = ssbonds[i].res2;
+        sg1 = search_res_atom(ssbonds[i].a1, ri, atoms, "check", bAllowMissing);
+        sg2 = search_res_atom(ssbonds[i].a2, rj, atoms, "check", bAllowMissing);
+        cb1 = search_res_atom("CB", ri, atoms, "check", bAllowMissing);
+        cb2 = search_res_atom("CB", rj, atoms, "check", bAllowMissing);
+
+        if ((sg1 == -1) || (sg2 == -1) || (cb1 == -1) || (cb2 == -1))
         {
             gmx_fatal(FARGS, "Trying to make impossible Thole interaction (%s-%s)!",
                       ssbonds[i].a1, ssbonds[i].a2);
         }
 
-        /* only do this for disulfides */
-        if ((strncmp(*(atoms->atomname[ai]),"SG",2)==0) &&
-            (strncmp(*(atoms->atomname[aj]),"SG",2)==0))
-        {
-            /* 1SG - 2SG and Drudes */
-            sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", alpha[etSG], alpha[etSG], tfac[etSG], tfac[etSG]);
-            add_thole_param(ps, ai, ai+1, aj, aj+1, buf);
+        /* 1SG - 2SG and Drudes */
+        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f",
+                atoms->atom[sg1].alpha, atoms->atom[sg2].alpha,
+                atoms->atom[sg1].thole, atoms->atom[sg2].thole);
+        add_thole_param(ps, sg1, sg1+1, sg2, sg2+1, buf);
 
-            /* 1SG - 2CB and Drudes */
-            sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", alpha[etSG], alpha[etCB], tfac[etSG], tfac[etCB]);
-            add_thole_param(ps, ai, ai+1, aj-4, aj-3, buf);
+        /* 1SG - 2CB and Drudes */
+        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f",
+                atoms->atom[sg1].alpha, atoms->atom[cb2].alpha,
+                atoms->atom[sg1].thole, atoms->atom[cb2].thole);
+        add_thole_param(ps, sg1, sg1+1, cb2, cb2+1, buf);
 
-            /* 1CB - 2SG and Drudes */
-            sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", alpha[etCB], alpha[etSG], tfac[etCB], tfac[etSG]);
-            add_thole_param(ps, ai-4, ai-3, aj, aj+1, buf);
-        }
+        /* 1CB - 2SG and Drudes */
+        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f",
+                atoms->atom[cb1].alpha, atoms->atom[sg2].alpha,
+                atoms->atom[cb1].thole, atoms->atom[sg2].thole);
+        add_thole_param(ps, cb1, cb1+1, sg2, sg2+1, buf);
     }
 }
 
@@ -2170,7 +2176,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
                atoms, nssbonds, ssbonds,
                bAllowMissing, bDrude);
 
-    nmissat = name2type(atoms, &cgnr, restp, rt);
+    nmissat = name2type(atoms, &cgnr, restp, rt, bDrude);
     if (nmissat)
     {
         if (bAllowMissing)
@@ -2206,7 +2212,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* With Drude, we also set up Thole, anisotropy, etc. */
     if (bDrude)
     {
-        fprintf(stderr, "Generating polarization, lone pairs, and Thole screening...\n");
+        /* Done within gen_pad() below based on bonded structure and t_atoms */
+        fprintf(stderr, "Generating Drude exclusions, lone pairs, and Thole screening...\n");
     }
     snew(excls, atoms->nr);
     init_nnb(&nnb, atoms->nr, 4);
@@ -2219,16 +2226,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         /* add exclusions for Drudes and LP */
         fprintf(stderr, "Generating Drude and lone pair exclusions...\n");
         construct_drude_lp_excl(&nnb, plist, atoms, excls);
-        /* special case of disulfide Thole screening factors */
-        if (nssbonds > 0)
-        {
-            add_drude_ssbonds_thole(atoms, nssbonds, ssbonds, &(plist[F_THOLE_POL]), bAllowMissing);
-        }
-        /* Duplicates can happen when merging tdb and rtp, so since the
-         * tdb are read and stored first, their terminus-specific values
-         * will override what is stored in the rtp */
-        fprintf(stderr, "Cleaning up merged Thole screening factors...\n");
-        clean_tholes(&(plist[F_THOLE_POL]), atoms);
     }
 
     done_nnb(&nnb);
