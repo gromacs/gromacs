@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -958,11 +958,11 @@ int gmx_order(int argc, char *argv[])
     t_filenm      fnm[] = {                           /* files for g_order    */
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
-        { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
+        { efNDX, "-nr", NULL,  ffOPTRD },             /* index for radial axis calculation */
         { efTPR, NULL, NULL,  ffREAD },               /* topology file                */
         { efXVG, "-o", "order", ffWRITE },            /* xvgr output file     */
         { efXVG, "-od", "deuter", ffWRITE },          /* xvgr output file           */
-        { efPDB, "-ob", NULL, ffWRITE },              /* write Scd as B factors to PDB if permolecule           */
+        { efPDB, "-ob", NULL, ffOPTWR },              /* write Scd as B factors to PDB if permolecule           */
         { efXVG, "-os", "sliced", ffWRITE },          /* xvgr output file           */
         { efXVG, "-Sg", "sg-ang", ffOPTWR },          /* xvgr output file           */
         { efXVG, "-Sk", "sk-dist", ffOPTWR },         /* xvgr output file           */
