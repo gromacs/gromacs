@@ -66,6 +66,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/sts.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -414,8 +415,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 }
 
                 nthreads = fr->nthread_ewc;
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-                for (t = 0; t < nthreads; t++)
+//#pragma omp parallel for num_threads(nthreads) schedule(static)
+                parallel_for("corr", 0, nthreads, [&](int t)
+                //for (t = 0; t < nthreads; t++)
                 {
                     try
                     {
@@ -466,7 +468,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                            dvdlt_q, dvdlt_lj);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 if (nthreads > 1)
                 {
                     reduce_thread_energies(fr->vir_el_recip, fr->vir_lj_recip,
