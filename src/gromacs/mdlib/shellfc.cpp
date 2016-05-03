@@ -964,7 +964,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * down according to the Drude temperature set in the .mdp file
  */
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,
-                          t_state *state, tensor force_vir)
+                          t_state *state, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose)
 {
 
     int     i, j, m, n;
@@ -995,6 +995,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     int         flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions subject to hardwall constraint */
     int         nrlocal = 2;        /* size of flocal[] array */
     int         nral;
+
+    char    buf[22];
 
     snew(pbc, 1);
     set_pbc(pbc, ir->ePBC, state->box);
@@ -1104,9 +1106,12 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
             {
                 rab = sqrt(rab2);
 
-                if (debug)
+                /* allow diagnostic info to be printed to stderr instead of debug
+                 * log file, which is very slow and cumbersome */
+                if (bVerbose)
                 {
-                    fprintf(debug, "HARDWALL: Imposing constraint on atom %d rab2 = %f\n", (ib+1), rab2);
+                    fprintf(stderr, "HARDWALL: step %s - imposing constraint on atom %d rab = %f\n",
+                            gmx_step_str(step,buf), DOMAINDECOMP(cr) ? ddglatnr(cr->dd, ib):(ib+1), rab);
                 }
 
                 /* Make sure nothing catastrophic is going on */
