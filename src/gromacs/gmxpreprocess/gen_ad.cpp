@@ -1140,7 +1140,6 @@ void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_
 }
 
 static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
-                      int nssbonds, t_ssbond *ssbonds,
                       gmx_bool bAllowMissing, gmx_bool bDrude)
 {
 
@@ -1558,15 +1557,14 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     snew(dih, maxdih);
     snew(pai, maxpai);
 
-    /* only allocate memory for these structures if needed */
+    snew(thole, ninc);
+    snew(ts, STRLEN);
+    snew(aniso, ninc);
+    snew(pol, ninc);
+    snew(vsites, ninc);
+
     if (bDrude)
     {
-        snew(thole, ninc);
-        snew(ts, STRLEN);
-        snew(aniso, ninc);
-        snew(pol, ninc);
-        snew(vsites, ninc);
-
         /* Must be populated here because we need plist to generate pairs.
          * Call a generalized routine here to get bondeds from hackblocks
          * and add them to plist. Thole will be generated below. */
@@ -1595,7 +1593,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 
     if (hb)
     {
-        gen_excls(atoms, excls, hb, nssbonds, ssbonds, bAllowMissing, bDrude);
+        gen_excls(atoms, excls, hb, bAllowMissing, bDrude);
         /* mark all entries as not matched yet */
         for (i = 0; i < atoms->nres; i++)
         {
