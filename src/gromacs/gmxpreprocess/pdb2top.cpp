@@ -85,32 +85,6 @@ static gmx_bool is_lp(t_atoms *atoms, int ai)
     return ((*(atoms->atomname[ai]))[0] == 'L');
 }
 
-static gmx_bool is_cbeta(t_atoms *atoms, int ai)
-{
-    return (((*(atoms->atomname[ai]))[0] == 'C') && ((*(atoms->atomname[ai]))[1] == 'B'));
-}
-
-static gmx_bool is_cbeta_drude(t_atoms *atoms, int ai)
-{
-    return (((*(atoms->atomname[ai]))[0] == 'D') && ((*(atoms->atomname[ai]))[1] == 'C') &&
-            ((*(atoms->atomname[ai]))[2] == 'B'));
-}
-
-static gmx_bool is_n(t_atoms *atoms, int ai)
-{
-    return ((*(atoms->atomname[ai]))[0] == 'N');
-}
-
-static gmx_bool is_pro(t_atoms *atoms, int ai)
-{
-    gmx_bool    bPro = FALSE;
-    if (strcmp(*(atoms->resinfo[atoms->atom[ai].resind].name), "PRO") == 0)
-    {
-        bPro = TRUE;
-    }
-    return bPro;
-}
-
 static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
@@ -1092,14 +1066,14 @@ static void clean_bonds(t_params *ps)
 }
 
 /* Clean up merged thole factors, since they can be changed in the .tdb file.
- * This function is similar to clean_bonds, but we need to retain 
- * the second instance of a Thole factor and an alpha, so rather than
- * make clean_bonds more convoluted, there's a new function to handle all that. */
-static void clean_tholes(t_params *ps, t_atoms *atoms)
+ * This function is similar to other clean_* functions. It actually doesn't
+ * matter which entry we keep, since the current approach for changing
+ * terminus-specific alpha and Thole removes any conflicts. */
+static void clean_tholes(t_params *ps)
 {
     int     i, j, k;
     int     start;
-    real    alphai[2], alphaj[2], ai[2], aj[2];  /* tmp values for sscanf */
+    real    alphai, alphaj, ai, aj;  /* tmp values for sscanf */
     char    buf[STRLEN];
     int     tmp1, tmp2;
 
@@ -1122,8 +1096,8 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
                 ps->param[i].a[2] = tmp1;
                 ps->param[i].a[3] = tmp2;
                 /* swap alphas and Tholes */
-                sscanf(ps->param[i].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", aj[0], ai[0], alphaj[0], alphai[0]);
+                sscanf(ps->param[i].s, "%f %f %f %f", &ai, &aj, &alphai, &alphaj);
+                sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", aj, ai, alphaj, alphai);
                 set_p_string(&(ps->param[i]), buf); 
             }
         }
@@ -1131,7 +1105,8 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
         /* sort */
         qsort(ps->param, ps->nr, (size_t)sizeof(ps->param[0]), tcomp);
 
-        /* Remove doubles, but here keep the second instance of a parameter if it is duplicated */
+        /* Remove doubles, but here keep the second instance of a parameter if it is duplicated,
+         * but really it doesn't matter */
         j = 0;
 
         for (i = 1; (i < ps->nr); i++)
@@ -1140,59 +1115,6 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
             if ((ps->param[i].a[0] == ps->param[j].a[0]) &&
                 (ps->param[i].a[2] == ps->param[j].a[2]))
             {
-                /* Check to see if either of the atoms is a CB */
-                /* We need this because CB Thole and alpha values vary based on the nature of
-                 * of the residue, but only a single value can be used in the .tdb,
-                 * so here we preserve whatever value is in the rtp (index j)
-                 * by copying it to ps->param[i].s before param[i] is copied into param[j].
-                 * We only need to check one set, because we've already determined that
-                 * they're the same! */
-                if (is_cbeta(atoms, ps->param[i].a[0]) || is_cbeta_drude(atoms, ps->param[i].a[1]))
-                {
-                    /* here, ai[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    /* only change value if we need to */
-                    if (ai[0] != ai[1])
-                    {
-                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
-                        set_p_string(&(ps->param[i]), buf);
-                    }
-                }
-                else if (is_cbeta(atoms, ps->param[i].a[2]) || is_cbeta_drude(atoms, ps->param[i].a[3]))
-                {
-                    /* here, aj[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    if (aj[0] != aj[1])
-                    {
-                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
-                        set_p_string(&(ps->param[i]), buf);
-                    }
-                }
-                /* need special condition for PRO since it has unique alpha/Thole for amide N */
-                if ((is_n(atoms, ps->param[i].a[0])) && (is_pro(atoms, ps->param[i].a[0])))
-                {
-                    /* here, ai[0] (proline-specific) is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    if (ai[0] != ai[1])
-                    {
-                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
-                        set_p_string(&(ps->param[i]), buf);
-                    }
-                }
-                else if ((is_n(atoms, ps->param[i].a[2])) && (is_pro(atoms, ps->param[i].a[2])))
-                {
-                    /* here, aj[1] (proline-specific) is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    if (aj[0] != aj[1])
-                    {
-                        sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[1], alphai[1], alphaj[1]);
-                        set_p_string(&(ps->param[i]), buf);
-                    }
-                }
                 /* copy params and shift the list */
                 if (j != i)
                 {
@@ -1209,44 +1131,12 @@ static void clean_tholes(t_params *ps, t_atoms *atoms)
                      (ps->param[i].a[2] != ps->param[j].a[2]))
             {
                 j++;
-                if (is_cbeta(atoms, ps->param[i].a[0]))
-                {
-                    /* here, ai[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
-                    set_p_string(&(ps->param[i]), buf);
-                }
-                else if (is_cbeta(atoms, ps->param[i].a[2]))
-                {
-                    /* here, aj[0] is the value to keep */
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
-                    set_p_string(&(ps->param[i]), buf);
-                }
-                /* as above */
-                if ((is_n(atoms, ps->param[i].a[0])) && (is_pro(atoms, ps->param[i].a[0])))
-                {
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[0], aj[1], alphai[0], alphaj[1]);
-                    set_p_string(&(ps->param[i]), buf);
-                }
-                else if ((is_n(atoms, ps->param[i].a[2])) && (is_pro(atoms, ps->param[i].a[2])))
-                {
-                    sscanf(ps->param[j].s, "%f %f %f %f", &(ai[0]), &(aj[0]), &(alphai[0]), &(alphaj[0]));
-                    sscanf(ps->param[i].s, "%f %f %f %f", &(ai[1]), &(aj[1]), &(alphai[1]), &(alphaj[1]));
-                    sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", ai[1], aj[0], alphai[1], alphaj[0]);
-                    set_p_string(&(ps->param[i]), buf);
-                }
                 if (j != i)
                 {
                     cp_param(&(ps->param[j]), &(ps->param[i]));
                 }
             }
         }
-
         fprintf(stderr, "Number of Thole quadruplets was %d, now %d\n", start, ps->nr);
     }
     else
@@ -2226,6 +2116,10 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         /* add exclusions for Drudes and LP */
         fprintf(stderr, "Generating Drude and lone pair exclusions...\n");
         construct_drude_lp_excl(&nnb, plist, atoms, excls);
+        /* Duplicates occur when combining tdb and rtp, but now contents
+         * are identical, so cleanup is easier */
+        fprintf(stderr, "Cleaning up merged Thole screening factors...\n");
+        clean_tholes(&(plist[F_THOLE_POL]));
     }
 
     done_nnb(&nnb);
