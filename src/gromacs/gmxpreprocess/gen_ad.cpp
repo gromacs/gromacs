@@ -1632,6 +1632,13 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                     thole[nthole].aj() = i+1;   /* Drude */
                     thole[nthole].ak() = j1;    /* atom */
                     thole[nthole].al() = j1+1;  /* Drude */
+                    /* protect against weirdness: if a Drude is not at i+1 or j1+1
+                     * but we've somehow detected a polarizable atom, there's a problem */
+                    if (!is_d(atoms, i+1) || !is_d(atoms, j1+1))
+                    {
+                        gmx_fatal(FARGS, "Non-Drude found in Thole: %d-%d-%d-%d\n",
+                                    i,i+1,j1,j1+1);
+                    }
                     thole[nthole].c0() = NOTSET;
                     thole[nthole].c1() = NOTSET;
                     sprintf(ts, "%10.6f %10.6f %8.4f %8.4f", atoms->atom[i].alpha, atoms->atom[j1].alpha,
@@ -1676,6 +1683,12 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 thole[nthole].aj() = i+1;   /* Drude */
                                 thole[nthole].ak() = k1;    /* atom */
                                 thole[nthole].al() = k1+1;  /* Drude */
+                                /* as above */
+                                if (!is_d(atoms, i+1) || !is_d(atoms, k1+1))
+                                {
+                                    gmx_fatal(FARGS, "Non-Drude found in Thole: %d-%d-%d-%d\n",
+                                                i,i+1,k1,k1+1);
+                                }
                                 thole[nthole].c0() = NOTSET;
                                 thole[nthole].c1() = NOTSET;
                                 sprintf(ts, "%10.6f %10.6f %8.4f %8.4f", atoms->atom[i].alpha, atoms->atom[k1].alpha,
