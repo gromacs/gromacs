@@ -46,8 +46,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
+import datetime
 import os
+import sys
 
 execfile('conf-vars.py')
 sys.path.append(gmx_sphinx_extension_path)
@@ -86,7 +87,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GROMACS'
-copyright = u'2015, GROMACS development team'
+copyright = str(datetime.datetime.now().year) + u', GROMACS development team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -175,7 +176,7 @@ rst_epilog += """
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = gmx_sphinx_theme
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
