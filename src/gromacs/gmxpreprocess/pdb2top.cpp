@@ -1097,7 +1097,7 @@ static void clean_tholes(t_params *ps)
                 ps->param[i].a[3] = tmp2;
                 /* swap alphas and Tholes */
                 sscanf(ps->param[i].s, "%f %f %f %f", &ai, &aj, &alphai, &alphaj);
-                sprintf(buf, "%10.6f %10.6f %10.4f %10.4f", aj, ai, alphaj, alphai);
+                sprintf(buf, "%10.6f %10.6f %8.4f %8.4f", aj, ai, alphaj, alphai);
                 set_p_string(&(ps->param[i]), buf); 
             }
         }
@@ -2116,6 +2116,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         /* add exclusions for Drudes and LP */
         fprintf(stderr, "Generating Drude and lone pair exclusions...\n");
         construct_drude_lp_excl(&nnb, plist, atoms, excls);
+
         /* Duplicates occur when combining tdb and rtp, but now contents
          * are identical, so cleanup is easier */
         fprintf(stderr, "Cleaning up merged Thole screening factors...\n");
