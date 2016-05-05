@@ -1100,24 +1100,24 @@ static void calc_fluctuation_props(FILE *fp,
         }
         if (kappa != NOTSET)
         {
-            fprintf(fp, "Isothermal Compressibility Kappa         = %10g (J/m^3)\n",
+            fprintf(fp, "Isothermal Compressibility Kappa         = %10g (m^3/J)\n",
                     kappa);
-            fprintf(fp, "Adiabatic bulk modulus                   = %10g (m^3/J)\n",
+            fprintf(fp, "Adiabatic bulk modulus                   = %10g (J/m^3)\n",
                     1.0/kappa);
         }
         if (cp != NOTSET)
         {
-            fprintf(fp, "Heat capacity at constant pressure Cp    = %10g J/mol K\n",
+            fprintf(fp, "Heat capacity at constant pressure Cp    = %10g J/(mol K)\n",
                     cp);
         }
         if (cv != NOTSET)
         {
-            fprintf(fp, "Heat capacity at constant volume Cv      = %10g J/mol K\n",
+            fprintf(fp, "Heat capacity at constant volume Cv      = %10g J/(mol K)\n",
                     cv);
         }
         if (dcp != NOTSET)
         {
-            fprintf(fp, "Cp-Cv                                    =  %10g J/mol K\n",
+            fprintf(fp, "Cp-Cv                                    =  %10g J/(mol K)\n",
                     dcp);
         }
         please_cite(fp, "Allen1987a");
