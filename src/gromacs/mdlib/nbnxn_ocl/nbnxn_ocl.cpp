@@ -760,7 +760,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
         if (bCalcFshift)
         {
             ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0,
-                               SHIFTS * adat->fshift_elem_size, stream, bDoTime ? &(t->nb_d2h_fshift[iloc]) : NULL);
+                               NBNXN_NSHIFT * adat->fshift_elem_size, stream, bDoTime ? &(t->nb_d2h_fshift[iloc]) : NULL);
         }
 
         /* DtoH energies */
@@ -882,7 +882,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
 
         if (bCalcFshift)
         {
-            for (i = 0; i < SHIFTS; i++)
+            for (i = 0; i < NBNXN_NSHIFT; i++)
             {
                 fshift[i][0] += (nbst.fshift)[i][0];
                 fshift[i][1] += (nbst.fshift)[i][1];

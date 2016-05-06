@@ -561,7 +561,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
         if (bCalcFshift)
         {
             cu_copy_D2H_async(nb->nbst.fshift, adat->fshift,
-                              SHIFTS * sizeof(*nb->nbst.fshift), stream);
+                              NBNXN_NSHIFT * sizeof(*nb->nbst.fshift), stream);
         }
 
         /* DtoH energies */
@@ -679,7 +679,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
 
         if (bCalcFshift)
         {
-            for (int i = 0; i < SHIFTS; i++)
+            for (int i = 0; i < NBNXN_NSHIFT; i++)
             {
                 fshift[i][0] += nbst.fshift[i].x;
                 fshift[i][1] += nbst.fshift[i].y;

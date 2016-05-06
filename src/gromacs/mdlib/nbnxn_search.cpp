@@ -924,7 +924,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
                                            const nbnxn_search_t nbs, real rl)
 {
     const nbnxn_grid_t *grid;
-    int                 cs[SHIFTS];
+    int                 cs[NBNXN_NSHIFT];
     int                 npexcl;
 
     /* This code only produces correct statistics with domain decomposition */
@@ -940,7 +940,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
     fprintf(fp, "nbl average j cell list length %.1f\n",
             0.25*nbl->ncj/(double)std::max(nbl->nci, 1));
 
-    for (int s = 0; s < SHIFTS; s++)
+    for (int s = 0; s < NBNXN_NSHIFT; s++)
     {
         cs[s] = 0;
     }
@@ -960,7 +960,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
     }
     fprintf(fp, "nbl cell pairs, total: %d excl: %d %.1f%%\n",
             nbl->ncj, npexcl, 100*npexcl/(double)std::max(nbl->ncj, 1));
-    for (int s = 0; s < SHIFTS; s++)
+    for (int s = 0; s < NBNXN_NSHIFT; s++)
     {
         if (cs[s] > 0)
         {
@@ -3417,6 +3417,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     {
                         continue;
                     }
+
+                    GMX_ASSERT(shift < NBNXN_NSHIFT, "For reduction optimization, we only sum over shift indices smaller than NBNXN_NSHIFT.");
 
                     shx = tx*box[XX][XX] + ty*box[YY][XX] + tz*box[ZZ][XX];
 

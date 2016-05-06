@@ -92,7 +92,7 @@ clear_fshift(real *fshift)
 {
     int i;
 
-    for (i = 0; i < SHIFTS*DIM; i++)
+    for (i = 0; i < NBNXN_NSHIFT*DIM; i++)
     {
         fshift[i] = 0;
     }

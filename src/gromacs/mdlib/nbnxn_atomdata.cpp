@@ -158,7 +158,7 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
                                        nbnxn_alloc_t *ma)
 {
     out->f = NULL;
-    ma((void **)&out->fshift, SHIFTS*DIM*sizeof(*out->fshift));
+    ma((void **)&out->fshift, NBNXN_NSHIFT*DIM*sizeof(*out->fshift));
     out->nV = nenergrp*nenergrp;
     ma((void **)&out->Vvdw, out->nV*sizeof(*out->Vvdw));
     ma((void **)&out->Vc, out->nV*sizeof(*out->Vc  ));
@@ -778,7 +778,7 @@ void nbnxn_atomdata_init(FILE *fp,
         nbat->neg_2log++;
     }
     nbat->energrp = NULL;
-    nbat->alloc((void **)&nbat->shift_vec, SHIFTS*sizeof(*nbat->shift_vec));
+    nbat->alloc((void **)&nbat->shift_vec, NBNXN_NSHIFT*sizeof(*nbat->shift_vec));
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->x       = NULL;
@@ -1125,10 +1125,8 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool          bDynamicBox,
                                   rvec             *shift_vec,
                                   nbnxn_atomdata_t *nbat)
 {
-    int i;
-
     nbat->bDynamicBox = bDynamicBox;
-    for (i = 0; i < SHIFTS; i++)
+    for (int i = 0; i < NBNXN_NSHIFT; i++)
     {
         copy_rvec(shift_vec[i], nbat->shift_vec[i]);
     }
@@ -1664,7 +1662,7 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
 {
     const nbnxn_atomdata_output_t * out = nbat->out;
 
-    for (int s = 0; s < SHIFTS; s++)
+    for (int s = 0; s < NBNXN_NSHIFT; s++)
     {
         rvec sum;
         clear_rvec(sum);

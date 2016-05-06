@@ -100,6 +100,11 @@ typedef struct {
     unsigned int excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
 
+/* We only shift backward when making the pairlist, so we only use shifts
+ * up to and including CENTRAL. We use this to reduce the reduction cost.
+ */
+#define NBNXN_NSHIFT            (CENTRAL + 1)
+
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
  * The upper bits contain information for non-bonded kernel optimization.
  * Simply calculating LJ and Coulomb for all pairs in a cluster pair is fine.
@@ -200,7 +205,7 @@ enum {
 
 typedef struct {
     real *f;      /* f, size natoms*fstride                             */
-    real *fshift; /* Shift force array, size SHIFTS*DIM                 */
+    real *fshift; /* Shift force array, size NBNXN_NSHIFT*DIM           */
     int   nV;     /* The size of *Vvdw and *Vc                          */
     real *Vvdw;   /* Temporary Van der Waals group energy storage       */
     real *Vc;     /* Temporary Coulomb group energy storage             */

@@ -252,7 +252,7 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
     ad->shift_vec_elem_size = sizeof(*(((nbnxn_atomdata_t*)0)->shift_vec));
 
     // TODO: handle errors, check clCreateBuffer flags
-    ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, NULL, &cl_error);
+    ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, NBNXN_NSHIFT * ad->shift_vec_elem_size, NULL, &cl_error);
     assert(cl_error == CL_SUCCESS);
     ad->bShiftVecUploaded = false;
 
@@ -260,7 +260,7 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
        of the host side fshift buffer. */
     ad->fshift_elem_size = sizeof(*(((cl_nb_staging_t*)0)->fshift));
 
-    ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->fshift_elem_size, NULL, &cl_error);
+    ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, NBNXN_NSHIFT * ad->fshift_elem_size, NULL, &cl_error);
     assert(cl_error == CL_SUCCESS);
     // TODO: handle errors, check clCreateBuffer flags
 
@@ -634,7 +634,7 @@ nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     size_t               local_work_size[3]   = {1, 1, 1};
     size_t               global_work_size[3]  = {1, 1, 1};
 
-    cl_int               shifts   = SHIFTS*3;
+    cl_int               shifts   = NBNXN_NSHIFT*3;
 
     cl_int               arg_no;
 
@@ -732,7 +732,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     /* init nbst */
     ocl_pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
     ocl_pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    ocl_pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    ocl_pmalloc((void**)&nb->nbst.fshift, NBNXN_NSHIFT * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
 
@@ -917,7 +917,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_ocl_t        *nb,
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
         ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 0,
-                           SHIFTS * adat->shift_vec_elem_size, ls, NULL);
+                           NBNXN_NSHIFT * adat->shift_vec_elem_size, ls, NULL);
         adat->bShiftVecUploaded = true;
     }
 }

@@ -216,11 +216,11 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     cudaError_t stat;
 
     ad->ntypes  = ntypes;
-    stat        = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
+    stat        = cudaMalloc((void**)&ad->shift_vec, NBNXN_NSHIFT*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
     ad->bShiftVecUploaded = false;
 
-    stat = cudaMalloc((void**)&ad->fshift, SHIFTS*sizeof(*ad->fshift));
+    stat = cudaMalloc((void**)&ad->fshift, NBNXN_NSHIFT*sizeof(*ad->fshift));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
 
     stat = cudaMalloc((void**)&ad->e_lj, sizeof(*ad->e_lj));
@@ -611,7 +611,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     /* init nbst */
     pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
     pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    pmalloc((void**)&nb->nbst.fshift, NBNXN_NSHIFT * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
 
@@ -745,7 +745,7 @@ void nbnxn_gpu_upload_shiftvec(gmx_nbnxn_cuda_t       *nb,
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
         cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec,
-                          SHIFTS * sizeof(*adat->shift_vec), ls);
+                          NBNXN_NSHIFT * sizeof(*adat->shift_vec), ls);
         adat->bShiftVecUploaded = true;
     }
 }
@@ -768,7 +768,7 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb)
     cu_atomdata_t *adat  = nb->atdat;
     cudaStream_t   ls    = nb->stream[eintLocal];
 
-    stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
+    stat = cudaMemsetAsync(adat->fshift, 0, NBNXN_NSHIFT * sizeof(*adat->fshift), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
     stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
