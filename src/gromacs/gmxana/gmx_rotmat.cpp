@@ -118,7 +118,8 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     snew(srmsd, nfr);
     for (i = 0; i < nfr; i++)
     {
-        printf("\rProcessing frame %d of %d", i, nfr);
+        fprintf(stdout, "\rProcessing frame %d of %d", i, nfr);
+        fflush(stdout);
         for (j = i+1; j < nfr; j++)
         {
             calc_fit_R(nfitdim, gnx, w_rls, xi[i], xi[j], R);

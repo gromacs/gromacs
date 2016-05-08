@@ -267,6 +267,8 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * dist(rng)-1);
         }
         fprintf(stderr, "\rTry %d", ++trial);
+        fflush(stderr);
+
         generate_trial_conf(x_insrt, offset_x, enum_rot, &rng, &x_n);
         gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);

@@ -965,6 +965,8 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         {
             fprintf(stderr, "\rLast energy frame read %d time %8.3f         ",
                     ef->framenr-1, ef->frametime);
+            fflush(stderr);
+
             if (!bOK)
             {
                 fprintf(stderr,

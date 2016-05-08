@@ -620,6 +620,7 @@ static real estimate_reciprocal(
         if (MASTER(cr))
         {
             fprintf(stderr, "\rCalculating reciprocal error part 1 ... %3.0f%%", 100.0*(nx-startlocal+1)/(x_per_core));
+            fflush(stderr);
         }
 
     }
@@ -744,7 +745,7 @@ static real estimate_reciprocal(
         {
             fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%",
                     100.0*(i+1)/stoplocal);
-
+            fflush(stderr);
         }
     }
 

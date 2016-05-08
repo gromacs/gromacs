@@ -561,6 +561,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                     fprintf(stderr, buf,
                             bUse ? "Read   " : "Skipped", ftp2ext(fn2ftp(frame_fn)),
                             frame, head.step, head.t);
+                    fflush(stderr);
                     frame++;
                     if (bTime && (head.t >= start_t))
                     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,6 +65,7 @@ void print_one(const gmx_output_env_t *oenv, const char *base, const char *name,
 
     sprintf(buf, "%s%s.xvg", base, name);
     fprintf(stderr, "\rPrinting %s  ", buf);
+    fflush(stderr);
     sprintf(t2, "%s %s", title, name);
     fp = xvgropen(buf, t2, "Time (ps)", ylabel, oenv);
     for (k = 0; (k < nf); k++)

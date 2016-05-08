@@ -993,6 +993,7 @@ static void do_dip(const t_topology *top, int ePBC, real volume,
                 if ((teller % 10) == 0)
                 {
                     fprintf(stderr, "\r Skipping Frame %6d, time: %8.3f", teller, t);
+                    fflush(stderr);
                 }
             }
             else
