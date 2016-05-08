@@ -926,7 +926,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme,
         gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
         if (gpu_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)
         {
-            fprintf(fplog, "\nForce evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
+            fprintf(fplog, "\nAverage per-step force GPU/CPU evaluation time ratio: %.3f ms/%.3f ms = %.3f\n",
                     tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
                     gpu_cpu_ratio);
         }
