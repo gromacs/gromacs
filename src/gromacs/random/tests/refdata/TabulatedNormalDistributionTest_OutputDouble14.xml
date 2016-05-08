@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="TabulatedNormalDistributionDouble14">
     <Int Name="Length">10</Int>
-    <Real>6.2040742877964199</Real>
-    <Real>-5.0443347697093763</Real>
-    <Real>-3.8484410188878648</Real>
-    <Real>-3.5752202548964327</Real>
-    <Real>1.806798968442128</Real>
-    <Real>6.2412274164063648</Real>
-    <Real>-1.5439517116690484</Real>
-    <Real>-8.951438171789011</Real>
-    <Real>-2.3151355578004198</Real>
-    <Real>2.7598447450963115</Real>
+    <Real>6.2040743073882094</Real>
+    <Real>-5.0443347858799923</Real>
+    <Real>-3.8484410453534643</Real>
+    <Real>-3.5752202809260982</Real>
+    <Real>1.8067989676891278</Real>
+    <Real>6.2412274362065912</Real>
+    <Real>-1.5439517275812444</Real>
+    <Real>-8.9514357643656126</Real>
+    <Real>-2.315135578014341</Real>
+    <Real>2.7598447480822306</Real>
   </Sequence>
 </ReferenceData>
