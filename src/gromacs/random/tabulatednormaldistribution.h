@@ -51,6 +51,7 @@
 #include <limits>
 #include <vector>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
@@ -161,35 +162,23 @@ class TabulatedNormalDistribution
         // cppcheck-suppress unusedPrivateFunction
         makeTable()
         {
-            /* Fill the table with the integral of a gaussian distribution:
+            /* Fill the table with the integral of a gaussian distribution, which
+             * corresponds to the inverse error function.
+             * We avoid integrating a gaussian numerically, since that leads to
+             * some loss-of-precision which also accumulates so it is worse for
+             * larger indices in the table.
              */
             std::size_t            tableSize        = 1 << tableBits;
-            std::size_t            halfSize         = (1 << tableBits)/2;
-            double                 invSize          = 1.0/tableSize;
-            double                 factor           = std::sqrt(2.0*M_PI);
-            double                 x                = 0.5*factor*invSize;
+            std::size_t            halfSize         = tableSize/2;
+            double                 invHalfSize      = 1.0/halfSize;
 
-            std::vector<RealType>  table(1ULL << tableBits);
+            std::vector<RealType>  table(tableSize);
 
             for (std::size_t i = 0; i < halfSize; i++)
             {
-                if (i > 0)
-                {
-                    double dx;
+                double r = (i + 0.5) * invHalfSize;
+                double x = std::sqrt(2.0) * erfinv(r);
 
-                    if (i < halfSize-1)
-                    {
-                        double invNormal = factor*std::exp(0.5*x*x);
-                        /* det is larger than 0 for all x, except the last */
-                        double det = 1.0 - 2.0*invSize*x*invNormal;
-                        dx = (1.0 - std::sqrt(det))/x;
-                    }
-                    else
-                    {
-                        dx = 1.0/x;
-                    }
-                    x = x + dx;
-                }
                 table.at(halfSize-1-i) = -x;
                 table.at(halfSize+i)   =  x;
             }

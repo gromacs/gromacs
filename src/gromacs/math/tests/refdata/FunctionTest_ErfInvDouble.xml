@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ErfInvDouble">
+    <Int Name="Length">10</Int>
+    <Real>-1.1630871536766743</Real>
+    <Real>-0.73286907795921663</Real>
+    <Real>-0.47693627620446977</Real>
+    <Real>-0.27246271472675443</Real>
+    <Real>-0.088855990494257672</Real>
+    <Real>0.088855990494257769</Real>
+    <Real>0.27246271472675443</Real>
+    <Real>0.47693627620446977</Real>
+    <Real>0.73286907795921663</Real>
+    <Real>1.1630871536766734</Real>
+  </Sequence>
+</ReferenceData>
