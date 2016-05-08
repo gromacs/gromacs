@@ -46,6 +46,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -419,6 +420,26 @@ static inline real series_sinhx(real x)
     real x2 = x*x;
     return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
 }
+
+/*! \brief Inverse error function, double precision.
+ *
+ *  \param x Argument, should be in the range -1.0 < x < 1.0
+ *
+ *  \return The inverse of the error function if the argument is inside the
+ *          range, +/- infinity if it is exactly 1.0 or -1.0, and NaN otherwise.
+ */
+double
+erfinv(double x);
+
+/*! \brief Inverse error function, single precision.
+ *
+ *  \param x Argument, should be in the range -1.0 < x < 1.0
+ *
+ *  \return The inverse of the error function if the argument is inside the
+ *          range, +/- infinity if it is exactly 1.0 or -1.0, and NaN otherwise.
+ */
+float
+erfinv(float x);
 
 } // namespace gmx
 
