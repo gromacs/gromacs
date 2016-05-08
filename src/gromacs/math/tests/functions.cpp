@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -299,6 +299,49 @@ TEST(FunctionTest, Powers)
     EXPECT_EQ(97.65625,           gmx::power5(2.5));
     EXPECT_EQ(244.140625,         gmx::power6(2.5));
     EXPECT_EQ(59604.644775390625, gmx::power12(2.5));
+}
+
+TEST(FunctionTest, ErfInvFloat)
+{
+    gmx::test::TestReferenceData     data;
+    gmx::test::TestReferenceChecker  checker(data.rootChecker());
+    std::vector<float>               result;
+    int                              npoints = 10;
+
+    for (int i = 0; i < npoints; i++)
+    {
+        float r = -1.0 + 2.0 * (float(i) + 0.5) / npoints;
+
+        result.push_back(gmx::erfinv(r));
+    }
+    checker.checkSequence(result.begin(), result.end(), "ErfInvFloat");
+}
+
+TEST(FunctionTest, ErfInvDouble)
+{
+    gmx::test::TestReferenceData     data;
+    gmx::test::TestReferenceChecker  checker(data.rootChecker());
+    std::vector<double>              result;
+    int                              npoints = 10;
+
+    for (int i = 0; i < npoints; i++)
+    {
+        double r = -1.0 + 2.0 * (double(i) + 0.5) / npoints;
+
+        result.push_back(gmx::erfinv(r));
+    }
+    checker.checkSequence(result.begin(), result.end(), "ErfInvDouble");
+}
+
+TEST(FunctionTest, ErfAndErfInvAreInversesDouble)
+{
+    int npoints = 1000;
+
+    for (int i = 0; i < npoints; i++)
+    {
+        double r = -1.0 + 2.0 * (double(i) + 0.5) / npoints;
+        EXPECT_FLOAT_EQ(r, std::erf(gmx::erfinv(r)));
+    }
 }
 
 } // namespace

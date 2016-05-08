@@ -100,7 +100,6 @@ TEST(TabulatedNormalDistributionTest, OutputDouble14)
     {
         result.push_back(dist(rng));
     }
-    checker.setDefaultTolerance(test::ulpTolerance(15)); //compiler usage of FMA in makeTable can cause higher difference
     checker.checkSequence(result.begin(), result.end(), "TabulatedNormalDistributionDouble14");
 }
 
@@ -150,6 +149,28 @@ TEST(TabulatedNormalDistributionTest, AltParam)
     distA.reset();
     distB.reset();
     EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+}
+
+TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
+{
+    std::vector<real> table = TabulatedNormalDistribution<real, c_defaultTableBits>::makeTable();
+
+    EXPECT_EQ(table.size() % 2, 0) << "Table must have even number of entries";
+
+    size_t halfSize     = table.size() / 2;
+    double sumOfSquares = 0.0;
+    auto tolerance = gmx::test::ulpTolerance(0);
+    for (size_t i = 0, iFromEnd = table.size()-1; i < halfSize; ++i, --iFromEnd)
+    {
+        EXPECT_REAL_EQ_TOL(table.at(i), table.at(iFromEnd), tolerance) <<
+            "Table is not an odd-valued function for entries " << i << " and " << iFromEnd;
+        // Add up the squares of the table values in order of ascending
+        // magnitude (to minimize accumulation of round-off error).
+        sumOfSquares += table.at(i) * table.at(i) + table.at(iFromEnd) * table.at(iFromEnd);
+    }
+
+    double variance = sumOfSquares / table.size();
+    EXPECT_REAL_EQ_TOL(1.0, variance, tolerance) << "Table should have unit variance";
 }
 
 }      // namespace anonymous
