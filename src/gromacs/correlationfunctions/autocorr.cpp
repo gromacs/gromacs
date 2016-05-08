@@ -610,6 +610,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
         if (bVerbose && (((i % 100) == 0) || (i == nitem-1)))
         {
             fprintf(stderr, "\rThingie %d", i+1);
+            fflush(stderr);
         }
 
         if (bFour)

@@ -1965,7 +1965,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
             /*fgets(Buffer0,999,file);
                fprintf(stderr,"First line '%s'\n",Buffer0); */
             done = 100.0*(i+1)/nfiles;
-            printf("\rOpening %s ... [%2.0f%%]", fn[i], done); fflush(stdout);
+            fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i], done); fflush(stdout);
             if (opt->verbose)
             {
                 printf("\n");
@@ -2006,7 +2006,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
     for (i = 0; i < nfiles; ++i)
     {
         done = 100.0*(i+1)/nfiles;
-        printf("\rOpening %s ... [%2.0f%%]", fn[i], done); fflush(stdout);
+        fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i], done); fflush(stdout);
         if (opt->verbose)
         {
             printf("\n");
@@ -2726,7 +2726,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     printf("\n");
     for (i = 0; i < nwins; i++)
     {
-        printf("\rEstimating integrated autocorrelation times ... [%2.0f%%] ...", 100.*(i+1)/nwins);
+        fprintf(stdout, "\rEstimating integrated autocorrelation times ... [%2.0f%%] ...", 100.*(i+1)/nwins);
         fflush(stdout);
         ntot = window[i].Ntot[0];
 

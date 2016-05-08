@@ -1435,6 +1435,7 @@ static void merge_hb(t_hbdata *hb, gmx_bool bTwo, gmx_bool bContact)
     for (i = 0; (i < hb->d.nrd); i++)
     {
         fprintf(stderr, "\r%d/%d", i+1, hb->d.nrd);
+        fflush(stderr);
         id = hb->d.don[i];
         ii = hb->a.aptr[id];
         for (j = 0; (j < hb->a.nra); j++)
@@ -2041,6 +2042,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                     if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == nrint))
                     {
                         fprintf(stderr, "\rACF %d/%d", nhbonds+1, nrint);
+                        fflush(stderr);
                     }
                     nhbonds++;
                     for (j = 0; (j < nframes); j++)

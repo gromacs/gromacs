@@ -1518,6 +1518,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                 fprintf(stderr, "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
                         step, s_min->epot, s_min->fnorm/sqrtNumAtoms,
                         s_min->fmax, s_min->a_fmax+1);
+                fflush(stderr);
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
@@ -2355,6 +2356,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
                 fprintf(stderr, "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
                         step, Epot, fnorm/sqrtNumAtoms, fmax, nfmax+1);
+                fflush(stderr);
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
@@ -2590,6 +2592,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 fprintf(stderr, "Step=%5d, Dmax= %6.1e nm, Epot= %12.5e Fmax= %11.5e, atom= %d%c",
                         count, ustep, s_try->epot, s_try->fmax, s_try->a_fmax+1,
                         ( (count == 0) || (s_try->epot < s_min->epot) ) ? '\n' : '\r');
+                fflush(stderr);
             }
 
             if ( (count == 0) || (s_try->epot < s_min->epot) )

@@ -413,6 +413,7 @@ static void print_grid(FILE *fp_err, FILE *fp_log,
     if (fp_err != NULL)
     {
         fprintf(fp_err, "\r%s\n", buf);
+        fflush(fp_err);
     }
     if (fp_log != NULL)
     {
@@ -448,6 +449,7 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
     if (fp_err != NULL)
     {
         fprintf(fp_err, "\r%s\n", buf);
+        fflush(fp_err);
     }
     if (fp_log != NULL)
     {

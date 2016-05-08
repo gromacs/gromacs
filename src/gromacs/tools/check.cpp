@@ -516,6 +516,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
             if (((i+1)%10) == 0)
             {
                 fprintf(stderr, "\r%5d", i+1);
+                fflush(stderr);
             }
             for (j = i+1; (j < natom); j++)
             {

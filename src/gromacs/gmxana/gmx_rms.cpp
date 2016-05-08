@@ -870,6 +870,7 @@ int gmx_rms(int argc, char *argv[])
         {
             axis[i] = time[freq*i];
             fprintf(stderr, "\r element %5d; time %5.2f  ", i, axis[i]);
+            fflush(stderr);
             if (bMat)
             {
                 snew(rmsd_mat[i], tel_mat2);

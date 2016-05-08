@@ -129,6 +129,8 @@ void print_time(FILE                     *out,
         fprintf(out, "\r");
     }
     fprintf(out, "step %s", gmx_step_str(step, buf));
+    fflush(out);
+
     if ((step >= ir->nstlist))
     {
         double seconds_since_epoch = gmx_gettime();
