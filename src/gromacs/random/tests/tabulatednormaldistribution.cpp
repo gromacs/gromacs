@@ -100,7 +100,6 @@ TEST(TabulatedNormalDistributionTest, OutputDouble14)
     {
         result.push_back(dist(rng));
     }
-    checker.setDefaultTolerance(test::ulpTolerance(15)); //compiler usage of FMA in makeTable can cause higher difference
     checker.checkSequence(result.begin(), result.end(), "TabulatedNormalDistributionDouble14");
 }
 
@@ -150,6 +149,49 @@ TEST(TabulatedNormalDistributionTest, AltParam)
     distA.reset();
     distB.reset();
     EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+}
+
+class TableQuantitiesTest : public ::testing::Test
+{
+    public:
+        typedef std::vector<real> TableType;
+        TableQuantitiesTest()
+        {
+            table_ = TabulatedNormalDistribution<real, c_defaultTableBits>::makeTable();
+        }
+
+        TableType table_;
+};
+
+TEST_F(TableQuantitiesTest, HasEvenNumberOfEntries)
+{
+    EXPECT_EQ(table_.size() % 2, 0);
+}
+
+TEST_F(TableQuantitiesTest, IsSymmetric)
+{
+    auto it        = table_.begin(), halfway = table_.begin() + table_.size() / 2;
+    auto reverseIt = table_.rbegin();
+    while (it < halfway)
+    {
+        EXPECT_EQ(*it, -*reverseIt);
+        it++;
+        reverseIt++;
+    }
+}
+
+TEST_F(TableQuantitiesTest, HasUnitVariance)
+{
+    double sumOfSquares = 0;
+    size_t halfSize     = table_.size() / 2;
+    // Add up the squares of the table values in order of ascending
+    // magnitude (to minimize accumulation of round-off error).
+    for (size_t i = 0, iFromEnd = table_.size()-1; i != halfSize; ++i, --iFromEnd)
+    {
+        sumOfSquares += table_.at(i) * table_.at(i) + table_.at(iFromEnd) * table_.at(iFromEnd);
+    }
+    double variance = sumOfSquares / table_.size();
+    EXPECT_FLOAT_EQ(1.0, variance);
 }
 
 }      // namespace anonymous
