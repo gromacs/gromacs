@@ -51,13 +51,23 @@
 #include <limits>
 #include <vector>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
 {
+
+namespace
+{
+
+//! Number of bits that determines the resolution of the lookup table for the normal distribution.
+const int c_TabulatedNormalDistributionDefaultBits = 14;
+
+}
 
 /*! \brief Tabulated normal random distribution
  *
@@ -76,8 +86,9 @@ namespace gmx
  *  important property is the distribution - given the noise in forces
  *  we do not need very high resolution.
  *  This distribution uses an internal table to return samples from a
- *  normal distribution with limited resolution. By default the table uses
- *  14 bits, but this is specified with a template parameter.
+ *  normal distribution with limited resolution. By default the table
+ *  uses c_TabulatedNormalDistributionDefaultBits bits, but this is
+ *  specified with a template parameter.
  *
  *  Since this distribution only uses tableBits bits per value generated,
  *  the values draw from the random engine are used for several results.
@@ -93,7 +104,7 @@ namespace gmx
  *        return arbitrarily small/large values, but with e.g. 14 bits
  *        the results are limited to roughly +/- 4 standard deviations.
  */
-template<class RealType = real, unsigned int tableBits = 14>
+template<class RealType = real, unsigned int tableBits = c_TabulatedNormalDistributionDefaultBits>
 class TabulatedNormalDistribution
 {
     static_assert(tableBits <= 24, "Normal distribution table is limited to 24bits (64MB in single precision)");
@@ -150,49 +161,56 @@ class TabulatedNormalDistribution
                 result_type stddev_;
         };
 
-    private:
-
         /*! \brief Fill the table with values for the normal distribution
          *
          *  This routine returns a new a std::vector with the table data.
+         *
+         *  This routine is used to help construct objects of this class,
+         *  and is exposed only to permit testing. Normal code should not
+         *  need to call this function.
          */
         static const
         std::vector<RealType>
         // cppcheck-suppress unusedPrivateFunction
         makeTable()
         {
-            /* Fill the table with the integral of a gaussian distribution:
-             */
+            /* Fill the table with the integral of a gaussian distribution, which
+             * corresponds to the inverse error function.
+             * We avoid integrating a gaussian numerically, since that leads to
+             * some loss-of-precision which also accumulates so it is worse for
+             * larger indices in the table. */
             std::size_t            tableSize        = 1 << tableBits;
-            std::size_t            halfSize         = (1 << tableBits)/2;
-            double                 invSize          = 1.0/tableSize;
-            double                 factor           = std::sqrt(2.0*M_PI);
-            double                 x                = 0.5*factor*invSize;
+            std::size_t            halfSize         = tableSize/2;
+            double                 invHalfSize      = 1.0/halfSize;
 
-            std::vector<RealType>  table(1ULL << tableBits);
+            std::vector<RealType>  table(tableSize);
 
-            for (std::size_t i = 0; i < halfSize; i++)
+            // Fill in all but the extremal entries of the table
+            for (std::size_t i = 0; i < halfSize-1; i++)
             {
-                if (i > 0)
-                {
-                    double dx;
+                double r = (i + 0.5) * invHalfSize;
+                double x = std::sqrt(2.0) * erfinv(r);
 
-                    if (i < halfSize-1)
-                    {
-                        double invNormal = factor*std::exp(0.5*x*x);
-                        /* det is larger than 0 for all x, except the last */
-                        double det = 1.0 - 2.0*invSize*x*invNormal;
-                        dx = (1.0 - std::sqrt(det))/x;
-                    }
-                    else
-                    {
-                        dx = 1.0/x;
-                    }
-                    x = x + dx;
-                }
                 table.at(halfSize-1-i) = -x;
                 table.at(halfSize+i)   =  x;
             }
+            // We want to fill in the extremal table entries with
+            // values that make the total variance equal to 1, so
+            // measure the variance by summing the squares of the
+            // other values of the distribution, starting from the
+            // smallest values.
+            double sumOfSquares = 0;
+            for (std::size_t i = 1; i < halfSize; i++)
+            {
+                double value = table.at(i);
+                sumOfSquares += value * value;
+            }
+            double missingVariance = 1.0 - 2.0*sumOfSquares/tableSize;
+            GMX_RELEASE_ASSERT(missingVariance > 0, "Incorrect computation of tabulated normal distribution");
+            double extremalValue   = std::sqrt(0.5*missingVariance*tableSize);
+            table.at(0)  = -extremalValue;
+            table.back() = extremalValue;
+
             return table;
         }
 
@@ -302,9 +320,11 @@ class TabulatedNormalDistribution
                 // store it in our 64-bit value, and set the number of active bits.
                 // For tableBits up to 16 this will be as efficient both with 32
                 // and 64 bit random engines when drawing multiple numbers
-                // (our default value is 14), It also avoids drawing multiple
-                // 32-bit random numbres even if we just call this routine for a
-                // single result.
+                // (our default value is
+                // c_TabulatedNormalDistributionDefaultBits == 14). It
+                // also avoids drawing multiple 32-bit random numbers
+                // even if we just call this routine for a single
+                // result.
                 savedRandomBits_     = static_cast<gmx_uint64_t>(g());
                 savedRandomBitsLeft_ = std::numeric_limits<typename Rng::result_type>::digits;
             }
@@ -356,10 +376,10 @@ class TabulatedNormalDistribution
 #if !defined(_MSC_VER) && !defined(DOXYGEN)
 // Declaration of template specialization
 template<>
-const std::vector<real> TabulatedNormalDistribution<real, 14>::c_table_;
+const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 
 extern template
-const std::vector<real> TabulatedNormalDistribution<real, 14>::c_table_;
+const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 #endif
 
 // Instantiation for all tables without specialization
