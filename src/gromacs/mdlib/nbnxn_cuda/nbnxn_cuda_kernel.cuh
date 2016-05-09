@@ -252,13 +252,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     extern __shared__  float4 xqib[];
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * 2 * c_nbnxnGpuJgroupSize;
+    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    int *cjs_end   = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    int *atib      = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+    int *atib      = cjs_end;
 #else
     /* shmem buffer for i-atom LJ combination rule parameters */
-    float2 *ljcpib = ((float2 *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+    float2 *ljcpib = (float2 *)cjs_end;
 #endif
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
