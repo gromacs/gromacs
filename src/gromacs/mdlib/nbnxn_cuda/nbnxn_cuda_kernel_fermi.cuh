@@ -214,7 +214,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     /* shmem buffer for cj, for each warp separately */
     int   *cjs   = ((int *)(xqib + c_numClPerSupercl * c_clSize));
     /* shmem j force buffer */
-    float *f_buf = (float *)(cjs + 2 * c_nbnxnGpuJgroupSize);
+    float *f_buf = (float *)(cjs + c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
     sci         = nb_sci.sci;           /* super-cluster */
