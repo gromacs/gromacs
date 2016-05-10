@@ -68,7 +68,7 @@ sys.path.append(gmx_sphinx_extension_path)
 # ones.
 extensions = [
     'sphinx.ext.graphviz',
-    'sphinx.ext.pngmath',
+    'sphinx.ext.imgmath',
     'sphinx.ext.ifconfig',
     'gmxsphinx'
 ]
