@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 
 # we rely on inline asm support for GNU!
 include(gmxTestInlineASM)
+include(gmxTryRunIgnoreStderr)
 
 function(gmx_suggest_simd _suggested_simd)
 
@@ -76,23 +77,28 @@ function(gmx_suggest_simd _suggested_simd)
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
-        try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
-                ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-                COMPILE_DEFINITIONS ${_compile_definitions}
-                RUN_OUTPUT_VARIABLE OUTPUT_TMP
-                COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
-                ARGS "-simd")
 
-        if(NOT GMX_CPUID_COMPILED)
+        # Some vendors (hello, Cray) think it's a great idea for their compiler to echo
+        # extra information to stderr, and unfortunately try_run() cannot separate stdout/stderr.
+        # Use our own version instead.
+
+        gmx_try_run_ignore_stderr(GMX_DETECT_SIMD_RUN_RESULT GMX_DETECT_SIMD_COMPILE_OK
+                                  "${CMAKE_BINARY_DIR}"
+                                  "${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c"
+                                  COMPILE_DEFINITIONS "${_compile_definitions}"
+                                  COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
+                                  RUN_OUTPUT_VARIABLE     OUTPUT_TMP
+                                  ARGS "-simd")
+
+        if(NOT GMX_DETECT_SIMD_COMPILE_OK)
             message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
             message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
             set(OUTPUT_TMP "None")
-        elseif(NOT GMX_CPUID_RUN_SIMD EQUAL 0)
+        elseif(NOT GMX_DETECT_SIMD_RUN_RESULT EQUAL 0)
             message(WARNING "Cannot run CPUID code, which means no SIMD instructions.")
             message(STATUS "Run output: ${OUTPUT_TMP}")
             set(OUTPUT_TMP "None")
-        endif(NOT GMX_CPUID_COMPILED)
+        endif(NOT GMX_DETECT_SIMD_COMPILE_OK)
 
         string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
 
