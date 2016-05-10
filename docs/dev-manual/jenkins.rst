@@ -151,3 +151,20 @@ The exact build sequence is desribed in :ref:`releng-workflow-release`.
 The build uses the source tarball build as a subbuild, and parts of the build
 are executed using :file:`admin/builds/gromacs.py` and
 :file:`admin/builds/documentation.py`.
+
+
+Reproducing Jenkins failures
+----------------------------
+
+In order to reproduce verification failures, it is important to identify the exact
+version code and tests, settings, as well as software and hardware used.
+
+To identify the version of code, regressiontest, and release engineering scripts,
+the git hashes of each are printed on the "Console Output" of each build
+(search for the "Building using versions:" string).
+This output also contains the full CMake command like invocation for configuring
+as well as running unit- and regressiontests. Details of the software used can be found
+through the combination of the option list passed (and detection output).
+Further details about the build slave software/hardware setup can be found 
+on the wiki. 
+.. TODO add the URL to the relevant page here.
