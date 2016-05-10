@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2012,2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
                         COMPILE_DEFINITIONS "-D_FILE_OFFSET_BITS=64" )
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _FILE_OFFSET_BITS=64")
-                set(_FILE_OFFSET_BITS 64 CACHE INTERNAL "64-bit off_t requires _FILE_OFFSET_BITS=64")
+                set(_FILE_OFFSET_BITS 64 CACHE "64-bit off_t requires _FILE_OFFSET_BITS=64")
             endif()
         endif()
 
@@ -134,16 +134,13 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
                         "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.c")
             if(FILE64_OK)
                 MESSAGE(STATUS "Checking for 64-bit off_t - present with _fseeki64")
-                set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")
             endif()
         endif()
 
         if(FSEEKO_COMPILE_OK)
             SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
-            set(HAVE_FSEEKO 1 CACHE INTERNAL "64bit fseeko is available" FORCE)
         elseif(HAVE__FSEEKI64)
             SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
-            SET(HAVE__FSEEKI64 1 CACHE INTERNAL "Windows 64-bit fseek" FORCE)
         else()
             check_type_size("long int"      SIZEOF_LONG_INT)
             if(SIZEOF_LONG_INT EQUAL 8) #standard fseek is OK for 64bit

@@ -250,13 +250,20 @@
 /* Define relative path to OpenCL kernels */
 #define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
 
-/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
-#cmakedefine01 HAVE_FSEEKO
+/* Define to 1 if 64-bit file IO is supporte (fseeko/ftello for Linux, _fseeki64 on windows) */
+#cmakedefine01 GMX_LARGE_FILES
 
-/* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
-#cmakedefine01 HAVE__FSEEKI64
+/* Macros that sometimes should be to enable large files. Do NOT remove even if
+ * they are not used in Gromacs - they change the behavior of some system headers.
+ * We avoid defining them at all if the are not needed to enable 64-bit file IO.
+ */
+#cmakedefine _LARGE_FILES
+#cmakedefine _LARGEFILE_SOURCE
 
-/* Have io.h (windows)*/
+/* Number of bits used for file offset. Do NOT remove - needed by some system headers. */
+#cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
+
+/* Have io.h (windows) */
 #cmakedefine01 HAVE_IO_H
 
 /* Define to 1 if you have the posix_memalign() function. */

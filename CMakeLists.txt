@@ -615,7 +615,7 @@ if(GMX_USE_RDTSCP)
 endif()
 
 include(gmxTestLargeFiles)
-gmx_test_large_files(GMX_LARGEFILES)
+gmx_test_large_files(GMX_LARGE_FILES)
 
 include(gmxTestSignal)
 gmx_test_sigusr1(HAVE_SIGUSR1)

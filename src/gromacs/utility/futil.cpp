@@ -262,32 +262,45 @@ void frewind(FILE *fp)
 
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
 {
-#if HAVE_FSEEKO
-    return fseeko(stream, offset, whence);
-#else
-#if HAVE__FSEEKI64
+#if GMX_LARGE_FILES
+
+#if GMX_NATIVE_WINDOWS
+    // Windows, 64 bit file offset
     return _fseeki64(stream, offset, whence);
-#else
+#else // GMX_NATIVE_WINDOWS
+      // Not windows, 64 bit file offset
+    return fseeko(stream, offset, whence);
+#endif // GMX_NATIVE_WINDOWS
+
+#else  // GMX_LARGE_FILES
+      // 32 bit file offset
     return fseek(stream, offset, whence);
-#endif
-#endif
+#endif // GMX_LARGE_FILES
 }
 
 gmx_off_t gmx_ftell(FILE *stream)
 {
-#if HAVE_FSEEKO
-    return ftello(stream);
-#else
-#if HAVE__FSEEKI64
-#ifndef __MINGW32__
-    return _ftelli64(stream);
-#else
+#if GMX_LARGE_FILES
+
+#if GMX_NATIVE_WINDOWS
+
+#ifdef __MINGW32__
+    // Mingw32, 64 bit file offset
     return ftello64(stream);
-#endif
-#else
+#else // __MINGW32__
+      // Other native windows, 64 bit file offset
+    return _ftelli64(stream);
+#endif // __MINGW32__
+
+#else  // GMX_NATIVE_WINDOWS
+      // Not windows, 64 bit file offset
+    return ftello(stream);
+#endif // GMX_NATIVE_WINDOWS
+
+#else  // GMX_LARGE_FILES
+      // 32 bit file offset
     return ftell(stream);
-#endif
-#endif
+#endif // GMX_LARGE_FILES
 }
 
 int gmx_truncate(const char *filename, gmx_off_t length)
