@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -76,13 +76,27 @@ function(gmx_suggest_simd _suggested_simd)
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
-        try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
-                ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-                COMPILE_DEFINITIONS ${_compile_definitions}
-                RUN_OUTPUT_VARIABLE OUTPUT_TMP
-                COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
-                ARGS "-simd")
+
+        # Some vendors (hello, Cray) think it's a great idea for their compiler to echo
+        # extra information to stderr, and unfortunately try_run() cannot separate stdout/stderr.
+        # Instead, use try_compile() followed by execute_process().
+        try_compile(GMX_CPUID_COMPILED
+                    ${CMAKE_BINARY_DIR}
+                    ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+                    COMPILE_DEFINITIONS ${_compile_definitions}
+                    COPY_FILE ${CMAKE_BINARY_DIR}/detectSimd${CMAKE_EXECUTABLE_SUFFIX})
+
+        # If it compiled, try to execute it, but ignore stderr.
+        if(GMX_CPUID_COMPILED)
+            execute_process(COMMAND ${CMAKE_BINARY_DIR}/detectSimd${CMAKE_EXECUTABLE_SUFFIX} -simd
+                            RESULT_VARIABLE GMX_CPUID_RUN_SIMD
+                            OUTPUT_VARIABLE OUTPUT_TMP
+                            ERROR_QUIET)
+
+        endif(GMX_CPUID_COMPILED)
+
+        # clean up
+        file(REMOVE ${CMAKE_BINARY_DIR}/detectSimd${CMAKE_EXECUTABLE_SUFFIX})
 
         if(NOT GMX_CPUID_COMPILED)
             message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
