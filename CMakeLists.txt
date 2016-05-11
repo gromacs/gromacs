@@ -398,6 +398,7 @@ check_cxx_symbol_exists(_fileno           stdio.h      HAVE__FILENO)
 check_cxx_symbol_exists(fileno            stdio.h      HAVE_FILENO)
 check_cxx_symbol_exists(_commit           io.h         HAVE__COMMIT)
 check_cxx_symbol_exists(sigaction         signal.h     HAVE_SIGACTION)
+check_cxx_symbol_exists(std::quick_exit   cstdlib      HAVE_QUICK_EXIT)
 
 # We cannot check for the __builtins as symbols, but check if code compiles
 check_cxx_source_compiles("int main(){ return __builtin_clz(1);}"   HAVE_BUILTIN_CLZ)

@@ -292,6 +292,9 @@
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine01 HAVE_SIGACTION
 
+/* Define to 1 if you have the std::quick_exit() function. */
+#cmakedefine01 HAVE_QUICK_EXIT
+
 /* Define for the GNU __builtin_clz() function. */
 #cmakedefine01 HAVE_BUILTIN_CLZ
 
