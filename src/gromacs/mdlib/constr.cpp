@@ -234,7 +234,7 @@ static void dump_confs(FILE *fplog, gmx_int64_t step, const gmx_mtop_t *mtop,
                        int start, int homenr, t_commrec *cr,
                        rvec x[], rvec xprime[], matrix box)
 {
-    char  buf[256], buf2[22];
+    char  buf[STRLEN], buf2[22];
 
     char *env = getenv("GMX_SUPPRESS_DUMP");
     if (env)
@@ -543,7 +543,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
             if (bSettleErrorHasOccurred)
             {
-                char buf[256];
+                char buf[STRLEN];
                 sprintf(buf,
                         "\nstep " "%" GMX_PRId64 ": One or more water molecules can not be settled.\n"
                         "Check for bad contacts and/or reduce the timestep if appropriate.\n",
