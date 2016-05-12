@@ -44,7 +44,7 @@
 
 #include "refdata-xml.h"
 
-#include "external/tinyxml2/tinyxml2.h"
+#include <tinyxml2.h>
 
 #include "gromacs/utility/exceptions.h"
 
