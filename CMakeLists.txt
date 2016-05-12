@@ -512,6 +512,14 @@ if(GMX_HWLOC)
     endif()
 endif()
 
+option(GMX_EXTERNAL_TINYXML2 "Use external TinyXML-2 instead of compiling the version shipped with GROMACS." OFF)
+mark_as_advanced(GMX_EXTERNAL_TINYXML2)
+if(GMX_EXTERNAL_TINYXML2)
+    # Find an external TinyXML-2 library.
+    find_package(TinyXML-2 3.0.0 QUIET)
+    set(HAVE_TINYXML2 ${TinyXML2_FOUND})
+endif()
+
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 

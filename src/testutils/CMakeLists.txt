@@ -48,14 +48,20 @@ set(TESTUTILS_SOURCES
     testoptions.cpp
     textblockmatchers.cpp
     xvgtest.cpp
-    ../external/tinyxml2/tinyxml2.cpp
     )
+
+if(NOT TinyXML2_FOUND)
+    list(APPEND TESTUTILS_SOURCES ../external/tinyxml2/tinyxml2.cpp)
+endif()
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils)
 set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 set_property(TARGET testutils APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
 target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES})
+if(TinyXML2_FOUND)
+    target_link_libraries(testutils ${TinyXML2_LIBRARIES})
+endif()
 
 set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
