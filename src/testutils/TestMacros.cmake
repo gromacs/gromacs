@@ -148,7 +148,7 @@ function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
         elseif(GMX_THREAD_MPI)
             add_test(NAME ${NAME}
                 COMMAND
-                $<TARGET_FILE:${EXENAME}> -nt ${NUMPROC}
+                $<TARGET_FILE:${EXENAME}> -ntmpi ${NUMPROC}
                 --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml
                 )
             set_tests_properties(${testname} PROPERTIES LABELS "MpiIntegrationTest")
@@ -164,4 +164,12 @@ endfunction ()
 function (gmx_add_unit_test NAME EXENAME)
     gmx_add_gtest_executable(${EXENAME} ${ARGN})
     gmx_register_unit_test(${NAME} ${EXENAME})
+endfunction()
+
+function (gmx_add_mpi_unit_test NAME EXENAME RANKS)
+    if (GMX_MPI OR (GMX_THREAD_MPI AND GTEST_IS_THREADSAFE))
+        gmx_add_gtest_executable(${EXENAME} MPI ${ARGN})
+        # TODO: This function needs a new name.
+        gmx_register_mpi_integration_test(${NAME} ${EXENAME} ${RANKS})
+    endif()
 endfunction()
