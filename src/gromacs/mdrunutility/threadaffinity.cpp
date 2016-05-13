@@ -85,7 +85,7 @@ static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
 static bool
 get_thread_affinity_layout(FILE *fplog,
                            const t_commrec *cr,
-                           const gmx_hw_info_t * hwinfo,
+                           const gmx::HardwareTopology &hwTop,
                            int   threads,
                            bool  automatic,
                            int pin_offset, int * pin_stride,
@@ -96,8 +96,6 @@ get_thread_affinity_layout(FILE *fplog,
     bool                         bPickPinStride;
     bool                         haveTopology;
     bool                         invalidValue;
-
-    const gmx::HardwareTopology &hwTop = *hwinfo->hardwareTopology;
 
     haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
 
@@ -131,7 +129,7 @@ get_thread_affinity_layout(FILE *fplog,
     else
     {
         /* topology information not available or invalid, ignore it */
-        hwThreads       = hwinfo->nthreads_hw_avail;
+        hwThreads       = hwTop.machine().logicalProcessorCount;
         *localityOrder  = NULL;
     }
     // Only warn about the first problem per node.  Otherwise, the first test
@@ -332,10 +330,10 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
    if only PME is using threads.
  */
 void
-gmx_set_thread_affinity(FILE                *fplog,
-                        const t_commrec     *cr,
-                        const gmx_hw_opt_t  *hw_opt,
-                        const gmx_hw_info_t *hwinfo)
+gmx_set_thread_affinity(FILE                        *fplog,
+                        const t_commrec             *cr,
+                        const gmx_hw_opt_t          *hw_opt,
+                        const gmx::HardwareTopology &hwTop)
 {
     int        thread0_id_node,
                nthread_local, nthread_node;
@@ -404,7 +402,7 @@ gmx_set_thread_affinity(FILE                *fplog,
 
     bool automatic = (hw_opt->thread_affinity == threadaffAUTO);
     bool validLayout
-        = get_thread_affinity_layout(fplog, cr, hwinfo, nthread_node, automatic,
+        = get_thread_affinity_layout(fplog, cr, hwTop, nthread_node, automatic,
                                      offset, &core_pinning_stride, &localityOrder);
     gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
 
