@@ -85,7 +85,7 @@ static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
 static bool
 get_thread_affinity_layout(FILE *fplog,
                            const t_commrec *cr,
-                           const gmx_hw_info_t * hwinfo,
+                           const gmx::HardwareTopology &hwTop,
                            int   threads,
                            int pin_offset, int * pin_stride,
                            int **localityOrder)
@@ -95,8 +95,6 @@ get_thread_affinity_layout(FILE *fplog,
     bool                         bPickPinStride;
     bool                         haveTopology;
     bool                         invalidValue;
-
-    const gmx::HardwareTopology &hwTop = *hwinfo->hardwareTopology;
 
     haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
 
@@ -130,7 +128,7 @@ get_thread_affinity_layout(FILE *fplog,
     else
     {
         /* topology information not available or invalid, ignore it */
-        hwThreads       = hwinfo->nthreads_hw_avail;
+        hwThreads       = hwTop.machine().logicalProcessorCount;
         *localityOrder  = NULL;
     }
     bool validLayout = (hwThreads > 0);
@@ -310,10 +308,10 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
    if only PME is using threads.
  */
 void
-gmx_set_thread_affinity(FILE                *fplog,
-                        const t_commrec     *cr,
-                        const gmx_hw_opt_t  *hw_opt,
-                        const gmx_hw_info_t *hwinfo)
+gmx_set_thread_affinity(FILE                        *fplog,
+                        const t_commrec             *cr,
+                        const gmx_hw_opt_t          *hw_opt,
+                        const gmx::HardwareTopology &hwTop)
 {
     int        thread0_id_node,
                nthread_local, nthread_node;
@@ -375,9 +373,9 @@ gmx_set_thread_affinity(FILE                *fplog,
 #endif
 
     if (hw_opt->thread_affinity == threadaffAUTO &&
-        nthread_node != hwinfo->nthreads_hw_avail)
+        nthread_node != hwTop.machine().logicalProcessorCount)
     {
-        if (nthread_node > 1 && nthread_node < hwinfo->nthreads_hw_avail)
+        if (nthread_node > 1 && nthread_node < hwTop.machine().logicalProcessorCount)
         {
             md_print_warn(cr, fplog,
                           "NOTE: The number of threads is not equal to the number of (logical) cores\n"
@@ -398,7 +396,7 @@ gmx_set_thread_affinity(FILE                *fplog,
 
     int  core_pinning_stride = hw_opt->core_pinning_stride;
     bool validLayout
-        = get_thread_affinity_layout(fplog, cr, hwinfo, nthread_node, offset,
+        = get_thread_affinity_layout(fplog, cr, hwTop, nthread_node, offset,
                                      &core_pinning_stride, &localityOrder);
     gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
 
