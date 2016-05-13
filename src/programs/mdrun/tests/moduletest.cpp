@@ -59,6 +59,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
+#include "testutils/mpitest.h"
 #include "testutils/testoptions.h"
 
 namespace gmx
@@ -73,10 +74,6 @@ namespace test
 namespace
 {
 
-#if GMX_THREAD_MPI || defined(DOXYGEN)
-//! Number of tMPI threads for child mdrun call.
-int g_numThreads = 1;
-#endif
 #if GMX_OPENMP || defined(DOXYGEN)
 //! Number of OpenMP threads for child mdrun call.
 int g_numOpenMPThreads = 1;
@@ -85,10 +82,6 @@ int g_numOpenMPThreads = 1;
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
-#if GMX_THREAD_MPI
-    options->addOption(IntegerOption("nt").store(&g_numThreads)
-                           .description("Number of thread-MPI threads/ranks for child mdrun calls"));
-#endif
 #if GMX_OPENMP
     options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
                            .description("Number of OpenMP threads for child mdrun calls"));
@@ -238,7 +231,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 #if GMX_MPI
 #  if GMX_GPU != GMX_GPU_NONE
 #    if GMX_THREAD_MPI
-    int         numGpusNeeded = g_numThreads;
+    int         numGpusNeeded = getNumberOfThreadMpiRanks();
 #    else   /* Must be real MPI */
     int         numGpusNeeded = gmx_node_num();
 #    endif
@@ -248,7 +241,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
 #endif
 
 #if GMX_THREAD_MPI
-    caller.addOption("-ntmpi", g_numThreads);
+    caller.addOption("-ntmpi", getNumberOfThreadMpiRanks());
 #endif
 
 #if GMX_OPENMP
@@ -262,14 +255,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
      * node regardless of the number of ranks, because that's true in
      * Jenkins and for most developers running the tests. */
     int numberOfNodes = 1;
-#if GMX_THREAD_MPI
-    /* Can't use gmx_node_num() because it is only valid after spawn of thread-MPI threads */
-    int numberOfRanks = g_numThreads;
-#elif GMX_LIB_MPI
     int numberOfRanks = gmx_node_num();
-#else
-    int numberOfRanks = 1;
-#endif
     if (numberOfRanks > numberOfNodes && !gmx_multiple_gpu_per_node_supported())
     {
         if (gmx_node_rank() == 0)
