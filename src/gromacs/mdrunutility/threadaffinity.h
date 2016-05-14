@@ -51,8 +51,20 @@ struct t_commrec;
 
 namespace gmx
 {
+
 class HardwareTopology;
-}
+
+class IThreadAffinityAccess
+{
+    public:
+        virtual bool isThreadAffinitySupported() const        = 0;
+        virtual bool setCurrentThreadAffinityToCore(int core) = 0;
+
+    protected:
+        virtual ~IThreadAffinityAccess();
+};
+
+} // namespace gmx
 
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
@@ -62,7 +74,8 @@ gmx_set_thread_affinity(FILE                        *fplog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local);
+                        int                          nthread_local,
+                        gmx::IThreadAffinityAccess  *affinityAccess);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,
