@@ -593,11 +593,7 @@ HardwareTopology HardwareTopology::detect()
 {
     HardwareTopology result;
 
-    // Default values for machine and numa stuff
-    result.machine_.logicalProcessorCount   = 0;
-    result.machine_.numa.baseLatency        = 0.0;
-    result.machine_.numa.maxRelativeLatency = 0.0;
-    result.supportLevel_                    = SupportLevel::None;
+    result.supportLevel_ = SupportLevel::None;
 
 #if GMX_HWLOC
     parseHwLoc(&result.machine_, &result.supportLevel_);
@@ -623,10 +619,27 @@ HardwareTopology HardwareTopology::detect()
     return result;
 }
 
+HardwareTopology::Machine::Machine()
+{
+    logicalProcessorCount   = 0;
+    numa.baseLatency        = 0.0;
+    numa.maxRelativeLatency = 0.0;
+}
+
 
 HardwareTopology::HardwareTopology()
     : supportLevel_(SupportLevel::None)
 {
+}
+
+HardwareTopology::HardwareTopology(int logicalProcessorCount)
+    : supportLevel_(SupportLevel::None)
+{
+    if (logicalProcessorCount > 0)
+    {
+        machine_.logicalProcessorCount = logicalProcessorCount;
+        supportLevel_                  = SupportLevel::LogicalProcessorCount;
+    }
 }
 
 int HardwareTopology::numberOfCores() const
