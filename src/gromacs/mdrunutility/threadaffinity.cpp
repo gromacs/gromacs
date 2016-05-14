@@ -52,7 +52,6 @@
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
@@ -311,10 +310,10 @@ void
 gmx_set_thread_affinity(FILE                        *fplog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop)
+                        const gmx::HardwareTopology &hwTop,
+                        int                          nthread_local)
 {
-    int        thread0_id_node,
-               nthread_local, nthread_node;
+    int        thread0_id_node, nthread_node;
     int        offset;
     int *      localityOrder = nullptr;
 
@@ -337,16 +336,6 @@ gmx_set_thread_affinity(FILE                        *fplog,
                       "NOTE: Cannot set thread affinities on the current platform.\n");
 #endif  /* __APPLE__ */
         return;
-    }
-
-    /* threads on this MPI process or TMPI thread */
-    if (cr->duty & DUTY_PP)
-    {
-        nthread_local = gmx_omp_nthreads_get(emntNonbonded);
-    }
-    else
-    {
-        nthread_local = gmx_omp_nthreads_get(emntPME);
     }
 
     /* map the current process to cores */

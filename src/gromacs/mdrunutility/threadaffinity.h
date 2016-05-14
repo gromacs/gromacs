@@ -61,7 +61,8 @@ void
 gmx_set_thread_affinity(FILE                        *fplog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop);
+                        const gmx::HardwareTopology &hwTop,
+                        int                          nthread_local);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,

@@ -1228,8 +1228,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_check_thread_affinity_set(fplog, cr,
                                       hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
+        int nthread_local;
+        /* threads on this MPI process or TMPI thread */
+        if (cr->duty & DUTY_PP)
+        {
+            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+        }
+        else
+        {
+            nthread_local = gmx_omp_nthreads_get(emntPME);
+        }
+
         /* Set the CPU affinity */
-        gmx_set_thread_affinity(fplog, cr, hw_opt, *hwinfo->hardwareTopology);
+        gmx_set_thread_affinity(fplog, cr, hw_opt, *hwinfo->hardwareTopology,
+                                nthread_local);
     }
 
     /* Initiate PME if necessary,
