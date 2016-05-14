@@ -168,6 +168,7 @@ typedef struct nbnxn_pairlist_t {
     int                     ncj;         /* The number of j-clusters in the list     */
     nbnxn_cj_t             *cj;          /* The j-cluster list, size ncj             */
     int                     cj_nalloc;   /* The allocation size of cj                */
+    int                     ncjInUse;    /* The number of j-clusters that are used by ci entries in this list, will be <= ncj */
 
     int                     ncj4;        /* The total number of 4*j clusters         */
     nbnxn_cj4_t            *cj4;         /* The 4*j cluster list, size ncj4          */
