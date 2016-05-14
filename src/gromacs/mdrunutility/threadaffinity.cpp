@@ -63,6 +63,31 @@
 #include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace
+{
+
+class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
+{
+    public:
+        virtual bool isThreadAffinitySupported() const
+        {
+            return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
+        }
+        virtual bool setCurrentThreadAffinityToCore(int core)
+        {
+            const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+            return ret == 0;
+        }
+};
+
+//! Global instance of DefaultThreadAffinityAccess
+DefaultThreadAffinityAccess g_defaultAffinityAccess;
+
+} // namespace
+
+gmx::IThreadAffinityAccess::~IThreadAffinityAccess()
+{
+}
 
 static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
 {
@@ -232,7 +257,8 @@ get_thread_affinity_layout(FILE *fplog,
 }
 
 static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_node,
-                         int offset, int core_pinning_stride, int *localityOrder)
+                         int offset, int core_pinning_stride, int *localityOrder,
+                         gmx::IThreadAffinityAccess *affinityAccess)
 {
     // Set the per-thread affinity. In order to be able to check the success
     // of affinity settings, we will set nth_affinity_set to 1 on threads
@@ -250,7 +276,6 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
         {
             int      thread_id, thread_id_node;
             int      index, core;
-            gmx_bool setaffinity_ret;
 
             thread_id      = gmx_omp_get_thread_num();
             thread_id_node = thread0_id_node + thread_id;
@@ -264,15 +289,15 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
                 core = index;
             }
 
-            setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+            const bool ret = affinityAccess->setCurrentThreadAffinityToCore(core);
 
             /* store the per-thread success-values of the setaffinity */
-            nth_affinity_set += (setaffinity_ret == 0);
+            nth_affinity_set += (ret ? 1 : 0);
 
             if (debug)
             {
                 fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
-                        cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
+                        cr->nodeid, gmx_omp_get_thread_num(), index, core, ret ? 1 : 0);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -333,7 +358,8 @@ gmx_set_thread_affinity(FILE                        *fplog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local)
+                        int                          nthread_local,
+                        gmx::IThreadAffinityAccess  *affinityAccess)
 {
     int        thread0_id_node, nthread_node;
     int *      localityOrder = nullptr;
@@ -344,10 +370,15 @@ gmx_set_thread_affinity(FILE                        *fplog,
         return;
     }
 
+    if (affinityAccess == nullptr)
+    {
+        affinityAccess = &g_defaultAffinityAccess;
+    }
+
     /* If the tMPI thread affinity setting is not supported encourage the user
      * to report it as it's either a bug or an exotic platform which we might
      * want to support. */
-    if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
+    if (!affinityAccess->isThreadAffinitySupported())
     {
         /* we know Mac OS & BlueGene do not support setting thread affinity, so there's
            no point in warning the user in that case. In any other case
@@ -399,7 +430,8 @@ gmx_set_thread_affinity(FILE                        *fplog,
     if (validLayout)
     {
         allAffinitiesSet = set_affinity(cr, nthread_local, thread0_id_node,
-                                        offset, core_pinning_stride, localityOrder);
+                                        offset, core_pinning_stride, localityOrder,
+                                        affinityAccess);
     }
     else
     {
