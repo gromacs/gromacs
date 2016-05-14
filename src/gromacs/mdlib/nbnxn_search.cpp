@@ -68,6 +68,7 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
@@ -820,6 +821,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     nbl->sci         = NULL;
     nbl->sci_nalloc  = 0;
     nbl->ncj         = 0;
+    nbl->ncjInUse    = 0;
     nbl->cj          = NULL;
     nbl->cj_nalloc   = 0;
     nbl->ncj4        = 0;
@@ -927,18 +929,17 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
     int                 cs[SHIFTS];
     int                 npexcl;
 
-    /* This code only produces correct statistics with domain decomposition */
     grid = &nbs->grid[0];
 
     fprintf(fp, "nbl nci %d ncj %d\n",
-            nbl->nci, nbl->ncj);
+            nbl->nci, nbl->ncjInUse);
     fprintf(fp, "nbl na_sc %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
-            nbl->na_sc, rl, nbl->ncj, nbl->ncj/(double)grid->nc,
-            nbl->ncj/(double)grid->nc*grid->na_sc,
-            nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
+            nbl->na_sc, rl, nbl->ncjInUse, nbl->ncjInUse/(double)grid->nc,
+            nbl->ncjInUse/(double)grid->nc*grid->na_sc,
+            nbl->ncjInUse/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
-            0.25*nbl->ncj/(double)std::max(nbl->nci, 1));
+            0.25*nbl->ncjInUse/(double)std::max(nbl->nci, 1));
 
     for (int s = 0; s < SHIFTS; s++)
     {
@@ -1402,7 +1403,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
         {
             /* We have a useful sj entry, close it now */
 
-            /* Set the exclucions for the ci== sj entry.
+            /* Set the exclusions for the ci==sj entry.
              * Here we don't bother to check if this entry is actually flagged,
              * as it will nearly always be in the list.
              */
@@ -1777,6 +1778,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
     {
         /* All interactions are perturbed, we can skip this entry */
         nbl_ci->cj_ind_end = cj_ind_start;
+        nbl->ncjInUse     -= cj_ind_end - cj_ind_start;
     }
 }
 
@@ -2380,6 +2382,7 @@ static void clear_pairlist(nbnxn_pairlist_t *nbl)
     nbl->nci           = 0;
     nbl->nsci          = 0;
     nbl->ncj           = 0;
+    nbl->ncjInUse      = 0;
     nbl->ncj4          = 0;
     nbl->nci_tot       = 0;
     nbl->nexcl         = 1;
@@ -3124,6 +3127,20 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
     return ci_block;
 }
 
+/* Returns the number of bits to right-shift a cluster index to obtain
+ * the corresponding force buffer flag index.
+ */
+static int getBufferFlagShift(int numAtomsPerCluster)
+{
+    int bufferFlagShift = 0;
+    while ((numAtomsPerCluster << bufferFlagShift) < NBNXN_BUFFERFLAG_SIZE)
+    {
+        bufferFlagShift++;
+    }
+
+    return bufferFlagShift;
+}
+
 /* Generates the part of pair-list nbl assigned to our thread */
 static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      const nbnxn_grid_t *gridi,
@@ -3186,18 +3203,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     if (bFBufferFlag)
     {
         /* Determine conversion of clusters to flag blocks */
-        gridi_flag_shift = 0;
-        while ((nbl->na_ci<<gridi_flag_shift) < NBNXN_BUFFERFLAG_SIZE)
-        {
-            gridi_flag_shift++;
-        }
-        gridj_flag_shift = 0;
-        while ((nbl->na_cj<<gridj_flag_shift) < NBNXN_BUFFERFLAG_SIZE)
-        {
-            gridj_flag_shift++;
-        }
+        gridi_flag_shift = getBufferFlagShift(nbl->na_ci);
+        gridj_flag_shift = getBufferFlagShift(nbl->na_cj);
 
-        gridj_flag = work->buffer_flags.flag;
+        gridj_flag       = work->buffer_flags.flag;
     }
 
     copy_mat(nbs->box, box);
@@ -3658,6 +3667,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                             bitmask_init_bit(&gridj_flag[cb], th);
                                         }
                                     }
+
+                                    nbl->ncjInUse += nbl->ncj - ncj_old_j;
                                 }
                             }
                         }
@@ -3727,6 +3738,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     work->ndistc = ndistc;
 
     nbs_cycle_stop(&work->cc[enbsCCsearch]);
+
+    GMX_ASSERT(nbl->ncjInUse == nbl->ncj || nbs->bFEP, "Without free-energy all cj pair-list entries should be in use. Note that subsequent code does not make use of the equality, this check is only here to catch bugs");
 
     if (debug)
     {
@@ -3811,6 +3824,184 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
             nkeep/(double)(flags->nflag),
             ncopy/(double)(flags->nflag),
             nred/(double)(flags->nflag));
+}
+
+/* Copies the list entries from src to dest when cjStart <= *cjGlobal < cjEnd.
+ * *cjGlobal is updated with the cj count in src.
+ * When setFlags==true, flag bit t is set in flag for all i and j clusters.
+ */
+template<bool setFlags>
+static void copySelectedListRange(int *cjGlobal, int cjStart, int cjEnd,
+                                  const nbnxn_pairlist_t * gmx_restrict src,
+                                  nbnxn_pairlist_t * gmx_restrict dest,
+                                  gmx_bitmask_t *flag,
+                                  int iFlagShift, int jFlagShift, int t)
+{
+    for (int i = 0; i < src->nci && *cjGlobal < cjEnd; i++)
+    {
+        int ncj = src->ci[i].cj_ind_end - src->ci[i].cj_ind_start;
+        if (*cjGlobal >= cjStart)
+        {
+            if (dest->nci + 1 >= dest->ci_nalloc)
+            {
+                nb_realloc_ci(dest, dest->nci + 1);
+            }
+            check_cell_list_space_simple(dest, ncj);
+
+            dest->ci[dest->nci]              = src->ci[i];
+            dest->ci[dest->nci].cj_ind_start = dest->ncj;
+            dest->ci[dest->nci].cj_ind_end   = dest->ncj + ncj;
+
+            if (setFlags)
+            {
+                bitmask_init_bit(&flag[src->ci[i].ci >> iFlagShift], t);
+            }
+
+            for (int j = src->ci[i].cj_ind_start; j < src->ci[i].cj_ind_end; j++)
+            {
+                dest->cj[dest->ncj++] = src->cj[j];
+
+                if (setFlags)
+                {
+                    /* NOTE: This is relatively expensive, since this
+                     * operation is done for all elements in the list,
+                     * whereas at list generation this is done only
+                     * once for each flag entry.
+                     */
+                    bitmask_init_bit(&flag[src->cj[j].cj >> jFlagShift], t);
+                }
+            }
+
+            dest->nci++;
+        }
+        *cjGlobal += ncj;
+    }
+}
+
+/* This routine re-balances the pairlists such that all are nearly equally
+ * sized. Only whole i-entries are moved between lists. These are moved
+ * between the ends of the lists, such that the buffer reduction cost should
+ * not change significantly.
+ * Note that all original reduction flags are currently kept. This can lead
+ * to reduction of parts of the force buffer that could be avoided. But since
+ * the original lists are quite balanced, this will only give minor overhead.
+ */
+static void rebalanceSimpleLists(nbnxn_search_t              nbs,
+                                 int                         ncjTotal,
+                                 const nbnxn_pairlist_set_t *srcSet,
+                                 nbnxn_pairlist_set_t       *destSet)
+{
+    int numLists  = srcSet->nnbl;
+    int ncjTarget = (ncjTotal + numLists - 1)/numLists;
+
+#pragma omp parallel num_threads(numLists)
+    {
+        int t       = gmx_omp_get_thread_num();
+
+        int cjStart = ncjTarget* t;
+        int cjEnd   = ncjTarget*(t + 1);
+
+        /* The destination pair-list for task/thread t */
+        nbnxn_pairlist_t *dest = destSet->nbl[t];
+
+        clear_pairlist(dest);
+        dest->bSimple = srcSet->nbl[0]->bSimple;
+        dest->na_ci   = srcSet->nbl[0]->na_ci;
+        dest->na_cj   = srcSet->nbl[0]->na_cj;
+
+        /* Note that the flags in the work struct (still) contain flags
+         * for all entries that are present in srcSet->nbl[t].
+         */
+        gmx_bitmask_t *flag       = nbs->work[t].buffer_flags.flag;
+
+        int            iFlagShift = getBufferFlagShift(dest->na_ci);
+        int            jFlagShift = getBufferFlagShift(dest->na_cj);
+
+        int            cjGlobal   = 0;
+        for (int s = 0; s < numLists && cjGlobal < cjEnd; s++)
+        {
+            const nbnxn_pairlist_t *src = srcSet->nbl[s];
+
+            if (cjGlobal + src->ncjInUse > cjStart)
+            {
+                /* If the source list is not our own, we need to set
+                 * extra flags (the template bool parameter).
+                 */
+                if (s != t)
+                {
+                    copySelectedListRange
+                    <true>
+                        (&cjGlobal, cjStart, cjEnd,
+                        src, dest,
+                        flag, iFlagShift, jFlagShift, t);
+                }
+                else
+                {
+                    copySelectedListRange
+                    <false>
+                        (&cjGlobal, cjStart, cjEnd,
+                        src, dest,
+                        flag, iFlagShift, jFlagShift, t);
+                }
+            }
+            else
+            {
+                cjGlobal += src->ncjInUse;
+            }
+        }
+
+        dest->ncjInUse = dest->ncj;
+
+        if (debug)
+        {
+            print_nblist_statistics_simple(debug, dest, nbs, 0.0);
+        }
+    }
+
+#ifndef NDEBUG
+    int ncjTotalNew = 0;
+    for (int s = 0; s < numLists; s++)
+    {
+        ncjTotalNew += destSet->nbl[s]->ncjInUse;
+    }
+    GMX_RELEASE_ASSERT(ncjTotalNew == ncjTotal, "The total size of the lists before and after rebalancing should match");
+#endif
+}
+
+/* Checks if the pairlists are imbalanced and if so re-balances them. */
+static void checkRebalanceSimpleLists(nbnxn_search_t        nbs,
+                                      nbnxn_pairlist_set_t *srcSet,
+                                      nbnxn_pairlist_set_t *destSet)
+{
+    int numLists = srcSet->nnbl;
+    int ncjMax   = 0;
+    int ncjTotal = 0;
+    for (int s = 0; s < numLists; s++)
+    {
+        ncjMax    = std::max(ncjMax, srcSet->nbl[s]->ncjInUse);
+        ncjTotal += srcSet->nbl[s]->ncjInUse;
+    }
+    if (debug)
+    {
+        fprintf(debug, "Pair-list ncjMax %d ncjTotal %d\n", ncjMax, ncjTotal);
+    }
+    /* The rebalancing adds 3% extra time to the search. Heuristically we
+     * determined that under common conditions the non-bonded kernel balance
+     * improvement will outweigh this when the imbalance is more than 3%.
+     * But this will, obviously, depend on search vs kernel time and nstlist.
+     */
+    const real rebalanceTolerance = 1.03;
+    if (numLists*ncjMax > ncjTotal*rebalanceTolerance)
+    {
+        rebalanceSimpleLists(nbs, ncjTotal, srcSet, destSet);
+
+        /* Swap the contents of the old and the rebalanced lists */
+        nbnxn_pairlist_set_t tmp = *srcSet;
+        *srcSet                  = *nbs->workListSet;
+        *nbs->workListSet        = tmp;
+        /* The FEP list did not get balanced, copy the pointer back */
+        srcSet->nbl_fep          = nbs->workListSet->nbl_fep;
+    }
 }
 
 /* Perform a count (linear) sort to sort the smaller lists to the end.
@@ -3921,6 +4112,21 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     if (debug)
     {
         fprintf(debug, "ns making %d nblists\n", nnbl);
+    }
+
+    if (nbl_list->bSimple && nnbl > 1)
+    {
+        if (nbs->workListSet == NULL)
+        {
+            snew(nbs->workListSet, 1);
+            nbnxn_init_pairlist_set(nbs->workListSet,
+                                    nbl_list->bSimple, nbl_list->bCombined,
+                                    NULL, NULL);
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(nbs->workListSet->nnbl == nnbl, "The work pair list needs to have the same setup as the actual pair list");
+        }
     }
 
     nbat->bUseBufferFlags = (nbat->nout > 1);
@@ -4103,7 +4309,19 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         }
     }
 
-    if (!nbl_list->bSimple)
+    if (nbl_list->bSimple)
+    {
+        if (nnbl > 1)
+        {
+            checkRebalanceSimpleLists(nbs, nbl_list, nbs->workListSet);
+
+            /* The contents of the lists are swapped after rebalancing,
+             * we need to update the nbl pointer.
+             */
+            nbl = nbl_list->nbl;
+        }
+    }
+    else
     {
         /* Sort the entries on size, large ones first */
         if (CombineNBLists || nnbl == 1)
