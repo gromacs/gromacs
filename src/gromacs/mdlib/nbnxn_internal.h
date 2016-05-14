@@ -287,14 +287,15 @@ typedef struct nbnxn_search {
     int                        natoms_nonlocal; /* The non-local atoms run from natoms_local
                                                  * to natoms_nonlocal */
 
-    gmx_bool             print_cycles;
-    int                  search_count;
-    nbnxn_cycle_t        cc[enbsCCnr];
+    gmx_bool              print_cycles;
+    int                   search_count;
+    nbnxn_cycle_t         cc[enbsCCnr];
 
-    gmx_icell_set_x_t   *icell_set_x; /* Function for setting i-coords    */
+    gmx_icell_set_x_t    *icell_set_x; /* Function for setting i-coords    */
 
-    int                  nthread_max; /* Maximum number of threads for pair-search  */
-    nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
+    int                   nthread_max; /* Maximum number of threads for pair-search  */
+    nbnxn_search_work_t  *work;        /* Work array, size nthread_max          */
+    nbnxn_pairlist_set_t *workListSet; /* A set of working pairlists, used for rebalancing the pair lists */
 } nbnxn_search_t_t;
 
 
