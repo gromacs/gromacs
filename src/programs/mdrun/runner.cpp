@@ -1241,7 +1241,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         /* Set the CPU affinity */
         gmx_set_thread_affinity(fplog, cr, hw_opt, *hwinfo->hardwareTopology,
-                                nthread_local);
+                                nthread_local, nullptr);
     }
 
     /* Initiate PME if necessary,
