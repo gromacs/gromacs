@@ -177,6 +177,8 @@ class HardwareTopology
          */
         struct Machine
         {
+            Machine();
+
             int                            logicalProcessorCount; //!< Number of logical processors in system
             std::vector<LogicalProcessor>  logicalProcessors;     //!< Map logical processors to socket/core
             std::vector<Socket>            sockets;               //!< All the sockets in the system
@@ -190,6 +192,14 @@ class HardwareTopology
         /*! \brief Detects the hardware topology.
          */
         static HardwareTopology detect();
+
+        /*! \brief Creates a topology with given number of logical cores.
+         *
+         * The support level will be either None or LogicalProcessorCount.
+         *
+         * Intended for testing of code that uses the hardware topology.
+         */
+        explicit HardwareTopology(int logicalProcessorCount);
 
         /*! \brief Check what topology information that is available and valid
          *
