@@ -295,6 +295,7 @@ typedef struct nbnxn_search {
 
     int                  nthread_max; /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
+    nbnxn_pairlist_set_t *workListSet; /* A set of working pairlists, used for rebalancing the pair lists */
 } nbnxn_search_t_t;
 
 
