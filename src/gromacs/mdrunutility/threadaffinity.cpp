@@ -73,6 +73,10 @@ class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
         {
             return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
         }
+        virtual int physicalNodeId() const
+        {
+            return gmx_physicalnode_id_hash();
+        }
         virtual bool setCurrentThreadAffinityToCore(int core)
         {
             const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
@@ -402,7 +406,7 @@ gmx_set_thread_affinity(FILE                        *fplog,
         MPI_Comm comm_intra;
 
         MPI_Comm_split(MPI_COMM_WORLD,
-                       gmx_physicalnode_id_hash(), cr->rank_intranode,
+                       affinityAccess->physicalNodeId(), cr->rank_intranode,
                        &comm_intra);
         MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
