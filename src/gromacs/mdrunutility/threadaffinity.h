@@ -58,6 +58,7 @@ class IThreadAffinityAccess
 {
     public:
         virtual bool isThreadAffinitySupported() const        = 0;
+        virtual int physicalNodeId() const                    = 0;
         virtual bool setCurrentThreadAffinityToCore(int core) = 0;
 
     protected:
