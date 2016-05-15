@@ -38,3 +38,7 @@ gmx_add_unit_test_object_library(mdrunutility-test-shared
 gmx_add_unit_test(MdrunUtilityUnitTests mdrunutility-test
                   threadaffinity.cpp
                   $<TARGET_OBJECTS:mdrunutility-test-shared>)
+
+gmx_add_mpi_unit_test(MdrunUtilityMpiUnitTests mdrunutility-mpi-test 4
+                      threadaffinity-mpi.cpp
+                      $<TARGET_OBJECTS:mdrunutility-test-shared>)

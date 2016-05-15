@@ -61,12 +61,15 @@ class MockThreadAffinityAccess : public IThreadAffinityAccess
         ~MockThreadAffinityAccess();
 
         void setSupported(bool supported) { supported_ = supported; }
+        void setPhysicalNodeId(int nodeId) { physicalNodeId_ = nodeId; }
 
         virtual bool isThreadAffinitySupported() const { return supported_; }
+        virtual int physicalNodeId() const { return physicalNodeId_; }
         MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
 
     private:
         bool supported_;
+        int  physicalNodeId_;
 };
 
 class ThreadAffinityTestHelper
@@ -87,6 +90,11 @@ class ThreadAffinityTestHelper
         {
             hwOpt_->core_pinning_offset = offset;
             hwOpt_->core_pinning_stride = stride;
+        }
+
+        void setPhysicalNodeId(int nodeId)
+        {
+            affinityAccess_.setPhysicalNodeId(nodeId);
         }
 
         void setLogicalProcessorCount(int logicalProcessorCount);
