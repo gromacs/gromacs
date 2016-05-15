@@ -150,4 +150,54 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnNonMasterOnly)
     helper.setAffinity(this, 1);
 }
 
+TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesUnknownHardwareOnNonMaster)
+{
+    GMX_MPI_TEST(4);
+    setAffinityOption(threadaffON);
+    ThreadAffinityTestHelper helper;
+    setupNodes(&helper, {{2, 0}});
+    expectNodeAffinitySet(&helper, 0, indexInNode());
+    helper.setAffinity(this, 1);
+}
+
+TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnMasterOnly)
+{
+    GMX_MPI_TEST(4);
+    ThreadAffinityTestHelper helper;
+    setupNodes(&helper, {{2, 1}});
+    expectNodeAffinitySet(&helper, 0, indexInNode());
+    helper.setAffinity(this, 1);
+}
+
+TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnNonMasterOnly)
+{
+    GMX_MPI_TEST(4);
+    ThreadAffinityTestHelper helper;
+    setupNodes(&helper, {{1, 2}});
+    expectNodeAffinitySet(&helper, 1, indexInNode());
+    helper.setAffinity(this, 1);
+}
+
+TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidOffsetOnNonMasterOnly)
+{
+    GMX_MPI_TEST(4);
+    setAffinityOption(threadaffON);
+    setOffsetAndStride(2, 0);
+    ThreadAffinityTestHelper helper;
+    setupNodes(&helper, {{4, 2}});
+    expectNodeAffinitySet(&helper, 0, indexInNode()+2);
+    helper.setAffinity(this, 1);
+}
+
+TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidStrideOnNonMasterOnly)
+{
+    GMX_MPI_TEST(4);
+    setAffinityOption(threadaffON);
+    setOffsetAndStride(0, 2);
+    ThreadAffinityTestHelper helper;
+    setupNodes(&helper, {{4, 2}});
+    expectNodeAffinitySet(&helper, 0, 2*indexInNode());
+    helper.setAffinity(this, 1);
+}
+
 } // namespace
