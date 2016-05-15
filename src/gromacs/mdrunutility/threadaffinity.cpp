@@ -87,6 +87,7 @@ get_thread_affinity_layout(FILE *fplog,
                            const t_commrec *cr,
                            const gmx_hw_info_t * hwinfo,
                            int   threads,
+                           bool  automatic,
                            int pin_offset, int * pin_stride,
                            int **localityOrder)
 {
@@ -133,31 +134,52 @@ get_thread_affinity_layout(FILE *fplog,
         hwThreads       = hwinfo->nthreads_hw_avail;
         *localityOrder  = NULL;
     }
-    bool validLayout = (hwThreads > 0);
-    if (!validLayout)
+    // Only warn about the first problem per node.  Otherwise, the first test
+    // failing would essentially always cause also the other problems get
+    // reported, leading to bogus warnings.  The order in the conditionals
+    // with this variable is important, since the MPI_Reduce() in
+    // invalidWithinSimulation() needs to always happen.
+    bool alreadyWarned = false;
+    invalidValue = (hwThreads <= 0);
+    if (invalidWithinSimulation(cr, invalidValue))
     {
         /* We don't know anything about the hardware, don't pin */
         md_print_warn(cr, fplog,
                       "NOTE: No information on available cores, thread pinning disabled.\n");
+        alreadyWarned = true;
+    }
+    bool validLayout = !invalidValue;
+
+    if (automatic)
+    {
+        invalidValue = (threads != hwThreads);
+        bool warn = (invalidValue && threads > 1 && threads < hwThreads);
+        if (invalidWithinSimulation(cr, warn) && !alreadyWarned)
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: The number of threads is not equal to the number of (logical) cores\n"
+                          "      and the -pin option is set to auto: will not pin thread to cores.\n"
+                          "      This can lead to significant performance degradation.\n"
+                          "      Consider using -pin on (and -pinoffset in case you run multiple jobs).\n");
+        }
+        validLayout = validLayout && !invalidValue;
     }
 
     invalidValue = (threads > hwThreads);
-    // Only warn about the first problem per node.  Otherwise, the first test
-    // failing would essentially always cause also the other problems get
-    // reported, leading to bogus warnings.  The order in the conditional is
-    // important, since the MPI_Reduce() needs to always happen.
-    if (invalidWithinSimulation(cr, invalidValue) && validLayout)
+    if (invalidWithinSimulation(cr, invalidValue) && !alreadyWarned)
     {
         md_print_warn(cr, fplog,
                       "NOTE: Oversubscribing a CPU, will not pin threads.\n");
+        alreadyWarned = true;
     }
     validLayout = validLayout && !invalidValue;
 
     invalidValue = (pin_offset + threads > hwThreads);
-    if (invalidWithinSimulation(cr, invalidValue) && validLayout)
+    if (invalidWithinSimulation(cr, invalidValue) && !alreadyWarned)
     {
         md_print_warn(cr, fplog,
                       "WARNING: Requested offset too large for available cores, thread pinning disabled.\n");
+        alreadyWarned = true;
 
     }
     validLayout = validLayout && !invalidValue;
@@ -193,11 +215,12 @@ get_thread_affinity_layout(FILE *fplog,
          * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
         invalidValue = (pin_offset + (threads-1)*(*pin_stride) >= hwThreads);
     }
-    if (invalidWithinSimulation(cr, invalidValue) && validLayout)
+    if (invalidWithinSimulation(cr, invalidValue) && !alreadyWarned)
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(cr, fplog,
                       "WARNING: Requested stride too large for available cores, thread pinning disabled.\n");
+        alreadyWarned = true;
 
     }
     validLayout = validLayout && !invalidValue;
@@ -317,7 +340,6 @@ gmx_set_thread_affinity(FILE                *fplog,
 {
     int        thread0_id_node,
                nthread_local, nthread_node;
-    int        offset;
     int *      localityOrder = nullptr;
 
     if (hw_opt->thread_affinity == threadaffOFF)
@@ -374,32 +396,17 @@ gmx_set_thread_affinity(FILE                *fplog,
     }
 #endif
 
-    if (hw_opt->thread_affinity == threadaffAUTO &&
-        nthread_node != hwinfo->nthreads_hw_avail)
+    int  offset              = hw_opt->core_pinning_offset;
+    int  core_pinning_stride = hw_opt->core_pinning_stride;
+    if (offset != 0)
     {
-        if (nthread_node > 1 && nthread_node < hwinfo->nthreads_hw_avail)
-        {
-            md_print_warn(cr, fplog,
-                          "NOTE: The number of threads is not equal to the number of (logical) cores\n"
-                          "      and the -pin option is set to auto: will not pin thread to cores.\n"
-                          "      This can lead to significant performance degradation.\n"
-                          "      Consider using -pin on (and -pinoffset in case you run multiple jobs).\n");
-        }
-
-        return;
-    }
-
-    offset = 0;
-    if (hw_opt->core_pinning_offset != 0)
-    {
-        offset = hw_opt->core_pinning_offset;
         md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
-    int  core_pinning_stride = hw_opt->core_pinning_stride;
+    bool automatic = (hw_opt->thread_affinity == threadaffAUTO);
     bool validLayout
-        = get_thread_affinity_layout(fplog, cr, hwinfo, nthread_node, offset,
-                                     &core_pinning_stride, &localityOrder);
+        = get_thread_affinity_layout(fplog, cr, hwinfo, nthread_node, automatic,
+                                     offset, &core_pinning_stride, &localityOrder);
     gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
 
     bool                    allAffinitiesSet;
