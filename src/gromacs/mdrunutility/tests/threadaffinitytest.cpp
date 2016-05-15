@@ -52,7 +52,7 @@ namespace test
 {
 
 MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true)
+    : supported_(true), physicalNodeId_(0)
 {
     using ::testing::_;
     using ::testing::Return;
