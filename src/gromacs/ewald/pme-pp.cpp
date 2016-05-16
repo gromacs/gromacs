@@ -773,14 +773,27 @@ void gmx_pme_receive_f(t_commrec *cr,
              MPI_STATUS_IGNORE);
 #endif
 
-    // cppcheck-suppress unreadVariable
-    int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel for num_threads(nt) schedule(static)
-    for (int i = 0; i < natoms; i++)
-    {
-        rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
-    }
+    int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
 
+    /* Note that we would like to avoid this conditional by putting it
+     * into the omp pragma instead, but then we still take the full
+     * omp parallel for overhead (at least with gcc5).
+     */
+    if (nt == 1)
+    {
+        for (int i = 0; i < natoms; i++)
+        {
+            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+        }
+    }
+    else
+    {
+#pragma omp parallel for num_threads(nt) schedule(static)
+        for (int i = 0; i < natoms; i++)
+        {
+            rvec_inc(f[i], cr->dd->pme_recv_f_buf[i]);
+        }
+    }
 
     receive_virial_energy(cr, vir_q, energy_q, vir_lj, energy_lj, dvdlambda_q, dvdlambda_lj, pme_cycles);
 }
