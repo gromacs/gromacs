@@ -738,13 +738,28 @@ gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
     return nbv != NULL && nbv->bUseGPU;
 }
 
-static gmx_inline void clear_rvecs_omp_nowait(int n, rvec v[])
+static gmx_inline void clear_rvecs_omp(int n, rvec v[])
 {
-    int i;
-#pragma omp for nowait
-    for (i = 0; i < n; i++)
+    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
+
+    /* Note that we should not try to avoid this conditional by putting it
+     * into the omp pragma instead, since then we still take the full omp
+     * parallel for overhead (at least with gcc5).
+     */
+    if (nth == 1)
     {
-        clear_rvec(v[i]);
+        for (int i = 0; i < n; i++)
+        {
+            clear_rvec(v[i]);
+        }
+    }
+    else
+    {
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for (int i = 0; i < n; i++)
+        {
+            clear_rvec(v[i]);
+        }
     }
 }
 
@@ -1165,28 +1180,24 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             }
         }
 
-        // cppcheck-suppress unreadVariable
-        int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel num_threads(nth)
+        wallcycle_start(wcycle, ewcTEST);
+        if (fr->bF_NoVirSum)
         {
-            if (fr->bF_NoVirSum)
+            if (flags & GMX_FORCE_VIRIAL)
             {
-                if (flags & GMX_FORCE_VIRIAL)
+                if (fr->bDomDec)
                 {
-
-                    if (fr->bDomDec)
-                    {
-                        clear_rvecs_omp_nowait(fr->f_novirsum_n, fr->f_novirsum);
-                    }
-                    else
-                    {
-                        clear_rvecs_omp_nowait(homenr, fr->f_novirsum+start);
-                    }
+                    clear_rvecs_omp(fr->f_novirsum_n, fr->f_novirsum);
+                }
+                else
+                {
+                    clear_rvecs_omp(homenr, fr->f_novirsum+start);
                 }
             }
-            /* Clear the short- and long-range forces */
-            clear_rvecs_omp_nowait(fr->natoms_force_constr, f);
         }
+        /* Clear the short- and long-range forces */
+        clear_rvecs_omp(fr->natoms_force_constr, f);
+        wallcycle_stop(wcycle, ewcTEST);
 
         clear_rvec(fr->vir_diag_posres);
     }
