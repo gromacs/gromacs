@@ -1697,7 +1697,6 @@ void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
         rvec_inc(f[l], f_l);         /*  3	*/
 
 
-        // Creating remaining r_xy vectors
         if (vir != NULL) {
 
              /* Central Force Decomposition (CDF) */
@@ -1712,10 +1711,9 @@ void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
             real fac, ia, ia2;                   // mutliplicative factor for forces
             real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
             int msign, fkjsign, Fsign;
-            int idihsign = (type == 0) ? 1 : -1;
-
             msign = (phi > 0) ? 1 : -1;          // sign correction because of angle definiton
-            Fsign = (ddphi > 0) ? -1 : 1;          // sign correction of fkj because of signed force ddphi
+            Fsign = (ddphi > 0) ? -1 : 1;        // sign correction of fkj because of signed force ddphi
+            int idihsign = (type == 0) ? 1 : -1; // improper dihedrals have one flip of sign
             fkjsign = Fsign * msign * idihsign;
 
             rvec_sub(r_ij,r_kj,r_ik);
@@ -1764,43 +1762,6 @@ void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
             rvec_add(t,tt,ttt);
             rvec_sub(ttt,f_j,t);
             fkj = sqrt(iprod(t,t)) * nrkj_1 * fkjsign;
-
-            // ASSEMBLE
-            puts ("----------------------");
-            puts ("ORIGINAL");
-            printf("[ %10lf  %10lf  %10lf ]\n",  f_i[0],  f_i[1],  f_i[2]);
-            printf("[ %10lf  %10lf  %10lf ]\n", -f_j[0], -f_j[1], -f_j[2]);
-            printf("[ %10lf  %10lf  %10lf ]\n", -f_k[0], -f_k[1], -f_k[2]);
-            printf("[ %10lf  %10lf  %10lf ]\n",  f_l[0],  f_l[1],  f_l[2]);
-            puts ("DECOMPOSITION");
-            svmul(fij,r_ij,t);
-            svmul(fik,r_ik,tt);
-            rvec_add(t,tt,ttt);
-            svmul(fil,r_il,tt);
-            rvec_add(tt,ttt,t);
-            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
-            svmul(-fij,r_ij,t);
-            svmul(-flj,r_lj,tt);
-            rvec_add(t,tt,ttt);
-            svmul(-fkj,r_kj,tt);
-            rvec_add(tt,ttt,t);
-            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
-            svmul(-fik,r_ik,t);
-            svmul(-fkl,r_kl,tt);
-            rvec_add(t,tt,ttt);
-            svmul(fkj,r_kj,tt);
-            rvec_add(tt,ttt,t);
-            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
-            svmul(-fil,r_il,t);
-            svmul(flj,r_lj,tt);
-            rvec_add(t,tt,ttt);
-            svmul(fkl,r_kl,tt);
-            rvec_add(tt,ttt,t);
-            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
-
-
-
-
 
             for (int m = 0; m < DIM; m++) {
                                           // already signed force * signed distance
