@@ -1711,46 +1711,50 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi, real phi, int mult,
             real lalpha, lbeta, lgamma;          // decomposition on l
             real fac, ia, ia2;                   // mutliplicative factor for forces
             real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
+            int msign, fkjsign, tsign;
+
+            msign = (phi > 0) ? 1 : -1;
+            tsign = int(floor (phi/(M_PI/mult))); // sensible rounding with float
+            fkjsign = pow(-1,tsign);
 
             rvec_sub(r_ij,r_kj,r_ik);
             rvec_add(r_kl,r_ik,r_il);
             rvec_sub(r_kj,r_kl,r_lj);
-
-             /* CDF on i */
-            // Creating projections
+             // p_ij
             svmul(nrkj_1, r_kj,vkj);
             svmul(iprod(r_ij, vkj), vkj, t);
             rvec_sub(r_ij, t, pij);
+             // p_kl
             svmul(iprod(r_kl, vkj), vkj, t);
             rvec_sub(r_kl, t, pkl);
-
+             // vp_ij
             npij2  = iprod(pij, pij);
             npij_1 = gmx_invsqrt (npij2);
             svmul (npij_1, pij, vpij);
-
-            ia2 = iprod(pkl,pkl) - iprod(pkl,vpij)*iprod(pkl,vpij);
-            ia = sqrt(ia2);
-
-            ialpha = -iprod(r_kl,vkj)*nrkj_1;
-            ibeta  = iprod(pkl,vpij)*npij_1;
-            igamma = -iprod(r_ij,vkj)*nrkj_1;
-
-             /* CDF on l */
+             // vp_kl
             npkl2  = iprod(pkl, pkl);
             npkl_1 = gmx_invsqrt (npkl2);
             svmul (npkl_1, pkl, vpkl);
+
+            ia2 = iprod(pkl,pkl) - iprod(pkl,vpij)*iprod(pkl,vpij);
+            if (ia2 < GMX_REAL_EPS) { ia2 = GMX_REAL_EPS; }
+            ia = sqrt(ia2);
+
+            ialpha = iprod(r_kl,vkj)*nrkj_1;
+            ibeta  = iprod(pkl,vpij)*npij_1;
+            igamma = iprod(r_ij,vkj)*nrkj_1;
 
             lalpha = igamma;
             lbeta  = iprod(pij,vpkl)*npkl_1;
             lgamma = ialpha;
 
             // force components
-            fac = a*sqrt(iprm)/ia;
-            fij = fac * (ibeta*igamma+ibeta-ialpha);
-            fik = fac * (1 + ialpha-ibeta*igamma);
-            fil = fac * (-1);
-            flj = -fac * (-lalpha + lgamma*lbeta -1);
-            fkl = -fac * (-lalpha +lbeta +lbeta*lgamma);
+            fac = msign * a*sqrt(iprm)/ia;
+            fij = fac * (ibeta*igamma - ibeta - ialpha);
+            fik = fac * (ialpha - ibeta*igamma - 1);
+            fil = fac;
+            flj = fac * (lalpha - lgamma*lbeta - 1);
+            fkl = fac * (lalpha +lbeta -lbeta*lgamma);
 
             // calculating remaining term
             // from f_j
@@ -1758,7 +1762,43 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi, real phi, int mult,
             svmul(flj,r_lj,tt);
             rvec_add(t,tt,ttt);
             rvec_sub(ttt,f_j,t);
-            fkj = sqrt(iprod(t,t)) * nrkj_1;
+            fkj = sqrt(iprod(t,t)) * nrkj_1 * msign * fkjsign;
+
+            // ASSEMBLE
+            puts ("ORIGINAL");
+            printf("[ %10lf  %10lf  %10lf ]\n",  f_i[0],  f_i[1],  f_i[2]);
+            printf("[ %10lf  %10lf  %10lf ]\n", -f_j[0], -f_j[1], -f_j[2]);
+            printf("[ %10lf  %10lf  %10lf ]\n", -f_k[0], -f_k[1], -f_k[2]);
+            printf("[ %10lf  %10lf  %10lf ]\n",  f_l[0],  f_l[1],  f_l[2]);
+            puts ("DECOMPOSITION");
+            svmul(fij,r_ij,t);
+            svmul(fik,r_ik,tt);
+            rvec_add(t,tt,ttt);
+            svmul(fil,r_il,tt);
+            rvec_add(tt,ttt,t);
+            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
+            svmul(-fij,r_ij,t);
+            svmul(-flj,r_lj,tt);
+            rvec_add(t,tt,ttt);
+            svmul(-fkj,r_kj,tt);
+            rvec_add(tt,ttt,t);
+            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
+            svmul(-fik,r_ik,t);
+            svmul(-fkl,r_kl,tt);
+            rvec_add(t,tt,ttt);
+            svmul(fkj,r_kj,tt);
+            rvec_add(tt,ttt,t);
+            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
+            svmul(-fil,r_il,t);
+            svmul(flj,r_lj,tt);
+            rvec_add(t,tt,ttt);
+            svmul(fkl,r_kl,tt);
+            rvec_add(tt,ttt,t);
+            printf("[ %10lf  %10lf  %10lf ]\n", t[0], t[1], t[2]);
+
+
+
+
 
             for (int m = 0; m < DIM; m++) {
                                           // already signed force * signed distance
