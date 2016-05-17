@@ -1711,13 +1711,11 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi, real phi, real phiA, int
             real lalpha, lbeta, lgamma;          // decomposition on l
             real fac, ia, ia2;                   // mutliplicative factor for forces
             real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
-            int msign, fkjsign, tsign;
+            int msign, fkjsign, Fsign;
 
-            phiA *= M_PI/180.0;             // convert to rads
-
-            msign = (phi > 0) ? 1 : -1;
-            tsign = int(floor (phi/(M_PI/mult))); // sensible rounding with float
-            fkjsign = pow(-1,tsign) * msign;
+            msign = (phi > 0) ? 1 : -1;          // sign correction because of angle definiton
+            Fsign = (ddphi > 0) ? -1 : 1;          // sign correction of fkj because of signed force ddphi
+            fkjsign = Fsign * msign;
 
             rvec_sub(r_ij,r_kj,r_ik);
             rvec_add(r_kl,r_ik,r_il);
@@ -1767,6 +1765,7 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi, real phi, real phiA, int
             fkj = sqrt(iprod(t,t)) * nrkj_1 * fkjsign;
 
             // ASSEMBLE
+            puts ("----------------------");
             puts ("ORIGINAL");
             printf("[ %10lf  %10lf  %10lf ]\n",  f_i[0],  f_i[1],  f_i[2]);
             printf("[ %10lf  %10lf  %10lf ]\n", -f_j[0], -f_j[1], -f_j[2]);
