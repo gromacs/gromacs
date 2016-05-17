@@ -1655,7 +1655,7 @@ dih_angle_simd(const rvec *x,
 #endif /* GMX_SIMD_HAVE_REAL */
 
 
-void do_dih_fup(int i, int j, int k, int l, real ddphi, real phi,
+void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
                 rvec r_ij, rvec r_kj, rvec r_kl,
                 rvec m, rvec n, rvec f[], rvec vir[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
@@ -1712,10 +1712,11 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi, real phi,
             real fac, ia, ia2;                   // mutliplicative factor for forces
             real fij, fik, fil, fkj, flj, fkl;   // decomposition coefficients
             int msign, fkjsign, Fsign;
+            int idihsign = (type == 0) ? 1 : -1;
 
             msign = (phi > 0) ? 1 : -1;          // sign correction because of angle definiton
             Fsign = (ddphi > 0) ? -1 : 1;          // sign correction of fkj because of signed force ddphi
-            fkjsign = Fsign * msign;
+            fkjsign = Fsign * msign * idihsign;
 
             rvec_sub(r_ij,r_kj,r_ik);
             rvec_add(r_kl,r_ik,r_il);
@@ -2033,7 +2034,7 @@ real pdihs(int nbonds,
                               phi, lambda, &vpd, &ddphi);
 
         vtot += vpd;
-        do_dih_fup(ai, aj, ak, al, ddphi, phi, r_ij, r_kj, r_kl, m, n,
+        do_dih_fup(ai, aj, ak, al, 0, ddphi, phi, r_ij, r_kj, r_kl, m, n,
                    f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
 
 #ifdef DEBUG
@@ -2443,7 +2444,7 @@ real idihs(int nbonds,
 
         dvdl_term += 0.5*(kB - kA)*dp2 - kk*dphi0*dp;
 
-        do_dih_fup(ai, aj, ak, al, -ddphi, 0, r_ij, r_kj, r_kl, m, n,
+        do_dih_fup(ai, aj, ak, al, 1, -ddphi, phi, r_ij, r_kj, r_kl, m, n,
                    f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
         /* 218 TOTAL	*/
 #ifdef DEBUG
@@ -2667,7 +2668,7 @@ real dihres(int nbonds,
             {
                 *dvdlambda += kfac*ddp*((dphiB - dphiA)-(phi0B - phi0A));
             }
-            do_dih_fup(ai, aj, ak, al, ddphi, 0, r_ij, r_kj, r_kl, m, n,
+            do_dih_fup(ai, aj, ak, al, 0, ddphi, 0, r_ij, r_kj, r_kl, m, n,
                        f, vir, fshift, pbc, g, x, t1, t2, t3);      /* 112		*/
         }
     }
@@ -3102,7 +3103,7 @@ real rbdihs(int nbonds,
 
         ddphi = -ddphi*sin_phi;         /*  11		*/
 
-        do_dih_fup(ai, aj, ak, al, ddphi, -phi, r_ij, r_kj, r_kl, m, n,
+        do_dih_fup(ai, aj, ak, al, 0, ddphi, -phi, r_ij, r_kj, r_kl, m, n,
                    f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
         vtot += v;
     }
@@ -4107,7 +4108,7 @@ real tab_dihs(int nbonds,
                                  phi+M_PI, lambda, &vpd, &ddphi);
 
         vtot += vpd;
-        do_dih_fup(ai, aj, ak, al, -ddphi, 0, r_ij, r_kj, r_kl, m, n,
+        do_dih_fup(ai, aj, ak, al, 0, -ddphi, 0, r_ij, r_kj, r_kl, m, n,
                    f, vir, fshift, pbc, g, x, t1, t2, t3); /* 112	*/
 
 #ifdef DEBUG
