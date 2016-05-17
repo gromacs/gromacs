@@ -1809,11 +1809,11 @@ void do_dih_fup(int i, int j, int k, int l, int type, real ddphi, real phi,
                 vir[i][m] += 0.5*(1e25/AVOGADRO) *  fil * r_il[m] *  r_il[m];
 
                 vir[j][m] += 0.5*(1e25/AVOGADRO) * -fij * r_ij[m] * -r_ij[m];
-                vir[j][m] += 0.5*(1e25/AVOGADRO) *  fkj * r_kj[m] * -r_kj[m];
+                vir[j][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] * -r_kj[m];
                 vir[j][m] += 0.5*(1e25/AVOGADRO) * -flj * r_lj[m] * -r_lj[m];
 
                 vir[k][m] += 0.5*(1e25/AVOGADRO) * -fik * r_ik[m] * -r_ik[m];
-                vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkj * r_kj[m] *  r_kj[m];
+                vir[k][m] += 0.5*(1e25/AVOGADRO) * +fkj * r_kj[m] *  r_kj[m];
                 vir[k][m] += 0.5*(1e25/AVOGADRO) * -fkl * r_kl[m] *  r_kl[m];
 
                 vir[l][m] += 0.5*(1e25/AVOGADRO) * -fil * r_il[m] * -r_il[m];
