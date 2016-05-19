@@ -244,11 +244,9 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
     {
         std::exit(returnValue);
     }
-    // We could possibly use std::_Exit() or other C99/C++11 construct to still
-    // use the exit code, but we cannot use std::exit() if other threads may
-    // still be executing, since that would cause destructors to be called for
-    // global objects that may still be in use elsewhere.
-    std::abort();
+    // We cannot use std::exit() if other threads may still be executing, since that would cause destructors to be
+    // called for global objects that may still be in use elsewhere.
+    std::_Exit(returnValue);
 }
 
 void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
