@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Sat, 21 May 2016 16:44:33 +0200
+Reviewed-on: https://gerrit.gromacs.org/5876
+Project: gromacs
+Branch: refs/heads/release-2016
