@@ -186,7 +186,7 @@
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2016)
+set(GMX_VERSION_MAJOR 2017)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
@@ -203,7 +203,7 @@ set(GMX_VERSION_SUFFIX "")
 # here. The important thing is to minimize the chance of third-party
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
-set(LIBRARY_SOVERSION_MAJOR 2)
+set(LIBRARY_SOVERSION_MAJOR 3)
 set(LIBRARY_SOVERSION_MINOR 0)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
