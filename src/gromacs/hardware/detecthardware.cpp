@@ -884,7 +884,11 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
-        check_nthreads_hw_avail(cr, fplog, hwinfo_g->nthreads_hw_avail);
+        // If we detected the topology on this system, double-check that it makes sense
+        if (hwinfo_g->hardwareTopology->isThisSystem())
+        {
+            check_nthreads_hw_avail(cr, fplog, hwinfo_g->nthreads_hw_avail);
+        }
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;
@@ -1052,6 +1056,15 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         case gmx::HardwareTopology::SupportLevel::FullWithDevices:
             s += gmx::formatString("Full, with devices\n");
             break;
+    }
+
+    if (!hwTop.isThisSystem())
+    {
+        s += gmx::formatString("  NOTE: Hardware topology cached or synthetic, not detected.\n");
+        if (char *p = getenv("HWLOC_XMLFILE"))
+        {
+            s += gmx::formatString("        HWLOC_XMLFILE=%s\n", p);
+        }
     }
 
     if (bFullCpuInfo)
