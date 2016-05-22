@@ -1672,7 +1672,10 @@ static void do_wall_params(t_inputrec *ir,
             }
             for (i = 0; i < ir->nwall; i++)
             {
-                sscanf(names[i], "%lf", &dbl);
+                if (sscanf(names[i], "%lf", &dbl) != 1)
+                {
+                    gmx_fatal(FARGS, "Could not parse wall-density value from string '%s'", names[i]);
+                }
                 if (dbl <= 0)
                 {
                     gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, dbl);
@@ -2477,9 +2480,16 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         dumdub[0][i] = 0;
     }
-    sscanf(is->deform, "%lf %lf %lf %lf %lf %lf",
-           &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
-           &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]));
+
+    int ndeform = sscanf(is->deform, "%lf %lf %lf %lf %lf %lf",
+                         &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
+                         &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]));
+
+    if (ndeform != 6 && ndeform > 0)
+    {
+        sprintf(warn_buf, "Not enough values for box deformation velocities (6 needed, %d provided)", ndeform);
+        warning_error(wi, warn_buf);
+    }
     for (i = 0; i < 3; i++)
     {
         ir->deform[i][i] = dumdub[0][i];
@@ -3028,7 +3038,10 @@ static void decode_cos(char *s, t_cosines *cosine)
     cosine->phi = NULL;
     if (strlen(t))
     {
-        sscanf(t, "%d", &(cosine->n));
+        if (sscanf(t, "%d", &(cosine->n)) != 1)
+        {
+            gmx_fatal(FARGS, "Cannot parse cosine multiplicity from string '%s'", t);
+        }
         if (cosine->n <= 0)
         {
             cosine->n = 0;
@@ -3946,7 +3959,10 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     {
         double dbl;
 
-        sscanf(ptr, "%lf", &dbl);
+        if (sscanf(ptr, "%lf", &dbl) != 1)
+        {
+            gmx_fatal(FARGS, "Could not parse a floating-point number from GMX_LJCOMB_TOL (%s)", ptr);
+        }
         tol = dbl;
     }
 
