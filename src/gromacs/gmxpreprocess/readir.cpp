@@ -1672,7 +1672,10 @@ static void do_wall_params(t_inputrec *ir,
             }
             for (i = 0; i < ir->nwall; i++)
             {
-                sscanf(names[i], "%lf", &dbl);
+                if (sscanf(names[i], "%lf", &dbl) != 1)
+                {
+                    gmx_fatal(FARGS, "Could not parse wall-density value from string '%s'", names[i]);
+                }
                 if (dbl <= 0)
                 {
                     gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, dbl);
@@ -2310,30 +2313,32 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
         if (ir->epc)
         {
+            char  *tmp_names[MAXPTR];
+            int    nstr = str_nelem(dumstr[m], MAXPTR, tmp_names);
+
             switch (ir->epct)
             {
                 case epctISOTROPIC:
-                    if (sscanf(dumstr[m], "%lf", &(dumdub[m][XX])) != 1)
+                    if (nstr != 1 || sscanf(dumstr[m], "%lf", &(dumdub[m][XX])) != 1)
                     {
-                        warning_error(wi, "Pressure coupling not enough values (I need 1)");
+                        warning_error(wi, "Pressure coupling incorrect number of values (I need exactly 1)");
                     }
                     dumdub[m][YY] = dumdub[m][ZZ] = dumdub[m][XX];
                     break;
                 case epctSEMIISOTROPIC:
                 case epctSURFACETENSION:
-                    if (sscanf(dumstr[m], "%lf%lf",
-                               &(dumdub[m][XX]), &(dumdub[m][ZZ])) != 2)
+                    if (nstr != 2 || sscanf(dumstr[m], "%lf%lf", &(dumdub[m][XX]), &(dumdub[m][ZZ])) != 2)
                     {
-                        warning_error(wi, "Pressure coupling not enough values (I need 2)");
+                        warning_error(wi, "Pressure coupling incorrect number ofh values (I need exactly 2)");
                     }
                     dumdub[m][YY] = dumdub[m][XX];
                     break;
                 case epctANISOTROPIC:
-                    if (sscanf(dumstr[m], "%lf%lf%lf%lf%lf%lf",
-                               &(dumdub[m][XX]), &(dumdub[m][YY]), &(dumdub[m][ZZ]),
-                               &(dumdub[m][3]), &(dumdub[m][4]), &(dumdub[m][5])) != 6)
+                    if (nstr != 6 || sscanf(dumstr[m], "%lf%lf%lf%lf%lf%lf",
+                                            &(dumdub[m][XX]), &(dumdub[m][YY]), &(dumdub[m][ZZ]),
+                                            &(dumdub[m][3]), &(dumdub[m][4]), &(dumdub[m][5])) != 6)
                     {
-                        warning_error(wi, "Pressure coupling not enough values (I need 6)");
+                        warning_error(wi, "Pressure coupling incorrect number of values (I need exactly 6)");
                     }
                     break;
                 default:
@@ -2477,9 +2482,17 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         dumdub[0][i] = 0;
     }
-    sscanf(is->deform, "%lf %lf %lf %lf %lf %lf",
-           &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
-           &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]));
+
+    double gmx_unused canary;
+    int               ndeform = sscanf(is->deform, "%lf %lf %lf %lf %lf %lf %lf",
+                                       &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
+                                       &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]), &canary);
+
+    if (strlen(is->deform) > 0 && ndeform != 6)
+    {
+        sprintf(warn_buf, "Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform);
+        warning_error(wi, warn_buf);
+    }
     for (i = 0; i < 3; i++)
     {
         ir->deform[i][i] = dumdub[0][i];
@@ -3015,10 +3028,11 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
 static void decode_cos(char *s, t_cosines *cosine)
 {
-    char   *t;
-    char    format[STRLEN], f1[STRLEN];
-    double  a, phi;
-    int     i;
+    char              *t;
+    char               format[STRLEN], f1[STRLEN];
+    double             a, phi;
+    double  gmx_unused canary;
+    int                i;
 
     t = gmx_strdup(s);
     trim(t);
@@ -3028,7 +3042,10 @@ static void decode_cos(char *s, t_cosines *cosine)
     cosine->phi = NULL;
     if (strlen(t))
     {
-        sscanf(t, "%d", &(cosine->n));
+        if (sscanf(t, "%d %lf", &(cosine->n), &canary) != 1)
+        {
+            gmx_fatal(FARGS, "Cannot parse single cosine multiplicity from string '%s'", t);
+        }
         if (cosine->n <= 0)
         {
             cosine->n = 0;
@@ -3042,8 +3059,8 @@ static void decode_cos(char *s, t_cosines *cosine)
             for (i = 0; (i < cosine->n); i++)
             {
                 strcpy(f1, format);
-                strcat(f1, "%lf%lf");
-                if (sscanf(t, f1, &a, &phi) < 2)
+                strcat(f1, "%lf%lf%lf");
+                if (sscanf(t, f1, &a, &phi, &canary) != 2)
                 {
                     gmx_fatal(FARGS, "Invalid input for electric field shift: '%s'", t);
                 }
@@ -3944,9 +3961,13 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     ptr = getenv("GMX_LJCOMB_TOL");
     if (ptr != NULL)
     {
-        double dbl;
+        double            dbl;
+        double gmx_unused canary;
 
-        sscanf(ptr, "%lf", &dbl);
+        if (sscanf(ptr, "%lf%lf", &dbl, &canary) != 1)
+        {
+            gmx_fatal(FARGS, "Could not parse a single floating-point number from GMX_LJCOMB_TOL (%s)", ptr);
+        }
         tol = dbl;
     }
 
