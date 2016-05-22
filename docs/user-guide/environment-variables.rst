@@ -332,6 +332,13 @@ Performance and Run Control
         resolution of buffer size in Verlet cutoff scheme.  The default value is
         0.001, but can be overridden with this environment variable.
 
+``HWLOC_XMLFILE``
+        Not strictly a |Gromacs| environment variable, but on large machines
+        the hwloc detection can take a few seconds if you have lots of MPI processes.
+        If you run the hwloc command `lstopo out.xml` and set this environment
+        variable to point to the location of this file, the hwloc library will use
+        the cached information instead, which can be faster.
+
 ``MPIRUN``
         the ``mpirun`` command used by :ref:`gmx tune_pme`.
 

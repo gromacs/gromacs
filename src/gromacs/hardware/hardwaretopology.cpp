@@ -485,7 +485,8 @@ parseHwLocDevices(const hwloc_topology_t             topo,
 
 void
 parseHwLoc(HardwareTopology::Machine *        machine,
-           HardwareTopology::SupportLevel *   supportLevel)
+           HardwareTopology::SupportLevel *   supportLevel,
+           bool *                             isThisSystem)
 {
     hwloc_topology_t    topo;
 
@@ -505,7 +506,9 @@ parseHwLoc(HardwareTopology::Machine *        machine,
         hwloc_topology_destroy(topo);
         return; // SupportLevel::None.
     }
+
     // If we get here, we can get a valid root object for the topology
+    *isThisSystem = hwloc_topology_is_thissystem(topo);
 
     // Parse basic information about sockets, cores, and hardware threads
     if (parseHwLocSocketsCoresThreads(topo, machine) == 0)
@@ -598,9 +601,10 @@ HardwareTopology HardwareTopology::detect()
     result.machine_.numa.baseLatency        = 0.0;
     result.machine_.numa.maxRelativeLatency = 0.0;
     result.supportLevel_                    = SupportLevel::None;
+    result.isThisSystem_                    = true;
 
 #if GMX_HWLOC
-    parseHwLoc(&result.machine_, &result.supportLevel_);
+    parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
 #endif
 
     // If something went wrong in hwloc (or if it was not present) we might
