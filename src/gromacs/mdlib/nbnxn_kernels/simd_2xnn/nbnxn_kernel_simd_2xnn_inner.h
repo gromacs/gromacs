@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -295,11 +295,9 @@
     }
 #endif
 
-#ifdef CHECK_EXCLS
-    /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = rsq_S0 + selectByNotMask(avoid_sing_S, interact_S0);
-    rsq_S2      = rsq_S2 + selectByNotMask(avoid_sing_S, interact_S2);
-#endif
+    // Add a small number to avoid r^-6 = NaN when atoms might overlap
+    rsq_S0      = rsq_S0 + avoid_sing_S;
+    rsq_S2      = rsq_S2 + avoid_sing_S;
 
     /* Calculate 1/r */
     rinv_S0     = invsqrt(rsq_S0);
