@@ -1386,7 +1386,6 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 
 
 static real vrescale_sumnoises(real                            nn,
-                               gmx_int64_t                     step,
                                gmx::ThreeFry2x64<>            *rng,
                                gmx::NormalDistribution<real>  *normalDist)
 {
@@ -1398,8 +1397,6 @@ static real vrescale_sumnoises(real                            nn,
     const real                     ndeg_tol = 0.0001;
     real                           r;
     gmx::GammaDistribution<real>   gammaDist(0.5*nn, 1.0);
-
-    rng->restart(step, 0);
 
     if (nn < 2 + ndeg_tol)
     {
@@ -1453,11 +1450,13 @@ static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
         factor = 0.0;
     }
 
+    rng.restart(step, 0);
+
     rr = normalDist(rng);
 
     ekin_new =
         kk +
-        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, step, &rng, &normalDist) + rr*rr)/ndeg - kk) +
+        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, &rng, &normalDist) + rr*rr)/ndeg - kk) +
         2.0*rr*std::sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 
     return ekin_new;
