@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,17 +76,15 @@ struct t_filenm;
  * simulation, and/or simulations.
  *
  * \param[in]    cr                 Communication structure
- * \param[in]    bTryToAppendFiles  Whether mdrun -append was used
+ * \param[in]    bAppendFiles       Whether mdrun -append was used
  * \param[in]    NFILE              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
- * \param[out]   bDoAppendFiles     Whether mdrun will append to files
  * \param[out]   bStartFromCpt      Whether mdrun will start from the -cpi file
  */
 void handleRestart(t_commrec *cr,
-                   gmx_bool   bTryToAppendFiles,
+                   gmx_bool   bAppendFiles,
                    const int  NFILE,
                    t_filenm   fnm[],
-                   gmx_bool  *bDoAppendFiles,
                    gmx_bool  *bStartFromCpt);
 
 #endif
