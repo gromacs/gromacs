@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,21 +66,29 @@ struct t_filenm;
 /*! \brief Handle startup of mdrun, particularly regarding -cpi and -append
  *
  * If there is a checkpoint file, then prepare to start from that
- * state. If there is also appending, then organize the file naming
- * accordingly, if possible. Issues various fatal errors if the input
- * conditions are inconsistent or broken. \p fnm is updated with
- * suffix strings for part numbers if we are doing a restart from
- * checkpoint and are not appending.
+ * state. If restarting from a checkpoint file and appending is requested with
+ * tryToAppendFiles, we will set doAppendFiles to true on return if all files
+ * were found correctly. If some files are not found when appending should be
+ * done, we will instead issue a fatal error to avoid unintentional problems.
  *
- * Does communication to coordinate behaviour between all ranks of a
- * simulation, and/or simulations.
+ * If there is no checkpoint file, we assume it is the first part of a new run,
+ * and in this case we silently set doAppendFiles to false on return.
+ *
+ * On return, \p fnm is updated with suffix strings for part numbers if we are
+ * doing a restart from checkpoint and are not appending. The routine also does
+ * communication to coordinate behaviour between all ranks of a simulation,
+ * and/or simulations.
  *
  * \param[in]    cr                 Communication structure
- * \param[in]    bTryToAppendFiles  Whether mdrun -append was used
+ * \param[in]    bTryToAppendFiles  Whether appending is requested (from mdrun)
  * \param[in]    NFILE              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
- * \param[out]   bDoAppendFiles     Whether mdrun will append to files
- * \param[out]   bStartFromCpt      Whether mdrun will start from the -cpi file
+ * \param[out]   bDoAppendFiles     True on return if we will do appending.
+ *                                  Note that the routine will generate a fatal
+ *                                  error for some scenarios where appending is
+ *                                  requested but the necessary files not found.
+ * \param[out]   bStartFromCpt      True on return if we found the checkpoint
+ *                                  and will use it to restart.
  */
 void handleRestart(t_commrec *cr,
                    gmx_bool   bTryToAppendFiles,
