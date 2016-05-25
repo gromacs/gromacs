@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -379,13 +379,12 @@
     }
 #endif
 
-#ifdef CHECK_EXCLS
-    /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = rsq_S0 + selectByNotMask(avoid_sing_S, interact_S0);
-    rsq_S1      = rsq_S1 + selectByNotMask(avoid_sing_S, interact_S1);
-    rsq_S2      = rsq_S2 + selectByNotMask(avoid_sing_S, interact_S2);
-    rsq_S3      = rsq_S3 + selectByNotMask(avoid_sing_S, interact_S3);
-#endif
+    // Ensure the distances do not fall below the limit where r^-12 overflows.
+    // This should never happen for normal interactions.
+    rsq_S0      = max(rsq_S0, minRsq_S);
+    rsq_S1      = max(rsq_S1, minRsq_S);
+    rsq_S2      = max(rsq_S2, minRsq_S);
+    rsq_S3      = max(rsq_S3, minRsq_S);
 
     /* Calculate 1/r */
 #if !GMX_DOUBLE
