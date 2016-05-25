@@ -106,12 +106,12 @@ if(GMX_SIMD STREQUAL "NONE")
     set(SIMD_STATUS_MESSAGE "SIMD instructions disabled")
 elseif(GMX_SIMD STREQUAL "SSE2")
 
-    gmx_find_cflag_for_source(CFLAGS_SSE2 "C compiler SSE2 flag"
+    gmx_find_cflag_for_source(CFLAGS_SSE2
                               "#include<xmmintrin.h>
                               int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-msse2" "/arch:SSE2" "-hgnu")
-    gmx_find_cxxflag_for_source(CXXFLAGS_SSE2 "C++ compiler SSE2 flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_SSE2
                                 "#include<xmmintrin.h>
                                 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_rsqrt_ps(x);return _mm_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
@@ -127,12 +127,12 @@ elseif(GMX_SIMD STREQUAL "SSE2")
 elseif(GMX_SIMD STREQUAL "SSE4.1")
 
     # Note: MSVC enables SSE4.1 with the SSE2 flag, so we include that in testing.
-    gmx_find_cflag_for_source(CFLAGS_SSE4_1 "C compiler SSE4.1 flag"
+    gmx_find_cflag_for_source(CFLAGS_SSE4_1
                               "#include<smmintrin.h>
                               int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-msse4.1" "/arch:SSE4.1" "/arch:SSE2" "-hgnu")
-    gmx_find_cxxflag_for_source(CXXFLAGS_SSE4_1 "C++ compiler SSE4.1 flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_SSE4_1
                                 "#include<smmintrin.h>
                                 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_dp_ps(x,x,0x77);return _mm_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
@@ -159,12 +159,12 @@ elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
     # 3) Optional: Find a flag to enable the AMD XOP instructions
 
     ### STAGE 1: Find the generic AVX flag
-    gmx_find_cflag_for_source(CFLAGS_AVX_128 "C compiler AVX (128 bit) flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX_128
                               "#include<immintrin.h>
                               int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_permute_ps(x,1);return 0;}"
                               SIMD_C_FLAGS
                               "-mavx" "/arch:AVX" "-hgnu")
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128 "C++ compiler AVX (128 bit) flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128
                                 "#include<immintrin.h>
                                 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_permute_ps(x,1);return 0;}"
                                 SIMD_CXX_FLAGS
@@ -181,14 +181,14 @@ elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
         set(INCLUDE_INTRIN_H "#include <xintrin.h>")
     endif()
 
-    gmx_find_cflag_for_source(CFLAGS_AVX_128_FMA "C compiler AVX (128 bit) FMA4 flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX_128_FMA
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-mfma4" "-hgnu")
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_FMA "C++ compiler AVX (128 bit) FMA4 flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_FMA
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
@@ -202,14 +202,14 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_macc_ps(x,x,x);return _mm_movemask_ps
     endif()
 
     ### STAGE 3: Optional: Find the XOP instruction flag (No point in yelling if this does not work)
-    gmx_find_cflag_for_source(CFLAGS_AVX_128_XOP "C compiler AVX (128 bit) XOP flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX_128_XOP
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
 int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-mxop")
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_XOP "C++ compiler AVX (128 bit) XOP flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_128_XOP
 "#include<immintrin.h>
 ${INCLUDE_X86INTRIN_H}
 ${INCLUDE_INTRIN_H}
@@ -246,12 +246,12 @@ elseif(GMX_SIMD STREQUAL "AVX_256")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
-    gmx_find_cflag_for_source(CFLAGS_AVX "C compiler AVX (256 bit) flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX
                               "#include<immintrin.h>
                               int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return _mm256_movemask_ps(x);}"
                               SIMD_C_FLAGS
                               "-mavx" "/arch:AVX" "-hgnu")
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX "C++ compiler AVX (256 bit) flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX
                                 "#include<immintrin.h>
                                 int main(){__m256 x=_mm256_set1_ps(0.5);x=_mm256_add_ps(x,x);return _mm256_movemask_ps(x);}"
                                 SIMD_CXX_FLAGS
@@ -270,12 +270,12 @@ elseif(GMX_SIMD STREQUAL "AVX2_256")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
-    gmx_find_cflag_for_source(CFLAGS_AVX2 "C compiler AVX2 flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX2
                               "#include<immintrin.h>
                               int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
                               SIMD_C_FLAGS
                               "-march=core-avx2" "-mavx2" "/arch:AVX" "-hgnu") # no AVX2-specific flag for MSVC yet
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX2 "C++ compiler AVX2 flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX2
                                 "#include<immintrin.h>
                                 int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
                                 SIMD_CXX_FLAGS
@@ -300,12 +300,12 @@ elseif(GMX_SIMD STREQUAL "AVX_512")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
-    gmx_find_cflag_for_source(CFLAGS_AVX_512F "C compiler AVX-512F flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX_512F
                               "#include<immintrin.h>
                               int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                               SIMD_C_FLAGS
                               "-xMIC-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512F "C++ compiler AVX-512F flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512F
                                 "#include<immintrin.h>
                                 int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                                 SIMD_CXX_FLAGS
@@ -322,12 +322,12 @@ elseif(GMX_SIMD STREQUAL "AVX_512_KNL")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
-    gmx_find_cflag_for_source(CFLAGS_AVX_512ER "C compiler AVX-512ER flag"
+    gmx_find_cflag_for_source(CFLAGS_AVX_512ER
                               "#include<immintrin.h>
                               int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                               SIMD_C_FLAGS
                               "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
-    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512ER "C++ compiler AVX-512ER flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512ER
                                 "#include<immintrin.h>
                                 int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                                 SIMD_CXX_FLAGS
@@ -342,12 +342,12 @@ elseif(GMX_SIMD STREQUAL "AVX_512_KNL")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
-    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler ARM NEON flag"
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON
                               "#include<arm_neon.h>
                               int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                               SIMD_C_FLAGS
                               "-mfpu=neon-vfpv4" "-mfpu=neon" "")
-    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler ARM NEON flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON
                                 "#include<arm_neon.h>
                                 int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                                 SIMD_CXX_FLAGS
@@ -362,12 +362,12 @@ elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON_ASIMD")
 
-    gmx_find_cflag_for_source(CFLAGS_ARM_NEON_ASIMD "C compiler ARM NEON Advanced SIMD flag"
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON_ASIMD
                               "#include<arm_neon.h>
                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                               SIMD_C_FLAGS
                               "")
-    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON_ASIMD "C++ compiler ARM NEON Advanced SIMD flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON_ASIMD
                                 "#include<arm_neon.h>
                                 int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                                 SIMD_CXX_FLAGS
@@ -400,12 +400,12 @@ elseif(GMX_SIMD STREQUAL "IBM_QPX")
 
 elseif(GMX_SIMD STREQUAL "IBM_VMX")
 
-    gmx_find_cflag_for_source(CFLAGS_IBM_VMX "C compiler IBM VMX SIMD flag"
+    gmx_find_cflag_for_source(CFLAGS_IBM_VMX
                               "#include<altivec.h>
                               int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
                               SIMD_C_FLAGS
                               "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
-    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VMX "C++ compiler IBM VMX SIMD flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VMX
                                 "#include<altivec.h>
                                 int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
                                 SIMD_CXX_FLAGS
@@ -439,12 +439,12 @@ elseif(GMX_SIMD STREQUAL "IBM_VSX")
         endif()
     endif()
 
-    gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
+    gmx_find_cflag_for_source(CFLAGS_IBM_VSX
                               "#include<altivec.h>
                               int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
                               SIMD_C_FLAGS
                               "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
-    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VSX "C++ compiler IBM VSX SIMD flag"
+    gmx_find_cxxflag_for_source(CXXFLAGS_IBM_VSX
                                 "#include<altivec.h>
                                 int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
                                 SIMD_CXX_FLAGS
