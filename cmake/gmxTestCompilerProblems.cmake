@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,31 +42,6 @@ macro(gmx_test_compiler_problems)
     endif()
     if(NOT CMAKE_C_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
-    endif()
-
-    # clang 3.0 is buggy for some unknown reason detected during adding
-    # the SSE2 group kernels for GROMACS 4.6. If we ever work out what
-    # that is, we should replace these tests with a compiler feature test,
-    # update GROMACS Redmine task #1039 and perhaps report a clang bug.
-    #
-    # In the meantime, until we require CMake 2.8.10 we cannot rely on it to detect
-    # the compiler version for us. So we need a manual check for clang 3.0.
-    include(gmxDetectClang30)
-    gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
-    if(COMPILER_IS_CLANG_3_0)
-        message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
-    endif()
-
-    # clang <=3.2 contains a bug that causes incorrect code to be generated for the
-    # vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
-    # (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
-    # We can work around this by not using the integrated assembler (except on OS X
-    # which has an outdated assembler that does not support AVX instructions).
-    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
-        set(GMX_USE_CLANG_C_FMA_BUG_WORKAROUND TRUE)
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
-        set(GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND TRUE)
     endif()
 
     if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
