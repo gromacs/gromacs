@@ -44,31 +44,6 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # clang 3.0 is buggy for some unknown reason detected during adding
-    # the SSE2 group kernels for GROMACS 4.6. If we ever work out what
-    # that is, we should replace these tests with a compiler feature test,
-    # update GROMACS Redmine task #1039 and perhaps report a clang bug.
-    #
-    # In the meantime, until we require CMake 2.8.10 we cannot rely on it to detect
-    # the compiler version for us. So we need a manual check for clang 3.0.
-    include(gmxDetectClang30)
-    gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
-    if(COMPILER_IS_CLANG_3_0)
-        message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
-    endif()
-
-    # clang <=3.2 contains a bug that causes incorrect code to be generated for the
-    # vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
-    # (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
-    # We can work around this by not using the integrated assembler (except on OS X
-    # which has an outdated assembler that does not support AVX instructions).
-    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
-        set(GMX_USE_CLANG_C_FMA_BUG_WORKAROUND TRUE)
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
-        set(GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND TRUE)
-    endif()
-
     if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
         message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
