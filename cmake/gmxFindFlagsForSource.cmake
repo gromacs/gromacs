@@ -37,48 +37,58 @@
 # DESCRIPTION         Text string describing what flag we are trying to find
 # SOURCE              Source code to test
 #                     The compiler is chosen based on the extension of this file
-# FLAGSVAR            Variable (string) to which we should add the correct flag
+# CFLAGSVAR           Variable (string) to which we should add the correct flag
+#                     which may already contain flags needed by the toolchain.
 # Args 5 through N    Multiple strings with optimization flags to test
 #
 # If a compile flag is found, but the project in check_c_source_compiles
 # fails to build, sets SUGGEST_BINUTILS_UPDATE in parent scope to suggest
 # that the calling code tell the user about this issue if needed.
+#
+# Note that if you update this function, you probably want to make
+# matching changes to the C++ version below.
 FUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
-    IF(NOT DEFINED ${VARIABLE})
-        # Insert a blank element last in the list (try without any flags too)
-        # This must come last, since some compilers (Intel) might try to emulate
-        # emulate AVX instructions with SSE4.1 otherwise.
-        foreach(_testflag ${ARGN} "")
+    if(DEFINED ${VARIABLE})
+        # This is a subsequent call to CMake, don't spam the status line
+        set(RUN_QUIETLY TRUE)
+    endif()
+    # Insert a blank element last in the list (try without any flags too)
+    # This must come last, since some compilers (Intel) might try to emulate
+    # emulate AVX instructions with SSE4.1 otherwise.
+    foreach(_testflag ${ARGN} "")
+        if (NOT RUN_QUIETLY)
             message(STATUS "Try ${DESCRIPTION} = [${_testflag}]")
-            set(CMAKE_REQUIRED_FLAGS "${${CFLAGSVAR}} ${_testflag}")
-            # make valid variable names from the flag string: replace all non-alphanumerical chars
-            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_FLAG_VARIABLE "C_FLAG_${_testflag}")
-            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_SIMD_VARIABLE "C_SIMD_COMPILES_FLAG_${_testflag}")
+        endif()
+        # TODO This sets up implicit context for both the compilation
+        # checks below, but the implementation could be improved to
+        # make this more explicit.
+        set(CMAKE_REQUIRED_FLAGS "${${CFLAGSVAR}} ${_testflag}")
+        # make valid variable names from the flag string: replace all non-alphanumerical chars
+        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_FLAG_VARIABLE "C_FLAG_${_testflag}")
+        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_SIMD_VARIABLE "C_SIMD_COMPILES_FLAG_${_testflag}")
 
-            # Check that the flag itself is fine, and that is does not generate warnings either
-            check_c_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
+        # Check that the flag itself is fine, and that is does not generate warnings either
+        check_c_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
 
-            if(${COMPILE_FLAG_VARIABLE})
-                # Check that we can compile SIMD source (this does not catch compiler warnings)
-                check_c_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
-                if(NOT ${COMPILE_SIMD_VARIABLE})
+        if(${COMPILE_FLAG_VARIABLE})
+            # Check that we can compile SIMD source (this does not catch compiler warnings)
+            check_c_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
+            if(NOT ${COMPILE_SIMD_VARIABLE})
+                if (NOT RUN_QUIETLY)
                     message(STATUS "Compiler flag was valid, but executable did not build - perhaps update the binutils package")
-                    set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
                 endif()
+                set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
             endif()
+        endif()
 
-            if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
-                set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
-                set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
-                break()
-            else()
-                set(${VARIABLE} 0 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
-            endif()
-        endforeach()
-    ENDIF()
+        if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
+            set(${VARIABLE} "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
+            break()
+        endif()
+    endforeach()
 
     IF (${VARIABLE})
-        SET (${CFLAGSVAR} "${${CFLAGSVAR}} ${${VARIABLE}_FLAG}" PARENT_SCOPE)
+        SET (${CFLAGSVAR} "${${CFLAGSVAR}} ${${VARIABLE}}" PARENT_SCOPE)
     ENDIF ()
 ENDFUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
 
@@ -88,49 +98,61 @@ ENDFUNCTION(GMX_FIND_CFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CFLAGSVAR)
 # DESCRIPTION         Text string describing what flag we are trying to find
 # SOURCE              Source code to test
 #                     The compiler is chosen based on the extension of this file
-# FLAGSVAR            Variable (string) to which we should add the correct flag
+# CXXFLAGSVAR         Variable (string) to which we should add the correct flag,
+#                     which may already contain flags needed by the toolchain.
 # Args 5 through N    Multiple strings with optimization flags to test
 #
 # If a compile flag is found, but the project in check_cxx_source_compiles
 # fails to build, sets SUGGEST_BINUTILS_UPDATE in parent scope to suggest
 # that the calling code tell the user about this issue if needed.
+#
+# Note that if you update this function, you probably want to make
+# matching changes to the C version above.
 FUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
-
-    IF(NOT DEFINED ${VARIABLE})
-        # Insert a blank element last in the list (try without any flags too)
-        # This must come last, since some compilers (Intel) might try to
-        # emulate AVX instructions with SSE4.1 otherwise.
-        foreach(_testflag ${ARGN} "")
+    IF(DEFINED ${VARIABLE})
+        # This is a subsequent call to CMake, don't spam the status line
+        set(RUN_QUIETLY TRUE)
+    endif()
+    # Insert a blank element last in the list (try without any flags too)
+    # This must come last, since some compilers (Intel) might try to
+    # emulate AVX instructions with SSE4.1 otherwise.
+    foreach(_testflag ${ARGN} "")
+        if (NOT RUN_QUIETLY)
             message(STATUS "Try ${DESCRIPTION} = [${_testflag}]")
-            set(CMAKE_REQUIRED_FLAGS "${${CXXFLAGSVAR}} ${_testflag}")
-            # make valid variable names from the flag string: replace all non-alphanumerical chars
-            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_FLAG_VARIABLE "CXX_FLAG_${_testflag}")
-            string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_SIMD_VARIABLE "CXX_SIMD_COMPILES_FLAG_${_testflag}")
+        endif()
+        # TODO This sets up implicit context for both the compilation
+        # checks below, but the implementation could be improved to
+        # make this more explicit.
+        set(CMAKE_REQUIRED_FLAGS "${${CXXFLAGSVAR}} ${_testflag}")
+        # make valid variable names from the flag string: replace all non-alphanumerical chars
+        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_FLAG_VARIABLE "CXX_FLAG_${_testflag}")
+        string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" COMPILE_SIMD_VARIABLE "CXX_SIMD_COMPILES_FLAG_${_testflag}")
             
-            # Check that the flag itself is fine, and that is does not generate warnings either
-            check_cxx_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
+        # Check that the flag itself is fine, and that is does not generate warnings either
+        check_cxx_compiler_flag("${_testflag}" ${COMPILE_FLAG_VARIABLE})
 
-            if(${COMPILE_FLAG_VARIABLE})
-                # Check that we can compile SIMD source (this does not catch compiler warnings)
-                check_cxx_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
-                if(NOT ${COMPILE_SIMD_VARIABLE})
+        if(${COMPILE_FLAG_VARIABLE})
+            # Check that we can compile SIMD source (this does not catch compiler warnings)
+            check_cxx_source_compiles("${SOURCE}" ${COMPILE_SIMD_VARIABLE})
+            if(NOT ${COMPILE_SIMD_VARIABLE})
+                if (NOT RUN_QUIETLY)
                     message(STATUS "Compiler flag was valid, but executable did not build - perhaps update the binutils package")
-                    set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
                 endif()
+                set(SUGGEST_BINUTILS_UPDATE 1 PARENT_SCOPE)
             endif()
+        endif()
 
-            if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
-                set(${VARIABLE}_FLAG "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
-                set(${VARIABLE} 1 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
-                break()
-            else()
-                set(${VARIABLE} 0 CACHE INTERNAL "Result of test for ${DESCRIPTION}" FORCE)
-            endif()
-        endforeach()
-    ENDIF()
+        # TODO This variable should not go into the cache, but rather
+        # simply be set in the parent scope.
+        if(${COMPILE_FLAG_VARIABLE} AND ${COMPILE_SIMD_VARIABLE})
+            set(${VARIABLE} "${_testflag}" CACHE INTERNAL "${DESCRIPTION}")
+            break()
+        endif()
+    endforeach()
 
+    # TODO This logic should move to the calling scope.
     IF (${VARIABLE})
-        SET (${CXXFLAGSVAR} "${${CXXFLAGSVAR}} ${${VARIABLE}_FLAG}" PARENT_SCOPE)
+        SET (${CXXFLAGSVAR} "${${CXXFLAGSVAR}} ${${VARIABLE}}" PARENT_SCOPE)
     ENDIF ()
 
 ENDFUNCTION(GMX_FIND_CXXFLAG_FOR_SOURCE VARIABLE DESCRIPTION SOURCE CXXFLAGSVAR)
