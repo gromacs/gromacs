@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,13 +128,9 @@
             skipmask = (rsq >= rcut2) ? 0 : skipmask;
             /* 9 flops for r^2 + cut-off check */
 
-#ifdef CHECK_EXCLS
-            /* Excluded atoms are allowed to be on top of each other.
-             * To avoid overflow of rinv, rinvsq and rinvsix
-             * we add a small number to rsq for excluded pairs only.
-             */
-            rsq += (1 - interact)*NBNXN_AVOID_SING_R2_INC;
-#endif
+            // Ensure the distances do not fall below the limit where r^-12 overflows.
+            // This should never happen for normal interactions.
+            rsq = std::max(rsq, NBNXN_MIN_RSQ);
 
 #ifdef COUNT_PAIRS
             npair++;
