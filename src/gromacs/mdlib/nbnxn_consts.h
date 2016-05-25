@@ -48,7 +48,7 @@ extern "C" {
 
 #define NBNXN_CPU_CLUSTER_I_SIZE_2LOG  2
 
-/* To avoid NaN when excluded atoms are at zero distance, we add a small
+/* To avoid NaN when atoms are at nearly zero distance, we add a small
  * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.
  */
 #if !GMX_DOUBLE
