@@ -748,6 +748,26 @@ static gmx_inline void clear_rvecs_omp_nowait(int n, rvec v[])
     }
 }
 
+/*! \brief  This routine checks if the potential energy is finite.
+ *
+ * Note that passing this check does not guarantee finite forces,
+ * since those use slightly different arithmetics. But in most cases
+ * there is just a narrow coordinate range where forces are not finite
+ * and energies are finite.
+ *
+ * \param[in] enerd  The energy data; the non-bonded group energies need to be added in here before calling this routine
+ */
+static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
+{
+    if (!std::isfinite(enerd->term[F_EPOT]))
+    {
+        gmx_fatal(FARGS, "The total potential energy is %g, which is not finite. The LJ and electrostatic contributions to the energy are %g and %g, respectively. A non-finite potential energy can be caused by overlapping interactions in bonded interactions or very large or NaN coordinate values. Usually this is caused by a badly or non-equilibrated initial configuration or incorrect interactions or parameters in the topology.",
+                  enerd->term[F_EPOT],
+                  enerd->term[F_LJ],
+                  enerd->term[F_COUL_SR]);
+    }
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1508,8 +1528,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                             flags);
     }
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(enerd->grpp), enerd->term);
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        /* Sum the potential energy terms from group contributions */
+        sum_epot(&(enerd->grpp), enerd->term);
+
+        if (!EI_TPI(inputrec->eI))
+        {
+            checkPotentialEnergyValidity(enerd);
+        }
+    }
 }
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
@@ -1892,8 +1920,17 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                             flags);
     }
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(enerd->grpp), enerd->term);
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        /* Sum the potential energy terms from group contributions */
+        sum_epot(&(enerd->grpp), enerd->term);
+
+        if (!EI_TPI(inputrec->eI))
+        {
+            checkPotentialEnergyValidity(enerd);
+        }
+    }
+
 }
 
 void do_force(FILE *fplog, t_commrec *cr,
