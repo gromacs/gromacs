@@ -50,8 +50,6 @@
 #include <algorithm>
 #include <vector>
 
-#include <thread>
-
 #if GMX_HWLOC
 #    include <hwloc.h>
 #endif
