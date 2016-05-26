@@ -73,16 +73,20 @@ function(gmx_suggest_simd _suggested_simd)
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
+        # We can use try_run(... LINK_LIBRARIES ${GMX_STDLIB_LIBRARIES})
+        # once we require CMake at least 2.8.11. The code below works
+        # even when GMX_STDLIB_LIBRARIES is empty.
+        set(LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}")
         try_run(GMX_CPUINFO_RUN_SIMD GMX_CPUINFO_COMPILED
                 ${CMAKE_BINARY_DIR}
                 ${CMAKE_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp
                 COMPILE_DEFINITIONS ${_compile_definitions}
-                LINK_LIBRARIES ${GMX_STDLIB_LIBRARIES}
+                CMAKE_FLAGS "-DLINK_LIBRARIES=${LINK_LIBRARIES}"
                 RUN_OUTPUT_VARIABLE OUTPUT_TMP
                 COMPILE_OUTPUT_VARIABLE GMX_CPUINFO_COMPILE_OUTPUT
                 ARGS "-features")
 
-        if(NOT GMX_CPUINFO_COMPILED)
+            if(NOT GMX_CPUINFO_COMPILED)
             message(WARNING "Cannot compile cpuinfo code, which means no SIMD instructions.")
             message(STATUS "Compile output: ${GMX_CPUINFO_COMPILE_OUTPUT}")
             set(OUTPUT_TMP "None")
