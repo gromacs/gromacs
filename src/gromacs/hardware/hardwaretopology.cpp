@@ -50,7 +50,9 @@
 #include <algorithm>
 #include <vector>
 
+#if !defined __GNUC__ || !(__GNUC__ == 4 && __GNUC_MINOR__ < 7)
 #include <thread>
+#endif
 
 #if GMX_HWLOC
 #    include <hwloc.h>
