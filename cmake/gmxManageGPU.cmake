@@ -74,6 +74,13 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
+
+    # Cmake tries to use the static cuda runtime by default,
+    # but this leads to unusable GPU builds on OS X.
+    if(APPLE)
+        set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE STRING "Use the static version of the CUDA runtime library if available")
+    endif()
+
     find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
 
     # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
