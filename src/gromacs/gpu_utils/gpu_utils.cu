@@ -403,7 +403,11 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
        e.g. if max application clocks should not be used for certain GPUs. */
     if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->gpu_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
     {
-        md_print_info( fplog, "Changing GPU application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+        md_print_info( fplog,
+                       "Changing GPU application clocks for %s to (%d,%d).\n"
+                       "To avoid hurting other GPU processes we will not reset clocks when finished.\n",
+                       gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+
         nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->gpu_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
         HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
         gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = true;
@@ -425,24 +429,21 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
 #endif /* HAVE_NVML */
 }
 
-/*! \brief Resets application clocks if changed and cleans up NVML for the passed \gpu_dev.
+/*! \brief Release all resources (nvml) related to application clocks
  *
  * \param[in] gpu_dev  CUDA device information
+ *
+ * \note For now, this routine only calls nvmlShutdown() to release resources.
+ *       We avoid resetting the application clocks since that might hurt other
+ *       processes still running on the GPU that were started after this one.
  */
-static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused * cuda_dev)
+static gmx_bool finalize_gpu_application_clocks(const gmx_device_info_t gmx_unused * cuda_dev)
 {
 #if !HAVE_NVML_APPLICATION_CLOCKS
     GMX_UNUSED_VALUE(cuda_dev);
     return true;
 #else /* HAVE_NVML_APPLICATION_CLOCKS */
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
-    if (cuda_dev &&
-        cuda_dev->nvml_is_restricted == NVML_FEATURE_DISABLED &&
-        cuda_dev->nvml_ap_clocks_changed)
-    {
-        nvml_stat = nvmlDeviceResetApplicationsClocks( cuda_dev->nvml_device_id );
-        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceResetApplicationsClocks failed" );
-    }
     nvml_stat = nvmlShutdown();
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlShutdown failed" );
     return (nvml_stat == NVML_SUCCESS);
@@ -493,7 +494,7 @@ gmx_bool free_cuda_gpu(
         )
 {
     cudaError_t  stat;
-    gmx_bool     reset_gpu_application_clocks_status = true;
+    gmx_bool     finalize_gpu_application_clocks_status = true;
     int          gpuid;
 
     assert(result_str);
@@ -509,12 +510,12 @@ gmx_bool free_cuda_gpu(
     gpuid = gpu_opt ? gpu_opt->dev_use[mygpu] : -1;
     if (gpuid != -1)
     {
-        reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->gpu_dev[gpuid]) );
+        finalize_gpu_application_clocks_status = finalize_gpu_application_clocks( &(gpu_info->gpu_dev[gpuid]) );
     }
 
     stat = cudaDeviceReset();
     strncpy(result_str, cudaGetErrorString(stat), STRLEN);
-    return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
+    return (stat == cudaSuccess) && finalize_gpu_application_clocks_status;
 }
 
 /*! \brief Returns true if the gpu characterized by the device properties is
