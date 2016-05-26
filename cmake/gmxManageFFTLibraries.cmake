@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -67,6 +67,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     endif()
 
     if(GMX_BUILD_OWN_FFTW)
+
+        if(WIN32)
+            message(FATAL_ERROR "Cannot build FFTW3 automatically (GMX_BUILD_OWN_FFTW=ON) on Windows")
+        endif()
+
         add_subdirectory(src/contrib/fftw)
         include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
         # libgmxfftw is always built static, so libgromacs does not
