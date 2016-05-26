@@ -748,6 +748,39 @@ static gmx_inline void clear_rvecs_omp_nowait(int n, rvec v[])
     }
 }
 
+/* This routine checks if the non-bonded pair energies that are calculated
+ * in the nbnxn kernels are finite.
+ * Note that this does not guarantee finite forces, but there is just a narrow
+ * pair-distance range where forces are not finite and energies finite.
+ */
+static void checkNonbondedPairEnergyValidity(const gmx_enerdata_t *enerd)
+{
+    /* For Coulomb the energy actually only uses 1/r^2, so here we can only
+     * catch distances up to 1/sqrt(GMX_REAL_MAX), whereas the forces might
+     * use 1/r^3, depending on the kernel. So we print that distance limit.
+     * Anyhow, this distance will be lower than the minimum increment of a real
+     * of order 1, so in practice this means detecting distances equal to 0.
+     * For LJ we use 1/r^12 for both force and energy.
+     */
+    const real coulombMinDistance = std::pow(GMX_REAL_MAX, -1.0/3.0);
+    const real ljMinDistance      = std::pow(GMX_REAL_MAX, -1.0/12.0);
+
+    const char *format            = "One or more pairs of non-excluded atoms, either interacting or non-interacting, are at a distance close to or shorter than %.1e nm, which is not allowed. In most cases this is caused by identical coordinates for different atoms in the initial structure or by forgetting to put exclusions/bonds in the topology between atoms that are intended to overlap.";
+
+    /* We need to check for both Coulomb and LJ, since the kernel might only
+     * calculate one of the two for some pairs.
+     * We first check Coulomb, since that has the tighter limit.
+     */
+    if (!std::isfinite(enerd->term[F_COUL_SR]))
+    {
+        gmx_fatal(FARGS, format, coulombMinDistance);
+    }
+    if (!std::isfinite(enerd->term[F_LJ]))
+    {
+        gmx_fatal(FARGS, format, ljMinDistance);
+    }
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1508,8 +1541,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                             flags);
     }
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(enerd->grpp), enerd->term);
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        /* Sum the potential energy terms from group contributions */
+        sum_epot(&(enerd->grpp), enerd->term);
+
+        /* For all dynamics and energy minimization we need finite energies
+         * and forces. TPI needs support for non finite energies, but we have
+         * not implemented that yet with the Verlet cut-offs scheme.
+         */
+        checkNonbondedPairEnergyValidity(enerd);
+    }
 }
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
