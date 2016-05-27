@@ -61,11 +61,11 @@ void nbnxn_realloc_void(void **ptr,
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n);
 
 /* Copy na rvec elements from x to xnb using nbatFormat, start dest a0,
- * and fills up to na_round using cx,cy,cz.
+ * and fills up to na_round with coordinates that are far away.
  */
 void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
-                            rvec *x, int nbatFormat, real *xnb, int a0,
-                            int cx, int cy, int cz);
+                            const rvec *x, int nbatFormat,
+                            real *xnb, int a0);
 
 enum {
     enbnxninitcombruleDETECT, enbnxninitcombruleGEOM, enbnxninitcombruleLB, enbnxninitcombruleNONE
