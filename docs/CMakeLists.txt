@@ -64,6 +64,7 @@ find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
+set(SPHINX_PDF_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/sphinx-pdf")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
 # The directory from which man pages will be installed; if it remains
@@ -96,6 +97,9 @@ if (SPHINX_FOUND)
     set(SPHINX_SOURCE_FILES
         index.rst
         download.rst
+        peregrine.ico
+        peregrine.jpg
+        peregrine-small.jpg
         dev-manual/index.rst
         dev-manual/build-system.rst
         dev-manual/doxygen.rst
@@ -123,8 +127,8 @@ if (SPHINX_FOUND)
         user-guide/file-formats.rst
         user-guide/cmdline.rst
         user-guide/environment-variables.rst
-        user-guide/plotje.gif
-        user-guide/xvgr.gif
+        user-guide/plotje.png
+        user-guide/xvgr.png
         conf.py
         links.dat
         )
@@ -202,6 +206,43 @@ if (SPHINX_FOUND)
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
 
+    gmx_get_stamp_filename(SPHINX_INPUT_STAMP sphinx-input)
+    add_custom_command(
+        OUTPUT
+            ${SPHINX_PDF_BUILD_DIR}/documentation.tex
+        COMMAND
+            ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -b latex
+            -w sphinx-html.log
+            -d "${SPHINX_CACHE_DIR}"
+            "${SPHINX_INPUT_DIR}"
+            "${SPHINX_PDF_BUILD_DIR}"
+        DEPENDS
+            sphinx-input sphinx-programs ${SPHINX_INPUT_STAMP}
+        WORKING_DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Building Latex intermediate stage with Sphinx"
+        VERBATIM
+        )
+
+    set(_documentation_pdf_target_location ${HTML_OUTPUT_DIR}/documentation-${GMX_VERSION_STRING}.pdf)
+    add_custom_command(
+        OUTPUT
+            ${_documentation_pdf_target_location}
+        COMMAND
+            make all
+        COMMAND
+            ${CMAKE_COMMAND} -E copy documentation.pdf ${_documentation_pdf_target_location}
+        DEPENDS
+            ${SPHINX_PDF_BUILD_DIR}/documentation.tex
+        WORKING_DIRECTORY
+            "${SPHINX_PDF_BUILD_DIR}"
+        COMMENT "Building PDF documentation with Sphinx"
+        VERBATIM
+        )
+
     add_custom_target(webpage-sphinx
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
@@ -212,9 +253,11 @@ if (SPHINX_FOUND)
             -d "${SPHINX_CACHE_DIR}"
             "${SPHINX_INPUT_DIR}"
             "${HTML_OUTPUT_DIR}"
+        DEPENDS
+            ${_documentation_pdf_target_location}
         WORKING_DIRECTORY
             ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Building HTML documentation with Sphinx"
+        COMMENT "Preparing HTML documentation with Sphinx"
         VERBATIM
         )
     add_dependencies(webpage-sphinx sphinx-input sphinx-programs)
