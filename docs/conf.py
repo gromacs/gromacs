@@ -150,6 +150,7 @@ rst_epilog += """
 .. |Gromacs| replace:: GROMACS
 .. _gmx-manual: manual-{gmx_version_string}.pdf
 .. _gmx-manual-parent-dir: ../manual-{gmx_version_string}.pdf
+.. _gmx-sphinx-pdf-documentation: documentation-{gmx_version_string}.pdf
 .. |gmx-source-package-ftp| replace:: As ftp ftp://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-source-package-http| replace:: As http http://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-regressiontests-package| replace:: http://gerrit.gromacs.org/download/regressiontests-{regressiontest_version}.tar.gz
@@ -199,12 +200,15 @@ html_short_title = u'GROMACS ' + version
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+#
+# TODO decide if we want to use this feature. Image made with convert -size 128x128
+#
+# html_logo = 'peregrine-small.jpg'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-#html_favicon = None
+html_favicon = 'peregrine.ico'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -278,23 +282,23 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'Gromacs.tex', u'GROMACS Documentation',
+  ('index', 'documentation.tex', u'GROMACS Documentation',
    u'GROMACS development team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
+latex_logo = 'peregrine.jpg'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
 #latex_use_parts = False
 
 # If true, show page references after internal links.
-#latex_show_pagerefs = False
+latex_show_pagerefs = True
 
 # If true, show URL addresses after external links.
-#latex_show_urls = False
+latex_show_urls = 'inline'
 
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []

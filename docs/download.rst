@@ -3,6 +3,10 @@
 Downloads
 =========
 
+|Gromacs| provides downloads of both its source code and a test
+suite. The versions of these that match this documentation can be
+found at the URLs below.
+
 Source code
 -----------
 * |gmx-source-package-ftp|

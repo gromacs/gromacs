@@ -105,7 +105,8 @@ def do_build(context):
     if not release:
         sphinx_targets.extend((
                 ('man', 'man', 'man page'),
-                ('install-guide', 'install', 'install-guide')
+                ('install-guide', 'install', 'install-guide'),
+                ('pdf-sphinx', 'pdf', 'Sphinx PDF')
             ))
     logs = []
     for target, log, descr in sphinx_targets:
@@ -117,6 +118,16 @@ def do_build(context):
         if os.path.isfile(logfile) and os.stat(logfile).st_size > 0:
             context.mark_unstable('Sphinx: {0} generation produced warnings'.format(descr))
         logs.append(logfile)
+
+        # Get the LaTeX log file also for the Sphinx PDF build
+        if target == 'pdf-sphinx':
+            logfile = os.path.join(context.workspace.build_dir, 'docs/sphinx-pdf/documentation.log')
+            if os.path.isfile(logfile):
+                with open(logfile, 'r') as f:
+                    pdf_sphinx_log = f.read()
+                if re.search(r'LaTeX Warning: Reference .* on page .* undefined', pdf_sphinx_log):
+                    context.mark_unstable('undefined references in Sphinx PDF')
+                logs.append(logfile)
     context.publish_logs(logs, category='sphinx')
     if context.failed:
         return

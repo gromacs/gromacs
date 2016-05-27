@@ -7,17 +7,19 @@ Welcome to the |Gromacs| documentation!
     http://www.gromacs.org/Documentation/Acceleration_and_parallelization
     and http://www.gromacs.org/Documentation/Performance_checklist)
 
-Contents:
-
 .. toctree::
    :maxdepth: 2
 
    download
    install-guide/index
-
    user-guide/index
 
+..  TODO : Move content from LaTeX to restructuredText and make a new
+    section above. Then rename "single PDF".
+
 * `Reference Manual`_ (PDF format)
+
+* `Single PDF`_ (PDF format)
 
 * Answers to `Frequently Asked Questions <http://www.gromacs.org/Documentation/FAQs>`_
 
@@ -82,3 +84,4 @@ Indices and tables
 * :ref:`genindex`
 
 .. _Reference Manual: `gmx-manual`_
+.. _Single PDF: `gmx-sphinx-pdf-documentation`_
