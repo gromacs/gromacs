@@ -60,6 +60,8 @@ give an overview of some of the topics that are documented:
 \if libapi
  - \subpage page_wrapperbinary <br/>
    Provides an overview of how the `gmx` wrapper binary is implemented.
+ - \subpage page_logging <br/>
+   Documentation for logging and status output (for now, within mdrun).
  - \subpage page_simd <br/>
    Documentation about the new SIMD module that makes it possible to write
    highly accelerated CPU code that is still portable.
