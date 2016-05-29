@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Wraps <mpi.h> usage in Gromacs.
+ * Wraps mpi.h usage in Gromacs.
  *
  * This header wraps the MPI header <mpi.h>, and should be included instead of
  * that one.  It abstracts away the case that depending on compilation

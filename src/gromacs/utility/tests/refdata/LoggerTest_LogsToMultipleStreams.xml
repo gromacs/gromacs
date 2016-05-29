@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Output1"><![CDATA[
+line
+
+par
+
+line2
+]]></String>
+  <String Name="Output2"><![CDATA[
+par
+]]></String>
+</ReferenceData>
