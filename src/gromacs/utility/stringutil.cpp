@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,7 +133,16 @@ std::string stripString(const std::string &str)
 
 std::string formatString(const char *fmt, ...)
 {
-    va_list           ap;
+    va_list     ap;
+    va_start(ap, fmt);
+    std::string result = formatStringV(fmt, ap);
+    va_end(ap);
+    return result;
+}
+
+std::string formatStringV(const char *fmt, va_list ap)
+{
+    va_list           ap_copy;
     char              staticBuf[1024];
     int               length = 1024;
     std::vector<char> dynamicBuf;
@@ -143,9 +152,9 @@ std::string formatString(const char *fmt, ...)
     // provides their own way of doing things...
     while (1)
     {
-        va_start(ap, fmt);
-        int n = vsnprintf(buf, length, fmt, ap);
-        va_end(ap);
+        va_copy(ap_copy, ap);
+        int n = vsnprintf(buf, length, fmt, ap_copy);
+        va_end(ap_copy);
         if (n > -1 && n < length)
         {
             std::string result(buf);
