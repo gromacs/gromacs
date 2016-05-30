@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -81,92 +81,108 @@ macro(gmx_set_build_information)
         message(STATUS "Setting build user & time - not on Unix, using anonymous")
     endif()
 
+    # Set up some defaults that will usually be overridden
+    if(CMAKE_CROSSCOMPILING)
+        set(_reason ", cross-compiled")
+    endif()
+    set(OUTPUT_CPU_VENDOR   "Unknown${_reason}")
+    set(OUTPUT_CPU_BRAND    "Unknown${_reason}")
+    set(OUTPUT_CPU_FAMILY   "0")
+    set(OUTPUT_CPU_MODEL    "0")
+    set(OUTPUT_CPU_STEPPING "0")
+    set(OUTPUT_CPU_FEATURES "Unknown${_reason}")
+    unset(_reason)
+
     if(NOT CMAKE_CROSSCOMPILING)
-        # Get CPU information, e.g. for deciding what SIMD support exists
+        # Get CPU information, e.g. for deciding what SIMD support probably exists
         set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUID_STANDALONE")
         if(GMX_TARGET_X86)
             set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
         endif()
-        try_run(GMX_CPUID_RUN_VENDOR GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_CPU_VENDOR ARGS "-vendor")
-        try_run(GMX_CPUID_RUN_BRAND GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_CPU_BRAND ARGS "-brand")
-        try_run(GMX_CPUID_RUN_FAMILY GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_CPU_FAMILY ARGS "-family")
-        try_run(GMX_CPUID_RUN_MODEL GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_CPU_MODEL ARGS "-model")
-       try_run(GMX_CPUID_RUN_STEPPING GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_CPU_STEPPING ARGS "-stepping")
-        try_run(GMX_CPUID_RUN_FEATURES GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_CPU_FEATURES ARGS "-features")
+
+        set(GMX_BUILDINFORMATION_BINARY "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/GmxBuildInformation${CMAKE_EXECUTABLE_SUFFIX}")
+        # TODO Extract this try_compile to a helper function, because
+        # it duplicates code in gmxDetectSimd.cmake
+        try_compile(GMX_BUILDINFORMATION_COMPILED
+            "${CMAKE_CURRENT_BINARY_DIR}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c"
+            COMPILE_DEFINITIONS "${_compile_definitions}"
+            OUTPUT_VARIABLE GMX_BUILDINFORMATION_COMPILED_OUTPUT
+            COPY_FILE ${GMX_BUILDINFORMATION_BINARY})
         unset(_compile_definitions)
 
-        string(STRIP "${OUTPUT_CPU_VENDOR}" OUTPUT_CPU_VENDOR)
-        string(STRIP "${OUTPUT_CPU_BRAND}" OUTPUT_CPU_BRAND)
-        string(STRIP "${OUTPUT_CPU_FAMILY}" OUTPUT_CPU_FAMILY)
-        string(STRIP "${OUTPUT_CPU_MODEL}" OUTPUT_CPU_MODEL)
-        string(STRIP "${OUTPUT_CPU_STEPPING}" OUTPUT_CPU_STEPPING)
-        string(STRIP "${OUTPUT_CPU_FEATURES}" OUTPUT_CPU_FEATURES)
-
-        if(GMX_CPUID_RUN_VENDOR EQUAL 0)
-            set(BUILD_CPU_VENDOR   "${OUTPUT_CPU_VENDOR}"   CACHE INTERNAL "Build CPU vendor")
-        else()
-            set(BUILD_CPU_VENDOR   "Unknown, detect failed" CACHE INTERNAL "Build CPU vendor")
+        if(GMX_BUILDINFORMATION_COMPILED)
+            # TODO Extract this duplication to a helper function (also
+            # from gmxDetectSimd.cmake)
+            if(NOT DEFINED GMX_BUILDINFORMATION_RUN_VENDOR)
+                execute_process(COMMAND ${GMX_BUILDINFORMATION_BINARY} "-vendor"
+                    RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_VENDOR
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_BUILDINFORMATION_RUN_VENDOR "${GMX_BUILDINFORMATION_RUN_VENDOR}" CACHE INTERNAL "Result of running CPUID code with arg -vendor")
+                if(GMX_BUILDINFORMATION_RUN_VENDOR EQUAL 0)
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_VENDOR)
+                endif()
+            endif()
+            if(NOT DEFINED GMX_BUILDINFORMATION_RUN_BRAND)
+                execute_process(COMMAND ${GMX_BUILDINFORMATION_BINARY} "-brand"
+                    RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_BRAND
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_BUILDINFORMATION_RUN_BRAND "${GMX_BUILDINFORMATION_RUN_BRAND}" CACHE INTERNAL "Result of running CPUID code with arg -brand")
+                if(GMX_BUILDINFORMATION_RUN_BRAND EQUAL 0)
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_BRAND)
+                endif()
+            endif()
+            if(NOT DEFINED GMX_BUILDINFORMATION_RUN_FAMILY)
+                execute_process(COMMAND ${GMX_BUILDINFORMATION_BINARY} "-family"
+                    RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_FAMILY
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_BUILDINFORMATION_RUN_FAMILY "${GMX_BUILDINFORMATION_RUN_FAMILY}" CACHE INTERNAL "Result of running CPUID code with arg -family")
+                if(GMX_BUILDINFORMATION_RUN_FAMILY EQUAL 0)
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_FAMILY)
+                endif()
+            endif()
+            if(NOT DEFINED GMX_BUILDINFORMATION_RUN_MODEL)
+                execute_process(COMMAND ${GMX_BUILDINFORMATION_BINARY} "-model"
+                    RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_MODEL
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_BUILDINFORMATION_RUN_MODEL "${GMX_BUILDINFORMATION_RUN_MODEL}" CACHE INTERNAL "Result of running CPUID code with arg -model")
+                if(GMX_BUILDINFORMATION_RUN_MODEL EQUAL 0)
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_MODEL)
+                endif()
+            endif()
+            if(NOT DEFINED GMX_BUILDINFORMATION_RUN_STEPPING)
+                execute_process(COMMAND ${GMX_BUILDINFORMATION_BINARY} "-stepping"
+                    RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_STEPPING
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_BUILDINFORMATION_RUN_STEPPING "${GMX_BUILDINFORMATION_RUN_STEPPING}" CACHE INTERNAL "Result of running CPUID code with arg -stepping")
+                if(GMX_BUILDINFORMATION_RUN_STEPPING EQUAL 0)
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_STEPPING)
+                endif()
+            endif()
+            if(NOT DEFINED GMX_BUILDINFORMATION_RUN_FEATURES)
+                execute_process(COMMAND ${GMX_BUILDINFORMATION_BINARY} "-features"
+                    RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_FEATURES
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_BUILDINFORMATION_RUN_FEATURES "${GMX_BUILDINFORMATION_RUN_FEATURES}" CACHE INTERNAL "Result of running CPUID code with arg -features")
+                if(GMX_BUILDINFORMATION_RUN_FEATURES EQUAL 0)
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_FEATURES)
+                endif()
+            endif()
         endif()
-        if(GMX_CPUID_RUN_BRAND EQUAL 0)
-            set(BUILD_CPU_BRAND    "${OUTPUT_CPU_BRAND}"    CACHE INTERNAL "Build CPU brand")
-        else()
-            set(BUILD_CPU_BRAND    "Unknown, detect failed" CACHE INTERNAL "Build CPU brand")
-        endif()
-        if(GMX_CPUID_RUN_FAMILY EQUAL 0)
-            set(BUILD_CPU_FAMILY   "${OUTPUT_CPU_FAMILY}"   CACHE INTERNAL "Build CPU family")
-        else()
-            set(BUILD_CPU_FAMILY   "0"                     CACHE INTERNAL "Build CPU family")
-        endif()
-        if(GMX_CPUID_RUN_MODEL EQUAL 0)
-            set(BUILD_CPU_MODEL    "${OUTPUT_CPU_MODEL}"    CACHE INTERNAL "Build CPU model")
-        else()
-            set(BUILD_CPU_MODEL    "0"                     CACHE INTERNAL "Build CPU model")
-        endif()
-        if(GMX_CPUID_RUN_STEPPING EQUAL 0)
-            set(BUILD_CPU_STEPPING "${OUTPUT_CPU_STEPPING}" CACHE INTERNAL "Build CPU stepping")
-        else()
-            set(BUILD_CPU_STEPPING "0"                     CACHE INTERNAL "Build CPU stepping")
-        endif()
-            if(GMX_CPUID_RUN_FEATURES EQUAL 0)
-            set(BUILD_CPU_FEATURES "${OUTPUT_CPU_FEATURES}" CACHE INTERNAL "Build CPU features")
-        else()
-            set(BUILD_CPU_FEATURES ""                      CACHE INTERNAL "Build CPU features")
-        endif()
-
-    else()
-
-        set(BUILD_CPU_VENDOR   "Unknown, cross-compiled"   CACHE INTERNAL "Build CPU vendor")
-        set(BUILD_CPU_BRAND    "Unknown, cross-compiled"    CACHE INTERNAL "Build CPU brand")
-        set(BUILD_CPU_FAMILY   "0"   CACHE INTERNAL "Build CPU family")
-        set(BUILD_CPU_MODEL    "0"    CACHE INTERNAL "Build CPU model")
-        set(BUILD_CPU_STEPPING "0" CACHE INTERNAL "Build CPU stepping")
-        set(BUILD_CPU_FEATURES "" CACHE INTERNAL "Build CPU features")
-
     endif()
+
+    set(BUILD_CPU_VENDOR   "${OUTPUT_CPU_VENDOR}"   CACHE INTERNAL "Build CPU vendor")
+    set(BUILD_CPU_BRAND    "${OUTPUT_CPU_BRAND}"    CACHE INTERNAL "Build CPU brand")
+    set(BUILD_CPU_FAMILY   "${OUTPUT_CPU_FAMILY}"   CACHE INTERNAL "Build CPU family")
+    set(BUILD_CPU_MODEL    "${OUTPUT_CPU_MODEL}"    CACHE INTERNAL "Build CPU model")
+    set(BUILD_CPU_STEPPING "${OUTPUT_CPU_STEPPING}" CACHE INTERNAL "Build CPU stepping")
+    set(BUILD_CPU_FEATURES "${OUTPUT_CPU_FEATURES}" CACHE INTERNAL "Build CPU features")
 
     ENDIF(NOT DEFINED BUILD_USER)
 endmacro(gmx_set_build_information)
