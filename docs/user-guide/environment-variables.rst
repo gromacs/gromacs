@@ -367,6 +367,11 @@ compilation of OpenCL kernels, but they are also used in device selection.
         kernels from previous runs. Currently, caching is always
         disabled, until we solve concurrency issues.
 
+``GMX_OCL_GENCACHE``
+        Enable OpenCL binary caching. Only intended to be used for
+        development and (expert) testing as neither concurrency
+        nor cache invalidation is implemented safely!
+
 ``GMX_OCL_NOFASTGEN``
         If set, generate and compile all algorithm flavors, otherwise
         only the flavor required for the simulation is generated and
