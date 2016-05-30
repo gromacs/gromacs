@@ -853,18 +853,7 @@ if (GMX_BUILD_FOR_COVERAGE)
 endif()
 
 if (BUILD_TESTING)
-    # "tests" target builds all the separate test binaries.
-    add_custom_target(tests)
-    # "run-ctest" is an internal target that actually runs the tests.
-    # This is necessary to be able to add separate targets that execute as part
-    # of 'make check', but are ensured to be executed after the actual tests.
-    add_custom_target(run-ctest
-                      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-                      COMMENT "Running all tests"
-                      VERBATIM)
-    add_dependencies(run-ctest tests)
-    # "check" target builds and runs all tests.
-    add_custom_target(check DEPENDS run-ctest)
+    include(tests/CheckTarget.cmake)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)

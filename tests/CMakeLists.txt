@@ -174,11 +174,8 @@ if(REGRESSIONTEST_PATH)
             ENVIRONMENT "PATH=${PATH}")
     endforeach()
 else()
-    add_custom_target(regressiontests-notice
-        ${CMAKE_COMMAND} -E echo "NOTE: Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON."
-        DEPENDS run-ctest
-        COMMENT "Regression tests not available" VERBATIM)
-    add_dependencies(check regressiontests-notice)
+    gmx_add_missing_tests_notice("Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON.")
 endif()
 
+gmx_create_missing_tests_notice_target()
 include(CppCheck.cmake)
