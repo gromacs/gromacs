@@ -1260,7 +1260,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 if (debug)
                 {
                     fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
-                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xa[ZZ]);
+                    fprintf(debug, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xb[ZZ]);
                     fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
                     fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
                 }
