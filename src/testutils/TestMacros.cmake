@@ -81,95 +81,61 @@ function (gmx_add_gtest_executable EXENAME)
     endif()
 endfunction()
 
-function (gmx_register_unit_test NAME EXENAME)
-    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        add_test(NAME ${NAME}
-                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
-        set_tests_properties(${NAME} PROPERTIES LABELS "GTest;UnitTest")
-        add_dependencies(tests ${EXENAME})
-    endif()
-endfunction ()
-
-# Use this function to register a test binary as an integration test
-function (gmx_register_integration_test NAME EXENAME)
-    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        add_test(NAME ${NAME}
-                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
-        set_tests_properties(${testname} PROPERTIES LABELS "IntegrationTest")
-        add_dependencies(tests ${EXENAME})
-
-        # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
-        # some point.
-        # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
-    endif()
-endfunction ()
-
-# Use this function to register a test binary as an integration test
-# that requires MPI. The intended number of MPI ranks is also passed
+# Use this function with MPI_RANKS <N> INTEGRATION_TEST to register a test
+# binary as an integration test that requires MPI. The intended number of MPI
+# ranks is also passed
 #
-# TODO When a test case needs it, generalize the NUMPROC mechanism so
+# TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
-function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
+function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        if (GMX_MPI)
-            foreach(VARNAME MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS)
-                # These variables need a valid value for the test to run
-                # and pass, but conceivably any of them might be valid
-                # with arbitrary (including empty) content. They can't be
-                # valid if they've been populated with the CMake
-                # find_package magic suffix/value "NOTFOUND", though.
-                if (${VARNAME} MATCHES ".*NOTFOUND")
-                    message(STATUS "CMake variable ${VARNAME} was not detected to be a valid value. To test GROMACS correctly, check the advice in the install guide.")
-                    set(_cannot_run_mpi_tests 1)
-                endif()
-                if (NOT VARNAME STREQUAL MPIEXEC AND ${VARNAME})
-                    set(_an_mpi_variable_had_content 1)
-                endif()
-            endforeach()
-            if(_an_mpi_variable_had_content AND NOT MPIEXEC)
-                message(STATUS "CMake variable MPIEXEC must have a valid value if one of the other related MPIEXEC variables does. To test GROMACS correctly, check the advice in the install guide.")
-                set(_cannot_run_mpi_tests 1)
-            endif()
-            if(NOT _cannot_run_mpi_tests)
-                add_test(NAME ${NAME}
-                    COMMAND
-                    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC}
-                    ${MPIEXEC_PREFLAGS} $<TARGET_FILE:${EXENAME}> ${MPIEXEC_POSTFLAGS}
-                    --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml
-                    )
-                set_tests_properties(${testname} PROPERTIES LABELS "MpiIntegrationTest")
-                add_dependencies(tests ${EXENAME})
-            endif()
+        set(_options INTEGRATION_TEST)
+        set(_one_value_args MPI_RANKS)
+        cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
+        set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
+        set(_cmd ${EXENAME})
+        set(_labels GTest)
+        set(_timeout 30)
+        if (ARG_INTEGRATION_TEST)
+            list(APPEND _labels IntegrationTest)
+            set(_timeout 120)
 
             # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
             # some point.
             # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
-        elseif(GMX_THREAD_MPI)
-            add_test(NAME ${NAME}
-                COMMAND
-                $<TARGET_FILE:${EXENAME}> -ntmpi ${NUMPROC}
-                --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml
-                )
-            set_tests_properties(${testname} PROPERTIES LABELS "MpiIntegrationTest")
-            add_dependencies(tests ${EXENAME})
-
-            # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
-            # some point.
-            # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
+        else()
+            list(APPEND _labels UnitTest)
         endif()
+        if (ARG_MPI_RANKS)
+            if (NOT GMX_CAN_RUN_MPI_TESTS)
+                return()
+            endif()
+            list(APPEND _labels MpiTest)
+            if (GMX_MPI)
+                set(_cmd
+                    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${ARG_MPI_RANKS}
+                    ${MPIEXEC_PREFLAGS} $<TARGET_FILE:${EXENAME}> ${MPIEXEC_POSTFLAGS})
+            elseif (GMX_THREAD_MPI)
+                list(APPEND _cmd -ntmpi ${ARG_MPI_RANKS})
+            endif()
+        endif()
+        add_test(NAME ${NAME}
+                 COMMAND ${_cmd} --gtest_output=xml:${_xml_path})
+        set_tests_properties(${NAME} PROPERTIES LABELS "${_labels}")
+        set_tests_properties(${NAME} PROPERTIES TIMEOUT ${_timeout})
+        add_dependencies(tests ${EXENAME})
     endif()
 endfunction ()
 
 function (gmx_add_unit_test NAME EXENAME)
     gmx_add_gtest_executable(${EXENAME} ${ARGN})
-    gmx_register_unit_test(${NAME} ${EXENAME})
+    gmx_register_gtest_test(${NAME} ${EXENAME})
 endfunction()
 
 function (gmx_add_mpi_unit_test NAME EXENAME RANKS)
     if (GMX_MPI OR (GMX_THREAD_MPI AND GTEST_IS_THREADSAFE))
         gmx_add_gtest_executable(${EXENAME} MPI ${ARGN})
-        # TODO: This function needs a new name.
-        gmx_register_mpi_integration_test(${NAME} ${EXENAME} ${RANKS})
+        gmx_register_gtest_test(${NAME} ${EXENAME} MPI_RANKS ${RANKS})
     endif()
 endfunction()
