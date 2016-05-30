@@ -414,7 +414,7 @@ compileProgram(FILE              *fplog,
     std::string cacheFilename;
     if (useBuildCache)
     {
-        cacheFilename = makeBinaryCacheFilename(kernelFilename, deviceId);
+        cacheFilename = makeBinaryCacheFilename(kernelBaseFilename, deviceId);
     }
 
     /* Create OpenCL program */

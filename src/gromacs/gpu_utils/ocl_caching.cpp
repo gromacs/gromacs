@@ -45,6 +45,8 @@
 
 #include "ocl_caching.h"
 
+#include <assert.h>
+
 #include <cstdio>
 
 #include <string>
@@ -73,6 +75,7 @@ namespace ocl
  */
 static void fclose_wrapper(FILE *fp)
 {
+    assert(fp != NULL);
     fclose(fp);
 }
 
@@ -85,9 +88,15 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
     {
         GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s", ocl_get_error_string(cl_error).c_str())));
     }
-    std::string cacheFilename = "OpenCL_cache_" + kernelFilename + "_" + deviceName;
+
+    std::string cacheFilename = "OCL-cache";
+    /* remove the kernel source suffix */
+    cacheFilename += "_" + stripSuffixIfPresent(kernelFilename, ".cl");
+    /* the device name often contains spaces, we don't like those */
+    cacheFilename += "_" + replaceAll(stripString(deviceName), " ", "-");
     cacheFilename  = replaceAll(cacheFilename, ".", "_");
     cacheFilename += ".bin";
+
     return cacheFilename;
 }
 
