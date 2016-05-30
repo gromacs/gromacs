@@ -52,10 +52,7 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-gmx_register_integration_test(
-    ${testname}
-    ${exename}
-    )
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 
 set(testname "MdrunMpiTests")
 set(exename "mdrun-mpi-test")
@@ -72,8 +69,4 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
-gmx_register_mpi_integration_test(
-    ${testname}
-    ${exename}
-    2
-    )
+gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 INTEGRATION_TEST)

@@ -58,8 +58,35 @@ set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPI
 set_property(TARGET testutils APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
 target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES})
 
+# TODO Use gmx_add_missing_tests_notice() instead of the messages below.
+set(GMX_CAN_RUN_MPI_TESTS 1)
+if (GMX_MPI)
+    set(_an_mpi_variable_had_content 0)
+    foreach(VARNAME MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS)
+        # These variables need a valid value for the test to run
+        # and pass, but conceivably any of them might be valid
+        # with arbitrary (including empty) content. They can't be
+        # valid if they've been populated with the CMake
+        # find_package magic suffix/value "NOTFOUND", though.
+        if (${VARNAME} MATCHES ".*NOTFOUND")
+            message(STATUS "CMake variable ${VARNAME} was not detected to be a valid value. To test GROMACS correctly, check the advice in the install guide.")
+            set(GMX_CAN_RUN_MPI_TESTS 0)
+        endif()
+        if (NOT VARNAME STREQUAL MPIEXEC AND ${VARNAME})
+            set(_an_mpi_variable_had_content 1)
+        endif()
+    endforeach()
+    if(_an_mpi_variable_had_content AND NOT MPIEXEC)
+        message(STATUS "CMake variable MPIEXEC must have a valid value if one of the other related MPIEXEC variables does. To test GROMACS correctly, check the advice in the install guide.")
+        set(GMX_CAN_RUN_MPI_TESTS 0)
+    endif()
+elseif (NOT GMX_THREAD_MPI)
+    set(GMX_CAN_RUN_MPI_TESTS 0)
+endif()
+
 set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
 set(TESTUTILS_LIBS ${TESTUTILS_LIBS} PARENT_SCOPE)
+set(GMX_CAN_RUN_MPI_TESTS ${GMX_CAN_RUN_MPI_TESTS} PARENT_SCOPE)
 
 add_subdirectory(tests)
