@@ -168,18 +168,15 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
     {
         if (!usesMpi && gmx_node_num() > 1)
         {
-            if (gmx_node_rank() == 0)
-            {
-                fprintf(stderr, "NOTE: You are running %s on %d MPI ranks, "
-                        "but it is does not contain MPI-enabled tests. "
-                        "Rank 0 will run the tests, other ranks will exit.",
-                        context.programName(), gmx_node_num());
-            }
-            else
-            {
-                finalizeForCommandLine();
-                std::exit(0);
-            }
+            // We cannot continue, since some tests might be using
+            // MPI_COMM_WORLD, which could deadlock if we would only
+            // continue with the master rank here.
+            fprintf(stderr, "NOTE: You are running %s on %d MPI ranks, "
+                    "but it is does not contain MPI-enabled tests. "
+                    "The test will now exit.\n",
+                    context.programName(), gmx_node_num());
+            finalizeForCommandLine();
+            std::exit(1);
         }
         g_testContext.reset(new TestProgramContext(context));
         setProgramContext(g_testContext.get());
