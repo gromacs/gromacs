@@ -47,6 +47,7 @@
 
 #include <cstdio>
 
+#include <assert.h>
 #include <string>
 #include <vector>
 
@@ -73,6 +74,7 @@ namespace ocl
  */
 static void fclose_wrapper(FILE *fp)
 {
+    assert(fp != NULL);
     fclose(fp);
 }
 
@@ -85,9 +87,10 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
     {
         GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s", ocl_get_error_string(cl_error).c_str())));
     }
-    std::string cacheFilename = "OpenCL_cache_" + kernelFilename + "_" + deviceName;
+    std::string cacheFilename = + "ocl-cache" + stripSuffixIfPresent(kernelFilename, ".cl") + "_" + deviceName;
     cacheFilename  = replaceAll(cacheFilename, ".", "_");
     cacheFilename += ".bin";
+
     return cacheFilename;
 }
 
