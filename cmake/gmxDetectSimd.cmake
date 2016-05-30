@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,10 @@
 include(gmxTestInlineASM)
 
 function(gmx_suggest_simd _suggested_simd)
+    if(${_suggested_simd})
+        # There's already been a suggestion made, which can't change
+        return()
+    endif()
 
     # for x86 we need inline asm to use cpuid
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -73,35 +77,50 @@ function(gmx_suggest_simd _suggested_simd)
         set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
     endif()
 
+    # Prepare a default suggestion
+    set(OUTPUT_SIMD "None")
+
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
-        try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
-                ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-                COMPILE_DEFINITIONS ${_compile_definitions}
-                RUN_OUTPUT_VARIABLE OUTPUT_TMP
-                COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
-                ARGS "-simd")
+        # TODO Extract this try_compile to a helper function, because
+        # it duplicates code in gmxDetectSimd.cmake
+        set(GMX_DETECTSIMD_BINARY "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/GmxDetectSimd${CMAKE_EXECUTABLE_SUFFIX}")
+        try_compile(GMX_DETECTSIMD_COMPILED
+            "${CMAKE_CURRENT_BINARY_DIR}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c"
+            COMPILE_DEFINITIONS "${_compile_definitions}"
+            OUTPUT_VARIABLE GMX_DETECTSIMD_COMPILED_OUTPUT
+            COPY_FILE ${GMX_DETECTSIMD_BINARY})
+        unset(_compile_definitions)
 
-        if(NOT GMX_CPUID_COMPILED)
+        if(GMX_DETECTSIMD_COMPILED)
+            # TODO Extract this duplication of
+            # gmxSetBuildInformation.cmake to a helper function
+            if(NOT DEFINED GMX_DETECTSIMD_RUN)
+                execute_process(COMMAND ${GMX_DETECTSIMD_BINARY} "-simd"
+                    RESULT_VARIABLE GMX_DETECTSIMD_RUN
+                    OUTPUT_VARIABLE OUTPUT_TMP
+                    ERROR_QUIET)
+                set(GMX_DETECTSIMD_RUN "${GMX_DETECTSIMD_RUN}" CACHE INTERNAL "Result of running CPUID code with arg -simd")
+                if(GMX_DETECTSIMD_RUN EQUAL 0)
+                    # Make a concrete suggestion of SIMD level
+                    string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
+                    message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
+                else()
+                    message(WARNING "Cannot run CPUID code, which means no SIMD suggestion can be made.")
+                    message(STATUS "Run output: ${OUTPUT_TMP}")
+                endif()
+            endif()
+        else()
             message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
             message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
-            set(OUTPUT_TMP "None")
-        elseif(NOT GMX_CPUID_RUN_SIMD EQUAL 0)
-            message(WARNING "Cannot run CPUID code, which means no SIMD instructions.")
-            message(STATUS "Run output: ${OUTPUT_TMP}")
-            set(OUTPUT_TMP "None")
-        endif(NOT GMX_CPUID_COMPILED)
-
-        string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
-
-        set(${_suggested_simd} "${OUTPUT_SIMD}" PARENT_SCOPE)
-        message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
+        endif()
     else()
-        set(${_suggested_simd} "None" PARENT_SCOPE)
         message(WARNING "Cannot detect SIMD architecture for this cross-compile; you should check it manually.")
     endif()
+
+    set(${_suggested_simd} "${OUTPUT_SIMD}" CACHE INTERNAL "Suggested SIMD")
 endfunction()
 
 function(gmx_detect_simd _suggested_simd)
