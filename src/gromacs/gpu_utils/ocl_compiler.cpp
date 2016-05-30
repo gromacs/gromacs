@@ -72,8 +72,9 @@ namespace ocl
 
 /*! \brief True if OpenCL binary caching is enabled.
  *
- *  Currently caching is disabled until we resolve concurrency issues. */
-static bool useBuildCache = false; // (NULL == getenv("GMX_OCL_NOGENCACHE"));
+ *  Currently caching is disabled by default unless the env var override
+ *  is used until we resolve concurrency issues. */
+static bool useBuildCache = getenv("GMX_OCL_GENCACHE"); // (NULL == getenv("GMX_OCL_NOGENCACHE"));
 
 /*! \brief Handles writing the OpenCL JIT compilation log to \c fplog.
  *
