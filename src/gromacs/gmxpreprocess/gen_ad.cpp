@@ -1527,7 +1527,6 @@ static void gen_drude_lp_pairs(t_params plist[], t_atoms *atoms, t_param *pai, i
 /* Generate pairs, angles and dihedrals from .rtp settings */
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
              t_params plist[], t_excls excls[], t_hackblock hb[],
-             int nssbonds, t_ssbond *ssbonds,
              gmx_bool bAllowMissing, gmx_bool bDrude)
 {
     t_param    *ang, *dih, *pai, *improper;
@@ -1540,7 +1539,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     int         i, j, j1, k, k1, l, l1, m, n, i1, i2;
     int         ninc, maxang, maxdih, maxpai, maxthole;
     int         nang, ndih, npai, nimproper, nbd;
-    int         nthole, naniso, npol, nvsites = 0;
+    int         nthole, naniso, npol, nvsites;
     int         nFound;
     gmx_bool    bFound, bExcl;
 
@@ -1583,6 +1582,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
         cppar(aniso, naniso, plist, F_ANISO_POL);
         cppar(pol, npol, plist, F_POLARIZATION);
         cppar(vsites, nvsites, plist, F_VSITE3);
+
+        nthole = 0;
     }
 
     snew(anm, 4);
@@ -1880,7 +1881,6 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 npai++;
 
                                                 /* Drudes and LP have the same pairs as the parent atom */
-                                                /* This function works much like gen_drude_lp_excl(), except for pairs */
                                                 if (bDrude)
                                                 {
                                                     /* The largest number of pairs that can be added for any atom-atom combination 
