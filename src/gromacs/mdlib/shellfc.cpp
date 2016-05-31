@@ -1265,6 +1265,25 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                     fprintf(debug, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
                 }
 
+                /* for debugging */
+                if (bVerbose)
+                {
+                    fprintf(stderr, "HARDWALL: New position x[%d]: %f %f %f\n", (ia+1), xa[XX], xa[YY], xa[ZZ]);
+                    fprintf(stderr, "HARDWALL: New position x[%d]: %f %f %f\n", (ib+1), xb[XX], xb[YY], xb[ZZ]);
+                    fprintf(stderr, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ia+1), va[XX], va[YY], va[ZZ]);
+                    fprintf(stderr, "HARDWALL: New velocity v[%d]: %f %f %f\n", (ib+1), vb[XX], vb[YY], vb[ZZ]);
+                    if (pbc != NULL)
+                    {
+                        pbc_dx(pbc, xb, xa, vecab);
+                    }
+                    else
+                    {
+                        rvec_sub(xb, xa, vecab);
+                    }
+                    rab = sqrt(norm2(vecab));
+                    fprintf(stderr, "HARDWALL: New bond length: %f\n", rab);
+                }
+
                 /* copy new positions back */
                 copy_rvec(xa, state->x[ia]);
                 copy_rvec(xb, state->x[ib]);
