@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,13 +93,29 @@
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
 
+/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+ * warp-pairs per block.
+ *
+ * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
+ * blocks/multiproc, is the fastest even though this setup gives low occupancy.
+ * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
+ * per multiprocessor is reduced proportionally to get the original number of max
+ * threads in flight (and slightly lower performance).
+ * - On CC 3.7 and 6.0 there are enough registers to double the number of threads; using
+ * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
+ * with low-register use).
+ *
+ * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
+ * shuffle-based reduction, hence CC >= 3.0.
+ */
+
 /* Kernel launch bounds as function of NTHREAD_Z.
- * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
+ * - CC 3.0/3.5/5.x, >=6.1: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7, 6.0:           NTHREAD_Z=2, (128, 16) bounds
  *
  * Note: convenience macros, need to be undef-ed at the end of the file.
  */
-#if __CUDA_ARCH__ == 370
+#if __CUDA_ARCH__ == 370 || __CUDA_ARCH__ == 600
 #define NTHREAD_Z           (2)
 #define MIN_BLOCKS_PER_MP   (16)
 #else
