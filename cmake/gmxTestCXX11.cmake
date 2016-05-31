@@ -60,7 +60,7 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
 "struct a {
   explicit operator bool() {return true;}
   a() {};
-  a(a&&) = default;
+  a(a&&) {};
   a(const a&) = delete;
 };
 class b: public a {};
