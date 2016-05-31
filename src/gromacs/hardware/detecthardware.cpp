@@ -1180,7 +1180,13 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
      */
     if (cpuInfo.supportLevel() >= gmx::CpuInfo::SupportLevel::Features)
     {
+#if GMX_THREAD_MPI
+        tMPI_Thread_mutex_lock(&hw_info_lock);
+#endif
         gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, MULTIMASTER(cr));
+#if GMX_THREAD_MPI
+        tMPI_Thread_mutex_unlock(&hw_info_lock);
+#endif
     }
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
