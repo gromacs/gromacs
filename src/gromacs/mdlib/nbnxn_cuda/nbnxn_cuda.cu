@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,36 +81,6 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 /* Convenience defines */
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
-
-/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
- * warp-pairs per block.
- *
- * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
- * blocks/multiproc, is the fastest even though this setup gives low occupancy.
- * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
- * per multiprocessor is reduced proportionally to get the original number of max
- * threads in flight (and slightly lower performance).
- * - On CC 3.7 there are enough registers to double the number of threads; using
- * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
- * with low-register use).
- *
- * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
- * shuffle-based reduction, hence CC >= 3.0.
- */
-
-/* Kernel launch bounds as function of NTHREAD_Z.
- * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
- */
-#if __CUDA_ARCH__ == 370
-#define NTHREAD_Z           (2)
-#define MIN_BLOCKS_PER_MP   (16)
-#else
-#define NTHREAD_Z           (1)
-#define MIN_BLOCKS_PER_MP   (16)
-#endif
-#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
-
 
 /***** The kernels come here *****/
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
@@ -432,7 +402,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
+    if ((nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7) ||
+        (nb->dev_info->prop.major == 6 && nb->dev_info->prop.minor == 0))
     {
         num_threads_z = 2;
     }
