@@ -80,6 +80,11 @@ extern int imdsock_winsockinit()
 #else
 /* On UNIX, we can use nice errors from errno.h */
 #include <unistd.h>
+#ifdef GMX_IMD
+#include <sys/select.h>
+#include <sys/time.h>
+#include <time.h>
+#endif
 #endif
 
 
