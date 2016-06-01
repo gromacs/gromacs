@@ -53,6 +53,11 @@
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 /*! \brief Detect all GPUs in the system.
  *
  *  Will detect every GPU supported by the device driver in use. Also
@@ -115,7 +120,7 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * The varible \p mygpu is the index of the GPU to initialize in the
  * gpu_info.gpu_dev array.
  *
- * \param[out] fplog        log file to write to
+ * \param      mdlog        log file to write to
  * \param[in]  mygpu        index of the GPU to initialize
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
@@ -124,7 +129,7 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * \returns                 true if no error occurs during initialization.
  */
 GPU_FUNC_QUALIFIER
-gmx_bool init_gpu(FILE *GPU_FUNC_ARGUMENT(fplog),
+gmx_bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
                   int GPU_FUNC_ARGUMENT(mygpu),
                   char *GPU_FUNC_ARGUMENT(result_str),
                   const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),

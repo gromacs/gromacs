@@ -43,13 +43,13 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
@@ -107,14 +107,12 @@ static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE}
  *  The "group" scheme supports OpenMP only in PME and in thise case all but
  *  the PME nthread values default to 1.
  */
-static void pick_module_nthreads(FILE *fplog, int m,
-                                 gmx_bool bSimMaster,
+static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
                                  gmx_bool bFullOmpSupport,
                                  gmx_bool bSepPME)
 {
     char      *env;
     int        nth;
-    char       sbuf[STRLEN];
 
     const bool bOMP = GMX_OPENMP;
 
@@ -161,16 +159,9 @@ static void pick_module_nthreads(FILE *fplog, int m,
         /* only babble if we are really overriding with a different value */
         if ((bSepPME && m == emntPME && nth != modth.gnth_pme) || (nth != modth.gnth))
         {
-            sprintf(sbuf, "%s=%d set, overriding the default number of %s threads",
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "%s=%d set, overriding the default number of %s threads",
                     modth_env_var[m], nth, mod_name[m]);
-            if (bSimMaster)
-            {
-                fprintf(stderr, "\n%s\n", sbuf);
-            }
-            if (fplog)
-            {
-                fprintf(fplog, "%s\n", sbuf);
-            }
         }
     }
     else
@@ -235,16 +226,16 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
 /*! \brief Helper function for parsing various input about the number
     of OpenMP threads to use in various modules and deciding what to
     do about it. */
-static void manage_number_of_openmp_threads(FILE               *fplog,
-                                            const t_commrec    *cr,
-                                            bool                bOMP,
-                                            int                 nthreads_hw_avail,
-                                            int                 omp_nthreads_req,
-                                            int                 omp_nthreads_pme_req,
-                                            gmx_bool gmx_unused bThisNodePMEOnly,
-                                            gmx_bool            bFullOmpSupport,
-                                            int                 nppn,
-                                            gmx_bool            bSepPME)
+static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
+                                            const t_commrec     *cr,
+                                            bool                 bOMP,
+                                            int                  nthreads_hw_avail,
+                                            int                  omp_nthreads_req,
+                                            int                  omp_nthreads_pme_req,
+                                            gmx_bool gmx_unused  bThisNodePMEOnly,
+                                            gmx_bool             bFullOmpSupport,
+                                            int                  nppn,
+                                            gmx_bool             bSepPME)
 {
     int      nth;
     char    *env;
@@ -258,6 +249,8 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
     {
         return;
     }
+#else
+    GMX_UNUSED_VALUE(cr);
 #endif
 
     if (modth.initialized)
@@ -352,15 +345,15 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
 
     /* now set the per-module values */
     modth.nth[emntDefault] = modth.gnth;
-    pick_module_nthreads(fplog, emntDomdec, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntPairsearch, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntNonbonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntBonded, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntPME, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntUpdate, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntVSITE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntLINCS, SIMMASTER(cr), bFullOmpSupport, bSepPME);
-    pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntDomdec, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntPairsearch, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntNonbonded, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntBonded, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntPME, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntUpdate, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntVSITE, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntLINCS, bFullOmpSupport, bSepPME);
+    pick_module_nthreads(mdlog, emntSETTLE, bFullOmpSupport, bSepPME);
 
     /* set the number of threads globally */
     if (bOMP)
@@ -389,11 +382,11 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
 
 /*! \brief Report on the OpenMP settings that will be used */
 static void
-reportOpenmpSettings(FILE            *fplog,
-                     const t_commrec *cr,
-                     gmx_bool         bOMP,
-                     gmx_bool         bFullOmpSupport,
-                     gmx_bool         bSepPME)
+reportOpenmpSettings(const gmx::MDLogger &mdlog,
+                     const t_commrec     *cr,
+                     gmx_bool             bOMP,
+                     gmx_bool             bFullOmpSupport,
+                     gmx_bool             bSepPME)
 {
 #if GMX_THREAD_MPI
     const char *mpi_str = "per tMPI thread";
@@ -440,31 +433,35 @@ reportOpenmpSettings(FILE            *fplog,
     {
         if (nth_max == nth_min)
         {
-            md_print_info(cr, fplog, "Using %d OpenMP thread%s %s\n",
-                          nth_min, nth_min > 1 ? "s" : "",
-                          cr->nnodes > 1 ? mpi_str : "");
+            GMX_LOG(mdlog.warning).appendTextFormatted(
+                    "Using %d OpenMP thread%s %s",
+                    nth_min, nth_min > 1 ? "s" : "",
+                    cr->nnodes > 1 ? mpi_str : "");
         }
         else
         {
-            md_print_info(cr, fplog, "Using %d - %d OpenMP threads %s\n",
-                          nth_min, nth_max, mpi_str);
+            GMX_LOG(mdlog.warning).appendTextFormatted(
+                    "Using %d - %d OpenMP threads %s",
+                    nth_min, nth_max, mpi_str);
         }
     }
     if (bSepPME && (nth_pme_min != nth_min || nth_pme_max != nth_max))
     {
         if (nth_pme_max == nth_pme_min)
         {
-            md_print_info(cr, fplog, "Using %d OpenMP thread%s %s for PME\n",
-                          nth_pme_min, nth_pme_min > 1 ? "s" : "",
-                          cr->nnodes > 1 ? mpi_str : "");
+            GMX_LOG(mdlog.warning).appendTextFormatted(
+                    "Using %d OpenMP thread%s %s for PME",
+                    nth_pme_min, nth_pme_min > 1 ? "s" : "",
+                    cr->nnodes > 1 ? mpi_str : "");
         }
         else
         {
-            md_print_info(cr, fplog, "Using %d - %d OpenMP threads %s for PME\n",
-                          nth_pme_min, nth_pme_max, mpi_str);
+            GMX_LOG(mdlog.warning).appendTextFormatted(
+                    "Using %d - %d OpenMP threads %s for PME",
+                    nth_pme_min, nth_pme_max, mpi_str);
         }
     }
-    md_print_info(cr, fplog, "\n");
+    GMX_LOG(mdlog.warning);
 }
 
 /*! \brief Detect and warn about oversubscription of cores.
@@ -474,11 +471,11 @@ reportOpenmpSettings(FILE            *fplog,
  *
  * \todo Enable this for separate PME nodes as well! */
 static void
-issueOversubscriptionWarning(FILE            *fplog,
-                             const t_commrec *cr,
-                             int              nthreads_hw_avail,
-                             int              nppn,
-                             gmx_bool         bSepPME)
+issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
+                             const t_commrec     *cr,
+                             int                  nthreads_hw_avail,
+                             int                  nppn,
+                             gmx_bool             bSepPME)
 {
     char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
 
@@ -504,14 +501,14 @@ issueOversubscriptionWarning(FILE            *fplog,
 #endif
         }
 #endif
-        md_print_warn(cr, fplog,
-                      "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
-                      "         This will cause considerable performance loss!",
-                      sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "WARNING: %sversubscribing the available %d logical CPU cores%s with %d %s.\n"
+                "         This will cause considerable performance loss!",
+                sbuf2, nthreads_hw_avail, sbuf1, nppn*modth.gnth, sbuf);
     }
 }
 
-void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
+void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
@@ -529,7 +526,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
         (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
 
-    manage_number_of_openmp_threads(fplog, cr, bOMP,
+    manage_number_of_openmp_threads(mdlog, cr, bOMP,
                                     nthreads_hw_avail,
                                     omp_nthreads_req, omp_nthreads_pme_req,
                                     bThisNodePMEOnly, bFullOmpSupport,
@@ -544,8 +541,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     }
 #endif
 
-    reportOpenmpSettings(fplog, cr, bOMP, bFullOmpSupport, bSepPME);
-    issueOversubscriptionWarning(fplog, cr, nthreads_hw_avail, nppn, bSepPME);
+    reportOpenmpSettings(mdlog, cr, bOMP, bFullOmpSupport, bSepPME);
+    issueOversubscriptionWarning(mdlog, cr, nthreads_hw_avail, nppn, bSepPME);
 }
 
 int gmx_omp_nthreads_get(int mod)

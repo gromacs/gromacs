@@ -447,7 +447,7 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
 }
 
 //! This function is documented in the header file
-gmx_bool init_gpu(FILE gmx_unused                 *fplog,
+gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
                   int                              mygpu,
                   char                            *result_str,
                   const gmx_gpu_info_t gmx_unused *gpu_info,

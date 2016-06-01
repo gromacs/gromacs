@@ -56,7 +56,6 @@
 
 #include "thread_mpi/threads.h"
 
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -152,9 +152,8 @@ static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info)
     }
 }
 
-static void print_gpu_detection_stats(FILE                 *fplog,
-                                      const gmx_gpu_info_t *gpu_info,
-                                      const t_commrec      *cr)
+static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
+                                      const gmx_gpu_info_t *gpu_info)
 {
     char onhost[HOSTNAMELEN+10], stmp[STRLEN];
     int  ngpu;
@@ -179,12 +178,13 @@ static void print_gpu_detection_stats(FILE                 *fplog,
     if (ngpu > 0)
     {
         sprint_gpus(stmp, gpu_info);
-        md_print_warn(cr, fplog, "%d GPU%s detected%s:\n%s\n",
-                      ngpu, (ngpu > 1) ? "s" : "", onhost, stmp);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "%d GPU%s detected%s:\n%s",
+                ngpu, (ngpu > 1) ? "s" : "", onhost, stmp);
     }
     else
     {
-        md_print_warn(cr, fplog, "No GPUs detected%s\n", onhost);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("No GPUs detected%s", onhost);
     }
 }
 
@@ -273,8 +273,7 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
 /* Give a suitable fatal error or warning if the build configuration
    and runtime CPU do not match. */
 static void
-check_use_of_rdtscp_on_this_cpu(FILE                  *fplog,
-                                const t_commrec       *cr,
+check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
                                 const gmx::CpuInfo    &cpuInfo)
 {
 #ifdef HAVE_RDTSCP
@@ -289,10 +288,11 @@ check_use_of_rdtscp_on_this_cpu(FILE                  *fplog,
     {
         if (binaryUsesRdtscp)
         {
-            md_print_warn(cr, fplog, "The %s executable was compiled to use the rdtscp CPU instruction. "
-                          "We cannot detect the features of your current CPU, but will proceed anyway. "
-                          "If you get a crash, rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
-                          programName);
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "The %s executable was compiled to use the rdtscp CPU instruction. "
+                    "We cannot detect the features of your current CPU, but will proceed anyway. "
+                    "If you get a crash, rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
+                    programName);
         }
     }
     else
@@ -309,16 +309,17 @@ check_use_of_rdtscp_on_this_cpu(FILE                  *fplog,
 
         if (cpuHasRdtscp && !binaryUsesRdtscp)
         {
-            md_print_warn(cr, fplog, "The current CPU can measure timings more accurately than the code in\n"
-                          "%s was configured to use. This might affect your simulation\n"
-                          "speed as accurate timings are needed for load-balancing.\n"
-                          "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.\n",
-                          programName, programName);
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "The current CPU can measure timings more accurately than the code in\n"
+                    "%s was configured to use. This might affect your simulation\n"
+                    "speed as accurate timings are needed for load-balancing.\n"
+                    "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.",
+                    programName, programName);
         }
     }
 }
 
-void gmx_check_hw_runconf_consistency(FILE                *fplog,
+void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
                                       const gmx_hw_opt_t  *hw_opt,
@@ -360,18 +361,18 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
 
     if (hwinfo->gpu_info.n_dev_compatible > 0)
     {
-        std::string gpuUseageReport;
+        std::string gpuUsageReport;
         try
         {
-            gpuUseageReport = makeGpuUsageReport(&hwinfo->gpu_info,
-                                                 &hw_opt->gpu_opt,
-                                                 cr->nrank_pp_intranode,
-                                                 bMPI && cr->nnodes > 1);
+            gpuUsageReport = makeGpuUsageReport(&hwinfo->gpu_info,
+                                                &hw_opt->gpu_opt,
+                                                cr->nrank_pp_intranode,
+                                                bMPI && cr->nnodes > 1);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
         /* NOTE: this print is only for and on one physical node */
-        md_print_info(cr, fplog, "%s\n", gpuUseageReport.c_str());
+        GMX_LOG(mdlog.warning).appendText(gpuUsageReport);
     }
 
     /* Need to ensure that we have enough GPUs:
@@ -439,13 +440,13 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
             {
                 /* There are more GPUs than tMPI threads; we have
                    limited the number GPUs used. */
-                md_print_warn(cr, fplog,
-                              "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
-                              "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.\n",
-                              ngpu_comp, gpu_comp_plural,
-                              npppn, th_or_proc_plural,
-                              programName, npppn,
-                              npppn > 1 ? "s" : "");
+                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                        "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
+                        "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.",
+                        ngpu_comp, gpu_comp_plural,
+                        npppn, th_or_proc_plural,
+                        programName, npppn,
+                        npppn > 1 ? "s" : "");
             }
         }
 
@@ -467,13 +468,13 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
             /* TODO Should we have a gpu_opt->n_dev_supported field? */
             if (ngpu_comp > npppn && gmx_multiple_gpu_per_node_supported())
             {
-                md_print_warn(cr, fplog,
-                              "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
-                              "      PP %s%s%s than GPU%s available.\n"
-                              "      Each PP %s can use only one GPU, %d GPU%s%s will be used.\n",
-                              programName, th_or_proc,
-                              th_or_proc_plural, pernode, gpu_comp_plural,
-                              th_or_proc, npppn, gpu_use_plural, pernode);
+                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                        "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
+                        "      PP %s%s%s than GPU%s available.\n"
+                        "      Each PP %s can use only one GPU, %d GPU%s%s will be used.",
+                        programName, th_or_proc,
+                        th_or_proc_plural, pernode, gpu_comp_plural,
+                        th_or_proc, npppn, gpu_use_plural, pernode);
             }
 
             if (ngpu_use != npppn)
@@ -516,9 +517,9 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
 
             if (same_count > 0)
             {
-                md_print_info(cr, fplog,
-                              "NOTE: You assigned %s to multiple %s%s.\n",
-                              same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
+                GMX_LOG(mdlog.warning).appendTextFormatted(
+                        "NOTE: You assigned %s to multiple %s%s.",
+                        same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
             }
         }
     }
@@ -609,20 +610,20 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
  * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
  * reason we now warn if this mismatches with the detected core count.
  */
-static void check_nthreads_hw_avail(const t_commrec gmx_unused *cr,
-                                    FILE gmx_unused *fplog, int nthreads)
+static void check_nthreads_hw_avail(const gmx::MDLogger gmx_unused &mdlog, int nthreads)
 {
 // Now check if we have the argument to use before executing the call
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
     if (nthreads != sysconf(_SC_NPROCESSORS_ONLN))
     {
-        md_print_warn(cr, fplog,
-                      "%d CPUs configured, but only %d of them are online.\n"
-                      "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                      "off to save power, and will turn them back on later when the load increases.\n"
-                      "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                      "will likely see much better performance by forcing all cores to be online, and\n"
-                      "making sure they run at their full clock frequency.", nthreads, sysconf(_SC_NPROCESSORS_ONLN));
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "%d CPUs configured, but only %d of them are online.\n"
+                "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                "off to save power, and will turn them back on later when the load increases.\n"
+                "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                "will likely see much better performance by forcing all cores to be online, and\n"
+                "making sure they run at their full clock frequency.",
+                nthreads, sysconf(_SC_NPROCESSORS_ONLN));
     }
 #endif
 
@@ -634,15 +635,15 @@ static void check_nthreads_hw_avail(const t_commrec gmx_unused *cr,
 #if GMX_OPENMP
     if (nthreads != gmx_omp_get_num_procs())
     {
-        md_print_warn(cr, fplog,
-                      "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                      "Consider setting the launch configuration manually!",
-                      nthreads, gmx_omp_get_num_procs());
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
+                "Consider setting the launch configuration manually!",
+                nthreads, gmx_omp_get_num_procs());
     }
 #endif
 }
 
-static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
+static void gmx_detect_gpus(const gmx::MDLogger &mdlog, const t_commrec *cr)
 {
 #if GMX_LIB_MPI
     int              rank_world;
@@ -670,6 +671,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
     MPI_Comm_split(MPI_COMM_WORLD, gmx_physicalnode_id_hash(),
                    rank_world, &physicalnode_comm);
     MPI_Comm_rank(physicalnode_comm, &rank_local);
+    GMX_UNUSED_VALUE(cr);
 #else
     /* Here there should be only one process, check this */
     GMX_RELEASE_ASSERT(cr->nnodes == 1 && cr->sim_nodeid == 0, "Only a single (master) process should execute here");
@@ -695,10 +697,10 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
             {
                 sprintf(sbuf, ".");
             }
-            md_print_warn(cr, fplog,
-                          "NOTE: Error occurred during GPU detection%s"
-                          "      Can not use GPU acceleration, will fall back to CPU kernels.\n",
-                          sbuf);
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "NOTE: Error occurred during GPU detection%s"
+                    "      Can not use GPU acceleration, will fall back to CPU kernels.",
+                    sbuf);
         }
     }
 
@@ -862,7 +864,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 #endif
 }
 
-gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
+gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
     int ret;
@@ -884,7 +886,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
-        check_nthreads_hw_avail(cr, fplog, hwinfo_g->nthreads_hw_avail);
+        check_nthreads_hw_avail(mdlog, hwinfo_g->nthreads_hw_avail);
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;
@@ -899,7 +901,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
              getenv("GMX_DISABLE_GPU_DETECTION") == NULL);
         if (hwinfo_g->gpu_info.bDetectGPUs)
         {
-            gmx_detect_gpus(fplog, cr);
+            gmx_detect_gpus(mdlog, cr);
         }
     }
     /* increase the reference counter */
@@ -1140,6 +1142,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 }
 
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx::MDLogger &mdlog,
                                  const gmx_hw_info_t *hwinfo)
 {
     const gmx::CpuInfo &cpuInfo = *hwinfo_g->cpuInfo;
@@ -1171,7 +1174,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
     }
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
-    check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
+    check_use_of_rdtscp_on_this_cpu(mdlog, cpuInfo);
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
@@ -1241,7 +1244,7 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
     }
 }
 
-void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
+void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                         const gmx_gpu_info_t *gpu_info,
                         gmx_bool bForceUseGPU,
                         gmx_gpu_opt_t *gpu_opt)
@@ -1277,7 +1280,7 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
 
         if (!res)
         {
-            print_gpu_detection_stats(fplog, gpu_info, cr);
+            print_gpu_detection_stats(mdlog, gpu_info);
 
             sprintf(sbuf, "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n");
             for (i = 0; i < gpu_opt->n_dev_use; i++)

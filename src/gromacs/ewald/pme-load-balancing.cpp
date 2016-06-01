@@ -57,7 +57,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fft/calcgrid.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
@@ -155,11 +155,11 @@ bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb)
 
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       t_commrec                 *cr,
-                      FILE                      *fp_log,
+                      const gmx::MDLogger       &mdlog,
                       const t_inputrec          *ir,
                       matrix                     box,
                       const interaction_const_t *ic,
-                      struct gmx_pme_t          *pmedata,
+                      gmx_pme_t                 *pmedata,
                       gmx_bool                   bUseGPU,
                       gmx_bool                  *bPrinting)
 {
@@ -244,7 +244,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
 
     if (!wallcycle_have_counter())
     {
-        md_print_warn(cr, fp_log, "NOTE: Cycle counters unsupported or not enabled in kernel. Cannot use PME-PP balancing.\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: Cycle counters unsupported or not enabled in kernel. Cannot use PME-PP balancing.");
     }
 
     /* Tune with GPUs and/or separate PME ranks.
@@ -274,7 +274,7 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
         dd_dlb_lock(cr->dd);
         if (dd_dlb_is_locked(cr->dd))
         {
-            md_print_warn(cr, fp_log, "NOTE: DLB will not turn on during the first phase of PME tuning\n");
+            GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: DLB will not turn on during the first phase of PME tuning");
         }
     }
 
@@ -518,6 +518,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                  t_commrec                 *cr,
                  FILE                      *fp_err,
                  FILE                      *fp_log,
+                 const gmx::MDLogger       &mdlog,
                  const t_inputrec          *ir,
                  t_state                   *state,
                  double                     cycles,
@@ -746,7 +747,8 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                 /* This should not happen, as we set limits on the DLB bounds.
                  * But we implement a complete failsafe solution anyhow.
                  */
-                md_print_warn(cr, fp_log, "The fastest PP/PME load balancing setting (cutoff %.3f nm) is no longer available due to DD DLB or box size limitations\n");
+                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                        "The fastest PP/PME load balancing setting (cutoff %.3f nm) is no longer available due to DD DLB or box size limitations", pme_lb->fastest);
                 pme_lb->fastest = pme_lb->lower_limit;
                 pme_lb->start   = pme_lb->lower_limit;
             }
@@ -870,6 +872,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                     t_commrec            *cr,
                     FILE                 *fp_err,
                     FILE                 *fp_log,
+                    const gmx::MDLogger  &mdlog,
                     const t_inputrec     *ir,
                     t_forcerec           *fr,
                     t_state              *state,
@@ -951,7 +954,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         {
             /* Unlock the DLB=auto, DLB is allowed to activate */
             dd_dlb_unlock(cr->dd);
-            md_print_warn(cr, fp_log, "NOTE: DLB can now turn on, when beneficial\n");
+            GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: DLB can now turn on, when beneficial");
 
             /* We don't deactivate the tuning yet, since we will balance again
              * after DLB gets turned on, if it does within PMETune_period.
@@ -984,7 +987,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
          * but the first data collected is skipped anyhow.
          */
         pme_load_balance(pme_lb, cr,
-                         fp_err, fp_log,
+                         fp_err, fp_log, mdlog,
                          ir, state, pme_lb->cycles_c - cycles_prev,
                          fr->ic, fr->nbv, &fr->pmedata,
                          step);
@@ -1015,7 +1018,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     {
         /* Make sure DLB is allowed when we deactivate PME tuning */
         dd_dlb_unlock(cr->dd);
-        md_print_warn(cr, fp_log, "NOTE: DLB can now turn on, when beneficial\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: DLB can now turn on, when beneficial");
     }
 
     *bPrinting = pme_lb->bBalance;
@@ -1042,8 +1045,8 @@ static void print_pme_loadbal_setting(FILE              *fplog,
 
 /*! \brief Print all load-balancing settings */
 static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
-                                       t_commrec            *cr,
                                        FILE                 *fplog,
+                                       const gmx::MDLogger  &mdlog,
                                        gmx_bool              bNonBondedOnGPU)
 {
     double     pp_ratio, grid_ratio;
@@ -1081,10 +1084,10 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
 
     if (pp_ratio > 1.5 && !bNonBondedOnGPU)
     {
-        md_print_warn(cr, fplog,
-                      "NOTE: PME load balancing increased the non-bonded workload by more than 50%%.\n"
-                      "      For better performance, use (more) PME ranks (mdrun -npme),\n"
-                      "      or if you are beyond the scaling limit, use fewer total ranks (or nodes).\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText(
+                "NOTE: PME load balancing increased the non-bonded workload by more than 50%.\n"
+                "      For better performance, use (more) PME ranks (mdrun -npme),\n"
+                "      or if you are beyond the scaling limit, use fewer total ranks (or nodes).");
     }
     else
     {
@@ -1093,13 +1096,13 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
 }
 
 void pme_loadbal_done(pme_load_balancing_t *pme_lb,
-                      t_commrec            *cr,
                       FILE                 *fplog,
+                      const gmx::MDLogger  &mdlog,
                       gmx_bool              bNonBondedOnGPU)
 {
     if (fplog != NULL && (pme_lb->cur > 0 || pme_lb->elimited != epmelblimNO))
     {
-        print_pme_loadbal_settings(pme_lb, cr, fplog, bNonBondedOnGPU);
+        print_pme_loadbal_settings(pme_lb, fplog, mdlog, bNonBondedOnGPU);
     }
 
     /* TODO: Here we should free all pointers in pme_lb,

@@ -42,6 +42,7 @@
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
+#include "gromacs/utility/logger.h"
 
 struct t_commrec;
 
@@ -114,7 +115,8 @@ class ThreadAffinityTestHelper
             {
                 setLogicalProcessorCount(1);
             }
-            gmx_set_thread_affinity(nullptr, cr_, hwOpt_, *hwTop_,
+            MDLogger mdlog;
+            gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_, *hwTop_,
                                     nthread_local, &affinityAccess_);
         }
 

@@ -55,7 +55,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -113,6 +112,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -151,7 +151,7 @@ static void checkNumberOfBondedInteractions(FILE *fplog, t_commrec *cr, int tota
     }
 }
 
-static void reset_all_counters(FILE *fplog, t_commrec *cr,
+static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                                gmx_int64_t step,
                                gmx_int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
@@ -161,8 +161,9 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     char sbuf[STEPSTRSIZE];
 
     /* Reset all the counters related to performance over the run */
-    md_print_warn(cr, fplog, "step %s: resetting all time and cycle counters\n",
-                  gmx_step_str(step, sbuf));
+    GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+            "step %s: resetting all time and cycle counters",
+            gmx_step_str(step, sbuf));
 
     if (use_GPU(nbv))
     {
@@ -186,7 +187,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
 }
 
 /*! \libinternal
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv, gmx_bool bVerbose,
                            int nstglobalcomm,
@@ -205,7 +206,8 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                            unsigned long Flags,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
+                  int nfile, const t_filenm fnm[],
                   const gmx_output_env_t *oenv, gmx_bool bVerbose,
                   int nstglobalcomm,
                   gmx_vsite_t *vsite, gmx_constr_t constr,
@@ -326,7 +328,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         nstglobalcomm     = 1;
     }
 
-    nstglobalcomm   = check_nstglobalcomm(fplog, cr, nstglobalcomm, ir);
+    nstglobalcomm   = check_nstglobalcomm(mdlog, nstglobalcomm, ir);
     bGStatEveryStep = (nstglobalcomm == 1);
 
     if (bRerunMD)
@@ -520,7 +522,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 !(Flags & MD_REPRODUCIBLE));
     if (bPMETune)
     {
-        pme_loadbal_init(&pme_loadbal, cr, fplog, ir, state->box,
+        pme_loadbal_init(&pme_loadbal, cr, mdlog, ir, state->box,
                          fr->ic, fr->pmedata, use_GPU(fr->nbv),
                          &bPMETunePrinting);
     }
@@ -786,7 +788,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal, cr,
                            (bVerbose && MASTER(cr)) ? stderr : NULL,
-                           fplog,
+                           fplog, mdlog,
                            ir, fr, state,
                            wcycle,
                            step, step_rel,
@@ -1758,7 +1760,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                           "resetting counters later in the run, e.g. with gmx "
                           "mdrun -resetstep.", step);
             }
-            reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
+            reset_all_counters(fplog, mdlog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
             if (!(cr->duty & DUTY_PME))
@@ -1811,7 +1813,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (bPMETune)
     {
-        pme_loadbal_done(pme_loadbal, cr, fplog, use_GPU(fr->nbv));
+        pme_loadbal_done(pme_loadbal, fplog, mdlog, use_GPU(fr->nbv));
     }
 
     done_shellfc(fplog, shellfc, step_rel);

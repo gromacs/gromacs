@@ -2523,7 +2523,7 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
 }
 
 // TODO This can be cleaned up a lot, and move back to runner.cpp
-void finish_run(FILE *fplog, t_commrec *cr,
+void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -2600,7 +2600,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
     {
         struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
 
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
+        wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
                         elapsed_time_over_all_ranks,
                         wcycle, cycle_sum, gputimes);
 

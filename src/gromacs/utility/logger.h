@@ -85,6 +85,12 @@ class LogEntryWriter
             entry_.text.append(text);
             return *this;
         }
+        //! Appends given text to the log entry.
+        LogEntryWriter &appendText(const std::string &text)
+        {
+            entry_.text.append(text);
+            return *this;
+        }
         //! Appends given text to the log entry, with printf-style formatting.
         LogEntryWriter &appendTextFormatted(const char *fmt, ...);
         //! Writes the log entry with empty lines before and after.
@@ -111,13 +117,14 @@ class LogWriteHelper
         //! Initializes a helper for writing to the given target.
         explicit LogWriteHelper(ILogTarget *target) : target_(target) {}
 
+        // Should be explicit, once that works in CUDA.
         /*! \brief
          * Returns whether anything needs to be written.
          *
          * Note that the return value is unintuitively `false` when the target
          * is active, to allow implementing ::GMX_LOG like it is now.
          */
-        explicit operator bool() const { return target_ == NULL; }
+        operator bool() const { return target_ == NULL; }
 
         /*! \brief
          * Writes the entry from the given writer to the log target.
@@ -150,11 +157,12 @@ class LogLevelHelper
         //! Initializes a helper for writing to the given target.
         explicit LogLevelHelper(ILogTarget *target) : target_(target) {}
 
+        // Both of the below should be explicit, once that works in CUDA.
         //! Returns whether the output for this log level goes anywhere.
-        explicit operator bool() const { return target_ != NULL; }
+        operator bool() const { return target_ != NULL; }
 
         //! Creates a helper for ::GMX_LOG.
-        explicit operator LogWriteHelper() const { return LogWriteHelper(target_); }
+        operator LogWriteHelper() const { return LogWriteHelper(target_); }
 
     private:
         ILogTarget *target_;
@@ -178,13 +186,13 @@ class MDLogger
 {
     public:
         //! Supported logging levels.
-        enum class LogLevel
+        enum LogLevel
         {
             Warning,
             Info
         };
         //! Number of logging levels.
-        static const int LogLevelCount = static_cast<int>(LogLevel::Info) + 1;
+        static const int LogLevelCount = static_cast<int>(Info) + 1;
 
         MDLogger();
         //! Creates a logger with the given targets.
