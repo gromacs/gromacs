@@ -126,7 +126,7 @@ namespace gmx
 {
 
 /*! \brief Do test particle insertion.
-    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                            int nfile, const t_filenm fnm[],
                            const gmx_output_env_t *oenv, gmx_bool bVerbose,
                            int nstglobalcomm,
@@ -145,7 +145,7 @@ namespace gmx
                            unsigned long Flags,
                            gmx_walltime_accounting_t walltime_accounting)
  */
-double do_tpi(FILE *fplog, t_commrec *cr,
+double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               int nfile, const t_filenm fnm[],
               const gmx_output_env_t *oenv, gmx_bool bVerbose,
               int gmx_unused nstglobalcomm,

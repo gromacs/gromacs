@@ -53,6 +53,7 @@ namespace gmx
 {
 
 class HardwareTopology;
+class MDLogger;
 
 class IThreadAffinityAccess
 {
@@ -71,6 +72,7 @@ class IThreadAffinityAccess
  */
 void
 gmx_set_thread_affinity(FILE                        *fplog,
+                        const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
@@ -92,7 +94,7 @@ gmx_set_thread_affinity(FILE                        *fplog,
  * variables for setting the affinity are set.
  */
 void
-gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
+gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
                               gmx_hw_opt_t *hw_opt, int ncpus,
                               gmx_bool bAfterOpenmpInit);
 

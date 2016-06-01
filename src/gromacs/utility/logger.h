@@ -85,6 +85,12 @@ class LogEntryWriter
             entry_.text.append(text);
             return *this;
         }
+        //! Appends given text to the log entry.
+        LogEntryWriter &appendText(const std::string &text)
+        {
+            entry_.text.append(text);
+            return *this;
+        }
         //! Appends given text to the log entry, with printf-style formatting.
         LogEntryWriter &appendTextFormatted(const char *fmt, ...);
         //! Writes the log entry with empty lines before and after.

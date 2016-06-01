@@ -44,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -68,6 +67,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
@@ -439,16 +439,18 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     }
 }
 
-void check_nst_param(FILE *fplog, t_commrec *cr,
-                     const char *desc_nst, int nst,
-                     const char *desc_p, int *p)
+/* check whether an 'nst'-style parameter p is a multiple of nst, and
+   set it to be one if not, with a warning. */
+static void check_nst_param(const gmx::MDLogger &mdlog,
+                            const char *desc_nst, int nst,
+                            const char *desc_p, int *p)
 {
     if (*p > 0 && *p % nst != 0)
     {
         /* Round up to the next multiple of nst */
         *p = ((*p)/nst + 1)*nst;
-        md_print_warn(cr, fplog,
-                      "NOTE: %s changes %s to %d\n", desc_nst, desc_p, *p);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "NOTE: %s changes %s to %d", desc_nst, desc_p, *p);
     }
 }
 
@@ -575,8 +577,7 @@ static int lcd4(int i1, int i2, int i3, int i4)
     return nst;
 }
 
-int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
-                        int nstglobalcomm, t_inputrec *ir)
+int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputrec *ir)
 {
     if (!EI_DYNAMICS(ir->eI))
     {
@@ -613,35 +614,38 @@ int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
             nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
         {
             nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            md_print_warn(cr, fplog, "WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n", nstglobalcomm);
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d",
+                    nstglobalcomm);
         }
         if (ir->nstcalcenergy > 0)
         {
-            check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+            check_nst_param(mdlog, "-gcom", nstglobalcomm,
                             "nstcalcenergy", &ir->nstcalcenergy);
         }
         if (ir->etc != etcNO && ir->nsttcouple > 0)
         {
-            check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+            check_nst_param(mdlog, "-gcom", nstglobalcomm,
                             "nsttcouple", &ir->nsttcouple);
         }
         if (ir->epc != epcNO && ir->nstpcouple > 0)
         {
-            check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+            check_nst_param(mdlog, "-gcom", nstglobalcomm,
                             "nstpcouple", &ir->nstpcouple);
         }
 
-        check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+        check_nst_param(mdlog, "-gcom", nstglobalcomm,
                         "nstenergy", &ir->nstenergy);
 
-        check_nst_param(fplog, cr, "-gcom", nstglobalcomm,
+        check_nst_param(mdlog, "-gcom", nstglobalcomm,
                         "nstlog", &ir->nstlog);
     }
 
     if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
     {
-        md_print_warn(cr, fplog, "WARNING: Changing nstcomm from %d to %d\n",
-                      ir->nstcomm, nstglobalcomm);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                "WARNING: Changing nstcomm from %d to %d",
+                ir->nstcomm, nstglobalcomm);
         ir->nstcomm = nstglobalcomm;
     }
 

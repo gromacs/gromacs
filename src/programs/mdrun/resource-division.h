@@ -46,6 +46,11 @@ struct gmx_mtop_t;
 struct t_commrec;
 struct t_inputrec;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 /* Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
  * and how many particles there are.
@@ -58,8 +63,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      gmx_hw_opt_t        *hw_opt,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
-                     const t_commrec     *cr,
-                     FILE                *fplog,
+                     const gmx::MDLogger &mdlog,
                      gmx_bool             bUseGpu);
 
 /* Check if the number of OpenMP threads is within reasonable range
@@ -73,8 +77,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         gmx_bool             bNtOmpOptionSet,
-                                        struct t_commrec    *cr,
-                                        FILE                *fplog);
+                                        t_commrec           *cr,
+                                        const gmx::MDLogger &mdlog);
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,

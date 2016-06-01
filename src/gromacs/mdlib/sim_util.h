@@ -53,6 +53,11 @@ struct t_graph;
 struct t_mdatoms;
 struct t_nrnb;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
 void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
@@ -117,7 +122,7 @@ void print_start(FILE *fplog, t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,
                  const char *name);
 
-void finish_run(FILE *log, t_commrec *cr,
+void finish_run(FILE *log, const gmx::MDLogger &mdlog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
