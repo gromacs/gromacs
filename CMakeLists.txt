@@ -374,6 +374,7 @@ check_cxx_symbol_exists(sqrtf             math.h       HAVE_SQRTF)
 
 include(CheckLibraryExists)
 find_library(HAVE_LIBM m)
+mark_as_advanced(HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
@@ -491,6 +492,8 @@ endif()
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
     gmx_gpu_setup()
+else()
+    mark_as_advanced(CUDA_HOST_COMPILER)
 endif()
 
 if(CYGWIN)
