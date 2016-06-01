@@ -52,7 +52,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -91,6 +90,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -1518,10 +1518,9 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 }
 
 
-gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
-                                          const t_commrec  *cr,
-                                          const t_inputrec *ir,
-                                          gmx_bool          bRerunMD)
+gmx_bool nbnxn_gpu_acceleration_supported(const gmx::MDLogger &mdlog,
+                                          const t_inputrec    *ir,
+                                          gmx_bool             bRerunMD)
 {
     if (bRerunMD && ir->opts.ngener > 1)
     {
@@ -1533,23 +1532,22 @@ gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
          * (which runs much faster than a multiple-energy-groups
          * implementation would), and issue a note in the .log
          * file. Users can re-run if they want the information. */
-        md_print_warn(cr, fplog, "Rerun with energy groups is not implemented for GPUs, falling back to the CPU\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText("Rerun with energy groups is not implemented for GPUs, falling back to the CPU");
         return FALSE;
     }
 
     return TRUE;
 }
 
-gmx_bool nbnxn_simd_supported(FILE             *fplog,
-                              const t_commrec  *cr,
-                              const t_inputrec *ir)
+gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
+                              const t_inputrec    *ir)
 {
     if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
     {
         /* LJ PME with LB combination rule does 7 mesh operations.
          * This so slow that we don't compile SIMD non-bonded kernels
          * for that. */
-        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling back to plain C kernels\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText("LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling back to plain C kernels");
         return FALSE;
     }
 
@@ -1680,7 +1678,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 };
 
 static void pick_nbnxn_kernel(FILE                *fp,
-                              const t_commrec     *cr,
+                              const gmx::MDLogger &mdlog,
                               gmx_bool             use_simd_kernels,
                               gmx_bool             bUseGPU,
                               gmx_bool             bEmulateGPU,
@@ -1700,7 +1698,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
         if (bDoNonbonded)
         {
-            md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
+            GMX_LOG(mdlog.warning).asParagraph().appendText("Emulating a GPU run on the CPU (slow)");
         }
     }
     else if (bUseGPU)
@@ -1711,7 +1709,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     if (*kernel_type == nbnxnkNotSet)
     {
         if (use_simd_kernels &&
-            nbnxn_simd_supported(fp, cr, ir))
+            nbnxn_simd_supported(mdlog, ir))
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1731,15 +1729,15 @@ static void pick_nbnxn_kernel(FILE                *fp,
         if (nbnxnk4x4_PlainC == *kernel_type ||
             nbnxnk8x8x8_PlainC == *kernel_type)
         {
-            md_print_warn(cr, fp,
-                          "WARNING: Using the slow %s kernels. This should\n"
-                          "not happen during routine usage on supported platforms.\n\n",
-                          lookup_nbnxn_kernel_name(*kernel_type));
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
+                    "WARNING: Using the slow %s kernels. This should\n"
+                    "not happen during routine usage on supported platforms.",
+                    lookup_nbnxn_kernel_name(*kernel_type));
         }
     }
 }
 
-static void pick_nbnxn_resources(FILE                *fp,
+static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                                  const t_commrec     *cr,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
@@ -1774,7 +1772,7 @@ static void pick_nbnxn_resources(FILE                *fp,
     {
         /* Each PP node will use the intra-node id-th device from the
          * list of detected/selected GPUs. */
-        if (!init_gpu(fp, cr->rank_pp_intranode, gpu_err_str,
+        if (!init_gpu(mdlog, cr->rank_pp_intranode, gpu_err_str,
                       &hwinfo->gpu_info, gpu_opt))
         {
             /* At this point the init should never fail as we made sure that
@@ -2058,6 +2056,7 @@ init_interaction_const(FILE                       *fp,
 }
 
 static void init_nb_verlet(FILE                *fp,
+                           const gmx::MDLogger &mdlog,
                            nonbonded_verlet_t **nb_verlet,
                            gmx_bool             bFEP_NonBonded,
                            const t_inputrec    *ir,
@@ -2075,7 +2074,7 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv, 1);
 
-    pick_nbnxn_resources(fp, cr, fr->hwinfo,
+    pick_nbnxn_resources(mdlog, cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
                          &bEmulateGPU,
@@ -2093,7 +2092,7 @@ static void init_nb_verlet(FILE                *fp,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, cr, fr->use_simd_kernels,
+            pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
                               nbv->bUseGPU, bEmulateGPU, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -2104,7 +2103,7 @@ static void init_nb_verlet(FILE                *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt, "gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, fr->use_simd_kernels,
+                pick_nbnxn_kernel(fp, mdlog, fr->use_simd_kernels,
                                   FALSE, FALSE, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
@@ -2257,19 +2256,20 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != NULL && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE              *fp,
-                   t_forcerec        *fr,
-                   t_fcdata          *fcd,
-                   const t_inputrec  *ir,
-                   const gmx_mtop_t  *mtop,
-                   const t_commrec   *cr,
-                   matrix             box,
-                   const char        *tabfn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
-                   const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force)
+void init_forcerec(FILE                *fp,
+                   const gmx::MDLogger &mdlog,
+                   t_forcerec          *fr,
+                   t_fcdata            *fcd,
+                   const t_inputrec    *ir,
+                   const gmx_mtop_t    *mtop,
+                   const t_commrec     *cr,
+                   matrix               box,
+                   const char          *tabfn,
+                   const char          *tabpfn,
+                   const char          *tabbfn,
+                   const char          *nbpu_opt,
+                   gmx_bool             bNoSolvOpt,
+                   real                 print_force)
 {
     int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
@@ -2287,7 +2287,7 @@ void init_forcerec(FILE              *fp,
          * In mdrun, hwinfo has already been set before calling init_forcerec.
          * Here we ignore GPUs, as tools will not use them anyhow.
          */
-        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE);
+        fr->hwinfo = gmx_detect_hardware(mdlog, cr, FALSE);
     }
 
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
@@ -2380,9 +2380,9 @@ void init_forcerec(FILE              *fp,
     {
         /* turn off non-bonded calculations */
         fr->bNonbonded = FALSE;
-        md_print_warn(cr, fp,
-                      "Found environment variable GMX_NO_NONBONDED.\n"
-                      "Disabling nonbonded calculations.\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText(
+                "Found environment variable GMX_NO_NONBONDED.\n"
+                "Disabling nonbonded calculations.");
     }
 
     bGenericKernelOnly = FALSE;
@@ -2501,12 +2501,12 @@ void init_forcerec(FILE              *fp,
                     fr->bMolPBC = FALSE;
                     if (fp)
                     {
-                        md_print_warn(cr, fp, "GMX_USE_GRAPH is set, using the graph for bonded interactions\n");
+                        GMX_LOG(mdlog.warning).asParagraph().appendText("GMX_USE_GRAPH is set, using the graph for bonded interactions");
                     }
 
                     if (mtop->bIntermolecularInteractions)
                     {
-                        md_print_warn(cr, fp, "WARNING: Molecules linked by intermolecular interactions have to reside in the same periodic image, otherwise artifacts will occur!\n");
+                        GMX_LOG(mdlog.warning).asParagraph().appendText("WARNING: Molecules linked by intermolecular interactions have to reside in the same periodic image, otherwise artifacts will occur!");
                     }
                 }
 
@@ -3143,7 +3143,7 @@ void init_forcerec(FILE              *fp,
             GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw, "With Verlet lists and no PME rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, mdlog, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
     }
 
     if (ir->eDispCorr != edispcNO)

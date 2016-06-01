@@ -54,6 +54,11 @@ struct t_nrnb;
 struct t_state;
 struct t_trxframe;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
  */
@@ -83,14 +88,7 @@ struct t_trxframe;
 
 
 /* return the number of steps between global communcations */
-int check_nstglobalcomm(FILE *fplog, t_commrec *cr,
-                        int nstglobalcomm, t_inputrec *ir);
-
-/* check whether an 'nst'-style parameter p is a multiple of nst, and
-   set it to be one if not, with a warning. */
-void check_nst_param(FILE *fplog, t_commrec *cr,
-                     const char *desc_nst, int nst,
-                     const char *desc_p, int *p);
+int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputrec *ir);
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */

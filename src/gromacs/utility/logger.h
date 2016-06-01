@@ -85,6 +85,12 @@ class LogEntryWriter
             entry_.text.append(text);
             return *this;
         }
+        //! Appends given text to the log entry.
+        LogEntryWriter &appendText(const std::string &text)
+        {
+            entry_.text.append(text);
+            return *this;
+        }
         //! Appends given text to the log entry, with printf-style formatting.
         LogEntryWriter &appendTextFormatted(const char *fmt, ...);
         //! Writes the log entry with empty lines before and after.
@@ -178,13 +184,13 @@ class MDLogger
 {
     public:
         //! Supported logging levels.
-        enum class LogLevel
+        enum LogLevel
         {
             Warning,
             Info
         };
         //! Number of logging levels.
-        static const int LogLevelCount = static_cast<int>(LogLevel::Info) + 1;
+        static const int LogLevelCount = static_cast<int>(Info) + 1;
 
         MDLogger();
         //! Creates a logger with the given targets.
