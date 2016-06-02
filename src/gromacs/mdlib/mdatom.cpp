@@ -300,14 +300,17 @@ void atoms2md(gmx_mtop_t *mtop, t_inputrec *ir,
             g = md->cFREEZE[i];
             if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
             {
-                /* Set the mass of completely frozen particles to ALMOST_ZERO iso 0
-                 * to avoid div by zero in lincs or shake.
-                 * Note that constraints can still move a partially frozen particle.
+                /* Set the mass of completely frozen particles to ALMOST_ZERO
+                 * iso 0 to avoid div by zero in lincs or shake.
                  */
                 md->invmass[i]  = ALMOST_ZERO;
             }
             else
             {
+                /* Note: Partially frozen particles use the normal invmass.
+                 * If such particles are constrained, the frozen dimensions
+                 * should not be updated with the constrained coordinates.
+                 */
                 md->invmass[i]  = 1.0/mA;
             }
         }
