@@ -466,6 +466,16 @@ compileProgram(FILE              *fplog,
     /* Build the OpenCL program, keeping the status to potentially
        write to the simulation log file. */
     cl_int buildStatus = clBuildProgram(program, 0, NULL, preprocessorOptions.c_str(), NULL, NULL);
+
+    /* Write log first, and then throw exception that the user know what is
+       the issue even if the build fails. */
+    writeOclBuildLog(fplog,
+                     program,
+                     deviceId,
+                     kernelFilename,
+                     preprocessorOptions,
+                     buildStatus != CL_SUCCESS);
+
     if (buildStatus != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not build OpenCL program, error was " + ocl_get_error_string(buildStatus)));
@@ -512,13 +522,6 @@ compileProgram(FILE              *fplog,
             formatExceptionMessageToFile(fplog, e);
         }
     }
-
-    writeOclBuildLog(fplog,
-                     program,
-                     deviceId,
-                     kernelFilename,
-                     preprocessorOptions,
-                     buildStatus != CL_SUCCESS);
 
     return program;
 }
