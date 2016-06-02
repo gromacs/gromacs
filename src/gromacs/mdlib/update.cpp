@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1727,6 +1727,42 @@ void update_constraints(FILE             *fplog,
          * then copy the results back here.
          */
         wallcycle_start_nocount(wcycle, ewcUPDATE);
+
+        if (md->cFREEZE != NULL && constr != NULL)
+        {
+            /* If we have atoms that are frozen along some, but not all
+             * dimensions, the constraints will have moved them also along
+             * the frozen dimensions. To freeze such degrees of freedom
+             * we copy them back here to later copy them forward. It would
+             * be more elegant and slightly more efficient to copies zero
+             * times instead of twice, but the graph case below prevents this.
+             */
+            const ivec *nFreeze                     = inputrec->opts.nFreeze;
+            bool        partialFreezeAndConstraints = false;
+            for (int g = 0; g < inputrec->opts.ngfrz; g++)
+            {
+                int numFreezeDim = nFreeze[g][XX] + nFreeze[g][YY] + nFreeze[g][ZZ];
+                if (numFreezeDim > 0 && numFreezeDim < 3)
+                {
+                    partialFreezeAndConstraints = true;
+                }
+            }
+            if (partialFreezeAndConstraints)
+            {
+                for (int i = start; i < nrend; i++)
+                {
+                    int g = md->cFREEZE[i];
+
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        if (nFreeze[g][d])
+                        {
+                            upd->xp[i][d] = state->x[i][d];
+                        }
+                    }
+                }
+            }
+        }
 
         if (graph && (graph->nnodes > 0))
         {
