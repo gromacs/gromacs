@@ -859,6 +859,8 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
     tMPI_Thread_mutex_unlock(&hw_info_lock);
+    /* Ensure that hwinfo is not modified after exiting this function */
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 }
 
