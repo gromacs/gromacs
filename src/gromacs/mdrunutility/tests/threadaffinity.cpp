@@ -48,6 +48,8 @@ namespace
 class ThreadAffinityTest : public ::testing::Test
 {
     public:
+        const char *const                   GenericFailureRegex = "NOTE: Thread affinity setting failed.";
+
         gmx::test::ThreadAffinityTestHelper helper_;
 };
 
@@ -66,12 +68,16 @@ TEST_F(ThreadAffinityTest, DoesNothingWhenNotSupported)
 TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewThreads)
 {
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("The number of threads is not equal to the number of");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.setAffinity(2);
 }
 
 TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyThreads)
 {
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.setAffinity(8);
 }
 
@@ -79,6 +85,8 @@ TEST_F(ThreadAffinityTest, DoesNothingWithUnknownHardware)
 {
     helper_.setAffinityOption(threadaffON);
     helper_.setLogicalProcessorCount(0);
+    helper_.expectWarningMatchingRegex("No information on available cores");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.setAffinity(2);
 }
 
@@ -86,6 +94,8 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooManyThreads)
 {
     helper_.setAffinityOption(threadaffON);
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.setAffinity(8);
 }
 
@@ -94,6 +104,9 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeOffset)
     helper_.setAffinityOption(threadaffON);
     helper_.setOffsetAndStride(2, 0);
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("Applying core pinning offset 2");
+    helper_.expectWarningMatchingRegex("Requested offset too large");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.setAffinity(3);
 }
 
@@ -102,6 +115,8 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooLargeStride)
     helper_.setAffinityOption(threadaffON);
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("Requested stride too large");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.setAffinity(3);
 }
 
@@ -109,6 +124,7 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWithAuto)
 {
     helper_.setLogicalProcessorCount(1);
     helper_.expectAffinitySet(0);
+    helper_.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
     helper_.setAffinity(1);
 }
 
@@ -116,6 +132,7 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWhenForced)
 {
     helper_.setAffinityOption(threadaffON);
     helper_.setLogicalProcessorCount(2);
+    helper_.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 2");
     helper_.expectAffinitySet(0);
     helper_.setAffinity(1);
 }
@@ -125,6 +142,8 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWithOffsetWhenForced)
     helper_.setAffinityOption(threadaffON);
     helper_.setOffsetAndStride(2, 0);
     helper_.setLogicalProcessorCount(4);
+    helper_.expectWarningMatchingRegex("Applying core pinning offset 2");
+    helper_.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 2");
     helper_.expectAffinitySet(2);
     helper_.setAffinity(1);
 }
@@ -132,6 +151,8 @@ TEST_F(ThreadAffinityTest, PinsSingleThreadWithOffsetWhenForced)
 TEST_F(ThreadAffinityTest, HandlesPinningFailureWithSingleThread)
 {
     helper_.setLogicalProcessorCount(1);
+    helper_.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.expectAffinitySetThatFails(0);
     helper_.setAffinity(1);
 }
@@ -142,6 +163,7 @@ TEST_F(ThreadAffinityTest, HandlesPinningFailureWithSingleThread)
 TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithAuto)
 {
     helper_.setLogicalProcessorCount(2);
+    helper_.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
     helper_.expectAffinitySet({0, 1});
     helper_.setAffinity(2);
 }
@@ -151,6 +173,7 @@ TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithStrideWhenForced)
     helper_.setAffinityOption(threadaffON);
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
+    helper_.expectInfoMatchingRegex("Pinning threads with a user-selected logical core stride of 2");
     helper_.expectAffinitySet({0, 2});
     helper_.setAffinity(2);
 }
@@ -159,6 +182,8 @@ TEST_F(ThreadAffinityTest, HandlesPinningFailureWithOneThreadFailing)
 {
     helper_.setAffinityOption(threadaffON);
     helper_.setLogicalProcessorCount(2);
+    helper_.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    helper_.expectWarningMatchingRegex(GenericFailureRegex);
     helper_.expectAffinitySet(0);
     helper_.expectAffinitySetThatFails(1);
     helper_.setAffinity(2);

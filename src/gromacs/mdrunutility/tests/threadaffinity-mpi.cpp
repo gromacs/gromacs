@@ -47,6 +47,9 @@
 namespace
 {
 
+//! Regex for the generic thread affinity failure message.
+const char *const GenericFailureRegex = "NOTE: Thread affinity setting failed.";
+
 using gmx::test::ThreadAffinityTestHelper;
 
 TEST(ThreadAffinityMultiRankTest, PinsWholeNode)
@@ -54,6 +57,7 @@ TEST(ThreadAffinityMultiRankTest, PinsWholeNode)
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
     helper.setLogicalProcessorCount(4);
+    helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
     helper.expectAffinitySet(gmx_node_rank());
     helper.setAffinity(1);
 }
@@ -65,6 +69,8 @@ TEST(ThreadAffinityMultiRankTest, PinsWithOffsetAndStride)
     helper.setAffinityOption(threadaffON);
     helper.setOffsetAndStride(1, 2);
     helper.setLogicalProcessorCount(8);
+    helper.expectWarningMatchingRegex("Applying core pinning offset 1");
+    helper.expectInfoMatchingRegex("Pinning threads with a user-specified logical core stride of 2");
     helper.expectAffinitySet(1 + 2*gmx_node_rank());
     helper.setAffinity(1);
 }
@@ -75,6 +81,7 @@ TEST(ThreadAffinityMultiRankTest, PinsTwoNodes)
     ThreadAffinityTestHelper helper;
     helper.setPhysicalNodeId(gmx_node_rank()/2);
     helper.setLogicalProcessorCount(2);
+    helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
     helper.expectAffinitySet(gmx_node_rank()%2);
     helper.setAffinity(1);
 }
@@ -93,6 +100,8 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithAuto)
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
     helper.setLogicalProcessorCount(6);
+    helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper.expectWarningMatchingRegex(GenericFailureRegex);
     helper.setAffinity(2);
 }
 
@@ -102,6 +111,8 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(threadaffON);
     helper.setLogicalProcessorCount(6);
+    helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper.expectWarningMatchingRegex(GenericFailureRegex);
     helper.setAffinity(2);
 }
 
@@ -110,6 +121,7 @@ class ThreadAffinityHeterogeneousNodesTest : public ::testing::Test
     public:
         int currentNode() const { return gmx_node_rank() / 2; }
         int indexInNode() const { return gmx_node_rank() % 2; }
+        bool isMaster() const { return gmx_node_rank() == 0; }
 
         void setupNodes(ThreadAffinityTestHelper *helper, std::array<int, 2> cores)
         {
@@ -132,6 +144,20 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnMasterOnly)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(threadaffON);
     setupNodes(&helper, {{2, 1}});
+    if (isMaster())
+    {
+        helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 0)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
     expectNodeAffinitySet(&helper, 0, indexInNode());
     helper.setAffinity(1);
 }
@@ -142,6 +168,15 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnNonMasterOnly)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(threadaffON);
     setupNodes(&helper, {{1, 2}});
+    if (currentNode() == 0)
+    {
+        helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    }
     expectNodeAffinitySet(&helper, 1, indexInNode());
     helper.setAffinity(1);
 }
@@ -152,6 +187,20 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesUnknownHardwareOnNonMaster)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(threadaffON);
     setupNodes(&helper, {{2, 0}});
+    if (isMaster())
+    {
+        helper.expectWarningMatchingRegex("No information on available cores");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 0)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectWarningMatchingRegex("No information on available cores");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
     expectNodeAffinitySet(&helper, 0, indexInNode());
     helper.setAffinity(1);
 }
@@ -161,6 +210,20 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnMasterOnly)
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, {{2, 1}});
+    if (isMaster())
+    {
+        helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 0)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
     expectNodeAffinitySet(&helper, 0, indexInNode());
     helper.setAffinity(1);
 }
@@ -170,6 +233,15 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnNonMasterOnly)
     GMX_MPI_TEST(4);
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, {{1, 2}});
+    if (currentNode() == 0)
+    {
+        helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    }
     expectNodeAffinitySet(&helper, 1, indexInNode());
     helper.setAffinity(1);
 }
@@ -181,6 +253,21 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidOffsetOnNonMasterOnly
     helper.setAffinityOption(threadaffON);
     helper.setOffsetAndStride(2, 0);
     setupNodes(&helper, {{4, 2}});
+    helper.expectWarningMatchingRegex("Applying core pinning offset 2");
+    if (isMaster())
+    {
+        helper.expectWarningMatchingRegex("Requested offset too large");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 0)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with an auto-selected logical core stride of 1");
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectWarningMatchingRegex("Requested offset too large");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
     expectNodeAffinitySet(&helper, 0, indexInNode()+2);
     helper.setAffinity(1);
 }
@@ -192,6 +279,20 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesInvalidStrideOnNonMasterOnly
     helper.setAffinityOption(threadaffON);
     helper.setOffsetAndStride(0, 2);
     setupNodes(&helper, {{4, 2}});
+    if (isMaster())
+    {
+        helper.expectWarningMatchingRegex("Requested stride too large");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
+    if (currentNode() == 0)
+    {
+        helper.expectInfoMatchingRegex("Pinning threads with a user-specified logical core stride of 2");
+    }
+    if (currentNode() == 1)
+    {
+        helper.expectWarningMatchingRegex("Requested stride too large");
+        helper.expectWarningMatchingRegex(GenericFailureRegex);
+    }
     expectNodeAffinitySet(&helper, 0, 2*indexInNode());
     helper.setAffinity(1);
 }

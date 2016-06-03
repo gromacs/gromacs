@@ -37,6 +37,7 @@ set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     integrationtests.cpp
     interactivetest.cpp
+    loggertest.cpp
     mpi-printer.cpp
     mpitest.cpp
     refdata.cpp

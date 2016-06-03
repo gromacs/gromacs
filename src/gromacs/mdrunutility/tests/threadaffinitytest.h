@@ -44,6 +44,8 @@
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/utility/logger.h"
 
+#include "testutils/loggertest.h"
+
 struct t_commrec;
 
 namespace gmx
@@ -116,6 +118,14 @@ class ThreadAffinityTestHelper
             EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core))
                 .WillOnce(Return(false));
         }
+        void expectWarningMatchingRegex(const char *re)
+        {
+            logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Warning, re);
+        }
+        void expectInfoMatchingRegex(const char *re)
+        {
+            logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, re);
+        }
 
         void setAffinity(int nthread_local)
         {
@@ -123,8 +133,7 @@ class ThreadAffinityTestHelper
             {
                 setLogicalProcessorCount(1);
             }
-            MDLogger mdlog;
-            gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_, *hwTop_,
+            gmx_set_thread_affinity(logHelper_.logger(), cr_, hwOpt_, *hwTop_,
                                     nthread_local, &affinityAccess_);
         }
 
@@ -133,6 +142,7 @@ class ThreadAffinityTestHelper
         gmx_hw_opt_t                      *hwOpt_;
         std::unique_ptr<HardwareTopology>  hwTop_;
         MockThreadAffinityAccess           affinityAccess_;
+        LoggerTestHelper                   logHelper_;
 };
 
 } // namespace test
