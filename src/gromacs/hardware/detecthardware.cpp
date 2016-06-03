@@ -730,7 +730,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 #endif
 }
 
-static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
+static void     gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 {
     const int ncore = hwinfo_g->hardwareTopology->numberOfCores();
 #if GMX_LIB_MPI
@@ -843,22 +843,26 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_max    = maxmin[3];
     hwinfo_g->bIdenticalGPUs      = (maxmin[4] == -maxmin[9]);
 #else
-    /* All ranks use the same pointer, protect it with a mutex */
-    tMPI_Thread_mutex_lock(&hw_info_lock);
-    hwinfo_g->nphysicalnode       = 1;
-    hwinfo_g->ncore_tot           = ncore;
-    hwinfo_g->ncore_min           = ncore;
-    hwinfo_g->ncore_max           = ncore;
-    hwinfo_g->nhwthread_tot       = hwinfo_g->nthreads_hw_avail;
-    hwinfo_g->nhwthread_min       = hwinfo_g->nthreads_hw_avail;
-    hwinfo_g->nhwthread_max       = hwinfo_g->nthreads_hw_avail;
-    hwinfo_g->ngpu_compatible_tot = hwinfo_g->gpu_info.n_dev_compatible;
-    hwinfo_g->ngpu_compatible_min = hwinfo_g->gpu_info.n_dev_compatible;
-    hwinfo_g->ngpu_compatible_max = hwinfo_g->gpu_info.n_dev_compatible;
-    hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
-    hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
-    hwinfo_g->bIdenticalGPUs      = TRUE;
-    tMPI_Thread_mutex_unlock(&hw_info_lock);
+    /* All ranks use the same pointer, so we need to run this code only once.
+     * The first call to this function is before thread-MPI is initialized,
+     * so we can simply check n_hwinfo.
+     */
+    if (n_hwinfo == 1)
+    {
+        hwinfo_g->nphysicalnode       = 1;
+        hwinfo_g->ncore_tot           = ncore;
+        hwinfo_g->ncore_min           = ncore;
+        hwinfo_g->ncore_max           = ncore;
+        hwinfo_g->nhwthread_tot       = hwinfo_g->nthreads_hw_avail;
+        hwinfo_g->nhwthread_min       = hwinfo_g->nthreads_hw_avail;
+        hwinfo_g->nhwthread_max       = hwinfo_g->nthreads_hw_avail;
+        hwinfo_g->ngpu_compatible_tot = hwinfo_g->gpu_info.n_dev_compatible;
+        hwinfo_g->ngpu_compatible_min = hwinfo_g->gpu_info.n_dev_compatible;
+        hwinfo_g->ngpu_compatible_max = hwinfo_g->gpu_info.n_dev_compatible;
+        hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
+        hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
+        hwinfo_g->bIdenticalGPUs      = TRUE;
+    }
 #endif
 }
 
@@ -909,13 +913,13 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
     /* increase the reference counter */
     n_hwinfo++;
 
+    gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
+
     ret = tMPI_Thread_mutex_unlock(&hw_info_lock);
     if (ret != 0)
     {
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
-
-    gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
 
     return hwinfo_g;
 }
