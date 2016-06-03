@@ -843,8 +843,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_max    = maxmin[3];
     hwinfo_g->bIdenticalGPUs      = (maxmin[4] == -maxmin[9]);
 #else
-    /* All ranks use the same pointer, protect it with a mutex */
-    tMPI_Thread_mutex_lock(&hw_info_lock);
+    /* All ranks use the same pointer, protected by a mutex in the caller */
     hwinfo_g->nphysicalnode       = 1;
     hwinfo_g->ncore_tot           = ncore;
     hwinfo_g->ncore_min           = ncore;
@@ -858,7 +857,6 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
-    tMPI_Thread_mutex_unlock(&hw_info_lock);
 #endif
 }
 
@@ -905,6 +903,8 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         {
             gmx_detect_gpus(fplog, cr);
         }
+
+        gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
     }
     /* increase the reference counter */
     n_hwinfo++;
@@ -914,8 +914,6 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
     {
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
-
-    gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
 
     return hwinfo_g;
 }
