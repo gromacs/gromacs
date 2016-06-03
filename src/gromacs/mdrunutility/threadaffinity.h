@@ -72,8 +72,7 @@ class IThreadAffinityAccess
  * Sets the thread affinity using the requested setting stored in hw_opt.
  */
 void
-gmx_set_thread_affinity(FILE                        *fplog,
-                        const gmx::MDLogger         &mdlog,
+gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
