@@ -111,7 +111,7 @@ static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
 }
 
 static bool
-get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
+get_thread_affinity_layout(const gmx::MDLogger &mdlog,
                            const t_commrec *cr,
                            const gmx::HardwareTopology &hwTop,
                            int   threads,
@@ -250,9 +250,10 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     }
     validLayout = validLayout && !invalidValue;
 
-    if (validLayout && fplog != nullptr)
+    if (validLayout)
     {
-        fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
+        GMX_LOG(mdlog.info).appendTextFormatted(
+                "Pinning threads with a%s logical core stride of %d",
                 bPickPinStride ? "n auto-selected" : " user-specified",
                 *pin_stride);
     }
@@ -343,6 +344,7 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
                     nthread_local > 1 ? "s" : "");
         }
 
+        // TODO: This output should also go through mdlog.
         fprintf(stderr, "NOTE: %sAffinity setting %sfailed.\n", sbuf1, sbuf2);
     }
     return allAffinitiesSet;
@@ -358,8 +360,7 @@ static bool set_affinity(const t_commrec *cr, int nthread_local, int thread0_id_
    if only PME is using threads.
  */
 void
-gmx_set_thread_affinity(FILE                        *fplog,
-                        const gmx::MDLogger         &mdlog,
+gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
                         const t_commrec             *cr,
                         const gmx_hw_opt_t          *hw_opt,
                         const gmx::HardwareTopology &hwTop,
@@ -427,7 +428,7 @@ gmx_set_thread_affinity(FILE                        *fplog,
 
     bool automatic = (hw_opt->thread_affinity == threadaffAUTO);
     bool validLayout
-        = get_thread_affinity_layout(fplog, mdlog, cr, hwTop, nthread_node, automatic,
+        = get_thread_affinity_layout(mdlog, cr, hwTop, nthread_node, automatic,
                                      offset, &core_pinning_stride, &localityOrder);
     const gmx::sfree_guard  localityOrderGuard(localityOrder);
 
