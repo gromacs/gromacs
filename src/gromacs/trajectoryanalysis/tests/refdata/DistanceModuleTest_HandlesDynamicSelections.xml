@@ -219,21 +219,27 @@
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
           </DataValue>
         </DataValues>
       </DataFrame>
