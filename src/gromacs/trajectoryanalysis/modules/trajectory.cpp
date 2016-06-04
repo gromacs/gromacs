@@ -1,0 +1,330 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements gmx::analysismodules::Trajectory.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_trajectoryanalysis
+ */
+#include "gmxpre.h"
+
+#include "trajectory.h"
+
+#include <algorithm>
+
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
+
+namespace gmx
+{
+
+namespace analysismodules
+{
+
+namespace
+{
+
+/********************************************************************
+ * Trajectory
+ */
+
+class Trajectory : public TrajectoryAnalysisModule
+{
+    public:
+        Trajectory();
+
+        virtual void initOptions(IOptionsContainer          *options,
+                                 TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation        &top);
+
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
+
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
+
+    private:
+        SelectionList                       sel_;
+
+        std::string                         fnX_;
+        std::string                         fnV_;
+        std::string                         fnF_;
+        bool                                dimMask_[4];
+        bool                                maskSet_[4];
+
+        AnalysisData                        xdata_;
+        AnalysisData                        vdata_;
+        AnalysisData                        fdata_;
+};
+
+Trajectory::Trajectory()
+{
+    std::fill(std::begin(dimMask_), std::end(dimMask_), true);
+    dimMask_[DIM] = false;
+    std::fill(std::begin(maskSet_), std::end(maskSet_), false);
+    registerAnalysisDataset(&xdata_, "x");
+    registerAnalysisDataset(&vdata_, "v");
+    registerAnalysisDataset(&fdata_, "f");
+}
+
+
+void
+Trajectory::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+{
+    static const char *const desc[] = {
+        "[THISMODULE] plots coordinates, velocities, and/or forces for",
+        "provided selections. By default, the X, Y, and Z components for",
+        "the requested vectors are plotted, but specifying one or more of",
+        "[TT]-len[tt], [TT]-x[tt], [TT]-y[tt], and [TT]-z[tt] overrides this.",
+        "",
+        "For dynamic selections, currently the values are written out for",
+        "all positions that the selection could select."
+    };
+
+    settings->setHelpText(desc);
+
+    options->addOption(FileNameOption("ox").filetype(eftPlot).outputFile()
+                           .store(&fnX_).defaultBasename("coord")
+                           .description("Coordinates for each position as a function of time"));
+    options->addOption(FileNameOption("ov").filetype(eftPlot).outputFile()
+                           .store(&fnV_).defaultBasename("veloc")
+                           .description("Velocities for each position as a function of time"));
+    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
+                           .store(&fnF_).defaultBasename("force")
+                           .description("Forces for each position as a function of time"));
+
+    options->addOption(SelectionOption("select").storeVector(&sel_)
+                           .required().dynamicMask().multiValue()
+                           .description("Selections to analyze"));
+
+    options->addOption(BooleanOption("x").store(&dimMask_[XX])
+                           .storeIsSet(&maskSet_[XX])
+                           .description("Plot X component"));
+    options->addOption(BooleanOption("y").store(&dimMask_[YY])
+                           .storeIsSet(&maskSet_[YY])
+                           .description("Plot Y component"));
+    options->addOption(BooleanOption("z").store(&dimMask_[ZZ])
+                           .storeIsSet(&maskSet_[ZZ])
+                           .description("Plot Z component"));
+    options->addOption(BooleanOption("len").store(&dimMask_[DIM])
+                           .storeIsSet(&maskSet_[DIM])
+                           .description("Plot vector length"));
+}
+
+
+void
+Trajectory::optionsFinished(TrajectoryAnalysisSettings *settings)
+{
+    int frameFlags = TRX_NEED_X;
+    if (!fnV_.empty())
+    {
+        frameFlags |= TRX_READ_V;
+    }
+    if (!fnF_.empty())
+    {
+        frameFlags |= TRX_READ_F;
+    }
+    settings->setFrameFlags(frameFlags);
+    if (std::count(std::begin(maskSet_), std::end(maskSet_), true) > 0)
+    {
+        for (int i = 0; i <= DIM; ++i)
+        {
+            if (!maskSet_[i])
+            {
+                dimMask_[i] = false;
+            }
+        }
+    }
+}
+
+
+void
+Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                         const TopologyInformation         & /*top*/)
+{
+    if (!fnX_.empty())
+    {
+        xdata_.setDataSetCount(sel_.size());
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            xdata_.setColumnCount(g, 3*sel_[g].posCount());
+        }
+        AnalysisDataVectorPlotModulePointer plot(
+                new AnalysisDataVectorPlotModule(settings.plotSettings()));
+        plot->setWriteMask(dimMask_);
+        plot->setFileName(fnX_);
+        plot->setTitle("Coordinates");
+        plot->setXAxisIsTime();
+        plot->setYLabel("Value [nm]");
+        xdata_.addModule(plot);
+    }
+    if (!fnV_.empty())
+    {
+        vdata_.setDataSetCount(sel_.size());
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            sel_[g].setEvaluateVelocities(true);
+            vdata_.setColumnCount(g, 3*sel_[g].posCount());
+        }
+        AnalysisDataVectorPlotModulePointer plot(
+                new AnalysisDataVectorPlotModule(settings.plotSettings()));
+        plot->setWriteMask(dimMask_);
+        plot->setFileName(fnV_);
+        plot->setTitle("Velocities");
+        plot->setXAxisIsTime();
+        plot->setYLabel("Value [nm/ps]");
+        vdata_.addModule(plot);
+    }
+    if (!fnF_.empty())
+    {
+        fdata_.setDataSetCount(sel_.size());
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            sel_[g].setEvaluateForces(true);
+            fdata_.setColumnCount(g, 3*sel_[g].posCount());
+        }
+        AnalysisDataVectorPlotModulePointer plot(
+                new AnalysisDataVectorPlotModule(settings.plotSettings()));
+        plot->setWriteMask(dimMask_);
+        plot->setFileName(fnF_);
+        plot->setTitle("Forces");
+        plot->setXAxisIsTime();
+        plot->setYLabel("Value [kJ mol\\S-1\\N nm\\S-1\\N]");
+        fdata_.addModule(plot);
+    }
+}
+
+
+void
+Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
+                         TrajectoryAnalysisModuleData *pdata)
+{
+    const SelectionList &sel = pdata->parallelSelections(sel_);
+
+    // There is some duplication here, but cppcheck cannot handle function
+    // types that return rvec references, and MSVC also apparently segfaults
+    // when using std::function with a member function here...
+    {
+        AnalysisDataHandle dh = pdata->dataHandle(xdata_);
+        if (dh.isValid())
+        {
+            dh.startFrame(frnr, fr.time);
+            for (size_t g = 0; g < sel.size(); ++g)
+            {
+                dh.selectDataSet(g);
+                for (int i = 0; i < sel[g].posCount(); ++i)
+                {
+                    const SelectionPosition &pos = sel[g].position(i);
+                    dh.setPoints(i*3, 3, pos.x(), pos.selected());
+                }
+            }
+            dh.finishFrame();
+        }
+    }
+    if (fr.bV)
+    {
+        AnalysisDataHandle dh = pdata->dataHandle(xdata_);
+        if (dh.isValid())
+        {
+            dh.startFrame(frnr, fr.time);
+            for (size_t g = 0; g < sel.size(); ++g)
+            {
+                dh.selectDataSet(g);
+                for (int i = 0; i < sel[g].posCount(); ++i)
+                {
+                    const SelectionPosition &pos = sel[g].position(i);
+                    dh.setPoints(i*3, 3, pos.v(), pos.selected());
+                }
+            }
+            dh.finishFrame();
+        }
+    }
+    if (fr.bF)
+    {
+        AnalysisDataHandle dh = pdata->dataHandle(xdata_);
+        if (dh.isValid())
+        {
+            dh.startFrame(frnr, fr.time);
+            for (size_t g = 0; g < sel.size(); ++g)
+            {
+                dh.selectDataSet(g);
+                for (int i = 0; i < sel[g].posCount(); ++i)
+                {
+                    const SelectionPosition &pos = sel[g].position(i);
+                    dh.setPoints(i*3, 3, pos.f(), pos.selected());
+                }
+            }
+            dh.finishFrame();
+        }
+    }
+}
+
+
+void
+Trajectory::finishAnalysis(int /*nframes*/)
+{
+}
+
+
+void
+Trajectory::writeOutput()
+{
+}
+
+}       // namespace
+
+const char TrajectoryInfo::name[]             = "trajectory";
+const char TrajectoryInfo::shortDescription[] =
+    "Print coordinates, velocities, and/or forces for selections";
+
+TrajectoryAnalysisModulePointer TrajectoryInfo::create()
+{
+    return TrajectoryAnalysisModulePointer(new Trajectory);
+}
+
+} // namespace analysismodules
+
+} // namespace gmx
