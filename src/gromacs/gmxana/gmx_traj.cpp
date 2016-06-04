@@ -621,7 +621,9 @@ int gmx_traj(int argc, char *argv[])
         "(specified with [TT]-av[tt] or [TT]-af[tt]).[PAR]",
         "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
         "norm of the vector is plotted. In addition in the same graph",
-        "the kinetic energy distribution is given."
+        "the kinetic energy distribution is given.",
+        "",
+        "See [gmx-trajectory] for plotting similar data for selections."
     };
     static gmx_bool   bMol    = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
     static gmx_bool   bX      = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
