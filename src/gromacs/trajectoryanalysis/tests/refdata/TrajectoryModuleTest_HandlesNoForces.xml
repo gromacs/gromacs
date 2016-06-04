@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">trajectory -select 'resnr 1' 'resnr 3'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="f"></AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-of"></File>
+  </OutputFiles>
+</ReferenceData>

@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">trajectory -select 'resnr 1' 'resnr 3'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="x">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">9</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">9</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">9</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">9</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-ox"></File>
+  </OutputFiles>
+</ReferenceData>
