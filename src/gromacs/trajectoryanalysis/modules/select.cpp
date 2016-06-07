@@ -672,9 +672,13 @@ Select::writeOutput()
         t_pdbinfo         *pdbinfo;
         snew(pdbinfo, atoms.nr);
         scoped_guard_sfree pdbinfoGuard(pdbinfo);
-        if (atoms.pdbinfo != NULL)
+        if (atoms.havePdbInfo)
         {
             std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
+        }
+        else
+        {
+            atoms.havePdbInfo = TRUE;
         }
         atoms.pdbinfo = pdbinfo;
         for (int i = 0; i < atoms.nr; ++i)
