@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include "gmx_lmmin.h"
+#include "lmmin.h"
 
 static double lm_enorm(int n, const double* x);
 
@@ -64,10 +64,10 @@ static void lm_qrsolv(const int n, double* r, const int ldr, const int* Pivot,
 */
 
 /* Predefined control parameter sets (msgfile=NULL means stdout). */
-const lm_control_struct gmx_lm_control_double = {
+const lm_control_struct lm_control_double = {
     LM_USERTOL, LM_USERTOL, LM_USERTOL, LM_USERTOL,
     100., 100, 1, NULL, 0, -1, -1};
-const lm_control_struct gmx_lm_control_float = {
+const lm_control_struct lm_control_float = {
     1.e-7, 1.e-7, 1.e-7, 1.e-7,
     100., 100, 1, NULL, 0, -1, -1};
 
@@ -75,7 +75,7 @@ const lm_control_struct gmx_lm_control_float = {
 /*  Message texts (indexed by status.info)                                    */
 /******************************************************************************/
 
-const char* gmx_lm_infmsg[] = {
+const char* lm_infmsg[] = {
     "found zero (sum of squares below underflow limit)",
     "converged  (the relative error in the sum of squares is at most tol)",
     "converged  (the relative error of the parameter vector is at most tol)",
@@ -106,10 +106,10 @@ static void lm_print_pars(int nout, const double* par, FILE* fout)
 /*  lmmin (main minimization routine)                                         */
 /******************************************************************************/
 
-void gmx_lmmin(const int n, double* x, const int m, const void* data,
-               void (*evaluate)(const double* par, const int m_dat,
-                                const void* data, double* fvec, int* userbreak),
-               const lm_control_struct* C, lm_status_struct* S)
+void lmmin(const int n, double* x, const int m, const void* data,
+           void (*evaluate)(const double* par, const int m_dat,
+                            const void* data, double* fvec, int* userbreak),
+           const lm_control_struct* C, lm_status_struct* S)
 {
     int j, i;
     double actred, dirder, fnorm, fnorm1, gnorm, pnorm, prered, ratio, step,
