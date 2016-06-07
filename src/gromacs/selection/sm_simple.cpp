@@ -779,7 +779,7 @@ check_pdbinfo(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */,
 {
     bool bOk;
 
-    bOk = (top != NULL && top->atoms.pdbinfo != NULL);
+    bOk = (top != NULL && top->atoms.havePdbInfo);
     if (!bOk)
     {
         GMX_THROW(gmx::InconsistentInputError("PDB info not available in topology"));
