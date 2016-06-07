@@ -1248,3 +1248,33 @@ std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop)
     }
     return atom_index;
 }
+
+void convertAtomsToMtop(t_symtab    *symtab,
+                        char       **name,
+                        t_atoms     *atoms,
+                        gmx_mtop_t  *mtop)
+{
+    mtop->symtab                 = *symtab;
+
+    mtop->name                   = name;
+
+    mtop->nmoltype               = 1;
+    // This snew clears all entries, we should replace it by an initializer
+    snew(mtop->moltype, mtop->nmoltype);
+    mtop->moltype[0].atoms       = *atoms;
+    init_block(&mtop->moltype[0].cgs);
+    init_blocka(&mtop->moltype[0].excls);
+
+    mtop->nmolblock              = 1;
+    // This snew clears all entries, we should replace it by an initializer
+    snew(mtop->molblock, mtop->nmolblock);
+    mtop->molblock[0].type       = 0;
+    mtop->molblock[0].nmol       = 1;
+    mtop->molblock[0].natoms_mol = atoms->nr;
+
+    mtop->bIntermolecularInteractions = FALSE;
+
+    mtop->natoms                 = atoms->nr;
+
+    gmx_mtop_finalize(mtop);
+}
