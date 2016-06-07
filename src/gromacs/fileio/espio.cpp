@@ -164,18 +164,15 @@ static const char *const esp_prop[espNR] = {
 };
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_topology *top, rvec x[], rvec *v, matrix box)
+                            t_symtab *symtab, t_atoms *atoms,
+                            rvec x[], rvec *v, matrix box)
 {
-    t_atoms  *atoms = &top->atoms;
     FILE     *fp;
     char      word[STRLEN], buf[STRLEN];
     int       level, r, nprop, p, i, m, molnr;
     int       prop[32];
     double    d;
     gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
-
-    // TODO: The code does not understand titles it writes...
-    top->name = put_symtab(&top->symtab, "");
 
     clear_mat(box);
 
@@ -295,13 +292,13 @@ void gmx_espresso_read_conf(const char *infile,
                     }
                     /* Generate an atom name from the particle type */
                     sprintf(buf, "T%hu", atoms->atom[i].type);
-                    atoms->atomname[i] = put_symtab(&top->symtab, buf);
+                    atoms->atomname[i] = put_symtab(symtab, buf);
                     if (bMol)
                     {
                         if (i == 0 || atoms->atom[i].resind != atoms->atom[i-1].resind)
                         {
                             atoms->resinfo[atoms->atom[i].resind].name =
-                                put_symtab(&top->symtab, "MOL");
+                                put_symtab(symtab, "MOL");
                         }
                     }
                     else
@@ -318,7 +315,7 @@ void gmx_espresso_read_conf(const char *infile,
                             sprintf(buf, "T%c%c",
                                     'A'+atoms->atom[i].type/26, 'A'+atoms->atom[i].type%26);
                         }
-                        t_atoms_set_resinfo(atoms, i, &top->symtab, buf, i, ' ', 0, ' ');
+                        t_atoms_set_resinfo(atoms, i, symtab, buf, i, ' ', 0, ' ');
                     }
 
                     if (r == 3)
