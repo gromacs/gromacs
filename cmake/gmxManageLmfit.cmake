@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,12 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB GMX_SOURCES_NEEDING_LMFIT expfit.cpp gmx_lmcurve.cpp)
-set(GMX_SOURCES_NEEDING_LMFIT ${GMX_SOURCES_NEEDING_LMFIT} PARENT_SCOPE)
+set(GMX_LMFIT_MINIMUM_REQUIRED_VERSION "6.1")
+set(BUNDLED_LMFIT_LOCATION "${CMAKE_SOURCE_DIR}/src/external/lmfit")
 
-file(GLOB GMXCORRFUNC_SOURCES *.cpp)
+option(GMX_EXTERNAL_LMFIT "Use external lmfit instead of compiling the version bundled with GROMACS." OFF)
+mark_as_advanced(GMX_EXTERNAL_LMFIT)
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+function(manage_lmfit)
+    if(GMX_EXTERNAL_LMFIT)
+        # Find an external lmfit library.
+        find_package(lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
+        if(NOT LMFIT_FOUND)
+            message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
+        endif()
+        set(HAVE_EXTERNAL_LMFIT 1 CACHE INTERNAL "Use an external lmfit library")
+    else()
+        set(HAVE_EXTERNAL_LMFIT 0 CACHE INTERNAL "Use an external lmfit library")
+        file(GLOB LMFIT_SOURCES ${BUNDLED_LMFIT_LOCATION}/*.cpp)
+        set(LMFIT_SOURCES ${LMFIT_SOURCES} PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(lmfit_set_source_properties)
+    if (HAVE_EXTERNAL_LMFIT)
+        foreach(_file ${ARGV})
+            set_property(SOURCE ${_file}
+                APPEND PROPERTY COMPILE_DEFINITIONS HAVE_EXTERNAL_LMFIT=${HAVE_EXTERNAL_LMFIT})
+        endforeach()
+        include_directories(BEFORE SYSTEM "${LMFIT_INCLUDE_DIR}")
+    endif()
+endfunction()
+
+manage_lmfit()
+
