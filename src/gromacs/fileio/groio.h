@@ -48,12 +48,13 @@ extern "C" {
 
 struct gmx_mtop_t;
 struct t_atoms;
-struct t_topology;
+struct t_symtab;
 struct t_trxframe;
 
 void get_coordnum(const char *infile, int *natoms);
 void gmx_gro_read_conf(const char *infile,
-                       struct t_topology *top, rvec x[], rvec *v, matrix box);
+                       t_symtab *symtab, char ***name, t_atoms *atoms,
+                       rvec x[], rvec *v, matrix box);
 
 gmx_bool gro_next_x_or_v(FILE *status, struct t_trxframe *fr);
 int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);
