@@ -68,14 +68,78 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
                          const rvec x[], const rvec *v, int ePBC, const matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
+// Mass reading settings for readConfAndTopology
+enum {
+    readAtomsMassNone,    // Don't attempt to lookup masses (with tpr we have them anyhow)
+    readAtomsMassAttempt, // Attempt to read masses
+    readAtomsMassRequired // Require all masses to be read
+};
+
+/*! \brief Read a configuration and, when available, a topology from a tpr or structure file.
+ *
+ * When reading from a tpr file, the complete topology is returned in \p mtop.
+ * When reading from a structure file, only the atoms struct in \p mtop contains data.
+ * The parameter \p readAtomsMass should be set to one of the three enum values
+ * defined above. A fatal error is generated with \c readAtomsMassRequired
+ * and the mass of an atom can not be found. The availability of masses is
+ * signaled by the T_ATOMS_MASS flag in the atoms struct(s).
+ *
+ * \param[in]     infile        Input file name
+ * \param[out]    haveTopology  true when a topology was read and stored in mtop
+ * \param[out]    mtop          The topology, either complete or only atom data
+ * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[in,out] x             Coordinates will be stored when *x!=NULL
+ * \param[in,out] v             Velocities will be stored when *v!=NULL
+ * \param[out]    box           Box dimensions
+ * \param[in]     readAtomsMass Request availability of masses in mtop, read from tpr or the atommass database
+ */
+void readConfAndTopology(const char *infile,
+                         bool *haveTopology, gmx_mtop_t *mtop,
+                         int *ePBC,
+                         rvec **x, rvec **v, matrix box,
+                         int readAtomsMass);
+
+/*! \brief Read a configuration and, when available, a topology from a tpr or structure file.
+ *
+ * Deprecated.
+ * Does the same thing as readConfAndTopology, but stores the topology
+ * in t_topology struct.
+ *
+ * \param[in]     infile        Input file name
+ * \param[out]    haveTopology  true when a topology was read and stored in mtop
+ * \param[out]    top           The topology, either complete or only atom data
+ * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[in,out] x             Coordinates will be stored when *x!=NULL
+ * \param[in,out] v             Velocities will be stored when *v!=NULL
+ * \param[out]    box           Box dimensions
+ * \param[in]     readAtomsMass Request availability of masses in mtop, read from tpr or the atommass database
+ */
+void readTpsConf(const char *infile,
+                 bool *haveTopology, t_topology *top,
+                 int *ePBC,
+                 rvec **x, rvec **v, matrix box,
+                 int readAtomsMass);
+
+
+/*! \brief Read a configuration and, when available, a topology from a tpr or structure file.
+ *
+ * Deprecated.
+ * Does the same thing as readConfAndTopology, but stores the topology
+ * in t_topology struct.
+ * \p bMass TRUE corresponds to \c readAtomsMass = \c readAtomsMassRequired
+ * \p bMass FALSE corresponds to \c readAtomsMass = \c readAtomsMassNone
+ *
+ * \param[in]     infile        Input file name
+ * \param[out]    top           The topology, either complete or only atom data
+ * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[in,out] x             Coordinates will be stored when *x!=NULL
+ * \param[in,out] v             Velocities will be stored when *v!=NULL
+ * \param[out]    box           Box dimensions
+ * \param[in]     bMass         Request availability of masses in mtop, read from tpr or the atommass database
+ * \returns if a topology is available
+ */
 gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box, gmx_bool bMass);
-/* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
- * memory for atoms, x and v will be allocated.
- * Return TRUE if a complete topology was read.
- * If infile is a TPX file read the whole top,
- * else if bMass=TRUE, read the masses into top.atoms from the mass database.
- */
 
 #ifdef __cplusplus
 }

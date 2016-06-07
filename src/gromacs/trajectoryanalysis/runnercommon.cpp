@@ -181,8 +181,8 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     if (!topfile_.empty())
     {
         snew(topInfo_.top_, 1);
-        topInfo_.bTop_ = read_tps_conf(topfile_.c_str(), topInfo_.top_, &topInfo_.ePBC_,
-                                       &topInfo_.xtop_, NULL, topInfo_.boxtop_, TRUE);
+        readTpsConf(topfile_.c_str(), &topInfo_.bTop_, topInfo_.top_, &topInfo_.ePBC_,
+                    &topInfo_.xtop_, NULL, topInfo_.boxtop_, readAtomsMassAttempt);
         if (hasTrajectory()
             && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
