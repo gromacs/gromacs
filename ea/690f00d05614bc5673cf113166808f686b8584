@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Gerrit Groenhof <g.groenhof@googlemail.com>
+Verified+1: Gerrit Groenhof <g.groenhof@googlemail.com>
+Code-Review+2: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Tue, 07 Jun 2016 15:40:26 +0200
+Reviewed-on: https://gerrit.gromacs.org/5922
+Project: gromacs
+Branch: refs/heads/release-2016
