@@ -50,6 +50,7 @@ struct t_atom;
 struct t_atoms;
 struct t_block;
 struct t_ilist;
+struct t_symtab;
 struct t_topology;
 
 /* Should be called after generating or reading mtop,
@@ -274,5 +275,21 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
  * \returns Vector that will be filled with the atom indices
  */
 std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
+
+/*! \brief Converts a t_atoms struct to an mtop struct
+ *
+ * All pointers contained in \p atoms will be copied into \p mtop.
+ * Note that this will produce one moleculetype encompassing the whole system.
+ *
+ * \param[in]  symtab  The symbol table
+ * \param[in]  name    Pointer to the name for the topology
+ * \param[in]  atoms   The atoms to convert
+ * \param[out] mtop    The molecular topology output containing atoms.
+ */
+void
+convertAtomsToMtop(t_symtab    *symtab,
+                   char       **name,
+                   t_atoms     *atoms,
+                   gmx_mtop_t  *mtop);
 
 #endif
