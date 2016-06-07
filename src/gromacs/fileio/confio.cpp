@@ -59,6 +59,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 void write_sto_conf_indexed(const char *outfile, const char *title,
@@ -304,7 +305,8 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile, t_topology *top,
+static void read_stx_conf(const char *infile,
+                          t_symtab *symtab, char ***name, t_atoms *atoms,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
@@ -312,11 +314,11 @@ static void read_stx_conf(const char *infile, t_topology *top,
     int         ftp;
     char        g96_line[STRLEN+1];
 
-    if (top->atoms.nr == 0)
+    if (atoms->nr == 0)
     {
         fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile);
     }
-    else if (top->atoms.atom == NULL)
+    else if (atoms->atom == NULL)
     {
         gmx_mem("Uninitialized array atom");
     }
@@ -330,29 +332,31 @@ static void read_stx_conf(const char *infile, t_topology *top,
     switch (ftp)
     {
         case efGRO:
-            gmx_gro_read_conf(infile, top, x, v, box);
+            gmx_gro_read_conf(infile, symtab, name, atoms, x, v, box);
             break;
         case efG96:
             fr.title  = NULL;
-            fr.natoms = top->atoms.nr;
-            fr.atoms  = &top->atoms;
+            fr.natoms = atoms->nr;
+            fr.atoms  = atoms;
             fr.x      = x;
             fr.v      = v;
             fr.f      = NULL;
             in        = gmx_fio_fopen(infile, "r");
-            read_g96_conf(in, infile, &fr, &top->symtab, g96_line);
+            read_g96_conf(in, infile, &fr, symtab, g96_line);
             gmx_fio_fclose(in);
             copy_mat(fr.box, box);
-            top->name = put_symtab(&top->symtab, fr.title);
+            *name     = put_symtab(symtab, fr.title);
             sfree(const_cast<char *>(fr.title));
             break;
         case efPDB:
         case efBRK:
         case efENT:
-            gmx_pdb_read_conf(infile, top, x, ePBC, box);
+            gmx_pdb_read_conf(infile, symtab, name, atoms, x, ePBC, box);
             break;
         case efESP:
-            gmx_espresso_read_conf(infile, top, x, v, box);
+            gmx_espresso_read_conf(infile, symtab, atoms, x, v, box);
+            // No title reading implemented for espresso files
+            *name = put_symtab(symtab, "");
             break;
         default:
             gmx_incons("Not supported in read_stx_conf");
@@ -380,22 +384,103 @@ static void done_gmx_groups_t(gmx_groups_t *g)
     sfree(g->grpname);
 }
 
-gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
-                       rvec **x, rvec **v, matrix box, gmx_bool bMass)
+static void readConfAndAtoms(const char *infile,
+                             t_symtab *symtab, char ***name, t_atoms *atoms,
+                             int *ePBC,
+                             rvec **x, rvec **v, matrix box, bool requireMass)
 {
-    t_tpxheader      header;
-    int              natoms, i;
-    gmx_bool         bTop, bXNULL = FALSE;
-    gmx_mtop_t      *mtop;
-    gmx_atomprop_t   aps;
+    int natoms;
+    get_stx_coordnum(infile, &natoms);
 
-    bTop  = fn2bTPX(infile);
+    init_t_atoms(atoms, natoms, (fn2ftp(infile) == efPDB));
+
+    bool xIsNull = false;
+    if (x == NULL)
+    {
+        snew(x, 1);
+        xIsNull = true;
+    }
+    snew(*x, natoms);
+    if (v)
+    {
+        snew(*v, natoms);
+    }
+    read_stx_conf(infile,
+                  symtab, name, atoms,
+                  *x, (v == NULL) ? NULL : *v, ePBC, box);
+    if (xIsNull)
+    {
+        sfree(*x);
+        sfree(x);
+    }
+    if (requireMass)
+    {
+        gmx_atomprop_t aps = gmx_atomprop_init();
+        for (int i = 0; (i < natoms); i++)
+        {
+            if (!gmx_atomprop_query(aps, epropMass,
+                                    *atoms->resinfo[atoms->atom[i].resind].name,
+                                    *atoms->atomname[i],
+                                    &(atoms->atom[i].m)))
+            {
+                gmx_fatal(FARGS, "Can not find mass for atom %s in residue %d %s. Please provide a tpr file for this analysis (or add the atom to the atommass.dat library file).",
+                          *atoms->atomname[i],
+                          atoms->resinfo[atoms->atom[i].resind].nr,
+                          *atoms->resinfo[atoms->atom[i].resind].name);
+            }
+        }
+        gmx_atomprop_destroy(aps);
+    }
+}
+
+/* Converts a t_atoms struct to an mtop struct.
+ * Note that this will produce one moleculetype encompassing the whole system.
+ */
+static void convertAtomsToMtop(t_symtab *symtab, char **name, t_atoms *atoms,
+                               gmx_mtop_t *mtop)
+{
+    mtop->symtab                 = *symtab;
+
+    mtop->name                   = name;
+
+    mtop->nmoltype               = 1;
+    // This snew clears all entries, we should replace it by an initializer
+    snew(mtop->moltype, mtop->nmoltype);
+    mtop->moltype[0].atoms       = *atoms;
+    init_block(&mtop->moltype[0].cgs);
+    init_blocka(&mtop->moltype[0].excls);
+
+    mtop->nmolblock              = 1;
+    // This snew clears all entries, we should replace it by an initializer
+    snew(mtop->molblock, mtop->nmolblock);
+    mtop->molblock[0].type       = 0;
+    mtop->molblock[0].nmol       = 1;
+    mtop->molblock[0].natoms_mol = atoms->nr;
+
+    mtop->bIntermolecularInteractions = FALSE;
+
+    mtop->natoms                 = atoms->nr;
+
+    gmx_mtop_finalize(mtop);
+}
+
+void readConfAndTopology(const char *infile,
+                         bool *haveTopology, gmx_mtop_t *mtop,
+                         int *ePBC,
+                         rvec **x, rvec **v, matrix box,
+                         bool requireMass)
+{
+    GMX_RELEASE_ASSERT(mtop != NULL, "readConfAndTopology requires mtop!=NULL");
+
     if (ePBC != NULL)
     {
         *ePBC = -1;
     }
-    if (bTop)
+
+    *haveTopology = fn2bTPX(infile);
+    if (*haveTopology)
     {
+        t_tpxheader header;
         read_tpxheader(infile, &header, TRUE);
         if (x)
         {
@@ -405,7 +490,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
         {
             snew(*v, header.natoms);
         }
-        snew(mtop, 1);
+        int natoms;
         int ePBC_tmp
             = read_tpx(infile, NULL, box, &natoms,
                        (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, mtop);
@@ -413,56 +498,34 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
         {
             *ePBC = ePBC_tmp;
         }
-        *top = gmx_mtop_t_to_t_topology(mtop);
-        /* In this case we need to throw away the group data too */
-        done_gmx_groups_t(&mtop->groups);
-        sfree(mtop);
-        tpx_make_chain_identifiers(&top->atoms, &top->mols);
     }
     else
     {
-        open_symtab(&top->symtab);
-        get_stx_coordnum(infile, &natoms);
-        init_t_atoms(&top->atoms, natoms, (fn2ftp(infile) == efPDB));
-        if (x == NULL)
-        {
-            snew(x, 1);
-            bXNULL = TRUE;
-        }
-        snew(*x, natoms);
-        if (v)
-        {
-            snew(*v, natoms);
-        }
-        read_stx_conf(infile, top, *x, (v == NULL) ? NULL : *v, ePBC, box);
-        if (bXNULL)
-        {
-            sfree(*x);
-            sfree(x);
-        }
-        if (bMass)
-        {
-            aps = gmx_atomprop_init();
-            for (i = 0; (i < natoms); i++)
-            {
-                if (!gmx_atomprop_query(aps, epropMass,
-                                        *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                        *top->atoms.atomname[i],
-                                        &(top->atoms.atom[i].m)))
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "Can not find mass for atom %s %d %s, setting to 1\n",
-                                *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                top->atoms.resinfo[top->atoms.atom[i].resind].nr,
-                                *top->atoms.atomname[i]);
-                    }
-                }
-            }
-            gmx_atomprop_destroy(aps);
-        }
-        top->idef.ntypes = -1;
-    }
+        t_symtab   symtab;
+        char     **name;
+        t_atoms    atoms;
 
-    return bTop;
+        open_symtab(&symtab);
+
+        readConfAndAtoms(infile,
+                         &symtab, &name, &atoms, ePBC,
+                         x, v, box, requireMass);
+
+        init_mtop(mtop);
+        convertAtomsToMtop(&symtab, name, &atoms, mtop);
+    }
+}
+
+gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
+                       rvec **x, rvec **v, matrix box, gmx_bool bMass)
+{
+    bool       haveTopology;
+    gmx_mtop_t mtop;
+
+    readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box, bMass);
+    *top = gmx_mtop_t_to_t_topology(&mtop);
+    /* In this case we need to throw away the group data too */
+    done_gmx_groups_t(&mtop.groups);
+
+    return haveTopology;
 }
