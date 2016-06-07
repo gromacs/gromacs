@@ -1182,9 +1182,13 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         {
             b.a[0] = bi->getAi() - 1;
             b.a[1] = bi->getAj() - 1;
-            auto bb = pd.findBond(*topology_->atoms.atomtype[b.a[0]],
-                                  *topology_->atoms.atomtype[b.a[1]],
-                                  0);
+            std::string b1, b0;
+            if (!pd.atypeToBtype(*topology_->atoms.atomtype[b.a[0]], b0) ||
+                !pd.atypeToBtype(*topology_->atoms.atomtype[b.a[1]], b1))
+            {
+                return immAtomTypes;
+            }
+            auto bb = pd.findBond(b0, b1, 0);
             if (bb != pd.getBondEnd())
             {
                 std::string         pp = bb->getParams();

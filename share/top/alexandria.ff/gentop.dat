@@ -345,6 +345,7 @@
     <gt_bond atom1="n1" atom2="os" length="115.18" sigma="0.5" ntrain="1" bondorder="1" params="300  20"/>
     <gt_bond atom1="ca" atom2="n1" length="136.19" sigma="1.63" ntrain="5" bondorder="1" params="300  20"/>
     <gt_bond atom1="c3" atom2="hc" length="109.19" sigma="0.73" ntrain="10873" bondorder="1" params="300  20"/>
+    <gt_bond atom1="oh" atom2="hp" length="98.19" sigma="0.73" ntrain="10873" bondorder="1" params="300  20"/>
   </gt_bonds>
   <gt_angles angle_unit="degree" function="angles">
     <gt_angle atom1="ca" atom2="c3" atom3="sh" angle="114.45" sigma="0.5" ntrain="2" params="100"/>
