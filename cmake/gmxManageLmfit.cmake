@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,9 +32,37 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB GMXCORRFUNC_SOURCES *.cpp)
+set(GMX_LMFIT_MINIMUM_REQUIRED_VERSION "6.1")
+set(GMX_BUNDLED_LMFIT_DIR "${CMAKE_SOURCE_DIR}/src/external/lmfit")
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+option(GMX_EXTERNAL_LMFIT "Use external lmfit instead of compiling the version bundled with GROMACS." OFF)
+mark_as_advanced(GMX_EXTERNAL_LMFIT)
+
+function(manage_lmfit)
+    if(GMX_EXTERNAL_LMFIT)
+        # Find an external lmfit library.
+        find_package(lmfit ${GMX_LMFIT_MINIMUM_REQUIRED_VERSION})
+        if(NOT LMFIT_FOUND)
+            message(FATAL_ERROR "External lmfit could not be found, please adjust your pkg-config path to include the lmfit.pc file")
+        endif()
+    endif()
+endfunction()
+
+# It would be preferable to unset the variables that aren't needed in
+# the two cases, but that isn't supported in PARENT_SCOPE until CMake
+# 3.0.
+function(get_lmfit_properties LMFIT_SOURCES_VAR LMFIT_LIBRARIES_VAR LMFIT_INCLUDE_DIR_VAR)
+    if (GMX_EXTERNAL_LMFIT)
+        set(${LMFIT_INCLUDE_DIR_VAR} ${LMFIT_INCLUDE_DIR} PARENT_SCOPE)
+        set(${LMFIT_SOURCES_VAR} "" PARENT_SCOPE)
+        set(${LMFIT_LIBRARIES_VAR} ${LMFIT_LIBRARIES} PARENT_SCOPE)
+    else()
+        set(${LMFIT_INCLUDE_DIR_VAR} ${GMX_BUNDLED_LMFIT_DIR} PARENT_SCOPE)
+        file(GLOB LMFIT_SOURCES ${GMX_BUNDLED_LMFIT_DIR}/*.cpp)
+        set(${LMFIT_SOURCES_VAR} ${LMFIT_SOURCES} PARENT_SCOPE)
+        set(${LMFIT_LIBRARIES_VAR} "" PARENT_SCOPE)
+    endif()
+endfunction()
+
+manage_lmfit()
+
