@@ -108,7 +108,7 @@ static const char *wcn[ewcNR] =
     "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force",
     "Write traj.", "Update", "Constraints", "Comm. energies",
-    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
+    "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test", "Drude Hardwall"
 };
 
 static const char *wcsn[ewcsNR] =

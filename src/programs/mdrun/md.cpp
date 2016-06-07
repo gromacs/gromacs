@@ -1412,7 +1412,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             if (ir->bDrude && ir->drude->bHardWall)
             {
+                wallcycle_start(wcycle, ewcHARDWALL);
                 apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift, step, bVerbose);
+                wallcycle_stop(wcycle, ewcHARDWALL);
             }
 
             if (ir->eI == eiVVAK)
@@ -1447,7 +1449,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (ir->bDrude && ir->drude->bHardWall)
                 {
+                    wallcycle_start(wcycle, ewcHARDWALL);
                     apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift, step, bVerbose);
+                    wallcycle_stop(wcycle, ewcHARDWALL);
                 }
 
             }
