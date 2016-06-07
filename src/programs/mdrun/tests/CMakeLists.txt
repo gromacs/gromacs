@@ -38,6 +38,7 @@ set(exename "mdrun-test")
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
+    tabulated_bonded_interactions.cpp
     energyreader.cpp
     grompp.cpp
     rerun.cpp

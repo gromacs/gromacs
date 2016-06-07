@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,6 +114,11 @@ static inline bool contains(const std::string &str, const char *substr)
 {
     return str.find(substr) != std::string::npos;
 }
+//! \copydoc contains(const std::string &str, const char *substr)
+static inline bool contains(const std::string &str, const std::string &substr)
+{
+    return str.find(substr) != std::string::npos;
+}
 
 /*!\brief Returns number of space-separated words in zero-terminated char ptr
  *
@@ -135,6 +140,12 @@ countWords(const char *s);
  */
 std::size_t
 countWords(const std::string &str);
+
+//! \copydoc endsWith(const std::string &str, const char *suffix)
+static inline bool endsWith(const std::string &str, const std::string &suffix)
+{
+    return endsWith(str, suffix.c_str());
+}
 
 /*! \brief
  * Removes a suffix from a string.

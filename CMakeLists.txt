@@ -412,6 +412,7 @@ endif()
 
 include(CheckLibraryExists)
 find_library(HAVE_LIBM m)
+mark_as_advanced(HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
@@ -567,8 +568,12 @@ endif()
 # Note this relies on zlib detection having already run
 include(gmxManageTNG)
 
-# now that we have detected the dependencies, do the second GPU configure pass
-gmx_gpu_setup()
+if(GMX_GPU)
+    # now that we have detected the dependencies, do the second configure pass
+    gmx_gpu_setup()
+else()
+    mark_as_advanced(CUDA_HOST_COMPILER)
+endif()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
