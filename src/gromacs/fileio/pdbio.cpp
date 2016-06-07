@@ -1020,12 +1020,13 @@ void get_pdb_coordnum(FILE *in, int *natoms)
 }
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_topology *top, rvec x[], int *ePBC, matrix box)
+                       t_symtab *symtab, char ***name, t_atoms *atoms,
+                       rvec x[], int *ePBC, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];
-    read_pdbfile(in, title, NULL, &top->atoms, &top->symtab, x, ePBC, box, TRUE, NULL);
-    top->name = put_symtab(&top->symtab, title);
+    read_pdbfile(in, title, NULL, atoms, symtab, x, ePBC, box, TRUE, NULL);
+    *name = put_symtab(symtab, title);
     gmx_fio_fclose(in);
 }
 
