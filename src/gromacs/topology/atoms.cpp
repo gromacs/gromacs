@@ -385,7 +385,7 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
     }
 }
 
-void atomsSetMassesBasedOnNames(t_atoms *atoms)
+void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses)
 {
     if (atoms->haveMass)
     {
@@ -395,8 +395,12 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms)
         return;
     }
 
-    gmx_atomprop_t aps = gmx_atomprop_init();
+    int            maxWarn  = (printMissingMasses ? 10 : 0);
+    int            numWarn  = 0;
 
+    gmx_atomprop_t aps      = gmx_atomprop_init();
+
+    gmx_bool       haveMass = TRUE;
     for (int i = 0; i < atoms->nr; i++)
     {
         if (!gmx_atomprop_query(aps, epropMass,
@@ -404,17 +408,23 @@ void atomsSetMassesBasedOnNames(t_atoms *atoms)
                                 *atoms->atomname[i],
                                 &atoms->atom[i].m))
         {
-            if (debug)
+            haveMass = FALSE;
+
+            if (numWarn < maxWarn)
             {
-                fprintf(debug, "Can not find mass for atom %s %d %s, setting to 1\n",
-                        *atoms->resinfo[atoms->atom[i].resind].name,
+                fprintf(stderr, "Can not find mass in database for atom %s in residue %d %s\n",
+                        *atoms->atomname[i],
                         atoms->resinfo[atoms->atom[i].resind].nr,
-                        *atoms->atomname[i]);
+                        *atoms->resinfo[atoms->atom[i].resind].name);
+                numWarn++;
             }
-            atoms->atom[i].m = 1;
+            else
+            {
+                break;
+            }
         }
     }
-    gmx_atomprop_destroy(aps);
+    atoms->haveMass = haveMass;
 
-    atoms->haveMass = TRUE;
+    gmx_atomprop_destroy(aps);
 }

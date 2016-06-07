@@ -41,10 +41,11 @@
 #include "gromacs/math/vectypes.h"
 
 struct t_atoms;
-struct t_topology;
+struct t_symtab;
 
 void gmx_espresso_read_conf(const char *infile,
-                            t_topology *top, rvec x[], rvec *v, matrix box);
+                            t_symtab *symtab, char ***name, t_atoms *atoms,
+                            rvec x[], rvec *v, matrix box);
 
 int get_espresso_coordnum(const char *infile);
 
