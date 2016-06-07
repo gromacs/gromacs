@@ -52,8 +52,6 @@
 
 #include <algorithm>
 
-#include "external/lmfit/gmx_lmcurve.h"
-
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
@@ -63,6 +61,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "gmx_lmcurve.h"
+#include "gmx_lmfit.h"
 
 /*! \brief Number of parameters for each fitting function */
 static const int nfp_ffn[effnNR] = { 0, 1, 2, 3, 5, 7, 9, 2, 4, 3, 6 };

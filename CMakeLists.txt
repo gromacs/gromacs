@@ -567,6 +567,8 @@ endif()
 # Note this relies on zlib detection having already run
 include(gmxManageTNG)
 
+include(gmxManageLmfit)
+
 # now that we have detected the dependencies, do the second GPU configure pass
 gmx_gpu_setup()
 
