@@ -142,6 +142,7 @@ if (SPHINX_FOUND)
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION
+            GMX_LMFIT_MINIMUM_REQUIRED_VERSION
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})

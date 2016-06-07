@@ -12,10 +12,10 @@
  * Homepage:  apps.jcns.fz-juelich.de/lmfit
  */
 
-#ifndef GMX_LMMIN_H
-#define GMX_LMMIN_H
+#ifndef LMMIN_H
+#define LMMIN_H
 
-#include "gmx_lmstruct.h"
+#include "lmstruct.h"
 
 /*! \brief
  * Levenberg-Marquardt minimization.
@@ -56,9 +56,9 @@
  *      status contains OUTPUT variables that inform about the fit result,
  *        as declared and explained in lmstruct.h
  */
-void gmx_lmmin( const int n_par, double *par, const int m_dat, const void *data,
-                void (*evaluate) (const double *par, const int m_dat, const void *data,
-                                  double *fvec, int *userbreak),
-                const lm_control_struct *control, lm_status_struct *status );
+void lmmin( const int n_par, double *par, const int m_dat, const void *data,
+            void (*evaluate) (const double *par, const int m_dat, const void *data,
+                              double *fvec, int *userbreak),
+            const lm_control_struct *control, lm_status_struct *status );
 
-#endif /* GMX_LMMIN_H */
+#endif /* LMMIN_H */
