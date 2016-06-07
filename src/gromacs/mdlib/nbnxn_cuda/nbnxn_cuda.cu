@@ -73,6 +73,7 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 
 /***** The kernel declarations/definitions come here *****/
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
 
 /* Top-level kernel declaration generation: will generate through multiple
  * inclusion the following flavors for all kernel declarations:
@@ -423,7 +424,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
+    if ((nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7) ||
+        (nb->dev_info->prop.major == 6 && nb->dev_info->prop.minor == 0))
     {
         num_threads_z = 2;
     }
