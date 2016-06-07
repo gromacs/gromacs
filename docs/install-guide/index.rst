@@ -299,6 +299,10 @@ Other optional build components
   by setting ``-DGMX_EXTERNAL_TNG=yes``, but TNG
   |GMX_TNG_MINIMUM_REQUIRED_VERSION| is bundled in the |Gromacs|
   source already.
+* An external lmfit library for Levenberg-Marquardt curve fitting
+  can be used by setting ``-DGMX_EXTERNAL_LMFIT=yes``, but lmfit
+  |GMX_LMFIT_MINIMUM_REQUIRED_VERSION| is bundled in the |Gromacs|
+  source already.
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Building the |Gromacs| documentation is optional, and requires
   ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx 1.2.4,

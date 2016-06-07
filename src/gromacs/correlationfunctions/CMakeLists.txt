@@ -33,9 +33,8 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB GMXCORRFUNC_SOURCES *.cpp)
-file(GLOB LMFIT_SOURCES ${CMAKE_SOURCE_DIR}/src/external/lmfit/*.cpp)
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES}  ${LMFIT_SOURCES} PARENT_SCOPE)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

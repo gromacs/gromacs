@@ -124,6 +124,10 @@ list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
 tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
 
+get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES_TO_LINK LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
+include_directories(${LMFIT_INCLUDE_DIR_ORDER} SYSTEM "${LMFIT_INCLUDE_DIRECTORY}")
+list(APPEND LIBGROMACS_SOURCES ${LMFIT_SOURCES})
+
 configure_file(version.h.cmakein version.h)
 gmx_install_headers(
     analysisdata.h
@@ -179,6 +183,7 @@ target_link_libraries(libgromacs
                       ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
+                      ${LMFIT_LIBRARIES_TO_LINK}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES}
                       ${GMX_STDLIB_LIBRARIES})
 set_target_properties(libgromacs PROPERTIES
