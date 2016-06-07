@@ -175,7 +175,9 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
 /*! \brief Set mass for each atom using the atom and residue names using a database
  *
  * If atoms->haveMass = TRUE does nothing.
+ * If printMissingMasss = TRUE, prints details for first 10 missing masses
+ * to stderr.
  */
-void atomsSetMassesBasedOnNames(t_atoms *atoms);
+void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses);
 
 #endif
