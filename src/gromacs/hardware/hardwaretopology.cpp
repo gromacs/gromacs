@@ -50,7 +50,9 @@
 #include <algorithm>
 #include <vector>
 
+#if !defined __GNUC__ || !(__GNUC__ == 4 && __GNUC_MINOR__ < 7)
 #include <thread>
+#endif
 
 #if GMX_HWLOC
 #    include <hwloc.h>
@@ -485,7 +487,8 @@ parseHwLocDevices(const hwloc_topology_t             topo,
 
 void
 parseHwLoc(HardwareTopology::Machine *        machine,
-           HardwareTopology::SupportLevel *   supportLevel)
+           HardwareTopology::SupportLevel *   supportLevel,
+           bool *                             isThisSystem)
 {
     hwloc_topology_t    topo;
 
@@ -505,7 +508,9 @@ parseHwLoc(HardwareTopology::Machine *        machine,
         hwloc_topology_destroy(topo);
         return; // SupportLevel::None.
     }
+
     // If we get here, we can get a valid root object for the topology
+    *isThisSystem = hwloc_topology_is_thissystem(topo);
 
     // Parse basic information about sockets, cores, and hardware threads
     if (parseHwLocSocketsCoresThreads(topo, machine) == 0)
@@ -596,7 +601,7 @@ HardwareTopology HardwareTopology::detect()
     result.supportLevel_ = SupportLevel::None;
 
 #if GMX_HWLOC
-    parseHwLoc(&result.machine_, &result.supportLevel_);
+    parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
 #endif
 
     // If something went wrong in hwloc (or if it was not present) we might
@@ -628,12 +633,16 @@ HardwareTopology::Machine::Machine()
 
 
 HardwareTopology::HardwareTopology()
-    : supportLevel_(SupportLevel::None)
+    : supportLevel_(SupportLevel::None),
+      machine_(),
+      isThisSystem_(true)
 {
 }
 
 HardwareTopology::HardwareTopology(int logicalProcessorCount)
-    : supportLevel_(SupportLevel::None)
+    : supportLevel_(SupportLevel::None),
+      machine_(),
+      isThisSystem_(true)
 {
     if (logicalProcessorCount > 0)
     {

@@ -144,6 +144,12 @@ options or bug fixes are not typically included.
 Version 2016
 ^^^^^^^^^^^^
 
+Analysis on arbitrary subsets of atoms
+......................................
+
+Tools implemented in the new analysis framework can now operate upon trajectories
+that match only a subset of the atoms in the input structure file.
+
 gmx insert-molecules
 ....................
 
@@ -155,6 +161,20 @@ overlapping solvent atoms.  In a fully solvated box, it is also possible to
 insert into a certain region of the solvent only by selecting a subset of the
 solvent atoms (``-replace`` takes a selection that can also contain expressions
 like ``not within 1 of ...``).
+
+gmx rdf
+.......
+
+**improved**
+
+The normalization for the output RDF can now also be the radial number density.
+
+gmx genconf
+...........
+
+**simplified**
+
+Removed ``-block``, ``-sort`` and ``-shuffle``.
 
 Version 5.1
 ^^^^^^^^^^^

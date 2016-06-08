@@ -1,0 +1,2 @@
+When updating the bundled version TNG, consider also updating the
+required version, specified in cmake/gmxManageTNG.cmake.
