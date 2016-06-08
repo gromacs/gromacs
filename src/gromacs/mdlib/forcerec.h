@@ -46,6 +46,7 @@
 
 struct t_commrec;
 struct t_fcdata;
+struct t_filenm;
 
 namespace gmx
 {
@@ -104,7 +105,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  box         Simulation box
  * \param[in]  tabfn       Table potential file for non-bonded interactions
  * \param[in]  tabpfn      Table potential file for pair interactions
- * \param[in]  tabbfn      Table potential file for bonded interactions
+ * \param[in]  tabbfnm     Table potential files for bonded interactions
  * \param[in]  nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
@@ -119,7 +120,7 @@ void init_forcerec(FILE                   *fplog,
                    matrix                  box,
                    const char             *tabfn,
                    const char             *tabpfn,
-                   const char             *tabbfn,
+                   const t_filenm         *tabbfnm,
                    const char             *nbpu_opt,
                    gmx_bool                bNoSolvOpt,
                    real                    print_force);
