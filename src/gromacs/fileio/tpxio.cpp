@@ -68,6 +68,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
@@ -2413,6 +2414,16 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     }
     if (bRead)
     {
+        /* Since we have always written all t_atom properties in the tpr file
+         * (at least for all backward compatible versions), we don't store
+         * but simple set the booleans here.
+         */
+        atoms->haveMass    = TRUE;
+        atoms->haveCharge  = TRUE;
+        atoms->haveType    = TRUE;
+        atoms->haveBState  = TRUE;
+        atoms->havePdbInfo = FALSE;
+
         snew(atoms->atom, atoms->nr);
         snew(atoms->atomname, atoms->nr);
         snew(atoms->atomtype, atoms->nr);
@@ -2424,6 +2435,10 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
         }
         atoms->pdbinfo = NULL;
     }
+    else
+    {
+        GMX_RELEASE_ASSERT(atoms->haveMass && atoms->haveCharge && atoms->haveType && atoms->haveBState, "Mass, charge, atomtype and B-state parameters should be present in t_atoms when writing a tpr file");
+    }
     for (i = 0; (i < atoms->nr); i++)
     {
         do_atom(fio, &atoms->atom[i], egcNR, bRead, file_version, groups, i);
@@ -2431,7 +2446,6 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
     do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
     do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
-
     do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
 
     if (file_version < 57)

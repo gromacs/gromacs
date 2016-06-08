@@ -1244,14 +1244,14 @@ int gmx_trjconv(int argc, char *argv[])
             /* get memory for stuff to go in .pdb file, and initialize
              * the pdbinfo structure part if the input has it.
              */
-            init_t_atoms(&useatoms, atoms->nr, (atoms->pdbinfo != NULL));
+            init_t_atoms(&useatoms, atoms->nr, atoms->havePdbInfo);
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
                 useatoms.atomname[i] = atoms->atomname[index[i]];
                 useatoms.atom[i]     = atoms->atom[index[i]];
-                if (atoms->pdbinfo != NULL)
+                if (atoms->havePdbInfo != NULL)
                 {
                     useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
                 }

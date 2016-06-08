@@ -43,8 +43,10 @@
 
 #include <algorithm>
 
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
@@ -54,14 +56,19 @@ const char *ptype_str[eptNR+1] = {
 
 void init_atom(t_atoms *at)
 {
-    at->nr        = 0;
-    at->nres      = 0;
-    at->atom      = NULL;
-    at->resinfo   = NULL;
-    at->atomname  = NULL;
-    at->atomtype  = NULL;
-    at->atomtypeB = NULL;
-    at->pdbinfo   = NULL;
+    at->nr          = 0;
+    at->nres        = 0;
+    at->atom        = NULL;
+    at->resinfo     = NULL;
+    at->atomname    = NULL;
+    at->atomtype    = NULL;
+    at->atomtypeB   = NULL;
+    at->pdbinfo     = NULL;
+    at->haveMass    = FALSE;
+    at->haveCharge  = FALSE;
+    at->haveType    = FALSE;
+    at->haveBState  = FALSE;
+    at->havePdbInfo = FALSE;
 }
 
 void init_atomtypes(t_atomtypes *at)
@@ -155,7 +162,12 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
     atoms->atomtypeB = NULL;
     snew(atoms->resinfo, natoms);
     snew(atoms->atom, natoms);
-    if (bPdbinfo)
+    atoms->haveMass    = FALSE;
+    atoms->haveCharge  = FALSE;
+    atoms->haveType    = FALSE;
+    atoms->haveBState  = FALSE;
+    atoms->havePdbInfo = bPdbinfo;
+    if (atoms->havePdbInfo)
     {
         snew(atoms->pdbinfo, natoms);
     }
@@ -372,3 +384,38 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
         }
     }
 }
+
+void atomsSetMassesBasedOnNames(t_atoms *atoms)
+{
+    if (atoms->haveMass)
+    {
+        /* We could decide to anyhow assign then or generate a fatal error,
+         * but it's probably most useful to keep the masses we have.
+         */
+        return;
+    }
+
+    gmx_atomprop_t aps = gmx_atomprop_init();
+
+    for (int i = 0; i < atoms->nr; i++)
+    {
+        if (!gmx_atomprop_query(aps, epropMass,
+                                *atoms->resinfo[atoms->atom[i].resind].name,
+                                *atoms->atomname[i],
+                                &atoms->atom[i].m))
+        {
+            if (debug)
+            {
+                fprintf(debug, "Can not find mass for atom %s %d %s, setting to 1\n",
+                        *atoms->resinfo[atoms->atom[i].resind].name,
+                        atoms->resinfo[atoms->atom[i].resind].nr,
+                        *atoms->atomname[i]);
+            }
+            atoms->atom[i].m = 1;
+        }
+    }
+    gmx_atomprop_destroy(aps);
+
+    atoms->haveMass = TRUE;
+}
+
