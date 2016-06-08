@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,7 +181,7 @@ static void delete_from_atoms(t_atoms *atoms, int inr)
         atoms->atom[i] = atoms->atom[i+1];
     }
 
-    if (atoms->pdbinfo)
+    if (atoms->havePdbInfo)
     {
         /* Shift the pdbatom struct down */
         for (i = inr; (i < atoms->nr-1); i++)

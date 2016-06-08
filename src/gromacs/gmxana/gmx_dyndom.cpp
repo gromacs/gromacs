@@ -223,7 +223,8 @@ int gmx_dyndom(int argc, char *argv[])
     {
         snew(atoms.pdbinfo, atoms.nr);
     }
-    natoms = atoms.nr;
+    atoms.havePdbInfo = TRUE;
+    natoms            = atoms.nr;
     snew(xout, natoms);
     snew(vout, natoms);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,7 @@ gmx_calc_com(const t_topology *top, rvec x[], int nrefat, const int index[], rve
     int                 m, j, ai;
     real                mass, mtot;
 
-    GMX_RELEASE_ASSERT(top != nullptr,
+    GMX_RELEASE_ASSERT(top != nullptr && top->atoms.haveMass,
                        "No masses available while mass weighting was requested");
     clear_rvec(xout);
     mtot = 0;
@@ -109,7 +109,7 @@ gmx_calc_cog_f(const t_topology *top, rvec f[], int nrefat, const int index[], r
     int                 m, j, ai;
     real                mass, mtot;
 
-    GMX_RELEASE_ASSERT(top != nullptr,
+    GMX_RELEASE_ASSERT(top != nullptr && top->atoms.haveMass,
                        "No masses available while mass weighting was requested");
     clear_rvec(fout);
     mtot = 0;
@@ -267,7 +267,7 @@ gmx_calc_com_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
     real                mass, mtot;
     rvec                dx, xtest;
 
-    GMX_RELEASE_ASSERT(top != nullptr,
+    GMX_RELEASE_ASSERT(top != nullptr && top->atoms.haveMass,
                        "No masses available while mass weighting was requested");
     /* First simple calculation */
     clear_rvec(xout);
@@ -379,7 +379,7 @@ gmx_calc_com_block(const t_topology *top, rvec x[], const t_block *block, const 
     rvec                xb;
     real                mass, mtot;
 
-    GMX_RELEASE_ASSERT(top != nullptr,
+    GMX_RELEASE_ASSERT(top != nullptr && top->atoms.haveMass,
                        "No masses available while mass weighting was requested");
     for (b = 0; b < block->nr; ++b)
     {
@@ -414,7 +414,7 @@ gmx_calc_cog_f_block(const t_topology *top, rvec f[], const t_block *block, cons
     rvec                fb;
     real                mass, mtot;
 
-    GMX_RELEASE_ASSERT(top != nullptr,
+    GMX_RELEASE_ASSERT(top != nullptr && top->atoms.haveMass,
                        "No masses available while mass weighting was requested");
     for (b = 0; b < block->nr; ++b)
     {

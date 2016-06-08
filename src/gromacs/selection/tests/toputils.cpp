@@ -159,6 +159,7 @@ void TopologyManager::initAtoms(int count)
     {
         top_->atoms.atom[i].m = (i % 3 == 0 ? 2.0 : 1.0);
     }
+    top_->atoms.haveMass = TRUE;
     if (frame_ != NULL)
     {
         frame_->natoms = count;
@@ -193,6 +194,7 @@ void TopologyManager::initAtomTypes(const ConstArrayRef<const char *> &types)
         }
         top_->atoms.atomtype[i] = &atomtypes_[j];
     }
+    top_->atoms.haveType = TRUE;
 }
 
 void TopologyManager::initUniformResidues(int residueSize)
