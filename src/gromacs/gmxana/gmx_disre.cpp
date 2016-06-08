@@ -770,6 +770,7 @@ int gmx_disre(int argc, char *argv[])
         {
             snew(atoms->pdbinfo, atoms->nr);
         }
+        atoms->havePdbInfo = TRUE;
     }
 
     top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);

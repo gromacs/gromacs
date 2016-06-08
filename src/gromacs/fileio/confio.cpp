@@ -50,7 +50,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
@@ -384,10 +383,9 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
                        rvec **x, rvec **v, matrix box, gmx_bool bMass)
 {
     t_tpxheader      header;
-    int              natoms, i;
+    int              natoms;
     gmx_bool         bTop, bXNULL = FALSE;
     gmx_mtop_t      *mtop;
-    gmx_atomprop_t   aps;
 
     bTop  = fn2bTPX(infile);
     if (ePBC != NULL)
@@ -442,24 +440,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
         }
         if (bMass)
         {
-            aps = gmx_atomprop_init();
-            for (i = 0; (i < natoms); i++)
-            {
-                if (!gmx_atomprop_query(aps, epropMass,
-                                        *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                        *top->atoms.atomname[i],
-                                        &(top->atoms.atom[i].m)))
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "Can not find mass for atom %s %d %s, setting to 1\n",
-                                *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                top->atoms.resinfo[top->atoms.atom[i].resind].nr,
-                                *top->atoms.atomname[i]);
-                    }
-                }
-            }
-            gmx_atomprop_destroy(aps);
+            atomsSetMassesBasedOnNames(&top->atoms);
         }
         top->idef.ntypes = -1;
     }
