@@ -927,8 +927,9 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             push_molt(symtab, &nmol, molinfo, pline, wi);
                             srenew(block2, nmol);
-                            block2[nmol-1].nr = 0;
-                            mi0               = &((*molinfo)[nmol-1]);
+                            block2[nmol-1].nr        = 0;
+                            mi0                      = &((*molinfo)[nmol-1]);
+                            mi0->atoms.haveAtomTypes = TRUE;
                             break;
                         }
                         case d_atoms:

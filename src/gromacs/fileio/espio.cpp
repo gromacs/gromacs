@@ -179,6 +179,8 @@ void gmx_espresso_read_conf(const char *infile,
 
     clear_mat(box);
 
+    atoms->haveAtomTypes = FALSE;
+
     fp = gmx_fio_fopen(infile, "r");
 
     bFoundParticles = FALSE;

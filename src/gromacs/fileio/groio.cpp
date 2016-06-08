@@ -111,6 +111,8 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                 " (%d)\n", natoms, atoms->nr);
     }
 
+    atoms->haveAtomTypes = FALSE;
+
     bFirst = TRUE;
 
     bVel = FALSE;

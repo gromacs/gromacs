@@ -68,6 +68,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
@@ -2724,15 +2725,15 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
         do_atom(fio, &atoms->atom[i], egcNR, bRead, file_version, groups, i);
     }
     do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
-    if (bRead && (file_version <= 20))
+    if (bRead)
     {
-        for (i = 0; i < atoms->nr; i++)
-        {
-            atoms->atomtype[i]  = put_symtab(symtab, "?");
-            atoms->atomtypeB[i] = put_symtab(symtab, "?");
-        }
+        atoms->haveAtomTypes = (file_version > 20);
     }
     else
+    {
+        GMX_RELEASE_ASSERT(atoms->haveAtomTypes, "We should have atomtypes when writing a tpr file");
+    }
+    if (atoms->haveAtomTypes)
     {
         do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
         do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);

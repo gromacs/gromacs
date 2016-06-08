@@ -53,14 +53,15 @@ const char *ptype_str[eptNR+1] = {
 
 void init_atom(t_atoms *at)
 {
-    at->nr        = 0;
-    at->nres      = 0;
-    at->atom      = NULL;
-    at->resinfo   = NULL;
-    at->atomname  = NULL;
-    at->atomtype  = NULL;
-    at->atomtypeB = NULL;
-    at->pdbinfo   = NULL;
+    at->nr            = 0;
+    at->nres          = 0;
+    at->atom          = NULL;
+    at->resinfo       = NULL;
+    at->atomname      = NULL;
+    at->haveAtomTypes = FALSE;
+    at->atomtype      = NULL;
+    at->atomtypeB     = NULL;
+    at->pdbinfo       = NULL;
 }
 
 void init_atomtypes(t_atomtypes *at)

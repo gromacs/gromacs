@@ -107,19 +107,20 @@ typedef struct t_grps
 
 typedef struct t_atoms
 {
-    int            nr;          /* Nr of atoms                          */
-    t_atom        *atom;        /* Array of atoms (dim: nr)             */
+    int          nr;            /* Nr of atoms                          */
+    t_atom      *atom;          /* Array of atoms (dim: nr)             */
                                 /* The following entries will not       */
                                 /* always be used (nres==0)             */
-    char          ***atomname;  /* Array of pointers to atom name       */
+    char      ***atomname;      /* Array of pointers to atom name       */
                                 /* use: (*(atomname[i]))                */
-    char          ***atomtype;  /* Array of pointers to atom types      */
+    gmx_bool     haveAtomTypes; /* TRUE when atomtype(B) are available  */
+    char      ***atomtype;      /* Array of pointers to atom types      */
                                 /* use: (*(atomtype[i]))                */
-    char          ***atomtypeB; /* Array of pointers to B atom types    */
+    char      ***atomtypeB;     /* Array of pointers to B atom types    */
                                 /* use: (*(atomtypeB[i]))               */
-    int              nres;      /* The number of resinfo entries        */
-    t_resinfo       *resinfo;   /* Array of residue names and numbers   */
-    t_pdbinfo       *pdbinfo;   /* PDB Information, such as aniso. Bfac */
+    int          nres;          /* The number of resinfo entries        */
+    t_resinfo   *resinfo;       /* Array of residue names and numbers   */
+    t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 
 typedef struct t_atomtypes

@@ -800,14 +800,18 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
                (size_t)(src->nres*sizeof(src->resinfo[0])));
     }
 
+    dest->haveAtomTypes = src->haveAtomTypes;
     for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
     {
         memcpy((char *) &(dest->atomname[l]), (char *) &(src->atomname[0]),
                (size_t)(srcnr*sizeof(src->atomname[0])));
-        memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
-               (size_t)(srcnr*sizeof(src->atomtype[0])));
-        memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
-               (size_t)(srcnr*sizeof(src->atomtypeB[0])));
+        if (dest->haveAtomTypes)
+        {
+            memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
+                   (size_t)(srcnr*sizeof(src->atomtype[0])));
+            memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
+                   (size_t)(srcnr*sizeof(src->atomtypeB[0])));
+        }
         memcpy((char *) &(dest->atom[l]), (char *) &(src->atom[0]),
                (size_t)(srcnr*sizeof(src->atom[0])));
     }
