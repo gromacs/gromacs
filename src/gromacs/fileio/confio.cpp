@@ -460,6 +460,8 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
                 }
             }
             gmx_atomprop_destroy(aps);
+
+            top->atoms.flags |= T_ATOMS_MASS;
         }
         top->idef.ntypes = -1;
     }

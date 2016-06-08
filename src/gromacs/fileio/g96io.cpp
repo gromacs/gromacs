@@ -66,6 +66,10 @@ static int read_g96_pos(char line[], t_symtab *symtab,
     nwanted = fr->natoms;
 
     atoms = fr->atoms;
+    if (atoms != NULL)
+    {
+        atoms->flags = 0;
+    }
 
     natoms = 0;
 
