@@ -833,8 +833,7 @@ static void fill_cell(const nbnxn_search_t nbs,
                       nbnxn_atomdata_t *nbat,
                       int a0, int a1,
                       const int *atinfo,
-                      rvec *x,
-                      int sx, int sy, int sz,
+                      const rvec *x,
                       nbnxn_bb_t gmx_unused *bb_work_aligned)
 {
     int         na, a;
@@ -880,8 +879,7 @@ static void fill_cell(const nbnxn_search_t nbs,
     }
 
     copy_rvec_to_nbat_real(nbs->a+a0, a1-a0, grid->na_c, x,
-                           nbat->XFormat, nbat->x, a0,
-                           sx, sy, sz);
+                           nbat->XFormat, nbat->x, a0);
 
     if (nbat->XFormat == nbatX4)
     {
@@ -934,8 +932,8 @@ static void fill_cell(const nbnxn_search_t nbs,
         }
         if (gmx_debug_at)
         {
-            fprintf(debug, "%2d %2d %2d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
-                    sx, sy, sz,
+            fprintf(debug, "cell %4d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+                    a0 >> grid->na_c_2log,
                     pbb_ptr[0*STRIDE_PBB], pbb_ptr[3*STRIDE_PBB],
                     pbb_ptr[1*STRIDE_PBB], pbb_ptr[4*STRIDE_PBB],
                     pbb_ptr[2*STRIDE_PBB], pbb_ptr[5*STRIDE_PBB]);
@@ -954,8 +952,8 @@ static void fill_cell(const nbnxn_search_t nbs,
         {
             int bbo;
             bbo = (a0 - grid->cell0*grid->na_sc)/grid->na_c;
-            fprintf(debug, "%2d %2d %2d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
-                    sx, sy, sz,
+            fprintf(debug, "cell %4d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+                    a0 >> grid->na_c_2log,
                     grid->bb[bbo].lower[BB_X],
                     grid->bb[bbo].lower[BB_Y],
                     grid->bb[bbo].lower[BB_Z],
@@ -988,9 +986,6 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
     /* Sort the atoms within each x,y column in 3 dimensions */
     for (int cxy = cxy_start; cxy < cxy_end; cxy++)
     {
-        int cx = cxy/grid->ncy;
-        int cy = cxy - cx*grid->ncy;
-
         int na  = grid->cxy_na[cxy];
         int ncz = grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy];
         int ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
@@ -1013,9 +1008,6 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 
             fill_cell(nbs, grid, nbat,
                       ash_c, ash_c+na_c, atinfo, x,
-                      grid->na_sc*cx + (dd_zone >> 2),
-                      grid->na_sc*cy + (dd_zone & 3),
-                      grid->na_sc*cz,
                       NULL);
 
             /* This copy to bbcz is not really necessary.
@@ -1135,9 +1127,6 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 
                     fill_cell(nbs, grid, nbat,
                               ash_x, ash_x + na_x, atinfo, x,
-                              grid->na_c*(cx*c_gpuNumClusterPerCellX + sub_x) + (dd_zone >> 2),
-                              grid->na_c*(cy*c_gpuNumClusterPerCellY + sub_y) + (dd_zone & 3),
-                              grid->na_c*sub_z,
                               bb_work_aligned);
                 }
             }
