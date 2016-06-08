@@ -870,6 +870,12 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         clear_mat(box);
     }
 
+    atoms->flags = 0;
+    if (atoms->pdbinfo)
+    {
+        atoms->flags |= T_ATOMS_PDBINFO;
+    }
+
     bCOMPND  = FALSE;
     title[0] = '\0';
     natom    = 0;

@@ -779,13 +779,25 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
     int srcnr  = src->nr;
     int destnr = dest->nr;
 
+    dest->flags = src->flags;
+
     if (srcnr)
     {
         size = destnr+copies*srcnr;
         srenew(dest->atom, size);
         srenew(dest->atomname, size);
-        srenew(dest->atomtype, size);
-        srenew(dest->atomtypeB, size);
+        if (dest->flags & T_ATOMS_ATOMTYPE)
+        {
+            srenew(dest->atomtype, size);
+        }
+        if (dest->flags & T_ATOMS_ATOMTYPEB)
+        {
+            srenew(dest->atomtypeB, size);
+        }
+        if (dest->flags & T_ATOMS_PDBINFO)
+        {
+            srenew(dest->pdbinfo, size);
+        }
     }
     if (src->nres)
     {
@@ -802,14 +814,25 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
 
     for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
     {
-        memcpy((char *) &(dest->atomname[l]), (char *) &(src->atomname[0]),
-               (size_t)(srcnr*sizeof(src->atomname[0])));
-        memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
-               (size_t)(srcnr*sizeof(src->atomtype[0])));
-        memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
-               (size_t)(srcnr*sizeof(src->atomtypeB[0])));
         memcpy((char *) &(dest->atom[l]), (char *) &(src->atom[0]),
                (size_t)(srcnr*sizeof(src->atom[0])));
+        memcpy((char *) &(dest->atomname[l]), (char *) &(src->atomname[0]),
+               (size_t)(srcnr*sizeof(src->atomname[0])));
+        if (dest->flags & T_ATOMS_ATOMTYPE)
+        {
+            memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
+                   (size_t)(srcnr*sizeof(src->atomtype[0])));
+        }
+        if (dest->flags & T_ATOMS_ATOMTYPEB)
+        {
+            memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
+                   (size_t)(srcnr*sizeof(src->atomtypeB[0])));
+        }
+        if (dest->flags & T_ATOMS_PDBINFO)
+        {
+            memcpy((char *) &(dest->pdbinfo[l]), (char *) &(src->pdbinfo[0]),
+                   (size_t)(srcnr*sizeof(src->pdbinfo[0])));
+        }
     }
 
     /* Increment residue indices */
