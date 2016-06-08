@@ -77,9 +77,6 @@ function(gmx_suggest_simd _suggested_simd)
         set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
     endif()
 
-    # Prepare a default suggestion
-    set(OUTPUT_SIMD "None")
-
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
@@ -100,14 +97,47 @@ function(gmx_suggest_simd _suggested_simd)
             # TODO Extract this duplication of
             # gmxSetBuildInformation.cmake to a helper function
             if(NOT DEFINED GMX_DETECTSIMD_RUN)
-                execute_process(COMMAND ${GMX_DETECTSIMD_BINARY} "-simd"
+                execute_process(COMMAND ${GMX_DETECTSIMD_BINARY} "-features"
                     RESULT_VARIABLE GMX_DETECTSIMD_RUN
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_DETECTSIMD_RUN "${GMX_DETECTSIMD_RUN}" CACHE INTERNAL "Result of running CPUID code with arg -simd")
+                set(GMX_DETECTSIMD_RUN "${GMX_DETECTSIMD_RUN}" CACHE INTERNAL "Result of running CPUID code with arg -features")
                 if(GMX_DETECTSIMD_RUN EQUAL 0)
+                    set(OUTPUT_SIMD "None")
+                    if(GMX_TARGET_X86)
+                        if(OUTPUT_TMP MATCHES " avx512er ")
+                            set(OUTPUT_SIMD "AVX_512_KNL")
+                        elseif(OUTPUT_TMP MATCHES " avx512f ")
+                            set(OUTPUT_SIMD "AVX_512")
+                        elseif(OUTPUT_TMP MATCHES " avx2 ")
+                            set(OUTPUT_SIMD "AVX2_256")
+                        elseif(OUTPUT_TMP MATCHES " avx ")
+                            if(OUTPUT_TMP MATCHES " fma4 ")
+                                # AMD that works better with avx-128-fma
+                            set(OUTPUT_SIMD "AVX_128_FMA")
+                            else()
+                                # Intel
+                            set(OUTPUT_SIMD "AVX_256")
+                            endif()
+                        elseif(OUTPUT_TMP MATCHES " sse4.1 ")
+                            set(OUTPUT_SIMD "SSE4.1")
+                        elseif(OUTPUT_TMP MATCHES " sse2 ")
+                            set(OUTPUT_SIMD "SSE2")
+                        endif()
+                    else()
+                        if(OUTPUT_TMP MATCHES " vsx ")
+                            set(OUTPUT_SIMD "IBM_VSX")
+                        elseif(OUTPUT_TMP MATCHES " vmx ")
+                            set(OUTPUT_SIMD "IBM_VMX")
+                        elseif(OUTPUT_TMP MATCHES " qpx ")
+                            set(OUTPUT_SIMD "IBM_QPX")
+                        elseif(OUTPUT_TMP MATCHES " neon_asimd ")
+                            set(OUTPUT_SIMD "ARM_NEON_ASIMD")
+                        elseif(OUTPUT_TMP MATCHES " neon ")
+                            set(OUTPUT_SIMD "ARM_NEON")
+                        endif()
+                    endif()
                     # Make a concrete suggestion of SIMD level
-                    string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
                     message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
                 else()
                     message(WARNING "Cannot run CPUID code, which means no SIMD suggestion can be made.")
