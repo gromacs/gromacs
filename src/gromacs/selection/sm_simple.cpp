@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -646,7 +646,7 @@ check_atomtype(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */
 {
     bool bOk;
 
-    bOk = (top != NULL && top->atoms.atomtype != NULL);
+    bOk = (top != NULL && (top->atoms.flags & T_ATOMS_ATOMTYPE));
     if (!bOk)
     {
         GMX_THROW(gmx::InconsistentInputError("Atom types not available in topology"));
