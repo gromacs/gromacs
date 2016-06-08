@@ -739,6 +739,8 @@ int gmx_confrms(int argc, char *argv[])
                 srenew(atoms1->pdbinfo, atoms1->nr);
                 srenew(atoms1->atom, atoms1->nr); /* Why renew atom? */
 
+                atoms1->havePdbInfo = TRUE;
+
                 /* Avoid segfaults when writing the pdb-file */
                 for (i = 0; i < atoms1->nr; i++)
                 {

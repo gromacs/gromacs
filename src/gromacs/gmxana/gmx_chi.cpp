@@ -1144,6 +1144,8 @@ static void order_params(FILE *log,
     {
         real x0, y0, z0;
 
+        atoms->havePdbInfo = TRUE;
+
         if (NULL == atoms->pdbinfo)
         {
             snew(atoms->pdbinfo, atoms->nr);

@@ -179,6 +179,12 @@ void gmx_espresso_read_conf(const char *infile,
 
     clear_mat(box);
 
+    atoms->haveMass    = FALSE;
+    atoms->haveCharge  = FALSE;
+    atoms->haveType    = FALSE;
+    atoms->haveBState  = FALSE;
+    atoms->havePdbInfo = FALSE;
+
     fp = gmx_fio_fopen(infile, "r");
 
     bFoundParticles = FALSE;
@@ -201,7 +207,15 @@ void gmx_espresso_read_conf(const char *infile,
                     {
                         bFoundProp    = TRUE;
                         prop[nprop++] = p;
-                        /* printf("  prop[%d] = %s\n",nprop-1,esp_prop[prop[nprop-1]]); */
+                        if (p == espQ)
+                        {
+                            atoms->haveCharge = TRUE;
+                        }
+
+                        if (debug)
+                        {
+                            fprintf(debug, "  prop[%d] = %s\n", nprop-1, esp_prop[prop[nprop-1]]);
+                        }
                     }
                 }
                 if (!bFoundProp && word[0] != '}')
