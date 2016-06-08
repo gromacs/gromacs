@@ -66,6 +66,14 @@ static int read_g96_pos(char line[], t_symtab *symtab,
     nwanted = fr->natoms;
 
     atoms = fr->atoms;
+    if (atoms != NULL)
+    {
+        atoms->haveMass    = FALSE;
+        atoms->haveCharge  = FALSE;
+        atoms->haveType    = FALSE;
+        atoms->haveBState  = FALSE;
+        atoms->havePdbInfo = FALSE;
+    }
 
     natoms = 0;
 

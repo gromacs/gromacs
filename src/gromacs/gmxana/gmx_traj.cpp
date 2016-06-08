@@ -511,6 +511,8 @@ static void write_pdb_bfac(const char *fname, const char *xname,
         {
             snew(atoms->pdbinfo, atoms->nr);
         }
+        atoms->havePdbInfo = TRUE;
+
         if (onedim == -1)
         {
             for (i = 0; i < isize; i++)
