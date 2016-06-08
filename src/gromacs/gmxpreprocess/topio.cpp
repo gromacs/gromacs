@@ -929,6 +929,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             srenew(block2, nmol);
                             block2[nmol-1].nr = 0;
                             mi0               = &((*molinfo)[nmol-1]);
+                            mi0->atoms.flags  = (T_ATOMS_MASS | T_ATOMS_ATOMTYPE | T_ATOMS_ATOMTYPEB);
                             break;
                         }
                         case d_atoms:

@@ -54,6 +54,7 @@ const char *ptype_str[eptNR+1] = {
 
 void init_atom(t_atoms *at)
 {
+    at->flags     = 0;
     at->nr        = 0;
     at->nres      = 0;
     at->atom      = NULL;

@@ -193,6 +193,7 @@ void TopologyManager::initAtomTypes(const ConstArrayRef<const char *> &types)
         }
         top_->atoms.atomtype[i] = &atomtypes_[j];
     }
+    top_->atoms.flags |= T_ATOMS_ATOMTYPE;
 }
 
 void TopologyManager::initUniformResidues(int residueSize)

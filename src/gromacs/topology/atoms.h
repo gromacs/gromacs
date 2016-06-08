@@ -49,6 +49,12 @@ enum {
     eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
 
+/* Flags for optional entries in the t_atoms struct */
+#define T_ATOMS_MASS       (1 << 0)
+#define T_ATOMS_ATOMTYPE   (1 << 1)
+#define T_ATOMS_ATOMTYPEB  (1 << 2)
+#define T_ATOMS_PDBINFO    (1 << 3)
+
 /* The particle type names */
 extern const char *ptype_str[eptNR+1];
 
@@ -103,19 +109,20 @@ typedef struct t_grps
 
 typedef struct t_atoms
 {
-    int            nr;          /* Nr of atoms                          */
-    t_atom        *atom;        /* Array of atoms (dim: nr)             */
+    int          flags;         /* Flags using the T_ATOMS bit above    */
+    int          nr;            /* Nr of atoms                          */
+    t_atom      *atom;          /* Array of atoms (dim: nr)             */
                                 /* The following entries will not       */
                                 /* always be used (nres==0)             */
-    char          ***atomname;  /* Array of pointers to atom name       */
+    char      ***atomname;      /* Array of pointers to atom name       */
                                 /* use: (*(atomname[i]))                */
-    char          ***atomtype;  /* Array of pointers to atom types      */
+    char      ***atomtype;      /* Array of pointers to atom types      */
                                 /* use: (*(atomtype[i]))                */
-    char          ***atomtypeB; /* Array of pointers to B atom types    */
+    char      ***atomtypeB;     /* Array of pointers to B atom types    */
                                 /* use: (*(atomtypeB[i]))               */
-    int              nres;      /* The number of resinfo entries        */
-    t_resinfo       *resinfo;   /* Array of residue names and numbers   */
-    t_pdbinfo       *pdbinfo;   /* PDB Information, such as aniso. Bfac */
+    int          nres;          /* The number of resinfo entries        */
+    t_resinfo   *resinfo;       /* Array of residue names and numbers   */
+    t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 
 typedef struct t_atomtypes
