@@ -73,7 +73,6 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 
 /***** The kernel declarations/definitions come here *****/
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
 
 /* Top-level kernel declaration generation: will generate through multiple
  * inclusion the following flavors for all kernel declarations:
