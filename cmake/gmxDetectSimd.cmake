@@ -84,7 +84,7 @@ function(gmx_suggest_simd _suggested_simd)
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
         # TODO Extract this try_compile to a helper function, because
-        # it duplicates code in gmxDetectSimd.cmake
+        # it duplicates code in gmxSetBuildInformation.cmake
         set(GMX_DETECTSIMD_BINARY "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/GmxDetectSimd${CMAKE_EXECUTABLE_SUFFIX}")
         set(LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}")
         try_compile(GMX_DETECTSIMD_COMPILED
@@ -97,26 +97,56 @@ function(gmx_suggest_simd _suggested_simd)
         unset(_compile_definitions)
 
         if(GMX_DETECTSIMD_COMPILED)
-            # TODO Extract this duplication of
-            # gmxSetBuildInformation.cmake to a helper function
             if(NOT DEFINED GMX_DETECTSIMD_RUN)
-                execute_process(COMMAND ${GMX_DETECTSIMD_BINARY} "-simd"
+                execute_process(COMMAND ${GMX_DETECTSIMD_BINARY} "-features"
                     RESULT_VARIABLE GMX_DETECTSIMD_RUN
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_DETECTSIMD_RUN "${GMX_DETECTSIMD_RUN}" CACHE INTERNAL "Result of running CPUID code with arg -simd")
+                set(GMX_DETECTSIMD_RUN "${GMX_DETECTSIMD_RUN}" CACHE INTERNAL "Result of running cpuinfo code to detect SIMD support")
                 if(GMX_DETECTSIMD_RUN EQUAL 0)
                     # Make a concrete suggestion of SIMD level
-                    string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
+                    if(GMX_TARGET_X86)
+                        if(OUTPUT_TMP MATCHES " avx512er ")
+                            set(OUTPUT_SIMD "AVX_512_KNL")
+                        elseif(OUTPUT_TMP MATCHES " avx512f ")
+                            set(OUTPUT_SIMD "AVX_512")
+                        elseif(OUTPUT_TMP MATCHES " avx2 ")
+                            set(OUTPUT_SIMD "AVX2_256")
+                        elseif(OUTPUT_TMP MATCHES " avx ")
+                            if(OUTPUT_TMP MATCHES " fma4 ")
+                                # AMD that works better with avx-128-fma
+                                set(OUTPUT_SIMD "AVX_128_FMA")
+                            else()
+                                # Intel
+                                set(OUTPUT_SIMD "AVX_256")
+                            endif()
+                        elseif(OUTPUT_TMP MATCHES " sse4.1 ")
+                            set(OUTPUT_SIMD "SSE4.1")
+                        elseif(OUTPUT_TMP MATCHES " sse2 ")
+                            set(OUTPUT_SIMD "SSE2")
+                        endif()
+                    else()
+                        if(OUTPUT_TMP MATCHES " vsx ")
+                            set(OUTPUT_SIMD "IBM_VSX")
+                        elseif(OUTPUT_TMP MATCHES " vmx ")
+                            set(OUTPUT_SIMD "IBM_VMX")
+                        elseif(OUTPUT_TMP MATCHES " qpx ")
+                            set(OUTPUT_SIMD "IBM_QPX")
+                        elseif(OUTPUT_TMP MATCHES " neon_asimd ")
+                            set(OUTPUT_SIMD "ARM_NEON_ASIMD")
+                        elseif(OUTPUT_TMP MATCHES " neon ")
+                            set(OUTPUT_SIMD "ARM_NEON")
+                        endif()
+                    endif()
                     message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
                 else()
-                    message(WARNING "Cannot run CPUID code, which means no SIMD suggestion can be made.")
+                    message(WARNING "Cannot run cpuinfo code, which means no SIMD suggestion can be made.")
                     message(STATUS "Run output: ${OUTPUT_TMP}")
                 endif()
             endif()
         else()
-            message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
-            message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
+            message(WARNING "Cannot compile cpuinfo code, which means no SIMD instructions.")
+            message(STATUS "Compile output: ${GMX_DETECTSIMD_COMPILED_OUTPUT}")
         endif()
     else()
         message(WARNING "Cannot detect SIMD architecture for this cross-compile; you should check it manually.")
