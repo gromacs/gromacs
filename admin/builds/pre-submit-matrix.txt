@@ -1,6 +1,29 @@
+# Brief motivation what configs are here and why they are here.
+#
+# We want to cover in the tests:
+# * a decent range of the "tier 0" supported arch configurations;
+# * those hw/software configs that are most prone to breakage;
+# * all important external dependencies
+# * major acceleration/parallelization features;
+# * a range of OS/compiler combinations for improved portability
+# * a minimum and latest version of each "tier 0" supported compiler
+#
+# Notes:
+# * the default is no SIMD (for clarity about what is being tested),
+#   but all major SIMD flavors supported should be included in the mix;
+# * GPU configs use OpenMP (in real-world runs rarely don't)
+# * Some GPU configs should use SIMD to test the offload-only SIMD code-paths;
+# * We run all supported sanitizers (currently Thread and Address)
+#   TODO Memory Sanitizer got lost at some point - building its dependencies
+#        is a PITA, so probably I put it in the too-hard basket until its
+#        time for Docker or something
+#   TODO check that ideas in http://redmine.gromacs.org/issues/1815 and
+#        http://redmine.gromacs.org/issues/1732 have been considered
+#        (Mark thinks this has been done)
+
 gcc-4.6 gpu cuda-5.0 mpi openmp x11 cmake-2.8.8
 gcc-4.8 gpu cuda-7.5 openmp release
-gcc-4.9 tsan fftpack simd=avx2_256
+gcc-4.9 tsan openmp fftpack simd=avx2_256
 gcc-5.1 double mpi
 clang-3.4 double no-openmp fftpack asan
 # TODO move mdrun-only config to post-submit matrix
