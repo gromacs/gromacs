@@ -169,6 +169,8 @@ def do_build(context):
 
             if not context.opts.mpi and context.opts.thread_mpi is not False:
                 use_tmpi = True
+            else:
+                use_tmpi = False
 
             cmd = 'perl gmxtest.pl -mpirun mpirun -xml -nosuffix all'
             if context.opts.asan:
