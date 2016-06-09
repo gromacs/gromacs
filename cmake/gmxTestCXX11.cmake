@@ -61,12 +61,17 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
   explicit operator bool() {return true;}
   a() {};
   a(a&&) {};
-  a(const a&) = delete;
+  a(const a&) {};
 };
-class b: public a {};
+class b: public a
+{
+};
 b f() {
   return b();
 }
+struct c {
+  c(const c&) = delete;
+};
 constexpr int factorial(int n)
 {
     return n <= 1? 1 : (n * factorial(n - 1));
