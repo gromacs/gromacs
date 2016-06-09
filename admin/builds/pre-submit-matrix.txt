@@ -7,7 +7,10 @@ clang-3.4 double no-openmp fftpack asan
 clang-3.7 double no-openmp fftpack mdrun-only
 msvc-2015 openmp release
 icc-16.0 msvc-2015 fftpack
-icc-16.0 openmp mkl cmake-3.3.2 simd=avx_256
+icc-16.0 no-thread-mpi openmp mkl cmake-3.3.2 simd=avx_256
 gcc-5.2 openmp simd=avx_128_fma
+#   TODO Both OpenCL configurations have proved unstable in debug mode,
+#   but we would prefer to have one of them run in debug mode. See
+#   Redmine #1693
 gcc-4.8 openmp opencl cuda-7.5 mpi release
-gcc-5.2 openmp opencl amdappsdk-3.0
+gcc-5.2 openmp opencl amdappsdk-3.0 release
