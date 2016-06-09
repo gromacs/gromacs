@@ -95,18 +95,20 @@ macro(gmx_set_build_information)
 
     if(NOT CMAKE_CROSSCOMPILING)
         # Get CPU information, e.g. for deciding what SIMD support probably exists
-        set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUID_STANDALONE")
+        set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS}")
         if(GMX_TARGET_X86)
             set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
         endif()
 
         set(GMX_BUILDINFORMATION_BINARY "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/GmxBuildInformation${CMAKE_EXECUTABLE_SUFFIX}")
+        set(LINK_LIBRARIES "${GMX_STDLIB_LIBRARIES}")
         # TODO Extract this try_compile to a helper function, because
         # it duplicates code in gmxDetectSimd.cmake
         try_compile(GMX_BUILDINFORMATION_COMPILED
             "${CMAKE_CURRENT_BINARY_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp"
             COMPILE_DEFINITIONS "${_compile_definitions}"
+            CMAKE_FLAGS "-DLINK_LIBRARIES=${LINK_LIBRARIES}"
             OUTPUT_VARIABLE GMX_BUILDINFORMATION_COMPILED_OUTPUT
             COPY_FILE ${GMX_BUILDINFORMATION_BINARY})
         unset(_compile_definitions)
@@ -119,7 +121,7 @@ macro(gmx_set_build_information)
                     RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_VENDOR
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_BUILDINFORMATION_RUN_VENDOR "${GMX_BUILDINFORMATION_RUN_VENDOR}" CACHE INTERNAL "Result of running CPUID code with arg -vendor")
+                set(GMX_BUILDINFORMATION_RUN_VENDOR "${GMX_BUILDINFORMATION_RUN_VENDOR}" CACHE INTERNAL "Result of running cpuinfo code with arg -vendor")
                 if(GMX_BUILDINFORMATION_RUN_VENDOR EQUAL 0)
                     string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_VENDOR)
                 endif()
@@ -129,7 +131,7 @@ macro(gmx_set_build_information)
                     RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_BRAND
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_BUILDINFORMATION_RUN_BRAND "${GMX_BUILDINFORMATION_RUN_BRAND}" CACHE INTERNAL "Result of running CPUID code with arg -brand")
+                set(GMX_BUILDINFORMATION_RUN_BRAND "${GMX_BUILDINFORMATION_RUN_BRAND}" CACHE INTERNAL "Result of running cpuinfo code with arg -brand")
                 if(GMX_BUILDINFORMATION_RUN_BRAND EQUAL 0)
                     string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_BRAND)
                 endif()
@@ -139,7 +141,7 @@ macro(gmx_set_build_information)
                     RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_FAMILY
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_BUILDINFORMATION_RUN_FAMILY "${GMX_BUILDINFORMATION_RUN_FAMILY}" CACHE INTERNAL "Result of running CPUID code with arg -family")
+                set(GMX_BUILDINFORMATION_RUN_FAMILY "${GMX_BUILDINFORMATION_RUN_FAMILY}" CACHE INTERNAL "Result of running cpuinfo code with arg -family")
                 if(GMX_BUILDINFORMATION_RUN_FAMILY EQUAL 0)
                     string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_FAMILY)
                 endif()
@@ -149,7 +151,7 @@ macro(gmx_set_build_information)
                     RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_MODEL
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_BUILDINFORMATION_RUN_MODEL "${GMX_BUILDINFORMATION_RUN_MODEL}" CACHE INTERNAL "Result of running CPUID code with arg -model")
+                set(GMX_BUILDINFORMATION_RUN_MODEL "${GMX_BUILDINFORMATION_RUN_MODEL}" CACHE INTERNAL "Result of running cpuinfo code with arg -model")
                 if(GMX_BUILDINFORMATION_RUN_MODEL EQUAL 0)
                     string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_MODEL)
                 endif()
@@ -159,7 +161,7 @@ macro(gmx_set_build_information)
                     RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_STEPPING
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_BUILDINFORMATION_RUN_STEPPING "${GMX_BUILDINFORMATION_RUN_STEPPING}" CACHE INTERNAL "Result of running CPUID code with arg -stepping")
+                set(GMX_BUILDINFORMATION_RUN_STEPPING "${GMX_BUILDINFORMATION_RUN_STEPPING}" CACHE INTERNAL "Result of running cpuinfo code with arg -stepping")
                 if(GMX_BUILDINFORMATION_RUN_STEPPING EQUAL 0)
                     string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_STEPPING)
                 endif()
@@ -169,7 +171,7 @@ macro(gmx_set_build_information)
                     RESULT_VARIABLE GMX_BUILDINFORMATION_RUN_FEATURES
                     OUTPUT_VARIABLE OUTPUT_TMP
                     ERROR_QUIET)
-                set(GMX_BUILDINFORMATION_RUN_FEATURES "${GMX_BUILDINFORMATION_RUN_FEATURES}" CACHE INTERNAL "Result of running CPUID code with arg -features")
+                set(GMX_BUILDINFORMATION_RUN_FEATURES "${GMX_BUILDINFORMATION_RUN_FEATURES}" CACHE INTERNAL "Result of running cpuinfo code with arg -features")
                 if(GMX_BUILDINFORMATION_RUN_FEATURES EQUAL 0)
                     string(STRIP "${OUTPUT_TMP}" OUTPUT_CPU_FEATURES)
                 endif()
