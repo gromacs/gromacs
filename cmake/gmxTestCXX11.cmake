@@ -57,25 +57,52 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
     endif()
     set(CMAKE_REQUIRED_FLAGS "${CXX11_CXX_FLAG}")
     check_cxx_source_compiles(
-"struct a {
-  explicit operator bool() {return true;}
+"// Test that a subclass has a proper copy constructor
+struct a {
   a() {};
-  a(a&&) {};
-  a(const a&) = delete;
+  a(const a&) {};
+  a(a&&) = delete;
 };
-class b: public a {};
-b f() {
+class b: public a
+{
+};
+b bTest() {
   return b();
 }
+// Early patch versions of icc 16 (and perhaps earlier versions)
+// have an issue with this test, but the GROMACS tests pass,
+// so we disable this test in that sub-case.
+#if (defined __INTEL_COMPILER && __INTEL_COMPILER >= 1700) || (defined __ICL && __ICL >= 1700) || (defined __INTEL_COMPILER_UDPATE && __INTEL_COMPILER_UPDATE >= 3)
+// Test that a subclass has a proper move constructor
+struct c {
+  c() {};
+  c(const c&) = delete;
+  c(c&&) {};
+};
+struct d : public c {
+};
+d dTest() {
+  return d();
+}
+#endif
+// Test that operator bool() works
+struct e {
+  explicit operator bool() {return true;}
+};
+// Test that constexpr works
 constexpr int factorial(int n)
 {
     return n <= 1? 1 : (n * factorial(n - 1));
 }
+// Test that r-value references work
 void checkRvalueReference(int &&);
+// Test that extern templates work
 template <typename T> void someFunction();
 extern template void someFunction<int>();
 int main() {
+  // Test nullptr
   double *x = nullptr;
+  // Test range-based for loops
   int array[5] = { 1, 2, 3, 4, 5 };
   for (int& x : array)
     x *= 2;
