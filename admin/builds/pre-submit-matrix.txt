@@ -1,3 +1,23 @@
+# Brief motivation what configs are here and why they are here.
+#
+# We want to cover in the tests:
+# * a decent range of the "tier 0" supported arch configurations;
+# * those hw/software configs that are most prone to breakage;
+# * all important external dependencies
+# * major acceleration/parallelization features;
+# * a range of OS/compiler combinations for improved portability
+#
+# Notes:
+# * the default is no SIMD (to improve build speed), but all major
+#   SIMD flavors supported should be included in the mix;
+# * GPU configs use OpenMP (in real-world runs rarely don't)
+# * Some GPU configs should use SIMD to test the offload-only SIMD code-paths;
+# * We run all supported sanitizers (currently Thread and Address)
+#   TODO should TSAN config use OpenMP?
+#   TODO Memory Sanitizer got lost at some point - building its dependencies #        is a PITA, so probably I put it in the too-hard basket until its
+#        time for Docker or something
+#   TODO check that ideas in http://redmine.gromacs.org/issues/1815 and http://redmine.gromacs.org/issues/1732 have been considered (Mark thinks this has been done)
+
 gcc-4.6 gpu cuda-5.0 mpi openmp x11 cmake-2.8.8
 gcc-4.8 gpu cuda-7.5 openmp release
 gcc-4.9 tsan fftpack simd=avx2_256
@@ -9,5 +29,8 @@ msvc-2015 openmp release
 icc-16.0 msvc-2015 fftpack
 icc-16.0 openmp mkl cmake-3.3.2 simd=avx_256
 gcc-5.2 openmp simd=avx_128_fma
+#   TODO Both OpenCL configurations have proved unstable in debug mode,
+#   but we would prefer to have one of them run in debug mode. See
+#   Redmine #1693
 gcc-4.8 openmp opencl cuda-7.5 mpi release
-gcc-5.2 openmp opencl amdappsdk-3.0
+gcc-5.2 openmp opencl amdappsdk-3.0 release
