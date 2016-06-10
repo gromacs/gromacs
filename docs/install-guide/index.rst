@@ -116,7 +116,9 @@ particular libstdc++ library, use:
 
 * For Intel: ``-DGMX_STDLIB_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
   or make sure that the correct gcc version is first in path (e.g. by
-  loading the gcc module)
+  loading the gcc module). It can also be useful to add
+  ``-DCMAKE_CXX_LINK_FLAGS="-Wl,-rpath,/path/to/gcc/lib64
+  -L/path/to/gcc/lib64"`` to ensure linking works correctly.
 * For clang:
   ``-DCMAKE_CXX_FLAGS=--gcc-toolchain=/path/to/gcc/folder``. This
   folder should contain ``include/c++``.
