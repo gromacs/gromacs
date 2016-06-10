@@ -58,6 +58,10 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
+if (DEFINED PYTHON_EXECUTABLE)
+    # Keep quiet on subsequent runs of cmake
+    set(PythonInterp_FIND_QUIETLY ON)
+endif()
 find_package(PythonInterp 2.7)
 find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
 
