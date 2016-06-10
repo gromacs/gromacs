@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \file
  * \brief
- * Tests creation of basic option types.
- *
- * Most of the tests for the basic options are in optionsassigner.cpp.
- * This file only tests behavior that should fail in initialization.
+ * Declares gmx::IOptionsContainerWithSections.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inpublicapi
  * \ingroup module_options
  */
-#include "gmxpre.h"
+#ifndef GMX_OPTIONS_IOPTIONSCONTAINERWITHSECTIONS_H
+#define GMX_OPTIONS_IOPTIONSCONTAINERWITHSECTIONS_H
 
-#include <string>
-#include <vector>
+#include "gromacs/options/ioptionscontainer.h"
 
-#include <gtest/gtest.h>
-
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
-#include "gromacs/utility/exceptions.h"
-
-#include "testutils/testasserts.h"
-
-namespace
+namespace gmx
 {
 
-TEST(OptionsTest, FailsOnNonsafeStorage)
+class OptionSection;
+class OptionSectionInfo;
+
+/*! \brief
+ * Interface for adding input options with sections.
+ *
+ * This interface extends IOptionsContainer with an additional addSection()
+ * method that supports creating a hierarchy of sections for the options.
+ *
+ * Header optionsection.h provides OptionSection.
+ *
+ * \inpublicapi
+ * \ingroup module_options
+ */
+class IOptionsContainerWithSections : public IOptionsContainer
 {
-    gmx::Options options;
-    int          value = -1;
-    using gmx::IntegerOption;
-    ASSERT_THROW_GMX(options.addOption(IntegerOption("name").store(&value)
-                                           .multiValue()),
-                     gmx::APIError);
-}
+    public:
+        /*! \brief
+         * Adds a section to this collection.
+         *
+         * \param[in] section Section to add.
+         */
+        virtual IOptionsContainerWithSections &addSection(const OptionSection &section) = 0;
+
+    protected:
+        // Disallow deletion through the interface.
+        // (no need for the virtual, but some compilers warn otherwise)
+        virtual ~IOptionsContainerWithSections();
+};
 
 } // namespace
+
+#endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
+#include "gromacs/options/optionsection.h"
 
 #include "options-impl.h"
 
@@ -69,17 +70,15 @@ void visitOption(OptionsModifyingVisitor *visitor, OptionInfo &optionInfo)
 
 //! Helper function to recursively visit all options in a group.
 template <class VisitorType>
-void acceptOptionsGroup(const OptionsImpl::Group &group, VisitorType *visitor)
+void acceptOptionsGroup(const internal::OptionSectionImpl::Group &group, VisitorType *visitor)
 {
-    OptionsImpl::Group::OptionList::const_iterator option;
-    for (option = group.options_.begin(); option != group.options_.end(); ++option)
+    for (const auto &option : group.options_)
     {
-        visitOption(visitor, (*option)->optionInfo());
+        visitOption(visitor, option->optionInfo());
     }
-    OptionsImpl::Group::SubgroupList::const_iterator subgroup;
-    for (subgroup = group.subgroups_.begin(); subgroup != group.subgroups_.end(); ++subgroup)
+    for (const auto &subgroup : group.subgroups_)
     {
-        acceptOptionsGroup(*subgroup, visitor);
+        acceptOptionsGroup(subgroup, visitor);
     }
 }
 
@@ -90,24 +89,26 @@ void acceptOptionsGroup(const OptionsImpl::Group &group, VisitorType *visitor)
  */
 
 OptionsIterator::OptionsIterator(const Options &options)
-    : options_(options)
+    : section_(options.rootSection().section())
 {
 }
 
-void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
+OptionsIterator::OptionsIterator(const OptionSectionInfo &section)
+    : section_(section.section())
 {
-    const OptionsImpl::SubSectionList          &subSectionList =
-        options_.impl_->subSections_;
-    OptionsImpl::SubSectionList::const_iterator i;
-    for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
+}
+
+void OptionsIterator::acceptSections(OptionsVisitor *visitor) const
+{
+    for (const auto &section : section_.subsections_)
     {
-        visitor->visitSubSection(*(*i));
+        visitor->visitSection(section->info());
     }
 }
 
 void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
 {
-    acceptOptionsGroup(options_.impl_->rootGroup_, visitor);
+    acceptOptionsGroup(section_.rootGroup_, visitor);
 }
 
 /********************************************************************
@@ -115,24 +116,26 @@ void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
  */
 
 OptionsModifyingIterator::OptionsModifyingIterator(Options *options)
-    : options_(*options)
+    : section_(options->rootSection().section())
 {
 }
 
-void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visitor) const
+OptionsModifyingIterator::OptionsModifyingIterator(OptionSectionInfo *section)
+    : section_(section->section())
 {
-    const OptionsImpl::SubSectionList          &subSectionList =
-        options_.impl_->subSections_;
-    OptionsImpl::SubSectionList::const_iterator i;
-    for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
+}
+
+void OptionsModifyingIterator::acceptSections(OptionsModifyingVisitor *visitor) const
+{
+    for (auto &section : section_.subsections_)
     {
-        visitor->visitSubSection(*i);
+        visitor->visitSection(&section->info());
     }
 }
 
 void OptionsModifyingIterator::acceptOptions(OptionsModifyingVisitor *visitor) const
 {
-    acceptOptionsGroup(options_.impl_->rootGroup_, visitor);
+    acceptOptionsGroup(section_.rootGroup_, visitor);
 }
 
 } // namespace gmx
