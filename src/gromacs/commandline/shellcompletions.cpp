@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -74,10 +75,10 @@ class OptionsListWriter : public OptionsVisitor
     public:
         const std::string &optionList() const { return optionList_; }
 
-        virtual void visitSubSection(const Options &section)
+        virtual void visitSection(const OptionSectionInfo &section)
         {
             OptionsIterator iterator(section);
-            iterator.acceptSubSections(this);
+            iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
         virtual void visitOption(const OptionInfo &option)
@@ -109,10 +110,10 @@ class OptionCompletionWriter : public OptionsVisitor
     public:
         explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
 
-        virtual void visitSubSection(const Options &section)
+        virtual void visitSection(const OptionSectionInfo &section)
         {
             OptionsIterator iterator(section);
-            iterator.acceptSubSections(this);
+            iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
         virtual void visitOption(const OptionInfo &option);
@@ -237,12 +238,12 @@ void ShellCompletionWriter::writeModuleCompletions(
     out.writeLine("COMPREPLY=()");
 
     OptionsListWriter listWriter;
-    listWriter.visitSubSection(options);
+    listWriter.visitSection(options.rootSection());
     out.writeLine(formatString("if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen -S ' '  -W $'%s' -- $c)); return 0; fi", listWriter.optionList().c_str()));
 
     out.writeLine("case \"$p\" in");
     OptionCompletionWriter optionWriter(&out);
-    optionWriter.visitSubSection(options);
+    optionWriter.visitSection(options.rootSection());
     out.writeLine("esac }");
 }
 
@@ -261,7 +262,7 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("if (( i == COMP_CWORD )); then");
     impl_->file_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
     OptionsListWriter lister;
-    lister.visitSubSection(options);
+    lister.visitSection(options.rootSection());
     std::string       completions(lister.optionList());
     for (ModuleNameList::const_iterator i = modules.begin();
          i != modules.end(); ++i)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,13 +67,16 @@ namespace gmx
 class OptionsAssigner::Impl
 {
     public:
+        //! Shorthand for the internal type used to represent a section.
+        typedef internal::OptionSectionStorage Section;
+
         //! Sets the option object to assign to.
         explicit Impl(Options *options);
 
         //! Returns true if a subsection has been set.
         bool inSubSection() const { return sectionStack_.size() > 1; }
         //! Returns the Options object for the current section.
-        Options &currentSection() const { return *sectionStack_.back(); }
+        Section &currentSection() const { return *sectionStack_.back(); }
         /*! \brief
          * Finds an option by the given name.
          *
@@ -95,7 +98,7 @@ class OptionsAssigner::Impl
          *
          * The first element always points to \a options_.
          */
-        std::vector<Options *>  sectionStack_;
+        std::vector<Section *>  sectionStack_;
         //! Current option being assigned to, or NULL if none.
         AbstractOptionStorage  *currentOption_;
         /*! \brief
@@ -113,7 +116,7 @@ OptionsAssigner::Impl::Impl(Options *options)
     : options_(*options), bAcceptBooleanNoPrefix_(false),
       currentOption_(NULL), currentValueCount_(0), reverseBoolean_(false)
 {
-    sectionStack_.push_back(&options_);
+    sectionStack_.push_back(&options_.impl_->rootSection_);
 }
 
 AbstractOptionStorage *
@@ -121,13 +124,13 @@ OptionsAssigner::Impl::findOption(const char *name)
 {
     GMX_RELEASE_ASSERT(currentOption_ == NULL,
                        "Cannot search for another option while processing one");
-    const Options         &section = currentSection();
-    AbstractOptionStorage *option  = section.impl_->findOption(name);
+    const Section         &section = currentSection();
+    AbstractOptionStorage *option  = section.findOption(name);
     if (option == NULL && bAcceptBooleanNoPrefix_)
     {
         if (name[0] == 'n' && name[1] == 'o')
         {
-            option = section.impl_->findOption(name + 2);
+            option = section.findOption(name + 2);
             if (option != NULL && option->isBoolean())
             {
                 reverseBoolean_ = true;
@@ -161,12 +164,12 @@ void OptionsAssigner::setAcceptBooleanNoPrefix(bool bEnabled)
 
 void OptionsAssigner::start()
 {
-    impl_->options_.impl_->startSource();
+    impl_->options_.impl_->rootSection_.startSource();
 }
 
 void OptionsAssigner::startSubSection(const char *name)
 {
-    Options *section = impl_->currentSection().impl_->findSubSection(name);
+    Impl::Section *section = impl_->currentSection().findSection(name);
     if (section == NULL)
     {
         GMX_THROW(InvalidInputError("Unknown subsection"));

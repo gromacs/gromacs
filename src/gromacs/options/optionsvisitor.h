@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,12 @@ namespace gmx
 {
 
 class Options;
+class OptionSectionInfo;
+
+namespace internal
+{
+class OptionSectionStorage;
+}
 
 /*! \libinternal \brief
  * Pure interface for visiting options in a Options object.
@@ -68,13 +74,9 @@ class OptionsVisitor
     public:
         virtual ~OptionsVisitor() {}
 
-        /*! \brief
-         * Called for each subsection in Options.
-         */
-        virtual void visitSubSection(const Options &section) = 0;
-        /*! \brief
-         * Called for each option in Options.
-         */
+        //! Called for each section.
+        virtual void visitSection(const OptionSectionInfo &section) = 0;
+        //! Called for each option.
         virtual void visitOption(const OptionInfo &option) = 0;
 };
 
@@ -93,7 +95,7 @@ class OptionsTypeVisitor : public OptionsVisitor
     public:
         virtual ~OptionsTypeVisitor() {}
 
-        virtual void visitSubSection(const Options &section) = 0;
+        virtual void visitSection(const OptionSectionInfo &section) = 0;
         /*! \brief
          * Called for each option of type \p InfoType.
          */
@@ -113,7 +115,7 @@ class OptionsTypeVisitor : public OptionsVisitor
 /*! \libinternal \brief
  * Decorator class for visiting options in a Options object.
  *
- * This class provides an interface for looping through subsections and
+ * This class provides an interface for looping through sections and
  * options in a Options object.
  *
  * Typical use (loop over all options, iteratively descending into
@@ -122,10 +124,10 @@ class OptionsTypeVisitor : public OptionsVisitor
    class Visitor : public gmx::OptionsVisitor
    {
        public:
-           void visitSubSection(const Options &section)
+           void visitSection(const Options &section)
            {
                OptionsIterator iterator(section);
-               iterator.acceptSubSections(this);
+               iterator.acceptSections(this);
                iterator.acceptOptions(this);
            }
 
@@ -135,7 +137,7 @@ class OptionsTypeVisitor : public OptionsVisitor
            }
    }
 
-   Visitor().visitSubSection(options);
+   Visitor().visitSection(options);
  * \endcode
  *
  * \inlibraryapi
@@ -146,21 +148,22 @@ class OptionsIterator
     public:
         /*! \brief
          * Creates an object for visiting options in a Options object.
+         *
+         * The created iterator iterates over the "root" section in the Options
+         * object.
          */
         explicit OptionsIterator(const Options &options);
+        //! Creates an object for visiting options in an options section.
+        explicit OptionsIterator(const OptionSectionInfo &section);
 
-        /*! \brief
-         * Visits each subsection in the wrapped Options object.
-         */
-        void acceptSubSections(OptionsVisitor *visitor) const;
-        /*! \brief
-         * Visits each option in the wrapped Options object.
-         */
+        //! Visits each section in the wrapped section.
+        void acceptSections(OptionsVisitor *visitor) const;
+        //! Visits each option in the wrapped section.
         void acceptOptions(OptionsVisitor *visitor) const;
 
     private:
-        //! The wrapped Options object.
-        const Options          &options_;
+        //! The wrapped section object.
+        const internal::OptionSectionStorage &section_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsIterator);
 };
@@ -179,13 +182,9 @@ class OptionsModifyingVisitor
     public:
         virtual ~OptionsModifyingVisitor() {}
 
-        /*! \brief
-         * Called for each subsection in Options.
-         */
-        virtual void visitSubSection(Options *section) = 0;
-        /*! \brief
-         * Called for each option in Options.
-         */
+        //! Called for each section.
+        virtual void visitSection(OptionSectionInfo *section) = 0;
+        //! Called for each option.
         virtual void visitOption(OptionInfo *option) = 0;
 };
 
@@ -205,7 +204,7 @@ class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
     public:
         virtual ~OptionsModifyingTypeVisitor() {}
 
-        virtual void visitSubSection(Options *section) = 0;
+        virtual void visitSection(OptionSectionInfo *section) = 0;
         /*! \brief
          * Called for each option of type \p InfoType.
          */
@@ -238,21 +237,22 @@ class OptionsModifyingIterator
     public:
         /*! \brief
          * Creates an object for visiting options in a Options object.
+         *
+         * The created iterator iterates over the "root" section in the Options
+         * object.
          */
         explicit OptionsModifyingIterator(Options *options);
+        //! Creates an object for visiting options in an options section.
+        explicit OptionsModifyingIterator(OptionSectionInfo *section);
 
-        /*! \brief
-         * Visits each subsection in the wrapped Options object.
-         */
-        void acceptSubSections(OptionsModifyingVisitor *visitor) const;
-        /*! \brief
-         * Visits each option in the wrapped Options object.
-         */
+        //! Visits each section in the wrapped section.
+        void acceptSections(OptionsModifyingVisitor *visitor) const;
+        //! Visits each option in the wrapped section.
         void acceptOptions(OptionsModifyingVisitor *visitor) const;
 
     private:
-        //! The wrapped Options object.
-        Options                &options_;
+        //! The wrapped section object.
+        internal::OptionSectionStorage &section_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionsModifyingIterator);
 };
