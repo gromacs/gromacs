@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -190,10 +190,10 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
         //! Initializes a scaler with the given factor.
         explicit TimeOptionScaler(double factor) : factor_(factor) {}
 
-        void visitSubSection(Options *section)
+        void visitSection(OptionSectionInfo *section)
         {
             OptionsModifyingIterator iterator(section);
-            iterator.acceptSubSections(this);
+            iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
 
@@ -214,8 +214,8 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
 void TimeUnitBehavior::optionsFinishing(Options *options)
 {
     double factor = TimeUnitManager(timeUnit()).timeScaleFactor();
-    TimeOptionScaler<DoubleOptionInfo>(factor).visitSubSection(options);
-    TimeOptionScaler<FloatOptionInfo>(factor).visitSubSection(options);
+    TimeOptionScaler<DoubleOptionInfo>(factor).visitSection(&options->rootSection());
+    TimeOptionScaler<FloatOptionInfo>(factor).visitSection(&options->rootSection());
     if (timeUnitStore_ != NULL)
     {
         *timeUnitStore_ = static_cast<TimeUnit>(timeUnit_);

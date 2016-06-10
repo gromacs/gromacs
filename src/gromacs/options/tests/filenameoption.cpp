@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@ using gmx::FileNameOption;
 
 TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
@@ -77,7 +77,7 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
@@ -97,7 +97,7 @@ TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
 
 TEST(FileNameOptionTest, HandlesOptionalUnsetOption)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
@@ -115,7 +115,7 @@ TEST(FileNameOptionTest, HandlesOptionalUnsetOption)
 
 TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
@@ -135,7 +135,7 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
 
 TEST(FileNameOptionTest, HandlesRequiredCustomDefaultExtension)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value).required()
@@ -154,7 +154,7 @@ TEST(FileNameOptionTest, HandlesRequiredCustomDefaultExtension)
 
 TEST(FileNameOptionTest, HandlesOptionalCustomDefaultExtension)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
@@ -175,7 +175,7 @@ TEST(FileNameOptionTest, HandlesOptionalCustomDefaultExtension)
 
 TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)
@@ -195,7 +195,7 @@ TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
 
 TEST(FileNameOptionTest, GivesErrorOnInvalidFileSuffix)
 {
-    gmx::Options           options(NULL, NULL);
+    gmx::Options           options;
     std::string            value;
     ASSERT_NO_THROW_GMX(options.addOption(
                                 FileNameOption("f").store(&value)

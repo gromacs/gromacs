@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,7 +136,7 @@ class OptionsFilter : public OptionsVisitor
                             IOptionsFormatter         *formatter,
                             const Options             &options);
 
-        virtual void visitSubSection(const Options &section);
+        virtual void visitSection(const OptionSectionInfo &section);
         virtual void visitOption(const OptionInfo &option);
 
     private:
@@ -153,13 +153,13 @@ void OptionsFilter::formatSelected(FilterType                 type,
 {
     formatter_  = formatter;
     filterType_ = type;
-    visitSubSection(options);
+    visitSection(options.rootSection());
 }
 
-void OptionsFilter::visitSubSection(const Options &section)
+void OptionsFilter::visitSection(const OptionSectionInfo &section)
 {
     OptionsIterator iterator(section);
-    iterator.acceptSubSections(this);
+    iterator.acceptSections(this);
     iterator.acceptOptions(this);
 }
 
