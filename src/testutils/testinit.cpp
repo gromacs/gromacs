@@ -198,7 +198,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         }
         bool        bHelp = false;
         std::string sourceRoot;
-        Options     options(NULL, NULL);
+        Options     options;
         // TODO: A single option that accepts multiple names would be nicer.
         // Also, we recognize -help, but GTest doesn't, which leads to a bit
         // unintuitive behavior.

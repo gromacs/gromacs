@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/optionsection.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -80,76 +81,120 @@ IOptionsContainer::~IOptionsContainer()
 namespace internal
 {
 
-OptionsImpl::OptionsImpl(const char *name, const char * /*title*/)
-    : name_(name != NULL ? name : ""), rootGroup_(this),
-      parent_(NULL)
+OptionsImpl::OptionsImpl()
+    : rootSection_(managers_, "")
 {
 }
 
-Options *OptionsImpl::findSubSection(const char *name) const
+/********************************************************************
+ * OptionSectionStorage
+ */
+
+IOptionsContainerWithSections &OptionSectionStorage::addSection(const OptionSection &section)
 {
-    SubSectionList::const_iterator i;
-    for (i = subSections_.begin(); i != subSections_.end(); ++i)
+    const char *name = section.name_;
+    // Make sure that there are no duplicate sections.
+    GMX_RELEASE_ASSERT(findSection(name) == NULL, "Duplicate subsection name");
+    subsections_.push_back(SectionPointer(new OptionSectionStorage(managers_, name)));
+    return *subsections_.back();
+}
+
+IOptionsContainer &OptionSectionStorage::addGroup()
+{
+    return rootGroup_.addGroup();
+}
+
+OptionInfo *OptionSectionStorage::addOption(const AbstractOption &settings)
+{
+    return rootGroup_.addOption(settings);
+}
+
+OptionSectionStorage *OptionSectionStorage::findSection(const char *name) const
+{
+    for (const auto &section : subsections_)
     {
-        if ((*i)->name() == name)
+        if (section->name_ == name)
         {
-            return *i;
+            return section.get();
         }
     }
-    return NULL;
+    return nullptr;
 }
 
-AbstractOptionStorage *OptionsImpl::findOption(const char *name) const
+AbstractOptionStorage *OptionSectionStorage::findOption(const char *name) const
 {
     OptionMap::const_iterator i = optionMap_.find(name);
     if (i == optionMap_.end())
     {
-        return NULL;
+        return nullptr;
     }
     return i->second.get();
 }
 
-void OptionsImpl::startSource()
+void OptionSectionStorage::startSource()
 {
     OptionMap::const_iterator i;
-    for (i = optionMap_.begin(); i != optionMap_.end(); ++i)
+    for (const auto &entry : optionMap_)
     {
-        AbstractOptionStorage &option = *i->second;
-        option.startSource();
+        entry.second->startSource();
     }
-    SubSectionList::const_iterator j;
-    for (j = subSections_.begin(); j != subSections_.end(); ++j)
+    for (const auto &section : subsections_)
     {
-        Options &section = **j;
-        section.impl_->startSource();
+        section->startSource();
+    }
+}
+
+void OptionSectionStorage::finish(ExceptionInitializer *errors)
+{
+    OptionMap::const_iterator i;
+    for (const auto &entry : optionMap_)
+    {
+        AbstractOptionStorage &option = *entry.second;
+        try
+        {
+            option.finish();
+        }
+        catch (UserInputError &ex)
+        {
+            ex.prependContext("In option " + option.name());
+            errors->addCurrentExceptionAsNested();
+        }
+    }
+    for (const auto &section : subsections_)
+    {
+        try
+        {
+            section->finish(errors);
+        }
+        catch (const UserInputError &)
+        {
+            errors->addCurrentExceptionAsNested();
+        }
     }
 }
 
 /********************************************************************
- * OptionsImpl::Group
+ * OptionsSectionStorage::Group
  */
 
-IOptionsContainer &OptionsImpl::Group::addGroup()
+IOptionsContainer &OptionSectionStorage::Group::addGroup()
 {
     subgroups_.push_back(Group(parent_));
     return subgroups_.back();
 }
 
-OptionInfo *OptionsImpl::Group::addOption(const AbstractOption &settings)
+OptionInfo *OptionSectionStorage::Group::addOption(const AbstractOption &settings)
 {
-    OptionsImpl *root = parent_;
-    while (root->parent_ != NULL)
-    {
-        root = root->parent_->impl_.get();
-    }
-    AbstractOptionStoragePointer         option(settings.createStorage(root->managers_));
+    OptionSectionStorage::AbstractOptionStoragePointer
+         option(settings.createStorage(parent_->managers_));
     options_.reserve(options_.size() + 1);
-    std::pair<OptionMap::iterator, bool> insertionResult =
+    auto insertionResult =
         parent_->optionMap_.insert(std::make_pair(option->name(),
                                                   std::move(option)));
     if (!insertionResult.second)
     {
-        GMX_THROW(APIError("Duplicate option: " + option->name()));
+        const std::string &name = insertionResult.first->second->name();
+        GMX_THROW(APIError("Duplicate option: " + name));
     }
     AbstractOptionStorage &insertedOption = *insertionResult.first->second;
     options_.push_back(&insertedOption);
@@ -164,8 +209,8 @@ using internal::OptionsImpl;
  * Options
  */
 
-Options::Options(const char *name, const char *title)
-    : impl_(new OptionsImpl(name, title))
+Options::Options()
+    : impl_(new OptionsImpl)
 {
 }
 
@@ -173,85 +218,48 @@ Options::~Options()
 {
 }
 
-const std::string &Options::name() const
-{
-    return impl_->name_;
-}
-
 
 void Options::addManager(IOptionManager *manager)
 {
-    GMX_RELEASE_ASSERT(impl_->parent_ == NULL,
-                       "Can only add a manager in a top-level Options object");
     // This ensures that all options see the same set of managers.
-    GMX_RELEASE_ASSERT(impl_->optionMap_.empty(),
+    GMX_RELEASE_ASSERT(impl_->rootSection_.optionMap_.empty(),
                        "Can only add a manager before options");
     // This check could be relaxed if we instead checked that the subsections
     // do not have options.
-    GMX_RELEASE_ASSERT(impl_->subSections_.empty(),
+    GMX_RELEASE_ASSERT(impl_->rootSection_.subsections_.empty(),
                        "Can only add a manager before subsections");
     impl_->managers_.add(manager);
 }
 
-void Options::addSubSection(Options *section)
+IOptionsContainerWithSections &Options::addSection(const OptionSection &section)
 {
-    // This is required, because managers are used from the root Options
-    // object, so they are only seen after the subsection has been added.
-    GMX_RELEASE_ASSERT(section->impl_->optionMap_.empty(),
-                       "Can only add a subsection before it has any options");
-    GMX_RELEASE_ASSERT(section->impl_->managers_.empty(),
-                       "Can only have managers in a top-level Options object");
-    // Make sure that section is not already inserted somewhere.
-    GMX_RELEASE_ASSERT(section->impl_->parent_ == NULL,
-                       "Cannot add as subsection twice");
-    // Make sure that there are no duplicate sections.
-    GMX_RELEASE_ASSERT(impl_->findSubSection(section->name().c_str()) == NULL,
-                       "Duplicate subsection name");
-    impl_->subSections_.push_back(section);
-    section->impl_->parent_ = this;
+    return impl_->rootSection_.addSection(section);
 }
 
 IOptionsContainer &Options::addGroup()
 {
-    return impl_->rootGroup_.addGroup();
+    return impl_->rootSection_.addGroup();
 }
 
 OptionInfo *Options::addOption(const AbstractOption &settings)
 {
-    return impl_->rootGroup_.addOption(settings);
+    return impl_->rootSection_.addOption(settings);
+}
+
+OptionSectionInfo &Options::rootSection()
+{
+    return impl_->rootSection_.info();
+}
+
+const OptionSectionInfo &Options::rootSection() const
+{
+    return impl_->rootSection_.info();
 }
 
 void Options::finish()
 {
-    // TODO: Consider how to customize these error messages based on context.
-    ExceptionInitializer                    errors("Invalid input values");
-    OptionsImpl::OptionMap::const_iterator  i;
-    for (i = impl_->optionMap_.begin(); i != impl_->optionMap_.end(); ++i)
-    {
-        AbstractOptionStorage &option = *i->second;
-        try
-        {
-            option.finish();
-        }
-        catch (UserInputError &ex)
-        {
-            ex.prependContext("In option " + option.name());
-            errors.addCurrentExceptionAsNested();
-        }
-    }
-    OptionsImpl::SubSectionList::const_iterator j;
-    for (j = impl_->subSections_.begin(); j != impl_->subSections_.end(); ++j)
-    {
-        Options &section = **j;
-        try
-        {
-            section.finish();
-        }
-        catch (const UserInputError &)
-        {
-            errors.addCurrentExceptionAsNested();
-        }
-    }
+    ExceptionInitializer  errors("Invalid input values");
+    impl_->rootSection_.finish(&errors);
     if (errors.hasNestedExceptions())
     {
         // TODO: This exception type may not always be appropriate.
