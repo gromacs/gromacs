@@ -570,8 +570,10 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
     }
 }
 
-//! Do one minimization step
-static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
+//! \brief Do one minimization step
+//
+// \returns true when the step succeeded, false when a constraint error occurred
+static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                        gmx_bool bMolPBC,
                        em_state_t *ems1, real a, rvec *f, em_state_t *ems2,
                        gmx_constr_t constr, gmx_localtop_t *top,
@@ -585,6 +587,8 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     rvec    *x1, *x2;
     real     dvdl_constr;
     int      nthreads gmx_unused;
+
+    bool     validStep = true;
 
     s1 = &ems1->s;
     s2 = &ems2->s;
@@ -700,13 +704,23 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     {
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
-        constrain(NULL, TRUE, TRUE, constr, &top->idef,
-                  ir, cr, count, 0, 1.0, md,
-                  s1->x, s2->x, NULL, bMolPBC, s2->box,
-                  s2->lambda[efptBONDED], &dvdl_constr,
-                  NULL, NULL, nrnb, econqCoord);
+        validStep =
+            constrain(NULL, TRUE, TRUE, constr, &top->idef,
+                      ir, cr, count, 0, 1.0, md,
+                      s1->x, s2->x, NULL, bMolPBC, s2->box,
+                      s2->lambda[efptBONDED], &dvdl_constr,
+                      NULL, NULL, nrnb, econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
+
+        // We should move this check to the different minimizers
+        if (!validStep && ir->eI != eiSteep)
+        {
+            gmx_fatal(FARGS, "The coordinates could not be constrained. Minimizer '%s' can not handle constraint failures, use minimizer '%s' before using '%s'.",
+                      EI(ir->eI), EI(eiSteep), EI(ir->eI));
+        }
     }
+
+    return validStep;
 }
 
 //! Prepare EM for using domain decomposition parallellization
@@ -2561,18 +2575,28 @@ double do_steep(FILE *fplog, t_commrec *cr,
         bAbort = (nsteps >= 0) && (count == nsteps);
 
         /* set new coordinates, except for first step */
+        bool validStep = true;
         if (count > 0)
         {
-            do_em_step(cr, inputrec, mdatoms, fr->bMolPBC,
-                       s_min, stepsize, s_min->f, s_try,
-                       constr, top, nrnb, wcycle, count);
+            validStep =
+                do_em_step(cr, inputrec, mdatoms, fr->bMolPBC,
+                           s_min, stepsize, s_min->f, s_try,
+                           constr, top, nrnb, wcycle, count);
         }
 
-        evaluate_energy(fplog, cr,
-                        top_global, s_try, top,
-                        inputrec, nrnb, wcycle, gstat,
-                        vsite, constr, fcd, graph, mdatoms, fr,
-                        mu_tot, enerd, vir, pres, count, count == 0);
+        if (validStep)
+        {
+            evaluate_energy(fplog, cr,
+                            top_global, s_try, top,
+                            inputrec, nrnb, wcycle, gstat,
+                            vsite, constr, fcd, graph, mdatoms, fr,
+                            mu_tot, enerd, vir, pres, count, count == 0);
+        }
+        else
+        {
+            // Signal constraint error during stepping with energy=inf
+            s_try->epot = std::numeric_limits<real>::infinity();
+        }
 
         if (MASTER(cr))
         {
