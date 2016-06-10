@@ -1262,34 +1262,46 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
 
                 ild->nr += ils->nr;
             }
-        }
-    }
 
-    /* Position restraints need an additional treatment */
-    if (dest->il[F_POSRES].nr > 0)
-    {
-        int n, s, i;
-
-        n = dest->il[F_POSRES].nr/2;
-        if (n > dest->iparams_posres_nalloc)
-        {
-            dest->iparams_posres_nalloc = over_alloc_large(n);
-            srenew(dest->iparams_posres, dest->iparams_posres_nalloc);
-        }
-        /* Set n to the number of original position restraints in dest */
-        for (s = 1; s < nsrc; s++)
-        {
-            n -= src[s].idef.il[F_POSRES].nr/2;
-        }
-        for (s = 1; s < nsrc; s++)
-        {
-            for (i = 0; i < src[s].idef.il[F_POSRES].nr/2; i++)
+            /* Position restraints need an additional treatment */
+            if (ftype == F_POSRES || ftype == F_FBPOSRES)
             {
-                /* Correct the index into iparams_posres */
-                dest->il[F_POSRES].iatoms[n*2] = n;
-                /* Copy the position restraint force parameters */
-                dest->iparams_posres[n] = src[s].idef.iparams_posres[i];
-                n++;
+                int nposres = dest->il[ftype].nr/2;
+                if (nposres > dest->iparams_posres_nalloc)
+                {
+                    dest->iparams_posres_nalloc = over_alloc_large(nposres);
+                    srenew(dest->iparams_posres, dest->iparams_posres_nalloc);
+                }
+                /* Set nposres to the number of original position restraints in dest */
+                for (int s = 1; s < nsrc; s++)
+                {
+                    nposres -= src[s].idef.il[ftype].nr/2;
+                }
+                for (int s = 1; s < nsrc; s++)
+                {
+                    if (ftype == F_POSRES)
+                    {
+                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
+                        {
+                            /* Correct the index into iparams_posres */
+                            dest->il[ftype].iatoms[nposres*2] = nposres;
+                            /* Copy the position restraint force parameters */
+                            dest->iparams_posres[nposres] = src[s].idef.iparams_posres[i];
+                            nposres++;
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
+                        {
+                            /* Correct the index into iparams_fbposres */
+                            dest->il[ftype].iatoms[nposres*2] = nposres;
+                            /* Copy the position restraint force parameters */
+                            dest->iparams_fbposres[nposres] = src[s].idef.iparams_fbposres[i];
+                            nposres++;
+                        }
+                    }
+                }
             }
         }
     }
