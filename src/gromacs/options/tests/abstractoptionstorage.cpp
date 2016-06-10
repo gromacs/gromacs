@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -186,7 +186,7 @@ MockOptionStorage &MockOptionInfo::option()
  */
 TEST(AbstractOptionStorageTest, HandlesSetInFinish)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").required().storeVector(&values));
@@ -216,7 +216,7 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
  */
 TEST(AbstractOptionStorageTest, HandlesValueRemoval)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).multiValue());
@@ -255,7 +255,7 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
  */
 TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).multiValue());
@@ -295,7 +295,7 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
  */
 TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).valueCount(2));
@@ -331,7 +331,7 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
  */
 TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).valueCount(0));

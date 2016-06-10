@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,7 +154,7 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
         moduleGuard = factory_();
         module      = moduleGuard.get();
     }
-    Options                          options(name(), shortDescription());
+    Options                          options;
     OptionsBehaviorCollection        behaviors(&options);
     CommandLineOptionsModuleSettings settings(&behaviors);
     module->initOptions(&options, &settings);
@@ -166,7 +166,7 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
 void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
 {
     FileNameOptionManager fileoptManager;
-    Options               options(name_, description_);
+    Options               options;
 
     options.addManager(&fileoptManager);
 
