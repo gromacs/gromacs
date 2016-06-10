@@ -560,6 +560,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 }
                 bDump = TRUE;
 
+                bOK   = FALSE;
             }
         }
     }
