@@ -830,7 +830,8 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     cl_uint              natoms_flat = natoms_clear * (sizeof(rvec)/sizeof(real));
 
     local_work_size[0]  = 64;
-    global_work_size[0] = ((natoms_flat/local_work_size[0])*local_work_size[0]) + ((natoms_flat%local_work_size[0]) ? local_work_size[0] : 0);
+    // Round the total number of threads up from the array size
+    global_work_size[0] = ((natoms_flat + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
 
     arg_no    = 0;
     cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
@@ -941,6 +942,15 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
        available and only allocate if we haven't initialized yet, i.e d_atdat->natoms == -1 */
     if (natoms > d_atdat->nalloc)
     {
+        // Ensure the force buffer clearing kernel has finished
+        cl_error = clEnqueueBarrier(nb->stream[eintLocal]);
+        assert(CL_SUCCESS == cl_error);
+        if (nb->bUseTwoStreams)
+        {
+            cl_error = clEnqueueBarrier(nb->stream[eintNonlocal]);
+            assert(CL_SUCCESS == cl_error);
+        }
+
         nalloc = over_alloc_small(natoms);
 
         /* free up first if the arrays have already been initialized */
