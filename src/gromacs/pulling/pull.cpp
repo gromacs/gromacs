@@ -639,9 +639,22 @@ static void low_get_pull_coord_dr(const struct pull_t *pull,
     }
     if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
     {
-        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n",
+        /* Detect if it might help to remove unused dimensions */
+        bool dimMightHelp = false;
+        for (int d = 0; d < pbc->ndim_ePBC; d++)
+        {
+            if (pcrd->params.eGeom != epullgDIST &&
+                pcrd->vec[d] == 0 &&
+                pcrd->dim[d] == 1)
+            {
+                dimMightHelp = true;
+            }
+        }
+
+        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\n%s",
                   pcrd->params.group[0], pcrd->params.group[1],
-                  sqrt(dr2), sqrt(0.98*0.98*max_dist2));
+                  sqrt(dr2), sqrt(0.98*0.98*max_dist2),
+                  dimMightHelp ? "It might help to remove pull dimensions that are orthogonal to the pull vector using \"pull-group?-dim\"." : "You might want to consider using \"pull-geometry = direction-periodic\" instead.");
     }
 
     if (pcrd->params.eGeom == epullgDIRPBC)
