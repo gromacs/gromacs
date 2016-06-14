@@ -1001,7 +1001,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     snew(pbc, 1);
     set_pbc(pbc, ir->ePBC, state->box);
 
-    const real kbt = BOLTZ * ir->drude->drude_t;
+    const real kbt = (BOLTZ * ir->drude->drude_t) / (KILO * KILO);
     max_t = ir->delta_t;
     invdt = 1.0/(ir->delta_t * 0.5);
 
@@ -1104,7 +1104,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
             /* impose hardwall if the Drude has strayed too far */
             if (rab2 > rwall2)
             {
-                rab = sqrt(rab2);
+                rab = std::sqrt(rab2);
 
                 /* allow diagnostic info to be printed to stderr instead of debug
                  * log file, which is very slow and cumbersome */
@@ -1195,7 +1195,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 }
 
                 /* relative velocity between ia and ib */
-                vbond = sqrt(kbt/mb);
+                vbond = std::sqrt(kbt/mb);
 
                 if (debug)
                 {
@@ -1280,7 +1280,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                     {
                         rvec_sub(xb, xa, vecab);
                     }
-                    rab = sqrt(norm2(vecab));
+                    rab = std::sqrt(norm2(vecab));
                     fprintf(stderr, "HARDWALL: New bond length: %f\n", rab);
                 }
 
@@ -1294,9 +1294,9 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
                 /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
 
-            } /* end loop over j within iatoms */
+            } /* end of hard wall conditions */
 
-        } /* end of hard wall conditions */
+        } /* end loop over j within iatoms */
 
     } /* end of loop over all local bonded interactions */
 
