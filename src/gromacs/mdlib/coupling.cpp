@@ -41,6 +41,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
@@ -307,8 +308,8 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
 
 /* CHARMM function RelativeTstat */
 /* Thermostat scaling velocities relative to the system COM */
-void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[],
-                    gmx_bool bSwitch, gmx_bool bComputeCM)
+static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_commrec *cr, 
+                           real grpmass[], gmx_bool bSwitch, gmx_bool bComputeCM)
 {
 
     if (debug)
@@ -342,6 +343,10 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
     for (i = 0; i < opts->ngtc; i++)
     {
         mtot += grpmass[i];
+    }
+    if (DOMAINDECOMP(cr))
+    {
+        gmx_sum(1, &mtot, cr);
     }
 
     if (bComputeCM)
@@ -501,8 +506,8 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
  * in the extended Lagrangian formalism, the thermostats are integrated based
  * on relative motion of atom-Drude pairs. Other functions take care of the
  * actual velocity scaling. */
-void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state, 
-                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
+void nosehoover_KE(t_inputrec *ir, t_commrec *cr, t_idef *idef, t_mdatoms *md, t_state *state, 
+                   real grpmass[], gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
 
     int             i, j, k, m, d;
@@ -512,7 +517,6 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
     real            ma, mb, mtot;   /* masses of atom, Drude, and pair */
     real            invmtot;        /* 1/mtot */
     real            mrel;           /* relative mass */
-    real           *grpmass;        /* mass of tc-grps */
     rvec            va, vb, vcom;   /* velocities of atom, Drude, and their COM */
     rvec            vrel;           /* relative velocity of atom-Drude pair */
     rvec            pa, pb;         /* momenta of atom and Drude */
@@ -526,31 +530,6 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
 
     opts = &(ir->opts);
     ngtc = opts->ngtc;
-
-    /* calculate mass of each tc-grp */
-    snew(grpmass, opts->ngtc);
-    for (i=0; i<opts->ngtc; i++)
-    {
-        /* initialize */
-        grpmass[i] = 0;
-
-        for (j=0; j< md->homenr; j++)
-        {
-            if (md->cTC[j] == i)
-            {
-                grpmass[i] += md->massT[j];
-            }
-        }
-    }
-
-    if (debug)
-    {
-        for (i=0; i<opts->ngtc; i++)
-        {
-            fprintf(debug, "NOSE KE: grpmass[%d] = %.3f\n", i, grpmass[i]);
-        }
-    }
-
     clear_mat(ekind->ekin);
 
     for (i = 0; i < ngtc; i++)
@@ -568,7 +547,7 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
     }
     ekind->dekindl_old = ekind->dekindl;
 
-    relative_tstat(state, md, ir, grpmass, TRUE, TRUE);
+    relative_tstat(state, md, ir, cr, grpmass, TRUE, TRUE);
 
     /* add absolute KE to total KE */
     for (i = 0; i < md->homenr; i++)
@@ -718,7 +697,7 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
     {
         fprintf(debug, "NOSE KE: calling relative_tstat second time\n");
     }
-    relative_tstat(state, md, ir, grpmass, FALSE, FALSE);
+    relative_tstat(state, md, ir, cr, grpmass, FALSE, FALSE);
 
     if (debug)
     {
@@ -735,8 +714,6 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
         inc_nrnb(nrnb, eNR_EKIN, md->homenr);
     }
 
-    sfree(grpmass);
-
 }
 
 /* CHARMM function PropagateTFP
@@ -745,7 +722,7 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
  * along the bond between the two. 
  */
 static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state, 
-                                      t_extmass *MassQ, t_vcm gmx_unused *vcm, gmx_ekindata_t *ekind, 
+                                      real grpmass[], t_extmass *MassQ, t_vcm gmx_unused *vcm, gmx_ekindata_t *ekind, 
                                       double scalefac[], int gmx_unused seqno)
 {
     int             i, j, k, n;
@@ -753,7 +730,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     int             ti;                     /* thermostat index */
     int             nh;                     /* NH chain lengths */
     int             ia, ib;                 /* atom indices */
-    real           *grpmass;                /* masses of tc-grps */
     double          dtsy;                   /* subdivided time step */
     double         *expfac;                 /* array of factors for (size: ngtc) */
     double          fac_int, fac_ext;       /* internal and external scaling factors */
@@ -777,30 +753,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     opts = &(ir->opts);
     nh = opts->nhchainlength;
 
-    /* calculate mass of each tc-grp */
-    snew(grpmass, opts->ngtc);
-    for (i=0; i<opts->ngtc; i++)
-    {
-        /* initialize */
-        grpmass[i] = 0;
-
-        for (j=0; j< md->homenr; j++)
-        {
-            if (md->cTC[j] == i)
-            {
-                grpmass[i] += md->massT[j];
-            }
-        }
-    }
-
-    if (debug)
-    {
-        for (i=0; i<opts->ngtc; i++)
-        {
-            fprintf(debug, "DRUDE TFP: grpmass[%d] = %.3f\n", i, grpmass[i]);
-        }
-    }
-
     /* set subdivided time step */
     dtsy = (double)(ir->delta_t)/(double)nc;
 
@@ -809,7 +761,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies associated with thermostats */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
+        nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
         if (DOMAINDECOMP(cr))
         {
             accumulate_ekin(cr, opts, ekind);
@@ -826,7 +778,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
         }
 
         /* scale relative to COM, subtracting COM velocity */
-        relative_tstat(state, md, ir, grpmass, TRUE, TRUE);
+        relative_tstat(state, md, ir, cr, grpmass, TRUE, TRUE);
 
         /* Now do the actual velocity scaling for each particle */
         for (i = 0; i < nrlocal; i++)
@@ -963,7 +915,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
         }
 
         /* scale relative to COM, adding COM velocity */
-        relative_tstat(state, md, ir, grpmass, FALSE, FALSE);
+        relative_tstat(state, md, ir, cr, grpmass, FALSE, FALSE);
 
         if (debug)
         {
@@ -987,7 +939,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
         }
 
         /* calculate new kinetic energies */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
+        nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
         if (DOMAINDECOMP(cr))
         {
             accumulate_ekin(cr, opts, ekind);
@@ -999,7 +951,6 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     } /* end for-loop over thermostat subdivided time steps */
 
     sfree(expfac);
-    sfree(grpmass);
 
 }
 
@@ -1050,7 +1001,7 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
+        nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
 
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
@@ -1070,7 +1021,7 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
         }
 
         /* update thermostat kinetic energies */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
+        nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
 
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
@@ -1648,7 +1599,7 @@ void destroy_bufstate(t_state *state)
 }
 
 void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t step, gmx_ekindata_t *ekind,
-                    gmx_enerdata_t *enerd, t_state *state,
+                    gmx_enerdata_t *enerd, t_state *state, real grpmass[],
                     tensor vir, t_mdatoms *md, t_vcm *vcm,
                     t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno)
 {
@@ -1746,7 +1697,7 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
             case etrtNHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                    drude_tstat_for_particles(cr, ir, idef, md, state, MassQ, vcm, ekind, scalefac, trotter_seq[i]); 
+                    drude_tstat_for_particles(cr, ir, idef, md, state, grpmass, MassQ, vcm, ekind, scalefac, trotter_seq[i]); 
                 }
                 else
                 {

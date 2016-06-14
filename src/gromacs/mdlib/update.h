@@ -148,9 +148,9 @@ void update_box(FILE             *fplog,
                 gmx_update_t     *upd);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
+void calc_ke_part(t_inputrec *ir, t_commrec *cr, t_state *state, t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, t_idef *idef, 
-                  gmx_bool bEkinAveVel);
+                  real grpmass[], gmx_bool bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -167,13 +167,9 @@ void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
  *
  */
 
-void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state, 
-                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
+void nosehoover_KE(t_inputrec *ir, t_commrec *cr, t_idef *idef, t_mdatoms *md, t_state *state, 
+                   real grpmass[], gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
 /* special KE calculation for Drude with extended Lagrangian */
-
-void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[],
-                    gmx_bool bSwitch, gmx_bool bComputeCM);
-/* thermostat for internal motion, used for Drude + extended Lagrangian */
 
 void
 init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
@@ -200,7 +196,7 @@ t_state *init_bufstate(const t_state *template_state);
 void destroy_bufstate(t_state *state);
 
 void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t step, gmx_ekindata_t *ekind,
-                    gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
+                    gmx_enerdata_t *enerd, t_state *state, real grpmass[], tensor vir, t_mdatoms *md,
                     t_vcm *vcm, t_extmass *MassQ, int **trotter_seqlist, int trotter_seqno);
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);

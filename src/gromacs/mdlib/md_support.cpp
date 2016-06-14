@@ -280,7 +280,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_state *state, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx_constr_t constr,
+                     real grpmass[], tensor pres, rvec mu_tot, gmx_constr_t constr,
                      struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
                      matrix box, t_idef *idef, 
                      int *totalNumberOfBondedInteractions,
@@ -327,7 +327,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
             /* idef is only used in case of Drude simulations, ir->opts always needed,
              * but other data in ir are needed by Drude algorithms, so instead of just
              * passing opts, we use ir directly */
-            calc_ke_part(ir, state, mdatoms, ekind, nrnb, idef, bEkinAveVel);
+            calc_ke_part(ir, cr, state, mdatoms, ekind, nrnb, idef, grpmass, bEkinAveVel);
         }
     }
 

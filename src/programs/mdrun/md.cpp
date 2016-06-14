@@ -233,7 +233,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bMasterState;
     int               force_flags, cglo_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
-    int               i, m;
+    int               i, j, m;
     t_trxstatus      *status;
     rvec              mu_tot;
     t_vcm            *vcm;
@@ -266,6 +266,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     double            cycles;
     real              saved_conserved_quantity = 0;
     real              last_ekin                = 0;
+    real             *grpmass;
     t_extmass         MassQ;
     int             **trotter_seq;
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
@@ -441,6 +442,47 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         shouldCheckNumberOfBondedInteractions = true;
     }
 
+    if (ir->bDrude)
+    {
+        /* we need the total mass of each tc-grp in several functions
+         * so we compute it here, as it requires md->cTC to be populated,
+         * and we can also only do this after DD partitioning has been completed */
+        snew(grpmass, ir->opts.ngtc);
+        for (i=0; i<ir->opts.ngtc; i++)
+        {
+            /* initialize */
+            grpmass[i] = 0;
+            /* sum */
+            for (j=0; j<mdatoms->homenr; j++)
+            {
+                if (mdatoms->cTC[j] == i)
+                {
+                    grpmass[i] += mdatoms->massT[j];
+                }
+            }
+        }
+        /* sum in parallel w/DD */
+        if (DOMAINDECOMP(cr))
+        {
+            for (i=0; i<ir->opts.ngtc; i++)
+            {
+                gmx_sum(1, &grpmass[i], cr);
+            }
+        }
+
+        /* TODO: remove */
+        if (debug)
+        {
+            if (MASTER(cr))
+            {
+                for (i=0; i<ir->opts.ngtc; i++)
+                {
+                    fprintf(debug, "MD: grpmass[%d] = %.3f\n", i, grpmass[i]);
+                }
+            }
+        }
+    }
+
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
 
     startingFromCheckpoint = Flags & MD_STARTFROMCPT;
@@ -562,7 +604,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     bSumEkinhOld = FALSE;
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                    NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                    NULL, enerd, force_vir, shake_vir, total_vir, grpmass, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
                     &(top->idef), 
                     &totalNumberOfBondedInteractions,
@@ -580,7 +622,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
            perhaps loses some logic?*/
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                        NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                        NULL, enerd, force_vir, shake_vir, total_vir, grpmass, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
                         &(top->idef), NULL, &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
@@ -982,7 +1024,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                            wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
+                            wcycle, enerd, NULL, NULL, NULL, grpmass, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
                             &(top->idef),
                             &totalNumberOfBondedInteractions, &bSumEkinhOld,
@@ -1098,7 +1140,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             else
             {
                 /* this is for NHC in the Ekin(t+dt/2) version of vv */
-                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
+                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, grpmass, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ1);
 
             }
 
@@ -1143,7 +1185,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                                wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                                wcycle, enerd, force_vir, shake_vir, total_vir, grpmass, pres, mu_tot,
                                 constr, NULL, FALSE, state->box,
                                 &(top->idef),
                                 &totalNumberOfBondedInteractions, &bSumEkinhOld, 
@@ -1174,7 +1216,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (bTrotter)
                 {
                     m_add(force_vir, shake_vir, total_vir);     /* we need the un-dispersion corrected total vir here */
-                    trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
+                    trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, grpmass, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
                     copy_mat(shake_vir, state->svir_prev);
                     copy_mat(force_vir, state->fvir_prev);
                     if (inputrecNvtTrotter(ir) && ir->eI == eiVV)
@@ -1191,7 +1233,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * the full step kinetic energy and possibly for T-coupling.*/
                     /* This may not be quite working correctly yet . . . . */
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                                    wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
+                                    wcycle, enerd, NULL, NULL, NULL, grpmass, NULL, mu_tot,
                                     constr, NULL, FALSE, state->box,
                                     &(top->idef), NULL, &bSumEkinhOld,
                                     CGLO_GSTAT | CGLO_TEMPERATURE);
@@ -1363,7 +1405,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
             if (bTrotter)
             {
-                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
+                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, grpmass, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
                  * in global_state after update, we should only do it at
@@ -1422,13 +1464,13 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* erase F_EKIN and F_TEMP here? */
                 /* just compute the kinetic energy at the half step to perform a trotter step */
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                                wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                                wcycle, enerd, force_vir, shake_vir, total_vir, grpmass, pres, mu_tot,
                                 constr, NULL, FALSE, lastbox,
                                 &(top->idef), NULL, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                                 );
                 wallcycle_start(wcycle, ewcUPDATE);
-                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
+                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, grpmass, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
                 /* now we know the scaling, we can compute the positions again again */
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
@@ -1510,7 +1552,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)))
         {
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                            wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                            wcycle, enerd, force_vir, shake_vir, total_vir, grpmass, pres, mu_tot,
                             constr, &gs,
                             (step_rel % gs.nstms == 0) &&
                             (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
