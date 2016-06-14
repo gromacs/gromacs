@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -636,7 +636,8 @@ nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     cl_kernel            zero_e_fshift = nb->kernel_zero_e_fshift;
 
     local_work_size[0]   = 64;
-    global_work_size[0]  = ((shifts/64)*64) + ((shifts%64) ? 64 : 0);
+    // Round the total number of threads up from the array size
+    global_work_size[0]  = ((shifts + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
 
     arg_no    = 0;
     cl_error  = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fshift));
@@ -796,6 +797,10 @@ void nbnxn_gpu_init(FILE gmx_unused           *fplog,
  */
 static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
 {
+    if (natoms_clear == 0)
+    {
+        return;
+    }
 
     cl_int               cl_error;
     cl_atomdata_t *      adat     = nb->atdat;
@@ -812,7 +817,9 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     cl_uint              natoms_flat = natoms_clear * (sizeof(rvec)/sizeof(real));
 
     local_work_size[0]  = 64;
-    global_work_size[0] = ((natoms_flat/local_work_size[0])*local_work_size[0]) + ((natoms_flat%local_work_size[0]) ? local_work_size[0] : 0);
+    // Round the total number of threads up from the array size
+    global_work_size[0] = ((natoms_flat + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
+
 
     arg_no    = 0;
     cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
