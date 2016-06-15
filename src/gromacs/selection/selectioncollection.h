@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ class SelectionCompiler;
 class SelectionEvaluator;
 class TextInputStream;
 class TextOutputStream;
+struct SelectionTopologyProperties;
 
 /*! \brief
  * Collection of selections.
@@ -202,20 +203,22 @@ class SelectionCollection
         void setDebugLevel(int debugLevel);
 
         /*! \brief
-         * Returns true if the collection requires topology information for
-         * evaluation.
+         * Returns what topology information is required for evaluation.
          *
-         * \returns true if any selection in the collection requires topology
-         *      information.
+         * \returns What topology information is required for compiling and/or
+         *     evaluating the selections in the collection.
          *
          * Before the parser functions have been called, the return value is
          * based just on the position types set.
          * After parser functions have been called, the return value also takes
          * into account the selection keywords used.
+         * After the compiler has been called, the return value is final and
+         * also considers possible force evaluation requested for the
+         * selections.
          *
          * Does not throw.
          */
-        bool requiresTopology() const;
+        SelectionTopologyProperties requiredTopologyProperties() const;
         /*! \brief
          * Returns true if the collection requires external index groups.
          *

@@ -270,6 +270,29 @@ index_type_for_poscalc(e_poscalc_t type)
 namespace gmx
 {
 
+namespace
+{
+
+//! Helper function for determining required topology information.
+PositionCalculationCollection::RequiredTopologyInfo
+requiredTopologyInfo(e_poscalc_t type, int flags)
+{
+    if (type != POS_ATOM)
+    {
+        if ((flags & POS_MASS) || (flags & POS_FORCES))
+        {
+            return PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses;
+        }
+        if (type == POS_RES || type == POS_MOL)
+        {
+            return PositionCalculationCollection::RequiredTopologyInfo::Topology;
+        }
+    }
+    return PositionCalculationCollection::RequiredTopologyInfo::None;
+}
+
+}   // namespace
+
 // static
 void
 PositionCalculationCollection::typeFromEnum(const char *post,
@@ -330,6 +353,17 @@ PositionCalculationCollection::typeFromEnum(const char *post,
     {
         GMX_THROW(InternalError("Unknown position calculation type"));
     }
+}
+
+// static
+PositionCalculationCollection::RequiredTopologyInfo
+PositionCalculationCollection::requiredTopologyInfoForType(const char *post,
+                                                           bool        forces)
+{
+    e_poscalc_t  type;
+    int          flags = (forces ? POS_FORCES : 0);
+    PositionCalculationCollection::typeFromEnum(post, &type, &flags);
+    return requiredTopologyInfo(type, flags);
 }
 
 /********************************************************************
@@ -1161,20 +1195,10 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
     sfree(pc);
 }
 
-/*!
- * \param[in] pc  Position calculation data to query.
- * \returns   true if \p pc requires topology for initialization and/or
- *   evaluation, false otherwise.
- */
-bool
-gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
+gmx::PositionCalculationCollection::RequiredTopologyInfo
+gmx_ana_poscalc_required_topology_info(gmx_ana_poscalc_t *pc)
 {
-    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL
-        || ((pc->flags & POS_FORCES) && pc->type != POS_ATOM))
-    {
-        return true;
-    }
-    return false;
+    return gmx::requiredTopologyInfo(pc->type, pc->flags);
 }
 
 /*!
