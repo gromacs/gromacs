@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/selection/selectionenums.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -322,6 +323,42 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
         // If there still is no name, use the selection string.
         setName(selectionText);
     }
+}
+
+SelectionTopologyProperties
+SelectionTreeElement::requiredTopologyProperties() const
+{
+    SelectionTopologyProperties props;
+    if (type == SEL_EXPRESSION || type == SEL_MODIFIER)
+    {
+        bool needsTop    = false;
+        bool needsMasses = false;
+        if (u.expr.method != nullptr)
+        {
+            needsTop    = (u.expr.method->flags & SMETH_REQTOP);
+            needsMasses = (u.expr.method->flags & SMETH_REQMASS);
+        }
+        if (u.expr.pc != nullptr)
+        {
+            needsTop    = needsTop || gmx_ana_poscalc_requires_top(u.expr.pc);
+            needsMasses = needsMasses || gmx_ana_poscalc_requires_masses(u.expr.pc);
+        }
+        if (needsTop)
+        {
+            props.merge(SelectionTopologyProperties::topology());
+        }
+        if (needsMasses)
+        {
+            props.merge(SelectionTopologyProperties::masses());
+        }
+    }
+    SelectionTreeElementPointer child = this->child;
+    while (child && !props.hasAll())
+    {
+        props.merge(child->requiredTopologyProperties());
+        child = child->next;
+    }
+    return props;
 }
 
 void SelectionTreeElement::checkUnsortedAtoms(
@@ -736,35 +773,4 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
         }
         child = child->next;
     }
-}
-
-/*!
- * \param[in] root Root of the subtree to query.
- * \returns true if \p root or any any of its elements require topology
- *   information, false otherwise.
- */
-bool
-_gmx_selelem_requires_top(const gmx::SelectionTreeElement &root)
-{
-    if (root.type == SEL_EXPRESSION || root.type == SEL_MODIFIER)
-    {
-        if (root.u.expr.method && (root.u.expr.method->flags & SMETH_REQTOP))
-        {
-            return true;
-        }
-        if (root.u.expr.pc && gmx_ana_poscalc_requires_top(root.u.expr.pc))
-        {
-            return true;
-        }
-    }
-    gmx::SelectionTreeElementPointer child = root.child;
-    while (child)
-    {
-        if (_gmx_selelem_requires_top(*child))
-        {
-            return true;
-        }
-        child = child->next;
-    }
-    return false;
 }
