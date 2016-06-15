@@ -403,6 +403,14 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_comm
                 reltv[ti][m] += p[m];
             }
         }
+        /* combine */
+        if (DOMAINDECOMP(cr))
+        {
+            for (i=0; i<opts->ngtc; i++)
+            {
+                gmx_sum(DIM, &reltv[i][XX], cr);
+            }
+        }
 
         /* Scale relative velocities */
         for (i=0; i<opts->ngtc; i++)
@@ -412,13 +420,8 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_comm
                 fprintf(debug, "REL TSTAT: reltv[%d] b4 scale = %f %f %f\n", i, reltv[i][XX], reltv[i][YY], reltv[i][ZZ]);
             }
             /* scale by mass, i.e. multiply by inverse mass */
-            /* TODO: in DD, if the system is heterogeneous, some cells will not have
-             * atoms from all of the tc-grps, so it is possible that grpmass[i] == 0
-             * in some cells, so we have to guard against that */
-            if (grpmass[i] != 0)
-            {
-                svmul((1.0/grpmass[i]), reltv[i], reltv[i]);
-            }
+            svmul((1.0/grpmass[i]), reltv[i], reltv[i]);
+
             if (debug)
             {
                 fprintf(debug, "REL TSTAT: reltv[%d] after scale = %f %f %f\n", i, reltv[i][XX], reltv[i][YY], reltv[i][ZZ]);
@@ -427,11 +430,7 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_comm
             /* total absolute velocity */
             for (m = 0; m < DIM; m++)
             {
-                /* Same as above, guard against nonsensical stuff */
-                if (grpmass[i] != 0)
-                {
-                    absv[m] += reltv[i][m] * grpmass[i];
-                }
+                absv[m] += reltv[i][m] * grpmass[i];
             }
         }
 

@@ -1300,6 +1300,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
     } /* end of loop over all local bonded interactions */
 
+    sfree(pbc);
 }
 
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
