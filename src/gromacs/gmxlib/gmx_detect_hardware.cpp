@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -663,6 +663,16 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
 #    if defined(_SC_NPROCESSORS_ONLN)
     if (ret != sysconf(_SC_NPROCESSORS_ONLN))
     {
+        /* We assume that this scenario means that the kernel has
+           disabled threads or cores, and that the only safe course is
+           to assume that _SC_NPROCESSORS_ONLN should be used. Even
+           this may not be valid if running in a containerized
+           environment, such system calls may read from
+           /sys/devices/system/cpu and report what the OS sees, rather
+           than what the container cgroup is supposed to set up as
+           limits. But we're not sure right now whether there's any
+           (standard-ish) way to handle that. */
+#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
         md_print_warn(cr, fplog,
                       "%d CPUs configured, but only %d of them are online.\n"
                       "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
@@ -670,6 +680,14 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
                       "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
                       "will likely see much better performance by forcing all cores to be online, and\n"
                       "making sure they run at their full clock frequency.", ret, sysconf(_SC_NPROCESSORS_ONLN));
+#else
+        /* On x86 this means HT is disabled by the kernel, not in the bios */
+        md_print_warn(cr, fplog,
+                      "Note: %d CPUs configured, but only %d of them are online.",
+                      ret, sysconf(_SC_NPROCESSORS_ONLN));
+        /* We use the online count to avoid (potential) oversubscription */
+        ret = sysconf(_SC_NPROCESSORS_ONLN);
+#endif
     }
 #    endif
 #elif defined(_SC_NPROC_CONF)
