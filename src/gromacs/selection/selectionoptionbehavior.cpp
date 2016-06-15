@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,10 +50,13 @@
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptionmanager.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 
 namespace gmx
@@ -132,14 +135,31 @@ class SelectionOptionBehavior::Impl
 
         void compileSelections()
         {
-            t_topology *top    = topologyProvider_.getTopology(selections_.requiresTopology());
-            int         natoms = -1;
+            const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
+            t_topology *top         = topologyProvider_.getTopology(topRequired);
+            int         natoms      = -1;
             if (top == NULL)
             {
                 natoms = topologyProvider_.getAtomCount();
             }
+            getMassesIfRequired(top);
             selections_.setTopology(top, natoms);
             selections_.compile();
+            // Situation may have changed after compilation.
+            getMassesIfRequired(top);
+        }
+
+        void getMassesIfRequired(t_topology *top)
+        {
+            const bool massRequired = selections_.requiredTopologyProperties().needsMasses;
+            if (massRequired && !top->atoms.haveMass)
+            {
+                atomsSetMassesBasedOnNames(&top->atoms, TRUE);
+                if (!top->atoms.haveMass)
+                {
+                    GMX_THROW(InconsistentInputError("Selections require mass information for evaluation, but it is not available in the input and could not be determined for all atoms based on atom names."));
+                }
+            }
         }
 
         SelectionCollection    &selections_;

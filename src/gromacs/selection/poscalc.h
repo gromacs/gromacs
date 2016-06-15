@@ -178,6 +178,14 @@ namespace gmx
 class PositionCalculationCollection
 {
     public:
+        //! Describes what topology information is needed for position calculation.
+        enum class RequiredTopologyInfo
+        {
+            None,     //!< No topology is needed.
+            Topology, //!< Topology is needed (residue/molecule info).
+            Masses    //!< Masses are needed.
+        };
+
         /*! \brief
          * Array of strings acceptable for position calculation type enum.
          *
@@ -210,6 +218,15 @@ class PositionCalculationCollection
          * \see typeEnumValues
          */
         static void typeFromEnum(const char *post, e_poscalc_t *type, int *flags);
+        /*! \brief
+         * Returns what information is needed for position evaluation.
+         *
+         * \param[in] post   Position type (see typeFromEnum()).
+         * \param[in] forces Whether forces are needed.
+         * \returns   What topology information is required for initializing
+         *     and/or evaluating the positions.
+         */
+        static RequiredTopologyInfo requiredTopologyInfoForType(const char *post, bool forces);
 
         /*! \brief
          * Creates a new position calculation collection object.
@@ -344,9 +361,21 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p);
 /** Frees the memory allocated for position calculation. */
 void
 gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
-/** Returns true if the position calculation requires topology information. */
-bool
-gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc);
+/*! \brief
+ * Returns true if the position calculation requires topology information.
+ *
+ * \param[in] pc  Position calculation data to query.
+ * \returns   `true` if \p pc requires topology for initialization and/or
+ *   evaluation.
+ */
+bool gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc);
+/*! \brief
+ * Returns true if the position calculation requires atom masses.
+ *
+ * \param[in] pc  Position calculation data to query.
+ * \returns   `true` if \p pc requires atom masses for evaluation.
+ */
+bool gmx_ana_poscalc_requires_masses(gmx_ana_poscalc_t *pc);
 
 /** Updates a single COM/COG structure for a frame. */
 void

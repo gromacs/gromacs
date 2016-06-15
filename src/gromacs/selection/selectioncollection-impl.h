@@ -71,6 +71,7 @@ typedef std::unique_ptr<internal::SelectionData> SelectionDataPointer;
 typedef std::vector<SelectionDataPointer> SelectionDataList;
 
 class SelectionParserSymbolTable;
+struct SelectionTopologyProperties;
 
 } // namespace gmx
 
@@ -153,6 +154,15 @@ class SelectionCollection::Impl
          */
         void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
                                    ExceptionInitializer                   *errors);
+
+        //! Whether forces have been requested for some selection.
+        bool areForcesRequested() const;
+        /*! \brief
+         * Returns topology properties needed for a certain position type.
+         */
+        SelectionTopologyProperties
+        requiredTopologyPropertiesForPositionType(const std::string &post,
+                                                  bool               forces) const;
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;

@@ -423,7 +423,7 @@ SelectionCollectionDataTest::runTest(
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
-    EXPECT_FALSE(sc_.requiresTopology());
+    EXPECT_FALSE(sc_.requiredTopologyProperties().needsTopology);
     EXPECT_NO_THROW_GMX(sc_.compile());
 }
 
@@ -642,7 +642,7 @@ TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
 {
     const int index[] = { 0, 1, 2, 3, 4, 5, 6, 9, 10, 11 };
     // Evaluating the positions will require atoms 1-3, 7-12.
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_com of atomnr 2 7 11"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_cog of atomnr 2 7 11"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
     topManager_.initFrameIndices(index);
@@ -906,11 +906,14 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
         "mass > 5"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
+    top_ = topManager_.topology();
     for (int i = 0; i < top_->atoms.nr; ++i)
     {
         top_->atoms.atom[i].m = 1.0 + i;
     }
+    top_->atoms.haveMass = TRUE;
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -926,7 +929,8 @@ TEST_F(SelectionCollectionDataTest, HandlesCharge)
         top_->atoms.atom[i].q = i / 10.0;
     }
     //ensure exact representation of 0.5 is used, so the test is always reproducible
-    top_->atoms.atom[5].q = 0.5;
+    top_->atoms.atom[5].q  = 0.5;
+    top_->atoms.haveCharge = TRUE;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -1121,6 +1125,8 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndCharges)
         top_->atoms.atom[i].m =   1.0 + i / 100.0;
         top_->atoms.atom[i].q = -(1.0 + i / 100.0);
     }
+    top_->atoms.haveMass   = TRUE;
+    top_->atoms.haveCharge = TRUE;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
     ASSERT_NO_FATAL_FAILURE(runEvaluate());
     ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
@@ -1294,6 +1300,7 @@ TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
     {
         top_->atoms.atom[i].q = i / 10.0 - 0.5;
     }
+    top_->atoms.haveCharge = TRUE;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 

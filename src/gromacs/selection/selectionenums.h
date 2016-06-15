@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,6 +83,55 @@ enum SelectionFlag
 //! Holds a collection of ::SelectionFlag values.
 typedef FlagsTemplate<SelectionFlag> SelectionFlags;
 //! \endcond
+
+/*! \brief
+ * Describes topology properties required for selection evaluation.
+ *
+ * See SelectionCollection::requiredTopologyProperties().
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+struct SelectionTopologyProperties
+{
+    //! Returns a property object that requires generic topology info.
+    static SelectionTopologyProperties topology()
+    {
+        return SelectionTopologyProperties(true, false);
+    }
+    //! Returns a property object that requires atom masses.
+    static SelectionTopologyProperties masses()
+    {
+        return SelectionTopologyProperties(true, true);
+    }
+
+    //! Initializes properties that does not require anything.
+    SelectionTopologyProperties()
+        : needsTopology(false), needsMasses(false)
+    {
+    }
+    //! Initializes properties with the given flags.
+    SelectionTopologyProperties(bool needsTopology, bool needsMasses)
+        : needsTopology(needsTopology), needsMasses(needsMasses)
+    {
+    }
+
+    //! Combines flags from another properties object to this.
+    void merge(const SelectionTopologyProperties &other)
+    {
+        needsTopology = needsTopology || other.needsTopology;
+        needsMasses   = needsMasses || other.needsMasses;
+    }
+    //! Whether all flags are `true` (for short-ciruiting logic).
+    bool hasAll() const { return needsTopology && needsMasses; }
+    //! Whether any flag is `true`.
+    bool hasAny() const { return needsTopology || needsMasses; }
+
+    //! Whether topology information is needed for selection evaluation.
+    bool needsTopology;
+    //! Whether atom masses are needed for selection evaluation.
+    bool needsMasses;
+};
 
 }
 
