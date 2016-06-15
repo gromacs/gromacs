@@ -423,24 +423,56 @@ SelectionCollectionDataTest::runTest(
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
-    EXPECT_FALSE(sc_.requiresTopology());
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
     EXPECT_NO_THROW_GMX(sc_.compile());
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
+}
+
+TEST_F(SelectionCollectionTest, HandlesNoSelectionsWithDefaultPositionType)
+{
+    EXPECT_NO_THROW_GMX(sc_.setOutputPosType("res_com"));
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_NO_THROW_GMX(sc_.setOutputPosType("res_cog"));
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
+    EXPECT_FALSE(sc_.requiredTopologyProperties().needsMasses);
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atom of atomnr 1 to 10"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
 }
 
 TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
 {
     ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
     ASSERT_EQ(2U, sel_.size());
     ASSERT_NO_THROW_GMX(sel_[0].setEvaluateVelocities(true));
     ASSERT_NO_THROW_GMX(sel_[1].setEvaluateVelocities(true));
     ASSERT_NO_THROW_GMX(sel_[0].setEvaluateForces(true));
     ASSERT_NO_THROW_GMX(sel_[1].setEvaluateForces(true));
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
     ASSERT_NO_THROW_GMX(sc_.compile());
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
     EXPECT_TRUE(sel_[0].hasVelocities());
     EXPECT_TRUE(sel_[1].hasVelocities());
     EXPECT_TRUE(sel_[0].hasForces());
     EXPECT_TRUE(sel_[1].hasForces());
+}
+
+TEST_F(SelectionCollectionTest, HandlesForceRequestForCenterOfGeometry)
+{
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("res_cog of atomnr 1 to 10"));
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_EQ(1U, sel_.size());
+    ASSERT_NO_THROW_GMX(sel_[0].setEvaluateForces(true));
+    // In principle, the code could know here that the masses are required, but
+    // currently it only knows this after compilation.
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_TRUE(sel_[0].hasForces());
 }
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
@@ -642,7 +674,7 @@ TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
 {
     const int index[] = { 0, 1, 2, 3, 4, 5, 6, 9, 10, 11 };
     // Evaluating the positions will require atoms 1-3, 7-12.
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_com of atomnr 2 7 11"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_cog of atomnr 2 7 11"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
     topManager_.initFrameIndices(index);
@@ -906,11 +938,15 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
         "mass > 5"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
+    top_ = topManager_.topology();
     for (int i = 0; i < top_->atoms.nr; ++i)
     {
         top_->atoms.atom[i].m = 1.0 + i;
     }
+    top_->atoms.haveMass = TRUE;
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -926,7 +962,8 @@ TEST_F(SelectionCollectionDataTest, HandlesCharge)
         top_->atoms.atom[i].q = i / 10.0;
     }
     //ensure exact representation of 0.5 is used, so the test is always reproducible
-    top_->atoms.atom[5].q = 0.5;
+    top_->atoms.atom[5].q  = 0.5;
+    top_->atoms.haveCharge = TRUE;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -1121,6 +1158,8 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndCharges)
         top_->atoms.atom[i].m =   1.0 + i / 100.0;
         top_->atoms.atom[i].q = -(1.0 + i / 100.0);
     }
+    top_->atoms.haveMass   = TRUE;
+    top_->atoms.haveCharge = TRUE;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
     ASSERT_NO_FATAL_FAILURE(runEvaluate());
     ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
@@ -1294,6 +1333,7 @@ TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
     {
         top_->atoms.atom[i].q = i / 10.0 - 0.5;
     }
+    top_->atoms.haveCharge = TRUE;
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 

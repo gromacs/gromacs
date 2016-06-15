@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,10 @@
  *    and the \p top pointer passed to the callbacks is guaranteed to be
  *    non-NULL. Should be set if the method requires topology information
  *    for evaluation.
+ *  - \ref SMETH_REQMASS : If set, masses of atoms is always loaded
+ *    and the \p top pointer passed to the callbacks is guaranteed to be
+ *    non-NULL and have meaningful masses.  Should be set if the method requires
+ *    atom masses for evaluation.  Implies \ref SMETH_REQTOP.
  *  - \ref SMETH_DYNAMIC : If set, the method can only be evaluated dynamically,
  *    i.e., it requires data from the trajectory frame.
  *  - \ref SMETH_MODIFIER : If set, the method is a selection modifier and
@@ -316,28 +320,26 @@ struct t_trxframe;
  * \anchor selmethod_flags
  */
 /*@{*/
-/*! \brief
- * If set, the method requires topology information.
- */
+//! If set, the method requires topology information.
 #define SMETH_REQTOP     1
-/*! \brief
- * If set, the method can only be evaluated dynamically.
- */
-#define SMETH_DYNAMIC    2
+//! If set, the method requires atom masses.
+#define SMETH_REQMASS    2
+//! If set, the method can only be evaluated dynamically.
+#define SMETH_DYNAMIC    4
 /*! \brief
  * If set, the method evaluates to a single value.
  *
  * The default is that the method evaluates to a value for each input atom.
  * Cannot be combined with \ref SMETH_VARNUMVAL.
  */
-#define SMETH_SINGLEVAL  4
+#define SMETH_SINGLEVAL  8
 /*! \brief
  * If set, the method evaluates to an arbitrary number of values.
  *
  * The default is that the method evaluates to a value for each input atom.
  * Cannot be combined with \ref SMETH_SINGLEVAL or with \ref GROUP_VALUE.
  */
-#define SMETH_VARNUMVAL  8
+#define SMETH_VARNUMVAL  16
 /*! \brief
  * If set, the method evaluates to single-character strings.
  *
@@ -418,7 +420,7 @@ typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data
  * Does initialization based on topology and/or parameter values.
  *
  * \param[in]  top   Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
+ *   (can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set).
  * \param[in]  npar  Number of parameters in \p param.
  * \param[in]  param Pointer to (an initialized copy of) the method's
  *   \c gmx_ana_selmethod_t::param.
@@ -464,7 +466,7 @@ typedef void  (*sel_initfunc)(t_topology *top, int npar,
  * Initializes output data structure.
  *
  * \param[in]     top   Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
+ *   (can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set).
  * \param[in,out] out   Output data structure.
  * \param[in]     data  Internal data structure from sel_datafunc().
  * \returns       0 on success, an error code on error.
@@ -512,7 +514,7 @@ typedef void  (*sel_freefunc)(void *data);
  * Initializes the evaluation for a new frame.
  *
  * \param[in]  top  Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
+ *   (can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set).
  * \param[in]  fr   Current frame.
  * \param[in]  pbc  Initialized periodic boundary condition structure,
  *   or NULL if PBC should not be used.
@@ -536,7 +538,7 @@ typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Evaluates a selection method.
  *
  * \param[in]  top  Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
+ *   (can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set).
  * \param[in]  fr   Current frame.
  * \param[in]  pbc  Initialized periodic boundary condition structure,
  *   or NULL if PBC should not be used.
@@ -569,7 +571,7 @@ typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Evaluates a selection method using positions.
  *
  * \param[in]  top  Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
+ *   (can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set).
  * \param[in]  fr   Current frame.
  * \param[in]  pbc  Initialized periodic boundary condition structure,
  *   or NULL if PBC should not be used.
