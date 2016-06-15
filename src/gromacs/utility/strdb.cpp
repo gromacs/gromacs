@@ -133,7 +133,7 @@ int search_str(int nstr, char **str, char *key)
     return -1;
 }
 
-static int fget_lines(FILE *in, char ***strings)
+static int fget_lines(FILE *in, const char *db, char ***strings)
 {
     char **ptr;
     char   buf[STRLEN];
@@ -153,7 +153,10 @@ static int fget_lines(FILE *in, char ***strings)
     {
         if (fgets2(buf, STRLEN, in) == nullptr)
         {
-            gmx_fatal(FARGS, "Cannot read string from buffer");
+            /* i+1 because index starts from 0, line numbering from 1 and
+             * additional +1 since first line in the file is used for the line
+             * count */
+            gmx_fatal(FARGS, "Cannot read string from buffer (file %s, line %d)", db, i + 2);
         }
         ptr[i] = gmx_strdup(buf);
     }
@@ -169,7 +172,7 @@ int get_lines(const char *db, char ***strings)
     int   nstr;
 
     in   = libopen(db);
-    nstr = fget_lines(in, strings);
+    nstr = fget_lines(in, db, strings);
     gmx_ffclose(in);
 
     return nstr;
