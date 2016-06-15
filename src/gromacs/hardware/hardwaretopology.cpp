@@ -50,10 +50,6 @@
 #include <algorithm>
 #include <vector>
 
-#if !defined __GNUC__ || !(__GNUC__ == 4 && __GNUC_MINOR__ < 7)
-#include <thread>
-#endif
-
 #if GMX_HWLOC
 #    include <hwloc.h>
 #endif
@@ -553,17 +549,8 @@ parseHwLoc(HardwareTopology::Machine *        machine,
 int
 detectLogicalProcessorCount()
 {
-    // Try to use std::thread::hardware_concurrency() first. This result is only
-    // a hint, and it might be 0 if the information is not available.
-    // On Apple this will not compile with gcc-4.6, and since it just returns 0 on other
-    // platforms too we skip it entirely for gcc < 4.7
-#if defined __GNUC__ && (__GNUC__ == 4 && __GNUC_MINOR__ < 7)
     int count = 0;
-#else
-    int count = std::thread::hardware_concurrency();
-#endif
 
-    if (count == 0)
     {
 #if GMX_NATIVE_WINDOWS
         // Windows
@@ -585,7 +572,7 @@ detectLogicalProcessorCount()
 #    endif      // End of check for sysconf argument values
 
 #else
-        count = 0; // Neither windows nor Unix, and std::thread_hardware_concurrency() failed.
+        count = 0; // Neither windows nor Unix.
 #endif
     }
     return count;
