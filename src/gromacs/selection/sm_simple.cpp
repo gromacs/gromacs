@@ -368,7 +368,7 @@ gmx_ana_selmethod_t sm_chain = {
 
 /** Selection method data for \p mass selection keyword. */
 gmx_ana_selmethod_t sm_mass = {
-    "mass", REAL_VALUE, SMETH_REQTOP,
+    "mass", REAL_VALUE, SMETH_REQMASS,
     0, NULL,
     NULL,
     NULL,

@@ -332,6 +332,25 @@ PositionCalculationCollection::typeFromEnum(const char *post,
     }
 }
 
+// static
+PositionCalculationCollection::RequiredTopologyInfo
+PositionCalculationCollection::requiredTopologyInfoForType(const char *post,
+                                                           bool        forces)
+{
+    e_poscalc_t  type;
+    int          flags = (forces ? POS_FORCES : 0);
+    PositionCalculationCollection::typeFromEnum(post, &type, &flags);
+    if (type != POS_ATOM)
+    {
+        if ((flags & POS_MASS) || forces)
+        {
+            return RequiredTopologyInfo::Masses;
+        }
+        return RequiredTopologyInfo::Topology;
+    }
+    return RequiredTopologyInfo::None;
+}
+
 /********************************************************************
  * PositionCalculationCollection::Impl
  */
@@ -1161,15 +1180,26 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
     sfree(pc);
 }
 
-/*!
- * \param[in] pc  Position calculation data to query.
- * \returns   true if \p pc requires topology for initialization and/or
- *   evaluation, false otherwise.
- */
 bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 {
-    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL
+    // TODO: Consider having a single place with the logic that is currently
+    // here, below, and in requiredTopologyInfoForType().
+    if (gmx_ana_poscalc_requires_masses(pc)
+        || pc->type == POS_RES || pc->type == POS_MOL)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+gmx_ana_poscalc_requires_masses(gmx_ana_poscalc_t *pc)
+{
+    // Force evaluation needs masses for center-of-geometry cases.
+    // Since center-of-mass always needs the masses, the second conditional
+    // does not need to check for center-of-geometry.
+    if ((pc->flags & POS_MASS)
         || ((pc->flags & POS_FORCES) && pc->type != POS_ATOM))
     {
         return true;

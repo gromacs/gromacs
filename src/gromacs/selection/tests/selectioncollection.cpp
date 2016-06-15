@@ -423,7 +423,7 @@ SelectionCollectionDataTest::runTest(
 
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
-    EXPECT_FALSE(sc_.requiresTopology());
+    EXPECT_FALSE(sc_.requiredTopologyProperties().needsTopology);
     EXPECT_NO_THROW_GMX(sc_.compile());
 }
 

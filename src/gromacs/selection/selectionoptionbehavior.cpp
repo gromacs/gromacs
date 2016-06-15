@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,14 +132,18 @@ class SelectionOptionBehavior::Impl
 
         void compileSelections()
         {
-            t_topology *top    = topologyProvider_.getTopology(selections_.requiresTopology());
-            int         natoms = -1;
+            const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
+            t_topology *top         = topologyProvider_.getTopology(topRequired);
+            int         natoms      = -1;
             if (top == NULL)
             {
                 natoms = topologyProvider_.getAtomCount();
             }
+            // TODO: Try to fill masses here if required and not yet available.
             selections_.setTopology(top, natoms);
             selections_.compile();
+            // TODO: Fill masses here if required (situation may have changed
+            // after compilation).
         }
 
         SelectionCollection    &selections_;
