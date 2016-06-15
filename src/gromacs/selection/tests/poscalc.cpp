@@ -243,7 +243,10 @@ void PositionCalculationTest::testSingleStatic(
         flags |= POS_FORCES;
     }
     gmx_ana_poscalc_t *pc = createCalculation(type, flags);
-    EXPECT_EQ(bExpectTop, gmx_ana_poscalc_requires_top(pc));
+    const bool         requiresTopology
+        = gmx_ana_poscalc_required_topology_info(pc)
+            != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
+    EXPECT_EQ(bExpectTop, requiresTopology);
     setMaximumGroup(pc, atoms);
     gmx_ana_pos_t *p = initPositions(pc, NULL);
     checkInitialized();
@@ -268,7 +271,10 @@ void PositionCalculationTest::testSingleDynamic(
         const gmx::ConstArrayRef<int> &index)
 {
     gmx_ana_poscalc_t *pc = createCalculation(type, flags | POS_DYNAMIC);
-    EXPECT_EQ(bExpectTop, gmx_ana_poscalc_requires_top(pc));
+    const bool         requiresTopology
+        = gmx_ana_poscalc_required_topology_info(pc)
+            != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
+    EXPECT_EQ(bExpectTop, requiresTopology);
     setMaximumGroup(pc, initAtoms);
     gmx_ana_pos_t *p = initPositions(pc, NULL);
     checkInitialized();
@@ -295,7 +301,10 @@ void PositionCalculationTest::setTopologyIfRequired()
     std::vector<gmx_ana_poscalc_t *>::const_iterator pci;
     for (pci = pcList_.begin(); pci != pcList_.end(); ++pci)
     {
-        if (gmx_ana_poscalc_requires_top(*pci))
+        const bool         requiresTopology
+            = gmx_ana_poscalc_required_topology_info(*pci)
+                != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
+        if (requiresTopology)
         {
             bTopSet_ = true;
             pcc_.setTopology(topManager_.topology());

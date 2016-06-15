@@ -102,9 +102,6 @@ evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \param     npar Not used.
  * \param     param Not used.
  * \param     data Not used.
- * \returns   0 if atom types are present in the topology, -1 otherwise.
- *
- * If the atom types are not found, also prints an error message.
  */
 static void
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
@@ -124,6 +121,16 @@ evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static void
 evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+/*! \brief
+ * Checks whether charges are present in the topology.
+ *
+ * \param[in] top  Topology structure.
+ * \param     npar Not used.
+ * \param     param Not used.
+ * \param     data Not used.
+ */
+static void
+check_charge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p charge selection keyword. */
 static void
 evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -368,7 +375,7 @@ gmx_ana_selmethod_t sm_chain = {
 
 /** Selection method data for \p mass selection keyword. */
 gmx_ana_selmethod_t sm_mass = {
-    "mass", REAL_VALUE, SMETH_REQTOP,
+    "mass", REAL_VALUE, SMETH_REQMASS,
     0, NULL,
     NULL,
     NULL,
@@ -386,7 +393,7 @@ gmx_ana_selmethod_t sm_charge = {
     0, NULL,
     NULL,
     NULL,
-    NULL,
+    &check_charge,
     NULL,
     NULL,
     NULL,
@@ -746,12 +753,25 @@ static void
 evaluate_mass(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
+    GMX_RELEASE_ASSERT(top != nullptr && top->atoms.haveMass,
+                       "Masses not available for evaluation");
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    for (int i = 0; i < g->isize; ++i)
     {
         out->u.r[i] = top->atoms.atom[g->index[i]].m;
+    }
+}
+
+
+static void
+check_charge(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+{
+    bool bOk;
+
+    bOk = (top != NULL && top->atoms.haveCharge);
+    if (!bOk)
+    {
+        GMX_THROW(gmx::InconsistentInputError("Charges not available in topology"));
     }
 }
 
