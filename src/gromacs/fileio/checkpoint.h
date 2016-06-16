@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,12 +78,14 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * files so they can be appended.
  * With bAppend and bForceAppend: truncate anyhow if the system does not
  * support file locking.
+ * With reproducibilityRequested warns about version, build, #ranks differences.
  */
 void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
-                     gmx_bool bAppend, gmx_bool bForceAppend);
+                     gmx_bool bAppend, gmx_bool bForceAppend,
+                     gmx_bool reproducibilityRequested);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.

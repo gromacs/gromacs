@@ -1742,41 +1742,34 @@ static void check_match(FILE *fplog,
                         char *btime, char *buser, char *bhost, int double_prec,
                         char *fprog,
                         const t_commrec *cr, int npp_f, int npme_f,
-                        ivec dd_nc, ivec dd_nc_f)
+                        ivec dd_nc, ivec dd_nc_f,
+                        gmx_bool reproducibilityRequested)
 {
-    int      npp;
-    gmx_bool mm                 = FALSE;
-    gmx_bool patchlevel_differs = FALSE;
-    gmx_bool version_differs    = FALSE;
+    /* Note that this check_string on the version will also print a message
+     * when only the minor version differs. But we only print a warning
+     * message further down with reproducibilityRequested=TRUE.
+     */
+    gmx_bool versionDiffers = FALSE;
+    check_string(fplog, "Version", gmx_version(), version, &versionDiffers);
 
-    check_string(fplog, "Version", gmx_version(), version, &mm);
-    patchlevel_differs = mm;
+    gmx_bool mm = versionDiffers;
 
-    if (patchlevel_differs)
+    if (reproducibilityRequested)
     {
-        /* Gromacs should be able to continue from checkpoints between
-         * different patch level versions, but we do not guarantee
-         * compatibility between different major/minor versions - check this.
-         */
-        int   gmx_major;
-        int   cpt_major;
-        sscanf(gmx_version(), "%5d", &gmx_major);
-        int   ret = sscanf(version, "%5d", &cpt_major);
-        version_differs = (ret < 1 || gmx_major != cpt_major);
+        check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
+        check_string(fplog, "Build user", BUILD_USER, buser, &mm);
+        check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
+        check_int   (fplog, "Double prec.", GMX_DOUBLE, double_prec, &mm);
+        check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), fprog, &mm);
+
+        check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
     }
 
-    check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
-    check_string(fplog, "Build user", BUILD_USER, buser, &mm);
-    check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
-    check_int   (fplog, "Double prec.", GMX_DOUBLE, double_prec, &mm);
-    check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), fprog, &mm);
-
-    check_int   (fplog, "#ranks", cr->nnodes, npp_f+npme_f, &mm);
-    if (cr->nnodes > 1)
+    if (cr->nnodes > 1 && reproducibilityRequested)
     {
         check_int (fplog, "#PME-ranks", cr->npmenodes, npme_f, &mm);
 
-        npp = cr->nnodes;
+        int npp = cr->nnodes;
         if (cr->npmenodes >= 0)
         {
             npp -= cr->npmenodes;
@@ -1791,7 +1784,17 @@ static void check_match(FILE *fplog,
 
     if (mm)
     {
-        const char msg_version_difference[] =
+        /* Gromacs should be able to continue from checkpoints between
+         * different patch level versions, but we do not guarantee
+         * compatibility between different major/minor versions - check this.
+         */
+        int        gmx_major;
+        int        cpt_major;
+        sscanf(gmx_version(), "%5d", &gmx_major);
+        int        ret                 = sscanf(version, "%5d", &cpt_major);
+        gmx_bool   majorVersionDiffers = (ret < 1 || gmx_major != cpt_major);
+
+        const char msg_major_version_difference[] =
             "The current GROMACS major version is not identical to the one that\n"
             "generated the checkpoint file. In principle GROMACS does not support\n"
             "continuation from checkpoints between different versions, so we advise\n"
@@ -1807,16 +1810,16 @@ static void check_match(FILE *fplog,
         const char msg_logdetails[] =
             "See the log file for details.\n";
 
-        if (version_differs)
+        if (majorVersionDiffers)
         {
-            fprintf(stderr, "%s%s\n", msg_version_difference, fplog ? msg_logdetails : "");
+            fprintf(stderr, "%s%s\n", msg_major_version_difference, fplog ? msg_logdetails : "");
 
             if (fplog)
             {
-                fprintf(fplog, "%s\n", msg_version_difference);
+                fprintf(fplog, "%s\n", msg_major_version_difference);
             }
         }
-        else
+        else if (reproducibilityRequested)
         {
             /* Major & minor versions match at least, but something is different. */
             fprintf(stderr, "%s%s\n", msg_mismatch_notice, fplog ? msg_logdetails : "");
@@ -1834,7 +1837,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadEkin,
                             int *simulation_part,
-                            gmx_bool bAppendOutputFiles, gmx_bool bForceAppend)
+                            gmx_bool bAppendOutputFiles, gmx_bool bForceAppend,
+                            gmx_bool reproducibilityRequested)
 {
     t_fileio            *fp;
     int                  i, j, rc;
@@ -2005,7 +2009,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         if (MASTER(cr))
         {
             check_match(fplog, version, btime, buser, bhost, double_prec, fprog,
-                        cr, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f);
+                        cr, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f,
+                        reproducibilityRequested);
         }
     }
     ret             = do_cpt_state(gmx_fio_getxdr(fp), TRUE, fflags, state, NULL);
@@ -2231,7 +2236,8 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
-                     gmx_bool bAppend, gmx_bool bForceAppend)
+                     gmx_bool bAppend, gmx_bool bForceAppend,
+                     gmx_bool reproducibilityRequested)
 {
     gmx_int64_t     step;
     double          t;
@@ -2242,7 +2248,8 @@ void load_checkpoint(const char *fn, FILE **fplog,
         read_checkpoint(fn, fplog,
                         cr, dd_nc, npme,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t, state, bReadEkin,
-                        &ir->simulation_part, bAppend, bForceAppend);
+                        &ir->simulation_part, bAppend, bForceAppend,
+                        reproducibilityRequested);
     }
     if (PAR(cr))
     {
