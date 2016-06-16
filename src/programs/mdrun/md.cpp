@@ -442,7 +442,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         shouldCheckNumberOfBondedInteractions = true;
     }
 
-    if (ir->bDrude)
+    if ((ir->bDrude) && (ir->drude->drudemode == edrudeLagrangian))
     {
         /* we need the total mass of each tc-grp in several functions
          * so we compute it here, as it requires md->cTC to be populated,
