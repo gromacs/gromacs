@@ -983,7 +983,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                         cr, ddxyz, &npme,
                         inputrec, state, &bReadEkin,
                         (Flags & MD_APPENDFILES),
-                        (Flags & MD_APPENDFILESSET));
+                        (Flags & MD_APPENDFILESSET),
+                        (Flags & MD_REPRODUCIBLE));
 
         if (bReadEkin)
         {
