@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,15 +120,15 @@ gmx_calc_comg_f(const t_topology *top, rvec f[], int nrefat, const int index[],
 
 /** Calculate a single center of geometry iteratively, taking PBC into account. */
 void
-gmx_calc_cog_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
+gmx_calc_cog_pbc(const t_topology *top, rvec x[], const t_pbc *pbc,
                  int nrefat, const int index[], rvec xout);
 /** Calculate a single center of mass iteratively, taking PBC into account. */
 void
-gmx_calc_com_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
+gmx_calc_com_pbc(const t_topology *top, rvec x[], const t_pbc *pbc,
                  int nrefat, const int index[], rvec xout);
 /** Calculate a single center of mass/geometry iteratively with PBC. */
 void
-gmx_calc_comg_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
+gmx_calc_comg_pbc(const t_topology *top, rvec x[], const t_pbc *pbc,
                   int nrefat, const int index[], bool bMass, rvec xout);
 
 /*! \brief

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,22 +100,19 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the \p permute selection modifier. */
 static void
 free_data_permute(void *data);
-static void
 /*! \brief
  * Evaluates the \p permute selection modifier.
  *
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
+ * \param[in]  context Not used.
  * \param[in]  p     Positions to permute (should point to \p data->p).
  * \param[out] out   Output data structure (\p out->u.p is used).
  * \param[in]  data  Should point to a \p t_methoddata_permute.
- * \returns    0 if \p p could be permuted, -1 on error.
  *
- * Returns -1 if the size of \p p is not divisible by the number of
+ * Throws if the size of \p p is not divisible by the number of
  * elements in the permutation.
  */
-evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+static void
+evaluate_permute(const gmx::SelMethodEvalContext &context,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p permute selection modifier. */
@@ -238,7 +235,7 @@ free_data_permute(void *data)
 }
 
 static void
-evaluate_permute(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
                  gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
