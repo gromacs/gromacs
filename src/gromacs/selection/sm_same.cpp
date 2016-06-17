@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,36 +126,32 @@ free_data_same(void *data);
 /*! \brief
  * Initializes the evaluation of the \p same selection method for a frame.
  *
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
+ * \param[in]  context  Not used.
  * \param      data Should point to a \ref t_methoddata_same.
  *
  * Sorts the \c data->as.i array and removes identical values for faster and
  * simpler lookup.
  */
 static void
-init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
+init_frame_same_int(const gmx::SelMethodEvalContext &context, void *data);
 /** Evaluates the \p same selection method. */
 static void
-evaluate_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_same_int(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /*! \brief
  * Initializes the evaluation of the \p same selection method for a frame.
  *
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
+ * \param[in]  context  Not used.
  * \param      data Should point to a \ref t_methoddata_same.
  *
  * Sorts the \c data->as.s array and removes identical values for faster and
  * simpler lookup.
  */
 static void
-init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
+init_frame_same_str(const gmx::SelMethodEvalContext &context, void *data);
 /** Evaluates the \p same selection method. */
 static void
-evaluate_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_same_str(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p same selection method. */
@@ -333,7 +329,7 @@ cmp_int(const void *a, const void *b)
 }
 
 static void
-init_frame_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */, void *data)
+init_frame_same_int(const gmx::SelMethodEvalContext & /*context*/, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
     int                i, j;
@@ -385,7 +381,7 @@ init_frame_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pb
  * \c data->val.
  */
 static void
-evaluate_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same     *d = (t_methoddata_same *)data;
@@ -461,7 +457,7 @@ cmp_str(const void *a, const void *b)
 }
 
 static void
-init_frame_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */, void *data)
+init_frame_same_str(const gmx::SelMethodEvalContext & /*context*/, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
     int                i, j;
@@ -508,7 +504,7 @@ init_frame_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pb
  * \c data->val.
  */
 static void
-evaluate_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same     *d = (t_methoddata_same *)data;

@@ -375,6 +375,6 @@ gmx_ana_poscalc_required_topology_info(gmx_ana_poscalc_t *pc);
 void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        gmx_ana_pos_t *p, gmx_ana_index_t *g,
-                       t_trxframe *fr, t_pbc *pbc);
+                       t_trxframe *fr, const t_pbc *pbc);
 
 #endif
