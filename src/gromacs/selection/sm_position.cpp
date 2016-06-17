@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,7 +128,8 @@ static void
 free_data_pos(void *data);
 /** Evaluates position evaluation selection methods. */
 static void
-evaluate_pos(t_topology * /* top */, t_trxframe *fr, t_pbc *pbc, gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data);
+evaluate_pos(const gmx::SelMethodEvalContext &context,
+             gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for position keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_pos[] = {
@@ -363,10 +364,10 @@ free_data_pos(void *data)
  * in \c t_methoddata_pos::g and stores the results in \p out->u.p.
  */
 static void
-evaluate_pos(t_topology * /* top */, t_trxframe *fr, t_pbc *pbc,
+evaluate_pos(const gmx::SelMethodEvalContext &context,
              gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
-    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr, pbc);
+    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, context.fr, context.pbc);
 }

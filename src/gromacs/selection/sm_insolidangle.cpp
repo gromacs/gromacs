@@ -264,22 +264,20 @@ free_data_insolidangle(void *data);
 /*! \brief
  * Initializes the evaluation of the \p insolidangle selection method for a frame.
  *
- * \param[in]  top  Not used.
- * \param[in]  fr   Not used.
- * \param[in]  pbc  PBC structure.
- * \param      data Should point to a \ref t_methoddata_insolidangle.
+ * \param[in]  context Evaluation context.
+ * \param      data    Should point to a \ref t_methoddata_insolidangle.
  *
  * Creates a lookup structure that enables fast queries of whether a point
  * is within the solid angle or not.
  */
 static void
-init_frame_insolidangle(t_topology * top, t_trxframe * fr, t_pbc *pbc, void *data);
+init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data);
 /** Internal helper function for evaluate_insolidangle(). */
 static bool
 accept_insolidangle(rvec x, t_pbc *pbc, void *data);
 /** Evaluates the \p insolidangle selection method. */
 static void
-evaluate_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc,
+evaluate_insolidangle(const gmx::SelMethodEvalContext &context,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Calculates the distance between unit vectors. */
@@ -462,7 +460,7 @@ free_data_insolidangle(void *data)
 }
 
 static void
-init_frame_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
+init_frame_insolidangle(const gmx::SelMethodEvalContext &context, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     rvec                       dx;
@@ -472,9 +470,9 @@ init_frame_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pb
     clear_surface_points(d);
     for (i = 0; i < d->span.count(); ++i)
     {
-        if (pbc)
+        if (context.pbc)
         {
-            pbc_dx(pbc, d->span.x[i], d->center.x[0], dx);
+            pbc_dx(context.pbc, d->span.x[i], d->center.x[0], dx);
         }
         else
         {
@@ -494,7 +492,7 @@ init_frame_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pb
  * \returns   true if \p x is within the solid angle, false otherwise.
  */
 static bool
-accept_insolidangle(rvec x, t_pbc *pbc, void *data)
+accept_insolidangle(rvec x, const t_pbc *pbc, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     rvec                       dx;
@@ -520,13 +518,13 @@ accept_insolidangle(rvec x, t_pbc *pbc, void *data)
  * \c t_methoddata_insolidangle::center, and stores the result in \p out->u.g.
  */
 static void
-evaluate_insolidangle(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc,
+evaluate_insolidangle(const gmx::SelMethodEvalContext &context,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     out->u.g->isize = 0;
     for (int b = 0; b < pos->count(); ++b)
     {
-        if (accept_insolidangle(pos->x[b], pbc, data))
+        if (accept_insolidangle(pos->x[b], context.pbc, data))
         {
             gmx_ana_pos_add_to_group(out->u.g, pos, b);
         }

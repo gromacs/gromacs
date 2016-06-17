@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,23 +52,23 @@
 
 /** Evaluates the \p all selection keyword. */
 static void
-evaluate_all(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_all(const gmx::SelMethodEvalContext &context,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p none selection keyword. */
 static void
-evaluate_none(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_none(const gmx::SelMethodEvalContext &context,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p atomnr selection keyword. */
 static void
-evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_atomnr(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p resnr selection keyword. */
 static void
-evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_resnr(const gmx::SelMethodEvalContext &context,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p resindex selection keyword. */
 static void
-evaluate_resindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_resindex(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /*! \brief
  * Checks whether molecule information is present in the topology.
@@ -85,15 +85,15 @@ static void
 check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p molindex selection keyword. */
 static void
-evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_molindex(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p atomname selection keyword. */
 static void
-evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_atomname(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p pdbatomname selection keyword. */
 static void
-evaluate_pdbatomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /*! \brief
  * Checks whether atom types are present in the topology.
@@ -110,23 +110,23 @@ static void
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p atomtype selection keyword. */
 static void
-evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_atomtype(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p insertcode selection keyword. */
 static void
-evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_insertcode(const gmx::SelMethodEvalContext &context,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p chain selection keyword. */
 static void
-evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_chain(const gmx::SelMethodEvalContext &context,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p mass selection keyword. */
 static void
-evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_mass(const gmx::SelMethodEvalContext &context,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p charge selection keyword. */
 static void
-evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_charge(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /*! \brief
  * Checks whether PDB info is present in the topology.
@@ -143,32 +143,32 @@ static void
 check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p altloc selection keyword. */
 static void
-evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_altloc(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p occupancy selection keyword. */
 static void
-evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_occupancy(const gmx::SelMethodEvalContext &context,
                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p betafactor selection keyword. */
 static void
-evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_betafactor(const gmx::SelMethodEvalContext &context,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p resname selection keyword. */
 static void
-evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_resname(const gmx::SelMethodEvalContext &context,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Evaluates the \p x selection keyword. */
 static void
-evaluate_x(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_x(const gmx::SelMethodEvalContext &context,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p y selection keyword. */
 static void
-evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_y(const gmx::SelMethodEvalContext &context,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p z selection keyword. */
 static void
-evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_z(const gmx::SelMethodEvalContext &context,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 //! Help title for atom name selection keywords.
@@ -485,7 +485,7 @@ gmx_ana_selmethod_t sm_z = {
  * Copies \p g to \p out->u.g.
  */
 static void
-evaluate_all(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_all(const gmx::SelMethodEvalContext & /*context*/,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     gmx_ana_index_copy(out->u.g, g, false);
@@ -498,7 +498,7 @@ evaluate_all(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns an empty \p out->u.g.
  */
 static void
-evaluate_none(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_none(const gmx::SelMethodEvalContext & /*context*/,
               gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void * /* data */)
 {
     out->u.g->isize = 0;
@@ -511,7 +511,7 @@ evaluate_none(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the indices for each atom in \p out->u.i.
  */
 static void
-evaluate_atomnr(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_atomnr(const gmx::SelMethodEvalContext & /*context*/,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -530,7 +530,7 @@ evaluate_atomnr(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */
  * Returns the residue numbers for each atom in \p out->u.i.
  */
 static void
-evaluate_resnr(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_resnr(const gmx::SelMethodEvalContext &context,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -539,8 +539,8 @@ evaluate_resnr(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind      = top->atoms.atom[g->index[i]].resind;
-        out->u.i[i] = top->atoms.resinfo[resind].nr;
+        resind      = context.top->atoms.atom[g->index[i]].resind;
+        out->u.i[i] = context.top->atoms.resinfo[resind].nr;
     }
 }
 
@@ -551,7 +551,7 @@ evaluate_resnr(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the residue indices for each atom in \p out->u.i.
  */
 static void
-evaluate_resindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_resindex(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -559,7 +559,7 @@ evaluate_resindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.i[i] = top->atoms.atom[g->index[i]].resind + 1;
+        out->u.i[i] = context.top->atoms.atom[g->index[i]].resind + 1;
     }
 }
 
@@ -582,7 +582,7 @@ check_molecules(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param *
  * Returns the molecule indices for each atom in \p out->u.i.
  */
 static void
-evaluate_molindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_molindex(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i, j;
@@ -590,7 +590,7 @@ evaluate_molindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (top->mols.index[j + 1] <= g->index[i])
+        while (context.top->mols.index[j + 1] <= g->index[i])
         {
             ++j;
         }
@@ -605,7 +605,7 @@ evaluate_molindex(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the atom name for each atom in \p out->u.s.
  */
 static void
-evaluate_atomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_atomname(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -613,7 +613,7 @@ evaluate_atomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *top->atoms.atomname[g->index[i]];
+        out->u.s[i] = *context.top->atoms.atomname[g->index[i]];
     }
 }
 
@@ -624,7 +624,7 @@ evaluate_atomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the PDB atom name for each atom in \p out->u.s.
  */
 static void
-evaluate_pdbatomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -632,7 +632,7 @@ evaluate_pdbatomname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        char *s = top->atoms.pdbinfo[g->index[i]].atomnm;
+        char *s = context.top->atoms.pdbinfo[g->index[i]].atomnm;
         while (std::isspace(*s))
         {
             ++s;
@@ -661,7 +661,7 @@ check_atomtype(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */
  * Segfaults if atom types are not found in the topology.
  */
 static void
-evaluate_atomtype(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_atomtype(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -669,7 +669,7 @@ evaluate_atomtype(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *top->atoms.atomtype[g->index[i]];
+        out->u.s[i] = *context.top->atoms.atomtype[g->index[i]];
     }
 }
 
@@ -680,7 +680,7 @@ evaluate_atomtype(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the residue name for each atom in \p out->u.s.
  */
 static void
-evaluate_resname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_resname(const gmx::SelMethodEvalContext &context,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -689,8 +689,8 @@ evaluate_resname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind      = top->atoms.atom[g->index[i]].resind;
-        out->u.s[i] = *top->atoms.resinfo[resind].name;
+        resind      = context.top->atoms.atom[g->index[i]].resind;
+        out->u.s[i] = *context.top->atoms.resinfo[resind].name;
     }
 }
 
@@ -701,7 +701,7 @@ evaluate_resname(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the insertion code for each atom in \p out->u.s.
  */
 static void
-evaluate_insertcode(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_insertcode(const gmx::SelMethodEvalContext &context,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -710,8 +710,8 @@ evaluate_insertcode(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind         = top->atoms.atom[g->index[i]].resind;
-        out->u.s[i][0] = top->atoms.resinfo[resind].ic;
+        resind         = context.top->atoms.atom[g->index[i]].resind;
+        out->u.s[i][0] = context.top->atoms.resinfo[resind].ic;
     }
 }
 
@@ -722,7 +722,7 @@ evaluate_insertcode(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the chain for each atom in \p out->u.s.
  */
 static void
-evaluate_chain(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_chain(const gmx::SelMethodEvalContext &context,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -731,8 +731,8 @@ evaluate_chain(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind         = top->atoms.atom[g->index[i]].resind;
-        out->u.s[i][0] = top->atoms.resinfo[resind].chainid;
+        resind         = context.top->atoms.atom[g->index[i]].resind;
+        out->u.s[i][0] = context.top->atoms.resinfo[resind].chainid;
     }
 }
 
@@ -743,7 +743,7 @@ evaluate_chain(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the mass for each atom in \p out->u.r.
  */
 static void
-evaluate_mass(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_mass(const gmx::SelMethodEvalContext &context,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -751,7 +751,7 @@ evaluate_mass(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = top->atoms.atom[g->index[i]].m;
+        out->u.r[i] = context.top->atoms.atom[g->index[i]].m;
     }
 }
 
@@ -762,7 +762,7 @@ evaluate_mass(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Returns the charge for each atom in \p out->u.r.
  */
 static void
-evaluate_charge(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_charge(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -770,7 +770,7 @@ evaluate_charge(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = top->atoms.atom[g->index[i]].q;
+        out->u.r[i] = context.top->atoms.atom[g->index[i]].q;
     }
 }
 
@@ -793,7 +793,7 @@ check_pdbinfo(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */,
  * Returns the alternate location identifier for each atom in \p out->u.s.
  */
 static void
-evaluate_altloc(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_altloc(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -801,7 +801,7 @@ evaluate_altloc(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = top->atoms.pdbinfo[g->index[i]].altloc;
+        out->u.s[i][0] = context.top->atoms.pdbinfo[g->index[i]].altloc;
     }
 }
 
@@ -813,7 +813,7 @@ evaluate_altloc(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Segfaults if PDB info is not found in the topology.
  */
 static void
-evaluate_occupancy(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_occupancy(const gmx::SelMethodEvalContext &context,
                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -821,7 +821,7 @@ evaluate_occupancy(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = top->atoms.pdbinfo[g->index[i]].occup;
+        out->u.r[i] = context.top->atoms.pdbinfo[g->index[i]].occup;
     }
 }
 
@@ -833,7 +833,7 @@ evaluate_occupancy(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
  * Segfaults if PDB info is not found in the topology.
  */
 static void
-evaluate_betafactor(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_betafactor(const gmx::SelMethodEvalContext &context,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
     int  i;
@@ -841,7 +841,7 @@ evaluate_betafactor(t_topology *top, t_trxframe * /* fr */, t_pbc * /* pbc */,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = top->atoms.pdbinfo[g->index[i]].bfac;
+        out->u.r[i] = context.top->atoms.pdbinfo[g->index[i]].bfac;
     }
 }
 
@@ -874,7 +874,7 @@ evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
  * Returns the \p x coordinate for each position in \p out->u.r.
  */
 static void
-evaluate_x(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+evaluate_x(const gmx::SelMethodEvalContext & /*context*/,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
     out->nr = pos->count();
@@ -888,7 +888,7 @@ evaluate_x(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
  * Returns the \p y coordinate for each position in \p out->u.r.
  */
 static void
-evaluate_y(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+evaluate_y(const gmx::SelMethodEvalContext & /*context*/,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
     out->nr = pos->count();
@@ -902,7 +902,7 @@ evaluate_y(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
  * Returns the \p z coordinate for each position in \p out->u.r.
  */
 static void
-evaluate_z(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+evaluate_z(const gmx::SelMethodEvalContext & /*context*/,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
     out->nr = pos->count();

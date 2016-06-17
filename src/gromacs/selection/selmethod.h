@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -299,18 +299,58 @@
 #include "selparam.h"
 #include "selvalue.h"
 
-namespace gmx
-{
-class PositionCalculationCollection;
-class SelectionParserSymbolTable;
-} // namespace gmx
-
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 struct gmx_ana_selcollection_t;
 struct t_pbc;
 struct t_topology;
 struct t_trxframe;
+
+namespace gmx
+{
+class PositionCalculationCollection;
+class SelectionParserSymbolTable;
+
+/*! \internal
+ * \brief
+ * Evaluation context for selection methods.
+ *
+ * This structure encapsulates common parameters passed to selection method
+ * evaluation functions.  The contained values describe the evaluation context,
+ * i.e., the topology and the current trajectory frame.
+ *
+ * \ingroup module_selection
+ */
+struct SelMethodEvalContext
+{
+    //! Initializes the context with given values.
+    SelMethodEvalContext(const t_topology *top, t_trxframe *fr, const t_pbc *pbc)
+        : top(top), fr(fr), pbc(pbc)
+    {
+    }
+
+    /*! \brief
+     * Topology.
+     *
+     * Can be `NULL` if SMETH_REQTOP is not set for the method.
+     */
+    const t_topology *top;
+    /*! \brief
+     * Trajectory frame.
+     *
+     * For static methods that are evaluated based on topology information
+     * alone, this is `NULL`.
+     */
+    t_trxframe       *fr;
+    /*! \brief
+     * Periodic boundary condition information.
+     *
+     * Can be `NULL`, in which case PBC should not be used.
+     */
+    const t_pbc      *pbc;
+};
+
+} // namespace gmx
 
 /*! \name Selection method flags
  * \anchor selmethod_flags
@@ -511,11 +551,7 @@ typedef void  (*sel_freefunc)(void *data);
 /*! \brief
  * Initializes the evaluation for a new frame.
  *
- * \param[in]  top  Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  Initialized periodic boundary condition structure,
- *   or NULL if PBC should not be used.
+ * \param[in]  context  Evaluation context.
  * \param      data Internal data structure from sel_datafunc().
  * \returns    0 on success, a non-zero error code on failure.
  *
@@ -530,16 +566,12 @@ typedef void  (*sel_freefunc)(void *data);
  * For static methods, it is called once, with \p fr and \p pbc set to
  * NULL.
  */
-typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                               void *data);
+typedef void  (*sel_framefunc)(const gmx::SelMethodEvalContext &context,
+                               void                            *data);
 /*! \brief
  * Evaluates a selection method.
  *
- * \param[in]  top  Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  Initialized periodic boundary condition structure,
- *   or NULL if PBC should not be used.
+ * \param[in]  context  Evaluation context.
  * \param[in]  g    Index group for which the method should be evaluated.
  * \param[out] out  Output data structure.
  * \param      data Internal data structure from sel_datafunc().
@@ -562,17 +594,13 @@ typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * contains such an atom in case the \p fr has been loaded from a trajectory
  * that only contains a subset of the system.
  */
-typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+typedef void  (*sel_updatefunc)(const gmx::SelMethodEvalContext &context,
                                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out,
                                 void *data);
 /*! \brief
  * Evaluates a selection method using positions.
  *
- * \param[in]  top  Topology structure
- *   (can be NULL if \ref SMETH_REQTOP is not set).
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  Initialized periodic boundary condition structure,
- *   or NULL if PBC should not be used.
+ * \param[in]  context  Evaluation context.
  * \param[in]  pos  Positions for which the method should be evaluated.
  * \param[out] out  Output data structure.
  * \param      data Internal data structure from sel_datafunc().
@@ -596,7 +624,7 @@ typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * contains such an atom in case the \p fr has been loaded from a trajectory
  * that only contains a subset of the system.
  */
-typedef void  (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+typedef void  (*sel_updatefunc_pos)(const gmx::SelMethodEvalContext &context,
                                     gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out,
                                     void *data);
 
