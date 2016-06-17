@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -298,6 +298,26 @@ static bool addNVMLDeviceId(gmx_device_info_t* cuda_dev)
     }
     return cuda_dev->nvml_initialized;
 }
+
+/*! \brief Reads and returns the application clocks for device.
+ *
+ * \param[in]  device        The GPU device
+ * \param[out] app_sm_clock  The current application SM clock
+ * \param[out] app_mem_clock The current application memory clock
+ */
+static void getApplicationClocks(gpu_device_info_t *device,
+                                 unsigned int      *app_sm_clock,
+                                 unsigned int      *app_mem_clock)
+{
+    nvml_stat = nvmlDeviceGetApplicationsClock ( device->nvml_device_id, NVML_CLOCK_SM, app_sm_clock );
+    if (NVML_ERROR_NOT_SUPPORTED == nvml_stat)
+    {
+        return false;
+    }
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+    nvml_stat = nvmlDeviceGetApplicationsClock ( device->nvml_device_id, NVML_CLOCK_MEM, app_mem_clock );
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+}
 #endif /* HAVE_NVML_APPLICATION_CLOCKS */
 
 /*! \brief Tries to set application clocks for the GPU with the given index.
@@ -366,52 +386,50 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     {
         return false;
     }
-    if (!addNVMLDeviceId( &(gpu_info->gpu_dev[gpuid])))
+
+    gmx_device_info_t *device = &(gpu_info->gpu_dev[gpuid]);
+
+    if (!addNVMLDeviceId(device))
     {
         return false;
     }
     //get current application clocks setting
-    unsigned int app_sm_clock  = 0;
-    unsigned int app_mem_clock = 0;
-    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &app_sm_clock );
-    if (NVML_ERROR_NOT_SUPPORTED == nvml_stat)
-    {
-        return false;
-    }
-    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
-    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &app_mem_clock );
-    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+    getApplicationClocks(device,
+                         &device->nvml_orig_app_sm_clock,
+                         &device->nvml_orig_app_mem_clock);
     //get max application clocks
     unsigned int max_sm_clock  = 0;
     unsigned int max_mem_clock = 0;
-    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &max_sm_clock );
+    nvml_stat = nvmlDeviceGetMaxClockInfo ( device->nvml_device_id, NVML_CLOCK_SM, &max_sm_clock );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
-    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &max_mem_clock );
+    nvml_stat = nvmlDeviceGetMaxClockInfo ( device->nvml_device_id, NVML_CLOCK_MEM, &max_mem_clock );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
 
-    gpu_info->gpu_dev[gpuid].nvml_is_restricted     = NVML_FEATURE_ENABLED;
-    gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = false;
+    device->nvml_is_restricted      = NVML_FEATURE_ENABLED;
+    device->nvml_app_clocks_changed = false;
 
-    nvml_stat = nvmlDeviceGetAPIRestriction ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(gpu_info->gpu_dev[gpuid].nvml_is_restricted) );
+    nvml_stat = nvmlDeviceGetAPIRestriction ( device->nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(device->nvml_is_restricted) );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetAPIRestriction failed" );
 
     /* Note: Distinguishing between different types of GPUs here might be necessary in the future,
        e.g. if max application clocks should not be used for certain GPUs. */
-    if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->gpu_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
+    if (nvml_stat == NVML_SUCCESS && device->nvml_orig_app_sm_clock < max_sm_clock && device->nvml_is_restricted == NVML_FEATURE_DISABLED)
     {
-        md_print_info( fplog, "Changing GPU application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
-        nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->gpu_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
+        md_print_info( fplog, "Changing GPU application clocks for %s to (%d,%d)\n", device->prop.name, max_mem_clock, max_sm_clock);
+        nvml_stat = nvmlDeviceSetApplicationsClocks ( device->nvml_device_id, max_mem_clock, max_sm_clock );
         HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
-        gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = true;
+        device->nvml_app_clocks_changed = true;
+        device->nvml_set_app_sm_clock   = max_sm_clock;
+        device->nvml_set_app_mem_clock  = max_mem_clock;
     }
-    else if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock)
+    else if (nvml_stat == NVML_SUCCESS && device->nvml_orig_app_sm_clock < max_sm_clock)
     {
-        md_print_warn( fplog, "Can not change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clocks.\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
+        md_print_warn( fplog, "Can not change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clocks.\n", device->prop.name, device->nvml_orig_app_mem_clock, device->nvml_orig_app_sm_clock, max_mem_clock, max_sm_clock);
     }
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock == max_sm_clock)
     {
         //TODO: This should probably be integrated into the GPU Properties table.
-        md_print_info( fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock);
+        md_print_info( fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", device->prop.name, device->nvml_orig_app_mem_clock, device->nvml_orig_app_sm_clock);
     }
     else
     {
@@ -434,10 +452,20 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
     if (cuda_dev &&
         cuda_dev->nvml_is_restricted == NVML_FEATURE_DISABLED &&
-        cuda_dev->nvml_ap_clocks_changed)
+        cuda_dev->nvml_app_clocks_changed)
     {
-        nvml_stat = nvmlDeviceResetApplicationsClocks( cuda_dev->nvml_device_id );
-        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceResetApplicationsClocks failed" );
+        /* Check if the clocks are still what we set them to.
+         * If so, set them back to the state we originally found them in.
+         * If not, don't touch them, because something else set them later.
+         */
+        unsigned int app_sm_clock, app_mem_clock;
+        getApplicationClocks(cuda_dev, &app_sm_clock, &app_mem_clock);
+        if (app_sm_clock  == cuda_dev->nvml_set_app_sm_clock &&
+            app_mem_clock == cuda_dev->nvml_set_app_mem_clock)
+        {
+            nvml_stat = nvmlDeviceSetApplicationsClocks ( device->nvml_device_id, max_mem_clock, max_sm_clock );
+            HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+        }
     }
     nvml_stat = nvmlShutdown();
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlShutdown failed" );
