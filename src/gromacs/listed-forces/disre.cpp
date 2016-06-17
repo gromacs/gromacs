@@ -152,7 +152,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
             fprintf(fplog, "%s\n", notestr);
         }
 
-        if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble || cr->ms != NULL ||
+        if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble ||
             dd->nres != dd->npair)
         {
             gmx_fatal(FARGS, "Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition, use a single MPI rank%s", cr->ms ? " per simulation" : "");
