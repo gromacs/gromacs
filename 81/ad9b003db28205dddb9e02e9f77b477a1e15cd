@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Jiri Kraus <jkraus@nvidia.com>
+Code-Review+1: Vedran Miletić <vedran@miletic.net>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Fri, 17 Jun 2016 14:39:27 +0200
+Reviewed-on: https://gerrit.gromacs.org/5960
+Project: gromacs
+Branch: refs/heads/release-2016
