@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,15 +121,19 @@ extern "C" {
 /*! CUDA device information. */
 struct gmx_device_info_t
 {
-    int                 id;                     /* id of the CUDA device */
-    cudaDeviceProp      prop;                   /* CUDA device properties */
-    int                 stat;                   /* result of the device check */
-    gmx_bool            nvml_initialized;       /* If NVML was initialized */
-    gmx_bool            nvml_ap_clocks_changed; /* If application clocks have been changed */
+    int                 id;                      /* id of the CUDA device */
+    cudaDeviceProp      prop;                    /* CUDA device properties */
+    int                 stat;                    /* result of the device check */
+    gmx_bool            nvml_initialized;        /* If NVML was initialized */
+    unsigned int        nvml_orig_app_sm_clock;  /* The original SM clock before we changed it */
+    unsigned int        nvml_orig_app_mem_clock; /* The original memory clock before we changed it */
+    gmx_bool            nvml_app_clocks_changed; /* If application clocks have been changed */
+    unsigned int        nvml_set_app_sm_clock;   /* The SM clock we set */
+    unsigned int        nvml_set_app_mem_clock;  /* The memory clock we set */
 #ifdef HAVE_NVML
-    nvmlDevice_t        nvml_device_id;         /* NVML device id */
-    nvmlEnableState_t   nvml_is_restricted;     /* Status of application clocks permission */
-#endif                                          /* HAVE_NVML */
+    nvmlDevice_t        nvml_device_id;          /* NVML device id */
+    nvmlEnableState_t   nvml_is_restricted;      /* Status of application clocks permission */
+#endif                                           /* HAVE_NVML */
 };
 
 
