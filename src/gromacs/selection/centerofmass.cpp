@@ -203,7 +203,7 @@ gmx_calc_comg_f(const t_topology *top, rvec f[], int nrefat, const int index[],
  * Works exactly as gmx_calc_com_pbc(), but calculates the center of geometry.
  */
 void
-gmx_calc_cog_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
+gmx_calc_cog_pbc(const t_topology *top, rvec x[], const t_pbc *pbc,
                  int nrefat, const int index[], rvec xout)
 {
     const real          tol = 1e-4;
@@ -258,7 +258,7 @@ gmx_calc_cog_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
  * Modified from src/tools/gmx_sorient.c in Gromacs distribution.
  */
 void
-gmx_calc_com_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
+gmx_calc_com_pbc(const t_topology *top, rvec x[], const t_pbc *pbc,
                  int nrefat, const int index[], rvec xout)
 {
     const real          tol = 1e-4;
@@ -328,7 +328,7 @@ gmx_calc_com_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
  * Other parameters are passed unmodified to these functions.
  */
 void
-gmx_calc_comg_pbc(const t_topology *top, rvec x[], t_pbc *pbc,
+gmx_calc_comg_pbc(const t_topology *top, rvec x[], const t_pbc *pbc,
                   int nrefat, const int index[], bool bMass, rvec xout)
 {
     if (bMass)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,23 +116,21 @@ free_data_common(void *data);
  * Initializes the evaluation of a distance-based within selection method for a
  * frame.
  *
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
- * \param      data Should point to a \c t_methoddata_distance.
+ * \param[in]  context Evaluation context.
+ * \param      data    Should point to a \c t_methoddata_distance.
  * \returns    0 on success, a non-zero error code on error.
  *
  * Initializes the neighborhood search for the current frame.
  */
 static void
-init_frame_common(t_topology *top, t_trxframe * fr, t_pbc *pbc, void *data);
+init_frame_common(const gmx::SelMethodEvalContext &context, void *data);
 /** Evaluates the \p distance selection method. */
 static void
-evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_distance(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p within selection method. */
 static void
-evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_within(const gmx::SelMethodEvalContext & /*context*/,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p distance selection method. */
@@ -258,13 +256,13 @@ free_data_common(void *data)
 }
 
 static void
-init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
+init_frame_common(const gmx::SelMethodEvalContext &context, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
     d->nbsearch.reset();
     gmx::AnalysisNeighborhoodPositions pos(d->p.x, d->p.count());
-    d->nbsearch = d->nb.initSearch(pbc, pos);
+    d->nbsearch = d->nb.initSearch(context.pbc, pos);
 }
 
 /*!
@@ -275,7 +273,7 @@ init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, voi
  * and puts them in \p out->u.r.
  */
 static void
-evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_distance(const gmx::SelMethodEvalContext & /*context*/,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
@@ -295,7 +293,7 @@ evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc 
  * \c t_methoddata_distance::xref and puts them in \p out.g.
  */
 static void
-evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_within(const gmx::SelMethodEvalContext & /*context*/,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
