@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -961,18 +961,17 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t                     *data,
                          gmx_ana_index_t                        *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
+    gmx::SelMethodEvalContext context(data->top, data->fr, data->pbc);
     if (sel->flags & SEL_INITFRAME)
     {
         sel->flags &= ~SEL_INITFRAME;
-        sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
-                                       sel->u.expr.mdata);
+        sel->u.expr.method->init_frame(context, sel->u.expr.mdata);
     }
     if (sel->u.expr.pc)
     {
         gmx_ana_poscalc_update(sel->u.expr.pc, sel->u.expr.pos, g,
                                data->fr, data->pbc);
-        sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
-                                    sel->u.expr.pos, &sel->v,
+        sel->u.expr.method->pupdate(context, sel->u.expr.pos, &sel->v,
                                     sel->u.expr.mdata);
         if ((sel->flags & SEL_ATOMVAL) && sel->v.nr < g->isize)
         {
@@ -989,8 +988,7 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t                     *data,
     }
     else
     {
-        sel->u.expr.method->update(data->top, data->fr, data->pbc, g,
-                                   &sel->v, sel->u.expr.mdata);
+        sel->u.expr.method->update(context, g, &sel->v, sel->u.expr.mdata);
     }
 }
 
@@ -1015,18 +1013,17 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                     *data,
                            gmx_ana_index_t                        *g)
 {
     _gmx_sel_evaluate_method_params(data, sel, g);
+    gmx::SelMethodEvalContext context(data->top, data->fr, data->pbc);
     if (sel->flags & SEL_INITFRAME)
     {
         sel->flags &= ~SEL_INITFRAME;
-        sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
-                                       sel->u.expr.mdata);
+        sel->u.expr.method->init_frame(context, sel->u.expr.mdata);
     }
     if (sel->child && sel->child->v.type != POS_VALUE)
     {
         GMX_THROW(gmx::NotImplementedError("Non-position valued modifiers not implemented"));
     }
-    sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
-                                NULL, &sel->v, sel->u.expr.mdata);
+    sel->u.expr.method->pupdate(context, NULL, &sel->v, sel->u.expr.mdata);
 }
 
 
