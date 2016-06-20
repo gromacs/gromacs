@@ -370,7 +370,7 @@ int gmx_nmeig(int argc, char *argv[])
     }
     std::vector<size_t> atom_index = get_atom_index(&mtop);
 
-    top = gmx_mtop_t_to_t_topology(&mtop);
+    top = gmx_mtop_t_to_t_topology(&mtop, true);
 
     bM       = TRUE;
     int ndim = DIM*atom_index.size();

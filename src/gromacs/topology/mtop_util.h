@@ -253,7 +253,7 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
 /* Generate a 'local' topology for the whole system.
- * When feeEnergyInteractionsAtEnd == true, the free energy interactions will
+ * When freeEnergyInteractionsAtEnd == true, the free energy interactions will
  * be sorted to the end.
  */
 gmx_localtop_t *
@@ -261,10 +261,14 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsA
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
- * All memory relating only to mtop will be freed.
+ *
+ * If freeMTop == true, memory related to mtop will be freed so that done_top()
+ * on the result value will free all memory.
+ * If freeMTop == false, mtop and the return value will share some of their
+ * memory, and there is currently no way to consistently free all the memory.
  */
 t_topology
-gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
 
 /*! \brief Get vector of atoms indices from topology
  *

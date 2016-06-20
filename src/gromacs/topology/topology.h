@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,9 +146,6 @@ void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
 void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
 void done_top(t_topology *top);
-
-t_atoms *mtop2atoms(gmx_mtop_t *mtop);
-/* generate a t_atoms struct for the system from gmx_mtop_t */
 
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers);

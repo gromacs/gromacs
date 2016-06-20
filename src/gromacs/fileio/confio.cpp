@@ -363,27 +363,6 @@ static void read_stx_conf(const char *infile,
     }
 }
 
-static void done_gmx_groups_t(gmx_groups_t *g)
-{
-    int i;
-
-    for (i = 0; (i < egcNR); i++)
-    {
-        if (NULL != g->grps[i].nm_ind)
-        {
-            sfree(g->grps[i].nm_ind);
-            g->grps[i].nm_ind = NULL;
-        }
-        if (NULL != g->grpnr[i])
-        {
-            sfree(g->grpnr[i]);
-            g->grpnr[i] = NULL;
-        }
-    }
-    /* The contents of this array is in symtab, don't free it here */
-    sfree(g->grpname);
-}
-
 static void readConfAndAtoms(const char *infile,
                              t_symtab *symtab, char ***name, t_atoms *atoms,
                              int *ePBC,
@@ -539,9 +518,7 @@ void readTpsConf(const char *infile,
     // Note: We should have an initializer instead of relying on snew
     snew(mtop, 1);
     readConfAndTopology(infile, haveTopology, mtop, ePBC, x, v, box, readAtomsMass);
-    *top = gmx_mtop_t_to_t_topology(mtop);
-    /* In this case we need to throw away the group data too */
-    done_gmx_groups_t(&mtop->groups);
+    *top = gmx_mtop_t_to_t_topology(mtop, true);
     sfree(mtop);
 }
 
