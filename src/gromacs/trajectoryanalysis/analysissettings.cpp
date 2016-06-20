@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -185,7 +186,7 @@ TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
  */
 
 TopologyInformation::TopologyInformation()
-    : top_(NULL), bTop_(false), xtop_(NULL), ePBC_(-1)
+    : mtop_(NULL), top_(NULL), bTop_(false), xtop_(NULL), ePBC_(-1)
 {
     clear_mat(boxtop_);
 }
@@ -193,12 +194,25 @@ TopologyInformation::TopologyInformation()
 
 TopologyInformation::~TopologyInformation()
 {
-    if (top_)
+    if (mtop_)
     {
-        done_top(top_);
-        sfree(top_);
+        done_mtop(mtop_, TRUE);
+        sfree(mtop_);
     }
+    // TODO: Free that part of the memory that is not shared with mtop_.
+    sfree(top_);
     sfree(xtop_);
+}
+
+
+t_topology *TopologyInformation::topology() const
+{
+    if (top_ == nullptr && mtop_ != nullptr)
+    {
+        snew(top_, 1);
+        *top_ = gmx_mtop_t_to_t_topology(mtop_, false);
+    }
+    return top_;
 }
 
 

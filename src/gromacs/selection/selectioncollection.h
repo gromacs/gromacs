@@ -52,8 +52,8 @@
 #include "gromacs/utility/classhelpers.h"
 
 struct gmx_ana_indexgrps_t;
+struct gmx_mtop_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 namespace gmx
@@ -245,7 +245,7 @@ class SelectionCollection
          * Does not throw currently, but this is subject to change when more
          * underlying code is converted to C++.
          */
-        void setTopology(t_topology *top, int natoms);
+        void setTopology(gmx_mtop_t *top, int natoms);
         /*! \brief
          * Sets the external index groups to use for the selections.
          *

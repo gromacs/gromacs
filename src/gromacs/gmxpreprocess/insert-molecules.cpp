@@ -67,6 +67,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/atomsbuilder.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
@@ -163,7 +164,7 @@ static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
 
 static void insert_mols(int nmol_insrt, int ntry, int seed,
                         real defaultDistance, real scaleFactor,
-                        t_topology *top, std::vector<RVec> *x,
+                        t_atoms *atoms, t_symtab *symtab, std::vector<RVec> *x,
                         const std::set<int> &removableAtoms,
                         const t_atoms &atoms_insrt, const std::vector<RVec> &x_insrt,
                         int ePBC, matrix box,
@@ -173,7 +174,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     gmx_atomprop_t          aps = gmx_atomprop_init();
     std::vector<real>       exclusionDistances(
-            makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor));
+            makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor));
     const std::vector<real> exclusionDistances_insrt(
             makeExclusionDistances(&atoms_insrt, aps, defaultDistance, scaleFactor));
     gmx_atomprop_destroy(aps);
@@ -222,11 +223,11 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                 nmol_insrt, posfn.c_str());
     }
 
-    gmx::AtomsBuilder builder(&top->atoms, &top->symtab);
-    gmx::AtomsRemover remover(top->atoms);
+    gmx::AtomsBuilder builder(atoms, symtab);
+    gmx::AtomsRemover remover(*atoms);
     {
-        const int finalAtomCount    = top->atoms.nr + nmol_insrt * atoms_insrt.nr;
-        const int finalResidueCount = top->atoms.nres + nmol_insrt * atoms_insrt.nres;
+        const int finalAtomCount    = atoms->nr + nmol_insrt * atoms_insrt.nr;
+        const int finalResidueCount = atoms->nres + nmol_insrt * atoms_insrt.nres;
         builder.reserve(finalAtomCount, finalResidueCount);
         x->reserve(finalAtomCount);
         exclusionDistances.reserve(finalAtomCount);
@@ -276,7 +277,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
         if (isInsertionAllowed(&search, exclusionDistances, x_n, exclusionDistances_insrt,
-                               top->atoms, removableAtoms, &remover))
+                               *atoms, removableAtoms, &remover))
         {
             x->insert(x->end(), x_n.begin(), x_n.end());
             exclusionDistances.insert(exclusionDistances.end(),
@@ -294,16 +295,16 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     fprintf(stderr, "Added %d molecules (out of %d requested)\n",
             mol - failed, nmol_insrt);
 
-    const int originalAtomCount    = top->atoms.nr;
-    const int originalResidueCount = top->atoms.nres;
-    remover.refreshAtomCount(top->atoms);
+    const int originalAtomCount    = atoms->nr;
+    const int originalResidueCount = atoms->nres;
+    remover.refreshAtomCount(*atoms);
     remover.removeMarkedElements(x);
-    remover.removeMarkedAtoms(&top->atoms);
-    if (top->atoms.nr < originalAtomCount)
+    remover.removeMarkedAtoms(atoms);
+    if (atoms->nr < originalAtomCount)
     {
         fprintf(stderr, "Replaced %d residues (%d atoms)\n",
-                originalResidueCount - top->atoms.nres,
-                originalAtomCount - top->atoms.nr);
+                originalResidueCount - atoms->nres,
+                originalAtomCount - atoms->nr);
     }
 
     if (rpos != NULL)
@@ -338,13 +339,13 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         {
             if (top_ != NULL)
             {
-                done_top(top_);
+                done_mtop(top_, TRUE);
                 sfree(top_);
             }
         }
 
         // From ITopologyProvider
-        virtual t_topology *getTopology(bool /*required*/) { return top_; }
+        virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
         virtual int getAtomCount() { return 0; }
 
         // From ICommandLineOptionsModule
@@ -376,7 +377,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         RotationType        enumRot_;
         Selection           replaceSel_;
 
-        t_topology         *top_;
+        gmx_mtop_t         *top_;
         std::vector<RVec>   x_;
         matrix              box_;
         int                 ePBC_;
@@ -510,7 +511,7 @@ void InsertMolecules::optionsFinished()
     {
         readConformation(inputConfFile_.c_str(), top_, &x_, NULL,
                          &ePBC_, box_, "solute");
-        if (top_->atoms.nr == 0)
+        if (top_->natoms == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
         }
@@ -575,22 +576,26 @@ int InsertMolecules::run()
         }
     }
 
+    // TODO: Adapt to use mtop throughout.
+    t_atoms atoms = gmx_mtop_global_atoms(top_);
+
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                top_, &x_, removableAtoms, top_insrt->atoms, x_insrt,
+                &atoms, &top_->symtab, &x_, removableAtoms, top_insrt->atoms, x_insrt,
                 ePBC_, box_, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), *top_->name, &top_->atoms,
+    write_sto_conf(outputConfFile_.c_str(), *top_->name, &atoms,
                    as_rvec_array(x_.data()), NULL, ePBC_, box_);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            top_->atoms.nr, top_->atoms.nres);
+            atoms.nr, atoms.nres);
 
+    done_atom(&atoms);
     done_top(top_insrt);
     sfree(top_insrt);
 

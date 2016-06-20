@@ -114,7 +114,7 @@ class SelectionOptionBehavior::Impl
             }
             if (ndxfile_.empty())
             {
-                t_topology *top = topologyProvider_.getTopology(false);
+                gmx_mtop_t *top = topologyProvider_.getTopology(false);
                 gmx_ana_indexgrps_init(&grps_, top, NULL);
             }
             else
@@ -136,7 +136,7 @@ class SelectionOptionBehavior::Impl
         void compileSelections()
         {
             const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
-            t_topology *top         = topologyProvider_.getTopology(topRequired);
+            gmx_mtop_t *top         = topologyProvider_.getTopology(topRequired);
             int         natoms      = -1;
             if (top == NULL)
             {
@@ -149,7 +149,7 @@ class SelectionOptionBehavior::Impl
             getMassesIfRequired(top);
         }
 
-        void getMassesIfRequired(t_topology *top)
+        void getMassesIfRequired(gmx_mtop_t *top)
         {
             const bool massRequired = selections_.requiredTopologyProperties().needsMasses;
             if (!massRequired)
@@ -160,12 +160,16 @@ class SelectionOptionBehavior::Impl
             // when the user has not provided the topology.
             GMX_RELEASE_ASSERT(top != nullptr,
                                "Masses are required, but no topology is loaded");
-            if (!top->atoms.haveMass)
+            for (int i = 0; i < top->nmoltype; ++i)
             {
-                atomsSetMassesBasedOnNames(&top->atoms, TRUE);
-                if (!top->atoms.haveMass)
+                gmx_moltype_t &moltype = top->moltype[i];
+                if (!moltype.atoms.haveMass)
                 {
-                    GMX_THROW(InconsistentInputError("Selections require mass information for evaluation, but it is not available in the input and could not be determined for all atoms based on atom names."));
+                    atomsSetMassesBasedOnNames(&moltype.atoms, TRUE);
+                    if (!moltype.atoms.haveMass)
+                    {
+                        GMX_THROW(InconsistentInputError("Selections require mass information for evaluation, but it is not available in the input and could not be determined for all atoms based on atom names."));
+                    }
                 }
             }
         }
