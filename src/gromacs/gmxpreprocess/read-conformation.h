@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_atomprop;
+struct gmx_mtop_t;
 struct t_atoms;
 struct t_topology;
 
@@ -54,6 +55,9 @@ std::vector<real>
 makeExclusionDistances(const t_atoms *a, gmx_atomprop *aps,
                        real defaultDistance, real scaleFactor);
 
+void readConformation(const char *confin, gmx_mtop_t *top,
+                      std::vector<gmx::RVec> *x, std::vector<gmx::RVec> *v,
+                      int *ePBC, matrix box, const char *statusTitle);
 /*! \brief Read a conformation from a file, allocate and fill data structures.
  *
  * Used by solvate and insert-molecules. The returned pointers *x and

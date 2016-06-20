@@ -90,10 +90,10 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         void finishTrajectory();
 
         // From ITopologyProvider
-        virtual t_topology *getTopology(bool required)
+        virtual gmx_mtop_t *getTopology(bool required)
         {
             initTopology(required);
-            return topInfo_.topology();
+            return topInfo_.mtop_;
         }
         virtual int getAtomCount()
         {
@@ -180,15 +180,20 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     // Load the topology if requested.
     if (!topfile_.empty())
     {
-        snew(topInfo_.top_, 1);
-        topInfo_.bTop_ = read_tps_conf(topfile_.c_str(), topInfo_.top_, &topInfo_.ePBC_,
-                                       &topInfo_.xtop_, NULL, topInfo_.boxtop_, FALSE);
+        snew(topInfo_.mtop_, 1);
+        readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_,
+                            &topInfo_.ePBC_, &topInfo_.xtop_, NULL,
+                            topInfo_.boxtop_);
         // TODO: Only load this here if the tool actually needs it; selections
         // take care of themselves.
-        if (!topInfo_.top_->atoms.haveMass)
+        for (int i = 0; i < topInfo_.mtop_->nmoltype; ++i)
         {
-            // Try to read masses from database, be silent about missing masses
-            atomsSetMassesBasedOnNames(&topInfo_.top_->atoms, FALSE);
+            gmx_moltype_t &moltype = topInfo_.mtop_->moltype[i];
+            if (!moltype.atoms.haveMass)
+            {
+                // Try to read masses from database, be silent about missing masses
+                atomsSetMassesBasedOnNames(&moltype.atoms, FALSE);
+            }
         }
         if (hasTrajectory()
             && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))

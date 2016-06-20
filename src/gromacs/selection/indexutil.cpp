@@ -52,6 +52,7 @@
 
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -105,7 +106,7 @@ struct gmx_ana_indexgrps_t
  * If both are null, the index group structure is initialized empty.
  */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
                        const char *fnm)
 {
     t_blocka *block = NULL;
@@ -118,7 +119,10 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     else if (top)
     {
         block = new_blocka();
-        analyse(&top->atoms, block, &names, FALSE, FALSE);
+        // TODO: Propagate mtop further.
+        t_atoms atoms = gmx_mtop_global_atoms(top);
+        analyse(&atoms, block, &names, FALSE, FALSE);
+        done_atom(&atoms);
     }
     else
     {
