@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,8 @@
 #include "gromacs/utility/classhelpers.h"
 
 struct gmx_ana_indexgrps_t;
+struct gmx_mtop_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 namespace gmx
@@ -242,7 +242,7 @@ class SelectionCollection
          * Does not throw currently, but this is subject to change when more
          * underlying code is converted to C++.
          */
-        void setTopology(t_topology *top, int natoms);
+        void setTopology(gmx_mtop_t *top, int natoms);
         /*! \brief
          * Sets the external index groups to use for the selections.
          *

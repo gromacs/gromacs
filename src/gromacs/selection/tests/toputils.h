@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 
 #include <vector>
 
+struct gmx_mtop_t;
+struct t_atoms;
 struct t_topology;
 struct t_trxframe;
 
@@ -75,9 +77,12 @@ class TopologyManager
         void initFrameIndices(const ConstArrayRef<int> &index);
 
         t_topology *topology() { return top_; }
+        gmx_mtop_t *mtop() { return mtop_; }
+        t_atoms &atoms();
         t_trxframe *frame() { return frame_; }
 
     private:
+        gmx_mtop_t             *mtop_;
         t_topology             *top_;
         t_trxframe             *frame_;
         std::vector<char *>     atomtypes_;

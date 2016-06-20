@@ -56,6 +56,7 @@
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selhelp.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
@@ -557,14 +558,14 @@ SelectionCollection::setDebugLevel(int debugLevel)
 
 
 void
-SelectionCollection::setTopology(t_topology *top, int natoms)
+SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
                        "The number of atoms must be given if there is no topology");
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
-        natoms = top->atoms.nr;
+        natoms = top->natoms;
     }
     if (impl_->bExternalGroupsSet_)
     {
@@ -583,8 +584,13 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     gmx_ana_selcollection_t *sc = &impl_->sc_;
     // Do this first, as it allocates memory, while the others don't throw.
     gmx_ana_index_init_simple(&sc->gall, natoms);
-    sc->pcc.setTopology(top);
-    sc->top = top;
+    // TODO: Adapt to use mtop throughout.
+    if (top != nullptr)
+    {
+        snew(sc->top, 1);
+        *sc->top = gmx_mtop_t_to_t_topology(top, false);
+        sc->pcc.setTopology(sc->top);
+    }
 }
 
 

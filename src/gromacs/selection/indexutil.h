@@ -72,6 +72,7 @@ namespace gmx
 class TextWriter;
 }
 
+struct gmx_mtop_t;
 struct t_topology;
 
 /** Stores a set of index groups. */
@@ -186,7 +187,7 @@ struct gmx_ana_indexmap_t
 /*@{*/
 /** Reads index groups from a file or constructs them from topology. */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
                        const char *fnm);
 /** Frees memory allocated for index groups. */
 void

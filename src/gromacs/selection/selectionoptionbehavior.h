@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 #include "gromacs/options/ioptionsbehavior.h"
 #include "gromacs/utility/classhelpers.h"
 
-struct t_topology;
+struct gmx_mtop_t;
 
 namespace gmx
 {
@@ -93,7 +93,7 @@ class ITopologyProvider
          * different values of \p required.  Subsequent calls should just
          * return the same topology that was loaded in the first call.
          */
-        virtual t_topology *getTopology(bool required) = 0;
+        virtual gmx_mtop_t *getTopology(bool required) = 0;
         /*! \brief
          * Returns the number of atoms.
          *

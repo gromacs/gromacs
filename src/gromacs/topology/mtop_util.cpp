@@ -142,6 +142,18 @@ int ncg_mtop(const gmx_mtop_t *mtop)
     return ncg;
 }
 
+int gmx_mtop_nres(const gmx_mtop_t *mtop)
+{
+    int nres = 0;
+    for (int mb = 0; mb < mtop->nmolblock; ++mb)
+    {
+        nres +=
+            mtop->molblock[mb].nmol*
+            mtop->moltype[mtop->molblock[mb].type].atoms.nres;
+    }
+    return nres;
+}
+
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
 {
     int      mt;

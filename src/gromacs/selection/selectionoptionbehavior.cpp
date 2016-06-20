@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ class SelectionOptionBehavior::Impl
             }
             if (ndxfile_.empty())
             {
-                t_topology *top = topologyProvider_.getTopology(false);
+                gmx_mtop_t *top = topologyProvider_.getTopology(false);
                 gmx_ana_indexgrps_init(&grps_, top, NULL);
             }
             else
@@ -132,7 +132,7 @@ class SelectionOptionBehavior::Impl
 
         void compileSelections()
         {
-            t_topology *top    = topologyProvider_.getTopology(selections_.requiresTopology());
+            gmx_mtop_t *top    = topologyProvider_.getTopology(selections_.requiresTopology());
             int         natoms = -1;
             if (top == NULL)
             {

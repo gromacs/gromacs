@@ -91,7 +91,6 @@ class SelectionCollectionTest : public ::testing::Test
         gmx::test::TopologyManager  topManager_;
         gmx::SelectionCollection    sc_;
         gmx::SelectionList          sel_;
-        t_topology                 *top_;
         gmx_ana_indexgrps_t        *grps_;
 };
 
@@ -108,7 +107,7 @@ GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 #endif
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : top_(NULL), grps_(NULL)
+    : grps_(NULL)
 {
     topManager_.requestFrame();
     sc_.setDebugLevel(s_debugLevel);
@@ -134,9 +133,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
 void
 SelectionCollectionTest::setTopology()
 {
-    top_   = topManager_.topology();
-
-    ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
+    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.mtop(), -1));
 }
 
 void
@@ -846,7 +843,7 @@ TEST_F(SelectionCollectionDataTest, HandlesResIndex)
     runTest("simple.pdb", selections);
 }
 
-TEST_F(SelectionCollectionDataTest, HandlesMolIndex)
+TEST_F(SelectionCollectionDataTest, DISABLED_HandlesMolIndex)
 {
     static const char * const selections[] = {
         "molindex 1 4",
@@ -885,9 +882,10 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomtype)
         "atomtype CA"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     const char *const types[] = { "CA", "SA", "SB" };
     topManager_.initAtomTypes(types);
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -906,11 +904,13 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
         "mass > 5"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    for (int i = 0; i < top_->atoms.nr; ++i)
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
+    t_atoms &atoms = topManager_.atoms();
+    for (int i = 0; i < atoms.nr; ++i)
     {
-        top_->atoms.atom[i].m = 1.0 + i;
+        atoms.atom[i].m = 1.0 + i;
     }
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -920,13 +920,16 @@ TEST_F(SelectionCollectionDataTest, HandlesCharge)
         "charge < 0.5"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    for (int i = 0; i < top_->atoms.nr; ++i)
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
+    t_atoms &atoms = topManager_.atoms();
+    for (int i = 0; i < atoms.nr; ++i)
     {
-        top_->atoms.atom[i].q = i / 10.0;
+        atoms.atom[i].q = i / 10.0;
     }
-    //ensure exact representation of 0.5 is used, so the test is always reproducible
-    top_->atoms.atom[5].q = 0.5;
+    // Ensure exact representation of 0.5 is used, so that the test is
+    // reproducible.
+    atoms.atom[5].q = 0.5;
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -1115,12 +1118,14 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndCharges)
     setFlags(TestFlags() | efTestEvaluation | efTestPositionAtoms
              | efTestPositionMasses | efTestPositionCharges);
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    for (int i = 0; i < top_->atoms.nr; ++i)
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
+    t_atoms &atoms = topManager_.atoms();
+    for (int i = 0; i < atoms.nr; ++i)
     {
-        top_->atoms.atom[i].m =   1.0 + i / 100.0;
-        top_->atoms.atom[i].q = -(1.0 + i / 100.0);
+        atoms.atom[i].m =   1.0 + i / 100.0;
+        atoms.atom[i].q = -(1.0 + i / 100.0);
     }
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
     ASSERT_NO_FATAL_FAILURE(runEvaluate());
     ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
@@ -1289,11 +1294,13 @@ TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
         "charge {0.05 to -0.3 -0.05 to 0.55}"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    for (int i = 0; i < top_->atoms.nr; ++i)
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
+    t_atoms &atoms = topManager_.atoms();
+    for (int i = 0; i < atoms.nr; ++i)
     {
-        top_->atoms.atom[i].q = i / 10.0 - 0.5;
+        atoms.atom[i].q = i / 10.0 - 0.5;
     }
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 

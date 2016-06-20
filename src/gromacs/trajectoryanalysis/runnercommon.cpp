@@ -90,10 +90,10 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         void finishTrajectory();
 
         // From ITopologyProvider
-        virtual t_topology *getTopology(bool required)
+        virtual gmx_mtop_t *getTopology(bool required)
         {
             initTopology(required);
-            return topInfo_.topology();
+            return topInfo_.mtop_;
         }
         virtual int getAtomCount()
         {
@@ -180,9 +180,10 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     // Load the topology if requested.
     if (!topfile_.empty())
     {
-        snew(topInfo_.top_, 1);
-        readTpsConf(topfile_.c_str(), &topInfo_.bTop_, topInfo_.top_, &topInfo_.ePBC_,
-                    &topInfo_.xtop_, NULL, topInfo_.boxtop_, readAtomsMassAttempt);
+        snew(topInfo_.mtop_, 1);
+        readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_,
+                            &topInfo_.ePBC_, &topInfo_.xtop_, NULL,
+                            topInfo_.boxtop_, readAtomsMassAttempt);
         if (hasTrajectory()
             && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
