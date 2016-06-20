@@ -956,7 +956,28 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
     return top;
 }
 
-t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
+static void done_gmx_groups_t(gmx_groups_t *g)
+{
+    int i;
+
+    for (i = 0; (i < egcNR); i++)
+    {
+        if (NULL != g->grps[i].nm_ind)
+        {
+            sfree(g->grps[i].nm_ind);
+            g->grps[i].nm_ind = NULL;
+        }
+        if (NULL != g->grpnr[i])
+        {
+            sfree(g->grpnr[i]);
+            g->grpnr[i] = NULL;
+        }
+    }
+    /* The contents of this array is in symtab, don't free it here */
+    sfree(g->grpname);
+}
+
+t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
 {
     int            mt, mb;
     gmx_localtop_t ltop;
@@ -975,23 +996,23 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     top.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
     top.symtab                      = mtop->symtab;
 
-    /* We only need to free the moltype and molblock data,
-     * all other pointers have been copied to top.
-     *
-     * Well, except for the group data, but we can't free those, because they
-     * are used somewhere even after a call to this function.
-     */
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    if (freeMTop)
     {
-        done_moltype(&mtop->moltype[mt]);
-    }
-    sfree(mtop->moltype);
+        // Free pointers that have not been copied to top.
+        for (mt = 0; mt < mtop->nmoltype; mt++)
+        {
+            done_moltype(&mtop->moltype[mt]);
+        }
+        sfree(mtop->moltype);
 
-    for (mb = 0; mb < mtop->nmolblock; mb++)
-    {
-        done_molblock(&mtop->molblock[mb]);
+        for (mb = 0; mb < mtop->nmolblock; mb++)
+        {
+            done_molblock(&mtop->molblock[mb]);
+        }
+        sfree(mtop->molblock);
+
+        done_gmx_groups_t(&mtop->groups);
     }
-    sfree(mtop->molblock);
 
     return top;
 }

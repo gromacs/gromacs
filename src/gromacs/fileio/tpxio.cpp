@@ -3357,7 +3357,7 @@ int read_tpx_top(const char *fn,
 
     ePBC = read_tpx(fn, ir, box, natoms, x, v, &mtop);
 
-    *top = gmx_mtop_t_to_t_topology(&mtop);
+    *top = gmx_mtop_t_to_t_topology(&mtop, true);
 
     return ePBC;
 }
