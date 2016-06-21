@@ -589,8 +589,8 @@ SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
     {
         snew(sc->top, 1);
         *sc->top = gmx_mtop_t_to_t_topology(top, false);
-        sc->pcc.setTopology(sc->top);
     }
+    sc->pcc.setTopology(top);
 }
 
 

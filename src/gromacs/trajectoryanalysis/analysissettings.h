@@ -258,6 +258,8 @@ class TopologyInformation
         //! Returns true if a full topology file was loaded.
         bool hasFullTopology() const { return bTop_; }
         //! Returns the loaded topology, or NULL if not loaded.
+        const gmx_mtop_t *mtop() const { return mtop_; }
+        //! Returns the loaded topology, or NULL if not loaded.
         t_topology *topology() const;
         //! Returns the ePBC field from the topology.
         int ePBC() const { return ePBC_; }

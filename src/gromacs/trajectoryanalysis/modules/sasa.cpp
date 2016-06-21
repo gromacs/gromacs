@@ -555,7 +555,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         dgsFactor_.reserve(surfaceSel_.posCount());
     }
 
-    const int resCount = surfaceSel_.initOriginalIdsToGroup(top_, INDEX_RES);
+    const int resCount = surfaceSel_.initOriginalIdsToGroup(top.mtop(), INDEX_RES);
 
     // TODO: Not exception-safe, but nice solution would be to have a C++
     // atom properties class...
