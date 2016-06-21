@@ -11,11 +11,7 @@ TABLE OF CONTENTS
 
 1. KNOWN LIMITATIONS
    =================
-- Sharing an OpenCL GPU between two MPI ranks is not supported.
-  See also Issue #91 - https://github.com/StreamComputing/gromacs/issues/91
-
-- Using more than one OpenCL GPU on a node is thought to work with thread-MPI,
-  and is known to segfault with AMD OpenCL and OpenMPI on x86 and Linux.
+- Currently there are no known limitations.
 
 2. CODE IMPROVEMENTS
    =================
@@ -100,7 +96,7 @@ TABLE OF CONTENTS
    =====================
 Tested devices:
 	NVIDIA GPUs: GeForce GTX 660M, GeForce GTX 750Ti, GeForce GTX 780
-	AMD GPUs: FirePro W5100, HD 7950, FirePro W9100, Radeon R7 M260, R9 290
+	AMD GPUs: FirePro W5100, HD 7950, FirePro W9100, Radeon R7 M260, R9 290, R9 Fury Nano
 
 Tested kernels:
 Kernel                                          |Benchmark test                                 |Remarks
