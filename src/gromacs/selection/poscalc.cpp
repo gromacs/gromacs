@@ -151,7 +151,7 @@ class PositionCalculationCollection::Impl
          * Can be NULL if none of the calculations require topology data or if
          * setTopology() has not been called.
          */
-        t_topology               *top_;
+        const gmx_mtop_t         *top_;
         //! Pointer to the first data structure.
         gmx_ana_poscalc_t        *first_;
         //! Pointer to the last data structure.
@@ -437,7 +437,7 @@ PositionCalculationCollection::~PositionCalculationCollection()
 }
 
 void
-PositionCalculationCollection::setTopology(t_topology *top)
+PositionCalculationCollection::setTopology(const gmx_mtop_t *top)
 {
     impl_->top_ = top;
 }
@@ -702,7 +702,7 @@ void PositionCalculationCollection::initFrame(const t_trxframe *fr)
 static void
 set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
-    t_topology *top = pc->coll->top_;
+    const gmx_mtop_t *top = pc->coll->top_;
     gmx_ana_index_make_block(&pc->b, top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
@@ -1307,7 +1307,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
         }
         gmx::ConstArrayRef<int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
-        const t_topology       *top   = pc->coll->top_;
+        const gmx_mtop_t       *top   = pc->coll->top_;
         const bool              bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {

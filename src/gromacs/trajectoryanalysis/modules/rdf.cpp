@@ -358,7 +358,7 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
             GMX_THROW(InconsistentInputError("-surf only works with -ref that consists of atoms"));
         }
         const e_index_t type = (surface_ == SurfaceType_Molecule ? INDEX_MOL : INDEX_RES);
-        surfaceGroupCount_ = refSel_.initOriginalIdsToGroup(top.topology(), type);
+        surfaceGroupCount_ = refSel_.initOriginalIdsToGroup(top.mtop(), type);
     }
 
     if (bExclusions_)

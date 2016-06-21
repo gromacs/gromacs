@@ -131,8 +131,8 @@ struct gmx_ana_poscalc_t;
 
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
+struct gmx_mtop_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 namespace gmx
@@ -236,7 +236,7 @@ class PositionCalculationCollection
          *
          * Does not throw.
          */
-        void setTopology(t_topology *top);
+        void setTopology(const gmx_mtop_t *top);
         /*! \brief
          * Prints information about calculations.
          *

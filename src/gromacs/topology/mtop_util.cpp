@@ -401,7 +401,8 @@ void gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
 }
 
 void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
-                              char **atomname, int *resnr, char **resname)
+                              char **atomname, int *resnr, char **resname,
+                              int *resind)
 {
     int             mb, a_start, a_end, maxresnr, at_loc;
     t_atoms        *atoms = NULL;
@@ -415,6 +416,7 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
     mb       = -1;
     a_end    = 0;
     maxresnr = mtop->maxresnr;
+    int rescount = 0;
     do
     {
         if (mb >= 0)
@@ -426,6 +428,8 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
                 /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
                 maxresnr += mtop->molblock[mb].nmol*atoms->nres;
             }
+            /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
+            rescount += mtop->molblock[mb].nmol*atoms->nres;
         }
         mb++;
         atoms   = &mtop->moltype[mtop->molblock[mb].type].atoms;
@@ -435,17 +439,30 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
     while (atnr_global >= a_end);
 
     at_loc    = (atnr_global - a_start) % atoms->nr;
-    *atomname = *(atoms->atomname[at_loc]);
-    if (atoms->nres > mtop->maxres_renum)
+    if (atomname != nullptr)
     {
-        *resnr = atoms->resinfo[atoms->atom[at_loc].resind].nr;
+        *atomname = *(atoms->atomname[at_loc]);
     }
-    else
+    if (resnr != nullptr)
     {
-        /* Single residue molecule, keep counting */
-        *resnr = maxresnr + 1 + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+        if (atoms->nres > mtop->maxres_renum)
+        {
+            *resnr = atoms->resinfo[atoms->atom[at_loc].resind].nr;
+        }
+        else
+        {
+            /* Single residue molecule, keep counting */
+            *resnr = maxresnr + 1 + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+        }
     }
-    *resname  = *(atoms->resinfo[atoms->atom[at_loc].resind].name);
+    if (resname != nullptr)
+    {
+        *resname = *(atoms->resinfo[atoms->atom[at_loc].resind].name);
+    }
+    if (resind != nullptr)
+    {
+        *resind = rescount + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+    }
 }
 
 typedef struct gmx_mtop_atomloop_all

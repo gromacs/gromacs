@@ -126,7 +126,7 @@ gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 void
 gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
-                         char **atomname, int *resnr, char **resname);
+                         char **atomname, int *resnr, char **resname, int *resind);
 
 
 /* Abstract type for atom loop over all atoms */

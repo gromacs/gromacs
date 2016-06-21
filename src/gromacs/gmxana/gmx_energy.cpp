@@ -2477,8 +2477,8 @@ int gmx_energy(int argc, char *argv[])
                     snew(pairleg[i], 30);
                     j = fa[3*i+1];
                     k = fa[3*i+2];
-                    gmx_mtop_atominfo_global(&mtop, j, &anm_j, &resnr_j, &resnm_j);
-                    gmx_mtop_atominfo_global(&mtop, k, &anm_k, &resnr_k, &resnm_k);
+                    gmx_mtop_atominfo_global(&mtop, j, &anm_j, &resnr_j, &resnm_j, nullptr);
+                    gmx_mtop_atominfo_global(&mtop, k, &anm_k, &resnr_k, &resnm_k, nullptr);
                     sprintf(pairleg[i], "%d %s %d %s (%d)",
                             resnr_j, anm_j, resnr_k, anm_k,
                             ip[fa[3*i]].disres.label);

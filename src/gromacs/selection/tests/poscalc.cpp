@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,12 +157,12 @@ PositionCalculationTest::~PositionCalculationTest()
 
 void PositionCalculationTest::generateCoordinates()
 {
-    t_topology *top   = topManager_.topology();
+    t_atoms    &atoms = topManager_.atoms();
     t_trxframe *frame = topManager_.frame();
-    for (int i = 0; i < top->atoms.nr; ++i)
+    for (int i = 0; i < atoms.nr; ++i)
     {
         frame->x[i][XX] = i;
-        frame->x[i][YY] = top->atoms.atom[i].resind;
+        frame->x[i][YY] = atoms.atom[i].resind;
         frame->x[i][ZZ] = 0.0;
         if (frame->bV)
         {
