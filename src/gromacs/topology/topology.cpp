@@ -168,6 +168,24 @@ void done_top(t_topology *top)
     done_blocka(&(top->excls));
 }
 
+bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveMass;
+}
+
+bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveCharge;
+}
+
 static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
 {
     int i, j;

@@ -2483,8 +2483,8 @@ int gmx_energy(int argc, char *argv[])
                     snew(pairleg[i], 30);
                     j = fa[3*i+1];
                     k = fa[3*i+2];
-                    mtopGetAtomAndResidueName(&mtop, j, &molb, &anm_j, &resnr_j, &resnm_j, NULL);
-                    mtopGetAtomAndResidueName(&mtop, k, &molb, &anm_k, &resnr_k, &resnm_k, NULL);
+                    mtopGetAtomAndResidueName(&mtop, j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
+                    mtopGetAtomAndResidueName(&mtop, k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
                     sprintf(pairleg[i], "%d %s %d %s (%d)",
                             resnr_j, anm_j, resnr_k, anm_k,
                             ip[fa[3*i]].disres.label);
