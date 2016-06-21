@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -303,7 +303,9 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
 }
 
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist, gmx_bool bShowNumbers)
+              const t_functype *functype, const t_ilist *ilist,
+              gmx_bool bShowNumbers,
+              gmx_bool bShowParameters, const t_iparams *iparams)
 {
     int      i, j, k, type, ftype;
     t_iatom *iatoms;
@@ -320,24 +322,26 @@ void pr_ilist(FILE *fp, int indent, const char *title,
             iatoms = ilist->iatoms;
             for (i = j = 0; i < ilist->nr; )
             {
-#ifndef DEBUG
                 pr_indent(fp, indent+INDENT);
                 type  = *(iatoms++);
                 ftype = functype[type];
-                fprintf(fp, "%d type=%d (%s)",
-                        bShowNumbers ? j : -1, bShowNumbers ? type : -1,
-                        interaction_function[ftype].name);
+                if (bShowNumbers)
+                {
+                    fprintf(fp, "%d type=%d ", j, type);
+                }
                 j++;
+                printf("(%s)", interaction_function[ftype].name);
                 for (k = 0; k < interaction_function[ftype].nratoms; k++)
                 {
-                    fprintf(fp, " %d", *(iatoms++));
+                    fprintf(fp, " %3d", *(iatoms++));
+                }
+                if (bShowParameters)
+                {
+                    fprintf(fp, "  ");
+                    pr_iparams(fp, ftype,  &iparams[type]);
                 }
                 fprintf(fp, "\n");
                 i += 1+interaction_function[ftype].nratoms;
-#else
-                fprintf(fp, "%5d%5d\n", i, iatoms[i]);
-                i++;
-#endif
             }
         }
     }
@@ -406,7 +410,8 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
     pr_cmap(fp, indent, "cmap", &ffparams->cmap_grid, bShowNumbers);
 }
 
-void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef, gmx_bool bShowNumbers)
+void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
+             gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
     int i, j;
 
@@ -430,7 +435,8 @@ void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef, gmx_bo
         for (j = 0; (j < F_NRE); j++)
         {
             pr_ilist(fp, indent, interaction_function[j].longname,
-                     idef->functype, &idef->il[j], bShowNumbers);
+                     idef->functype, &idef->il[j], bShowNumbers,
+                     bShowParameters, idef->iparams);
         }
     }
 }
