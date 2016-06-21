@@ -296,7 +296,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteResiduesPositive)
 
     topManager_.initAtoms(15);
     topManager_.initUniformResidues(3);
-    t_topology *top = topManager_.topology();
+    gmx_mtop_t *top = topManager_.topology();
 
     setGroup(group1);
     EXPECT_TRUE(gmx_ana_index_has_complete_elems(&g_, INDEX_RES, top));
@@ -310,10 +310,11 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteResiduesNegative)
     const int group1[] = { 3, 4, 5, 6, 7, 8, 12, 13 };
     const int group2[] = { 3, 4, 5, 6, 7, 12, 13, 14 };
     const int group3[] = { 4, 5, 6, 7, 8, 12, 13, 14 };
+    const int group4[] = { 3, 4, 5, 6, 8, 12, 13, 14 };
 
     topManager_.initAtoms(18);
     topManager_.initUniformResidues(3);
-    t_topology *top = topManager_.topology();
+    gmx_mtop_t *top = topManager_.topology();
 
     setGroup(group1);
     EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_RES, top));
@@ -323,6 +324,9 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteResiduesNegative)
 
     setGroup(group3);
     EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_RES, top));
+
+    setGroup(group4);
+    EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_RES, top));
 }
 
 TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesPositive)
@@ -331,7 +335,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesPositive)
 
     topManager_.initAtoms(15);
     topManager_.initUniformMolecules(3);
-    t_topology *top = topManager_.topology();
+    gmx_mtop_t *top = topManager_.topology();
 
     setGroup(group);
     EXPECT_TRUE(gmx_ana_index_has_complete_elems(&g_, INDEX_MOL, top));
@@ -345,7 +349,7 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteMoleculesNegative)
 
     topManager_.initAtoms(18);
     topManager_.initUniformMolecules(3);
-    t_topology *top = topManager_.topology();
+    gmx_mtop_t *top = topManager_.topology();
 
     setGroup(group1);
     EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_MOL, top));

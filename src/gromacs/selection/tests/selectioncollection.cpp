@@ -133,7 +133,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
 void
 SelectionCollectionTest::setTopology()
 {
-    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.mtop(), -1));
+    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.topology(), -1));
 }
 
 void
@@ -875,15 +875,16 @@ TEST_F(SelectionCollectionDataTest, HandlesResIndex)
     runTest("simple.pdb", selections);
 }
 
-TEST_F(SelectionCollectionDataTest, DISABLED_HandlesMolIndex)
+TEST_F(SelectionCollectionDataTest, HandlesMolIndex)
 {
     static const char * const selections[] = {
         "molindex 1 4",
         "molecule 2 3 5"
     };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     topManager_.initUniformMolecules(3);
+    ASSERT_NO_FATAL_FAILURE(setTopology());
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 

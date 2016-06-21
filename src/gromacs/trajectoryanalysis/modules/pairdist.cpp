@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -238,7 +238,7 @@ PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings
 }
 
 //! Helper function to initialize the grouping for a selection.
-int initSelectionGroups(Selection *sel, t_topology *top, int type)
+int initSelectionGroups(Selection *sel, const gmx_mtop_t *top, int type)
 {
     e_index_t indexType = INDEX_UNKNOWN;
     switch (type)
@@ -256,14 +256,14 @@ void
 PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
                            const TopologyInformation        &top)
 {
-    refGroupCount_ = initSelectionGroups(&refSel_, top.topology(), refGroupType_);
+    refGroupCount_ = initSelectionGroups(&refSel_, top.mtop(), refGroupType_);
 
     maxGroupCount_ = 0;
     distances_.setDataSetCount(sel_.size());
     for (size_t i = 0; i < sel_.size(); ++i)
     {
         const int selGroupCount
-            = initSelectionGroups(&sel_[i], top.topology(), selGroupType_);
+            = initSelectionGroups(&sel_[i], top.mtop(), selGroupType_);
         const int columnCount = refGroupCount_ * selGroupCount;
         maxGroupCount_ = std::max(maxGroupCount_, columnCount);
         distances_.setColumnCount(i, columnCount);
