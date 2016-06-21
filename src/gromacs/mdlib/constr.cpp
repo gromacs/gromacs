@@ -223,7 +223,7 @@ static void write_constr_pdb(const char *fn, const char *title,
         {
             ii = i;
         }
-        mtopGetAtomAndResidueName(mtop, ii, &molb, &anm, &resnr, &resnm, NULL);
+        mtopGetAtomAndResidueName(mtop, ii, &molb, &anm, &resnr, &resnm, nullptr);
         gmx_fprintf_pdb_atomline(out, epdbATOM, ii+1, anm, ' ', resnm, ' ', resnr, ' ',
                                  10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 0.0, "");
     }
