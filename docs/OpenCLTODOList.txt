@@ -11,11 +11,7 @@ TABLE OF CONTENTS
 
 1. KNOWN LIMITATIONS
    =================
-- Sharing an OpenCL GPU between two MPI ranks is not supported.
-  See also Issue #91 - https://github.com/StreamComputing/gromacs/issues/91
-
-- Using more than one OpenCL GPU on a node is thought to work with thread-MPI,
-  and is known to segfault with AMD OpenCL and OpenMPI on x86 and Linux.
+- Currently there are no known limitations.
 
 2. CODE IMPROVEMENTS
    =================
@@ -95,31 +91,3 @@ TABLE OF CONTENTS
 - Unlike the CUDA version, the OpenCL implementation uses normal buffers
   instead of textures
   See also Issue #88 - https://github.com/StreamComputing/gromacs/issues/88
-
-6. TESTED CONFIGURATIONS
-   =====================
-Tested devices:
-	NVIDIA GPUs: GeForce GTX 660M, GeForce GTX 750Ti, GeForce GTX 780
-	AMD GPUs: FirePro W5100, HD 7950, FirePro W9100, Radeon R7 M260, R9 290
-
-Tested kernels:
-Kernel                                          |Benchmark test                                 |Remarks
---------------------------------------------------------------------------------------------------------
-nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl      |d.poly-ch2                                     |
-nbnxn_kernel_ElecCut_VdwLJ_F_opencl             |d.poly-ch2                                     |
-nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl       |d.poly-ch2                                     |
-nbnxn_kernel_ElecCut_VdwLJ_VF_opencl            |d.poly-ch2                                     |
-nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl       |adh_cubic with rf_verlet.mdp                   |
-nbnxn_kernel_ElecRF_VdwLJ_F_opencl              |adh_cubic with rf_verlet.mdp                   |
-nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl        |adh_cubic with rf_verlet.mdp                   |
-nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl  |adh_cubic_vsites with pme_verlet_vsites.mdp    |Failed
-nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl   |adh_cubic_vsites with pme_verlet_vsites.mdp    |Failed
-nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl       |adh_cubic_vsites with pme_verlet_vsites.mdp	|
-nbnxn_kernel_ElecEw_VdwLJ_F_opencl              |adh_cubic_vsites with pme_verlet_vsites.mdp	|
-nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl        |adh_cubic_vsites with pme_verlet_vsites.mdp	|
-nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl	|adh_cubic_vsites with pme_verlet_vsites.mdp	|
-nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl       |adh_cubic_vsites with pme_verlet_vsites.mdp    |
-
-Input data used for testing - Benchmark data sets available here:
-ftp://ftp.gromacs.org/pub/benchmarks
-
