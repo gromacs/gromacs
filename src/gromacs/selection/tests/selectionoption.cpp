@@ -94,7 +94,7 @@ void SelectionOptionTestBase::loadTopology(const char *filename)
 {
     topManager_.loadTopology(filename);
 
-    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.mtop(), -1));
+    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.topology(), -1));
 }
 
 
