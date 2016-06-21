@@ -406,10 +406,13 @@ typedef struct t_idef
 
 void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist, gmx_bool bShowNumbers);
+              const t_functype *functype, const t_ilist *ilist,
+              gmx_bool bShowNumbers,
+              gmx_bool bShowParameters, const t_iparams *iparams);
 void pr_ffparams(FILE *fp, int indent, const char *title,
                  const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
-void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef, gmx_bool bShowNumbers);
+void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
+             gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
 #ifdef __cplusplus
 }

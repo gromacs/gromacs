@@ -70,8 +70,11 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
-                     gmx_bool bSysTop)
+static void list_tpx(const char *fn,
+                     gmx_bool    bShowNumbers,
+                     gmx_bool    bShowParameters, 
+                     const char *mdpfn,
+                     gmx_bool    bSysTop)
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
@@ -113,11 +116,11 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
 
             if (!bSysTop)
             {
-                pr_mtop(stdout, indent, "topology", &(mtop), bShowNumbers);
+                pr_mtop(stdout, indent, "topology", &(mtop), bShowNumbers, bShowParameters);
             }
             else
             {
-                pr_top(stdout, indent, "topology", &(top), bShowNumbers);
+                pr_top(stdout, indent, "topology", &(top), bShowNumbers, bShowParameters);
             }
 
             pr_rvecs(stdout, indent, "box", tpx.bBox ? state.box : NULL, DIM);
@@ -618,9 +621,11 @@ int gmx_dump(int argc, char *argv[])
     gmx_output_env_t *oenv;
     /* Command line options */
     static gmx_bool   bShowNumbers = TRUE;
+    static gmx_bool   bShowParams  = FALSE;
     static gmx_bool   bSysTop      = FALSE;
     t_pargs           pa[]         = {
         { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
+        { "-param", FALSE, etBOOL, {&bShowParams}, "Show parmeters for each bonded interaction instead of the type index" },
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };
 
@@ -633,7 +638,7 @@ int gmx_dump(int argc, char *argv[])
 
     if (ftp2bSet(efTPR, NFILE, fnm))
     {
-        list_tpx(ftp2fn(efTPR, NFILE, fnm), bShowNumbers,
+        list_tpx(ftp2fn(efTPR, NFILE, fnm), bShowNumbers, bShowParams,
                  ftp2fn_null(efMDP, NFILE, fnm), bSysTop);
     }
     else if (ftp2bSet(efTRX, NFILE, fnm))

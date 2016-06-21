@@ -151,8 +151,9 @@ t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */
 
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
-             gmx_bool bShowNumbers);
-void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_bool bShowNumbers);
+             gmx_bool bShowNumbers, gmx_bool bShowParameters);
+void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
+            gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
 #ifdef __cplusplus
 }

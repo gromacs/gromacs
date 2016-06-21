@@ -236,7 +236,7 @@ static void pr_groups(FILE *fp, int indent,
 static void pr_moltype(FILE *fp, int indent, const char *title,
                        const gmx_moltype_t *molt, int n,
                        const gmx_ffparams_t *ffparams,
-                       gmx_bool bShowNumbers)
+                       gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
     int j;
 
@@ -249,7 +249,8 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     for (j = 0; (j < F_NRE); j++)
     {
         pr_ilist(fp, indent, interaction_function[j].longname,
-                 ffparams->functype, &molt->ilist[j], bShowNumbers);
+                 ffparams->functype, &molt->ilist[j],
+                 bShowNumbers, bShowParameters, ffparams->iparams);
     }
 }
 
@@ -276,7 +277,7 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
 }
 
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
-             gmx_bool bShowNumbers)
+             gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
     int mt, mb, j;
 
@@ -299,7 +300,8 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
                          mtop->ffparams.functype,
-                         &mtop->intermolecular_ilist[j], bShowNumbers);
+                         &mtop->intermolecular_ilist[j],
+                         bShowNumbers, bShowParameters, mtop->ffparams.iparams);
             }
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
@@ -307,13 +309,14 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
         for (mt = 0; mt < mtop->nmoltype; mt++)
         {
             pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt,
-                       &mtop->ffparams, bShowNumbers);
+                       &mtop->ffparams, bShowNumbers, bShowParameters);
         }
         pr_groups(fp, indent, &mtop->groups, bShowNumbers);
     }
 }
 
-void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_bool bShowNumbers)
+void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
+            gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
     if (available(fp, top, indent, title))
     {
@@ -327,6 +330,6 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_
         pr_str(fp, indent, "bIntermolecularInteractions",
                gmx::boolToString(top->bIntermolecularInteractions));
         pr_blocka(fp, indent, "excls", &top->excls, bShowNumbers);
-        pr_idef(fp, indent, "idef", &top->idef, bShowNumbers);
+        pr_idef(fp, indent, "idef", &top->idef, bShowNumbers, bShowParameters);
     }
 }
