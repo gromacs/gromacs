@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
+struct gmx_mtop_t;
 struct t_topology;
 
 namespace gmx
@@ -532,7 +533,7 @@ class Selection
          * \see setOriginalId()
          * \see SelectionPosition::mappedId()
          */
-        int initOriginalIdsToGroup(t_topology *top, e_index_t type);
+        int initOriginalIdsToGroup(const gmx_mtop_t *top, e_index_t type);
 
         /*! \brief
          * Prints out one-line description of the selection.

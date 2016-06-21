@@ -213,6 +213,60 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
+void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
+                              char **atomname, int *resnr, char **resname,
+                              int *resind)
+{
+    if (atnr_global < 0 || atnr_global >= mtop->natoms)
+    {
+        gmx_fatal(FARGS, "gmx_mtop_atominfo_global was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
+                  atnr_global, 0, mtop->natoms-1);
+    }
+
+    int mb       = 0;
+    int maxresnr = mtop->maxresnr;
+    int rescount = 0;
+    while (atnr_global >= mtop->molblock[mb].globalAtomEnd)
+    {
+        int nres = mtop->moltype[mtop->molblock[mb].type].atoms.nres;
+        if (nres <= mtop->maxres_renum)
+        {
+            /* Single residue molecule, keep counting */
+            maxresnr += mtop->molblock[mb].nmol*nres;
+        }
+        rescount += mtop->molblock[mb].nmol*nres;
+        mb++;
+    }
+
+    int            a_start = mtop->molblock[mb].globalAtomStart;
+    const t_atoms *atoms   = &mtop->moltype[mtop->molblock[mb].type].atoms;
+    int            at_loc  = (atnr_global - a_start) % atoms->nr;
+    if (atomname != nullptr)
+    {
+        *atomname = *(atoms->atomname[at_loc]);
+    }
+    if (resnr != nullptr)
+    {
+        if (atoms->nres > mtop->maxres_renum)
+        {
+            *resnr = atoms->resinfo[atoms->atom[at_loc].resind].nr;
+        }
+        else
+        {
+            /* Single residue molecule, keep counting */
+            *resnr = maxresnr + 1 + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+        }
+    }
+    if (resname != nullptr)
+    {
+        *resname = *(atoms->resinfo[atoms->atom[at_loc].resind].name);
+    }
+    if (resind != nullptr)
+    {
+        *resind = rescount + (atnr_global - a_start)/atoms->nr*atoms->nres + atoms->atom[at_loc].resind;
+    }
+}
+
 typedef struct gmx_mtop_atomloop_all
 {
     const gmx_mtop_t *mtop;

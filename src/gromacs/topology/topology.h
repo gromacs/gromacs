@@ -150,6 +150,9 @@ void done_molblock(gmx_molblock_t *molb);
 void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
 void done_top(t_topology *top);
 
+bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
+
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers);
 void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_bool bShowNumbers);
