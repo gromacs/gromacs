@@ -329,7 +329,8 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
             for (j = i+1; (j < nspec); j++)
             {
                 aj = sgp[j];
-                if (is_bond(nsb, sb, pdba, ai, aj, d[i][j], &index_sb, &bSwap))
+                /* Ensure creation of at most nspec special bonds to avoid overflowing bonds[] */
+                if (nbonds < nspec && is_bond(nsb, sb, pdba, ai, aj, d[i][j], &index_sb, &bSwap))
                 {
                     fprintf(stderr, "%s %s-%d %s-%d and %s-%d %s-%d%s",
                             bInteractive ? "Link" : "Linking",
