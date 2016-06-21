@@ -43,80 +43,88 @@
 
 #include "manyautocorrelation.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <cmath>
-
 #include <algorithm>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/smalloc.h"
 
-int many_auto_correl(int nfunc, int ndata, int nfft, real **c)
+int many_auto_correl(std::vector<std::vector<real> > *c)
 {
+    size_t nfunc = (*c).size();
+    if (nfunc == 0)
+    {
+        GMX_THROW(gmx::InconsistentInputError("Empty array of vectors supplied"));
+    }
+    size_t ndata = (*c)[0].size();
+    if (ndata == 0)
+    {
+        GMX_THROW(gmx::InconsistentInputError("Empty vector supplied"));
+    }
+#ifndef NDEBUG
+    for (size_t i = 1; i < nfunc; i++)
+    {
+        if ((*c)[i].size() != ndata)
+        {
+            char buf[256];
+            snprintf(buf, sizeof(buf), "Vectors of different lengths supplied (%d %d)",
+                     static_cast<int>((*c)[i].size()),
+                     static_cast<int>(ndata));
+            GMX_THROW(gmx::InconsistentInputError(buf));
+        }
+    }
+#endif
+    // Add buffer size to the arrays.
+    size_t nfft = (3*ndata/2) + 1;
+    // Pad arrays with zeros
+    for (auto &i : *c)
+    {
+        i.resize(nfft, 0);
+    }
     #pragma omp parallel
     {
         try
         {
-            typedef real complex[2];
-            int          i, j;
-            gmx_fft_t    fft1;
-            complex     *in, *out;
-            int          i0, i1;
-            int          nthreads, thread_id;
+            gmx_fft_t         fft1;
+            std::vector<real> in, out;
 
-            nthreads  = gmx_omp_get_max_threads();
-            thread_id = gmx_omp_get_thread_num();
-            if ((0 == thread_id))
-            {
-                // fprintf(stderr, "There are %d threads for correlation functions\n", nthreads);
-            }
-            i0 = thread_id*nfunc/nthreads;
-            i1 = std::min(nfunc, (thread_id+1)*nfunc/nthreads);
+            int               nthreads  = gmx_omp_get_max_threads();
+            int               thread_id = gmx_omp_get_thread_num();
+            int               i0        = (thread_id*nfunc)/nthreads;
+            int               i1        = std::min(nfunc, ((thread_id+1)*nfunc)/nthreads);
 
             gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
             /* Allocate temporary arrays */
-            snew(in, nfft);
-            snew(out, nfft);
-            for (i = i0; (i < i1); i++)
+            in.resize(2*nfft, 0);
+            out.resize(2*nfft, 0);
+            for (int i = i0; (i < i1); i++)
             {
-                for (j = 0; j < ndata; j++)
+                for (size_t j = 0; j < ndata; j++)
                 {
-                    in[j][0] = c[i][j];
-                    in[j][1] = 0;
+                    in[2*j+0] = (*c)[i][j];
+                    in[2*j+1] = 0;
                 }
-                for (; (j < nfft); j++)
+                gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in.data(), (void *)out.data());
+                for (size_t j = 0; j < nfft; j++)
                 {
-                    in[j][0] = in[j][1] = 0;
+                    in[2*j+0] = (out[2*j+0]*out[2*j+0] + out[2*j+1]*out[2*j+1])/nfft;
+                    in[2*j+1] = 0;
                 }
-
-                gmx_fft_1d(fft1, GMX_FFT_BACKWARD, (void *)in, (void *)out);
-                for (j = 0; j < nfft; j++)
+                gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in.data(), (void *)out.data());
+                for (size_t j = 0; (j < nfft); j++)
                 {
-                    in[j][0] = (out[j][0]*out[j][0] + out[j][1]*out[j][1])/nfft;
-                    in[j][1] = 0;
-                }
-                for (; (j < nfft); j++)
-                {
-                    in[j][0] = in[j][1] = 0;
-                }
-
-                gmx_fft_1d(fft1, GMX_FFT_FORWARD, (void *)in, (void *)out);
-                for (j = 0; (j < nfft); j++)
-                {
-                    c[i][j] = out[j][0];
+                    (*c)[i][j] = out[2*j+0];
                 }
             }
             /* Free the memory */
             gmx_fft_destroy(fft1);
-            sfree(in);
-            sfree(out);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    // gmx_fft_cleanup();
+    for (auto &i : *c)
+    {
+        i.resize(ndata);
+    }
+
     return 0;
 }
