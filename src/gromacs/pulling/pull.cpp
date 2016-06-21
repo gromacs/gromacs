@@ -84,6 +84,14 @@ static bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
             pcrd->eGeom == epullgANGLEAXIS);
 }
 
+static bool pull_coordinate_is_directional(const t_pull_coord *pcrd)
+{
+    return (pcrd->eGeom == epullgDIR ||
+            pcrd->eGeom == epullgDIRPBC ||
+            pcrd->eGeom == epullgDIRRELATIVE ||
+            pcrd->eGeom == epullgCYL);
+}
+
 const char *pull_coordinate_units(const t_pull_coord *pcrd)
 {
     return pull_coordinate_is_angletype(pcrd) ?  "deg" : "nm";
@@ -574,23 +582,38 @@ static void apply_forces_coord(struct pull_t * pull, int coord,
     }
 }
 
-static double max_pull_distance2(const pull_coord_work_t *pcrd,
-                                 const t_pbc             *pbc)
+double max_pull_distance2(const pull_coord_work_t *pcrd,
+                          const t_pbc             *pbc)
 {
-    double max_d2;
-    int    m;
+    real max_d2 = GMX_REAL_MAX;
 
-    max_d2 = GMX_DOUBLE_MAX;
-
-    for (m = 0; m < pbc->ndim_ePBC; m++)
+    if (pull_coordinate_is_directional(&pcrd->params))
     {
-        if (pcrd->params.dim[m] != 0)
+        for (int m = 0; m < pbc->ndim_ePBC; m++)
         {
-            max_d2 = std::min(max_d2, static_cast<double>(norm2(pbc->box[m])));
+            if (pcrd->vec[m] != 0)
+            {
+                real imageDistance2 = gmx::square(pbc->box[m][m]);
+                for (int d = m + 1; d < DIM; d++)
+                {
+                    imageDistance2 -= gmx::square(pbc->box[d][m]);
+                }
+                max_d2 = std::min(max_d2, imageDistance2);
+            }
+        }
+    }
+    else
+    {
+        for (int m = 0; m < pbc->ndim_ePBC; m++)
+        {
+            if (pcrd->params.dim[m] != 0)
+            {
+                max_d2 = std::min(max_d2, norm2(pbc->box[m]));
+            }
         }
     }
 
-    return 0.25*max_d2;
+    return 0.25*static_cast<double>(max_d2);
 }
 
 /* This function returns the distance based on coordinates xg and xref.
@@ -602,27 +625,24 @@ static void low_get_pull_coord_dr(const struct pull_t *pull,
                                   dvec xg, dvec xref, double max_dist2,
                                   dvec dr)
 {
-    const pull_group_work_t *pgrp0;
-    int                      m;
-    dvec                     xrefr, dref = {0, 0, 0};
-    double                   dr2;
-
-    pgrp0 = &pull->group[pcrd->params.group[0]];
+    const pull_group_work_t *pgrp0 = &pull->group[pcrd->params.group[0]];
 
     /* Only the first group can be an absolute reference, in that case nat=0 */
     if (pgrp0->params.nat == 0)
     {
-        for (m = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             xref[m] = pcrd->params.origin[m];
         }
     }
 
+    dvec xrefr;
     copy_dvec(xref, xrefr);
 
+    dvec dref = {0, 0, 0};
     if (pcrd->params.eGeom == epullgDIRPBC)
     {
-        for (m = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             dref[m] = pcrd->value_ref*pcrd->vec[m];
         }
@@ -631,17 +651,29 @@ static void low_get_pull_coord_dr(const struct pull_t *pull,
     }
 
     pbc_dx_d(pbc, xg, xrefr, dr);
-    dr2 = 0;
-    for (m = 0; m < DIM; m++)
+
+    bool   directional = pull_coordinate_is_directional(&pcrd->params);
+    double dr2         = 0;
+    for (int m = 0; m < DIM; m++)
     {
         dr[m] *= pcrd->params.dim[m];
-        dr2   += dr[m]*dr[m];
+        if (pcrd->params.dim[m] && !(directional && pcrd->vec[m] == 0))
+        {
+            dr2 += dr[m]*dr[m];
+        }
     }
-    if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
+    /* Check if we are close to switching to another periodic image */
+    if (max_dist2 > 0 && dr2 > 0.98*0.98*max_dist2)
     {
-        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n",
+        /* Note that technically there is no issue with switching periodic
+         * image, as pbc_dx_d returns the distance to the closest periodic
+         * image. However in all cases where periodic image switches occur,
+         * the pull results will be useless in practice.
+         */
+        gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\n%s",
                   pcrd->params.group[0], pcrd->params.group[1],
-                  sqrt(dr2), sqrt(0.98*0.98*max_dist2));
+                  sqrt(dr2), sqrt(0.98*0.98*max_dist2),
+                  pcrd->params.eGeom == epullgDIR ? "You might want to consider using \"pull-geometry = direction-periodic\" instead.\n" : "");
     }
 
     if (pcrd->params.eGeom == epullgDIRPBC)
