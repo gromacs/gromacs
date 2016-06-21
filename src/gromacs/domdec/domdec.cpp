@@ -1774,7 +1774,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     for (i = 0; i < natoms; i++)
     {
         ii = dd->gatindex[i];
-        mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, NULL);
+        mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
         if (i < dd->comm->nat[ddnatZONE])
         {
             c = 0;
