@@ -62,6 +62,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -91,32 +92,39 @@ static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
                              int nCos)
 {
     int  i = 0;
-
+    GMX_RELEASE_ASSERT(nfour >= nframes, "nfour < nframes in low_do_four_core");
+    std::vector<std::vector<real> > data;
+    data.resize(1);
+    data[0].resize(nfour, 0);
     switch (nCos)
     {
         case enNorm:
             for (i = 0; (i < nframes); i++)
             {
-                cfour[i] = c1[i];
+                data[0][i] = c1[i];
             }
             break;
         case enCos:
             for (i = 0; (i < nframes); i++)
             {
-                cfour[i] = cos(c1[i]);
+                data[0][i] = cos(c1[i]);
             }
             break;
         case enSin:
             for (i = 0; (i < nframes); i++)
             {
-                cfour[i] = sin(c1[i]);
+                data[0][i] = sin(c1[i]);
             }
             break;
         default:
             gmx_fatal(FARGS, "nCos = %d, %s %d", nCos, __FILE__, __LINE__);
     }
 
-    many_auto_correl(1, nframes, nfour, &cfour);
+    many_auto_correl(static_cast<size_t>(nframes), data);
+    for (i = 0; (i < nfour); i++)
+    {
+        cfour[i] = data[0][i];
+    }
 }
 
 /*! \brief Routine to comput ACF without FFT. */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #ifndef GMX_MANYAUTOCORRELATION_H
 #define GMX_MANYAUTOCORRELATION_H
 
+#include <vector>
+
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/real.h"
 
@@ -55,19 +57,20 @@ extern "C" {
  * Perform many autocorrelation calculations.
  *
  * This routine performs many autocorrelation function calculations using FFTs.
- * The GROMACS FFT library wrapper is employed. On return the c[] arrays contain
+ * The GROMACS FFT library wrapper is employed. On return the c vector contain
  * a symmetric function that is useful for further FFT:ing, for instance in order to
- * compute spectra.
+ * compute spectra. Dimensions of the c vector are number of data sets (nfunc) X
+ * length of the data arrays (nfft), this should at least be 50% larger than ndata.
+ * The c arrays will filled with zero beyond ndata before computing the correlation.
  *
  * The functions uses OpenMP parallellization.
  *
- * \param[in] nfunc   Number of data functions to autocorrelate
  * \param[in] ndata   Number of valid data points in the data
- * \param[in] nfft    Length of the data arrays, this should at least be 50% larger than ndata. The c arrays will filled with zero beyond ndata before computing the correlation.
  * \param[inout] c    Data array of size nfunc x nfft, will also be used for output
  * \return fft error code, or zero if everything went fine (see fft/fft.h)
  */
-int many_auto_correl(int nfunc, int ndata, int nfft, real **c);
+int many_auto_correl(size_t                           ndata,
+                     std::vector<std::vector<real> > &c);
 
 #ifdef __cplusplus
 }
