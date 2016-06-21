@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -406,10 +406,13 @@ typedef struct t_idef
 
 void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
 void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const t_ilist *ilist, gmx_bool bShowNumbers);
+              const t_functype *functype, const t_ilist *ilist,
+              gmx_bool bShowNumbers,
+              gmx_bool bShowParameters, const t_iparams *iparams);
 void pr_ffparams(FILE *fp, int indent, const char *title,
                  const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
-void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef, gmx_bool bShowNumbers);
+void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
+             gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
 #ifdef __cplusplus
 }
