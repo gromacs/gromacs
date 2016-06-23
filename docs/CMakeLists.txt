@@ -58,6 +58,10 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
+if (DEFINED PYTHON_EXECUTABLE)
+    # Keep quiet on subsequent runs of cmake
+    set(PythonInterp_FIND_QUIETLY ON)
+endif()
 find_package(PythonInterp 2.7)
 find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
 
@@ -141,6 +145,7 @@ if (SPHINX_FOUND)
             REQUIRED_OPENCL_MIN_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
+            GMX_TNG_MINIMUM_REQUIRED_VERSION
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})

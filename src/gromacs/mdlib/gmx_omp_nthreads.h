@@ -74,6 +74,40 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &fplog, t_commrec *cr,
  * Returns the number of threads to be used in the given module \p mod. */
 int gmx_omp_nthreads_get(int mod);
 
+/*! \brief
+ * Returns the number of threads to be used in the given module \p mod for simple rvec operations.
+ *
+ * When the, potentially, parallel task only consists of a loop of clear_rvec
+ * or rvec_inc for nrvec elements, the OpenMP overhead might be higher than
+ * the reduction in computional cost due to parallelization. This routine
+ * returns 1 when the overhead is expected to be higher than the gain.
+ */
+static int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
+{
+    /* There can be a relatively large overhead to an OpenMP parallel for loop.
+     * This overhead increases, slowly, with the numbe of threads used.
+     * The computational gain goes as 1/#threads. The two effects combined
+     * lead to a cross-over point for a (non-)parallel loop at loop count
+     * that is not strongly dependent on the thread count.
+     * Note that a (non-)parallel loop can have benefit later in the code
+     * due to generating more cache hits, depending on how the next lask
+     * that accesses the same data is (not) parallelized over threads.
+     *
+     * A value of 2000 is the switch-over point for Haswell without
+     * hyper-threading. With hyper-threading it is about a factor 1.5 higher.
+     */
+    const int nrvec_omp = 2000;
+
+    if (nrvec < nrvec_omp)
+    {
+        return 1;
+    }
+    else
+    {
+        return gmx_omp_nthreads_get(mod);
+    }
+}
+
 /*! \brief Sets the number of threads to be used in module.
  *
  * Intended for use in testing. */

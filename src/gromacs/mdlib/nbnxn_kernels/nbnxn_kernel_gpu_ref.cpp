@@ -40,6 +40,8 @@
 
 #include <cmath>
 
+#include <algorithm>
+
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -256,8 +258,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     npair++;
                                 }
 
-                                /* avoid NaN for excluded pairs at r=0 */
-                                rsq             += (1.0 - int_bit)*NBNXN_AVOID_SING_R2_INC;
+                                // Ensure distance do not become so small that r^-12 overflows
+                                rsq              = std::max(rsq, NBNXN_MIN_RSQ);
 
                                 rinv             = gmx::invsqrt(rsq);
                                 rinvsq           = rinv*rinv;

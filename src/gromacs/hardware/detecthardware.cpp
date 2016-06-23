@@ -845,8 +845,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_max    = maxmin[3];
     hwinfo_g->bIdenticalGPUs      = (maxmin[4] == -maxmin[9]);
 #else
-    /* All ranks use the same pointer, protect it with a mutex */
-    tMPI_Thread_mutex_lock(&hw_info_lock);
+    /* All ranks use the same pointer, protected by a mutex in the caller */
     hwinfo_g->nphysicalnode       = 1;
     hwinfo_g->ncore_tot           = ncore;
     hwinfo_g->ncore_min           = ncore;
@@ -860,7 +859,6 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
     hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
-    tMPI_Thread_mutex_unlock(&hw_info_lock);
 #endif
 }
 
@@ -886,7 +884,11 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
-        check_nthreads_hw_avail(mdlog, hwinfo_g->nthreads_hw_avail);
+        // If we detected the topology on this system, double-check that it makes sense
+        if (hwinfo_g->hardwareTopology->isThisSystem())
+        {
+            check_nthreads_hw_avail(mdlog, hwinfo_g->nthreads_hw_avail);
+        }
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;
@@ -903,6 +905,8 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
         {
             gmx_detect_gpus(mdlog, cr);
         }
+
+        gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
     }
     /* increase the reference counter */
     n_hwinfo++;
@@ -912,8 +916,6 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
     {
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
-
-    gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
 
     return hwinfo_g;
 }
@@ -1054,6 +1056,15 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         case gmx::HardwareTopology::SupportLevel::FullWithDevices:
             s += gmx::formatString("Full, with devices\n");
             break;
+    }
+
+    if (!hwTop.isThisSystem())
+    {
+        s += gmx::formatString("  NOTE: Hardware topology cached or synthetic, not detected.\n");
+        if (char *p = getenv("HWLOC_XMLFILE"))
+        {
+            s += gmx::formatString("        HWLOC_XMLFILE=%s\n", p);
+        }
     }
 
     if (bFullCpuInfo)
