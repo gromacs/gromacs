@@ -390,6 +390,12 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 
             if (rsq > 0)
             {
+                /* Note that unlike in the nbnxn kernels, we do not need
+                 * to clamp the value of rsq before taking the invsqrt
+                 * to avoid NaN in the LJ calculation, since here we do
+                 * not calculate LJ interactions when C6 and C12 are zero.
+                 */
+
                 rinv         = gmx::invsqrt(rsq);
                 r            = rsq*rinv;
             }

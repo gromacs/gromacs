@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/tng/tng_io.h
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+assert.h
+-
+tng_io_fwd.h
+../include/tng/tng_io_fwd.h
+inttypes.h
+-
+stdint.h
+-
+
+../include/tng/tng_io_fwd.h
+
+/Users/markmac/git/tng/src/tests/tng_io_testing.c
+tng/tng_io.h
+/Users/markmac/git/tng/src/tests/tng/tng_io.h
+inttypes.h
+-
+stdlib.h
+-
+string.h
+-
+math.h
+-
+tng/version.h
+/Users/markmac/git/tng/src/tests/tng/version.h
+
+include/tng/version.h
+

@@ -217,6 +217,17 @@ class HardwareTopology
         SupportLevel
         supportLevel() const { return supportLevel_; }
 
+        /*! \brief Return true if we actually detected hardware.
+         *
+         *  \return This method will normally return true, when we actually ran
+         *          the hardware detection as part of this process to construct
+         *          the object. It will be false when the object was constructed
+         *          by reading a cached XML file, or possibly generated from
+         *          synthetic data.
+         */
+        bool
+        isThisSystem() const { return isThisSystem_; }
+
         /*! \brief Return the machine topology tree
          *
          *  You can always call this routine, but be aware that some or all contents
@@ -251,6 +262,7 @@ class HardwareTopology
 
         SupportLevel        supportLevel_; //!< Available topology information
         Machine             machine_;      //!< The machine map
+        bool                isThisSystem_; //!< Machine map is real (vs. cached/synthetic)
 };
 
 }

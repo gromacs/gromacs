@@ -256,18 +256,22 @@ static void clear_nbat_real(int na, int nbatFormat, real *xnb, int a0)
 }
 
 void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
-                            rvec *x, int nbatFormat, real *xnb, int a0,
-                            int cx, int cy, int cz)
+                            const rvec *x, int nbatFormat,
+                            real *xnb, int a0)
 {
-    int i, j, c;
+    /* We complete partially filled cells, can only be the last one in each
+     * column, with coordinates farAway. The actual coordinate value does
+     * not influence the results, since these filler particles do not interact.
+     * Clusters with normal atoms + fillers have a bounding box based only
+     * on the coordinates of the atoms. Clusters with only fillers have as
+     * the bounding box the coordinates of the first filler. Such clusters
+     * are not considered as i-entries, but they are considered as j-entries.
+     * So for performance it is better to have their bounding boxes far away,
+     * such that filler only clusters don't end up in the pair list.
+     */
+    const real farAway = -1000000;
 
-/* We might need to place filler particles to fill up the cell to na_round.
- * The coefficients (LJ and q) for such particles are zero.
- * But we might still get NaN as 0*NaN when distances are too small.
- * We hope that -107 nm is far away enough from to zero
- * to avoid accidental short distances to particles shifted down for pbc.
- */
-#define NBAT_FAR_AWAY 107
+    int        i, j, c;
 
     switch (nbatFormat)
     {
@@ -279,15 +283,12 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                 xnb[j++] = x[a[i]][YY];
                 xnb[j++] = x[a[i]][ZZ];
             }
-            /* Complete the partially filled last cell with copies of the last element.
-             * This simplifies the bounding box calculation and avoid
-             * numerical issues with atoms that are coincidentally close.
-             */
+            /* Complete the partially filled last cell with farAway elements */
             for (; i < na_round; i++)
             {
-                xnb[j++] = -NBAT_FAR_AWAY*(1 + cx);
-                xnb[j++] = -NBAT_FAR_AWAY*(1 + cy);
-                xnb[j++] = -NBAT_FAR_AWAY*(1 + cz + i);
+                xnb[j++] = farAway;
+                xnb[j++] = farAway;
+                xnb[j++] = farAway;
             }
             break;
         case nbatXYZQ:
@@ -299,12 +300,12 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                 xnb[j++] = x[a[i]][ZZ];
                 j++;
             }
-            /* Complete the partially filled last cell with particles far apart */
+            /* Complete the partially filled last cell with zeros */
             for (; i < na_round; i++)
             {
-                xnb[j++] = -NBAT_FAR_AWAY*(1 + cx);
-                xnb[j++] = -NBAT_FAR_AWAY*(1 + cy);
-                xnb[j++] = -NBAT_FAR_AWAY*(1 + cz + i);
+                xnb[j++] = farAway;
+                xnb[j++] = farAway;
+                xnb[j++] = farAway;
                 j++;
             }
             break;
@@ -324,12 +325,12 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                     c  = 0;
                 }
             }
-            /* Complete the partially filled last cell with particles far apart */
+            /* Complete the partially filled last cell with zeros */
             for (; i < na_round; i++)
             {
-                xnb[j+XX*c_packX4] = -NBAT_FAR_AWAY*(1 + cx);
-                xnb[j+YY*c_packX4] = -NBAT_FAR_AWAY*(1 + cy);
-                xnb[j+ZZ*c_packX4] = -NBAT_FAR_AWAY*(1 + cz + i);
+                xnb[j+XX*c_packX4] = farAway;
+                xnb[j+YY*c_packX4] = farAway;
+                xnb[j+ZZ*c_packX4] = farAway;
                 j++;
                 c++;
                 if (c == c_packX4)
@@ -355,12 +356,12 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                     c  = 0;
                 }
             }
-            /* Complete the partially filled last cell with particles far apart */
+            /* Complete the partially filled last cell with zeros */
             for (; i < na_round; i++)
             {
-                xnb[j+XX*c_packX8] = -NBAT_FAR_AWAY*(1 + cx);
-                xnb[j+YY*c_packX8] = -NBAT_FAR_AWAY*(1 + cy);
-                xnb[j+ZZ*c_packX8] = -NBAT_FAR_AWAY*(1 + cz + i);
+                xnb[j+XX*c_packX8] = farAway;
+                xnb[j+YY*c_packX8] = farAway;
+                xnb[j+ZZ*c_packX8] = farAway;
                 j++;
                 c++;
                 if (c == c_packX8)
@@ -1198,13 +1199,12 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                     {
                         /* We fill only the real particle locations.
                          * We assume the filling entries at the end have been
-                         * properly set before during ns.
+                         * properly set before during pair-list generation.
                          */
                         na_fill = na;
                     }
                     copy_rvec_to_nbat_real(nbs->a+ash, na, na_fill, x,
-                                           nbat->XFormat, nbat->x, ash,
-                                           0, 0, 0);
+                                           nbat->XFormat, nbat->x, ash);
                 }
             }
         }

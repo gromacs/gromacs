@@ -48,14 +48,18 @@ extern "C" {
 
 #define NBNXN_CPU_CLUSTER_I_SIZE_2LOG  2
 
-/* To avoid NaN when excluded atoms are at zero distance, we add a small
- * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.
- */
-#if !GMX_DOUBLE
-#define NBNXN_AVOID_SING_R2_INC  1.0e-12f
+// Lower limit for square interaction distances in nonbonded kernels.
+// For smaller values we will overflow when calculating r^-1 or r^-12, but
+// to keep it simple we always apply the limit from the tougher r^-12 condition.
+#if GMX_DOUBLE
+// Some double precision SIMD architectures use single precision in the first
+// step, so although the double precision criterion would allow smaller rsq,
+// we need to stay in single precision with some margin for the N-R iterations.
+#define NBNXN_MIN_RSQ         1.0e-36
 #else
-/* The double prec. x86 SIMD kernels use a single prec. invsqrt, so > 1e-38 */
-#define NBNXN_AVOID_SING_R2_INC  1.0e-36
+// The worst intermediate value we might evaluate is r^-12, which
+// means we should ensure r^2 stays above pow(GMX_FLOAT_MAX,-1.0/6.0)*1.01 (some margin)
+#define NBNXN_MIN_RSQ         3.82e-07f  // r > 6.2e-4
 #endif
 
 

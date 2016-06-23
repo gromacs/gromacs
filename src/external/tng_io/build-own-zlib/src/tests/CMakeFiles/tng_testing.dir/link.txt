@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/tng_testing.dir/tng_io_testing.c.o  -o ../../bin/tests/tng_testing  -L/Users/markmac/git/tng/build-own-zlib/src/lib  ../../lib/libtng_io.1.7.9.dylib -lm -Wl,-rpath,/Users/markmac/git/tng/build-own-zlib/src/lib 

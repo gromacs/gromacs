@@ -50,8 +50,6 @@
 #include <algorithm>
 #include <vector>
 
-#include <thread>
-
 #if GMX_HWLOC
 #    include <hwloc.h>
 #endif
@@ -485,7 +483,8 @@ parseHwLocDevices(const hwloc_topology_t             topo,
 
 void
 parseHwLoc(HardwareTopology::Machine *        machine,
-           HardwareTopology::SupportLevel *   supportLevel)
+           HardwareTopology::SupportLevel *   supportLevel,
+           bool *                             isThisSystem)
 {
     hwloc_topology_t    topo;
 
@@ -505,7 +504,9 @@ parseHwLoc(HardwareTopology::Machine *        machine,
         hwloc_topology_destroy(topo);
         return; // SupportLevel::None.
     }
+
     // If we get here, we can get a valid root object for the topology
+    *isThisSystem = hwloc_topology_is_thissystem(topo);
 
     // Parse basic information about sockets, cores, and hardware threads
     if (parseHwLocSocketsCoresThreads(topo, machine) == 0)
@@ -548,17 +549,8 @@ parseHwLoc(HardwareTopology::Machine *        machine,
 int
 detectLogicalProcessorCount()
 {
-    // Try to use std::thread::hardware_concurrency() first. This result is only
-    // a hint, and it might be 0 if the information is not available.
-    // On Apple this will not compile with gcc-4.6, and since it just returns 0 on other
-    // platforms too we skip it entirely for gcc < 4.7
-#if defined __GNUC__ && (__GNUC__ == 4 && __GNUC_MINOR__ < 7)
     int count = 0;
-#else
-    int count = std::thread::hardware_concurrency();
-#endif
 
-    if (count == 0)
     {
 #if GMX_NATIVE_WINDOWS
         // Windows
@@ -580,7 +572,7 @@ detectLogicalProcessorCount()
 #    endif      // End of check for sysconf argument values
 
 #else
-        count = 0; // Neither windows nor Unix, and std::thread_hardware_concurrency() failed.
+        count = 0; // Neither windows nor Unix.
 #endif
     }
     return count;
@@ -594,9 +586,10 @@ HardwareTopology HardwareTopology::detect()
     HardwareTopology result;
 
     result.supportLevel_ = SupportLevel::None;
+    result.isThisSystem_ = true;
 
 #if GMX_HWLOC
-    parseHwLoc(&result.machine_, &result.supportLevel_);
+    parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
 #endif
 
     // If something went wrong in hwloc (or if it was not present) we might

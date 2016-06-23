@@ -1,0 +1,40 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/tng_io.dir/src/compression/bwlzh.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/bwt.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/coder.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/dict.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/fixpoint.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/huffman.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/huffmem.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/lz77.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/merge_sort.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/mtf.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/rle.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/tng_compress.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/vals16.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/warnmalloc.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/widemuldiv.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/xtc2.c.o"
+  "CMakeFiles/tng_io.dir/src/compression/xtc3.c.o"
+  "CMakeFiles/tng_io.dir/src/lib/tng_io.c.o"
+  "CMakeFiles/tng_io.dir/src/lib/md5.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/adler32.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/compress.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/crc32.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/deflate.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/inffast.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/inflate.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/inftrees.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/trees.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/uncompr.c.o"
+  "CMakeFiles/tng_io.dir/external/zlib/zutil.c.o"
+  "lib/libtng_io.pdb"
+  "lib/libtng_io.dylib"
+  "lib/libtng_io.1.7.9.dylib"
+  "lib/libtng_io.1.dylib"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/tng_io.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

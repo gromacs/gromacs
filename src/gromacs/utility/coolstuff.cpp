@@ -731,7 +731,8 @@ std::string getCoolQuote()
         { "Contemplating answers that could break my bonds.", "Peter Hammill" },
         { "I always think there is something foreign about jolly phrases at breakfast.", "Mr. Carson in Downtown Abbey" },
         { "According to my computations we're overdue for a transformation.", "Jackson Browne" },
-        { "Therefore, things must be learned only to be unlearned again or, more likely, to be corrected.", "Richard Feynman" }
+        { "Therefore, things must be learned only to be unlearned again or, more likely, to be corrected.", "Richard Feynman" },
+        { "You wouldn't walk into a chemistry lab and mix two clear liquids together just because they look pretty much the same, would you?", "Justin Lemkul" },
     };
 
     if (beCool())

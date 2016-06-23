@@ -729,14 +729,17 @@ static void read_tables(FILE *fp, const char *fn,
                 {
                     /* Take the centered difference */
                     numf = -(vp - vm)*0.5*tabscale;
-                    ssd += fabs(2*(f - numf)/(f + numf));
+                    if (f + numf != 0)
+                    {
+                        ssd += fabs(2*(f - numf)/(f + numf));
+                    }
                     ns++;
                 }
             }
             if (ns > 0)
             {
                 ssd /= ns;
-                sprintf(buf, "For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from minus the numerical derivative of the potential\n", ns, k, libfn, (int)(100*ssd+0.5));
+                sprintf(buf, "For the %d non-zero entries for table %d in %s the forces deviate on average %lld%% from minus the numerical derivative of the potential\n", ns, k, libfn, (long long int)(100*ssd+0.5));
                 if (debug)
                 {
                     fprintf(debug, "%s", buf);
@@ -1539,7 +1542,7 @@ t_forcetable *make_gb_table(const t_forcerec              *fr)
 
 }
 
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
+bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)
 {
     t_tabledata   td;
     int           i;
