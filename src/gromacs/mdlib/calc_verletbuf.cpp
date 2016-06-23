@@ -673,6 +673,12 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
 {
     double drift_tot = 0;
 
+    if (kT_fac == 0)
+    {
+        /* No atom displacements: no drift, avoid division by 0 */
+        return drift_tot;
+    }
+
     // Here add up the contribution of all atom pairs in the system to
     // (estimated) energy drift by looping over all atom type pairs.
     for (int i = 0; i < natt; i++)

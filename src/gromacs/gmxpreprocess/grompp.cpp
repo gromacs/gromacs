@@ -1904,8 +1904,7 @@ int gmx_grompp(int argc, char *argv[])
              sys, bVerbose, ir,
              wi);
 
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
-        ir->nstlist > 1)
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0)
     {
         if (EI_DYNAMICS(ir->eI) && inputrec2nboundeddim(ir) == 3)
         {
