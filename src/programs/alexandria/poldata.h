@@ -546,10 +546,7 @@ class Poldata
         double                                _fudgeQQ, _fudgeLJ;
         std::string                           _gtVdwFunction, _gtCombinationRule;
         int                                   _gtVdwFtype, _gtCombRule;
-        std::string                           _gtBondFunction;
-        unsigned int                          _gtBondFtype;
-        std::string                           _gtLengthUnit;
-        std::vector<GtBond>                   _gtBond;
+        std::vector<GtBonds>                  _gtBonds;
         std::string                           _gtAngleFunction;
         unsigned int                          _gtAngleFtype;
         std::string                           _gtAngleUnit;

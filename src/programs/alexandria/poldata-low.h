@@ -224,6 +224,20 @@ class GtBond
         void setNtrain(int ntrain) { ntrain_ = ntrain; }
 };
 
+class GtBonds
+{
+ public:
+ GtBonds(const std::string function,
+         unsigned int ftype, 
+         const std::string unit) :  _gtBondFunction(function), _gtBondFtype(ftype), _gtLengthUnit(unit);
+         
+ private:
+    std::string                           _gtBondFunction;
+    unsigned int                          _gtBondFtype;
+    std::string                           _gtLengthUnit;
+    std::vector<GtBond>                   _gtBond;
+};
+
 class GtAngle
 {
     private:
