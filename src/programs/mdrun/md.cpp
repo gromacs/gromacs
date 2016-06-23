@@ -736,7 +736,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* check how many steps are left in other sims */
         multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
     }
-
+    if (MULTISIM(cr) && max_hours > 0)
+    {
+        gmx_fatal(FARGS, "The combination of mdrun -maxh and mdrun -multi is not supported. Please use the nsteps .mdp field.");
+    }
 
     /* and stop now if we should */
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||

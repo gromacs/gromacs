@@ -130,7 +130,8 @@ more control is useful. `gmx mdrun -nsteps 100` overrides the [.mdp] file
 and executes 100 steps. `gmx mdrun -maxh 2.5` will terminate the
 simulation shortly before 2.5 hours elapse, which can be useful when
 running under cluster queues (as long as the queuing system does not
-ever suspend the simulation).
+ever suspend the simulation). `-maxh` is not supported with
+multi-simulations.
 
 Running a membrane protein embedding simulation
 -----------------------------------------------
