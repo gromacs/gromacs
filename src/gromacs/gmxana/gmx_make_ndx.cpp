@@ -1214,11 +1214,11 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         if (bVerbose || bPrintOnce)
         {
             printf("\n");
-            printf(" nr : group       !   'name' nr name   'splitch' nr    Enter: list groups\n");
-            printf(" 'a': atom        &   'del' nr         'splitres' nr   'l': list residues\n");
-            printf(" 't': atom type   |   'keep' nr        'splitat' nr    'h': help\n");
-            printf(" 'r': residue         'res' nr         'chain' char\n");
-            printf(" \"name\": group        'case': case %s         'q': save and quit\n",
+            printf(" nr : group      '!': not  'name' nr name   'splitch' nr    Enter: list groups\n");
+            printf(" 'a': atom       '&': and  'del' nr         'splitres' nr   'l': list residues\n");
+            printf(" 't': atom type  '|': or   'keep' nr        'splitat' nr    'h': help\n");
+            printf(" 'r': residue              'res' nr         'chain' char\n");
+            printf(" \"name\": group             'case': case %s         'q': save and quit\n",
                    bCase ? "insensitive" : "sensitive  ");
             printf(" 'ri': residue index\n");
             bPrintOnce = FALSE;
@@ -1517,18 +1517,26 @@ int gmx_make_ndx(int argc, char *argv[])
         "have to use [THISMODULE] when you need SPECIAL index groups.",
         "There is a default index group for the whole system, 9 default",
         "index groups for proteins, and a default index group",
-        "is generated for every other residue name.[PAR]",
+        "is generated for every other residue name.",
+        "",
         "When no index file is supplied, also [THISMODULE] will generate the",
         "default groups.",
         "With the index editor you can select on atom, residue and chain names",
         "and numbers.",
         "When a run input file is supplied you can also select on atom type.",
-        "You can use NOT, AND and OR, you can split groups",
-        "into chains, residues or atoms. You can delete and rename groups.[PAR]",
-        "The atom numbering in the editor and the index file starts at 1.[PAR]",
+        "You can use boolean operations, you can split groups",
+        "into chains, residues or atoms. You can delete and rename groups.",
+        "Type 'h' in the editor for more details.",
+        "",
+        "The atom numbering in the editor and the index file starts at 1.",
+        "",
         "The [TT]-twin[tt] switch duplicates all index groups with an offset of",
         "[TT]-natoms[tt], which is useful for Computational Electrophysiology",
-        "double-layer membrane setups."
+        "double-layer membrane setups.",
+        "",
+        "See also [gmx-select] [TT]-on[tt], which provides an alternative way",
+        "for constructing index groups.  It covers nearly all of [THISMODULE]",
+        "functionality, and in many cases much more."
     };
 
     static int      natoms     = 0;

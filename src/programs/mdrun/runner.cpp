@@ -1004,7 +1004,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                         cr, ddxyz, &npme,
                         inputrec, state, &bReadEkin,
                         (Flags & MD_APPENDFILES),
-                        (Flags & MD_APPENDFILESSET));
+                        (Flags & MD_APPENDFILESSET),
+                        (Flags & MD_REPRODUCIBLE));
 
         if (bReadEkin)
         {
@@ -1177,7 +1178,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         init_forcerec(fplog, mdlog, fr, fcd, inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
-                      opt2fn("-tableb", nfile, fnm),
+                      getFilenm("-tableb", nfile, fnm),
                       nbpu_opt,
                       FALSE,
                       pforce);

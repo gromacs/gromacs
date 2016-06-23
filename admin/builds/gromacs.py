@@ -167,8 +167,7 @@ def do_build(context):
             context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
             context.chdir(regressiontests_path)
 
-            if not context.opts.mpi and context.opts.thread_mpi is not False:
-                use_tmpi = True
+            use_tmpi = not context.opts.mpi and context.opts.thread_mpi is not False
 
             cmd = 'perl gmxtest.pl -mpirun mpirun -xml -nosuffix all'
             if context.opts.asan:

@@ -84,7 +84,7 @@ t_forcetable *make_tables(FILE *fp,
                           const char *fn, real rtab, int flags);
 /* Return tables for inner loops. */
 
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
+bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle);
 /* Return a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
  */

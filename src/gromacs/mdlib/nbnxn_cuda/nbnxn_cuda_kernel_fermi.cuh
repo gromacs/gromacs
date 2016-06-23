@@ -388,8 +388,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif                          /* LJ_COMB_GEOM */
 #endif                          /* LJ_COMB */
 
-                                /* avoid NaN for excluded pairs at r=0 */
-                                r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
+                                // Ensure distance do not become so small that r^-12 overflows
+                                r2      = max(r2, NBNXN_MIN_RSQ);
 
                                 inv_r   = rsqrt(r2);
                                 inv_r2  = inv_r * inv_r;

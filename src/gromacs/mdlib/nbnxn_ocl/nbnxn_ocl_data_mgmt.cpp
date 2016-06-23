@@ -595,7 +595,7 @@ nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s:\n OpenCL error %d: %s",
                   rank,
                   devInfo->device_name,
-                  cl_error, ocl_get_error_string(cl_error));
+                  cl_error, ocl_get_error_string(cl_error).c_str());
         return;
     }
 
@@ -641,17 +641,18 @@ nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     cl_kernel            zero_e_fshift = nb->kernel_zero_e_fshift;
 
     local_work_size[0]   = 64;
-    global_work_size[0]  = ((shifts/64)*64) + ((shifts%64) ? 64 : 0);
+    // Round the total number of threads up from the array size
+    global_work_size[0]  = ((shifts + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
 
     arg_no    = 0;
     cl_error  = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fshift));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_lj));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_el));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
-    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error));
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 
     cl_error = clEnqueueNDRangeKernel(ls, zero_e_fshift, 3, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error));
+    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
@@ -814,6 +815,10 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
  */
 static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
 {
+    if (natoms_clear == 0)
+    {
+        return;
+    }
 
     cl_int               cl_error;
     cl_atomdata_t *      adat     = nb->atdat;
@@ -830,7 +835,9 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     cl_uint              natoms_flat = natoms_clear * (sizeof(rvec)/sizeof(real));
 
     local_work_size[0]  = 64;
-    global_work_size[0] = ((natoms_flat/local_work_size[0])*local_work_size[0]) + ((natoms_flat%local_work_size[0]) ? local_work_size[0] : 0);
+    // Round the total number of threads up from the array size
+    global_work_size[0] = ((natoms_flat + local_work_size[0] - 1)/local_work_size[0])*local_work_size[0];
+
 
     arg_no    = 0;
     cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
