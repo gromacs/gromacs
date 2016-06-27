@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016 by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -516,9 +516,10 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
         }
         else
         {
-            if (state->fep_state > 0)
+            /* if < 0, fep_state was never defined, and we should not set lambda from the state */
+            if (state_global->fep_state > -1)
             {
-                state_global->fep_state = state->fep_state; /* state->fep is the one updated by bExpanded */
+                state_global->fep_state = state->fep_state; /* state->fep_state is the one updated by bExpanded */
                 for (i = 0; i < efptNR; i++)
                 {
                     state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
