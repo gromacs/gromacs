@@ -47,6 +47,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -964,22 +965,23 @@ static void comp_state(const t_state *st1, const t_state *st2,
 void comp_tpx(const char *fn1, const char *fn2,
               gmx_bool bRMSD, real ftol, real abstol)
 {
-    const char  *ff[2];
-    t_inputrec   ir[2];
-    t_state      state[2];
-    gmx_mtop_t   mtop[2];
-    t_topology   top[2];
-    int          i;
+    const char    *ff[2];
+    gmx::MDModules mdModules[2];
+    t_inputrec    *ir[2] = { mdModules[0].inputrec(), mdModules[1].inputrec() };
+    t_state        state[2];
+    gmx_mtop_t     mtop[2];
+    t_topology     top[2];
+    int            i;
 
     ff[0] = fn1;
     ff[1] = fn2;
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
-        read_tpx_state(ff[i], &(ir[i]), &state[i], &(mtop[i]));
+        read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
     }
     if (fn2)
     {
-        cmp_inputrec(stdout, &ir[0], &ir[1], ftol, abstol);
+        cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
         /* Convert gmx_mtop_t to t_topology.
          * We should implement direct mtop comparison,
          * but it might be useful to keep t_topology comparison as an option.
@@ -993,15 +995,15 @@ void comp_tpx(const char *fn1, const char *fn2,
     }
     else
     {
-        if (ir[0].efep == efepNO)
+        if (ir[0]->efep == efepNO)
         {
-            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0].efep]);
+            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0]->efep]);
         }
         else
         {
-            if (ir[0].bPull)
+            if (ir[0]->bPull)
             {
-                comp_pull_AB(stdout, ir->pull, ftol, abstol);
+                comp_pull_AB(stdout, ir[0]->pull, ftol, abstol);
             }
             /* Convert gmx_mtop_t to t_topology.
              * We should implement direct mtop comparison,

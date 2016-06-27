@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -1628,7 +1629,8 @@ int gmx_grompp(int argc, char *argv[])
     };
 
     /* Initiate some variables */
-    snew(ir, 1);
+    gmx::MDModules mdModules;
+    ir = mdModules.inputrec();
     snew(opts, 1);
     init_ir(ir, opts);
 

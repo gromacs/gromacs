@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -247,7 +247,8 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
-typedef struct t_inputrec {
+struct t_inputrec
+{
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -398,7 +399,7 @@ typedef struct t_inputrec {
     /* Fields for removed features go here (better caching) */
     gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
     gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
-} t_inputrec;
+};
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);
 
@@ -435,14 +436,6 @@ gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir);
  * interactions, since these might be zero beyond rvdw.
  */
 gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir);
-
-/*! \brief Initiate input record structure
- *
- * Initialiazes all the arrays and pointers to NULL.
- *
- * \param[in] ir Inputrec must be pre-allocated
- */
-void init_inputrec(t_inputrec *ir);
 
 /*! \brief Free memory from input record.
  *

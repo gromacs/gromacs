@@ -34,6 +34,7 @@
 
 gmx_add_libgromacs_sources(
     handlerestart.cpp
+    mdmodules.cpp
     threadaffinity.cpp
     )
 

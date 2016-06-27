@@ -933,11 +933,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                 file_version, tpx_version);
     }
 
-    if (bRead)
-    {
-        init_inputrec(ir);
-    }
-
     if (file_version == 0)
     {
         return;

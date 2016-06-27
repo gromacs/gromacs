@@ -251,14 +251,6 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-void init_inputrec(t_inputrec *ir)
-{
-    std::memset(ir, 0, sizeof(*ir));
-    snew(ir->fepvals, 1);
-    snew(ir->expandedvals, 1);
-    snew(ir->simtempvals, 1);
-}
-
 static void done_pull_group(t_pull_group *pgrp)
 {
     if (pgrp->nat > 0)

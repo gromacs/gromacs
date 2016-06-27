@@ -88,6 +88,7 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tpi.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -731,7 +732,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
-    snew(inputrec, 1);
+    gmx::MDModules mdModules;
+    inputrec = mdModules.inputrec();
     snew(mtop, 1);
 
     if (Flags & MD_APPENDFILES)
