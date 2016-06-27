@@ -72,8 +72,10 @@ const SimdReal rSimd_m1_m2_m3 = setSimdRealFrom3R(-1, -2, -3);
 const SimdReal rSimd_3_1_4    = setSimdRealFrom3R(3, 1, 4);
 const SimdReal rSimd_m3_m1_m4 = setSimdRealFrom3R(-3, -1, -4);
 const SimdReal rSimd_2p25     = setSimdRealFrom1R(2.25);
+const SimdReal rSimd_3p25     = setSimdRealFrom1R(3.25);
 const SimdReal rSimd_3p75     = setSimdRealFrom1R(3.75);
 const SimdReal rSimd_m2p25    = setSimdRealFrom1R(-2.25);
+const SimdReal rSimd_m3p25    = setSimdRealFrom1R(-3.25);
 const SimdReal rSimd_m3p75    = setSimdRealFrom1R(-3.75);
 const SimdReal rSimd_Exp      = setSimdRealFrom3R( 1.4055235171027452623914516e+18,
                                                    5.3057102734253445623914516e-13,

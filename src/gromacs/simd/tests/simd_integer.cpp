@@ -181,20 +181,34 @@ TEST_F(SimdIntegerTest, extract)
 #if GMX_SIMD_HAVE_REAL
 TEST_F(SimdIntegerTest, cvtR2I)
 {
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(2), cvtR2I(rSimd_2p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-2), cvtR2I(rSimd_m2p25));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), cvtR2I(rSimd_3p75));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-4), cvtR2I(rSimd_m3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), cvtR2I(rSimd_3p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), cvtR2I(rSimd_m3p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(102448688), cvttR2I(setSimdRealFrom1R(102448689.3)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-102448688), cvttR2I(setSimdRealFrom1R(-102448689.3)));
 }
 
 TEST_F(SimdIntegerTest, cvttR2I)
 {
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(2), cvtR2I(rSimd_2p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-2), cvtR2I(rSimd_m2p25));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), cvttR2I(rSimd_3p75));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), cvttR2I(rSimd_m3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), cvtR2I(rSimd_3p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), cvtR2I(rSimd_m3p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(102448688), cvttR2I(setSimdRealFrom1R(102448689.3)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-102448688), cvttR2I(setSimdRealFrom1R(-102448689.3)));
 }
 
 TEST_F(SimdIntegerTest, cvtI2R)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2.0), cvtI2R(SimdInt32(2)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2.0), cvtI2R(SimdInt32(-2)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(102448689), cvtI2R(SimdInt32(102448689)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-102448689), cvtI2R(SimdInt32(-102448689)));
 }
 #endif      // GMX_SIMD_HAVE_REAL
 
