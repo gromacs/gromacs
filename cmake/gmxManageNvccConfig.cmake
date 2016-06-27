@@ -68,6 +68,20 @@ if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
         "True if CUDA_HOST_COMPILER is automatically set")
 endif()
 
+# glibc 2.23 changed string.h in a way that breaks CUDA compilation in
+# many projects, but which has a trivial workaround. It would be nicer
+# to compile with nvcc and see that the workaround is necessary and
+# effective, but it is unclear how to do that. Also, grepping in the
+# glibc source shows that _FORCE_INLINES is only used in this string.h
+# feature and performance of memcpy variants is unimportant for CUDA
+# code in GROMACS. So this workaround is good enough to keep problems
+# away from users installing GROMACS. See Redmine 1942.
+function(work_around_glibc_2_23)
+    try_compile(IS_GLIBC_2_23_OR_HIGHER ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/cmake/TestGlibcVersion.cpp)
+    list(APPEND CUDA_HOST_COMPILER_OPTIONS "-D_FORCE_INLINES")
+    set(CUDA_HOST_COMPILER_OPTIONS ${CUDA_HOST_COMPILER_OPTIONS} PARENT_SCOPE)
+endfunction()
+
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
     # FindCUDA in CMake 2.8.10 sets the host compiler internally
@@ -95,6 +109,8 @@ if(CUDA_HOST_COMPILER_CHANGED)
         # if we do not use -D__STRICT_ANSI__. It is harmless, so we might as well add it for all versions.
         list(APPEND CUDA_HOST_COMPILER_OPTIONS "-D__STRICT_ANSI__")
     endif()
+
+    work_around_glibc_2_23()
 
     set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Options for nvcc host compiler (do not edit!).")
