@@ -34,30 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MATH_VECCOMPARE_H
+#define GMX_MATH_VECCOMPARE_H
 
-#ifndef GMX_TOOLS_COMPARE_H
-#define GMX_TOOLS_COMPARE_H
+#include <cstdio>
 
-struct gmx_output_env_t;
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-/* Routines for comparing data structures from non-trajectory binary
-   file formats (e.g. as used by gmx check). */
+void cmp_rvec(FILE *fp, const char *s, int index, const rvec i1, const rvec i2, real ftol, real abstol);
 
-void
-comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
-/* Compare two binary run input files */
+void cmp_ivec(FILE *fp, const char *s, int index, const ivec i1, const ivec i2);
 
-void comp_tpx_a_and_b_states(const char *fn, real ftol, real abstol);
-/* Compare two A and B states of a free-energy run input file. */
-
-void
-comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *fn2,
-         gmx_bool bRMSD, real ftol, real abstol);
-/* Compare two binary trajectory files */
-
-void
-comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
-         const char *lastener);
-/* Compare two binary energy files */
+void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x2[],
+               gmx_bool bRMSD, real ftol, real abstol);
 
 #endif

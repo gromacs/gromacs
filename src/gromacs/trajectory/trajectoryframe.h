@@ -39,9 +39,10 @@
  * Do not try to use a pointer when its gmx_bool is FALSE, as memory might
  * not be allocated.
  */
-
 #ifndef GMX_TRAJECTORY_TRX_H
 #define GMX_TRAJECTORY_TRX_H
+
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -81,5 +82,8 @@ typedef struct t_trxframe
     gmx_bool        bIndex;
     int            *index;     /* atom indices of contained coordinates */
 } t_trxframe;
+
+void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
+                gmx_bool bRMSD, real ftol, real abstol);
 
 #endif

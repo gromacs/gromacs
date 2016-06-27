@@ -50,6 +50,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct pull_params_t;
+
 typedef struct {
     //! Number of terms
     int   n;
@@ -447,6 +449,11 @@ void done_inputrec(t_inputrec *ir);
 
 void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
                  gmx_bool bMDPformat);
+
+void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol);
+
+void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol);
+
 
 gmx_bool inputrecDeform(const t_inputrec *ir);
 

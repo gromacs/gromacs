@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,12 @@
 #include <algorithm>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/compare.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
@@ -244,4 +246,76 @@ t_state *serial_init_local_state(t_state *state_global)
     }
 
     return state_local;
+}
+
+void comp_state(const t_state *st1, const t_state *st2,
+                gmx_bool bRMSD, real ftol, real abstol)
+{
+    int i, j, nc;
+
+    fprintf(stdout, "comparing flags\n");
+    cmp_int(stdout, "flags", -1, st1->flags, st2->flags);
+    fprintf(stdout, "comparing box\n");
+    cmp_rvecs(stdout, "box", DIM, st1->box, st2->box, FALSE, ftol, abstol);
+    fprintf(stdout, "comparing box_rel\n");
+    cmp_rvecs(stdout, "box_rel", DIM, st1->box_rel, st2->box_rel, FALSE, ftol, abstol);
+    fprintf(stdout, "comparing boxv\n");
+    cmp_rvecs(stdout, "boxv", DIM, st1->boxv, st2->boxv, FALSE, ftol, abstol);
+    if (st1->flags & (1<<estSVIR_PREV))
+    {
+        fprintf(stdout, "comparing shake vir_prev\n");
+        cmp_rvecs(stdout, "svir_prev", DIM, st1->svir_prev, st2->svir_prev, FALSE, ftol, abstol);
+    }
+    if (st1->flags & (1<<estFVIR_PREV))
+    {
+        fprintf(stdout, "comparing force vir_prev\n");
+        cmp_rvecs(stdout, "fvir_prev", DIM, st1->fvir_prev, st2->fvir_prev, FALSE, ftol, abstol);
+    }
+    if (st1->flags & (1<<estPRES_PREV))
+    {
+        fprintf(stdout, "comparing prev_pres\n");
+        cmp_rvecs(stdout, "pres_prev", DIM, st1->pres_prev, st2->pres_prev, FALSE, ftol, abstol);
+    }
+    cmp_int(stdout, "ngtc", -1, st1->ngtc, st2->ngtc);
+    cmp_int(stdout, "nhchainlength", -1, st1->nhchainlength, st2->nhchainlength);
+    if (st1->ngtc == st2->ngtc && st1->nhchainlength == st2->nhchainlength)
+    {
+        for (i = 0; i < st1->ngtc; i++)
+        {
+            nc = i*st1->nhchainlength;
+            for (j = 0; j < nc; j++)
+            {
+                cmp_real(stdout, "nosehoover_xi",
+                         i, st1->nosehoover_xi[nc+j], st2->nosehoover_xi[nc+j], ftol, abstol);
+            }
+        }
+    }
+    cmp_int(stdout, "nnhpres", -1, st1->nnhpres, st2->nnhpres);
+    if (st1->nnhpres == st2->nnhpres && st1->nhchainlength == st2->nhchainlength)
+    {
+        for (i = 0; i < st1->nnhpres; i++)
+        {
+            nc = i*st1->nhchainlength;
+            for (j = 0; j < nc; j++)
+            {
+                cmp_real(stdout, "nosehoover_xi",
+                         i, st1->nhpres_xi[nc+j], st2->nhpres_xi[nc+j], ftol, abstol);
+            }
+        }
+    }
+
+    cmp_int(stdout, "natoms", -1, st1->natoms, st2->natoms);
+    if (st1->natoms == st2->natoms)
+    {
+        if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX)))
+        {
+            fprintf(stdout, "comparing x\n");
+            cmp_rvecs(stdout, "x", st1->natoms, st1->x, st2->x, bRMSD, ftol, abstol);
+        }
+        if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV)))
+        {
+            fprintf(stdout, "comparing v\n");
+            cmp_rvecs(stdout, "v", st1->natoms, st1->v, st2->v, bRMSD, ftol, abstol);
+        }
+    }
 }
