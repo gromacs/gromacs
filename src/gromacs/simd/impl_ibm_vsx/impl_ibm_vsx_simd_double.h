@@ -351,7 +351,7 @@ static inline SimdDouble gmx_simdcall
 maskzRsqrt(SimdDouble x, SimdDBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = vec_sel(vec_splats(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
                vec_and(vec_rsqrte(x.simdInternal_), reinterpret_cast<__vector double>(m.simdInternal_))
@@ -362,7 +362,7 @@ static inline SimdDouble gmx_simdcall
 maskzRcp(SimdDouble x, SimdDBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = vec_sel(vec_splats(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
                vec_and(vec_re(x.simdInternal_), reinterpret_cast<__vector double>(m.simdInternal_))
@@ -748,10 +748,12 @@ cvtI2R(SimdDInt32 a)
 {
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 // gcc up to at least version 4.9 is missing intrinsics for converting double to/from int - use inline asm
-    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
     __vector double              x;
-
+#ifndef __BIG_ENDIAN__
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
     a.simdInternal_ = vec_perm(a.simdInternal_, a.simdInternal_, perm);
+#endif
+
     __asm__ ("xvcvsxwdp %x0,%x1" : "=wd" (x) : "wa" (a.simdInternal_));
 
     return {
