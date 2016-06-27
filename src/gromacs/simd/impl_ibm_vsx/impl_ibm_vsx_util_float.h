@@ -175,22 +175,34 @@ transposeScatterIncrU(float *              base,
         t4 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[0])));
         t4 = vec_add(t4, t0);
         *reinterpret_cast<double *>( base + align * offset[0] ) = vec_extract(reinterpret_cast<__vector double>(t4), 0);
-        base[align*offset[0] + 2] += vec_extract(v2.simdInternal_, 0);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 0);
+            base[align*offset[0] + 2] += extracted;
+        }
 
         t5 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[1])));
         t5 = vec_add(t5, t1);
         *reinterpret_cast<double *>( base + align * offset[1] ) = vec_extract(reinterpret_cast<__vector double>(t5), 0);
-        base[align*offset[1] + 2] += vec_extract(v2.simdInternal_, 1);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 1);
+            base[align*offset[1] + 2] += extracted;
+        }
 
         t6 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[2])));
         t6 = vec_add(t6, t2);
         *reinterpret_cast<double *>( base + align * offset[2] ) = vec_extract(reinterpret_cast<__vector double>(t6), 0);
-        base[align*offset[2] + 2] += vec_extract(v2.simdInternal_, 2);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 2);
+            base[align*offset[2] + 2] += extracted;
+        }
 
         t7 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[3])));
         t7 = vec_add(t7, t3);
         *reinterpret_cast<double *>( base + align * offset[3] ) = vec_extract(reinterpret_cast<__vector double>(t7), 0);
-        base[align*offset[3] + 2] += vec_extract(v2.simdInternal_, 3);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 3);
+            base[align*offset[3] + 2] += extracted;
+        }
     }
     else
     {
@@ -233,22 +245,34 @@ transposeScatterDecrU(float *              base,
         t4 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[0])));
         t4 = vec_sub(t4, t0);
         *reinterpret_cast<double *>( base + align * offset[0] ) = vec_extract(reinterpret_cast<__vector double>(t4), 0);
-        base[align*offset[0] + 2] -= vec_extract(v2.simdInternal_, 0);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 0);
+            base[align*offset[0] + 2] -= extracted;
+        }
 
         t5 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[1])));
         t5 = vec_sub(t5, t1);
         *reinterpret_cast<double *>( base + align * offset[1] ) = vec_extract(reinterpret_cast<__vector double>(t5), 0);
-        base[align*offset[1] + 2] -= vec_extract(v2.simdInternal_, 1);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 1);
+            base[align*offset[1] + 2] -= extracted;
+        }
 
         t6 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[2])));
         t6 = vec_sub(t6, t2);
         *reinterpret_cast<double *>( base + align * offset[2] ) = vec_extract(reinterpret_cast<__vector double>(t6), 0);
-        base[align*offset[2] + 2] -= vec_extract(v2.simdInternal_, 2);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 2);
+            base[align*offset[2] + 2] -= extracted;
+        }
 
         t7 = reinterpret_cast<__vector float>(vec_splats(*reinterpret_cast<double *>(base + align * offset[3])));
         t7 = vec_sub(t7, t3);
         *reinterpret_cast<double *>( base + align * offset[3] ) = vec_extract(reinterpret_cast<__vector double>(t7), 0);
-        base[align*offset[3] + 2] -= vec_extract(v2.simdInternal_, 3);
+        {
+            float extracted = vec_extract(v2.simdInternal_, 3);
+            base[align*offset[3] + 2] -= extracted;
+        }
     }
     else
     {
