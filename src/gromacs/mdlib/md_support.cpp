@@ -526,15 +526,12 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
         }
         else
         {
-            if (state->fep_state > 0)
-            {
-                state_global->fep_state = state->fep_state; /* state->fep is the one updated by bExpanded */
-                for (i = 0; i < efptNR; i++)
-                {
-                    state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
-                }
-            }
-        }
+			state_global->fep_state = state->fep_state; /* state->fep_state is the one updated by bExpanded */
+			for (i = 0; i < efptNR; i++)
+			{
+				state_global->lambda[i] = fepvals->all_lambda[i][state_global->fep_state];
+			}
+		}
     }
     for (i = 0; i < efptNR; i++)
     {
