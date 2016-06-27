@@ -116,8 +116,10 @@ extern const SimdReal rSimd_m1_m2_m3;  //!< Generic negative floating-point valu
 extern const SimdReal rSimd_3_1_4;     //!< Used to test min/max.
 extern const SimdReal rSimd_m3_m1_m4;  //!< negative rSimd_3_1_4.
 extern const SimdReal rSimd_2p25;      //!< Value that rounds down.
+extern const SimdReal rSimd_3p25;      //!< Value that rounds down.
 extern const SimdReal rSimd_3p75;      //!< Value that rounds up.
 extern const SimdReal rSimd_m2p25;     //!< Negative value that rounds up.
+extern const SimdReal rSimd_m3p25;     //!< Negative value that rounds up.
 extern const SimdReal rSimd_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const SimdReal rSimd_Exp;
