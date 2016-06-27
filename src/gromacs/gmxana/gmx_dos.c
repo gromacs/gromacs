@@ -89,7 +89,7 @@ static int calcMoleculesInIndexGroup(t_block *mols, int natoms, atom_id *index, 
                 gmx_fatal(FARGS, "The index group does not consist of whole molecules");
             }
             i++;
-            if (i == natoms)
+            if (i > natoms)
             {
                 gmx_fatal(FARGS, "Index contains atom numbers larger than the topology");
             }
