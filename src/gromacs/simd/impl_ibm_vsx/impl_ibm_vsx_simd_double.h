@@ -351,7 +351,7 @@ static inline SimdDouble gmx_simdcall
 maskzRsqrt(SimdDouble x, SimdDBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = vec_sel(vec_splats(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
                vec_and(vec_rsqrte(x.simdInternal_), reinterpret_cast<__vector double>(m.simdInternal_))
@@ -362,7 +362,7 @@ static inline SimdDouble gmx_simdcall
 maskzRcp(SimdDouble x, SimdDBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = vec_sel(vec_splats(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
                vec_and(vec_re(x.simdInternal_), reinterpret_cast<__vector double>(m.simdInternal_))
@@ -519,12 +519,22 @@ static inline SimdDBool gmx_simdcall
 testBits(SimdDouble a)
 {
 #ifdef __POWER8_VECTOR__
+    // Power8 VSX has proper support for operations on long long integers
     return {
                vec_cmpgt(reinterpret_cast<__vector unsigned long long>(a.simdInternal_), vec_splats(0ULL))
     };
 #else
+    // No support for long long operations.
+    // Start with comparing 32-bit subfields bitwise by casting to integers
+    __vector vsxBool int tmp = vec_cmpgt( reinterpret_cast<__vector unsigned int>(a.simdInternal_), vec_splats(0U));
+
+    // Shuffle low/high 32-bit fields of tmp into tmp2
+    const __vector unsigned char  perm  = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+    __vector vsxBool int          tmp2  = vec_perm(tmp, tmp, perm);
+
+    // Return the or:d parts of tmp & tmp2
     return {
-               reinterpret_cast<__vector vsxBool long long>(vec_nor(reinterpret_cast<__vector signed int>(vec_cmpeq(a.simdInternal_, vec_splats(0.0))), vec_splats(0)))
+               reinterpret_cast<__vector vsxBool long long>(vec_or(tmp, tmp2))
     };
 #endif
 }
@@ -748,10 +758,12 @@ cvtI2R(SimdDInt32 a)
 {
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 // gcc up to at least version 4.9 is missing intrinsics for converting double to/from int - use inline asm
-    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
     __vector double              x;
-
+#ifndef __BIG_ENDIAN__
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
     a.simdInternal_ = vec_perm(a.simdInternal_, a.simdInternal_, perm);
+#endif
+
     __asm__ ("xvcvsxwdp %x0,%x1" : "=wd" (x) : "wa" (a.simdInternal_));
 
     return {
