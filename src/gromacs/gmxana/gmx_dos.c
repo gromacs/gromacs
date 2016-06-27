@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ static int calcMoleculesInIndexGroup(t_block *mols, int natoms, atom_id *index, 
                 gmx_fatal(FARGS, "The index group does not consist of whole molecules");
             }
             i++;
-            if (i == natoms)
+            if (i > natoms)
             {
                 gmx_fatal(FARGS, "Index contains atom numbers larger than the topology");
             }
