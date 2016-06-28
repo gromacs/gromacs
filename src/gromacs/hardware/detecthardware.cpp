@@ -80,6 +80,12 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
+static const bool isArm = true;
+#else
+static const bool isArm = false;
+#endif
+
 static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 
 /* Note that some of the following arrays must match the "GPU support
@@ -612,19 +618,45 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
 static void check_nthreads_hw_avail(const t_commrec gmx_unused *cr,
                                     FILE gmx_unused *fplog, int nthreads)
 {
-// Now check if we have the argument to use before executing the call
-#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
-    if (nthreads != sysconf(_SC_NPROCESSORS_ONLN))
-    {
-        md_print_warn(cr, fplog,
-                      "%d CPUs configured, but only %d of them are online.\n"
-                      "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                      "off to save power, and will turn them back on later when the load increases.\n"
-                      "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                      "will likely see much better performance by forcing all cores to be online, and\n"
-                      "making sure they run at their full clock frequency.", nthreads, sysconf(_SC_NPROCESSORS_ONLN));
-    }
+    int nthreadsOnline, nthreadsConfigured;
+#if defined HAVE_SYSCONF && defined _SC_NPROCESSORS_ONLN
+    // We are probably on Unix, and have checked the argument to use before executing the call.
+    nthreadsOnline = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+    nthreadsOnline = nthreads;
 #endif
+#if defined HAVE_SYSCONF && defined _SC_NPROCESSORS_CONF
+    // We are probably on Unix, and have checked the argument to use before executing the call.
+    nthreadsConfigured = sysconf(_SC_NPROCESSORS_CONF);
+#else
+    nthreadsConfigured = nthreads;
+#endif
+    if (nthreadsConfigured != nthreadsOnline)
+    {
+        /* We assume that this scenario means that the kernel has
+           disabled threads or cores. */
+        if (isArm)
+        {
+            md_print_warn(cr, fplog,
+                          "%d CPUs configured, but only %d of them are online.\n"
+                          "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                          "off to save power, and will turn them back on later when the load increases.\n"
+                          "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                          "will likely see much better performance by forcing all cores to be online, and\n"
+                          "making sure they run at their full clock frequency.", nthreadsConfigured, nthreadsOnline);
+        }
+        else
+        {
+            /* If this fires, then perhaps
+               detectLogicalProcessorCount() needs updating, or the
+               number of online cores has changed in the meantime. */
+            GMX_RELEASE_ASSERT(nthreads == nthreadsOnline, gmx::formatString("Requested to use %d threads, but sysconf reported %d cores online.", nthreads, nthreadsOnline).c_str());
+            // On x86 this means HT is disabled by the kernel, not in the BIOS.
+            md_print_warn(cr, fplog,
+                          "Note: %d CPUs configured, but only %d of them are online, so GROMACS will use the latter.",
+                          nthreadsConfigured, nthreadsOnline);
+        }
+    }
 
     if (debug)
     {
