@@ -68,6 +68,12 @@
 #    include <windows.h>      // GetSystemInfo()
 #endif
 
+#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
+static const bool isArm = true;
+#else
+static const bool isArm = false;
+#endif
+
 namespace gmx
 {
 
@@ -573,13 +579,42 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
         int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
         if (count != countOnline)
         {
-            md_print_warn(cr, fplog,
-                          "%d CPUs configured, but only %d of them are online.\n"
-                          "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                          "off to save power, and will turn them back on later when the load increases.\n"
-                          "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                          "will likely see much better performance by forcing all cores to be online, and\n"
-                          "making sure they run at their full clock frequency.", count, countOnline);
+            /* We assume that this scenario means that the kernel has
+               disabled threads or cores, and that the only safe course is
+               to assume that _SC_NPROCESSORS_ONLN should be used. Even
+               this may not be valid if running in a containerized
+               environment, such system calls may read from
+               /sys/devices/system/cpu and report what the OS sees, rather
+               than what the container cgroup is supposed to set up as
+               limits. But we're not sure right now whether there's any
+               (standard-ish) way to handle that.
+
+               On ARM, the kernel may have powered down the cores,
+               which we'll warn the user about later in
+               check_nthreads_hw_avail. On x86, this means HT is
+               disabled by the kernel, not in the BIOS. We're not sure
+               what it means on other architectures, or even if it is
+               possible, because sysconf is rather
+               non-standardized. */
+            if (isArm)
+            {
+                md_print_warn(cr, fplog,
+                              "%d CPUs configured, but only %d of them are online.\n"
+                              "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                              "off to save power, and will turn them back on later when the load increases.\n"
+                              "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                              "will likely see much better performance by forcing all cores to be online, and\n"
+                              "making sure they run at their full clock frequency.", count, countOnline);
+            }
+            else
+            {
+                // On x86 this means HT is disabled by the kernel, not in the BIOS.
+                md_print_warn(cr, fplog,
+                              "Note: %d CPUs configured, but only %d of them are online, so GROMACS will use the latter.",
+                              count, countOnline);
+                // We use the online count to avoid (potential) oversubscription.
+                count = countOnline;
+            }
         }
 #        endif
 #    elif defined(_SC_NPROC_CONF)
