@@ -46,14 +46,6 @@
 #include <string>
 #include <vector>
 
-#ifdef HAVE_UNISTD_H
-/* For sysconf */
-#include <unistd.h>
-#endif
-#if GMX_NATIVE_WINDOWS
-#include <windows.h>
-#endif
-
 #include "thread_mpi/threads.h"
 
 #include "gromacs/gmxlib/md_logging.h"
@@ -74,7 +66,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -604,44 +595,6 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     return uniq_count;
 }
 
-/* On e.g. Arm, the Linux kernel can use advanced power saving features where
- * processors are brought online/offline dynamically. This will cause
- * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
- * reason we now warn if this mismatches with the detected core count.
- */
-static void check_nthreads_hw_avail(const t_commrec gmx_unused *cr,
-                                    FILE gmx_unused *fplog, int nthreads)
-{
-// Now check if we have the argument to use before executing the call
-#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
-    if (nthreads != sysconf(_SC_NPROCESSORS_ONLN))
-    {
-        md_print_warn(cr, fplog,
-                      "%d CPUs configured, but only %d of them are online.\n"
-                      "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                      "off to save power, and will turn them back on later when the load increases.\n"
-                      "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                      "will likely see much better performance by forcing all cores to be online, and\n"
-                      "making sure they run at their full clock frequency.", nthreads, sysconf(_SC_NPROCESSORS_ONLN));
-    }
-#endif
-
-    if (debug)
-    {
-        fprintf(debug, "Detected %d hardware threads to use.\n", nthreads);
-    }
-
-#if GMX_OPENMP
-    if (nthreads != gmx_omp_get_num_procs())
-    {
-        md_print_warn(cr, fplog,
-                      "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                      "Consider setting the launch configuration manually!",
-                      nthreads, gmx_omp_get_num_procs());
-    }
-#endif
-}
-
 static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 {
 #if GMX_LIB_MPI
@@ -878,15 +831,10 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         snew(hwinfo_g, 1);
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
-        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
+        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect(fplog, cr));
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
-        // If we detected the topology on this system, double-check that it makes sense
-        if (hwinfo_g->hardwareTopology->isThisSystem())
-        {
-            check_nthreads_hw_avail(cr, fplog, hwinfo_g->nthreads_hw_avail);
-        }
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;

@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <vector>
 
@@ -54,8 +56,10 @@
 #    include <hwloc.h>
 #endif
 
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxomp.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>       // sysconf()
@@ -547,7 +551,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
  *  \return The number of hardware processing units, or 0 if it fails.
  */
 int
-detectLogicalProcessorCount()
+detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
 {
     int count = 0;
 
@@ -558,9 +562,26 @@ detectLogicalProcessorCount()
         GetSystemInfo( &sysinfo );
         count = sysinfo.dwNumberOfProcessors;
 #elif defined HAVE_SYSCONF
-        // We are probably on Unix. Check if we have the argument to use before executing the call
+        // We are probably on Unix. Check if we have the argument to use before executing any calls
 #    if defined(_SC_NPROCESSORS_CONF)
         count = sysconf(_SC_NPROCESSORS_CONF);
+#        if defined(_SC_NPROCESSORS_ONLN)
+        /* On e.g. Arm, the Linux kernel can use advanced power saving features where
+         * processors are brought online/offline dynamically. This will cause
+         * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
+         * reason we now warn if this mismatches with the detected core count. */
+        int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
+        if (count != countOnline)
+        {
+            md_print_warn(cr, fplog,
+                          "%d CPUs configured, but only %d of them are online.\n"
+                          "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                          "off to save power, and will turn them back on later when the load increases.\n"
+                          "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                          "will likely see much better performance by forcing all cores to be online, and\n"
+                          "making sure they run at their full clock frequency.", count, countOnline);
+        }
+#        endif
 #    elif defined(_SC_NPROC_CONF)
         count = sysconf(_SC_NPROC_CONF);
 #    elif defined(_SC_NPROCESSORS_ONLN)
@@ -575,13 +596,26 @@ detectLogicalProcessorCount()
         count = 0; // Neither windows nor Unix.
 #endif
     }
+#if GMX_OPENMP
+    int countFromOpenmp = gmx_omp_get_num_procs();
+    if (count != countFromOpenmp)
+    {
+        md_print_warn(cr, fplog,
+                      "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
+                      "Consider setting the launch configuration manually!",
+                      count, countFromOpenmp);
+    }
+#endif
+
+    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(fplog);
     return count;
 }
 
 }   // namespace anonymous
 
 // static
-HardwareTopology HardwareTopology::detect()
+HardwareTopology HardwareTopology::detect(FILE *fplog, const t_commrec *cr)
 {
     HardwareTopology result;
 
@@ -607,7 +641,7 @@ HardwareTopology HardwareTopology::detect()
     if (result.supportLevel_ == SupportLevel::None)
     {
         // No topology information; try to detect the number of logical processors at least
-        result.machine_.logicalProcessorCount = detectLogicalProcessorCount();
+        result.machine_.logicalProcessorCount = detectLogicalProcessorCount(fplog, cr);
         if (result.machine_.logicalProcessorCount > 0)
         {
             result.supportLevel_ = SupportLevel::LogicalProcessorCount;
