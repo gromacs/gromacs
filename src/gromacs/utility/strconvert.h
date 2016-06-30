@@ -1,0 +1,124 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ * \brief
+ * Declares common utility functions for conversions from strings.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_STRCONVERT_H
+#define GMX_UTILITY_STRCONVERT_H
+
+#include <string>
+
+#include "gromacs/utility/basedefinitions.h"
+
+namespace gmx
+{
+
+//! \cond libapi
+//! \addtogroup module_utility
+//! \{
+
+/*! \brief
+ * Parses an integer from a string.
+ *
+ * \throws  InvalidInputError if `str` is not a valid integer.
+ *
+ * Also checks for overflow.
+ */
+int intFromString(const char *str);
+/*! \brief
+ * Parses a 64-bit integer from a string.
+ *
+ * \throws  InvalidInputError if `str` is not a valid integer.
+ *
+ * Also checks for overflow.
+ */
+gmx_int64_t int64FromString(const char *str);
+/*! \brief
+ * Parses a float value from a string.
+ *
+ * \throws  InvalidInputError if `str` is not a valid number.
+ *
+ * Also checks for overflow.
+ */
+float floatFromString(const char *str);
+/*! \brief
+ * Parses a double value from a string.
+ *
+ * \throws  InvalidInputError if `str` is not a valid number.
+ *
+ * Also checks for overflow.
+ */
+double doubleFromString(const char *str);
+
+/*! \brief
+ * Parses a value from a string to a given type.
+ *
+ * \tparam T Type of value to parse.
+ *
+ * `T` can only be one of the types that is explicity supported.
+ * The main use for this function is to write `fromString<real>(value)`,
+ * but it can also be used for other types for consistency.
+ */
+template <typename T> static inline T fromString(const char *str);
+//! \copydoc fromString(const char *)
+template <typename T> static inline T fromString(const std::string &str)
+{
+    return fromString<T>(str.c_str());
+}
+
+//! Implementation for integer values.
+template <> inline
+int fromString<int>(const char *str) { return intFromString(str); }
+//! Implementation for 64-bit integer values.
+template <> inline
+gmx_int64_t fromString<gmx_int64_t>(const char *str) { return int64FromString(str); }
+//! Implementation for float values.
+template <> inline
+float fromString<float>(const char *str) { return floatFromString(str); }
+//! Implementation for double values.
+template <> inline
+double fromString<double>(const char *str) { return doubleFromString(str); }
+
+//! \}
+//! \endcond
+
+} // namespace gmx
+
+#endif

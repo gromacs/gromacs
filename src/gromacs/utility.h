@@ -133,6 +133,8 @@
  *
  * \if libapi
  *
+ * The header strconvert.h declares string parsing routines.
+ *
  * The header gmxmpi.h abstracts away the mechanism of including either MPI or
  * thread-MPI headers depending on compilation options.
  * Similarly, gmxomp.h removes the need to use conditional compilation for code
