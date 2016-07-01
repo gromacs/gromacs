@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="ExponentialDistribution">
     <Int Name="Length">10</Int>
-    <Real>0.92549379561501188</Real>
-    <Real>0.013168495762002016</Real>
-    <Real>0.022251099130735842</Real>
-    <Real>0.23759859566034716</Real>
-    <Real>0.038665674736610124</Real>
-    <Real>0.016541807278810619</Real>
-    <Real>0.18103781021478368</Real>
-    <Real>0.17955342905619712</Real>
-    <Real>0.18197374957106757</Real>
-    <Real>0.14540022394339377</Real>
+    <Real>0.22333462396987422</Real>
+    <Real>0.18421697200896706</Real>
+    <Real>0.033839365119957797</Real>
+    <Real>0.51016911715115631</Real>
+    <Real>0.22561816943872842</Real>
+    <Real>0.33608648129666574</Real>
+    <Real>0.38497529095967858</Real>
+    <Real>0.056196444488407105</Real>
+    <Real>0.063115628619941855</Real>
+    <Real>0.021977804339963065</Real>
   </Sequence>
 </ReferenceData>

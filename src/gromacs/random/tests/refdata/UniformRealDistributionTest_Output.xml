@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="UniformRealDistribution">
     <Int Name="Length">10</Int>
-    <Real>9.9119846810554737</Real>
-    <Real>1.5734949728137229</Real>
-    <Real>1.9476088734177832</Real>
-    <Real>7.2565078971051244</Real>
-    <Real>2.5820984763691017</Real>
-    <Real>1.7144292261626446</Real>
-    <Real>6.359811280714311</Real>
-    <Real>6.3326936351463772</Real>
-    <Real>6.3768064629822563</Real>
-    <Real>5.6497928806131403</Real>
+    <Real>7.0536961355209389</Real>
+    <Real>6.4172175568504182</Real>
+    <Real>2.4009157110538335</Real>
+    <Real>9.2978589775283176</Real>
+    <Real>7.087144911837985</Real>
+    <Real>8.3233593626949371</Real>
+    <Real>8.686955978025896</Real>
+    <Real>3.2046241765643413</Real>
+    <Real>3.435696335715265</Real>
+    <Real>1.9365979693335078</Real>
   </Sequence>
 </ReferenceData>

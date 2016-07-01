@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="GammaDistribution">
     <Int Name="Length">10</Int>
-    <Real>7.2300576785074835</Real>
-    <Real>7.2758594071167826</Real>
-    <Real>5.2014783979537693</Real>
-    <Real>17.065501715812729</Real>
-    <Real>32.066124987428772</Real>
-    <Real>5.4208824941016109</Real>
-    <Real>3.9078264858447538</Real>
-    <Real>3.1450042317477274</Real>
-    <Real>9.3517746645342825</Real>
-    <Real>3.2296141721313592</Real>
+    <Real>9.2146999780459886</Real>
+    <Real>9.3181723985255722</Real>
+    <Real>16.492350958815223</Real>
+    <Real>2.7389756291065686</Real>
+    <Real>5.005568397097921</Real>
+    <Real>6.3781988933688938</Real>
+    <Real>18.121070565588941</Real>
+    <Real>12.390232051791186</Real>
+    <Real>9.9474836977264669</Real>
+    <Real>12.827282363762063</Real>
   </Sequence>
 </ReferenceData>

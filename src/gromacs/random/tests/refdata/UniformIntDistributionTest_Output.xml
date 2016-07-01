@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="UniformIntDistribution">
     <Int Name="Length">10</Int>
-    <Int>522</Int>
-    <Int>489</Int>
-    <Int>950</Int>
-    <Int>567</Int>
-    <Int>792</Int>
-    <Int>864</Int>
-    <Int>35</Int>
-    <Int>605</Int>
-    <Int>640</Int>
-    <Int>118</Int>
+    <Int>58</Int>
+    <Int>402</Int>
+    <Int>676</Int>
+    <Int>531</Int>
+    <Int>428</Int>
+    <Int>781</Int>
+    <Int>395</Int>
+    <Int>30</Int>
+    <Int>110</Int>
+    <Int>464</Int>
   </Sequence>
 </ReferenceData>

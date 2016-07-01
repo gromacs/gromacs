@@ -516,14 +516,12 @@ class ThreeFry2x64General
         void
         seed(gmx_uint64_t key0, gmx_uint64_t key1)
         {
-            const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? ( StaticLog2<internalCounterBits>::value + 1 ) : 0;
-
             key_ = {{key0, key1}};
 
             if (internalCounterBits > 0)
             {
-                internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBitsBits>(&key_);
-                internal::highBitCounter::increment<result_type, 2, internalCounterBitsBits>(&key_, internalCounterBits-1);
+                internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBits>(&key_);
+                internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&key_, internalCounterBits-1);
             }
             restart(0, 0);
         }

@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="GenerateCanonical">
     <Int Name="Length">10</Int>
-    <Real>0.9902205201172749</Real>
-    <Real>0.063721663645969207</Real>
-    <Real>0.10528987482419813</Real>
-    <Real>0.69516754412279158</Real>
-    <Real>0.17578871959656689</Real>
-    <Real>0.079381025129182742</Real>
-    <Real>0.59553458674603454</Real>
-    <Real>0.59252151501626416</Real>
-    <Real>0.59742294033136178</Real>
-    <Real>0.51664365340146001</Real>
+    <Real>0.672632903946771</Real>
+    <Real>0.60191306187226867</Real>
+    <Real>0.15565730122820373</Real>
+    <Real>0.92198433083647979</Real>
+    <Real>0.67634943464866504</Real>
+    <Real>0.81370659585499305</Real>
+    <Real>0.85410621978065515</Real>
+    <Real>0.24495824184048234</Real>
+    <Real>0.27063292619058499</Real>
+    <Real>0.10406644103705642</Real>
   </Sequence>
 </ReferenceData>
