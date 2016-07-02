@@ -202,85 +202,182 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
     spline->n = n;
 }
 
-/* Macro to force loop unrolling by fixing order.
- * This gives a significant performance gain.
- */
-#define CALC_SPLINE(order)                     \
-    {                                              \
-        for (int j = 0; (j < DIM); j++)            \
-        {                                          \
-            real dr, div;                          \
-            real data[PME_ORDER_MAX];              \
-                                                   \
-            dr  = xptr[j];                         \
-                                               \
-            /* dr is relative offset from lower cell limit */ \
-            data[order-1] = 0;                     \
-            data[1]       = dr;                          \
-            data[0]       = 1 - dr;                      \
-                                               \
-            for (int k = 3; (k < order); k++)      \
-            {                                      \
-                div       = 1.0/(k - 1.0);               \
-                data[k-1] = div*dr*data[k-2];      \
-                for (int l = 1; (l < (k-1)); l++)  \
-                {                                  \
-                    data[k-l-1] = div*((dr+l)*data[k-l-2]+(k-l-dr)* \
-                                       data[k-l-1]);                \
-                }                                  \
-                data[0] = div*(1-dr)*data[0];      \
-            }                                      \
-            /* differentiate */                    \
-            dtheta[j][i*order+0] = -data[0];       \
-            for (int k = 1; (k < order); k++)      \
-            {                                      \
-                dtheta[j][i*order+k] = data[k-1] - data[k]; \
-            }                                      \
-                                               \
-            div           = 1.0/(order - 1);                 \
-            data[order-1] = div*dr*data[order-2];  \
-            for (int l = 1; (l < (order-1)); l++)  \
-            {                                      \
-                data[order-l-1] = div*((dr+l)*data[order-l-2]+    \
-                                       (order-l-dr)*data[order-l-1]); \
-            }                                      \
-            data[0] = div*(1 - dr)*data[0];        \
-                                               \
-            for (int k = 0; k < order; k++)        \
-            {                                      \
-                theta[j][i*order+k]  = data[k];    \
-            }                                      \
-        }                                          \
+// Dummy function to enable compilation of the makeBsplines template
+static void transpose(real gmx_unused *a0,
+                      real gmx_unused *a1,
+                      real gmx_unused *a2,
+                      real gmx_unused *a3)
+{
+}
+
+// Wrapper function to enable one transpose call with different numbers of elements
+template<typename T,
+         int      packSize,
+         int      numElements>
+static void transposeWrapper(T gmx_unused *a)
+{
+    // cppcheck-suppress duplicateExpression
+    if (packSize > 1)
+    {
+        static_assert(packSize == 1 || numElements == 4, "transpose() is only implemented for 4 elements");
+
+        transpose(&a[0], &a[1], &a[2], &a[3]);
     }
+}
+
+// Template that does the actual spline calculation.
+// Works both for T=real and T=SimdReal.
+template<typename T,
+         int      packSize,
+         int      order>
+static void makeBsplines(splinevec theta, splinevec dtheta,
+                         const rvec fractx[], int nr, int ind[],
+                         const real *coefficient, gmx_bool alwaysCalcSplines)
+{
+    if (nr & (packSize - 1))
+    {
+        /* Pad ind so we don't need conditionals */
+        for (int i = nr; i < (nr | (packSize - 1)); i++)
+        {
+            ind[i] = ind[nr - 1];
+        }
+    }
+
+    /* construct splines for local atoms */
+    const real *fractxd = static_cast<const real *>(fractx[0]);
+
+    T           one(1);
+    T           orders(order);
+
+    for (int i = 0; i < nr; i += packSize)
+    {
+        /* When we don't use SIMD, we can skip the coefficient calculation
+         * for particles with zero charge, unless bDoSplines is set.
+         */
+        if (packSize == 1 && !alwaysCalcSplines && coefficient[ind[i]] == 0)
+        {
+            continue;
+        }
+
+        T x[DIM];
+
+        gatherLoadUTranspose<DIM>(fractxd, ind + i, &x[0], &x[1], &x[2]);
+
+        for (int j = 0; j < DIM; j++)
+        {
+            T data[order];
+
+            /* dr is relative offset from lower cell limit */
+            T dr   = x[j];
+            data[order-1] = setZero();
+            data[1]       = dr;
+            data[0]       = one - dr;
+
+            for (int k = 3; (k < order); k++)
+            {
+                T div(1.0/(k - 1));
+                data[k-1]    = div*dr*data[k-2];
+                for (int l = 1; l < k - 1; l++)
+                {
+                    T ls(l);
+                    T k_min_l(k - l);
+                    data[k-l-1] = div*((dr + ls)*data[k-l-2]+(k_min_l - dr)*data[k-l-1]);
+                }
+                data[0] = div*(one - dr)*data[0];
+            }
+            /* differentiate */
+            T dt[order];
+            dt[0] = -data[0];
+            for (int k = 1; (k < order); k++)
+            {
+                dt[k] = data[k-1] - data[k];
+            }
+            /* Transpose the coefficients in SIMD registers for storing */
+            transposeWrapper<T, packSize, order>(dt);
+            for (int k = 0; k < order; k++)
+            {
+                store(dtheta[j] + i*order + k*packSize, dt[k]);
+            }
+
+            T div(1.0/(order - 1));
+            data[order-1] = div*dr*data[order-2];
+            for (int l = 1; l < order - 1; l++)
+            {
+                T ls(l);
+                data[order-l-1] = div*((dr + ls)*data[order-l-2] +
+                                       (orders - ls - dr)*data[order-l-1]);
+            }
+            data[0] = div*(one - dr)*data[0];
+            /* Transpose the coefficients in SIMD registers for storing */
+            transposeWrapper<T, packSize, order>(data);
+            for (int k = 0; k < order; k++)
+            {
+                store(theta[j] + i*order + k*packSize, data[k]);
+            }
+        }
+    }
+
+    if (nr & (packSize - 1))
+    {
+        /* Revert the padding of ind.
+         * When we don't use threads, ind should be the identity mapping.
+         */
+        for (int i = nr; i < (nr | (packSize - 1)); i++)
+        {
+            ind[i] = i;
+        }
+    }
+}
 
 static void make_bsplines(splinevec theta, splinevec dtheta, int order,
                           rvec fractx[], int nr, int ind[], real coefficient[],
                           gmx_bool bDoSplines)
 {
-    /* construct splines for local atoms */
-    int   i, ii;
-    real *xptr;
+    GMX_ASSERT(order >= 3 && order <= 12, "We only support 3 <= order <= 12");
 
-    for (i = 0; i < nr; i++)
+    switch (order)
     {
-        /* With free energy we do not use the coefficient check.
-         * In most cases this will be more efficient than calling make_bsplines
-         * twice, since usually more than half the particles have non-zero coefficients.
-         */
-        ii = ind[i];
-        if (bDoSplines || coefficient[ii] != 0.0)
-        {
-            xptr = fractx[ii];
-            assert(order >= 4 && order <= PME_ORDER_MAX);
-            switch (order)
-            {
-                case 4:  CALC_SPLINE(4);     break;
-                case 5:  CALC_SPLINE(5);     break;
-                default: CALC_SPLINE(order); break;
-            }
-        }
+        case 4:
+            /* Stencil size 4 (order 3) is by far the most common case,
+             * so we support SIMD acceleration for this. Adding it for other
+             * orders requires additional SIMD transpose functions.
+             */
+#if GMX_SIMD_HAVE_REAL
+            makeBsplines<SimdReal, GMX_SIMD_REAL_WIDTH, 4>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+#else
+            makeBsplines<real, 1, 4>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+#endif
+            break;
+        case 3:
+            makeBsplines<real, 1, 3>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 5:
+            makeBsplines<real, 1, 5>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 6:
+            makeBsplines<real, 1, 6>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 7:
+            makeBsplines<real, 1, 7>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 8:
+            makeBsplines<real, 1, 8>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 9:
+            makeBsplines<real, 1, 9>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 10:
+            makeBsplines<real, 1, 10>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 11:
+            makeBsplines<real, 1, 11>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
+        case 12:
+            makeBsplines<real, 1, 12>(theta, dtheta, fractx, nr, ind, coefficient, bDoSplines);
+            break;
     }
 }
+
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \
