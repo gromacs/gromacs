@@ -80,6 +80,38 @@ avx256Transpose3By4InLanes(__m256 * v0,
     *v2       = _mm256_shuffle_ps(t2, *v2, _MM_SHUFFLE(0, 2, 1, 0));
 }
 
+/*
+ * Input v0: [a0 a1 a2 a3 a4 a5 a6 a7]
+ * Input v1: [b0 b1 b2 b3 b4 b5 b6 b7]
+ * Input v2: [c0 c1 c2 c3 c4 c5 c6 c7]
+ * Input v3: [d0 d1 d2 d3 d4 d5 d6 d7]
+ *
+ * Output v0: [a0 b0 c0 d0 a1 b1 c1 d1]
+ * Output v1: [a2 b2 c2 d2 a3 b3 c3 d3]
+ * Output v2: [a4 b4 c4 d4 a5 b5 c5 d5]
+ * Output v3: [a6 b6 c6 d6 a7 b7 c7 d7]
+ */
+static inline void gmx_simdcall
+transpose(SimdFloat * v0,
+          SimdFloat * v1,
+          SimdFloat * v2,
+          SimdFloat * v3)
+{
+    __m256 tA  = _mm256_unpacklo_ps(v0->simdInternal_, v1->simdInternal_);
+    __m256 tB  = _mm256_unpacklo_ps(v2->simdInternal_, v3->simdInternal_);
+    __m256 tC  = _mm256_unpackhi_ps(v0->simdInternal_, v1->simdInternal_);
+    __m256 tD  = _mm256_unpackhi_ps(v2->simdInternal_, v3->simdInternal_);
+    __m256 t0  = _mm256_shuffle_ps(tA, tB, _MM_SHUFFLE(1, 0, 1, 0));
+    __m256 t1  = _mm256_shuffle_ps(tA, tB, _MM_SHUFFLE(3, 2, 3, 2));
+    __m256 t2  = _mm256_shuffle_ps(tC, tD, _MM_SHUFFLE(1, 0, 1, 0));
+    __m256 t3  = _mm256_shuffle_ps(tC, tD, _MM_SHUFFLE(3, 2, 3, 2));
+
+    v0->simdInternal_ = _mm256_permute2f128_ps(t0, t1, 0x20);
+    v1->simdInternal_ = _mm256_permute2f128_ps(t2, t3, 0x20);
+    v2->simdInternal_ = _mm256_permute2f128_ps(t0, t1, 0x31);
+    v3->simdInternal_ = _mm256_permute2f128_ps(t2, t3, 0x31);
+}
+
 template <int align>
 static inline void gmx_simdcall
 gatherLoadTranspose(const float *        base,

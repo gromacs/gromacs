@@ -202,6 +202,7 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
     spline->n = n;
 }
 
+
 /* Macro to force loop unrolling by fixing order.
  * This gives a significant performance gain.
  */
@@ -253,9 +254,10 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
         }                                          \
     }
 
-static void make_bsplines(splinevec theta, splinevec dtheta, int order,
-                          rvec fractx[], int nr, int ind[], real coefficient[],
-                          gmx_bool bDoSplines)
+static void
+make_bsplines_generic(splinevec theta, splinevec dtheta, int order,
+                      rvec fractx[], int nr, int ind[], real coefficient[],
+                      gmx_bool bDoSplines)
 {
     /* construct splines for local atoms */
     int   i, ii;
@@ -281,6 +283,108 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
         }
     }
 }
+
+#ifdef GMX_SIMD_HAVE_REAL
+static void
+make_bsplines_simd_order4(splinevec theta, splinevec dtheta,
+                          const rvec fractx[], int nr, int ind[])
+{
+    if (nr & (GMX_SIMD_REAL_WIDTH - 1))
+    {
+        /* Pad ind so we don't need conditionals */
+        for (int i = nr; i < (nr | (GMX_SIMD_REAL_WIDTH - 1)); i++)
+        {
+            ind[i] = ind[nr - 1];
+        }
+    }
+
+    const int order = 4;
+
+    /* construct splines for local atoms */
+    const real *fractxd = static_cast<const real *>(fractx[0]);
+
+    SimdReal one(1);
+    SimdReal orders(order);
+
+    for (int i = 0; i < nr; i += GMX_SIMD_REAL_WIDTH)
+    {
+        SimdReal x[DIM];
+
+        gatherLoadUTranspose<DIM>(fractxd, ind + i, &x[0], &x[1], &x[2]);
+
+        for (int j = 0; j < DIM; j++)
+        {
+            SimdReal data[order];
+
+            /* dr is relative offset from lower cell limit */
+            SimdReal dr   = x[j];
+            data[order-1] = setZero();
+            data[1]       = dr;
+            data[0]       = one - dr;
+
+            for (int k = 3; (k < order); k++)
+            {
+                SimdReal div(1.0/(k - 1));
+                data[k-1]    = div*dr*data[k-2];
+                for (int l = 1; l < k - 1; l++)
+                {
+                    SimdReal ls(l);
+                    SimdReal k_min_l(k - l);
+                    data[k-l-1] = div*((dr + ls)*data[k-l-2]+(k_min_l - dr)*data[k-l-1]);
+                }
+                data[0] = div*(one - dr)*data[0];
+            }
+            /* differentiate */
+            SimdReal dt[order];
+            dt[0] = -data[0];
+            for (int k = 1; (k < order); k++)
+            {
+                dt[k] = data[k-1] - data[k];
+            }
+            /* Transpose the coefficients in SIMD registers for storing */
+            transpose(&dt[0], &dt[1], &dt[2], &dt[3]);
+            for (int k = 0; k < order; k++)
+            {
+                store(dtheta[j] + i*order + k*GMX_SIMD_REAL_WIDTH, dt[k]);
+            }
+
+            SimdReal div(1.0/(order - 1));
+            data[order-1] = div*dr*data[order-2];
+            for (int l = 1; l < order - 1; l++)
+            {
+                SimdReal ls(l);
+                data[order-l-1] = div*((dr + ls)*data[order-l-2] +
+                                       (orders - ls - dr)*data[order-l-1]);
+            }
+            data[0] = div*(one - dr)*data[0];
+            /* Transpose the coefficients in SIMD registers for storing */
+            transpose(&data[0], &data[1], &data[2], &data[3]);
+            for (int k = 0; k < order; k++)
+            {
+                store(theta[j] + i*order + k*GMX_SIMD_REAL_WIDTH, data[k]);
+            }
+        }
+    }
+}
+#endif
+
+static void make_bsplines(splinevec theta, splinevec dtheta, int order,
+                          rvec fractx[], int nr, int ind[], real coefficient[],
+                          gmx_bool bDoSplines)
+{
+#if GMX_SIMD_HAVE_REAL
+    if (order == 4)
+    {
+        make_bsplines_simd_order4(theta, dtheta, fractx, nr, ind);
+    }
+    else
+#endif
+    {
+        make_bsplines_generic(theta, dtheta, order, fractx, nr, ind,
+                              coefficient, bDoSplines);
+    }
+}
+
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \
