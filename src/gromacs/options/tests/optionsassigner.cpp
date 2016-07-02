@@ -222,8 +222,8 @@ TEST(OptionsAssignerTest, HandlesSections)
 {
     using gmx::OptionSection;
     gmx::Options options;
-    auto        &sub1   = options.addSection(OptionSection("section1"));
-    auto        &sub2   = options.addSection(OptionSection("section2"));
+    auto         sub1   = options.addSection(OptionSection("section1"));
+    auto         sub2   = options.addSection(OptionSection("section2"));
     int          value  = 3;
     int          value1 = 1;
     int          value2 = 2;

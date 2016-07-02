@@ -32,75 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Declares gmx::OptionSection and gmx::OptionSectionInfo.
+ * Implements classes from abstractsection.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
  * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_OPTIONSECTION_H
-#define GMX_OPTIONS_OPTIONSECTION_H
+#include "gmxpre.h"
 
-#include "gromacs/options/abstractsection.h"
-#include "gromacs/utility/classhelpers.h"
+#include "abstractsection.h"
+
+#include "options-impl.h"
 
 namespace gmx
 {
 
-class OptionSectionHandle;
-
-/*! \brief
- * Declares a simple option section.
- *
- * This class declares a simple section that only provides structure for
- * grouping the options, but does not otherwise influence the behavior of the
- * contained options.
- *
- * \inpublicapi
- * \ingroup module_options
- */
-class OptionSection : public AbstractOptionSection
+IOptionsContainer &AbstractOptionSectionHandle::addGroup()
 {
-    public:
-        //! AbstractOptionSectionHandle corresponding to this option type.
-        typedef OptionSectionHandle HandleType;
+    return section_->addGroup();
+}
 
-        //! Creates a section with the given name.
-        explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
-};
-
-/*! \brief
- * Allows adding options to an OptionSection.
- *
- * An instance of this class is returned from
- * IOptionsContainerWithSections::addSection(), and supports adding options and
- * subsections to a section created with OptionSection.
- *
- * \inpublicapi
- * \ingroup module_options
- */
-class OptionSectionHandle : public AbstractOptionSectionHandle
+internal::OptionSectionImpl *
+AbstractOptionSectionHandle::addSectionImpl(const AbstractOptionSection &section)
 {
-    public:
-        //! Wraps a given section storage object.
-        explicit OptionSectionHandle(internal::OptionSectionImpl *section)
-            : AbstractOptionSectionHandle(section)
-        {
-        }
-};
+    return section_->addSectionImpl(section);
+}
 
-class OptionSectionInfo : public AbstractOptionSectionInfo
+OptionInfo *AbstractOptionSectionHandle::addOptionImpl(const AbstractOption &settings)
 {
-    public:
-        //! Wraps a given section storage object.
-        explicit OptionSectionInfo(internal::OptionSectionImpl *section)
-            : AbstractOptionSectionInfo(section)
-        {
-        }
-};
+    return section_->addOptionImpl(settings);
+}
 
 } // namespace gmx
-
-#endif
