@@ -76,6 +76,15 @@ static const bool isArm = true;
 static const bool isArm = false;
 #endif
 
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = false;
+#endif
+
+
 namespace gmx
 {
 
@@ -592,9 +601,10 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
                (standard-ish) way to handle that.
 
                On ARM, the kernel may have powered down the cores,
-               which we'll warn the user about now. On x86, this
-               means HT is disabled by the kernel, not in the
-               BIOS. We're not sure what it means on other
+               which we'll warn the user about now.
+               On x86 this can indicate that HT is disabled
+               by the kernel not in the BIOS (if the difference is 2x).
+               We're not sure what it means on other
                architectures, or even if it is possible, because
                sysconf is rather non-standardized. */
             if (isArm)
@@ -609,9 +619,21 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
             }
             else
             {
-                md_print_warn(cr, fplog,
-                              "Note: %d CPUs configured, but only %d of them are online, so GROMACS will use the latter.",
-                              count, countOnline);
+                if (isX86 && count == 2*countOnline)
+                {
+                    md_print_warn(cr, fplog,
+                                  "Note: %d CPUs configured, but only %d of them are online."
+                                  "This likely means that HyperThreading is disabled which has performance benefits, "
+                                  "so consider re-enabling it. GROMACS will use the online CPU count.",
+                                  count, countOnline);
+                }
+                else
+                {
+                    md_print_warn(cr, fplog,
+                                  "Note: %d CPUs configured, but only %d of them are online, so GROMACS will use the latter.",
+                                  count, countOnline);
+                }
+
                 // We use the online count to avoid (potential) oversubscription.
                 count = countOnline;
             }
