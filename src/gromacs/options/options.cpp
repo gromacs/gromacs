@@ -98,13 +98,14 @@ OptionsImpl::OptionsImpl()
  * OptionSectionImpl
  */
 
-IOptionsContainerWithSections &OptionSectionImpl::addSection(const OptionSection &section)
+OptionSectionImpl *
+OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
 {
     const char *name = section.name_;
     // Make sure that there are no duplicate sections.
     GMX_RELEASE_ASSERT(findSection(name) == NULL, "Duplicate subsection name");
     subsections_.push_back(SectionPointer(new OptionSectionImpl(managers_, name)));
-    return *subsections_.back();
+    return subsections_.back().get();
 }
 
 IOptionsContainer &OptionSectionImpl::addGroup()
@@ -112,9 +113,9 @@ IOptionsContainer &OptionSectionImpl::addGroup()
     return rootGroup_.addGroup();
 }
 
-OptionInfo *OptionSectionImpl::addOption(const AbstractOption &settings)
+OptionInfo *OptionSectionImpl::addOptionImpl(const AbstractOption &settings)
 {
-    return rootGroup_.addOption(settings);
+    return rootGroup_.addOptionImpl(settings);
 }
 
 OptionSectionImpl *OptionSectionImpl::findSection(const char *name) const
@@ -189,7 +190,7 @@ IOptionsContainer &OptionSectionImpl::Group::addGroup()
     return subgroups_.back();
 }
 
-OptionInfo *OptionSectionImpl::Group::addOption(const AbstractOption &settings)
+OptionInfo *OptionSectionImpl::Group::addOptionImpl(const AbstractOption &settings)
 {
     OptionSectionImpl::AbstractOptionStoragePointer
          option(settings.createStorage(parent_->managers_));
@@ -237,9 +238,9 @@ void Options::addManager(IOptionManager *manager)
     impl_->managers_.add(manager);
 }
 
-IOptionsContainerWithSections &Options::addSection(const OptionSection &section)
+internal::OptionSectionImpl *Options::addSectionImpl(const AbstractOptionSection &section)
 {
-    return impl_->rootSection_.addSection(section);
+    return impl_->rootSection_.addSectionImpl(section);
 }
 
 IOptionsContainer &Options::addGroup()
@@ -247,9 +248,9 @@ IOptionsContainer &Options::addGroup()
     return impl_->rootSection_.addGroup();
 }
 
-OptionInfo *Options::addOption(const AbstractOption &settings)
+OptionInfo *Options::addOptionImpl(const AbstractOption &settings)
 {
-    return impl_->rootSection_.addOption(settings);
+    return impl_->rootSection_.addOptionImpl(settings);
 }
 
 OptionSectionInfo &Options::rootSection()

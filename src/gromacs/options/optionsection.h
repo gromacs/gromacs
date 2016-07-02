@@ -43,45 +43,41 @@
 #ifndef GMX_OPTIONS_OPTIONSECTION_H
 #define GMX_OPTIONS_OPTIONSECTION_H
 
+#include "gromacs/options/abstractsection.h"
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 
-namespace internal
-{
-class OptionSectionImpl;
-}
+class OptionSectionHandle;
 
-class OptionSection
+class OptionSection : public AbstractOptionSection
 {
     public:
-        explicit OptionSection(const char *name) : name_(name) {}
+        //! OptionSectionHandle corresponding to this option type.
+        typedef OptionSectionHandle HandleType;
 
-    private:
-        const char *name_;
-
-        friend class internal::OptionSectionImpl;
+        explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
 };
 
-class OptionSectionInfo
+class OptionSectionHandle : public AbstractOptionSectionHandle
+{
+    public:
+        //! Wraps a given section storage object.
+        explicit OptionSectionHandle(internal::OptionSectionImpl *section)
+            : AbstractOptionSectionHandle(section)
+        {
+        }
+};
+
+class OptionSectionInfo : public AbstractOptionSectionInfo
 {
     public:
         //! Wraps a given section storage object.
         explicit OptionSectionInfo(internal::OptionSectionImpl *section)
-            : section_(*section)
+            : AbstractOptionSectionInfo(section)
         {
         }
-
-        //! Returns the wrapped section storage object.
-        internal::OptionSectionImpl       &section() { return section_; }
-        //! Returns the wrapped section storage object.
-        const internal::OptionSectionImpl &section() const { return section_; }
-
-    private:
-        internal::OptionSectionImpl &section_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionSectionInfo);
 };
 
 } // namespace gmx

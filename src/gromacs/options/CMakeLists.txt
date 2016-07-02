@@ -32,11 +32,22 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB OPTIONS_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${OPTIONS_SOURCES} PARENT_SCOPE)
+gmx_add_libgromacs_sources(
+    abstractoption.cpp
+    abstractsection.cpp
+    basicoptions.cpp
+    behaviorcollection.cpp
+    filenameoption.cpp
+    filenameoptionmanager.cpp
+    options.cpp
+    optionsassigner.cpp
+    optionsvisitor.cpp
+    timeunitmanager.cpp
+    )
 
 gmx_install_headers(
     abstractoption.h
+    abstractoptionsection.h
     basicoptions.h
     filenameoption.h
     filenameoptionmanager.h
