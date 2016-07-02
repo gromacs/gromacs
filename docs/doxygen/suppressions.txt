@@ -18,7 +18,6 @@ src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" firs
 src/gromacs/ewald/pme-simd4.h: warning: should include "pme-simd.h"
 src/gromacs/ewald/pme-spline-work.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/ewald/pme-spline-work.h: warning: includes "simd.h" unnecessarily
-src/gromacs/ewald/pme-spread.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/kernelutil_sparc64_hpc_ace_double.h: warning: includes "simd.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_inner.h: warning: should include "simd.h"
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h: warning: should include "simd.h"

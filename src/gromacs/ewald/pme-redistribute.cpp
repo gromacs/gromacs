@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,13 +44,13 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
-#include "pme-simd.h"
 
 static void pme_calc_pidx(int start, int end,
                           matrix recipbox, rvec x[],
@@ -138,22 +138,31 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
     }
 }
 
+// Align memory on 128-byte boundaries
+// TODO: Replace by the aligned allocator
+static const int memAlignment = 128;
+
+#if GMX_SIMD_HAVE_REAL
+static const int simdPadding  = GMX_SIMD_REAL_WIDTH;
+#else
+static const int simdPadding  = 1;
+#endif
+
 static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
 {
-    const int padding = 4;
-    int       i;
-
-    srenew(th[XX], nalloc);
-    srenew(th[YY], nalloc);
+    sfree_aligned(th[XX]);
+    snew_aligned(th[XX], nalloc, memAlignment);
+    sfree_aligned(th[YY]);
+    snew_aligned(th[YY], nalloc, memAlignment);
     /* In z we add padding, this is only required for the aligned SIMD code */
     sfree_aligned(*ptr_z);
-    snew_aligned(*ptr_z, nalloc+2*padding, SIMD4_ALIGNMENT);
-    th[ZZ] = *ptr_z + padding;
+    snew_aligned(*ptr_z, nalloc + 2*simdPadding, memAlignment);
+    th[ZZ] = *ptr_z + simdPadding;
 
-    for (i = 0; i < padding; i++)
+    for (int i = 0; i < simdPadding; i++)
     {
-        (*ptr_z)[               i] = 0;
-        (*ptr_z)[padding+nalloc+i] = 0;
+        (*ptr_z)[                       i] = 0;
+        (*ptr_z)[simdPadding + nalloc + i] = 0;
     }
 }
 
@@ -161,7 +170,8 @@ static void pme_realloc_splinedata(splinedata_t *spline, pme_atomcomm_t *atc)
 {
     int i;
 
-    srenew(spline->ind, atc->nalloc);
+    sfree_aligned(spline->ind);
+    snew_aligned(spline->ind, atc->nalloc, memAlignment);
     /* Initialize the index to identity so it works without threads */
     for (i = 0; i < atc->nalloc; i++)
     {
@@ -185,6 +195,8 @@ void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
     {
         nalloc_old  = atc->nalloc;
         atc->nalloc = over_alloc_dd(std::max(atc->n, 1));
+        /* With SIMD we need padding up to a multiple of simdPadding */
+        atc->nalloc = ((atc->nalloc + simdPadding - 1)/simdPadding)*simdPadding;
 
         if (atc->nslab > 1)
         {
@@ -198,7 +210,8 @@ void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
         }
         if (atc->bSpread)
         {
-            srenew(atc->fractx, atc->nalloc);
+            /* With SIMD loads we might load 1 element extra */
+            srenew(atc->fractx, atc->nalloc + 1);
             srenew(atc->idx, atc->nalloc);
 
             if (atc->nthread > 1)
