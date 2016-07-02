@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,32 @@
 
 namespace gmx
 {
+
+
+/*
+ * Input v0:  [ a0 a1 ]
+ * Input v1:  [ b0 b1 ]
+ * Input v2:  [ c0 c1 ]
+ * Input v3:  [ d0 d1 ]
+ *
+ * Output v0: [ a0 b0 ]
+ * Output v1: [ c0 d0 ]
+ * Output v2: [ a1 b1 ]
+ * Output v3: [ c1 d1 ]
+ */
+static inline void gmx_simdcall
+transpose(SimdDouble * v0,
+          SimdDouble * v1,
+          SimdDouble * v2,
+          SimdDouble * v3)
+{
+    __m128d t0 = v0->simdInternal_;
+    __m128d t1 = v1->simdInternal_;
+    v0->simdInternal_ = _mm_unpacklo_pd(t0, t1);
+    v1->simdInternal_ = _mm_unpacklo_pd(v2->simdInternal_, v3->simdInternal_);
+    v3->simdInternal_ = _mm_unpackhi_pd(v2->simdInternal_, v3->simdInternal_);
+    v2->simdInternal_ = _mm_unpackhi_pd(t0, t1);
+}
 
 template <int align>
 static inline void gmx_simdcall
