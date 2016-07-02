@@ -128,13 +128,8 @@ class Options : public IOptionsContainerWithSections
          */
         void addManager(IOptionManager *manager);
 
-        // From IOptionsContainerWithSections
-        virtual IOptionsContainerWithSections &addSection(const OptionSection &section);
-
         // From IOptionsContainer
         virtual IOptionsContainer &addGroup();
-        virtual OptionInfo *addOption(const AbstractOption &settings);
-        using IOptionsContainer::addOption;
 
         //! Returns a handle to the root section.
         OptionSectionInfo       &rootSection();
@@ -158,6 +153,12 @@ class Options : public IOptionsContainerWithSections
         void finish();
 
     private:
+        // From IOptionsContainerWithSections
+        virtual internal::OptionSectionImpl *
+        addSectionImpl(const AbstractOptionSection &section);
+        // From IOptionsContainer
+        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+
         PrivateImplPointer<internal::OptionsImpl> impl_;
 
         //! Needed to be able to extend the interface of this object.

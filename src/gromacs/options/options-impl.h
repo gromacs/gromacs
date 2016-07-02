@@ -94,7 +94,7 @@ class OptionSectionImpl : public IOptionsContainerWithSections
 
                 // From IOptionsContainer
                 virtual IOptionsContainer &addGroup();
-                virtual OptionInfo *addOption(const AbstractOption &settings);
+                virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
 
                 //! Containing options object.
                 OptionSectionImpl  *parent_;
@@ -126,11 +126,11 @@ class OptionSectionImpl : public IOptionsContainerWithSections
         }
 
         // From IOptionsContainerWithSections
-        virtual IOptionsContainerWithSections &addSection(const OptionSection &section);
+        virtual OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section);
 
         // From IOptionsContainer
         virtual IOptionsContainer &addGroup();
-        virtual OptionInfo *addOption(const AbstractOption &settings);
+        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
 
         //! Returns section info object for this section.
         OptionSectionInfo       &info() { return info_; }
