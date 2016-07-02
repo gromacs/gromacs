@@ -233,6 +233,22 @@ transposeScatterStoreU(float *              base,
     _mm512_i32scatter_ps(base+2, simdoffset.simdInternal_, v2.simdInternal_, 4);
 }
 
+static inline void gmx_simdcall
+transpose(SimdFloat * v0,
+          SimdFloat * v1,
+          SimdFloat * v2,
+          SimdFloat * v3)
+{
+    __m512 tA = _mm512_shuffle_f32x4(v0->simdInternal_, v1->simdInternal_, _MM_SHUFFLE(1, 0, 1, 0));
+    __m512 tB = _mm512_shuffle_f32x4(v0->simdInternal_, v1->simdInternal_, _MM_SHUFFLE(3, 2, 3, 2));
+    __m512 tC = _mm512_shuffle_f32x4(v2->simdInternal_, v3->simdInternal_, _MM_SHUFFLE(1, 0, 1, 0));
+    __m512 tD = _mm512_shuffle_f32x4(v2->simdInternal_, v3->simdInternal_, _MM_SHUFFLE(3, 2, 3, 2));
+
+    v0->simdInternal_ = _mm512_permutex2var_ps(tA, _mm512_set_epi32(27, 19, 11, 3, 26, 18, 10, 2, 25, 17,  9, 1, 24, 16,  8, 0), tC);
+    v1->simdInternal_ = _mm512_permutex2var_ps(tA, _mm512_set_epi32(31, 23, 15, 7, 30, 22, 14, 6, 29, 21, 13, 5, 28, 20, 12, 4), tC);
+    v2->simdInternal_ = _mm512_permutex2var_ps(tB, _mm512_set_epi32(27, 19, 11, 3, 26, 18, 10, 2, 25, 17,  9, 1, 24, 16,  8, 0), tD);
+    v3->simdInternal_ = _mm512_permutex2var_ps(tB, _mm512_set_epi32(31, 23, 15, 7, 30, 22, 14, 6, 29, 21, 13, 5, 28, 20, 12, 4), tD);
+}
 
 template <int align>
 static inline void gmx_simdcall
