@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,5 +59,17 @@
 /* We can use any alignment, apart from 0, so we use 4 reals */
 #    define SIMD4_ALIGNMENT  (4*sizeof(real))
 #endif
+
+/* Returns the smallest number >= \p that is a multiple of \p factor, \p factor must be a power of 2 */
+template <unsigned int factor>
+static inline size_t roundUpToMultipleOfFactor(size_t number)
+{
+    static_assert(factor > 0 && (factor & (factor - 1)) == 0, "factor should be >0 and a power of 2");
+
+    /* We need to add a most factor-1 and because factor is a power of 2,
+     * we get the result by masking out the bits corresponding to factor-1.
+     */
+    return (number + factor - 1) & ~(factor - 1);
+}
 
 #endif

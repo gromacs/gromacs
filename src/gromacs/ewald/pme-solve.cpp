@@ -52,6 +52,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
+#include "pme-simd.h"
 
 #if GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
@@ -87,18 +88,6 @@ constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
 /* We can use any alignment > 0, so we use 4 */
 constexpr int c_simdWidth = 4;
 #endif
-
-/* Returns the smallest number >= \p that is a multiple of \p factor, \p factor must be a power of 2 */
-template <unsigned int factor>
-static size_t roundUpToMultipleOfFactor(size_t number)
-{
-    static_assert(factor > 0 && (factor & (factor - 1)) == 0, "factor should be >0 and a power of 2");
-
-    /* We need to add a most factor-1 and because factor is a power of 2,
-     * we get the result by masking out the bits corresponding to factor-1.
-     */
-    return (number + factor - 1) & ~(factor - 1);
-}
 
 /* Allocate an aligned pointer for SIMD operations, including extra elements
  * at the end for padding.
