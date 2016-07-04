@@ -66,12 +66,14 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
-static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
+static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
+static const bool bHasOmpSupport = GMX_OPENMP;
 
 /* Note that some of the following arrays must match the "GPU support
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
@@ -1131,6 +1133,25 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
     check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
+}
+
+void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
+                                                      const gmx::HardwareTopology *hardwareTopology)
+{
+    if (bHasOmpSupport &&
+        hardwareTopology->supportLevel() >=
+        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
+        int countFromOpenmp    = gmx_omp_get_num_procs();
+        if (countFromDetection != countFromOpenmp)
+        {
+            md_print_warn(cr, fplog,
+                          "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
+                          "Consider setting the launch configuration manually!",
+                          countFromDetection, countFromOpenmp);
+        }
+    }
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
