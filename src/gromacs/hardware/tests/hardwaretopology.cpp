@@ -79,12 +79,12 @@ TEST(HardwareTopologyTest, Execute)
 #if GMX_HWLOC
 TEST(HardwareTopologyTest, HwlocExecute)
 {
-#ifdef __linux__
+#if defined(__linux__)
     gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect(nullptr, nullptr));
 
-    // On Linux with hwloc support we should be able to get full information
-    EXPECT_GE(hwTop.supportLevel(), gmx::HardwareTopology::SupportLevel::Full)
-    << "Cannot determine full hardware topology from hwloc. GROMACS will still\n" << std::endl
+    // On Linux with hwloc support we should be able to get at least basic information
+    EXPECT_GE(hwTop.supportLevel(), gmx::HardwareTopology::SupportLevel::Basic)
+    << "Cannot determine basic hardware topology from hwloc. GROMACS will still\n" << std::endl
     << "work, but it might affect your performance for large nodes." << std::endl
     << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
 #endif
