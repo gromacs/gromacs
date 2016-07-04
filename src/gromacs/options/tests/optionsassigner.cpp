@@ -603,10 +603,8 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssign
 {
     gmx::Options     options;
     int              vec[3] = {3, 2, 1};
-    std::vector<int> vec2(vec, vec+3);
     using gmx::IntegerOption;
-    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec)
-                                          .storeVector(&vec2).vector()));
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec).vector()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -620,10 +618,6 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssign
     EXPECT_EQ(3, vec[0]);
     EXPECT_EQ(2, vec[1]);
     EXPECT_EQ(1, vec[2]);
-    ASSERT_EQ(3U, vec2.size());
-    EXPECT_EQ(3, vec2[0]);
-    EXPECT_EQ(2, vec2[1]);
-    EXPECT_EQ(1, vec2[2]);
 }
 
 

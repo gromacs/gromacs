@@ -377,7 +377,7 @@ void FileNameOptionStorage::processAll()
 {
     if (manager_ != NULL && hasFlag(efOption_HasDefaultValue))
     {
-        ValueList &valueList = values();
+        ArrayRef<std::string> valueList = values();
         GMX_RELEASE_ASSERT(valueList.size() == 1,
                            "There should be only one default value");
         if (!valueList[0].empty())
@@ -394,7 +394,6 @@ void FileNameOptionStorage::processAll()
                 GMX_ASSERT(isValidType(fn2ftp(newValue.c_str())),
                            "Manager returned an invalid default value");
                 valueList[0] = newValue;
-                refreshValues();
             }
         }
     }

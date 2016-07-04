@@ -54,6 +54,7 @@ gmx_install_headers(
     ioptionsbehavior.h
     ioptionscontainer.h
     ioptionscontainerwithsections.h
+    ivaluestore.h
     optionfiletype.h
     optionflags.h
     options.h

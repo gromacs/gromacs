@@ -216,10 +216,6 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 class EnumOptionStorage : public OptionStorageTemplate<int>
 {
     public:
-        //! Shorthand for the enum index storage interface.
-        typedef std::unique_ptr<internal::EnumIndexStoreInterface>
-            EnumIndexStorePointer;
-
         /*! \brief
          * Initializes the storage from option settings.
          *
@@ -239,7 +235,7 @@ class EnumOptionStorage : public OptionStorageTemplate<int>
         EnumOptionStorage(const AbstractOption &settings,
                           const char *const *enumValues, int count,
                           int defaultValue, int defaultValueIfSet,
-                          EnumIndexStorePointer store);
+                          StorePointer store);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "enum"; }
@@ -251,14 +247,9 @@ class EnumOptionStorage : public OptionStorageTemplate<int>
 
     private:
         virtual void convertValue(const std::string &value);
-        virtual void processSetValues(ValueList *values);
-        virtual void refreshValues();
-
-        void refreshEnumIndexStore();
 
         EnumOptionInfo            info_;
         std::vector<std::string>  allowed_;
-        EnumIndexStorePointer     store_;
 };
 
 /*!\}*/

@@ -300,13 +300,11 @@ void DoubleOptionStorage::setScaleFactor(double factor)
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
     if (!hasFlag(efOption_HasDefaultValue))
     {
-        double              scale = factor / factor_;
-        ValueList::iterator i;
-        for (i = values().begin(); i != values().end(); ++i)
+        double scale = factor / factor_;
+        for (double &value : values())
         {
-            (*i) *= scale;
+            value *= scale;
         }
-        refreshValues();
     }
     factor_ = factor;
 }
@@ -390,13 +388,11 @@ void FloatOptionStorage::setScaleFactor(double factor)
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
     if (!hasFlag(efOption_HasDefaultValue))
     {
-        double              scale = factor / factor_;
-        ValueList::iterator i;
-        for (i = values().begin(); i != values().end(); ++i)
+        float scale = factor / factor_;
+        for (float &value : values())
         {
-            (*i) *= scale;
+            value *= scale;
         }
-        refreshValues();
     }
     factor_ = factor;
 }
@@ -482,9 +478,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
             {
                 GMX_THROW(APIError("Conflicting default values"));
             }
-            clear();
-            addValue(allowed_[settings.defaultEnumIndex_]);
-            commitValues();
+            setDefaultValue(allowed_[settings.defaultEnumIndex_]);
         }
     }
 }
@@ -560,8 +554,8 @@ StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
                                      const char *const *enumValues, int count,
                                      int defaultValue, int defaultValueIfSet,
-                                     EnumIndexStorePointer store)
-    : MyBase(settings), info_(this), store_(move(store))
+                                     StorePointer store)
+    : MyBase(settings, std::move(store)), info_(this)
 {
     if (enumValues == NULL)
     {
@@ -596,12 +590,6 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
     {
         setDefaultValueIfSet(defaultValueIfSet);
     }
-
-    if (values().empty())
-    {
-        values() = store_->initialValues();
-    }
-    refreshEnumIndexStore();
 }
 
 std::string EnumOptionStorage::formatExtraDescription() const
@@ -625,24 +613,6 @@ void EnumOptionStorage::convertValue(const std::string &value)
 {
     std::vector<std::string>::const_iterator match = findEnumValue(allowed_, value);
     addValue(match - allowed_.begin());
-}
-
-void EnumOptionStorage::processSetValues(ValueList *values)
-{
-    const size_t newSize = (hasFlag(efOption_ClearOnNextSet) ? 0 : valueCount())
-        + std::max<size_t>(values->size(), 1);
-    store_->reserveSpace(newSize);
-}
-
-void EnumOptionStorage::refreshValues()
-{
-    MyBase::refreshValues();
-    refreshEnumIndexStore();
-}
-
-void EnumOptionStorage::refreshEnumIndexStore()
-{
-    store_->refreshValues(values());
 }
 
 /********************************************************************
@@ -671,18 +641,14 @@ const std::vector<std::string> &EnumOptionInfo::allowedValues() const
 namespace internal
 {
 
-EnumIndexStoreInterface::~EnumIndexStoreInterface()
-{
-}
-
 //! \cond internal
 AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        EnumIndexStoreInterface *store)
+                        IOptionValueStore<int> *store)
 {
-    EnumOptionStorage::EnumIndexStorePointer storePtr(store);
+    std::unique_ptr<IOptionValueStore<int>> storePtr(store);
     return new EnumOptionStorage(option, enumValues, count, defaultValue,
                                  defaultValueIfSet, move(storePtr));
 }

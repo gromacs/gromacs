@@ -180,10 +180,9 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
 
 void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
-    ValueList::iterator i;
-    for (i = values().begin(); i != values().end(); ++i)
+    for (const Selection &value : values())
     {
-        if (flag == efSelection_OnlyStatic && bSet && i->isDynamic())
+        if (flag == efSelection_OnlyStatic && bSet && value.isDynamic())
         {
             MessageStringCollector errors;
             errors.startContext("In option '" + name() + "'");
@@ -193,9 +192,9 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
         }
     }
     selectionFlags_.set(flag, bSet);
-    for (i = values().begin(); i != values().end(); ++i)
+    for (Selection &value : values())
     {
-        i->data().setFlags(selectionFlags_);
+        value.data().setFlags(selectionFlags_);
     }
 }
 
