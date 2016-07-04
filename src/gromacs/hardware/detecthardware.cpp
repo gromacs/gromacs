@@ -66,6 +66,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -1131,6 +1132,21 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
     check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
+
+#if GMX_OPENMP
+    if (hwinfo->hardwareTopology->supportLevel() >= gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        int countFromDetection = hwinfo->hardwareTopology->machine().logicalProcessorCount;
+        int countFromOpenmp    = gmx_omp_get_num_procs();
+        if (countFromDetection != countFromOpenmp)
+        {
+            md_print_warn(cr, fplog,
+                          "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
+                          "Consider setting the launch configuration manually!",
+                          countFromDetection, countFromOpenmp);
+        }
+    }
+#endif
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
