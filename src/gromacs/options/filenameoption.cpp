@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -377,7 +377,7 @@ void FileNameOptionStorage::processAll()
 {
     if (manager_ != NULL && hasFlag(efOption_HasDefaultValue))
     {
-        ValueList &valueList = values();
+        ArrayRef<std::string> valueList = values();
         GMX_RELEASE_ASSERT(valueList.size() == 1,
                            "There should be only one default value");
         if (!valueList[0].empty())
@@ -394,7 +394,6 @@ void FileNameOptionStorage::processAll()
                 GMX_ASSERT(isValidType(fn2ftp(newValue.c_str())),
                            "Manager returned an invalid default value");
                 valueList[0] = newValue;
-                refreshValues();
             }
         }
     }

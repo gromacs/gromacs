@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,8 @@
 #include <vector>
 
 #include "gromacs/options/abstractoption.h"
+#include "gromacs/options/ivaluestore.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -376,97 +378,72 @@ namespace internal
 
 /*! \internal
  * \brief
- * Interface for handling storage of the enum indexes.
- *
- * This interface acts as a proxy between the EnumOptionStorage class (that
- * operates on `int` values), and the actual enum variable that receives the
- * values.  The implementation of this interface takes care of conversion of
- * the values and writing them out into the actual enum variables.
- *
- * \ingroup module_options
- */
-class EnumIndexStoreInterface
-{
-    public:
-        virtual ~EnumIndexStoreInterface();
-
-        //! Returns initial values from the actual enum variables.
-        virtual std::vector<int> initialValues() const = 0;
-        //! Reserves space for storage in the actual enum variables.
-        virtual void reserveSpace(size_t count) = 0;
-        //! Updates values in the actual enum variables based on option values.
-        virtual void refreshValues(const std::vector<int> &values) = 0;
-};
-
-/*! \internal
- * \brief
- * Type-specific implementation for EnumIndexStoreInterface.
+ * Type-specific implementation for IOptionValueStore for an enum option.
  *
  * This class is instantiated for each enum type for which EnumOption is used,
- * and takes care of managing the `int`-to-`enum` conversions as described in
- * EnumIndexStoreInterface.  Having this as a template in the header allows the
- * actual storage implementation to not be in the header, which would require
- * exposing all the internals through this one header...
+ * and takes care of managing `int`-to-`enum` conversions.  Having this part in
+ * the header allows the actual storage implementation to not be in the header,
+ * which would require exposing all the internals through this one header...
  *
  * \ingroup module_options
  */
 template <typename EnumType>
-class EnumIndexStore : public EnumIndexStoreInterface
+class EnumIndexStore : public IOptionValueStore<int>
 {
     public:
         //! Initializes the storage for the given actual enum variables.
         EnumIndexStore(EnumType *store, std::vector<EnumType> *storeVector)
             : store_(store), storeVector_(storeVector)
         {
-        }
-
-        virtual std::vector<int> initialValues() const
-        {
-            std::vector<int> result;
-            if (storeVector_ != NULL)
+            if (storeVector_ != nullptr)
             {
-                typename std::vector<EnumType>::const_iterator i;
-                for (i = storeVector_->begin(); i != storeVector_->end(); ++i)
+                for (EnumType value : *storeVector_)
                 {
-                    result.push_back(*i);
+                    intStore_.push_back(static_cast<int>(value));
                 }
             }
-            else if (store_ != NULL)
+            else if (store_ != nullptr)
             {
                 // TODO: Copy more than one value if that would make sense.
-                result.push_back(store_[0]);
-            }
-            return result;
-        }
-        virtual void reserveSpace(size_t count)
-        {
-            if (storeVector_ != NULL)
-            {
-                storeVector_->reserve(count);
+                intStore_.push_back(static_cast<int>(store_[0]));
             }
         }
-        virtual void refreshValues(const std::vector<int> &values)
+
+        virtual int valueCount() { return static_cast<int>(intStore_.size()); }
+        virtual ArrayRef<int> values() { return intStore_; }
+        virtual void clear()
         {
-            if (store_ != NULL)
+            intStore_.clear();
+            if (storeVector_ != nullptr)
             {
-                for (size_t i = 0; i < values.size(); ++i)
-                {
-                    store_[i] = static_cast<EnumType>(values[i]);
-                }
+                storeVector_->clear();
             }
-            if (storeVector_ != NULL)
+        }
+        virtual void reserve(size_t count)
+        {
+            intStore_.reserve(intStore_.size() + count);
+            if (storeVector_ != nullptr)
             {
-                GMX_ASSERT(storeVector_->capacity() >= values.size(),
-                           "reserveSpace() should have been called earlier");
-                storeVector_->resize(values.size());
-                for (size_t i = 0; i < values.size(); ++i)
-                {
-                    (*storeVector_)[i] = static_cast<EnumType>(values[i]);
-                }
+                storeVector_->reserve(storeVector_->size() + count);
+            }
+        }
+        virtual void append(const int &value)
+        {
+            const size_t count = intStore_.size();
+            intStore_.push_back(value);
+            if (store_ != nullptr)
+            {
+                store_[count] = static_cast<EnumType>(value);
+            }
+            if (storeVector_ != nullptr)
+            {
+                storeVector_->push_back(static_cast<EnumType>(value));
             }
         }
 
     private:
+        //! Stores the integer values for values().
+        std::vector<int>       intStore_;
         EnumType              *store_;
         std::vector<EnumType> *storeVector_;
 };
@@ -486,7 +463,7 @@ AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        EnumIndexStoreInterface *store);
+                        IOptionValueStore<int> *store);
 //! \endcond
 
 }   // namespace internal
