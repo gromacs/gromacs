@@ -59,7 +59,6 @@
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxomp.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>       // sysconf()
@@ -631,16 +630,6 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
         count = 0; // Neither windows nor Unix.
 #endif
     }
-#if GMX_OPENMP
-    int countFromOpenmp = gmx_omp_get_num_procs();
-    if (count != countFromOpenmp)
-    {
-        md_print_warn(cr, fplog,
-                      "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                      "Consider setting the launch configuration manually!",
-                      count, countFromOpenmp);
-    }
-#endif
 
     GMX_UNUSED_VALUE(cr);
     GMX_UNUSED_VALUE(fplog);
