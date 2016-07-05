@@ -47,10 +47,14 @@
 #define GMX_OPTIONS_ABSTRACTSECTION_H
 
 #include "gromacs/options/ioptionscontainerwithsections.h"
+#include "gromacs/options/isectionstorage.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
+
+class IOptionSectionStorage;
 
 namespace internal
 {
@@ -68,6 +72,13 @@ class AbstractOptionSection
         //! \cond libapi
         //! Initializes option properties with the given name.
         explicit AbstractOptionSection(const char *name) : name_(name) {}
+
+        /*! \brief
+         * Creates a storage object corresponding to this section.
+         *
+         * Similar to AbstractOption::createStorage().
+         */
+        virtual IOptionSectionStorage *createStorage() const = 0;
         //! \endcond
 
     private:
@@ -93,6 +104,24 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
 
     protected:
         //! \cond libapi
+        /*! \brief
+         * Returns the storage for a particular type of section.
+         *
+         * This is intended for use in derived class constructors, where the
+         * handle needs access to the actual storage.  The handle should know
+         * the type of storage created for the section type it deals with, so
+         * the cast should always be successful.
+         */
+        template <typename StorageType>
+        static StorageType *getStorage(internal::OptionSectionImpl *section)
+        {
+            IOptionSectionStorage *storage = getStorage(section);
+            StorageType           *typedStorage
+                = dynamic_cast<StorageType *>(storage);
+            GMX_ASSERT(typedStorage != nullptr, "Mismatching section storage type");
+            return typedStorage;
+        }
+
         //! Wraps a given section storage object.
         explicit AbstractOptionSectionHandle(internal::OptionSectionImpl *section)
             : section_(section)
@@ -106,6 +135,13 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
         addSectionImpl(const AbstractOptionSection &section);
         // From IOptionsContainer
         virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+
+        /*! \brief
+         * Implementation helper for the template method.
+         *
+         * This allows encapsulating the implementation within the source file.
+         */
+        static IOptionSectionStorage *getStorage(internal::OptionSectionImpl *section);
 
         internal::OptionSectionImpl *section_;
 };

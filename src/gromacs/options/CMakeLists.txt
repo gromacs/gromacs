@@ -41,6 +41,7 @@ gmx_add_libgromacs_sources(
     filenameoptionmanager.cpp
     options.cpp
     optionsassigner.cpp
+    optionsection.cpp
     optionsvisitor.cpp
     timeunitmanager.cpp
     )
@@ -54,12 +55,15 @@ gmx_install_headers(
     ioptionsbehavior.h
     ioptionscontainer.h
     ioptionscontainerwithsections.h
+    isectionstorage.h
     ivaluestore.h
     optionfiletype.h
     optionflags.h
     options.h
     optionsection.h
+    repeatingsection.h
     timeunitmanager.h
+    valuestore.h
     )
 
 if (BUILD_TESTING)

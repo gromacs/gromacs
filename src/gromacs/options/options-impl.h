@@ -52,14 +52,13 @@
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
+#include "gromacs/options/isectionstorage.h"
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 
 namespace gmx
 {
-
-class ExceptionInitializer;
 
 namespace internal
 {
@@ -70,6 +69,9 @@ namespace internal
  *
  * All options are stored within a section: the top-level contents of an
  * Options object are handled within an unnamed, "root" section.
+ * This class handles the common functionality for all sections, related to
+ * storing the options and subsections.  Functionality specific to a section
+ * type is provided by IOptionSectionStorage.
  *
  * \ingroup module_options
  */
@@ -120,8 +122,11 @@ class OptionSectionImpl : public IOptionsContainerWithSections
         typedef std::vector<SectionPointer> SectionList;
 
         //! Creates storage for a new section.
-        OptionSectionImpl(const OptionManagerContainer &managers, const char *name)
-            : managers_(managers), info_(this), name_(name), rootGroup_(this)
+        OptionSectionImpl(const OptionManagerContainer          &managers,
+                          std::unique_ptr<IOptionSectionStorage> storage,
+                          const char                            *name)
+            : managers_(managers), storage_(std::move(storage)), info_(this),
+              name_(name), rootGroup_(this), storageInitialized_(false)
         {
         }
 
@@ -157,24 +162,24 @@ class OptionSectionImpl : public IOptionsContainerWithSections
         AbstractOptionStorage *findOption(const char *name) const;
 
         /*! \brief
-         * Calls AbstractOptionStorage::startSource() for all options,
-         * including subsections.
+         * Called when entering the section.
          *
-         * Does not throw.
+         * Calls AbstractOptionStorage::startSource() for all options.
          */
-        void startSource();
+        void start();
         /*! \brief
-         * Calls AbstractOptionStorage::finish() for all options, including
-         * subsections.
+         * Calls AbstractOptionStorage::finish() for all options.
          */
-        void finish(ExceptionInitializer *errors);
+        void finish();
 
         //! Reference to the option managers in the parent Options object.
-        const OptionManagerContainer  &managers_;
-        //! Info object for this object.
-        OptionSectionInfo              info_;
+        const OptionManagerContainer           &managers_;
+        //! Type-specific storage object for this section.
+        std::unique_ptr<IOptionSectionStorage>  storage_;
+        //! Info object for this section.
+        OptionSectionInfo                       info_;
         //! Name of this section (empty and unused for the root section).
-        std::string                    name_;
+        std::string                             name_;
         /*! \brief
          * Group that contains all options (and subgroups).
          *
@@ -185,6 +190,8 @@ class OptionSectionImpl : public IOptionsContainerWithSections
         OptionMap                      optionMap_;
         //! List of subsections, in insertion order.
         SectionList                    subsections_;
+        //! Whether initStorage() has been called for `storage_`.
+        bool                           storageInitialized_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionSectionImpl);
 };

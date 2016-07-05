@@ -32,43 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \file
  * \brief
- * Implements classes from abstractsection.h.
+ * Declares gmx::IOptionSectionStorage.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "gmxpre.h"
-
-#include "abstractsection.h"
-
-#include "options-impl.h"
+#ifndef GMX_OPTIONS_ISECTIONSTORAGE_H
+#define GMX_OPTIONS_ISECTIONSTORAGE_H
 
 namespace gmx
 {
 
-// static
-IOptionSectionStorage *
-AbstractOptionSectionHandle::getStorage(internal::OptionSectionImpl *section)
+/*! \internal
+ * \brief
+ * Provides behavior specific to a certain option section type.
+ *
+ * \ingroup module_options
+ */
+class IOptionSectionStorage
 {
-    return section->storage_.get();
-}
+    public:
+        virtual ~IOptionSectionStorage();
 
-IOptionsContainer &AbstractOptionSectionHandle::addGroup()
-{
-    return section_->addGroup();
-}
-
-internal::OptionSectionImpl *
-AbstractOptionSectionHandle::addSectionImpl(const AbstractOptionSection &section)
-{
-    return section_->addSectionImpl(section);
-}
-
-OptionInfo *AbstractOptionSectionHandle::addOptionImpl(const AbstractOption &settings)
-{
-    return section_->addOptionImpl(settings);
-}
+        /*! \brief
+         * Called once before the first call to startSection().
+         *
+         * This is called once all options have been added to the section.
+         * The current implementation does not call this if startSection() is
+         * never called.
+         */
+        virtual void initStorage() = 0;
+        /*! \brief
+         * Called when option assignment enters this section.
+         */
+        virtual void startSection()  = 0;
+        /*! \brief
+         * Called when option assignment leaves this section.
+         */
+        virtual void finishSection() = 0;
+};
 
 } // namespace gmx
+
+#endif

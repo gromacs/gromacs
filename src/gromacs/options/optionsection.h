@@ -69,6 +69,9 @@ class OptionSection : public AbstractOptionSection
 
         //! Creates a section with the given name.
         explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
+
+    private:
+        virtual IOptionSectionStorage *createStorage() const;
 };
 
 /*! \brief
