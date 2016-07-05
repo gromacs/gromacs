@@ -46,6 +46,11 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_UNISTD_H
+/* For sysconf */
+#include <unistd.h>
+#endif
+
 #include "thread_mpi/threads.h"
 
 #include "gromacs/gmxlib/md_logging.h"
@@ -72,7 +77,25 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
+//! Constant used to help minimize preprocessed code
+static const bool isArm = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isArm = false;
+#endif
+
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = false;
+#endif
+
+//! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
+//! Constant used to help minimize preprocessed code
 static const bool bHasOmpSupport = GMX_OPENMP;
 
 /* Note that some of the following arrays must match the "GPU support
@@ -597,6 +620,11 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     return uniq_count;
 }
 
+// TODO Consider moving the responsibility of planning whether to run
+// GPU detection to the caller, so we don't implement two different,
+// potentially inconsistent, ways of a) deciding if a rank has
+// responsibility for detection on its node, b) broadcasting the
+// detected value in gmx_collect_hardware_mpi.
 static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 {
 #if GMX_LIB_MPI
@@ -815,6 +843,114 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 #endif
 }
 
+//! Warn the user if the OpenMP system doesn't agree with the hardware detection about the number of logical processors.
+static void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
+                                                             const gmx::HardwareTopology *hardwareTopology)
+{
+    if (bHasOmpSupport &&
+        hardwareTopology->supportLevel() >=
+        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
+        int countFromOpenmp    = gmx_omp_get_num_procs();
+        if (countFromDetection != countFromOpenmp)
+        {
+            md_print_warn(cr, fplog,
+                          "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
+                          "Consider setting the launch configuration manually!",
+                          countFromDetection, countFromOpenmp);
+        }
+    }
+}
+
+/*! \brief If the number of logical processors detected disagrees with
+ * sysconf online core count, warn the user (where we know what to
+ * suggest). */
+static void checkHardwareThreadUsage(FILE *fplog, const t_commrec *cr,
+                                     const gmx::HardwareTopology *hardwareTopology)
+{
+    // We need to know what sysconf thinks about the number of online
+    // cores to do any checking.
+    // TODO use cmakedefine01 for HAVE_SYSCONF
+#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
+    int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+    int countOnline = -1;
+#endif
+
+    if (countOnline < 0)
+    {
+        return;
+    }
+
+    if (hardwareTopology->supportLevel() >=
+        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
+        if (countFromDetection != countOnline)
+        {
+            if (isArm)
+            {
+                // This situation is very unlikely to happen, and we
+                // don't know what to say to the user about it.
+            }
+            else
+            {
+                // Both hwloc and sysconf detection return the number
+                // of online cores in countFromDetection, so we are
+                // unlikely to reach this point.
+                md_print_warn(cr, fplog,
+                              "Note: %d CPUs detected, but only %d of them are online, so something is strange\n"
+                              "about this machine. GROMACS will use the number detected.",
+                              countFromDetection, countOnline);
+            }
+        }
+    }
+
+#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_CONF)
+    int countConfigured = sysconf(_SC_NPROCESSORS_CONF);
+#else
+    int countConfigured = -1;
+#endif
+
+    /* BIOS, kernel or user actions can take physical processors
+     * offline, so we should observe if this is the case. */
+    if (countConfigured >= 0 && countConfigured != countOnline)
+    {
+        /* We assume that this scenario means that the something has
+           disabled threads or cores. This is generally something
+           a GROMACS user would want to rectify.
+
+           On ARM, the kernel may have powered down the cores. On x86,
+           this can indicate that HT is disabled by the kernel not in
+           the BIOS (if the difference is 2x). We'll warn about those,
+           but we're not sure what it means on other architectures, or
+           even if it is possible, because sysconf is rather
+           non-standardized. */
+        if (isArm)
+        {
+            md_print_warn(cr, fplog,
+                          "Note: %d CPUs configured, but only %d of them are online.\n"
+                          "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                          "off to save power, and will turn them back on later when the load increases.\n"
+                          "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                          "will likely see much better performance by forcing all cores to be online, and\n"
+                          "making sure they run at their full clock frequency.", countConfigured, countOnline);
+        }
+        else
+        {
+            if (isX86 && countConfigured == 2*countOnline)
+            {
+                md_print_warn(cr, fplog,
+                              "Note: %d CPUs configured, but only %d of them are online. This\n"
+                              "likely means that HyperThreading is disabled. Enabling it would be likely\n"
+                              "to have performance benefits. GROMACS will use the online CPU count.",
+                              countConfigured, countOnline);
+            }
+        }
+    }
+}
+
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
@@ -833,10 +969,16 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         snew(hwinfo_g, 1);
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
-        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect(fplog, cr));
+        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
+        // If we detected the topology on this system, double-check that it makes sense
+        if (hwinfo_g->hardwareTopology->isThisSystem())
+        {
+            checkLogicalProcessorCountIsConsistentWithOpenmp(fplog, cr, hwinfo_g->hardwareTopology);
+            checkHardwareThreadUsage(fplog, cr, hwinfo_g->hardwareTopology);
+        }
 
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;
@@ -846,6 +988,10 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         /* Run the detection if the binary was compiled with GPU support
          * and we requested detection.
          */
+        // TODO Refactor so that there is no need to store bDetectGPUs
+        // in gpu_info, because its scope should not exceed the
+        // implementation of hardware detection, and the use of it and
+        // bGPUBinary is currently inconsistent in some places.
         hwinfo_g->gpu_info.bDetectGPUs =
             (bGPUBinary && bDetectGPUs &&
              getenv("GMX_DISABLE_GPU_DETECTION") == NULL);
@@ -1123,6 +1269,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
         fprintf(stderr, "%s\n", detected.c_str());
     }
 
+    // TODO Consider moving this check to gmx_detect_hardware().
     /* Check the compiled SIMD instruction set against that of the node
      * with the lowest SIMD level support (skip if SIMD detection did not work)
      */
@@ -1131,27 +1278,9 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
         gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, MULTIMASTER(cr));
     }
 
+    // TODO Consider moving this check to gmx_detect_hardware().
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
     check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
-}
-
-void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
-                                                      const gmx::HardwareTopology *hardwareTopology)
-{
-    if (bHasOmpSupport &&
-        hardwareTopology->supportLevel() >=
-        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
-    {
-        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
-        int countFromOpenmp    = gmx_omp_get_num_procs();
-        if (countFromDetection != countFromOpenmp)
-        {
-            md_print_warn(cr, fplog,
-                          "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                          "Consider setting the launch configuration manually!",
-                          countFromDetection, countFromOpenmp);
-        }
-    }
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
