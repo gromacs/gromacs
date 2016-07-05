@@ -182,6 +182,10 @@ Performance and Run Control
         when set, disables GPU detection even if :ref:`gmx mdrun` was compiled
         with GPU support.
 
+``GMX_GPU_APPLICATION_CLOCKS``
+        setting this variable to a value of "0", "ON", or "DISABLE" (case insensitive)
+        allows disabling the CUDA GPU allication clock support.
+
 ``GMX_DISRE_ENSEMBLE_SIZE``
         the number of systems for distance restraint ensemble
         averaging. Takes an integer value.
