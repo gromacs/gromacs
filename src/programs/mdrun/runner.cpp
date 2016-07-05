@@ -731,6 +731,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * global for this process (MPI rank). */
     hwinfo = gmx_detect_hardware(fplog, cr, bTryUseGPU);
 
+    // TODO Consider moving this behaviour into gmx_detect_hardware().
     gmx_print_detected_hardware(fplog, cr, hwinfo);
 
     if (fplog != NULL)
@@ -1110,8 +1111,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Ignore (potentially) manually selected GPUs */
         hw_opt->gpu_opt.n_dev_use = 0;
     }
-
-    checkLogicalProcessorCountIsConsistentWithOpenmp(fplog, cr, hwinfo->hardwareTopology);
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
