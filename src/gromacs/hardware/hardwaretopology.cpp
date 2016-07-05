@@ -558,7 +558,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
  *  \return The number of hardware processing units, or 0 if it fails.
  */
 int
-detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
+detectLogicalProcessorCount()
 {
     int count = 0;
 
@@ -580,7 +580,7 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
         int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
         if (count != countOnline)
         {
-            /* We assume that this scenario means that the kernel has
+            /* We assume that this scenario means that something has
                disabled threads or cores, and that the only safe course is
                to assume that _SC_NPROCESSORS_ONLN should be used. Even
                this may not be valid if running in a containerized
@@ -590,27 +590,16 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
                limits. But we're not sure right now whether there's any
                (standard-ish) way to handle that.
 
-               On ARM, the kernel may have powered down the cores,
-               which we'll warn the user about now. On x86, this
-               means HT is disabled by the kernel, not in the
-               BIOS. We're not sure what it means on other
-               architectures, or even if it is possible, because
-               sysconf is rather non-standardized. */
-            if (isArm)
+               On ARM, the kernel may have powered down the cores. On
+               x86, this can indicate that HT is disabled by the user
+               or kernel, not in the BIOS (if the difference is
+               2x). We'll warn the user about those in
+               checkHardwareThreadUsage() later. We're not sure what
+               it means on other architectures, or even if it is
+               possible, because sysconf is rather
+               non-standardized. */
+            if (!isArm)
             {
-                md_print_warn(cr, fplog,
-                              "%d CPUs configured, but only %d of them are online.\n"
-                              "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                              "off to save power, and will turn them back on later when the load increases.\n"
-                              "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                              "will likely see much better performance by forcing all cores to be online, and\n"
-                              "making sure they run at their full clock frequency.", count, countOnline);
-            }
-            else
-            {
-                md_print_warn(cr, fplog,
-                              "Note: %d CPUs configured, but only %d of them are online, so GROMACS will use the latter.",
-                              count, countOnline);
                 // We use the online count to avoid (potential) oversubscription.
                 count = countOnline;
             }
@@ -627,19 +616,17 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
 #    endif      // End of check for sysconf argument values
 
 #else
+        // TODO Flag this error in a more useful way
         count = 0; // Neither windows nor Unix.
 #endif
     }
-
-    GMX_UNUSED_VALUE(cr);
-    GMX_UNUSED_VALUE(fplog);
     return count;
 }
 
 }   // namespace anonymous
 
 // static
-HardwareTopology HardwareTopology::detect(FILE *fplog, const t_commrec *cr)
+HardwareTopology HardwareTopology::detect()
 {
     HardwareTopology result;
 
@@ -665,7 +652,7 @@ HardwareTopology HardwareTopology::detect(FILE *fplog, const t_commrec *cr)
     if (result.supportLevel_ == SupportLevel::None)
     {
         // No topology information; try to detect the number of logical processors at least
-        result.machine_.logicalProcessorCount = detectLogicalProcessorCount(fplog, cr);
+        result.machine_.logicalProcessorCount = detectLogicalProcessorCount();
         if (result.machine_.logicalProcessorCount > 0)
         {
             result.supportLevel_ = SupportLevel::LogicalProcessorCount;

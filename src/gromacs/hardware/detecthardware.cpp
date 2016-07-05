@@ -72,7 +72,29 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>       // sysconf()
+#endif
+
+#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
+//! Constant used to help minimize preprocessed code
+static const bool isArm = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isArm = false;
+#endif
+
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = false;
+#endif
+
+//! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
+//! Constant used to help minimize preprocessed code
 static const bool bHasOmpSupport = GMX_OPENMP;
 
 /* Note that some of the following arrays must match the "GPU support
@@ -833,7 +855,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         snew(hwinfo_g, 1);
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
-        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect(fplog, cr));
+        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
@@ -1150,6 +1172,60 @@ void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commr
                           "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
                           "Consider setting the launch configuration manually!",
                           countFromDetection, countFromOpenmp);
+        }
+    }
+}
+
+void checkHardwareThreadUsage(FILE *fplog, const t_commrec *cr,
+                              const gmx::HardwareTopology *hardwareTopology)
+{
+    if (hardwareTopology->supportLevel() <
+        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        return;
+    }
+
+    int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
+    // TODO use cmakedefine01 for HAVE_SYSCONF
+#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
+    /* BIOS, kernel or user actions can take physical processors
+     * offline, so we should observe if this is the case. */
+    int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+    int countOnline = countFromDetection;
+#endif
+    if (countFromDetection != countOnline)
+    {
+        /* We assume that this scenario means that the something has
+           disabled threads or cores. This is generally something
+           a GROMACS user would want to rectify.
+
+           On ARM, the kernel may have powered down the cores. On x86,
+           this can indicate that HT is disabled by the kernel not in
+           the BIOS (if the difference is 2x). We'll warn about those,
+           but we're not sure what it means on other architectures, or
+           even if it is possible, because sysconf is rather
+           non-standardized. */
+        if (isArm)
+        {
+            md_print_warn(cr, fplog,
+                          "%d CPUs configured, but only %d of them are online.\n"
+                          "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                          "off to save power, and will turn them back on later when the load increases.\n"
+                          "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                          "will likely see much better performance by forcing all cores to be online, and\n"
+                          "making sure they run at their full clock frequency.", countFromDetection, countOnline);
+        }
+        else
+        {
+            if (isX86 && countFromDetection == 2*countOnline)
+            {
+                md_print_warn(cr, fplog,
+                              "Note: %d CPUs configured in the hardware, but only %d of them are online. This\n"
+                              "likely means that HyperThreading is disabled. Enabling it would be likely\n"
+                              "to have performance benefits. GROMACS will use the online CPU count.",
+                              countFromDetection, countOnline);
+            }
         }
     }
 }

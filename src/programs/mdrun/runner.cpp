@@ -1112,6 +1112,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     checkLogicalProcessorCountIsConsistentWithOpenmp(fplog, cr, hwinfo->hardwareTopology);
+    checkHardwareThreadUsage(fplog, cr, hwinfo->hardwareTopology);
 
     /* check consistency across ranks of things like SIMD
      * support and number of GPUs selected */

@@ -67,7 +67,7 @@ TEST(HardwareTopologyTest, Execute)
     // depends on the architecture, but we can at least make sure that it
     // works to execute the tests
 
-    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect(nullptr, nullptr));
+    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect());
 
     // If we cannot even find the number of logical processors we want to flag it
     EXPECT_GT(hwTop.supportLevel(), gmx::HardwareTopology::SupportLevel::None)
@@ -80,7 +80,7 @@ TEST(HardwareTopologyTest, Execute)
 TEST(HardwareTopologyTest, HwlocExecute)
 {
 #ifdef __linux__
-    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect(nullptr, nullptr));
+    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect());
 
     // On Linux with hwloc support we should be able to get full information
     EXPECT_GE(hwTop.supportLevel(), gmx::HardwareTopology::SupportLevel::Full)
@@ -93,7 +93,7 @@ TEST(HardwareTopologyTest, HwlocExecute)
 
 TEST(HardwareTopologyTest, ProcessorSelfconsistency)
 {
-    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect(nullptr, nullptr));
+    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect());
 
     if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
     {
@@ -129,7 +129,7 @@ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
 
 TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
 {
-    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect(nullptr, nullptr));
+    gmx::HardwareTopology hwTop(gmx::HardwareTopology::detect());
 
     if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Full)
     {
