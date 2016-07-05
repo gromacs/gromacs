@@ -520,6 +520,28 @@ maybe elsewhere
 
 Running mdrun with GPUs
 -----------------------
+
+NVIDIA GPUs from the professional line (Tesla or Quadro) starting with
+the Kepler generation (compute capability 3.5 and later) support changing the
+processor and memory clock frequency with the help of the applications clocks feature.
+With many workloads, using higher clock rates than the default provides significant
+performance improvements.
+For more information see the `NVIDIA blog article`_ on this topic.
+For |Gromacs| the highest application clock rates are optimal on all hardware
+available to date (up to and including Maxwell, compute capability 5.2).
+
+Application clocks can be set using the NVIDIA system managemet tool
+``nvidia-smi``. If the system permissions allow, :ref:`gmx mdrun` has
+built-in support to set application clocks if built with NVML support. # TODO add ref to relevant section
+Note that application clocks are a global setting, hence affect the
+performance of all applications that use the respective GPU(s).
+For this reason, :ref:`gmx mdrun` sets application clocks at initialization
+to the values optimal for |Gromacs| and it restores them before exiting
+to the values found at startup, unless it detects that they were altered
+during its runtime.
+
+.. _NVIDIA blog article: https://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/
+
 TODO In future patch: any tips not covered above
 
 Running the OpenCL version of mdrun
