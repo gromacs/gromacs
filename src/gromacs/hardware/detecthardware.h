@@ -79,6 +79,10 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
                                                       const gmx::HardwareTopology *hardwareTopology);
 
+//! If the number of logical processors detected disagrees with sysconf online core count, warn the user (where we know what to suggest).
+void checkHardwareThreadUsage(FILE *fplog, const t_commrec *cr,
+                              const gmx::HardwareTopology *hardwareTopology);
+
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);

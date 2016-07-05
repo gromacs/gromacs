@@ -190,11 +190,8 @@ class HardwareTopology
 
     public:
 
-        /*! \brief Detects the hardware topology.
-         *
-         * Writes any warnings to stderr, and \c fplog if it is not nullptr.
-         */
-        static HardwareTopology detect(FILE *fplog, const t_commrec *cr);
+        /*! \brief Detects the hardware topology. */
+        static HardwareTopology detect();
 
         /*! \brief Check what topology information that is available and valid
          *
