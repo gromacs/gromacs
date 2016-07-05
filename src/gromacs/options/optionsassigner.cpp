@@ -164,7 +164,7 @@ void OptionsAssigner::setAcceptBooleanNoPrefix(bool bEnabled)
 
 void OptionsAssigner::start()
 {
-    impl_->options_.impl_->rootSection_.startSource();
+    impl_->options_.impl_->rootSection_.start();
 }
 
 void OptionsAssigner::startSection(const char *name)
@@ -175,6 +175,7 @@ void OptionsAssigner::startSection(const char *name)
         GMX_THROW(InvalidInputError("Unknown subsection"));
     }
     impl_->sectionStack_.push_back(section);
+    section->start();
 }
 
 void OptionsAssigner::startOption(const char *name)
@@ -238,6 +239,8 @@ void OptionsAssigner::finishSection()
 {
     // Should only be called if we are in a subsection.
     GMX_RELEASE_ASSERT(impl_->inSection(), "startSection() not called");
+    Impl::Section *section = impl_->sectionStack_.back();
+    section->finish();
     impl_->sectionStack_.pop_back();
 }
 

@@ -32,43 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Implements classes from abstractsection.h.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_options
- */
 #include "gmxpre.h"
 
-#include "abstractsection.h"
+#include "optionsection.h"
 
-#include "options-impl.h"
+#include "gromacs/options/isectionstorage.h"
 
 namespace gmx
 {
 
-// static
-IOptionSectionStorage *
-AbstractOptionSectionHandle::getStorage(internal::OptionSectionImpl *section)
+namespace
 {
-    return section->storage_.get();
-}
 
-IOptionsContainer &AbstractOptionSectionHandle::addGroup()
+class OptionSectionStorage : public IOptionSectionStorage
 {
-    return section_->addGroup();
-}
+    public:
+        virtual void initStorage() {}
+        virtual void startSection() {}
+        virtual void finishSection() {}
+};
 
-internal::OptionSectionImpl *
-AbstractOptionSectionHandle::addSectionImpl(const AbstractOptionSection &section)
-{
-    return section_->addSectionImpl(section);
-}
+}   // namespace
 
-OptionInfo *AbstractOptionSectionHandle::addOptionImpl(const AbstractOption &settings)
+IOptionSectionStorage *OptionSection::createStorage() const
 {
-    return section_->addOptionImpl(settings);
+    return new OptionSectionStorage();
 }
 
 } // namespace gmx

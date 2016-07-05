@@ -83,6 +83,14 @@ IOptionsContainerWithSections::~IOptionsContainerWithSections()
 }
 
 /********************************************************************
+ * IOptionSectionStorage
+ */
+
+IOptionSectionStorage::~IOptionSectionStorage()
+{
+}
+
+/********************************************************************
  * OptionsImpl
  */
 
@@ -90,7 +98,7 @@ namespace internal
 {
 
 OptionsImpl::OptionsImpl()
-    : rootSection_(managers_, "")
+    : rootSection_(managers_, nullptr, "")
 {
 }
 
@@ -104,7 +112,8 @@ OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
     const char *name = section.name_;
     // Make sure that there are no duplicate sections.
     GMX_RELEASE_ASSERT(findSection(name) == NULL, "Duplicate subsection name");
-    subsections_.push_back(SectionPointer(new OptionSectionImpl(managers_, name)));
+    std::unique_ptr<IOptionSectionStorage> storage(section.createStorage());
+    subsections_.push_back(SectionPointer(new OptionSectionImpl(managers_, std::move(storage), name)));
     return subsections_.back().get();
 }
 
@@ -140,20 +149,27 @@ AbstractOptionStorage *OptionSectionImpl::findOption(const char *name) const
     return i->second.get();
 }
 
-void OptionSectionImpl::startSource()
+void OptionSectionImpl::start()
 {
     for (const auto &entry : optionMap_)
     {
         entry.second->startSource();
     }
-    for (const auto &section : subsections_)
+    if (storage_ != nullptr)
     {
-        section->startSource();
+        if (!storageInitialized_)
+        {
+            storage_->initStorage();
+            storageInitialized_ = true;
+        }
+        storage_->startSection();
     }
 }
 
-void OptionSectionImpl::finish(ExceptionInitializer *errors)
+void OptionSectionImpl::finish()
 {
+    // TODO: Consider how to customize these error messages based on context.
+    ExceptionInitializer  errors("Invalid input values");
     for (const auto &entry : optionMap_)
     {
         AbstractOptionStorage &option = *entry.second;
@@ -164,19 +180,17 @@ void OptionSectionImpl::finish(ExceptionInitializer *errors)
         catch (UserInputError &ex)
         {
             ex.prependContext("In option " + option.name());
-            errors->addCurrentExceptionAsNested();
+            errors.addCurrentExceptionAsNested();
         }
     }
-    for (const auto &section : subsections_)
+    if (errors.hasNestedExceptions())
     {
-        try
-        {
-            section->finish(errors);
-        }
-        catch (const UserInputError &)
-        {
-            errors->addCurrentExceptionAsNested();
-        }
+        // TODO: This exception type may not always be appropriate.
+        GMX_THROW(InvalidInputError(errors));
+    }
+    if (storage_ != nullptr)
+    {
+        storage_->finishSection();
     }
 }
 
@@ -265,14 +279,7 @@ const OptionSectionInfo &Options::rootSection() const
 
 void Options::finish()
 {
-    // TODO: Consider how to customize these error messages based on context.
-    ExceptionInitializer  errors("Invalid input values");
-    impl_->rootSection_.finish(&errors);
-    if (errors.hasNestedExceptions())
-    {
-        // TODO: This exception type may not always be appropriate.
-        GMX_THROW(InvalidInputError(errors));
-    }
+    impl_->rootSection_.finish();
 }
 
 } // namespace gmx
