@@ -48,15 +48,18 @@ definitions. Experienced HPC users can skip this section.
         Intel x86 processors this is called "hyper-threading."
         Normally, :ref:`gmx mdrun` will not benefit from such mapping.
 
-    affinity
-        On some kinds of hardware, software threads can migrate
-        between cores to help automatically balance
-        workload. Normally, the performance of :ref:`gmx mdrun` will degrade
-        dramatically if this is permitted, so :ref:`gmx mdrun` will by default
-        set the affinity of its threads to their cores, unless the
-        user or software environment has already done so. Setting
-        thread affinity is sometimes called "pinning" threads to
-        cores.
+    thread affinity (pinning)
+        By default, most operating systems allow software threads to migrate
+        between cores (or hardware threads) to help automatically balance
+        workload. However, the performance of :ref:`gmx mdrun` can deteriorate
+        if this is permitted and will degrade dramatically especially when
+        relying on multi-threading within a rank. To avoid this,
+        :ref:`gmx mdrun` will by default
+        set the affinity of its threads to individual cores/hardware threads,
+        unless the user or software environment has already done so
+        (or not the entire node is used for the run, i.e. there is potential
+        for node sharing).
+        Setting thread affinity is sometimes called thread "pinning".
 
     MPI
         The dominant multi-node parallelization-scheme, which provides
@@ -84,8 +87,15 @@ definitions. Experienced HPC users can skip this section.
         MPI to achieve hybrid MPI/OpenMP parallelism.
 
     CUDA
-        A programming-language extension developed by Nvidia
-        for use in writing code for their GPUs.
+        A proprietary parallel computing framework and API developed by NVIDIA
+        that allows targeting their accelerator hardware.
+        |Gromacs| uses CUDA for GPU acceleration support with NVIDIA hardware.
+
+    OpenCL
+        An open standard-based parallel computing framework that consists
+        of a C99-based compiler and a programming API for targeting heterogeneous
+        and accelerator hardware. |Gromacs| uses OpenCL for GPU acceleration
+        on AMD devices (both GPUs and APUs); NVIDIA hardware is also supported.
 
     SIMD
         Modern CPU cores have instructions that can execute large
@@ -423,7 +433,8 @@ and both ranks on a node sharing GPU with ID 0.
 
     mpirun -np 8 gmx mdrun -ntomp 3 -gpu_id 0000
 
-Starts :ref:`mdrun_mpi` on a machine with two nodes, using
+Using a same/similar hardware as above,
+starts :ref:`mdrun_mpi` on a machine with two nodes, using
 eight total ranks, each rank with three OpenMP threads,
 and all four ranks on a node sharing GPU with ID 0.
 This may or may not be faster than the previous setup
