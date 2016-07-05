@@ -45,13 +45,6 @@ struct gmx_hw_info_t;
 struct gmx_hw_opt_t;
 struct t_commrec;
 
-namespace gmx
-{
-
-class HardwareTopology;
-
-} // namespace
-
 /*! \brief Return whether mdrun can use more than one GPU per node
  *
  * The OpenCL implementation cannot use more than one GPU per node,
@@ -64,8 +57,12 @@ gmx_bool gmx_multiple_gpu_per_node_supported();
  * example. */
 gmx_bool gmx_gpu_sharing_supported();
 
-/* Construct the global hwinfo structure and return a pointer to
-   it. Caller is responsible for freeing this pointer. */
+/*! \brief Runs hardware detection, makes the result consistent and
+ * available over all ranks, and runs any available consistency
+ * checks to report to the user.
+ *
+ * Constructs the global hwinfo structure and returns a pointer to
+ * it. Caller is responsible for freeing this pointer. */
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs);
 
@@ -74,10 +71,6 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
  */
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_hw_info_t *hwinfo);
-
-//! Warn the user if the OpenMP system doesn't agree with the hardware detection about the number of logical processors.
-void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
-                                                      const gmx::HardwareTopology *hardwareTopology);
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
