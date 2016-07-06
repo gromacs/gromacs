@@ -156,8 +156,11 @@ if (SPHINX_FOUND)
             FROM ${RELENG_PATH}/docs TO dev-manual/releng PREFIX releng/docs/
             FILES ${RELENG_SPHINX_FILES})
     else()
-        gmx_add_dummy_sphinx_input_file(dev-manual/releng/index.rst
-            "releng repository (missing)")
+        gmx_add_sphinx_source_files(FILES
+            dev-manual/releng/index.rst
+            dev-manual/releng/jenkins-howto.rst
+            dev-manual/releng/jenkins-ui.rst
+            )
     endif()
     gmx_add_sphinx_input_target(sphinx-input)
     # Remove other rst files from the build tree, since they confuse Sphinx.
