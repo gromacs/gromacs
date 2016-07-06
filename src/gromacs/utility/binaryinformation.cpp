@@ -75,6 +75,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -373,6 +374,13 @@ void printBinaryInformation(FILE                            *fp,
     {
         fprintf(fp, "%sData prefix:  %s%s%s\n", prefix, installPrefix.path,
                 installPrefix.bSourceLayout ? " (source tree)" : "", suffix);
+    }
+    char workingDir[GMX_PATH_MAX];
+    gmx_getcwd(workingDir, sizeof(workingDir));
+    if (!gmx::isNullOrEmpty(workingDir))
+    {
+        fprintf(fp, "%sWorking dir:  %s%s\n",
+                prefix, workingDir, suffix);
     }
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
