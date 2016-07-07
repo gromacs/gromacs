@@ -43,7 +43,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <chrono>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "thread_mpi/threads.h"
@@ -66,14 +68,41 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>       // sysconf()
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROC_CONF)
+#    define _SC_NPROCESSORS_CONF _SC_NPROC_CONF
+#endif
+
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = false;
+#endif
+
+#if defined __powerpc__ || defined __ppc__ || defined __PPC__
+static const bool isPowerPC = true;
+#else
+static const bool isPowerPC = false;
+#endif
+
+//! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
-static const bool bHasOmpSupport = GMX_OPENMP;
 
 /* Note that some of the following arrays must match the "GPU support
  * enumeration" in src/config.h.cmakein, so that GMX_GPU looks up an
@@ -815,6 +844,130 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 #endif
 }
 
+/*! \brief Utility that does dummy computing for max 2 seconds to spin up cores
+ *
+ *  This routine will check the number of cores configured and online
+ *  (using sysconf), and the spins doing dummy compute operations for up to
+ *  2 seconds, or until all cores have come online. This can be used prior to
+ *  hardware detection for platforms that take unused processors offline.
+ *
+ *  This routine will not throw exceptions.
+ */
+static void
+spinUpCore() noexcept
+{
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
+    // steady_clock is better than system_clock, but unsupported in gcc-4.6.4.
+    // For release-2017 we can retire gcc-4.6 support and move to steady_clock.
+    float dummy           = 0.1;
+    int   countConfigured = sysconf(_SC_NPROCESSORS_CONF);    // noexcept
+    auto  start           = std::chrono::system_clock::now(); // noexcept
+
+    while (sysconf(_SC_NPROCESSORS_ONLN) < countConfigured &&
+           std::chrono::system_clock::now() - start < std::chrono::seconds(2))
+    {
+        for (int i = 1; i < 10000; i++)
+        {
+            dummy /= i;
+        }
+    }
+
+    if (dummy < 0)
+    {
+        printf("This cannot happen, but prevents loop from being optimized away.");
+    }
+#endif
+}
+
+/*! \brief Prepare the system before hardware topology detection
+ *
+ * This routine should perform any actions we want to put the system in a state
+ * where we want it to be before detecting the hardware topology. For most
+ * processors there is nothing to do, but some architectures (in particular ARM)
+ * have support for taking configured cores offline, which will make them disappear
+ * from the online processor count.
+ *
+ * This routine checks if there is a mismatch between the number of cores
+ * configured and online, and in that case we issue a small workload that
+ * attempts to wake sleeping cores before doing the actual detection.
+ *
+ * This type of mismatch can also occur for x86 or PowerPC on Linux, if SMT has only
+ * been disabled in the kernel (rather than bios). Since those cores will never
+ * come online automatically, we currently skip this test for x86 & PowerPC to
+ * avoid wasting 2 seconds. We also skip the test if there is no thread support.
+ *
+ * \note Cores will sleep relatively quickly again, so it's important to issue
+ *       the real detection code directly after this routine.
+ */
+static void
+hardwareTopologyPrepareDetection()
+{
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && \
+    (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
+
+    // Modify this conditional when/if x86 or PowerPC starts to sleep some cores
+    if (!isX86 && !isPowerPC)
+    {
+        int                      countConfigured  = sysconf(_SC_NPROCESSORS_CONF);
+        std::vector<std::thread> workThreads(countConfigured);
+
+        for (auto &t : workThreads)
+        {
+            t = std::thread(spinUpCore);
+        }
+
+        for (auto &t : workThreads)
+        {
+            t.join();
+        }
+    }
+#endif
+}
+
+/*! \brief Sanity check hardware topology and optionally print some notes to log
+ *
+ *  \param fplog            Log file pointer. This can be NULL, but the then routine
+ *                          will not do anything.
+ *  \param hardwareTopology Reference to hardwareTopology object.
+ */
+static void
+hardwareTopologyDoubleCheckDetection(FILE gmx_unused                          *fplog,
+                                     const gmx::HardwareTopology gmx_unused   &hardwareTopology)
+{
+#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_CONF)
+    if (fplog == NULL ||
+        hardwareTopology.supportLevel() < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        return;
+    }
+
+    int countFromDetection = hardwareTopology.machine().logicalProcessorCount;
+    int countConfigured    = sysconf(_SC_NPROCESSORS_CONF);
+
+    /* BIOS, kernel or user actions can take physical processors
+     * offline. We already cater for the some of the cases inside the hardwareToplogy
+     * by trying to spin up cores just before we detect, but there could be other
+     * cases where it is worthwhile to hint that there might be more resources available.
+     */
+    if (countConfigured >= 0 && countConfigured != countFromDetection)
+    {
+        fprintf(fplog, "Note: %d CPUs configured, but only %d were detected to be online.\n", countConfigured, countFromDetection);
+
+        if (isX86 && countConfigured == 2*countFromDetection)
+        {
+            fprintf(fplog, "      X86 Hyperthreading is likely disabled; enable it for better performance.\n");
+        }
+        // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
+        // We only warn if it is completely disabled since default performance drops with SMT8.
+        if (isPowerPC && countConfigured == 8*countFromDetection)
+        {
+            fprintf(fplog, "      PowerPC SMT is likely disabled; enable SMT2/SMT4 for better performance.\n");
+        }
+    }
+#endif
+}
+
+
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
@@ -833,7 +986,15 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         snew(hwinfo_g, 1);
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
-        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect(fplog, cr));
+
+        hardwareTopologyPrepareDetection();
+        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
+
+        // If we detected the topology on this system, double-check that it makes sense
+        if (hwinfo_g->hardwareTopology->isThisSystem())
+        {
+            hardwareTopologyDoubleCheckDetection(fplog, *(hwinfo_g->hardwareTopology));
+        }
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
@@ -1133,25 +1294,6 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
     check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
-}
-
-void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
-                                                      const gmx::HardwareTopology *hardwareTopology)
-{
-    if (bHasOmpSupport &&
-        hardwareTopology->supportLevel() >=
-        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
-    {
-        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
-        int countFromOpenmp    = gmx_omp_get_num_procs();
-        if (countFromDetection != countFromOpenmp)
-        {
-            md_print_warn(cr, fplog,
-                          "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                          "Consider setting the launch configuration manually!",
-                          countFromDetection, countFromOpenmp);
-        }
-    }
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
