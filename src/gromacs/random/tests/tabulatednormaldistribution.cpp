@@ -159,7 +159,9 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
 
     size_t halfSize     = table.size() / 2;
     double sumOfSquares = 0.0;
-    auto   tolerance    = gmx::test::ulpTolerance(1);
+    // accept errors of a few ULP since the exact value of the summation
+    // below will depend on whether the compiler issues FMA instructions
+    auto   tolerance    = gmx::test::ulpTolerance(10);
     for (size_t i = 0, iFromEnd = table.size()-1; i < halfSize; ++i, --iFromEnd)
     {
         EXPECT_REAL_EQ_TOL(table.at(i), -table.at(iFromEnd), tolerance)
