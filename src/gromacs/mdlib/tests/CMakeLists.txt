@@ -33,5 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MdlibUnitTest mdlib-test
+                  groupindexmanager.cpp
                   settle.cpp
                   shake.cpp)
