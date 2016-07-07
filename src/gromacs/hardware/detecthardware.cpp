@@ -72,6 +72,38 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>       // sysconf()
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>         // gettimeofday()
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROC_CONF)
+#    define _SC_NPROCESSORS_CONF _SC_NPROC_CONF
+#endif
+
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = true;
+#else
+//! Constant used to help minimize preprocessed code
+static const bool isX86 = false;
+#endif
+
+#if defined __powerpc__ || defined __ppc__ || defined __PPC__
+static const bool isPowerPC = true;
+#else
+static const bool isPowerPC = false;
+#endif
+
+//! Constant used to help minimize preprocessed code
 static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
 static const bool bHasOmpSupport = GMX_OPENMP;
 
@@ -815,6 +847,134 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 #endif
 }
 
+/*! \brief Prepare the system before hardware topology detection
+ *
+ * This routine should perform any actions we want to put the system in a state
+ * where we want it to be before detecting the hardware topology. For most
+ * processors there is nothing to do, but some architectures (in particular ARM)
+ * have support for taking configured cores offline, which will make them disappear
+ * from the online processor count.
+ *
+ * This routine checks if there is a mismatch between the number of cores
+ * configured and online, and in that case we issue a small workload that
+ * runs for up to 2.0 seconds (ARM cores typically come online in less than 1s)
+ * to attempt to wake sleeping cores before doing the actual detection.
+ *
+ * This type of mismatch can also occur for x86 on Linux, if SMT has only
+ * been disabled in the kernel (rather than bios). Since those cores will never
+ * come online automatically, we skip this test for x86 to avoid wasting 2 seconds.
+ * We also skip the test if there is no openMP support, and for now we only
+ * run it on Linux, since we are not aware of windows running on any systems
+ * like this.
+ *
+ * \note Cores will sleep relatively quickly again, so it's important to issue
+ *       the real detection code directly after this routine.
+ */
+void
+hardwareTopologyDetectionPrologue()
+{
+#if !GMX_TARGET_X86 && GMX_OPENMP && defined(HAVE_SYSCONF) && defined(HAVE_SYS_TIME_H) && \
+    defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
+
+    int countConfigured  = sysconf(_SC_NPROCESSORS_CONF);
+    int countOnline      = sysconf(_SC_NPROCESSORS_ONLN);
+
+    if (countConfigured != countOnline)
+    {
+        struct timeval t1, t2;
+        double         timeDiff;
+        double         dum = 0.1;
+
+        gettimeofday(&t1, NULL);
+
+        // Save the current number of OpenMP threads
+        int saveNumThreads = gmx_omp_get_num_threads();
+
+        // Use as many threads as there are configured processors in the do-while loop
+        gmx_omp_set_num_threads(countConfigured);
+
+#pragma omp parallel
+        do
+        {
+            for (int i = 1.0; i < 10000; i++)
+            {
+                dum = dum/static_cast<double>(i);
+            }
+            gettimeofday(&t2, NULL);
+            timeDiff     = static_cast<double>(t2.tv_sec-t1.tv_sec)+(t2.tv_usec-t1.tv_usec)*1e-6;
+            countOnline  = sysconf(_SC_NPROCESSORS_ONLN);
+        }
+        while (timeDiff < 2.0 && countConfigured != countOnline);
+
+        if (dum < 0.0)
+        {
+            // This can never happen, but it prevents the compiler from optimizing away the loop
+            fprintf(stderr, "Dummy message");
+        }
+
+        // reset the number of OpenMP threads to the original state
+        gmx_omp_set_num_threads(saveNumThreads);
+    }
+
+#endif
+}
+
+/*! \brief Sanity check hardware topology and optionally print some notes to log
+ *
+ *  \param fplog           Log file pointer. This can be NULL, but the then routine
+ *                         will not do anything.
+ *  \param hardwareTpology Reference to hardwareTopology object.
+ *
+ */
+void hardwareTopologyDetectionEpilogue(FILE gmx_unused                          *fplog,
+                                       const gmx::HardwareTopology gmx_unused   &hardwareTopology)
+{
+#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
+
+    if (fplog)
+    {
+        int countFromDetection = hardwareTopology.machine().logicalProcessorCount;
+        int countConfigured    = sysconf(_SC_NPROCESSORS_CONF);
+
+        /* BIOS, kernel or user actions can take physical processors
+         * offline. We already cater for the some of the cases inside the hardwareToplogy
+         * by trying to spin up cores just before we detect, but there could be other
+         * cases where it is worthwhile to hint that there might be more resources available.
+         */
+        if (countConfigured >= 0 && countConfigured != countFromDetection)
+        {
+            fprintf(fplog, "Note: %d CPUs configured, but only %d were detected to be online.\n", countConfigured, countFromDetection);
+
+            int ratio = countConfigured/countFromDetection;
+
+            if (isX86 && ratio == 2)
+            {
+                fprintf(fplog, "      X86 Hyperthreading is likely disabled; enable it for better performance.\n");
+            }
+            // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
+            // We only warn if it is completely disabled since default performance drops with SMT8.
+            if (isPowerPC && ratio == 8)
+            {
+                fprintf(fplog, "      PowerPC SMT is likely disabled; enable SMT2/SMT4 for better performance.\n");
+            }
+        }
+
+        if (bHasOmpSupport && countFromDetection >= 0)
+        {
+            // This test might produce false warnings e.g. on ARM when cores go offline, but by having
+            // it right after the hardware detection they might still be online if we are lucky.
+            int countFromOpenMP    = gmx_omp_get_num_procs();
+            if (countFromDetection != countFromOpenMP)
+            {
+                fprintf(fplog, "Note: OpenMP core count (%d) does not match detected core count (%d).\n",
+                        countFromOpenMP, countFromDetection);
+            }
+        }
+    }
+#endif
+}
+
+
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
@@ -833,7 +993,10 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         snew(hwinfo_g, 1);
 
         hwinfo_g->cpuInfo             = new gmx::CpuInfo(gmx::CpuInfo::detect());
-        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect(fplog, cr));
+
+        hardwareTopologyDetectionPrologue();
+        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology(gmx::HardwareTopology::detect());
+        hardwareTopologyDetectionEpilogue(fplog, *(hwinfo_g->hardwareTopology));
 
         // TODO: Get rid of this altogether.
         hwinfo_g->nthreads_hw_avail = hwinfo_g->hardwareTopology->machine().logicalProcessorCount;
@@ -1133,25 +1296,6 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
     check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
-}
-
-void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
-                                                      const gmx::HardwareTopology *hardwareTopology)
-{
-    if (bHasOmpSupport &&
-        hardwareTopology->supportLevel() >=
-        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
-    {
-        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
-        int countFromOpenmp    = gmx_omp_get_num_procs();
-        if (countFromDetection != countFromOpenmp)
-        {
-            md_print_warn(cr, fplog,
-                          "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                          "Consider setting the launch configuration manually!",
-                          countFromDetection, countFromOpenmp);
-        }
-    }
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated

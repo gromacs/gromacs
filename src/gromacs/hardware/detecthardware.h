@@ -75,10 +75,6 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_hw_info_t *hwinfo);
 
-//! Warn the user if the OpenMP system doesn't agree with the hardware detection about the number of logical processors.
-void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
-                                                      const gmx::HardwareTopology *hardwareTopology);
-
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
