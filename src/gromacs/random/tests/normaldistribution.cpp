@@ -91,17 +91,31 @@ TEST(NormalDistributionTest, Reset)
     gmx::ThreeFry2x64<8>                                rng(123456, gmx::RandomDomain::Other);
     gmx::NormalDistribution<real>                       distA(2.0, 5.0);
     gmx::NormalDistribution<real>                       distB(2.0, 5.0);
-    gmx::NormalDistribution<>::result_type              valA, valB;
 
-    valA = distA(rng);
+    union
+    {
+        real           r;
+#if GMX_DOUBLE
+        std::uint64_t  i;
+#else
+        std::uint32_t  i;
+#endif
+    } resA, resB;
+
+    resA.r = distA(rng);
 
     distB(rng);
     rng.restart();
     distB.reset();
 
-    valB = distB(rng);
+    resB.r = distB(rng);
 
-    EXPECT_EQ(valA, valB);
+    // Approximate floating-point test first, so we get nice FP
+    // values printed if the test fails
+    EXPECT_REAL_EQ_TOL(resA.r, resB.r, gmx::test::defaultRealTolerance());
+
+    // Followed by exact binary comparison
+    EXPECT_EQ(resA.i, resB.i);
 }
 
 TEST(NormalDistributionTest, AltParam)
@@ -112,12 +126,32 @@ TEST(NormalDistributionTest, AltParam)
     gmx::NormalDistribution<real>              distB; // default parameters
     gmx::NormalDistribution<real>::param_type  paramA(2.0, 5.0);
 
+    union
+    {
+        real           r;
+#if GMX_DOUBLE
+        std::uint64_t  i;
+#else
+        std::uint32_t  i;
+#endif
+    } resA, resB;
+
+
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();
     rngB.restart();
     distA.reset();
     distB.reset();
-    EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+
+    resA.r = distA(rngA);
+    resB.r = distB(rngB, paramA);
+
+    // Approximate floating-point test first, so we get nice FP
+    // values printed if the test fails
+    EXPECT_REAL_EQ_TOL(resA.r, resB.r, gmx::test::defaultRealTolerance());
+
+    // Followed by exact binary comparison
+    EXPECT_EQ(resA.i, resB.i);
 }
 
 }      // namespace anonymous
