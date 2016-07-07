@@ -665,6 +665,9 @@ endif()
 include(gmxManageSimd)
 gmx_manage_simd()
 
+include(gmxManageCycleCounters)
+gmx_manage_cycle_counters()
+
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
     set(GMX_QMMM_GAUSSIAN 1)
