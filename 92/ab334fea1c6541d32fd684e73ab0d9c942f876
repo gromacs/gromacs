@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Szilárd Páll <pall.szilard@gmail.com>
+Code-Review+2: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-by: Erik Lindahl <erik.lindahl@gmail.com>
+Submitted-at: Thu, 07 Jul 2016 17:53:57 +0200
+Reviewed-on: https://gerrit.gromacs.org/6008
+Project: gromacs
+Branch: refs/heads/release-2016
