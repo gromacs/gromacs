@@ -104,11 +104,11 @@ class GroupedSorter(object):
             'stddef.h', 'stdint.h', 'stdio.h', 'stdlib.h', 'string.h',
             'time.h']
     _std_c_cpp_headers = ['c' + x[:-2] for x in _std_c_headers]
-    _std_cpp_headers = ['algorithm', 'array', 'deque', 'exception', 'fstream',
+    _std_cpp_headers = ['algorithm', 'array', 'chrono', 'deque', 'exception', 'fstream',
             'functional', 'iomanip', 'ios', 'iosfwd', 'iostream', 'istream', 'iterator',
             'limits', 'list', 'map', 'memory', 'new', 'numeric', 'ostream', 'random',
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
-            'tuple', 'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
+            'thread', 'tuple', 'type_traits', 'typeindex', 'typeinfo', 'vector', 'utility']
 
     def __init__(self, style='pub-priv', absolute=False):
         """Initialize a sorted with the given style."""

@@ -45,8 +45,19 @@ definitions. Experienced HPC users can skip this section.
         spreading computation over multiple threads, such as OpenMP,
         pthreads, winthreads, CUDA, OpenCL, and OpenACC. Some kinds of
         hardware can map more than one software thread to a core; on
-        Intel x86 processors this is called "hyper-threading."
-        Normally, :ref:`gmx mdrun` will not benefit from such mapping.
+        Intel x86 processors this is called "hyper-threading", while
+        the more general concept is often called SMT for
+        "simultaneous multi-threading". IBM Power8 can for instance use
+        up to 8 hardware threads per core.
+        This feature can usually be enabled or disabled either in
+        the hardware bios or through a setting in the Linux operating
+        system. GROMACS can typically make use of this, for a moderate
+        free performance boost. In most cases it will be
+        enabled by default e.g. on new x86 processors, but in some cases
+        the system administrators might have disabled it. If that is the
+        case, ask if they can re-enable it for you. If you are not sure
+        if it is enabled, check the output of the CPU information in
+        the log file and compare with CPU specifications you find online.
 
     thread affinity (pinning)
         By default, most operating systems allow software threads to migrate
