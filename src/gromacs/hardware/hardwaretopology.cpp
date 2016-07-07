@@ -56,7 +56,6 @@
 #    include <hwloc.h>
 #endif
 
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -67,12 +66,9 @@
 #    include <windows.h>      // GetSystemInfo()
 #endif
 
-#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
-//! Constant used to help minimize preprocessed code
-static const bool isArm = true;
-#else
-//! Constant used to help minimize preprocessed code
-static const bool isArm = false;
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
 #endif
 
 namespace gmx
@@ -558,7 +554,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
  *  \return The number of hardware processing units, or 0 if it fails.
  */
 int
-detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
+detectLogicalProcessorCount()
 {
     int count = 0;
 
@@ -568,78 +564,21 @@ detectLogicalProcessorCount(FILE *fplog, const t_commrec *cr)
         SYSTEM_INFO sysinfo;
         GetSystemInfo( &sysinfo );
         count = sysinfo.dwNumberOfProcessors;
-#elif defined HAVE_SYSCONF
+#elif defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
         // We are probably on Unix. Check if we have the argument to use before executing any calls
-#    if defined(_SC_NPROCESSORS_CONF)
-        count = sysconf(_SC_NPROCESSORS_CONF);
-#        if defined(_SC_NPROCESSORS_ONLN)
-        /* On e.g. Arm, the Linux kernel can use advanced power saving features where
-         * processors are brought online/offline dynamically. This will cause
-         * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
-         * reason we now warn if this mismatches with the detected core count. */
-        int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
-        if (count != countOnline)
-        {
-            /* We assume that this scenario means that the kernel has
-               disabled threads or cores, and that the only safe course is
-               to assume that _SC_NPROCESSORS_ONLN should be used. Even
-               this may not be valid if running in a containerized
-               environment, such system calls may read from
-               /sys/devices/system/cpu and report what the OS sees, rather
-               than what the container cgroup is supposed to set up as
-               limits. But we're not sure right now whether there's any
-               (standard-ish) way to handle that.
-
-               On ARM, the kernel may have powered down the cores,
-               which we'll warn the user about now. On x86, this
-               means HT is disabled by the kernel, not in the
-               BIOS. We're not sure what it means on other
-               architectures, or even if it is possible, because
-               sysconf is rather non-standardized. */
-            if (isArm)
-            {
-                md_print_warn(cr, fplog,
-                              "%d CPUs configured, but only %d of them are online.\n"
-                              "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                              "off to save power, and will turn them back on later when the load increases.\n"
-                              "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                              "will likely see much better performance by forcing all cores to be online, and\n"
-                              "making sure they run at their full clock frequency.", count, countOnline);
-            }
-            else
-            {
-                md_print_warn(cr, fplog,
-                              "Note: %d CPUs configured, but only %d of them are online, so GROMACS will use the latter.",
-                              count, countOnline);
-                // We use the online count to avoid (potential) oversubscription.
-                count = countOnline;
-            }
-        }
-#        endif
-#    elif defined(_SC_NPROC_CONF)
-        count = sysconf(_SC_NPROC_CONF);
-#    elif defined(_SC_NPROCESSORS_ONLN)
         count = sysconf(_SC_NPROCESSORS_ONLN);
-#    elif defined(_SC_NPROC_ONLN)
-        count = sysconf(_SC_NPROC_ONLN);
-#    else
-#       warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
-#    endif      // End of check for sysconf argument values
-
 #else
         count = 0; // Neither windows nor Unix.
 #endif
     }
 
-    GMX_UNUSED_VALUE(cr);
-    GMX_UNUSED_VALUE(fplog);
     return count;
 }
 
 }   // namespace anonymous
 
 // static
-HardwareTopology HardwareTopology::detect(FILE *fplog, const t_commrec *cr)
+HardwareTopology HardwareTopology::detect()
 {
     HardwareTopology result;
 
@@ -665,7 +604,7 @@ HardwareTopology HardwareTopology::detect(FILE *fplog, const t_commrec *cr)
     if (result.supportLevel_ == SupportLevel::None)
     {
         // No topology information; try to detect the number of logical processors at least
-        result.machine_.logicalProcessorCount = detectLogicalProcessorCount(fplog, cr);
+        result.machine_.logicalProcessorCount = detectLogicalProcessorCount();
         if (result.machine_.logicalProcessorCount > 0)
         {
             result.supportLevel_ = SupportLevel::LogicalProcessorCount;
