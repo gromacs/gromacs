@@ -85,6 +85,15 @@ int gmx_omp_get_thread_num(void)
 #endif
 }
 
+int gmx_omp_get_num_threads()
+{
+#if GMX_OPENMP
+    return omp_get_num_threads();
+#else
+    return 1; // we always have one thread at least
+#endif
+}
+
 void gmx_omp_set_num_threads(int num_threads)
 {
 #if GMX_OPENMP

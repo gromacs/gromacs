@@ -76,20 +76,18 @@
 #    include <unistd.h>       // sysconf()
 #endif
 
-#if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
-//! Constant used to help minimize preprocessed code
-static const bool isArm = true;
-#else
-//! Constant used to help minimize preprocessed code
-static const bool isArm = false;
-#endif
-
 #if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
 //! Constant used to help minimize preprocessed code
 static const bool isX86 = true;
 #else
 //! Constant used to help minimize preprocessed code
 static const bool isX86 = false;
+#endif
+
+#if defined __powerpc__ || defined __ppc__ || defined __PPC__
+static const bool isPowerPC = true;
+#else
+static const bool isPowerPC = false;
 #endif
 
 //! Constant used to help minimize preprocessed code
@@ -1176,89 +1174,37 @@ void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commr
     }
 }
 
-void checkHardwareThreadUsage(FILE *fplog, const t_commrec *cr,
-                              const gmx::HardwareTopology *hardwareTopology)
+void checkIntelHyperThreadingUsage(FILE                        *fplog,
+                                   const gmx::HardwareTopology *hardwareTopology)
 {
-    // We need to know what sysconf thinks about the number of online
-    // cores to do any checking.
-    // TODO use cmakedefine01 for HAVE_SYSCONF
 #if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
-    int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
-#else
-    int countOnline = -1;
-#endif
 
-    if (countOnline < 0)
-    {
-        return;
-    }
-
-    if (hardwareTopology->supportLevel() >=
-        gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
-    {
-        int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
-        if (countFromDetection != countOnline)
-        {
-            if (isArm)
-            {
-                // This situation is very unlikely to happen, and we
-                // don't know what to say to the user about it.
-            }
-            else
-            {
-                // Both hwloc and sysconf detection return the number
-                // of online cores in countFromDetection, so we are
-                // unlikely to reach this point.
-                md_print_warn(cr, fplog,
-                              "Note: %d CPUs detected, but only %d of them are online, so something is strange\n"
-                              "about this machine. GROMACS will use the number detected.",
-                              countFromDetection, countOnline);
-            }
-        }
-    }
-
-#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_CONF)
-    int countConfigured = sysconf(_SC_NPROCESSORS_CONF);
-#else
-    int countConfigured = -1;
-#endif
+    int countFromDetection = hardwareTopology->machine().logicalProcessorCount;
+    int countConfigured    = sysconf(_SC_NPROCESSORS_CONF);
 
     /* BIOS, kernel or user actions can take physical processors
-     * offline, so we should observe if this is the case. */
-    if (countConfigured >= 0 && countConfigured != countOnline)
+     * offline. We already cater for the some of the cases inside the hardwareToplogy
+     * by trying to spin up cores just before we detect, but there could be other
+     * cases where it is worthwhile to hint that there might be more resources available.
+     */
+    if (countConfigured >= 0 && countConfigured != countFromDetection)
     {
-        /* We assume that this scenario means that the something has
-           disabled threads or cores. This is generally something
-           a GROMACS user would want to rectify.
+        fprintf(fplog, "Note: %d CPUs configured, but only %d are online - using the online count.\n");
 
-           On ARM, the kernel may have powered down the cores. On x86,
-           this can indicate that HT is disabled by the kernel not in
-           the BIOS (if the difference is 2x). We'll warn about those,
-           but we're not sure what it means on other architectures, or
-           even if it is possible, because sysconf is rather
-           non-standardized. */
-        if (isArm)
+        int ratio = countConfigured/countFromDetection;
+
+        if (isX86 && ratio == 2)
         {
-            md_print_warn(cr, fplog,
-                          "Note: %d CPUs configured, but only %d of them are online.\n"
-                          "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
-                          "off to save power, and will turn them back on later when the load increases.\n"
-                          "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
-                          "will likely see much better performance by forcing all cores to be online, and\n"
-                          "making sure they run at their full clock frequency.", countConfigured, countOnline);
+            fprintf(fplog, "      X86 Hyperthreading is likely disabled; enable it for better performance.\n");
         }
-        else
+        // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
+        // We only warn if it is completely disabled since default performance drops with SMT8.
+        if (isPowerPC && ratio == 8)
         {
-            if (isX86 && countConfigured == 2*countOnline)
-            {
-                md_print_warn(cr, fplog,
-                              "Note: %d CPUs configured, but only %d of them are online. This\n"
-                              "likely means that HyperThreading is disabled. Enabling it would be likely\n"
-                              "to have performance benefits. GROMACS will use the online CPU count.",
-                              countConfigured, countOnline);
-            }
+            fprintf(fplog, "      PowerPC SMT is likely disabled; enable SMT2/SMT4 for better performance.\n");
         }
     }
+#endif
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
