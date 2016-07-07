@@ -118,14 +118,21 @@ int main() {
     set(CMAKE_REQUIRED_FLAGS "${CXX11_CXX_FLAG} ${${STDLIB_CXX_FLAG_NAME}}")
     set(CMAKE_REQUIRED_LIBRARIES "${${STDLIB_LIBRARIES_NAME}}")
     check_cxx_source_compiles(
-"#include <map>
+"#include <chrono>
+#include <map>
 #include <memory>
+#include <thread>
 #include <utility>
 int main() {
   typedef std::unique_ptr<int> intPointer;
   intPointer p(new int(10));
   std::map<int, std::unique_ptr<int>> m;
   m.insert(std::make_pair(5, std::move(p)));
+  auto start = std::chrono::steady_clock::now();
+  if (std::chrono::steady_clock::now() - start < std::chrono::seconds(2))
+  {
+      std::thread t;
+  }
 }" CXX11_STDLIB_PRESENT)
     if(NOT CXX11_STDLIB_PRESENT)
         message(FATAL_ERROR "This version of GROMACS requires C++11-compatible standard library. Please use a newer compiler, or a newer standard library, or use the GROMACS 5.1.x release. See the installation guide for details.")

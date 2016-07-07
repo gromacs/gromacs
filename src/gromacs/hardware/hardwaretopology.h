@@ -44,11 +44,8 @@
 #define GMX_HARDWARE_HARDWARETOPOLOGY_H
 
 #include <cstdint>
-#include <cstdio>
 
 #include <vector>
-
-struct t_commrec;
 
 namespace gmx
 {
@@ -190,11 +187,8 @@ class HardwareTopology
 
     public:
 
-        /*! \brief Detects the hardware topology.
-         *
-         * Writes any warnings to stderr, and \c fplog if it is not nullptr.
-         */
-        static HardwareTopology detect(FILE *fplog, const t_commrec *cr);
+        /*! \brief Detects the hardware topology. */
+        static HardwareTopology detect();
 
         /*! \brief Check what topology information that is available and valid
          *
