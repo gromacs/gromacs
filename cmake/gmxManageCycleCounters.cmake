@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,50 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# - Define function to detect whether the compiler's target
-# - architecture is one for which GROMACS has special treatment
-#   (e.g. SIMD instructions)
+# - Decide whether to use CPU cycle counters
 #
-# Sets GMX_TARGET_X86 or GMX_TARGET_BGQ if targetting that
-# architecture. May set other such variables if/when there is future
-# need.
+# gmx_manage_cycle_counters()
+#
+# By default, we enable GMX_CYCLECOUNTERS for all architectures except ARMv7.
+# On ARMv7, we enable it if we are not cross-compiling and can run a small
+# test to confirm that the support is present in the kernel, otherwise we
+# disable it.
+#
+macro(gmx_manage_cycle_counters)
 
-function(gmx_detect_target_architecture)
-    if (NOT DEFINED GMX_TARGET_X86)
-        try_compile(GMX_TARGET_X86 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestX86.c")
+    if(NOT DEFINED GMX_CYCLECOUNTERS)
+
+        if(GMX_TARGET_ARMV7)
+
+            if(NOT CMAKE_CROSSCOMPILING)
+
+                try_run(ARMV7_COUNTER_RUN_VAR ARMV7_COUNTER_COMPILE_VAR
+                        ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/TestARMv7CycleCounters.cpp")
+
+                # Enable cycle counter usage if the test ran fine and exited with 0 return code
+                if(${ARMV7_COUNTER_COMPILE_VAR} AND ("${ARMV7_COUNTER_RUN_VAR}" EQUAL "0"))
+                    set(GMX_CYCLECOUNTERS ON CACHE BOOL "Use CPU cycle counters timing")
+                else()
+                    set(GMX_CYCLECOUNTERS OFF CACHE BOOL "Use CPU cycle counters for timing")
+                endif()
+
+            else()
+
+                # Disable cycle counters when cross-compiling for ARMv7
+                set(GMX_CYCLECOUNTERS OFF CACHE BOOL "Use CPU cycle counters for timing")
+
+            endif()
+
+        else()
+
+            # For now we (try to) enable cycle counters on all other platforms
+            set(GMX_CYCLECOUNTERS ON CACHE BOOL "Use CPU cycle counters timing")
+
+        endif()
+
+        mark_as_advanced(GMX_CYCLECOUNTERS)
+
     endif()
-    if (NOT DEFINED GMX_TARGET_BGQ)
-        try_compile(GMX_TARGET_BGQ ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestBlueGeneQ.c")
-    endif()
-    if (NOT DEFINED GMX_TARGET_MIC)
-        try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestMIC.c")
-    endif()
-    if (NOT DEFINED GMX_TARGET_ARMV7)
-        try_compile(GMX_TARGET_ARMV7 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestARMv7.cpp")
-    endif()
-    if (NOT DEFINED GMX_TARGET_AARCH64)
-        try_compile(GMX_TARGET_AARCH64 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestAArch64.cpp")
-    endif()
-    if (NOT DEFINED GMX_TARGET_FUJITSU_SPARC64)
-        try_compile(GMX_TARGET_FUJITSU_SPARC64 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestFujitsuSparc64.c")
-    endif()
-endfunction()
+
+endmacro()
+
