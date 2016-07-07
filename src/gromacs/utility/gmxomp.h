@@ -115,20 +115,9 @@ void gmx_omp_set_num_threads(int num_threads);
  * \param[out] message  Receives the message to be shown to the user.
  * \returns `true` if we can set thread affinity ourselves.
  *
- * While GNU OpenMP does not set affinity by default, the Intel OpenMP library
- * does.  This conflicts with the internal affinity (especially thread-MPI)
- * setting, results in incorrectly locked threads, and causes dreadful performance.
- *
  * The KMP_AFFINITY environment variable is used by Intel, GOMP_CPU_AFFINITY
  * by the GNU compilers (Intel also honors it well).  If any of the variables
  * is set, we should honor it and disable the internal pinning.
- * When using Intel OpenMP, we will disable affinity if the user did not set it
- * manually through one of the aforementioned environment variables.
- *
- * Note that the Intel OpenMP affinity disabling will only take effect if this
- * function is called before the OpenMP library gets initialized, which happens
- * when the first call is made into a compilation unit that contains OpenMP
- * pragmas.
  *
  * If this function returns `false`, the caller is responsible to disable the
  * pinning, show the message from \p *message to the user, and free the memory
