@@ -100,6 +100,14 @@ int gmx_omp_get_num_procs(void);
  */
 int gmx_omp_get_thread_num(void);
 
+/*! \brief Return the number of threads currently used for parallel regions
+ *
+ *  \return If OpenMP support is present, this returns the value obtained
+ *          from omp_get_num_threads(), and otherwise 1.
+ */
+int
+gmx_omp_get_num_threads();
+
 /*! \brief
  * Sets the number of threads in subsequent parallel regions, unless overridden
  * by a num_threads clause.
