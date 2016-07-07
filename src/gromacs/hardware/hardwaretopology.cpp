@@ -59,12 +59,16 @@
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxomp.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>       // sysconf()
 #endif
 #if GMX_NATIVE_WINDOWS
 #    include <windows.h>      // GetSystemInfo()
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>         // gettimeofday()
 #endif
 
 #if defined(_M_ARM) || defined(__arm__) || defined(__ARM_ARCH) || defined (__aarch64__)
@@ -73,6 +77,16 @@ static const bool isArm = true;
 #else
 //! Constant used to help minimize preprocessed code
 static const bool isArm = false;
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROC_CONF)
+#    define _SC_NPROCESSORS_CONF _SC_NPROC_CONF
 #endif
 
 namespace gmx
@@ -570,57 +584,74 @@ detectLogicalProcessorCount()
         count = sysinfo.dwNumberOfProcessors;
 #elif defined HAVE_SYSCONF
         // We are probably on Unix. Check if we have the argument to use before executing any calls
-#    if defined(_SC_NPROCESSORS_CONF)
-        count = sysconf(_SC_NPROCESSORS_CONF);
-#        if defined(_SC_NPROCESSORS_ONLN)
-        /* On e.g. Arm, the Linux kernel can use advanced power saving features where
-         * processors are brought online/offline dynamically. This will cause
-         * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
-         * reason we now warn if this mismatches with the detected core count. */
-        int countOnline = sysconf(_SC_NPROCESSORS_ONLN);
-        if (count != countOnline)
-        {
-            /* We assume that this scenario means that something has
-               disabled threads or cores, and that the only safe course is
-               to assume that _SC_NPROCESSORS_ONLN should be used. Even
-               this may not be valid if running in a containerized
-               environment, such system calls may read from
-               /sys/devices/system/cpu and report what the OS sees, rather
-               than what the container cgroup is supposed to set up as
-               limits. But we're not sure right now whether there's any
-               (standard-ish) way to handle that.
-
-               On ARM, the kernel may have powered down the cores. On
-               x86, this can indicate that HT is disabled by the user
-               or kernel, not in the BIOS (if the difference is
-               2x). We'll warn the user about those in
-               checkHardwareThreadUsage() later. We're not sure what
-               it means on other architectures, or even if it is
-               possible, because sysconf is rather
-               non-standardized. */
-            if (!isArm)
-            {
-                // We use the online count to avoid (potential) oversubscription.
-                count = countOnline;
-            }
-        }
-#        endif
-#    elif defined(_SC_NPROC_CONF)
-        count = sysconf(_SC_NPROC_CONF);
-#    elif defined(_SC_NPROCESSORS_ONLN)
         count = sysconf(_SC_NPROCESSORS_ONLN);
-#    elif defined(_SC_NPROC_ONLN)
-        count = sysconf(_SC_NPROC_ONLN);
-#    else
-#       warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
-#    endif      // End of check for sysconf argument values
-
 #else
         // TODO Flag this error in a more useful way
         count = 0; // Neither windows nor Unix.
 #endif
     }
     return count;
+}
+
+/*! \brief Try to bring (non-x86) cores online with a small fake workload
+ *
+ * Some architectures (in particular ARM) have support for taking configured
+ * cores offline, which will make them disappear from hwloc and the online
+ * processor count. We want to avoid resorting to the configured count, since
+ * processors could be permanently offline.
+ *
+ * This routine checks if there is a mismatch between the number of cores
+ * configured and online, and in that case we issue a small workload that
+ * runs for up to 2.0 seconds (ARM cores typically come online in less than 1s)
+ * to attempt to wake sleeping cores.
+ *
+ * This type of mismatch can also occur for x86 on Linux, if SMT has only
+ * been disabled in the kernel (rather than bios). Since those cores will never
+ * come online automatically, we skip this test for x86 to avoid wasting 2 seconds.
+ * We also skip the test if there is no openMP support, and for now we only
+ * run it on Linux, since we are not aware of windows running on any systems
+ * like this.
+ *
+ * \note Cores will sleep relatively quickly again, so it's important to issue
+ *       the real detection code directly after this routine.
+ */
+void
+spinUpCores()
+{
+#if !GMX_TARGET_X86 && GMX_OPENMP && defined(HAVE_SYSCONF) && defined(HAVE_SYS_TIME_H)
+    int conf   = sysconf(_SC_NPROCESSORS_CONF);
+    int online = sysconf(_SC_NPROCESSORS_ONLN);
+
+    if (conf != online)
+    {
+        struct timeval t1, t2;
+        double         timediff;
+        double         dum = 0.1;
+
+        gettimeofday(&t1, NULL);
+        gmx_omp_set_num_threads(conf);
+
+#pragma omp parallel
+        do
+        {
+            for (int i = 1.0; i < 10000; i++)
+            {
+                dum = dum/static_cast<double>(i);
+            }
+            gettimeofday(&t2, NULL);
+            timediff = static_cast<double>(t2.tv_sec-t1.tv_sec)+(t2.tv_usec-t1.tv_usec)*1e-6;
+            online   = sysconf(_SC_NPROCESSORS_ONLN);
+        }
+        while (timediff < 2.0 && conf != online);
+
+        if (dum < 0.0)
+        {
+            // This can never happen, but it prevents the compiler from optimizing away the loop
+            fprintf(stderr, "Dummy message");
+        }
+    }
+
+#endif
 }
 
 }   // namespace anonymous
@@ -636,6 +667,8 @@ HardwareTopology HardwareTopology::detect()
     result.machine_.numa.maxRelativeLatency = 0.0;
     result.supportLevel_                    = SupportLevel::None;
     result.isThisSystem_                    = true;
+
+    spinUpCores();
 
 #if GMX_HWLOC
     parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
