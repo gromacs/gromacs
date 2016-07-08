@@ -401,6 +401,11 @@ int gmx_dos(int argc, char *argv[])
 
     close_trj(status);
 
+    int min_frames = 100;
+    if (nframes < min_frames)
+    {
+        gmx_fatal(FARGS, "You need at least %d frames in the trajectory and you only have %d.", min_frames, nframes);
+    }
     dt = (t1-t0)/(nframes-1);
     if (nV > 0)
     {
