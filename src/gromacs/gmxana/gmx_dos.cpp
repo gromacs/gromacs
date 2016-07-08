@@ -286,9 +286,10 @@ int gmx_dos(int argc, char *argv[])
     double              invNormalize;
     gmx_bool            normalizeAutocorrelation;
 
-    static     gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
-    static     gmx_bool bRecip   = FALSE;
-    static     real     Temp     = 298.15, toler = 1e-6;
+    static     gmx_bool bVerbose   = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
+    static     gmx_bool bRecip     = FALSE;
+    static     real     Temp       = 298.15, toler = 1e-6;
+    int                 min_frames = 100;
 
     t_pargs             pa[]     = {
         { "-v", FALSE, etBOOL, {&bVerbose},
@@ -398,6 +399,10 @@ int gmx_dos(int argc, char *argv[])
 
     close_trj(status);
 
+    if (nframes < min_frames)
+    {
+        gmx_fatal(FARGS, "You need at least %d frames in the trajectory and you only have %d.", min_frames, nframes);
+    }
     dt = (t1-t0)/(nframes-1);
     if (nV > 0)
     {
