@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@ namespace gmx
 class AbstractOption;
 class OptionInfo;
 class Options;
+class Variant;
 
 /*! \libinternal \brief
  * Abstract base class for converting, validating, and storing option values.
@@ -171,16 +172,16 @@ class AbstractOptionStorage
          */
         void startSet();
         /*! \brief
-         * Adds a new value for the option, converting it from a string.
+         * Adds a new value for the option.
          *
-         * \param[in] value  String value to convert.
+         * \param[in] value  Value to convert.
          * \throws  InvalidInputError if value cannot be converted, or
          *      if there are too many values.
          *
          * This method should only be called between startSet() and
          * finishSet().
          */
-        void appendValue(const std::string &value);
+        void appendValue(const Variant &value);
         /*! \brief
          * Performs validation and/or actions once a set of values has been
          * added.
@@ -270,9 +271,9 @@ class AbstractOptionStorage
          */
         virtual void clearSet() = 0;
         /*! \brief
-         * Adds a new value, converting it from a string.
+         * Adds a new value.
          *
-         * \param[in] value  String value to convert.
+         * \param[in] value  Value to convert.
          * \throws  InvalidInputError if \p value is not valid for this option
          *      or if there have been too many values in the set.
          *
@@ -281,7 +282,7 @@ class AbstractOptionStorage
          *
          * \see OptionStorageTemplate::convertValue()
          */
-        virtual void convertValue(const std::string &value) = 0;
+        virtual void convertValue(const Variant &value) = 0;
         /*! \brief
          * Performs validation and/or actions once a set of values has been
          * added.

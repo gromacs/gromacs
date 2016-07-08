@@ -90,7 +90,7 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
          *
          * \param[in] settings   Storage settings.
          */
-        MockOptionStorage(const MockOption &settings);
+        explicit MockOptionStorage(const MockOption &settings);
 
         /*! \brief
          * Calls addValue("dummy") in the base class.
@@ -99,25 +99,9 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             addValue("dummy");
         }
-        // using MyBase::markAsSet;
-        // using MyBase::addValue;
-        // using MyBase::commitValues;
-        // "using" is correct but MSVC gives error C2248. Workaround:
-        //! \copydoc gmx::OptionStorageTemplate::markAsSet()
-        void markAsSet()
-        {
-            MyBase::markAsSet();
-        }
-        //! \copydoc gmx::OptionStorageTemplate::addValue()
-        void addValue(const std::string &value)
-        {
-            MyBase::addValue(value);
-        }
-        //! \copydoc gmx::OptionStorageTemplate::commitValues()
-        void commitValues()
-        {
-            MyBase::commitValues();
-        }
+        using MyBase::markAsSet;
+        using MyBase::addValue;
+        using MyBase::commitValues;
 
         virtual gmx::OptionInfo &optionInfo() { return info_; }
         // These are not used.
@@ -125,6 +109,11 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         virtual std::string formatSingleValue(const std::string & /*value*/) const
         {
             return "";
+        }
+
+        virtual void convertValue(const gmx::Variant &value)
+        {
+            convertValue(value.cast<std::string>());
         }
 
         MOCK_METHOD1(convertValue, void(const std::string &value));

@@ -53,6 +53,7 @@ namespace gmx
 {
 
 class Options;
+class Variant;
 
 /*! \libinternal \brief
  * Decorator class for assigning values to Options.
@@ -145,7 +146,7 @@ class OptionsAssigner
         /*! \brief
          * Appends a value to the value list of the current option.
          *
-         * \param[in] value  String representation of the value to assign.
+         * \param[in] value  Value to assign.
          * \throws InvalidInputError if the value cannot be converted or if
          *      there are too many values for an option.
          *
@@ -165,6 +166,14 @@ class OptionsAssigner
          * This method provides the same exception safety guarantee as the
          * OptionStorageTemplate::convertValue() method of the storage class
          * implementing the option where the value is assigned to.
+         */
+        void appendValue(const Variant &value);
+        /*! \brief
+         * Appends a value to the value list of the current option.
+         *
+         * \param[in] value  Value to assign.
+         *
+         * See appendValue(const Variant &) for more details.
          */
         void appendValue(const std::string &value);
         /*! \brief
