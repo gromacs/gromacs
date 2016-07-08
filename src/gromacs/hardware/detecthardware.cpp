@@ -838,7 +838,14 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 #endif
 }
 
-//! Warn the user if the OpenMP system doesn't agree with the hardware detection about the number of logical processors.
+/*! Warn the user if the OpenMP system doesn't agree with the hardware detection about the number of logical processors.
+ *
+ * This typically happens when mpirun or the job scheduler is not requested the correct
+ * number of cores/node and when either of these set the process CPUSET, the OpenMP library
+ * takes that into account and reports the number of processor accordingly.
+ * As mdrun only takes into acout the number of online CPUs but not the CPUSET for the number of
+ * threads to launch, this situation can lead to oversubscription or clashes in node sharing cases.
+ */
 static void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const t_commrec *cr,
                                                              const gmx::HardwareTopology *hardwareTopology)
 {
@@ -852,8 +859,12 @@ static void checkLogicalProcessorCountIsConsistentWithOpenmp(FILE *fplog, const 
         {
             md_print_warn(cr, fplog,
                           "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
-                          "Consider setting the launch configuration manually!",
-                          countFromDetection, countFromOpenmp);
+                          "This often means that the MPI launcher or job scheduler expects this run to be using %d\n"
+                          "core(s)/node, but mdrun is trying to use all %d detected logical cores. \n"
+                          "This can lead to core oversubscription, so consider checking your job launch settings!",
+                          countFromDetection, countFromOpenmp,
+                          countFromOpenmp, countFromDetection
+                          );
         }
     }
 }
