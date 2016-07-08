@@ -313,7 +313,11 @@ std::string FileNameOptionStorage::formatSingleValue(const std::string &value) c
     return value;
 }
 
-void FileNameOptionStorage::convertValue(const std::string &value)
+void FileNameOptionStorage::initConverter(ConverterType * /*converter*/)
+{
+}
+
+std::string FileNameOptionStorage::processValue(const std::string &value)
 {
     if (manager_ != NULL)
     {
@@ -340,8 +344,7 @@ void FileNameOptionStorage::convertValue(const std::string &value)
                                "Manager returned an invalid file name");
                 }
             }
-            addValue(processedValue);
-            return;
+            return processedValue;
         }
     }
     // Currently, directory options are simple, and don't need any
@@ -349,8 +352,7 @@ void FileNameOptionStorage::convertValue(const std::string &value)
     // TODO: Consider splitting them into a separate DirectoryOption.
     if (isDirectoryOption())
     {
-        addValue(value);
-        return;
+        return value;
     }
     const int fileType = fn2ftp(value.c_str());
     if (fileType == efNR)
@@ -370,7 +372,7 @@ void FileNameOptionStorage::convertValue(const std::string &value)
                            value.c_str(), joinStrings(extensions(), ", ").c_str());
         GMX_THROW(InvalidInputError(message));
     }
-    addValue(value);
+    return value;
 }
 
 void FileNameOptionStorage::processAll()

@@ -118,9 +118,9 @@ void SelectionOptionStorage::addSelections(
 }
 
 
-void SelectionOptionStorage::convertValue(const std::string &value)
+void SelectionOptionStorage::convertValue(const Variant &value)
 {
-    manager_.convertOptionValue(this, value, false);
+    manager_.convertOptionValue(this, value.cast<std::string>(), false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
@@ -280,7 +280,7 @@ void SelectionFileOptionStorage::clearSet()
     bValueParsed_ = false;
 }
 
-void SelectionFileOptionStorage::convertValue(const std::string &value)
+void SelectionFileOptionStorage::convertValue(const Variant &value)
 {
     if (bValueParsed_)
     {
@@ -288,7 +288,7 @@ void SelectionFileOptionStorage::convertValue(const std::string &value)
     }
     bValueParsed_ = true;
     // TODO: Should we throw an InvalidInputError if the file does not exist?
-    manager_.parseRequestedFromFile(value);
+    manager_.parseRequestedFromFile(value.cast<std::string>());
 }
 
 void SelectionFileOptionStorage::processSet()

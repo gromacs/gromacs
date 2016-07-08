@@ -141,20 +141,9 @@ std::string BooleanOptionStorage::formatSingleValue(const bool &value) const
     return value ? "yes" : "no";
 }
 
-void BooleanOptionStorage::convertValue(const std::string &value)
+void BooleanOptionStorage::initConverter(ConverterType *converter)
 {
-    // TODO: Case-independence
-    if (value == "1" || value == "yes" || value == "true")
-    {
-        addValue(true);
-        return;
-    }
-    else if (value == "0" || value == "no" || value == "false")
-    {
-        addValue(false);
-        return;
-    }
-    GMX_THROW(InvalidInputError("Invalid value: '" + value + "'; supported values are: 1, 0, yes, no, true, false"));
+    converter->addConverter<std::string>(&fromStdString<bool>);
 }
 
 /********************************************************************
@@ -196,9 +185,9 @@ std::string IntegerOptionStorage::formatSingleValue(const int &value) const
     return formatString("%d", value);
 }
 
-void IntegerOptionStorage::convertValue(const std::string &value)
+void IntegerOptionStorage::initConverter(ConverterType *converter)
 {
-    addValue(fromString<int>(value));
+    converter->addConverter<std::string>(&fromStdString<int>);
 }
 
 void IntegerOptionStorage::processSetValues(ValueList *values)
@@ -238,9 +227,9 @@ std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) cons
     return formatString("%" GMX_PRId64, value);
 }
 
-void Int64OptionStorage::convertValue(const std::string &value)
+void Int64OptionStorage::initConverter(ConverterType *converter)
 {
-    addValue(fromString<gmx_int64_t>(value));
+    converter->addConverter<std::string>(&fromStdString<gmx_int64_t>);
 }
 
 /********************************************************************
@@ -282,9 +271,15 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
     return formatString("%g", value / factor_);
 }
 
-void DoubleOptionStorage::convertValue(const std::string &value)
+void DoubleOptionStorage::initConverter(ConverterType *converter)
 {
-    addValue(fromString<double>(value) * factor_);
+    converter->addConverter<std::string>(&fromStdString<double>);
+}
+
+double DoubleOptionStorage::processValue(const double &value)
+{
+    // TODO: Consider testing for overflow when scaling with factor_.
+    return value * factor_;
 }
 
 void DoubleOptionStorage::processSetValues(ValueList *values)
@@ -368,11 +363,15 @@ std::string FloatOptionStorage::formatSingleValue(const float &value) const
     return formatString("%g", value / factor_);
 }
 
-void FloatOptionStorage::convertValue(const std::string &value)
+void FloatOptionStorage::initConverter(ConverterType *converter)
 {
-    // TODO: Consider testing for overflow when scaling with factor_ (also for
-    // the double precision case).
-    addValue(fromString<float>(value) * factor_);
+    converter->addConverter<std::string>(&fromStdString<float>);
+}
+
+float FloatOptionStorage::processValue(const float &value)
+{
+    // TODO: Consider testing for overflow when scaling with factor_.
+    return value * factor_;
 }
 
 void FloatOptionStorage::processSetValues(ValueList *values)
@@ -499,17 +498,17 @@ std::string StringOptionStorage::formatSingleValue(const std::string &value) con
     return value;
 }
 
-void StringOptionStorage::convertValue(const std::string &value)
+void StringOptionStorage::initConverter(ConverterType * /*converter*/)
 {
-    if (allowed_.size() == 0)
+}
+
+std::string StringOptionStorage::processValue(const std::string &value)
+{
+    if (allowed_.size() > 0)
     {
-        addValue(value);
+        return *findEnumValue(this->allowed_, value);
     }
-    else
-    {
-        ValueList::const_iterator match = findEnumValue(allowed_, value);
-        addValue(*match);
-    }
+    return value;
 }
 
 /********************************************************************
@@ -609,10 +608,13 @@ std::string EnumOptionStorage::formatSingleValue(const int &value) const
     return allowed_[value];
 }
 
-void EnumOptionStorage::convertValue(const std::string &value)
+void EnumOptionStorage::initConverter(ConverterType *converter)
 {
-    std::vector<std::string>::const_iterator match = findEnumValue(allowed_, value);
-    addValue(match - allowed_.begin());
+    converter->addConverter<std::string>(
+            [this] (const std::string &value)
+            {
+                return findEnumValue(this->allowed_, value) - this->allowed_.begin();
+            });
 }
 
 /********************************************************************

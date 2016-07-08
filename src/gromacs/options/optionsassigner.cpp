@@ -49,6 +49,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/variant.h"
 
 #include "options-impl.h"
 
@@ -202,6 +203,11 @@ bool OptionsAssigner::tryStartOption(const char *name)
 
 void OptionsAssigner::appendValue(const std::string &value)
 {
+    appendValue(Variant(value));
+}
+
+void OptionsAssigner::appendValue(const Variant &value)
+{
     AbstractOptionStorage *option = impl_->currentOption_;
     GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
     ++impl_->currentValueCount_;
@@ -218,8 +224,7 @@ void OptionsAssigner::finishOption()
         if (impl_->currentValueCount_ == 0)
         {
             // Should not throw, otherwise something is wrong.
-            // TODO: Get rid of the hard-coded values.
-            option->appendValue(impl_->reverseBoolean_ ? "0" : "1");
+            option->appendValue(Variant::create<bool>(!impl_->reverseBoolean_));
         }
         else if (impl_->reverseBoolean_)
         {
