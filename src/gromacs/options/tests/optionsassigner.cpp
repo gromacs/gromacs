@@ -661,6 +661,46 @@ TEST(OptionsAssignerDoubleTest, HandlesEmptyValue)
     EXPECT_DOUBLE_EQ(1.0, value);
 }
 
+TEST(OptionsAssignerDoubleTest, HandlesPreSetScaleValue)
+{
+    gmx::Options           options;
+    double                 value = 1.0;
+    using gmx::DoubleOption;
+    gmx::DoubleOptionInfo *info;
+    ASSERT_NO_THROW(info = options.addOption(DoubleOption("p").store(&value)));
+    EXPECT_NO_THROW(info->setScaleFactor(10));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    ASSERT_NO_THROW(assigner.appendValue("2.7"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_DOUBLE_EQ(27, value);
+}
+
+TEST(OptionsAssignerDoubleTest, HandlesPostSetScaleValue)
+{
+    gmx::Options           options;
+    double                 value = 1.0;
+    using gmx::DoubleOption;
+    gmx::DoubleOptionInfo *info;
+    ASSERT_NO_THROW(info = options.addOption(DoubleOption("p").store(&value)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    ASSERT_NO_THROW(assigner.appendValue("2.7"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(info->setScaleFactor(10));
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_DOUBLE_EQ(27, value);
+}
+
 
 /********************************************************************
  * Tests for string assignment

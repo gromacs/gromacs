@@ -55,6 +55,12 @@ namespace gmx
 //! \{
 
 /*! \brief
+ * Parses a boolean from a string.
+ *
+ * \throws  InvalidInputError if `str` is not recognized as a boolean value.
+ */
+bool boolFromString(const char *str);
+/*! \brief
  * Parses an integer from a string.
  *
  * \throws  InvalidInputError if `str` is not a valid integer.
@@ -102,7 +108,19 @@ template <typename T> static inline T fromString(const std::string &str)
 {
     return fromString<T>(str.c_str());
 }
+/*! \copydoc fromString(const char *)
+ *
+ * Provided for situations where overload resolution cannot easily resolve the
+ * desired std::string parameter.
+ */
+template <typename T> static inline T fromStdString(const std::string &str)
+{
+    return fromString<T>(str.c_str());
+}
 
+//! Implementation for boolean values.
+template <> inline
+bool fromString<bool>(const char *str) { return boolFromString(str); }
 //! Implementation for integer values.
 template <> inline
 int fromString<int>(const char *str) { return intFromString(str); }

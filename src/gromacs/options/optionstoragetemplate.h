@@ -49,6 +49,7 @@
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/valueconverter.h"
 #include "gromacs/options/valuestore.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -146,7 +147,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * should be considered whether the implementation can be made strongly
          * exception safe.
          */
-        virtual void convertValue(const std::string &value) = 0;
+        virtual void convertValue(const Variant &value) = 0;
         /*! \brief
          * Processes values for a set after all have been converted.
          *
@@ -276,6 +277,89 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // Copy and assign disallowed by base.
 };
 
+
+/*! \libinternal \brief
+ * Simplified option storage template for options that have one-to-one value
+ * conversion.
+ *
+ * \tparam T Assignable type that stores a single option value.
+ *
+ * To implement an option that always map a single input value to a single
+ * output value, derive from this class instead of OptionStorageTemplate.
+ * This class implements convertValue() in terms of two new virtual methods:
+ * initConverter() and processValue().
+ *
+ * To specify how different types of values need to be converted, implement
+ * initConverter().
+ * To do common post-processing of the values after conversion, but before they
+ * are added to the underlying storage, override processValue().
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+template <typename T>
+class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
+{
+    public:
+        //! Alias for the template class for use in base classes.
+        typedef OptionStorageTemplateSimple<T> MyBase;
+
+    protected:
+        //! Alias for the converter parameter type for initConverter().
+        typedef OptionValueConverterSimple<T> ConverterType;
+
+        //! Initializes the storage.
+        template <class U>
+        explicit OptionStorageTemplateSimple(const OptionTemplate<T, U> &settings,
+                                             OptionFlags staticFlags = OptionFlags())
+            : OptionStorageTemplate<T>(settings, staticFlags), initialized_(false)
+        {
+        }
+        //! Initializes the storage.
+        OptionStorageTemplateSimple(const AbstractOption                            &settings,
+                                    typename OptionStorageTemplate<T>::StorePointer  store)
+            : OptionStorageTemplate<T>(settings, std::move(store)), initialized_(false)
+        {
+        }
+
+        /*! \brief
+         * Specifies how different types are converted.
+         *
+         * See OptionValueConverterSimple for more details.
+         */
+        virtual void initConverter(ConverterType *converter) = 0;
+        /*! \brief
+         * Post-processes a value after conversion to the output type.
+         *
+         * \param[in] value  Value after conversion.
+         * \returns   Value to store for the option.
+         *
+         * The default implementation only provides an identity mapping.
+         */
+        virtual T processValue(const T &value)
+        {
+            return value;
+        }
+
+    private:
+        virtual void convertValue(const Variant &variant)
+        {
+            if (!initialized_)
+            {
+                initConverter(&converter_);
+                initialized_ = true;
+            }
+            this->addValue(processValue(converter_.convert(variant)));
+        }
+
+        ConverterType  converter_;
+        bool           initialized_;
+};
+
+
+/********************************************************************
+ * OptionStorageTemplate implementation
+ */
 
 template <typename T>
 template <class U>

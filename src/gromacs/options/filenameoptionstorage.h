@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ class FileNameOptionManager;
 /*! \internal \brief
  * Converts, validates, and stores file names.
  */
-class FileNameOptionStorage : public OptionStorageTemplate<std::string>
+class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
 {
     public:
         /*! \brief
@@ -100,7 +100,8 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         ConstArrayRef<int> fileTypes() const;
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
+        virtual std::string processValue(const std::string &value);
         virtual void processAll();
 
         FileNameOptionInfo      info_;

@@ -57,6 +57,23 @@ namespace gmx
 
 //! \cond libapi
 
+bool boolFromString(const char *value)
+{
+    if (gmx_strcasecmp(value, "1") == 0
+        || gmx_strcasecmp(value, "yes") == 0
+        || gmx_strcasecmp(value, "true") == 0)
+    {
+        return true;
+    }
+    if (gmx_strcasecmp(value, "0") == 0
+        || gmx_strcasecmp(value, "no") == 0
+        || gmx_strcasecmp(value, "false") == 0)
+    {
+        return false;
+    }
+    GMX_THROW(InvalidInputError("Invalid value: '" + std::string(value) + "'; supported values are: 1, 0, yes, no, true, false"));
+}
+
 int intFromString(const char *str)
 {
     errno = 0;
