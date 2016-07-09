@@ -219,6 +219,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   gmx_edsam_t ed, t_forcerec *fr,
                   int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                  gmx_membed_t *membed,
                   real cpt_period, real max_hours,
                   int imdport,
                   unsigned long Flags,
@@ -283,7 +284,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
-    gmx_membed_t     *membed   = NULL;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -339,18 +339,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         ir->nstxout_compressed = 0;
     }
     groups = &top_global->groups;
-
-    if (opt2bSet("-membed", nfile, fnm))
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "Initializing membed");
-        }
-        /* Note that membed cannot work in parallel because mtop is
-         * changed here. Fix this if we ever want to make it run with
-         * multiple ranks. */
-        membed = init_membed(fplog, nfile, fnm, top_global, ir, state_global, cr, &cpt_period);
-    }
 
     if (ir->eSwapCoords != eswapNO)
     {
@@ -1847,11 +1835,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     if (ir->eSwapCoords != eswapNO)
     {
         finish_swapcoords(ir->swap);
-    }
-
-    if (membed != nullptr)
-    {
-        free_membed(membed);
     }
 
     /* IMD cleanup, if bIMD is TRUE. */
