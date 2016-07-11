@@ -189,8 +189,7 @@ class HardwareTopology
 
     public:
 
-        /*! \brief Detects the hardware topology.
-         */
+        /*! \brief Detects the hardware topology. */
         static HardwareTopology detect();
 
         /*! \brief Creates a topology with given number of logical cores.

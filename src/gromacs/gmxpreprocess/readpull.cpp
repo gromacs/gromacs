@@ -365,6 +365,15 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
             set_warning_line(wi, NULL, -1);
             warning_error(wi, wbuf);
         }
+        for (int g = 0; g < pcrd->ngroup; g++)
+        {
+            if (pcrd->group[g] < 0 || pcrd->group[g] >= pull->ngroup)
+            {
+                /* Quit with a fatal error to avoid invalid memory access */
+                gmx_fatal(FARGS, "%s contains an invalid pull group %d, you should have %d <= group <= %d",
+                          buf, pcrd->group[g], 0, pull->ngroup - 1);
+            }
+        }
 
         sprintf(buf, "pull-coord%d-dim", coordNum);
         STYPE(buf,              dim_buf,     "Y Y Y");

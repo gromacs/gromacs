@@ -53,6 +53,7 @@
 #include "config.h"
 
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/utility/gmxmpi.h"
 
 /*! \cond INTERNAL */
 

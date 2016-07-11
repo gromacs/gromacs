@@ -48,8 +48,8 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
@@ -67,49 +67,37 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-/* check which of the multisim simulations has the shortest number of
-   steps and return that number of nsteps */
-gmx_int64_t get_multisim_nsteps(const t_commrec *cr,
-                                gmx_int64_t      nsteps)
+// TODO move this to multi-sim module
+bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
+                                gmx_int64_t           value)
 {
-    gmx_int64_t steps_out;
+    bool         allValuesAreEqual = true;
+    gmx_int64_t *buf;
 
-    if (MASTER(cr))
+    GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
+
+    snew(buf, ms->nsim);
+    /* send our value to all other master ranks, receive all of theirs */
+    buf[ms->sim] = value;
+    gmx_sumli_sim(ms->nsim, buf, ms);
+
+    for (int s = 0; s < ms->nsim; s++)
     {
-        gmx_int64_t     *buf;
-        int              s;
-
-        snew(buf, cr->ms->nsim);
-
-        buf[cr->ms->sim] = nsteps;
-        gmx_sumli_sim(cr->ms->nsim, buf, cr->ms);
-
-        steps_out = -1;
-        for (s = 0; s < cr->ms->nsim; s++)
+        if (buf[s] != value)
         {
-            /* find the smallest positive number */
-            if (buf[s] >= 0 && ((steps_out < 0) || (buf[s] < steps_out)) )
-            {
-                steps_out = buf[s];
-            }
-        }
-        sfree(buf);
-
-        /* if we're the limiting simulation, don't do anything */
-        if (steps_out >= 0 && steps_out < nsteps)
-        {
-            char strbuf[255];
-            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", "%" GMX_PRId64);
-            fprintf(stderr, strbuf, cr->ms->sim, steps_out);
+            allValuesAreEqual = false;
+            break;
         }
     }
-    /* broadcast to non-masters */
-    gmx_bcast(sizeof(gmx_int64_t), &steps_out, cr);
-    return steps_out;
+
+    sfree(buf);
+
+    return allValuesAreEqual;
 }
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
@@ -154,33 +142,6 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
         }
     }
     sfree(buf);
-
-    return nmin;
-}
-
-int multisim_nstsimsync(const t_commrec *cr,
-                        const t_inputrec *ir, int repl_ex_nst)
-{
-    int nmin;
-
-    if (MASTER(cr))
-    {
-        nmin = INT_MAX;
-        nmin = multisim_min(cr->ms, nmin, ir->nstlist);
-        nmin = multisim_min(cr->ms, nmin, ir->nstcalcenergy);
-        nmin = multisim_min(cr->ms, nmin, repl_ex_nst);
-        if (nmin == INT_MAX)
-        {
-            gmx_fatal(FARGS, "Can not find an appropriate interval for inter-simulation communication, since nstlist, nstcalcenergy and -replex are all <= 0");
-        }
-        /* Avoid inter-simulation communication at every (second) step */
-        if (nmin <= 2)
-        {
-            nmin = 10;
-        }
-    }
-
-    gmx_bcast(sizeof(int), &nmin, cr);
 
     return nmin;
 }
@@ -280,7 +241,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
-                     struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
+                     gmx::SimulationSignaller *signalCoordinator,
                      matrix box, int *totalNumberOfBondedInteractions,
                      gmx_bool *bSumEkinhOld, int flags)
 {
@@ -345,7 +306,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         }
         else
         {
-            gmx::ArrayRef<real> signalBuffer = prepareSignalBuffer(gs);
+            gmx::ArrayRef<real> signalBuffer = signalCoordinator->getCommunicationBuffer();
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
@@ -356,7 +317,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
                             *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
-            handleSignals(gs, cr, bInterSimGS);
+            signalCoordinator->finalizeSignals();
             *bSumEkinhOld = FALSE;
         }
     }
@@ -563,7 +524,7 @@ static int lcd4(int i1, int i2, int i3, int i4)
     min_zero(&nst, i4);
     if (nst == 0)
     {
-        gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
+        gmx_incons("All 4 inputs for determining nstglobalcomm are <= 0");
     }
 
     while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
@@ -586,11 +547,15 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
 
     if (nstglobalcomm == -1)
     {
+        // Set up the default behaviour
         if (!(ir->nstcalcenergy > 0 ||
               ir->nstlist > 0 ||
               ir->etc != etcNO ||
               ir->epc != epcNO))
         {
+            /* The user didn't choose the period for anything
+               important, so we just make sure we can send signals and
+               write output suitably. */
             nstglobalcomm = 10;
             if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
             {
@@ -599,8 +564,14 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
         }
         else
         {
-            /* Ensure that we do timely global communication for
-             * (possibly) each of the four following options.
+            /* The user has made a choice (perhaps implicitly), so we
+             * ensure that we do timely intra-simulation communication
+             * for (possibly) each of the four parts that care.
+             *
+             * TODO Does the Verlet scheme (+ DD) need any
+             * communication at nstlist steps? Is the use of nstlist
+             * here a leftover of the twin-range scheme? Can we remove
+             * nstlist when we remove the group scheme?
              */
             nstglobalcomm = lcd4(ir->nstcalcenergy,
                                  ir->nstlist,
@@ -610,6 +581,7 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
     }
     else
     {
+        // Check that the user's choice of mdrun -gcom will work
         if (ir->nstlist > 0 &&
             nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
         {
@@ -649,6 +621,8 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
         ir->nstcomm = nstglobalcomm;
     }
 
+    GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
+            "Intra-simulation communication will occur every %d steps.\n", nstglobalcomm);
     return nstglobalcomm;
 }
 
