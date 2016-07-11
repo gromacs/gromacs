@@ -57,6 +57,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 
 /* DISCLAIMER: All the atom count and thread numbers below are heuristic.
@@ -295,6 +296,44 @@ gmxSmtIsEnabled(const gmx::HardwareTopology &hwTop)
     return (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic && hwTop.machine().sockets[0].cores[0].hwThreads.size() > 1);
 }
 
+namespace
+{
+
+class SingleRankChecker
+{
+    public:
+        //! Constructor
+        SingleRankChecker() : value_(false), reasons_() {}
+        /*! \brief Call this function for each possible condition
+            under which a single rank is required, along with a string
+            describing the constraint when it is applied. */
+        void applyConstraint(bool condition, const char *description)
+        {
+            if (condition)
+            {
+                value_ = true;
+                reasons_.push_back(gmx::formatString("%s only supports a single rank.", description));
+            }
+        }
+        //! After applying any conditions, is a single rank required?
+        bool mustUseOneRank() const
+        {
+            return value_;
+        }
+        /*! \brief Return a formatted string to use when writing a
+            message when a single rank is required, (or empty if no
+            constraint exists.) */
+        std::string getMessage() const
+        {
+            return formatAndJoin(reasons_, "\n", gmx::IdentityFormatter());
+        }
+    private:
+        bool                     value_;
+        std::vector<std::string> reasons_;
+};
+
+} // namespace
+
 /* Get the number of MPI ranks to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
  * and how many particles there are.
@@ -308,7 +347,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
                      FILE                *fplog,
-                     gmx_bool             bUseGpu)
+                     gmx_bool             bUseGpu,
+                     bool                 doMembed)
 {
     int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int                          min_atoms_per_mpi_rank;
@@ -316,17 +356,25 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
-    /* Check if an algorithm does not support parallel simulation.  */
-    if (inputrec->eI == eiLBFGS ||
-        inputrec->coulombtype == eelEWALD)
     {
-        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI rank.\n");
-        if (hw_opt->nthreads_tmpi > 1)
+        /* Check if an algorithm does not support parallel simulation.  */
+        // TODO This might work better if e.g. implemented algorithms
+        // had to define a function that returns such requirements,
+        // and a description string.
+        SingleRankChecker checker;
+        checker.applyConstraint(inputrec->eI == eiLBFGS, "L-BFGS minimization");
+        checker.applyConstraint(inputrec->coulombtype == eelEWALD, "Plain Ewald electrostatics");
+        checker.applyConstraint(doMembed, "Membrane embedding");
+        if (checker.mustUseOneRank())
         {
-            gmx_fatal(FARGS, "You asked for more than 1 thread-MPI rank, but an algorithm doesn't support that");
+            std::string message = checker.getMessage();
+            if (hw_opt->nthreads_tmpi > 1)
+            {
+                gmx_fatal(FARGS, "%s However, you asked for more than 1 thread-MPI rank, so mdrun cannot continue. Choose a single rank, or a different algorithm.", message.c_str());
+            }
+            md_print_warn(cr, fplog, "%s Choosing to use only a single thread-MPI rank.", message.c_str());
+            return 1;
         }
-
-        return 1;
     }
 
     if (hw_opt->nthreads_tmpi > 0)

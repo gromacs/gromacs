@@ -60,7 +60,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
                      FILE                *fplog,
-                     gmx_bool             bUseGpu);
+                     gmx_bool             bUseGpu,
+                     bool                 doMembed);
 
 /* Check if the number of OpenMP threads is within reasonable range
  * considering the hardware used. This is a crude check, but mainly

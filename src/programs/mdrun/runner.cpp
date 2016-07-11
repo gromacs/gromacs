@@ -725,6 +725,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fplog = NULL;
     }
 
+    bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
@@ -832,7 +833,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 cr, fplog, bUseGPU);
+                                                 cr, fplog, bUseGPU,
+                                                 doMembed);
 
         if (hw_opt->nthreads_tmpi > 1)
         {
@@ -1145,7 +1147,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     // Membrane embedding must be initialized before we call init_forcerec()
-    if (opt2bSet("-membed", nfile, fnm))
+    if (doMembed)
     {
         if (MASTER(cr))
         {
@@ -1371,7 +1373,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
 
-    if (membed != nullptr)
+    if (doMembed)
     {
         free_membed(membed);
     }
