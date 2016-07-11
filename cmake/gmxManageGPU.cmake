@@ -232,6 +232,10 @@ include(CMakeDependentOption)
 include(gmxOptionUtilities)
 macro(gmx_gpu_setup)
     if(GMX_GPU)
+        if(NOT CUDA_NVCC_EXECUTABLE)
+            message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDA_TOOLKIT_ROOT_DIR appropriately")
+        endif()
+
         # set up nvcc options
         include(gmxManageNvccConfig)
 

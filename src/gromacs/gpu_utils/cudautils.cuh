@@ -115,15 +115,19 @@
  */
 struct gmx_device_info_t
 {
-    int                 id;                     /* id of the CUDA device */
-    cudaDeviceProp      prop;                   /* CUDA device properties */
-    int                 stat;                   /* result of the device check */
-    gmx_bool            nvml_initialized;       /* If NVML was initialized */
-    gmx_bool            nvml_ap_clocks_changed; /* If application clocks have been changed */
+    int                 id;                      /* id of the CUDA device */
+    cudaDeviceProp      prop;                    /* CUDA device properties */
+    int                 stat;                    /* result of the device check */
+    gmx_bool            nvml_initialized;        /* If NVML was initialized */
+    unsigned int        nvml_orig_app_sm_clock;  /* The original SM clock before we changed it */
+    unsigned int        nvml_orig_app_mem_clock; /* The original memory clock before we changed it */
+    gmx_bool            nvml_app_clocks_changed; /* If application clocks have been changed */
+    unsigned int        nvml_set_app_sm_clock;   /* The SM clock we set */
+    unsigned int        nvml_set_app_mem_clock;  /* The memory clock we set */
 #if HAVE_NVML
-    nvmlDevice_t        nvml_device_id;         /* NVML device id */
-    nvmlEnableState_t   nvml_is_restricted;     /* Status of application clocks permission */
-#endif                                          /* HAVE_NVML */
+    nvmlDevice_t        nvml_device_id;          /* NVML device id */
+    nvmlEnableState_t   nvml_is_restricted;      /* Status of application clocks permission */
+#endif                                           /* HAVE_NVML */
 };
 
 

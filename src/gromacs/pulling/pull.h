@@ -54,6 +54,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -288,6 +289,20 @@ gmx_bool pull_have_potential(const struct pull_t *pull);
  * \param[in] pull     The pull data structure.
  */
 gmx_bool pull_have_constraint(const struct pull_t *pull);
+
+/*! \brief Returns the maxing distance for pulling
+ *
+ * For distance geometries, only dimensions with pcrd->params[dim]=1
+ * are included in the distance calculation.
+ * For directional geometries, only dimensions with pcrd->vec[dim]!=0
+ * are included in the distance calculation.
+ *
+ * \param[in] pcrd Pulling data structure
+ * \param[in] pbc  Information on periodic boundary conditions
+ * \returns The maximume distance
+ */
+real max_pull_distance2(const pull_coord_work_t *pcrd,
+                        const t_pbc             *pbc);
 
 #ifdef __cplusplus
 }

@@ -208,7 +208,12 @@ typedef long
  *  the difference between two gmx_cycles_t values returned from this
  *  routine.
  */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
+#if (GMX_CYCLECOUNTERS == 0)
+static __inline__ gmx_cycles_t gmx_cycles_read(void)
+{
+    return 0;
+}
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
     (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
@@ -441,7 +446,12 @@ static gmx_cycles_t gmx_cycles_read(void)
  *       one when later linking to the library it might happen that the
  *       library supports cyclecounters but not the headers, or vice versa.
  */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
+#if (GMX_CYCLECOUNTERS == 0)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    return 0;
+}
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
     (defined(__i386__) || defined(__x86_64__)))
 static __inline__ int gmx_cycles_have_counter(void)
 {

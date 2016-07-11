@@ -32,6 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# make an "object library" for code that we re-use for both kinds of tests
+add_library(mdrun_test_objlib OBJECT
+    mdruncomparisonfixture.cpp
+    moduletest.cpp
+    terminationhelper.cpp
+    )
+
 set(testname "MdrunTests")
 set(exename "mdrun-test")
 
@@ -47,9 +54,9 @@ gmx_add_gtest_executable(
     compressed_x_output.cpp
     swapcoords.cpp
     interactiveMD.cpp
-    # files with code for test fixtures
-    mdruncomparisonfixture.cpp
-    moduletest.cpp
+    termination.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
@@ -68,8 +75,8 @@ gmx_add_gtest_executable(
     multisimtest.cpp
     replicaexchange.cpp
     domain_decomposition.cpp
-    # files with code for test fixtures
-    moduletest.cpp
+    # pseudo-library for code for testing mdrun
+    $<TARGET_OBJECTS:mdrun_test_objlib>
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )

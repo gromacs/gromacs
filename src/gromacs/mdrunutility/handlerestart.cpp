@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,10 +91,10 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
  * This is is needed at the beginning of mdrun,
  * to be able to rename the logfile correctly.
  * When file appending is requested, checks which output files are present,
- * and returns TRUE/FALSE in bDoAppendFiles if all or none are present.
- * If only some output files are present, give a fatal error.
- * When bDoAppendFiles is TRUE upon return, bAddPart will tell whether the simulation part
- * needs to be added to the output file name.
+ * and issue a fatal error if some are not.
+ * Upon return, bAddPart will tell whether the simulation part
+ * needs to be added to the output file name, i.e. when we are doing checkpoint
+ * continuation without appending.
  *
  * This routine cannot print tons of data, since it is called before
  * the log file is opened. */
@@ -120,6 +120,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
         if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
         {
             *simulation_part = 0;
+            fprintf(stderr, "Warning: No checkpoint file found with -cpi option. Assuming this is a new run.\n\n");
         }
         else
         {
@@ -142,35 +143,48 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                 {
                     *bDoAppendFiles = bTryToAppendFiles;
                 }
-                else if (nexist > 0)
+                else
                 {
+                    // If we get here, the user requested restarting from a checkpoint file, that checkpoint
+                    // file was found (so it is not the first part of a new run), but we are still missing
+                    // some or all checkpoint files. In this case we issue a fatal error since there are
+                    // so many special cases we cannot keep track of, and better safe than sorry.
                     fprintf(stderr,
                             "Output file appending has been requested,\n"
                             "but some output files listed in the checkpoint file %s\n"
-                            "are not present or are named differently by the current program:\n",
+                            "are not present or not named as the output files by the current program:\n",
                             filename);
-                    fprintf(stderr, "output files present:");
+                    fprintf(stderr, "Expect output files present:\n");
                     for (f = 0; f < nfiles; f++)
                     {
                         if (exist_output_file(outputfiles[f].filename,
                                               nfile, fnm))
                         {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
+                            fprintf(stderr, "  %s\n", outputfiles[f].filename);
                         }
                     }
                     fprintf(stderr, "\n");
-                    fprintf(stderr, "output files not present or named differently:");
+                    fprintf(stderr, "Expected output files not present or named differently:\n");
                     for (f = 0; f < nfiles; f++)
                     {
                         if (!exist_output_file(outputfiles[f].filename,
                                                nfile, fnm))
                         {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
+                            fprintf(stderr, "  %s\n", outputfiles[f].filename);
                         }
                     }
-                    fprintf(stderr, "\n");
 
-                    gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
+                    gmx_fatal(FARGS,
+                              "File appending requested, but %d of the %d output files are not present or are named differently. "
+                              "For safety reasons, GROMACS-2016 and later only allows file appending to be used when all files "
+                              "have the same names as they had in the original run. "
+                              "Checkpointing is merely intended for plain continuation of runs. "
+                              "For safety reasons you must specify all file names (e.g. with -deffnm), "
+                              "and all these files must match the names used in the run prior to checkpointing "
+                              "since we will append to them by default. If the files are not available, you "
+                              "can add the -noappend flag to mdrun and write separate new parts. "
+                              "For mere concatenation of files, you should use the gmx trjcat tool instead.",
+                              nfiles-nexist, nfiles);
                 }
             }
 
@@ -200,6 +214,7 @@ read_checkpoint_data(const char *filename, int *simulation_part,
     }
     if (PAR(cr))
     {
+        // Make sure all settings are in sync
         gmx_bcast(sizeof(*simulation_part), simulation_part, cr);
 
         if (*simulation_part > 0 && bTryToAppendFiles)
@@ -224,18 +239,18 @@ handleRestart(t_commrec *cr,
     const char     *part_suffix = ".part";
     FILE           *fpmulti;
 
-    bAddPart = !bTryToAppendFiles;
 
     /* Check if there is ANY checkpoint file available */
     sim_part    = 1;
     sim_part_fn = sim_part;
     if (opt2bSet("-cpi", NFILE, fnm))
     {
+        bAddPart = !bTryToAppendFiles;
+
         read_checkpoint_data(opt2fn_master("-cpi", NFILE, fnm, cr),
                              &sim_part_fn, cr,
                              bTryToAppendFiles, NFILE, fnm,
-                             part_suffix, &bAddPart,
-                             bDoAppendFiles);
+                             part_suffix, &bAddPart, bDoAppendFiles);
         if (sim_part_fn == 0 && MULTIMASTER(cr))
         {
             fprintf(stdout, "No previous checkpoint file present, assuming this is a new run.\n");
@@ -262,8 +277,10 @@ handleRestart(t_commrec *cr,
     }
     else
     {
-        *bDoAppendFiles = FALSE;
+        *bDoAppendFiles = false;
+        bAddPart        = false;
     }
+
     *bStartFromCpt = sim_part > 1;
 
     if (!*bDoAppendFiles)
