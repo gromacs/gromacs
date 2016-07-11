@@ -67,4 +67,13 @@ TEST(PathTest, StripSourcePrefixWorks)
     << "This only affects source paths reported in fatal error messages.";
 }
 
+TEST(PathTest, ConcatenateBeforeExtensionWorks)
+{
+    EXPECT_STREQ("md1.log", gmx::Path::concatenateBeforeExtension("md.log", "1").c_str());
+    EXPECT_STREQ("ener0", gmx::Path::concatenateBeforeExtension("ener", "0").c_str());
+    EXPECT_STREQ("simpledir/traj34.tng", gmx::Path::concatenateBeforeExtension("simpledir/traj.tng", "34").c_str());
+    EXPECT_STREQ("complex.dir/traj34.tng", gmx::Path::concatenateBeforeExtension("complex.dir/traj.tng", "34").c_str());
+    EXPECT_STREQ("complex.dir/traj34", gmx::Path::concatenateBeforeExtension("complex.dir/traj", "34").c_str());
+}
+
 } // namespace

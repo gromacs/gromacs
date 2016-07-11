@@ -181,20 +181,60 @@ TEST_F(SimdIntegerTest, extract)
 #if GMX_SIMD_HAVE_REAL
 TEST_F(SimdIntegerTest, cvtR2I)
 {
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(2), cvtR2I(rSimd_2p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-2), cvtR2I(rSimd_m2p25));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), cvtR2I(rSimd_3p75));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-4), cvtR2I(rSimd_m3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), cvtR2I(rSimd_3p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), cvtR2I(rSimd_m3p25));
+
+    // Test multi-byte numbers
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(123457), cvtR2I(setSimdRealFrom1R(123456.7)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-123457), cvtR2I(setSimdRealFrom1R(-123456.7)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(123456), cvtR2I(setSimdRealFrom1R(123456.3)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-123456), cvtR2I(setSimdRealFrom1R(-123456.3)));
+
+#if GMX_DOUBLE
+    // Test number with more digits than we can represent in single.
+    // Note that our SIMD integers are only 32 bits, so we cannot go beyond that.
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(12345679), cvtR2I(setSimdRealFrom1R(12345678.6)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-12345679), cvtR2I(setSimdRealFrom1R(-12345678.6)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(12345678), cvtR2I(setSimdRealFrom1R(12345678.3)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-12345678), cvtR2I(setSimdRealFrom1R(-12345678.3)));
+#endif
 }
 
 TEST_F(SimdIntegerTest, cvttR2I)
 {
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(2), cvttR2I(rSimd_2p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-2), cvttR2I(rSimd_m2p25));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), cvttR2I(rSimd_3p75));
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), cvttR2I(rSimd_m3p75));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(3), cvttR2I(rSimd_3p25));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-3), cvttR2I(rSimd_m3p25));
+
+    // Test multi-byte numbers
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(123456), cvttR2I(setSimdRealFrom1R(123456.7)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-123456), cvttR2I(setSimdRealFrom1R(-123456.7)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(123456), cvttR2I(setSimdRealFrom1R(123456.3)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-123456), cvttR2I(setSimdRealFrom1R(-123456.3)));
+
+#if GMX_DOUBLE
+    // Test number with more digits than we can represent in single.
+    // Note that our SIMD integers are only 32 bits, so we cannot go beyond that.
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(12345678), cvttR2I(setSimdRealFrom1R(12345678.6)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-12345678), cvttR2I(setSimdRealFrom1R(-12345678.6)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(12345678), cvttR2I(setSimdRealFrom1R(12345678.3)));
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(-12345678), cvttR2I(setSimdRealFrom1R(-12345678.3)));
+#endif
 }
 
 TEST_F(SimdIntegerTest, cvtI2R)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2.0), cvtI2R(SimdInt32(2)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2.0), cvtI2R(SimdInt32(-2)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(102448689), cvtI2R(SimdInt32(102448689)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-102448689), cvtI2R(SimdInt32(-102448689)));
 }
 #endif      // GMX_SIMD_HAVE_REAL
 

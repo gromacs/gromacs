@@ -68,7 +68,7 @@ TEST(CpuInfoTest, SupportLevel)
     EXPECT_GT(c.supportLevel(), gmx::CpuInfo::SupportLevel::None)
     << "No CPU information at all could be detected. " << commonMsg << std::endl;
 
-#if defined __powerpc__ || defined __ppc__ || defined __PPC__  || defined __arm__ || defined __arm || GMX_TARGET_X86
+#ifdef GMX_TARGET_X86
     EXPECT_GE(c.supportLevel(), gmx::CpuInfo::SupportLevel::Features)
     << "No CPU features could be detected. " << commonMsg << std::endl;
 #endif

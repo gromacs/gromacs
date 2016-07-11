@@ -32,11 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
- * \defgroup module_mdrun_integration_tests Integration test utilities
+/*! \defgroup module_mdrun_integration_tests Integration test utilities
  * \ingroup group_mdrun
  *
  * \brief Functionality for testing mdrun as a whole
+ */
+/*! \internal \file
+ * \brief
+ * Declares test fixtures for general mdrun functionality.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdrun_integration_tests
  */
 #ifndef GMX_MDRUN_TESTS_MODULETEST_H
 #define GMX_MDRUN_TESTS_MODULETEST_H
@@ -52,7 +58,8 @@ namespace gmx
 namespace test
 {
 
-/*! \libinternal \brief Helper object for running grompp and mdrun in
+/*! \internal
+ * \brief Helper object for running grompp and mdrun in
  * integration tests of mdrun functionality
  *
  * Objects of this class are intended to be owned by
@@ -141,7 +148,8 @@ class SimulationRunner
         //@}
 };
 
-/*! \libinternal \brief Declares test fixture base class for
+/*! \internal
+ * \brief Declares test fixture base class for
  * integration tests of mdrun functionality
  *
  * Derived fixture classes (or individual test cases) that might have
@@ -171,7 +179,8 @@ class MdrunTestFixtureBase : public IntegrationTestFixture
         virtual ~MdrunTestFixtureBase();
 };
 
-/*! \libinternal \brief Declares test fixture class for integration
+/*! \internal
+ * \brief Declares test fixture class for integration
  * tests of mdrun functionality that use a single call of mdrun
  *
  * Any method in this class may throw std::bad_alloc if out of memory.
@@ -188,7 +197,8 @@ class MdrunTestFixture : public IntegrationTestFixture
         SimulationRunner runner_;
 };
 
-/*! \libinternal \brief
+/*! \internal
+ * \brief
  * Parameterized test fixture for mdrun integration tests
  */
 class ParameterizedMdrunTestFixture : public gmx::test::MdrunTestFixture,

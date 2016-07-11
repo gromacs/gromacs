@@ -39,6 +39,36 @@
 %after a couple of hours of trial I gave up... /EL
 \input{macros}
 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\newcommand{\projectContributors}{
+Emile Apol, Rossen Apostolov, Herman J.C. Berendsen, \\
+Aldert van Buuren, P\"ar Bjelkmar, Rudi van Drunen, \\
+Anton Feenstra, Sebastian Fritsch, Gerrit Groenhof, \\
+Christoph Junghans, Jochen Hub, Peter Kasson, \\
+Carsten Kutzner, Brad Lambeth, Per Larsson, \\
+Justin A. Lemkul, Erik Marklund, Peiter Meulenhoff, \\
+Teemu Murtola, Szil\'ard P\'all, Sander Pronk, \\
+Roland Schulz, Michael Shirts, Alfons Sijbers, \\
+Peter Tieleman, Christian Wennberg and Maarten Wolf.
+}
+\newcommand{\projectLeaders}{
+     Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.
+ }
+
+\hypersetup{
+pdfencoding=unicode,
+pdfinfo={
+   Author={The GROMACS team.
+        Contributors: \projectContributors
+        Project leaders: \projectLeaders
+   For more details see http://www.gromacs.org/About\_Gromacs/People},
+   Title={GROMACS Reference Manual},
+   Subject={Theoretical and algorithmic background to molecular dynamics simulation using GROMACS},
+   Keywords={GROMACS; molecular dynamics; molecular simulation; free energy; SIMD; GPU; GPGPU; MPI; OpenMP}
+}}
+
 % If you set gmxlite to 1 a very much shortened version of the manual 
 % will be generated, which may be useful for teaching.
 \newcommand{\gmxlite}{0}
@@ -134,18 +164,10 @@ Reference Manual\\[1cm]
 Contributions from \\
 \vspace{5mm}
 
-Emile Apol, Rossen Apostolov, Herman J.C. Berendsen, \\
-Aldert van Buuren, P\"ar Bjelkmar, Rudi van Drunen, \\
-Anton Feenstra, Sebastian Fritsch, Gerrit Groenhof, \\
-Christoph Junghans, Jochen Hub, Peter Kasson, \\
-Carsten Kutzner, Brad Lambeth, Per Larsson, \\
-Justin A. Lemkul, Erik Marklund, Peiter Meulenhoff, \\
-Teemu Murtola, Szil\'ard P\'all, Sander Pronk, \\
-Roland Schulz, Michael Shirts, Alfons Sijbers, \\
-Peter Tieleman, Christian Wennberg and Maarten Wolf. \\}
+\projectContributors}
 \vspace{5mm}
 
-{\LARGE Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.}
+{\LARGE \projectLeaders}
 \vspace{10mm}
 \end{center}
 

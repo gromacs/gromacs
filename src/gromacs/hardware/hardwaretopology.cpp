@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <vector>
 
@@ -62,6 +64,11 @@
 #endif
 #if GMX_NATIVE_WINDOWS
 #    include <windows.h>      // GetSystemInfo()
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
 #endif
 
 namespace gmx
@@ -557,24 +564,14 @@ detectLogicalProcessorCount()
         SYSTEM_INFO sysinfo;
         GetSystemInfo( &sysinfo );
         count = sysinfo.dwNumberOfProcessors;
-#elif defined HAVE_SYSCONF
-        // We are probably on Unix. Check if we have the argument to use before executing the call
-#    if defined(_SC_NPROCESSORS_CONF)
-        count = sysconf(_SC_NPROCESSORS_CONF);
-#    elif defined(_SC_NPROC_CONF)
-        count = sysconf(_SC_NPROC_CONF);
-#    elif defined(_SC_NPROCESSORS_ONLN)
+#elif defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+        // We are probably on Unix. Check if we have the argument to use before executing any calls
         count = sysconf(_SC_NPROCESSORS_ONLN);
-#    elif defined(_SC_NPROC_ONLN)
-        count = sysconf(_SC_NPROC_ONLN);
-#    else
-#       warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
-#    endif      // End of check for sysconf argument values
-
 #else
         count = 0; // Neither windows nor Unix.
 #endif
     }
+
     return count;
 }
 

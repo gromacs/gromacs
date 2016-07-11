@@ -46,6 +46,11 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/testfilemanager.h"
+
 #include "multisimtest.h"
 
 namespace gmx
@@ -54,41 +59,32 @@ namespace test
 {
 
 //! Convenience typedef
-typedef MultiSimTest ReplicaExchangeTest;
+typedef MultiSimTest ReplicaExchangeEnsembleTest;
 
-/* This test ensures mdrun can run NVT REMD under the supported
- * conditions. It runs one replica per MPI rank.
- *
- * See also comments about MultiSimTest */
-TEST_P(ReplicaExchangeTest, ExitsNormally)
+TEST_P(ReplicaExchangeEnsembleTest, ExitsNormally)
 {
-    if (size_ <= 1)
-    {
-        /* Can't test replica exchange without multiple ranks. */
-        return;
-    }
-
-    const char *pcoupl = GetParam();
-    organizeMdpFile(pcoupl);
-    /* Call grompp on every rank - the standard callGrompp() only runs
-       grompp on rank 0. */
-    EXPECT_EQ(0, runner_.callGromppOnThisRank());
-
-    // mdrun names the files without the rank suffix
-    runner_.tprFileName_ = mdrunTprFileName_;
     mdrunCaller_->addOption("-replex", 1);
-    ASSERT_EQ(0, runner_.callMdrun(*mdrunCaller_));
+    runExitsNormallyTest();
 }
 
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeTest,
+INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
                             ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeTest,
+INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
                             ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
 #endif
+
+//! Convenience typedef
+typedef MultiSimTest ReplicaExchangeTerminationTest;
+
+TEST_F(ReplicaExchangeTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+{
+    mdrunCaller_->addOption("-replex", 1);
+    runMaxhTest();
+}
 
 } // namespace
 } // namespace
