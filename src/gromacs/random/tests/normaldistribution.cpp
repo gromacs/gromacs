@@ -91,7 +91,7 @@ TEST(NormalDistributionTest, Reset)
     gmx::ThreeFry2x64<8>                                rng(123456, gmx::RandomDomain::Other);
     gmx::NormalDistribution<real>                       distA(2.0, 5.0);
     gmx::NormalDistribution<real>                       distB(2.0, 5.0);
-    gmx::NormalDistribution<>::result_type              valA, valB;
+    gmx::NormalDistribution<real>::result_type          valA, valB;
 
     valA = distA(rng);
 
@@ -101,7 +101,10 @@ TEST(NormalDistributionTest, Reset)
 
     valB = distB(rng);
 
-    EXPECT_EQ(valA, valB);
+    // Use floating-point test with no tolerance rather than
+    // exact test, since the latter leads to failures with
+    // 32-bit gcc-4.8.4
+    EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
 TEST(NormalDistributionTest, AltParam)
@@ -111,13 +114,21 @@ TEST(NormalDistributionTest, AltParam)
     gmx::NormalDistribution<real>              distA(2.0, 5.0);
     gmx::NormalDistribution<real>              distB; // default parameters
     gmx::NormalDistribution<real>::param_type  paramA(2.0, 5.0);
+    gmx::NormalDistribution<real>::result_type valA, valB;
 
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();
     rngB.restart();
     distA.reset();
     distB.reset();
-    EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+
+    valA = distA(rngA);
+    valB = distB(rngB, paramA);
+
+    // Use floating-point test with no tolerance rather than
+    // exact test, since the latter leads to failures with
+    // 32-bit gcc-4.8.4
+    EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
 }      // namespace anonymous

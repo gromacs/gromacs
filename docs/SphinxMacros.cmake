@@ -66,16 +66,6 @@ function(gmx_add_sphinx_source_files)
     set(_SPHINX_INPUT_FILES "${_SPHINX_INPUT_FILES}" PARENT_SCOPE)
 endfunction()
 
-macro(gmx_add_dummy_sphinx_input_file FILEPATH TITLE)
-    set(_target ${_SPHINX_INPUT_ROOT}/${FILEPATH})
-    set(_underline "=====================================================")
-    file(WRITE  ${_target} "
-${TITLE}
-${_underline}
-")
-    list(APPEND _SPHINX_INPUT_FILES ${_target})
-endmacro()
-
 macro(gmx_remove_obsolete_sphinx_input_files IGNORE_PATTERN)
     file(GLOB_RECURSE _obsolete_sources ${_SPHINX_INPUT_ROOT}/*.rst)
     list(REMOVE_ITEM _obsolete_sources ${_SPHINX_INPUT_FILES})

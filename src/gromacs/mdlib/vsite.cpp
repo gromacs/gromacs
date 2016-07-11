@@ -165,6 +165,18 @@ static const int c_ftypeVsiteStart = F_VSITE2;
 static const int c_ftypeVsiteEnd   = F_VSITEN + 1;
 
 
+/* Returns the sum of the vsite ilist sizes over all vsite types */
+static int vsiteIlistNrCount(const t_ilist *ilist)
+{
+    int nr = 0;
+    for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
+    {
+        nr += ilist[ftype].nr;
+    }
+
+    return nr;
+}
+
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
     if (pbc)
@@ -2310,12 +2322,20 @@ void split_vsites_over_threads(const t_ilist   *ilist,
             }
         }
         vsite_atom_range++;
+        natperthread     = (vsite_atom_range + vsite->nthreads - 1)/vsite->nthreads;
     }
     else
     {
-        vsite_atom_range = mdatoms->homenr;
+        /* Any local or not local atom could be involved in virtual sites.
+         * But since we usually have very few non-local virtual sites
+         * (only non-local vsites that depend on local vsites),
+         * we distribute the local atom range equally over the threads.
+         * When assigning vsites to threads, we should take care that the last
+         * threads also covers the non-local range.
+         */
+        vsite_atom_range = mdatoms->nr;
+        natperthread     = (mdatoms->homenr + vsite->nthreads - 1)/vsite->nthreads;
     }
-    natperthread = (vsite_atom_range + vsite->nthreads - 1)/vsite->nthreads;
 
     if (debug)
     {
@@ -2398,18 +2418,8 @@ void split_vsites_over_threads(const t_ilist   *ilist,
             tData->useInterdependentTask = (vsite_atom_range <= 200000);
             if (tData->useInterdependentTask)
             {
-                size_t natoms_use_in_vsites;
-                if (bLimitRange)
-                {
-                    /* Only atoms belows vsite_atom_range are involved */
-                    natoms_use_in_vsites = vsite_atom_range;
-                }
-                else
-                {
-                    /* Use the whole local+non-local atom range: mdatoms->nr */
-                    natoms_use_in_vsites = mdatoms->nr;
-                }
-                InterdependentTask *idTask = &tData->idTask;
+                size_t              natoms_use_in_vsites = vsite_atom_range;
+                InterdependentTask *idTask               = &tData->idTask;
                 /* To avoid resizing and re-clearing every nstlist steps,
                  * we never down size the force buffer.
                  */
@@ -2422,8 +2432,16 @@ void split_vsites_over_threads(const t_ilist   *ilist,
             }
 
             /* Assign all vsites that can execute independently on threads */
-            tData->rangeStart =  thread     *natperthread;
-            tData->rangeEnd   = (thread + 1)*natperthread;
+            tData->rangeStart     =  thread     *natperthread;
+            if (thread < vsite->nthreads - 1)
+            {
+                tData->rangeEnd   = (thread + 1)*natperthread;
+            }
+            else
+            {
+                /* The last thread should cover up to the end of the range */
+                tData->rangeEnd   = mdatoms->nr;
+            }
             assignVsitesToThread(tData,
                                  thread, vsite->nthreads,
                                  natperthread,
@@ -2497,6 +2515,18 @@ void split_vsites_over_threads(const t_ilist   *ilist,
             }
         }
     }
+
+#ifndef NDEBUG
+    int nrOrig     = vsiteIlistNrCount(ilist);
+    int nrThreaded = 0;
+    for (int th = 0; th < vsite->nthreads + 1; th++)
+    {
+        nrThreaded +=
+            vsiteIlistNrCount(vsite->tData[th]->ilist) +
+            vsiteIlistNrCount(vsite->tData[th]->idTask.ilist);
+    }
+    GMX_ASSERT(nrThreaded == nrOrig, "The number of virtual sites assigned to all thread task has to match the total number of virtual sites");
+#endif
 }
 
 void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,

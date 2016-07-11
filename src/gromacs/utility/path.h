@@ -69,6 +69,14 @@ class Path
         static std::string getFilename(const std::string &path);
         static bool hasExtension(const std::string &path);
         static std::string stripExtension(const std::string &path);
+        /*! \brief Concatenate \c stringToAdd to \c input, before any
+         * file extension (if one exists), and return the result.
+         *
+         * To be recognized as an extension, an extension-separator
+         * character must follow the last path-separator character (if
+         * any). */
+        static std::string concatenateBeforeExtension(const std::string &input,
+                                                      const std::string &stringToAdd);
 
         static const char *stripSourcePrefix(const char *path);
 

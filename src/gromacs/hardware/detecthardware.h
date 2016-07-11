@@ -47,6 +47,7 @@ struct t_commrec;
 
 namespace gmx
 {
+class HardwareTopology;
 class MDLogger;
 }
 
@@ -62,8 +63,14 @@ gmx_bool gmx_multiple_gpu_per_node_supported();
  * example. */
 gmx_bool gmx_gpu_sharing_supported();
 
-/* Construct the global hwinfo structure and return a pointer to
-   it. Caller is responsible for freeing this pointer. */
+/*! \brief Run detection, consistency checks, and make available on all ranks.
+ *
+ * This routine constructs the global hwinfo structure and returns a pointer to
+ * it. It will run a preamble before executing cpu and hardware checks, and
+ * then run consistency checks afterwards. The results will also be made
+ * available on all nodes.
+ * Caller is responsible for freeing this pointer.
+ */
 gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog,
                                    const t_commrec *cr, gmx_bool bDetectGPUs);
 

@@ -146,6 +146,7 @@ if (SPHINX_FOUND)
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION
+            GMX_LMFIT_MINIMUM_REQUIRED_VERSION
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
@@ -155,8 +156,11 @@ if (SPHINX_FOUND)
             FROM ${RELENG_PATH}/docs TO dev-manual/releng PREFIX releng/docs/
             FILES ${RELENG_SPHINX_FILES})
     else()
-        gmx_add_dummy_sphinx_input_file(dev-manual/releng/index.rst
-            "releng repository (missing)")
+        gmx_add_sphinx_source_files(FILES
+            dev-manual/releng/index.rst
+            dev-manual/releng/jenkins-howto.rst
+            dev-manual/releng/jenkins-ui.rst
+            )
     endif()
     gmx_add_sphinx_input_target(sphinx-input)
     # Remove other rst files from the build tree, since they confuse Sphinx.

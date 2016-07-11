@@ -52,7 +52,7 @@
 
 #include <algorithm>
 
-#include "external/lmfit/gmx_lmcurve.h"
+#include <lmstruct.h>
 
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
@@ -63,6 +63,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "gmx_lmcurve.h"
 
 /*! \brief Number of parameters for each fitting function */
 static const int nfp_ffn[effnNR] = { 0, 1, 2, 3, 5, 7, 9, 2, 4, 3, 6 };
@@ -448,7 +450,7 @@ static gmx_bool lmfit_exp(int          nfit,
     /* Using default control structure for double precision fitting that
      * comes with the lmfit package (i.e. from the include file).
      */
-    control            = gmx_lm_control_double;
+    control            = lm_control_double;
     control.verbosity  = (bVerbose ? 1 : 0);
     control.n_maxpri   = 0;
     control.m_maxpri   = 0;
@@ -490,7 +492,7 @@ static gmx_bool lmfit_exp(int          nfit,
         {
             printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
                    status->fnorm, status->nfev, status->userbreak,
-                   gmx_lm_infmsg[status->outcome]);
+                   lm_infmsg[status->outcome]);
         }
         if (bVerbose)
         {

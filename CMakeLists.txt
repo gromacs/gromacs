@@ -568,6 +568,8 @@ endif()
 # Note this relies on zlib detection having already run
 include(gmxManageTNG)
 
+include(gmxManageLmfit)
+
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
     gmx_gpu_setup()
@@ -662,6 +664,9 @@ endif()
 # for SIMD math operations.
 include(gmxManageSimd)
 gmx_manage_simd()
+
+include(gmxManageCycleCounters)
+gmx_manage_cycle_counters()
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")

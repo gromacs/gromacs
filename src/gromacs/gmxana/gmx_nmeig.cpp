@@ -58,6 +58,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
@@ -262,6 +263,37 @@ nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
 }
 
 
+/* Returns a pointer for eigenvector storage */
+static real *allocateEigenvectors(int nrow, int first, int last,
+                                  bool ignoreBegin)
+{
+    int numVector;
+    if (ignoreBegin)
+    {
+        numVector = last;
+    }
+    else
+    {
+        numVector = last - first + 1;
+    }
+    size_t vectorsSize = static_cast<size_t>(nrow)*static_cast<size_t>(numVector);
+    /* We can't have more than INT_MAX elements.
+     * Relaxing this restriction probably requires changing lots of loop
+     * variable types in the linear algebra code.
+     */
+    if (vectorsSize > INT_MAX)
+    {
+        gmx_fatal(FARGS, "You asked to store %d eigenvectors of size %d, which requires more than the supported %d elements; %sdecrease -last",
+                  numVector, nrow, INT_MAX,
+                  ignoreBegin ? "" : "increase -first and/or ");
+    }
+
+    real *eigenvectors;
+    snew(eigenvectors, vectorsSize);
+
+    return eigenvectors;
+}
+
 
 int gmx_nmeig(int argc, char *argv[])
 {
@@ -394,28 +426,27 @@ int gmx_nmeig(int argc, char *argv[])
     int nrow, ncol;
     gmx_mtxio_read(ftp2fn(efMTX, NFILE, fnm), &nrow, &ncol, &full_hessian, &sparse_hessian);
 
-    /* Memory for eigenvalues and eigenvectors (begin..end) */
-    snew(eigenvalues, nrow);
-    snew(eigenvectors, nrow*(end-begin+1));
-
     /* If the Hessian is in sparse format we can calculate max (ndim-1) eigenvectors,
-     * and they must start at the first one. If this is not valid we convert to full matrix
-     * storage, but warn the user that we might run out of memory...
+     * If this is not valid we convert to full matrix storage,
+     * but warn the user that we might run out of memory...
      */
-    if ((sparse_hessian != NULL) && (begin != 1 || end == ndim))
+    if ((sparse_hessian != NULL) && (end == ndim))
     {
-        if (begin != 1)
-        {
-            fprintf(stderr, "Cannot use sparse Hessian with first eigenvector != 1.\n");
-        }
-        else if (end == ndim)
-        {
-            fprintf(stderr, "Cannot use sparse Hessian to calculate all eigenvectors.\n");
-        }
+        fprintf(stderr, "Cannot use sparse Hessian to calculate all eigenvectors.\n");
 
         fprintf(stderr, "Will try to allocate memory and convert to full matrix representation...\n");
 
-        snew(full_hessian, nrow*ncol);
+        size_t hessianSize = static_cast<size_t>(nrow)*static_cast<size_t>(ncol);
+        /* Allowing  Hessians larger than INT_MAX probably only makes sense
+         * with (OpenMP) parallel diagonalization routines, since with a single
+         * thread it will takes months.
+         */
+        if (hessianSize > INT_MAX)
+        {
+            gmx_fatal(FARGS, "Hessian size is %d x %d, which is larger than the maximum allowed %d elements.",
+                      nrow, ncol, INT_MAX);
+        }
+        snew(full_hessian, hessianSize);
         for (i = 0; i < nrow*ncol; i++)
         {
             full_hessian[i] = 0;
@@ -436,9 +467,13 @@ int gmx_nmeig(int argc, char *argv[])
         fprintf(stderr, "Converted sparse to full matrix storage.\n");
     }
 
+    snew(eigenvalues, nrow);
+
     if (full_hessian != NULL)
     {
         /* Using full matrix storage */
+        eigenvectors = allocateEigenvectors(nrow, begin, end, false);
+
         nma_full_hessian(full_hessian, nrow, bM, &top, atom_index, begin, end,
                          eigenvalues, eigenvectors);
     }
@@ -446,7 +481,8 @@ int gmx_nmeig(int argc, char *argv[])
     {
         assert(sparse_hessian);
         /* Sparse memory storage, allocate memory for eigenvectors */
-        snew(eigenvectors, ncol*end);
+        eigenvectors = allocateEigenvectors(nrow, begin, end, true);
+
         nma_sparse_hessian(sparse_hessian, bM, &top, atom_index, end, eigenvalues, eigenvectors);
     }
 
@@ -600,7 +636,17 @@ int gmx_nmeig(int argc, char *argv[])
      * nma_full_hessian() or nma_sparse_hessian() routines. Mass scaled vectors
      * will not be strictly orthogonal in plain cartesian scalar products.
      */
-    write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectors, FALSE, begin, end,
+    const real *eigenvectorPtr;
+    if (full_hessian != NULL)
+    {
+        eigenvectorPtr = eigenvectors;
+    }
+    else
+    {
+        /* The sparse matrix diagonalization store all eigenvectors up to end */
+        eigenvectorPtr = eigenvectors + (begin - 1)*atom_index.size();
+    }
+    write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin, end,
                        eWXR_NO, NULL, FALSE, top_x, bM, eigenvalues);
 
     return 0;
