@@ -94,7 +94,12 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
     cacheFilename += "_" + stripSuffixIfPresent(kernelFilename, ".cl");
     /* the device name often contains spaces, we don't like those */
     cacheFilename += "_" + replaceAll(stripString(deviceName), " ", "-");
+    /* While dots are just inconvenient, slash is an illegal character in
+     * filenames; we replace both of those with underscore. Null character (\0)
+     * is also illegal but does not have to be replaced because it marks an end
+     * of a C strin and therefore can not appear in deviceName. */
     cacheFilename  = replaceAll(cacheFilename, ".", "_");
+    cacheFilename  = replaceAll(cacheFilename, "/", "_");
     cacheFilename += ".bin";
 
     return cacheFilename;
