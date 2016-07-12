@@ -48,7 +48,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #define BUFSIZE     128
-#define GROMACS_MAGIC   1993
 
 static int nFloatSize(gmx_trr_header_t *sh)
 {
@@ -86,15 +85,24 @@ static int nFloatSize(gmx_trr_header_t *sh)
 static gmx_bool
 do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *bOK)
 {
-    int             magic  = GROMACS_MAGIC;
-    static gmx_bool bFirst = TRUE;
+    const int       magicValue = 1993;
+    int             magic      = magicValue;
+    static gmx_bool bFirst     = TRUE;
     char            buf[256];
 
     *bOK = TRUE;
 
-    if (!gmx_fio_do_int(fio, magic) || magic != GROMACS_MAGIC)
+    if (!gmx_fio_do_int(fio, magic))
     {
-        return FALSE;
+        // Failed to read an integer, which should be the magic number
+        *bOK = FALSE;
+        return *bOK;
+    }
+    if (magic != magicValue)
+    {
+        *bOK = FALSE;
+        gmx_fatal(FARGS, "Failed to find GROMACS magic number in trr frame header, so this is not a trr file!\n");
+        return *bOK;
     }
 
     if (bRead)
