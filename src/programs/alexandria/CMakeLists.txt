@@ -75,7 +75,9 @@ set(ALEXANDRIA_SOURCES
 	molselect.cpp
 	poldata.cpp
 	poldata_xml.cpp
+	poldata-low.cpp
 	xml_util.c
+	mymol.cpp
         alex_modules.cpp
         analyze.cpp
         bastat.cpp
@@ -92,7 +94,6 @@ set(ALEXANDRIA_SOURCES
         molprop_tables.cpp
         molprop_test.cpp
         mp2csv.cpp
-        mymol.cpp
         nmsimplex.c
         phase.cpp
         plistwrapper.cpp

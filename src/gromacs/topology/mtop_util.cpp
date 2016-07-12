@@ -1050,7 +1050,6 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     idef->fudgeQQ                 = ffp->fudgeQQ;
     idef->cmap_grid               = ffp->cmap_grid;
     idef->ilsort                  = ilsortUNKNOWN;
-
     init_block(&top->cgs);
     init_blocka(&top->excls);
     for (ftype = 0; ftype < F_NRE; ftype++)

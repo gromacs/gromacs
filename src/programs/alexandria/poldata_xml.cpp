@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -13,6 +47,7 @@
 #include <libxml/tree.h>
 
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -133,7 +168,7 @@ static void sp(int n, char buf[], int maxindent)
 static double my_atof(const char *str)
 {
     char   *ptr = NULL;
-    double  d = strtod(str, &ptr);
+    double  d   = strtod(str, &ptr);
     GMX_RELEASE_ASSERT(ptr == NULL || strcmp(ptr, str) != 0, "Could not read double precision number");
     return d;
 }
@@ -222,44 +257,33 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 pd.setBosqueFlags(xbuf[exmlPOLAR_UNIT], xbuf[exmlREFERENCE]);
             }
             break;
-        case exmlGT_DIHEDRALS:
-            if (NN(xbuf[exmlFUNCTION]))
+        case exmlGT_BONDS:
+            if (NN(xbuf[exmlFUNCTION]) && NN(xbuf[exmlLENGTH_UNIT]))
             {
-                pd.setDihedralFunction( egdPDIHS, xbuf[exmlFUNCTION]);
-            }
-            break;
-        case exmlGT_IMPROPERS:
-            if (NN(xbuf[exmlFUNCTION]))
-            {
-                pd.setDihedralFunction(egdIDIHS, xbuf[exmlFUNCTION]);
+                GtBonds gtbs (xbuf[exmlFUNCTION], xbuf[exmlLENGTH_UNIT]);
+                pd.addGtBonds(gtbs);
             }
             break;
         case exmlGT_ANGLES:
-            if (NN(xbuf[exmlANGLE_UNIT]))
+            if (NN(xbuf[exmlFUNCTION]) && NN(xbuf[exmlANGLE_UNIT]))
             {
-                pd.setAngleUnit(xbuf[exmlANGLE_UNIT]);
-            }
-            if (NN(xbuf[exmlFUNCTION]))
-            {
-                pd.setAngleFunction(xbuf[exmlFUNCTION]);
+                GtAngles gtas (xbuf[exmlFUNCTION], xbuf[exmlANGLE_UNIT]);
+                pd.addGtAngles(gtas);
             }
             break;
-        case exmlGT_BONDS:
-            if (NN(xbuf[exmlLENGTH_UNIT]))
+        case exmlGT_DIHEDRALS:
+            if (NN(xbuf[exmlFUNCTION]) && NN(xbuf[exmlANGLE_UNIT]))
             {
-                pd.setLengthUnit(xbuf[exmlLENGTH_UNIT]);
-            }
-            if (NN(xbuf[exmlFUNCTION]))
-            {
-                pd.setBondFunction(xbuf[exmlFUNCTION]);
+                GtDihedrals gtds (xbuf[exmlFUNCTION], xbuf[exmlANGLE_UNIT]);
+                pd.addGtDihedrals(gtds);
             }
             break;
         case exmlMILATOMS:
-            if (NN(xbuf[exmlTAU_UNIT]) && 
-                NN(xbuf[exmlAHP_UNIT]) && 
+            if (NN(xbuf[exmlTAU_UNIT]) &&
+                NN(xbuf[exmlAHP_UNIT]) &&
                 NN(xbuf[exmlREFERENCE]))
             {
-                pd.setMillerFlags(xbuf[exmlTAU_UNIT], xbuf[exmlAHP_UNIT], 
+                pd.setMillerFlags(xbuf[exmlTAU_UNIT], xbuf[exmlAHP_UNIT],
                                   xbuf[exmlREFERENCE]);
             }
             break;
@@ -297,7 +321,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             {
                 pd.addMiller(xbuf[exmlMILNAME],
                              atoi(xbuf[exmlATOMNUMBER].c_str()),
-                             my_atof(xbuf[exmlTAU_AHC].c_str()), 
+                             my_atof(xbuf[exmlTAU_AHC].c_str()),
                              my_atof(xbuf[exmlALPHA_AHP].c_str()),
                              xbuf[exmlALEXANDRIA_EQUIV]);
             }
@@ -309,27 +333,30 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlGT_BOND:
-            if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
-                NN(xbuf[exmlLENGTH]) && NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlBONDORDER]) &&
-                NN(xbuf[exmlNTRAIN]))
+            if (NN(xbuf[exmlATOM1])     && NN(xbuf[exmlATOM2]) &&
+                NN(xbuf[exmlLENGTH])    && NN(xbuf[exmlSIGMA]) && 
+		NN(xbuf[exmlBONDORDER]) && NN(xbuf[exmlNTRAIN]))
             {
-                pd.addBond(xbuf[exmlATOM1], xbuf[exmlATOM2],
-                           my_atof(xbuf[exmlLENGTH].c_str()),
-                           my_atof(xbuf[exmlSIGMA].c_str()),
-                           atoi(xbuf[exmlNTRAIN].c_str()),
-                           my_atof(xbuf[exmlBONDORDER].c_str()),
-                           xbuf[exmlPARAMS]);
+                auto& gtbs = pd.getLastGtBonds();
+                gtbs.addBond(xbuf[exmlATOM1], xbuf[exmlATOM2],
+                             my_atof(xbuf[exmlLENGTH].c_str()),
+                             my_atof(xbuf[exmlSIGMA].c_str()),
+                             atoi(xbuf[exmlNTRAIN].c_str()),
+                             my_atof(xbuf[exmlBONDORDER].c_str()),
+                             xbuf[exmlPARAMS]);
             }
             break;
         case exmlGT_ANGLE:
             if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
-                NN(xbuf[exmlATOM3]) && NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlATOM3]) && NN(xbuf[exmlANGLE]) && 
+		NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlNTRAIN]))
             {
-                pd.addAngle(xbuf[exmlATOM1], xbuf[exmlATOM2],
-                            xbuf[exmlATOM3], my_atof(xbuf[exmlANGLE].c_str()),
-                            my_atof(xbuf[exmlSIGMA].c_str()), atoi(xbuf[exmlNTRAIN].c_str()),
-                            xbuf[exmlPARAMS].c_str());
+                auto& gtas = pd.getLastGtAngles();
+                gtas.addAngle(xbuf[exmlATOM1], xbuf[exmlATOM2], xbuf[exmlATOM3], 
+			      my_atof(xbuf[exmlANGLE].c_str()),
+                              my_atof(xbuf[exmlSIGMA].c_str()), 
+			      atoi(xbuf[exmlNTRAIN].c_str()),
+                              xbuf[exmlPARAMS].c_str());
             }
             break;
         case exmlGT_DIHEDRAL:
@@ -338,35 +365,22 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
                 NN(xbuf[exmlNTRAIN]))
             {
-                pd.addDihedral(egdPDIHS,
-                               xbuf[exmlATOM1], xbuf[exmlATOM2],
-                               xbuf[exmlATOM3], xbuf[exmlATOM4],
-                               my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
-                               atoi(xbuf[exmlNTRAIN].c_str()),
-                               xbuf[exmlPARAMS]);
-            }
-            break;
-        case exmlGT_IMPROPER:
-            if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) &&
-                NN(xbuf[exmlATOM3]) && NN(xbuf[exmlATOM4]) &&
-                NN(xbuf[exmlANGLE]) && NN(xbuf[exmlSIGMA]) &&
-                NN(xbuf[exmlNTRAIN]))
-            {
-                pd.addDihedral(egdIDIHS,
-                               xbuf[exmlATOM1], xbuf[exmlATOM2],
-                               xbuf[exmlATOM3], xbuf[exmlATOM4],
-                               my_atof(xbuf[exmlANGLE].c_str()), my_atof(xbuf[exmlSIGMA].c_str()),
-                               atoi(xbuf[exmlNTRAIN].c_str()),
-                               xbuf[exmlPARAMS]);
+                auto& gtds = pd.getLastGtDihedrals();
+                gtds.addDihedral(xbuf[exmlATOM1], xbuf[exmlATOM2],
+                                 xbuf[exmlATOM3], xbuf[exmlATOM4],
+                                 my_atof(xbuf[exmlANGLE].c_str()), 
+				 my_atof(xbuf[exmlSIGMA].c_str()),
+                                 atoi(xbuf[exmlNTRAIN].c_str()),
+                                 xbuf[exmlPARAMS]);
             }
             break;
         case exmlSYM_CHARGE:
             if (NN(xbuf[exmlCENTRAL]) && NN(xbuf[exmlATTACHED]) &&
                 NN(xbuf[exmlNUMATTACH]))
             {
-                pd.addSymcharges( xbuf[exmlCENTRAL],
-                                   xbuf[exmlATTACHED],
-                                   atoi(xbuf[exmlNUMATTACH].c_str()));
+                pd.addSymcharges(xbuf[exmlCENTRAL],
+                                 xbuf[exmlATTACHED],
+                                 atoi(xbuf[exmlNUMATTACH].c_str()));
             }
             break;
         case exmlEEMPROP:
@@ -375,12 +389,12 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES]) &&
                 NN(xbuf[exmlROW]))
             {
-                Eemprops eep(name2eemtype(xbuf[exmlMODEL]), 
+                Eemprops eep(name2eemtype(xbuf[exmlMODEL]),
                              xbuf[exmlNAME],
                              xbuf[exmlROW],
-                             xbuf[exmlZETA], 
-                             xbuf[exmlCHARGES], 
-                             my_atof(xbuf[exmlJ0].c_str()), 
+                             xbuf[exmlZETA],
+                             xbuf[exmlCHARGES],
+                             my_atof(xbuf[exmlJ0].c_str()),
                              my_atof(xbuf[exmlCHI0].c_str()) );
                 pd.addEemprops(eep);
             }
@@ -463,8 +477,8 @@ static void processTree(FILE *fp, xmlNodePtr tree, int indent,
 }
 
 void readPoldata(const std::string &fileName,
-                 Poldata &pd,
-                 gmx_atomprop_t aps)
+                 Poldata           &pd,
+                 gmx_atomprop_t     aps)
 {
     xmlDocPtr   doc;
     std::string fn2;
@@ -491,7 +505,7 @@ void readPoldata(const std::string &fileName,
     if (doc == NULL)
     {
         char buf[256];
-        snprintf(buf, sizeof(buf), 
+        snprintf(buf, sizeof(buf),
                  "Error reading XML file %s. Run a syntax checker such as nsgmls.",
                  fn2.c_str());
         GMX_THROW(gmx::FileIOError(buf));
@@ -511,7 +525,7 @@ void readPoldata(const std::string &fileName,
 static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
 {
     xmlNodePtr                    child, grandchild;
-    int                           i, nexcl;
+    int                           nexcl;
     std::string                   geometry, name,
                                   acentral, attached, tau_unit, ahp_unit,
                                   epref, desc, params;
@@ -578,82 +592,82 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         }
     }
 
-    child = add_xml_child(parent, exml_names[exmlGT_BONDS]);
-    blu   = pd.getLengthUnit();
-    if (blu.size() != 0)
+    for (auto gtbs = pd.getBondsBegin(); gtbs != pd.getBondsEnd(); gtbs++)
     {
-        add_xml_char(child, exml_names[exmlLENGTH_UNIT], blu.c_str());
-    }
-    func = pd.getBondFunction();
-    if (func.size() != 0)
-    {
-        add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
-    }
-    for (GtBondConstIterator bond = pd.getBondBegin();
-         bond != pd.getBondEnd(); bond++)
-    {
-        grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
-        add_xml_char(grandchild, exml_names[exmlATOM1], bond->getAtom1().c_str());
-        add_xml_char(grandchild, exml_names[exmlATOM2], bond->getAtom2().c_str());
-        add_xml_double(grandchild, exml_names[exmlLENGTH], bond->getLength());
-        add_xml_double(grandchild, exml_names[exmlSIGMA], bond->getSigma());
-        add_xml_int(grandchild, exml_names[exmlNTRAIN], bond->getNtrain());
-        add_xml_double(grandchild, exml_names[exmlBONDORDER], bond->getBondorder());
-        add_xml_char(grandchild, exml_names[exmlPARAMS], bond->getParams().c_str());
-    }
-
-    child = add_xml_child(parent, exml_names[exmlGT_ANGLES]);
-    blu   = pd.getAngleUnit();
-    if (blu.size() != 0)
-    {
-        add_xml_char(child, exml_names[exmlANGLE_UNIT], blu.c_str());
-    }
-    func = pd.getAngleFunction();
-    if (func.size() != 0)
-    {
-        add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
-    }
-    for (GtAngleConstIterator angle = pd.getAngleBegin();
-         angle != pd.getAngleEnd(); angle++)
-    {
-        grandchild = add_xml_child(child, exml_names[exmlGT_ANGLE]);
-        add_xml_char(grandchild, exml_names[exmlATOM1], angle->getAtom1().c_str());
-        add_xml_char(grandchild, exml_names[exmlATOM2], angle->getAtom2().c_str());
-        add_xml_char(grandchild, exml_names[exmlATOM3], angle->getAtom3().c_str());
-        add_xml_double(grandchild, exml_names[exmlANGLE], angle->getAngle());
-        add_xml_double(grandchild, exml_names[exmlSIGMA], angle->getSigma());
-        add_xml_int(grandchild, exml_names[exmlNTRAIN], angle->getNtrain());
-        add_xml_char(grandchild, exml_names[exmlPARAMS], angle->getParams().c_str());
-    }
-
-    for (i = 0; (i < egdNR); i++)
-    {
-        int exs[egdNR] = { exmlGT_DIHEDRALS, exmlGT_IMPROPERS };
-        int ex[egdNR]  = { exmlGT_DIHEDRAL, exmlGT_IMPROPER };
-
-        child = add_xml_child(parent, exml_names[exs[i]]);
-        blu   = pd.getAngleUnit();
+        child = add_xml_child(parent, exml_names[exmlGT_BONDS]);
+        blu   = gtbs->getLengthUnit();
         if (blu.size() != 0)
         {
-            add_xml_char(child, exml_names[exmlANGLE_UNIT], blu.c_str());
+            add_xml_char(child, exml_names[exmlLENGTH_UNIT], blu.c_str());
         }
-        func = pd.getDihedralFunction( i);
+        func = gtbs->getBondFunction();
         if (func.size() != 0)
         {
             add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
         }
-        for (DihedralConstIterator dihydral = pd.getDihedralBegin(i);
-             dihydral != pd.getDihedralEnd(i); dihydral++)
+        for (auto gtb = gtbs->getBondBegin(); gtb != gtbs->getBondEnd(); gtb++)
         {
-            grandchild = add_xml_child(child, exml_names[ex[i]]);
-            add_xml_char(grandchild, exml_names[exmlATOM1], dihydral->getAtom1().c_str());
-            add_xml_char(grandchild, exml_names[exmlATOM2], dihydral->getAtom2().c_str());
-            add_xml_char(grandchild, exml_names[exmlATOM3], dihydral->getAtom3().c_str());
-            add_xml_char(grandchild, exml_names[exmlATOM4], dihydral->getAtom4().c_str());
-            add_xml_double(grandchild, exml_names[exmlANGLE], dihydral->getDihedral());
-            add_xml_double(grandchild, exml_names[exmlSIGMA], dihydral->getSigma());
-            add_xml_int(grandchild, exml_names[exmlNTRAIN], dihydral->getNtrain());
-            add_xml_char(grandchild, exml_names[exmlPARAMS], dihydral->getParams().c_str());
+            grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
+            add_xml_char(grandchild, exml_names[exmlATOM1], gtb->getAtom1().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM2], gtb->getAtom2().c_str());
+            add_xml_double(grandchild, exml_names[exmlLENGTH], gtb->getLength());
+            add_xml_double(grandchild, exml_names[exmlSIGMA], gtb->getSigma());
+            add_xml_int(grandchild, exml_names[exmlNTRAIN], gtb->getNtrain());
+            add_xml_double(grandchild, exml_names[exmlBONDORDER], gtb->getBondorder());
+            add_xml_char(grandchild, exml_names[exmlPARAMS], gtb->getParams().c_str());
+        }
+    }
+
+    for (auto gtas = pd.getAnglesBegin(); gtas != pd.getAnglesEnd(); gtas++)
+    {
+        child = add_xml_child(parent, exml_names[exmlGT_ANGLES]);
+        blu   = gtas->getAngleUnit();
+        if (blu.size() != 0)
+        {
+            add_xml_char(child, exml_names[exmlANGLE_UNIT], blu.c_str());
+        }
+        func = gtas->getAngleFunction();
+        if (func.size() != 0)
+        {
+            add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+        }
+        for (auto gta = gtas->getAngleBegin(); gta != gtas->getAngleEnd(); gta++)
+        {
+            grandchild = add_xml_child(child, exml_names[exmlGT_ANGLE]);
+            add_xml_char(grandchild, exml_names[exmlATOM1], gta->getAtom1().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM2], gta->getAtom2().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM3], gta->getAtom3().c_str());
+            add_xml_double(grandchild, exml_names[exmlANGLE], gta->getAngle());
+            add_xml_double(grandchild, exml_names[exmlSIGMA], gta->getSigma());
+            add_xml_int(grandchild, exml_names[exmlNTRAIN], gta->getNtrain());
+            add_xml_char(grandchild, exml_names[exmlPARAMS], gta->getParams().c_str());
+        }
+    }
+
+    for (auto gtds = pd.getDihedralsBegin(); gtds != pd.getDihedralsEnd(); gtds++)
+    {
+        child = add_xml_child(parent, exml_names[exmlGT_DIHEDRALS]);
+        blu   = gtds->getDihedralUnit();
+        if (blu.size() != 0)
+        {
+            add_xml_char(child, exml_names[exmlANGLE_UNIT], blu.c_str());
+        }
+        func = gtds->getDihedralFunction();
+        if (func.size() != 0)
+        {
+            add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+        }
+        for (auto gtd = gtds->getDihedralBegin(); gtd != gtds->getDihedralEnd(); gtd++)
+        {
+            grandchild = add_xml_child(child, exml_names[exmlGT_DIHEDRAL]);
+            add_xml_char(grandchild, exml_names[exmlATOM1], gtd->getAtom1().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM2], gtd->getAtom2().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM3], gtd->getAtom3().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM4], gtd->getAtom4().c_str());
+            add_xml_double(grandchild, exml_names[exmlANGLE], gtd->getDihedral());
+            add_xml_double(grandchild, exml_names[exmlSIGMA], gtd->getSigma());
+            add_xml_int(grandchild, exml_names[exmlNTRAIN], gtd->getNtrain());
+            add_xml_char(grandchild, exml_names[exmlPARAMS], gtd->getParams().c_str());
         }
     }
     child = add_xml_child(parent, exml_names[exmlBSATOMS]);
@@ -661,7 +675,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     pd.getBosqueFlags(tmp, ref);
     add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
     add_xml_char(child, exml_names[exmlREFERENCE], ref.c_str());
-    
+
     for (BosqueConstIterator bosque = pd.getBosqueBegin();
          bosque != pd.getBosqueEnd(); bosque++)
     {
@@ -716,7 +730,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr());
         add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr());
     }
-    for(auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
+    for (auto eep = pd.epRefBegin(); eep < pd.epRefEnd(); ++eep)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);
         add_xml_char(grandchild, exml_names[exmlMODEL], getEemtypeName(eep->getEqdModel()));
@@ -725,8 +739,8 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
 }
 
 void writePoldata(const std::string &fileName,
-                  const Poldata &pd,
-                  bool compress)
+                  const Poldata     &pd,
+                  bool               compress)
 {
     xmlDocPtr   doc;
     xmlDtdPtr   dtd;

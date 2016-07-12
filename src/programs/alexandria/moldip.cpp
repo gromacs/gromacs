@@ -617,7 +617,7 @@ void MolDip::Read(FILE *fp,
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.getExpProps(_bQM, bZero, lot, gap);
+                    imm = mpnew.getExpProps(_bQM, bZero, lot, pd_);
                 }
 
                 if (immOK == imm)
@@ -731,7 +731,7 @@ void MolDip::Read(FILE *fp,
             }
             if (immOK == imm)
             {
-                imm = mpnew.getExpProps(_bQM, bZero, lot, gap);
+                imm = mpnew.getExpProps(_bQM, bZero, lot, pd_);
             }
 
             mpnew.eSupp = eSupportLocal;

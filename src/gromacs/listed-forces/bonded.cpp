@@ -179,7 +179,7 @@ real morse_bonds(int nbonds,
         cbomtemp  = cb*omtemp;         /*   1          */
         vbond     = cbomtemp*omtemp;   /*   1          */
         fbond     = -two*be*temp*cbomtemp*gmx::invsqrt(dr2); /*   9          */
-        vtot     += vbond; /*   2          */
+        vtot     += vbond-cb; /*   2          */
 
         *dvdlambda += (cbB - cbA) * omtemp * omtemp - (2-2*omtemp)*omtemp * cb * ((b0B-b0A)*be - (beB-beA)*(dr-b0)); /* 15 */
 

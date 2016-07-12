@@ -20,15 +20,15 @@ enum InteractionType
     InteractionType_ANGLES = ebtsANGLES,
     InteractionType_PDIHS  = ebtsPDIHS,
     InteractionType_IDIHS  = ebtsIDIHS,
+    InteractionType_LINEAR_ANGLES,
     InteractionType_LJ14,
     InteractionType_Polarization,
-    InteractionType_LINEAR_ANGLES,
     InteractionType_CONSTR,
-    InteractionType_VSITE2
+    InteractionType_VSITE2,
 };
 
 //! Utility typedef
-typedef std::vector<t_param>::iterator ParamIterator;
+using ParamIterator = typename std::vector<t_param>::iterator;
 
 //! Cleaner version of plist array
 class PlistWrapper
@@ -74,7 +74,7 @@ class PlistWrapper
 };
 
 //! Another utility typedef for a looper
-typedef std::vector<PlistWrapper>::iterator PlistWrapperIterator;
+using  PlistWrapperIterator = typename std::vector<PlistWrapper>::iterator;
 
 PlistWrapperIterator SearchPlist(std::vector<PlistWrapper> &plist, int ftype);
 

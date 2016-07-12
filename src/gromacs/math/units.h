@@ -111,6 +111,8 @@ extern "C" {
 #define unit_mass     "u"
 #define unit_energy   "kJ/mol"
 
+#define unit_angle    "degree"
+
 /* Temperature unit, T in this unit times BOLTZ give energy in unit_energy */
 #define unit_temp_K   "K"
 

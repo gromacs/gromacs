@@ -224,6 +224,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
      * calls are done from do_force_cutsVERLET(). */
     if (fr->cutoff_scheme == ecutsGROUP && (flags & GMX_FORCE_NONBONDED))
     {
+        
         donb_flags = 0;
         /* Add short-range interactions */
         donb_flags |= GMX_NONBONDED_DO_SR;
@@ -241,7 +242,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
         }
-
+	
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
         do_nonbonded(fr, x, f, md, excl,
                      &enerd->grpp, nrnb,

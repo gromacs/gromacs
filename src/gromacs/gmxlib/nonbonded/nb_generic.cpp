@@ -61,20 +61,20 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          facel;
     int           n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid, nnn, n0;
     real          shX, shY, shZ;
-    real          fscal, felec, fvdw, velec, vvdw, tx, ty, tz;
+    real          fscal, felec, fvdw, fvdw_disp, fvdw_rep, velec, vvdw, tx, ty, tz;
     real          rinvsq;
     real          iq;
     real          qq, vctot;
     int           nti, nvdwparam;
     int           tj;
-    real          rt, r, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
+    real          rt, r, r5, r6, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
     real          rinvsix;
     real          vvdwtot;
     real          vvdw_rep, vvdw_disp;
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6, c12, c6grid, cexp1, cexp2, br;
+    real          c, c2, c6, c5, c12, c6grid, cexp1, cexp2; //br is removed
     real *        charge;
     real *        shiftvec;
     real *        vdwparam, *vdwgridparam;
@@ -93,6 +93,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          rcutoff, rcutoff2;
     real          d, d2, sw, dsw, rinvcorr;
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
+    real          vdw_wang1, vdw_wang2, vdw_wang3;
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent, sh_lj_ewald;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
@@ -254,7 +255,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             /* Coulomb interaction. ielec==0 means no interaction */
             if (ielec != GMX_NBKERNEL_ELEC_NONE)
             {
-                qq               = iq*charge[jnr];
+	           qq            = iq*charge[jnr];
 
                 switch (ielec)
                 {
@@ -363,16 +364,27 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         break;
 
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
-                        /* Buckingham */
-                        c6               = vdwparam[tj];
-                        cexp1            = vdwparam[tj+1];
-                        cexp2            = vdwparam[tj+2];
+                        /* Modiefied Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
+		        c                = vdwparam[tj+1];   /*sigma*/
+                        cexp1            = vdwparam[tj+2];   /*epsilon*/
+                        cexp2            = vdwparam[tj];     /*gamma*/
+			rinvsix          = rinvsq*rinvsq*rinvsq;
+			r                = rsq*rinv;
+			r5               = rsq*rsq*r;
+			r6               = r5*r;
+			c2               = c*c;
+			c6               = c2*c2*c2;
+			c5               = c2*c2*c;
+			vdw_wang1        = std::exp(cexp2*(1-(r/c)));
+			vdw_wang2        = c6 + rinvsix;
+			vdw_wang3        = cexp2 + 3;
+                        
+                        vvdw_disp        = -2*cexp1*(1.0/(1-(3.0/vdw_wang3))*(c6/vdw_wang2));
+                        vvdw_rep         = -vvdw_disp*((3.0/vdw_wang3)*vdw_wang1);
+			fvdw_disp        = -2*cexp1*((6*vdw_wang3*r5*c6)/(cexp2*(vdw_wang2*vdw_wang2)));
+			fvdw_rep         = (6*vdw_wang1*cexp1*c5*(cexp2*r6 + 6*r5*c + cexp2*c6))/(cexp2*(vdw_wang2*vdw_wang2));
+                        fvdw             = fvdw_rep - fvdw_disp;
 
-                        rinvsix          = rinvsq*rinvsq*rinvsq;
-                        vvdw_disp        = c6*rinvsix;
-                        br               = cexp2*rsq*rinv;
-                        vvdw_rep         = cexp1*std::exp(-br);
-                        fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
@@ -477,6 +489,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         ggid             = nlist->gid[n];
         velecgrp[ggid]  += vctot;
         vvdwgrp[ggid]   += vvdwtot;
+	
     }
     /* Estimate flops, average for generic kernel:
      * 12 flops per outer iteration

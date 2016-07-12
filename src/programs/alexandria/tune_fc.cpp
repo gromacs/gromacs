@@ -290,55 +290,51 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                 char buf[STRLEN];
                 switch (bt_)
                 {
-                    case ebtsBONDS:
+                    case InteractionType_BONDS:
                     {
-                        GtBondConstIterator gtb = pd.findBond(aai, aaj, 0);
-                        if (pd.getBondEnd() != gtb)
+                        GtBondConstIterator gtb;
+                        if (pd.findBond(aai, aaj, 0, &gtb, &index))
                         {
                             sprintf(buf, "%s %s",
                                     gtb->getAtom1().c_str(),
                                     gtb->getAtom2().c_str());
                             params    = gtb->getParams();
                             bondorder = gtb->getBondorder();
-                            index     = gtb - pd.getBondBegin();
                             found     = true;
                         }
                     }
                     break;
-                    case ebtsANGLES:
+                    case InteractionType_ANGLES:
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak))
                         {
-                            GtAngleConstIterator gta = pd.findAngle(aai, aaj, aak);
-                            if (pd.getAngleEnd() != gta)
+                            GtAngleConstIterator gta;
+                            if (pd.findAngle(aai, aaj, aak, &gta, &index))
                             {
                                 sprintf(buf, "%s %s %s", gta->getAtom1().c_str(),
                                         gta->getAtom2().c_str(), gta->getAtom3().c_str());
                                 params = gta->getParams();
-                                index  = gta - pd.getAngleBegin();
                                 found  = true;
                             }
                         }
                     }
                     break;
-                    case ebtsPDIHS:
-                    case ebtsIDIHS:
+                    case InteractionType_PDIHS:
+                    case InteractionType_IDIHS:
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         int al  = mymol.ltop_->idef.il[ftype_].iatoms[i+4];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak) &&
                             pd.atypeToBtype( *mymol.topology_->atoms.atomtype[al], aal))
                         {
-                            int                   egd = (bt_ == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
-                            DihedralConstIterator gtd = pd.findDihedral(egd, aai, aaj, aak, aal);
-                            if (pd.getDihedralEnd(egd) != gtd)
+                            GtDihedralConstIterator gtd;
+                            if (pd.findDihedral(aai, aaj, aak, aal, &gtd, &index))
                             {
                                 sprintf(buf, "%s %s %s %s",
                                         gtd->getAtom1().c_str(), gtd->getAtom2().c_str(),
                                         gtd->getAtom3().c_str(), gtd->getAtom4().c_str());
                                 params = gtd->getParams();
-                                index  = gtd - pd.getDihedralBegin(egd);
                                 found  = true;
                             }
                         }
@@ -488,25 +484,38 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
         }
         bool bSupport = true;
 
-        for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
+        for (int bt = 0; bSupport && (bt <= InteractionType_VSITE2); bt++)
         {
             int  ft;
             if (bOpt[bt])
             {
                 switch (bt)
                 {
-                    case ebtsBONDS:
-                        ft = pd_.getBondFtype();
+                    case InteractionType_BONDS:
+                    {
+                        ft = F_MORSE;
                         break;
-                    case ebtsANGLES:
-                        ft = pd_.getAngleFtype();
+                    }
+                    case InteractionType_ANGLES:
+                    {
+                        ft = F_UREY_BRADLEY;
                         break;
-                    case ebtsPDIHS:
-                        ft = pd_.getDihedralFtype(egdPDIHS);
+                    }
+                    case InteractionType_LINEAR_ANGLES:
+                    {
+                        ft = F_LINEAR_ANGLES;
                         break;
-                    case ebtsIDIHS:
-                        ft = pd_.getDihedralFtype( egdIDIHS);
+                    }
+                    case InteractionType_PDIHS:
+                    {
+                        ft = F_PIDIHS;
                         break;
+                    }
+                    case InteractionType_IDIHS:
+                    {
+                        ft = F_IDIHS;
+                        break;
+                    }
                     default:
                         gmx_fatal(FARGS, "Boe");
                 }
@@ -525,9 +534,10 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                     }
                     switch (bt)
                     {
-                        case ebtsBONDS:
+                        case InteractionType_BONDS:
                         {
-                            if (pd_.findBond(aai, aaj, 0) == pd_.getBondEnd())
+                            GtBondConstIterator gtb;
+                            if (!pd_.findBond(aai, aaj, 0, &gtb))
                             {
                                 bSupport = false;
                                 if (debug)
@@ -537,7 +547,7 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             break;
                         }
-                        case ebtsANGLES:
+                        case InteractionType_ANGLES:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             if (!pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
@@ -546,7 +556,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             else
                             {
-                                if (pd_.findAngle(aai, aaj, aak) == pd_.getAngleEnd())
+                                GtAngleConstIterator gta;
+                                if (!pd_.findAngle(aai, aaj, aak, &gta))
                                 {
                                     bSupport = false;
                                     if (debug)
@@ -558,8 +569,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                         }
                         break;
-                        case ebtsPDIHS:
-                        case ebtsIDIHS:
+                        case InteractionType_PDIHS:
+                        case InteractionType_IDIHS:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
@@ -570,8 +581,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             else
                             {
-                                int egd = (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS;
-                                if (pd_.findDihedral(egd, aai, aaj, aak, aal) == pd_.getDihedralEnd(egd))
+                                GtDihedralConstIterator gtd;
+                                if (!pd_.findDihedral(aai, aaj, aak, aal, &gtd))
                                 {
                                     bSupport = false;
                                     if (debug)
@@ -648,8 +659,8 @@ void OptPrep::list2Opt()
             {
                 case InteractionType_BONDS:
                 {
-                    auto fb = pd_.findBond(bondtypes[0], bondtypes[1], 0);
-                    if (pd_.getBondEnd() != fb)
+                    GtBondIterator fb;
+                    if (pd_.findBond(bondtypes[0], bondtypes[1], 0, &fb))
                     {
                         fb->setParams(buf);
                     }
@@ -657,8 +668,8 @@ void OptPrep::list2Opt()
                 break;
                 case InteractionType_ANGLES:
                 {
-                    auto fa = pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2]);
-                    if (pd_.getAngleEnd() != fa)
+                    GtAngleIterator fa;
+                    if (pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2], &fa))
                     {
                         fa->setParams(buf);
                     }
@@ -667,10 +678,9 @@ void OptPrep::list2Opt()
                 case InteractionType_PDIHS:
                 case InteractionType_IDIHS:
                 {
-                    int  egd = (fc.interactionType() == InteractionType_PDIHS) ? egdPDIHS : egdIDIHS;
-                    auto fd  = pd_.findDihedral(egd, bondtypes[0], bondtypes[1],
-                                                bondtypes[2], bondtypes[3]);
-                    if (pd_.getDihedralEnd(egd) != fd)
+                    GtDihedralIterator fd;
+                    if (pd_.findDihedral(bondtypes[0], bondtypes[1],
+                                         bondtypes[2], bondtypes[3], &fd))
                     {
                         fd->setParams(buf);
                     }
@@ -691,7 +701,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     std::vector<int>            ntest;
     std::vector<std::string>    ctest;
 
-    int nD   = ForceConstants_[ebtsBONDS].nbad();
+    int nD   = ForceConstants_[InteractionType_BONDS].nbad();
     int nMol = _mymol.size();
     if ((0 == nD) || (0 == nMol))
     {
@@ -706,45 +716,49 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    int ftb = pd_.getBondFtype();
-    int j   = 0;
-    for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
-         (mymol < _mymol.end()); mymol++, j++)
+    for (GtBondsConstIterator gtbs = pd_.getBondsBegin();
+         gtbs != pd_.getBondsEnd(); gtbs++)
     {
-        for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
+        int ftb = gtbs->getBondFtype();
+        int j   = 0;
+        for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
+             (mymol < _mymol.end()); mymol++, j++)
         {
-            int         ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-            int         aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-            std::string aai, aaj;
-            if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+            for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
             {
-                GtBondIterator gtb = pd_.findBond(aai, aaj, 0);
-                if (gtb != pd_.getBondEnd())
+                int         ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+                int         aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+                std::string aai, aaj;
+                if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+                    pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
                 {
-                    int gt  = gtb - pd_.getBondBegin();
-                    int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
-
-                    a[gti][j]++;
-                    ntest[gti]++;
-                    if (ctest[gti].empty())
+                    GtBondConstIterator gtb = gtbs->findBond(aai, aaj, 0);
+                    if (gtb != gtbs->getBondEnd())
                     {
-                        char buf[STRLEN];
-                        snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-                        ctest[gti].assign(buf);
+                        int gt  = gtb - gtbs->getBondBegin();
+                        int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
+
+                        a[gti][j]++;
+                        ntest[gti]++;
+                        if (ctest[gti].empty())
+                        {
+                            char buf[STRLEN];
+                            snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
+                            ctest[gti].assign(buf);
+                        }
                     }
                 }
+                else
+                {
+                    gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
+                              aai.c_str(), aaj.c_str(),
+                              *mymol->topology_->atoms.atomtype[ai],
+                              *mymol->topology_->atoms.atomtype[aj],
+                              mymol->molProp()->getIupac().c_str());
+                }
             }
-            else
-            {
-                gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-                          aai.c_str(), aaj.c_str(),
-                          *mymol->topology_->atoms.atomtype[ai],
-                          *mymol->topology_->atoms.atomtype[aj],
-                          mymol->molProp()->getIupac().c_str());
-            }
+            rhs.push_back(-mymol->Emol);
         }
-        rhs.push_back(-mymol->Emol);
     }
     char buf[STRLEN];
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
@@ -786,21 +800,20 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     free_matrix(a);
     free_matrix(a2);
     int i = 0;
-    j = 0;
+    //j = 0;
     for (auto b = ForceConstants_[ebtsBONDS].beginBN();
          b < ForceConstants_[ebtsBONDS].endBN(); ++b)
     {
         if (ntest[i] > 0)
         {
             std::vector<std::string> aa  = gmx::splitString(b->name());
-            GtBondIterator           gtb = pd_.findBond(aa[0], aa[1], 0);
-            GMX_RELEASE_ASSERT(gtb != pd_.getBondEnd(), "Can not find my bonds");
+            GtBondIterator           gtb;
+            GMX_RELEASE_ASSERT(!pd_.findBond(aa[0], aa[1], 0, &gtb), "Cannot find my bonds");
             std::vector<std::string> pp = gmx::splitString(b->paramString());
             char                     buf[256];
             // Here we use the "knowledge" that the energy is the second parameter in
             // the Morse description. Not good!
-            snprintf(buf, sizeof(buf), "%s  %.2f  %s", pp[0].c_str(),
-                     Edissoc[j++], pp[2].c_str());
+            snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
             gtb->setParams(buf);
             b->setParamString(buf);
         }
@@ -811,11 +824,30 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
 void OptPrep::InitOpt(FILE *fplog, bool bOpt[ebtsNR],
                       real  factor)
 {
-    std::vector<int> fts;
-    fts.push_back(pd_.getBondFtype());
-    fts.push_back(pd_.getAngleFtype());
-    fts.push_back(pd_.getDihedralFtype(egdPDIHS));
-    fts.push_back(pd_.getDihedralFtype(egdIDIHS));
+    std::vector<unsigned int> fts;
+    unsigned int a, b, c;
+
+    for (auto gtbs = pd_.getBondsBegin();
+         gtbs != pd_.getBondsEnd(); gtbs++)
+    {
+        a = gtbs->getBondFtype();
+        fts.push_back(gtbs->getBondFtype());
+    }
+
+
+    for (auto gtas = pd_.getAnglesBegin();
+         gtas != pd_.getAnglesEnd(); gtas++)
+    {
+        b = gtas->getAngleFtype();
+        fts.push_back(gtas->getAngleFtype());
+    }
+
+    for (auto gtds = pd_.getDihedralsBegin();
+         gtds != pd_.getDihedralsEnd(); gtds++)
+    {
+        c = gtds->getDihedralFtype();
+        fts.push_back(gtds->getDihedralFtype());
+    }
 
     for (size_t bt = 0; (bt < fts.size()); bt++)
     {
@@ -826,10 +858,8 @@ void OptPrep::InitOpt(FILE *fplog, bool bOpt[ebtsNR],
         ForceConstants_.push_back(fc);
     }
 
-    opt2List();
     getDissociationEnergy(fplog);
     opt2List();
-    list2Opt();
 
     orig_.resize(param_.size(), 0);
     best_.resize(param_.size(), 0);
@@ -910,7 +940,7 @@ double OptPrep::calcDeviation()
 {
     rvec    mu_tot;
     int     j;
-    double  ener;
+    double  ener, morse, angle, coulSR, lang, lj, bham;
     FILE   *dbcopy;
 
     if (PAR(_cr))
@@ -982,9 +1012,15 @@ double OptPrep::calcDeviation()
 
             if (NULL != debug)
             {
-                fprintf(debug, "%s ener %g Epot %g Force2 %g\n",
-                        mymol.molProp()->getMolname().c_str(), ener,
-                        mymol.Ecalc, mymol.Force2);
+                morse   = mymol.enerd_->term[F_MORSE];
+                angle   = mymol.enerd_->term[F_ANGLES];
+                coulSR  = mymol.enerd_->term[F_COUL_SR];
+                bham    = mymol.enerd_->term[F_BHAM];
+                lj      = mymol.enerd_->term[F_LJ];
+                lang    = mymol.enerd_->term[F_LINEAR_ANGLES];
+                fprintf(debug, "%s Chi_2 %g Hform %g Emol %g  Ecalc %g Morse %g  Angles %g LinearAng %g  CoulSR %g  LJ  %g  BHAM  %g  Force2 %g\n",
+                        mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, mymol.Emol,
+                        mymol.Ecalc, morse, angle, lang, coulSR, lj, bham, mymol.Force2);
             }
         }
     }
@@ -1123,12 +1159,12 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
     if (MASTER(_cr))
     {
         chi2 = chi2_min  = GMX_REAL_MAX;
-        int            n = 0;
-        guessAll(n++, stepsize, bRandom, gen, dis);
+        //int            n = 0;
+        //guessAll(n++, stepsize, bRandom, gen, dis);
         Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
         TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
                     temperature, bBound);
-        for (; (n <= nrun); n++)
+        for (int n = 0; (n < nrun); n++)
         {
             if ((NULL != fp) && (0 == n))
             {
@@ -1155,15 +1191,15 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
             if (NULL != fp)
             {
-                fprintf(fp, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
             }
             if (NULL != fplog)
             {
-                fprintf(fplog, "%5d  %8.3f  %8.3f  %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
-            guessAll(n, stepsize, bRandom, gen, dis);
-            TuneFc.setParam(param_);
+            //guessAll(n, stepsize, bRandom, gen, dis);
+            TuneFc.setParam(best_);
         }
 
         if (bMinimum)
@@ -1344,7 +1380,7 @@ int alex_tune_fc(int argc, char *argv[])
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "tune_fc",    ffWRITE },
         { efDAT, "-sel", "molselect", ffREAD },
-        { efXVG, "-tab", "table",    ffOPTRD },
+        { efXVG, "-table", "table",    ffOPTRD },
         { efLOG, "-g", "tune_fc",    ffWRITE },
         { efXVG, "-x", "hform-corr", ffWRITE },
         { efXVG, "-conv", "param-conv", ffWRITE },
@@ -1354,7 +1390,7 @@ int alex_tune_fc(int argc, char *argv[])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPolar = FALSE, bFitZeta = TRUE;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
@@ -1477,23 +1513,29 @@ int alex_tune_fc(int argc, char *argv[])
     }
 
     alexandria::OptPrep       opt;
-    ChargeDistributionModel   iDistributionModel         = name2eemtype(cqdist[0]);
+    ChargeDistributionModel   iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
-    opt.Init(cr, bQM, bGaussianBug, iDistributionModel,
+    const char               *tabfn = opt2fn_null("-table", NFILE, fnm);
+
+    if (iChargeDistributionModel != eqdAXp && NULL == tabfn)
+    {
+        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+    }
+
+    opt.Init(cr, bQM, bGaussianBug, iChargeDistributionModel,
              iChargeGenerationAlgorithm,
              rDecrZeta,
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
-             fc_esp, fc_epot, fc_force, fixchi, bOptHfac, hfac, bPol, bFitZeta);
+             fc_esp, fc_epot, fc_force, fixchi, bOptHfac, hfac, bPolar, bFitZeta);
     opt.Read(fp ? fp : (debug ? debug : NULL),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
              lot, gms, watoms, FALSE,
-             false, bPol,
-             opt2fn_null("-tab", NFILE, fnm));
+             false, bPolar, tabfn);
 
     opt.checkSupport(fp, bOpt);
 
@@ -1504,11 +1546,14 @@ int alex_tune_fc(int argc, char *argv[])
     opt.InitOpt(fp, bOpt, factor);
 
     print_moldip_mols(fp, opt._mymol, FALSE, FALSE);
+
     opt.calcDeviation();
+
     if (MASTER(cr))
     {
         opt.printSpecs(fp, (char *)"Before optimization", NULL, oenv, false);
     }
+
     opt.optRun(MASTER(cr) ? stderr : NULL, fp,
                maxiter, nrun, step, seed,
                bRandom, oenv, nprint,

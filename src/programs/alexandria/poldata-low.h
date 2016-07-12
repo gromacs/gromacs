@@ -59,15 +59,32 @@ enum ChargeDistributionModel {
     eqdAXp, eqdAXg, eqdAXs, eqdYang, eqdBultinck, eqdRappe, eqdNR
 };
 
-enum DihedrlalType {
-    egdPDIHS, egdIDIHS, egdNR
-};
-
 namespace alexandria
 {
 
 class Ptype
 {
+    public:
+        Ptype(const std::string &ptype,
+              const std::string &miller,
+              const std::string &bosque,
+              double             polarizability,
+              double             sigPol);
+
+        const std::string &getType() const { return type_; }
+
+        const std::string &getMiller() const { return miller_; }
+
+        const std::string &getBosque() const { return bosque_; }
+
+	void setPolarizability(double polarizability) { polarizability_ = polarizability; }
+
+        double getPolarizability() const { return polarizability_; }    
+
+	void setSigPol(double sigPol) { sigPol_ = sigPol; }
+
+        double getSigPol() const { return sigPol_; }
+
     private:
         //! Polarizability type
         std::string type_;
@@ -80,45 +97,14 @@ class Ptype
         //! Standard deviation
         double      sigPol_;
 
-    public:
-        Ptype(const std::string &ptype,
-              const std::string &miller,
-              const std::string &bosque,
-              double             polarizability,
-              double             sigPol) :
-            type_(ptype),
-            miller_(miller),
-            bosque_(bosque),
-            polarizability_(polarizability),
-            sigPol_(sigPol)
-        {}
-
-        const std::string &getType() const { return type_; }
-
-        const std::string &getMiller() const { return miller_; }
-
-        const std::string &getBosque() const { return bosque_; }
-
-        double getPolarizability() const { return polarizability_; }
-
-        void setPolarizability(double polarizability) { polarizability_ = polarizability; }
-
-        double getSigPol() const { return sigPol_; }
-
-        void setSigPol(double sigPol) { sigPol_ = sigPol; }
 
 };
 
+using PtypeIterator      = typename std::vector<Ptype>::iterator;
+using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
+
 class Ffatype
 {
-    private:
-        std::string desc_;
-        std::string type_;
-        std::string ptype_;
-        std::string btype_;
-        std::string elem_;
-        std::string vdwparams_;
-        std::string refEnthalpy_;
     public:
         Ffatype(const std::string &desc,
                 const std::string &type,
@@ -126,16 +112,9 @@ class Ffatype
                 const std::string &btype,
                 const std::string &elem,
                 const std::string &vdwparams,
-                const std::string &refEnthalpy) :
-            desc_(desc),
-            type_(type),
-            ptype_(ptype),
-            btype_(btype),
-            elem_(elem),
-            vdwparams_(vdwparams),
-            refEnthalpy_(refEnthalpy) {}
+                const std::string &refEnthalpy);
 
-        Ffatype() {}
+        Ffatype () {}
 
         const std::string &getDesc() const { return desc_; }
 
@@ -150,104 +129,138 @@ class Ffatype
         const std::string &getVdwparams() const { return vdwparams_; }
 
         const std::string &getRefEnthalpy() const { return refEnthalpy_; }
+
+    private:
+        std::string desc_;
+        std::string type_;
+        std::string ptype_;
+        std::string btype_;
+        std::string elem_;
+        std::string vdwparams_;
+        std::string refEnthalpy_;
 };
+
+using FfatypeIterator      = typename std::vector<Ffatype>::iterator;
+using FfatypeConstIterator = typename std::vector<Ffatype>::const_iterator;
 
 class GtBond
 {
-    private:
-        std::string atom1_;
-        std::string atom2_;
-        std::string params_;
-        std::string elem1_, elem2_;
-        double      length_;
-        double      sigma_;
-        double      bondorder_;
-        int         ntrain_;
     public:
         GtBond(const std::string atom1,
                const std::string atom2,
                const std::string params,
-               const std::string elem1,
-               const std::string elem2,
                double            length,
                double            sigma,
                double            bondorder,
-               int               ntrain)
-            :
-              atom1_(atom1),
-              atom2_(atom2),
-              params_(params),
-              elem1_(elem1),
-              elem2_(elem2),
-              length_(length),
-              sigma_(sigma),
-              bondorder_(bondorder),
-              ntrain_(ntrain)
-        {}
-
-        //GtBond() {}
+               int               ntrain);
 
         const std::string &getAtom1() const { return atom1_; }
 
         const std::string &getAtom2() const { return atom2_; }
 
-        const std::string &getParams() const { return params_; }
+	void setParams(const std::string &params) { params_ = params; }
 
-        const std::string &getElem1() const { return elem1_; }
-
-        const std::string &getElem2() const { return elem2_; }
-
-        void setElem1(const std::string elem) { elem1_ = elem; }
-
-        void setElem2(const std::string elem) { elem2_ = elem; }
-
-        double getLength() const { return length_; }
-
-        double getSigma() const { return sigma_; }
-
-        double getBondorder() const { return bondorder_; }
-
-        int getNtrain() const { return ntrain_; }
-
-        void setAtom1(const std::string &atom) { atom1_ = atom; }
-
-        void setAtom2(const std::string &atom) { atom2_ = atom; }
-
-        void setBondorder(double bondorder) { bondorder_ = bondorder; }
+        const std::string &getParams() const { return params_; }   
 
         void setLength(double length) { length_ = length; }
 
-        void setParams(const std::string &params) { params_ = params; }
+        double getLength() const { return length_; }
 
-        void setSigma(double sigma) { sigma_ = sigma; }
+	void setSigma(double sigma) { sigma_ = sigma; }
 
-        void setNtrain(int ntrain) { ntrain_ = ntrain; }
+        double getSigma() const { return sigma_; }
+
+	void setBondorder(double bondorder) { bondorder_ = bondorder; }
+
+        double getBondorder() const { return bondorder_; }
+
+	void setNtrain(int ntrain) { ntrain_ = ntrain; }
+
+        int getNtrain() const { return ntrain_; }
+	
+    private:
+        const std::string atom1_;
+        const std::string atom2_;
+        std::string       params_;
+        std::string       elem1_;
+	std::string       elem2_;
+        double            length_;
+        double            sigma_;
+        double            bondorder_;
+        int               ntrain_;
 };
 
-class GtBonds
+using GtBondIterator      = typename std::vector<GtBond>::iterator;
+using GtBondConstIterator = typename std::vector<GtBond>::const_iterator;
+
+class GtBonds 
 {
- public:
- GtBonds(const std::string function,
-         unsigned int ftype, 
-         const std::string unit) :  _gtBondFunction(function), _gtBondFtype(ftype), _gtLengthUnit(unit);
-         
- private:
-    std::string                           _gtBondFunction;
-    unsigned int                          _gtBondFtype;
-    std::string                           _gtLengthUnit;
-    std::vector<GtBond>                   _gtBond;
+    public:
+
+        GtBonds(const std::string function, const std::string unit);
+
+	const std::string &getLengthUnit() const { return gtLengthUnit_;}
+
+	void setBondFtype();
+
+	const std::string &getBondFunction() const{ return gtBondFunction_;}
+
+	unsigned int getBondFtype() const { return gtBondFtype_; }
+
+        size_t getNgtBond() const { return gtBond_.size(); }
+
+	GtBondIterator getBondBegin() { return gtBond_.begin(); }  
+
+	GtBondIterator getBondEnd() { return gtBond_.end(); }
+
+	GtBondConstIterator getBondBegin() const { return gtBond_.begin(); }
+
+	GtBondConstIterator getBondEnd() const { return gtBond_.end(); }
+
+	GtBondIterator findBond(const std::string &btype1,
+				const std::string &btype2,
+				double             bondorder);
+                                
+        GtBondConstIterator findBond(const std::string &btype1,
+				     const std::string &btype2,
+				     double             bondorder) const;
+
+	bool setBondParams(const std::string &btype1,
+                           const std::string &btype2,
+                           double             length, 
+                           double             sigma,
+                           int                ntrain,
+                           double             bondorder, 
+                           const std::string &params);
+
+	void addBond(const std::string &btype1,
+                     const std::string &btype2,
+                     double             length, 
+                     double             sigma, 
+                     int                ntrain,
+                     double             bondorder,
+                     const std::string &params);   
+
+	bool searchBond(const std::string &btype1,
+                        const std::string &btype2,
+                        double           *length, 
+                        double           *sigma, 
+                        int              *ntrain,
+                        double           *bondorder, 
+                        std::string      &params) const;
+	
+    private:
+	std::vector<GtBond> gtBond_;
+        const std::string   gtBondFunction_;
+        const std::string   gtLengthUnit_; 
+	unsigned int        gtBondFtype_;   
 };
+
+using GtBondsIterator      = typename std::vector<GtBonds>::iterator;
+using GtBondsConstIterator = typename std::vector<GtBonds>::const_iterator;
 
 class GtAngle
 {
-    private:
-        std::string atom1_;
-        std::string atom2_;
-        std::string atom3_;
-        std::string params_;
-        double      angle_;
-        double      sigma_;
-        int         ntrain_;
     public:
         GtAngle(const std::string &atom1,
                 const std::string &atom2,
@@ -255,53 +268,111 @@ class GtAngle
                 const std::string &params,
                 double             angle,
                 double             sigma,
-                int                ntrain)
-            :
-              atom1_(atom1),
-              atom2_(atom2),
-              atom3_(atom3),
-              params_(params),
-              angle_(angle),
-              sigma_(sigma),
-              ntrain_(ntrain)
-        {}
-
-        //GtAngle() {}
+                int                ntrain);
 
         const std::string &getAtom1() const { return atom1_; }
 
         const std::string &getAtom2() const { return atom2_; }
 
         const std::string &getAtom3() const { return atom3_; }
+	
+	void setParams(std::string params) { params_ = params; }
 
         const std::string &getParams() const { return params_; }
 
+	void setAngle(double angle) { angle_ = angle; }
+
         double getAngle() const { return angle_; }
+
+	void setSigma(double sigma) { sigma_ = sigma; }
 
         double getSigma() const { return sigma_; }
 
+	void setNtrain(int ntrain) { ntrain_ = ntrain; }
+
         int getNtrain() const { return ntrain_; }
 
-        void setParams(std::string params) { params_ = params; }
-
-        void setAngle(double angle) { angle_ = angle; }
-
-        void setSigma(double sigma) { sigma_ = sigma; }
-
-        void setNtrain(int ntrain) { ntrain_ = ntrain; }
+    private:
+        const std::string atom1_;
+        const std::string atom2_;
+        const std::string atom3_;
+        std::string       params_;
+        double            angle_;
+        double            sigma_;
+        int               ntrain_;
 };
+
+using GtAngleIterator      = typename std::vector<GtAngle>::iterator;
+using GtAngleConstIterator = typename std::vector<GtAngle>::const_iterator;
+
+class GtAngles
+{
+    public:
+
+        GtAngles(const std::string function,const std::string unit);
+
+	const std::string &getAngleUnit() const { return gtAngleUnit_;}
+
+	void setAngleFtype();
+
+        const std::string &getAngleFunction() const { return gtAngleFunction_; }
+
+	unsigned int getAngleFtype() const { return gtAngleFtype_; }
+
+	size_t getNgtAngle() const { return gtAngle_.size(); }
+
+	GtAngleIterator getAngleBegin() { return gtAngle_.begin(); }
+
+	GtAngleIterator getAngleEnd() { return gtAngle_.end(); }
+
+	GtAngleConstIterator getAngleBegin() const { return gtAngle_.begin(); }
+
+        GtAngleConstIterator getAngleEnd() const { return gtAngle_.end(); }
+
+	GtAngleIterator findAngle(const std::string &btype1,
+                                  const std::string &btype2,
+                                  const std::string &btype3);
+                                  
+        GtAngleConstIterator findAngle(const std::string &btype1,
+                                       const std::string &btype2,
+                                       const std::string &btype3) const;
+
+	bool setAngleParams(const std::string &btype1,
+                            const std::string &btype2,
+                            const std::string &btype3, 
+                            double             angle, 
+                            double             sigma, 
+                            int                ntrain, 
+                            const std::string &params);
+
+	void addAngle(const std::string &btype1, 
+                      const std::string &btype2,
+                      const std::string &btype3,
+                      double             angle, 
+                      double             sigma,
+                      int                ntrain,
+                      const std::string &params);
+
+	bool searchAngle(const std::string &btype1,
+                         const std::string &btype2,
+                         const std::string &btype3,
+                         double            *angle, 
+                         double            *sigma,
+                         int               *ntrain, 
+                         std::string       &params) const;
+         
+    private:
+	std::vector<GtAngle> gtAngle_;
+        const std::string    gtAngleFunction_;
+	const std::string    gtAngleUnit_;
+        unsigned int         gtAngleFtype_;   
+};
+
+using GtAnglesIterator      = typename std::vector<GtAngles>::iterator;
+using GtAnglesConstIterator = typename std::vector<GtAngles>::const_iterator;
 
 class GtDihedral
 {
-    private:
-        std::string atom1_;
-        std::string atom2_;
-        std::string atom3_;
-        std::string atom4_;
-        std::string params_;
-        double      dihedral_;
-        double      sigma_;
-        int         ntrain_;
     public:
         GtDihedral(const std::string &atom1,
                    const std::string &atom2,
@@ -310,19 +381,7 @@ class GtDihedral
                    const std::string &params,
                    double             dihedral,
                    double             sigma,
-                   int                ntrain)
-            :
-              atom1_(atom1),
-              atom2_(atom2),
-              atom3_(atom3),
-              atom4_(atom4),
-              params_(params),
-              dihedral_(dihedral),
-              sigma_(sigma),
-              ntrain_(ntrain)
-        {}
-
-        //GtDihedral() {}
+                   int                ntrain);
 
         const std::string &getAtom1() const { return atom1_; }
 
@@ -332,53 +391,147 @@ class GtDihedral
 
         const std::string &getAtom4() const { return atom4_; }
 
-        void setAtom1(const std::string &atom) { atom1_ = atom; }
-
-        void setAtom2(const std::string &atom) { atom2_ = atom; }
-
-        void setAtom3(const std::string &atom) { atom3_ = atom; }
-
-        void setAtom4(const std::string &atom) { atom4_ = atom; }
+        void setParams(const std::string &params) { params_ = params; }
 
         const std::string &getParams() const { return params_; }
 
+	void setDihedral(double dihedral) { dihedral_ = dihedral; }
+
         double getDihedral() const { return dihedral_; }
 
+	void setSigma(double sigma) { sigma_ = sigma; }
+
         double getSigma() const { return sigma_; }
+	
+	void setNtrain(int ntrain) { ntrain_ = ntrain; }
 
         int getNtrain() const { return ntrain_; }
 
-        bool compare(const GtDihedral &gtB) const;
-
-        void setParams(const std::string &params) { params_ = params; }
-
-        void setDihedral(double dihedral) { dihedral_ = dihedral; }
-
-        void setSigma(double sigma) { sigma_ = sigma; }
-
-        void setNtrain(int ntrain) { ntrain_ = ntrain; }
+    private:
+        const std::string atom1_;
+        const std::string atom2_;
+        const std::string atom3_;
+        const std::string atom4_;
+        std::string       params_;
+        double            dihedral_;
+        double            sigma_;
+        int               ntrain_;
 };
+
+using GtDihedralIterator      = typename std::vector<GtDihedral>::iterator;
+using GtDihedralConstIterator = typename std::vector<GtDihedral>::const_iterator;
+
+class GtDihedrals
+{
+    public:
+
+        GtDihedrals(const std::string function, const std::string unit);
+
+	const std::string &getDihedralUnit() const {return gtDihedralUnit_; }
+
+	void setDihedralFtype();
+
+        const std::string &getDihedralFunction() const { return gtDihedralFunction_; }
+
+	unsigned int getDihedralFtype() const { return gtDihedralFtype_; }
+
+	size_t getNgtDihedral() const { return gtDihedral_.size(); }
+
+	GtDihedralIterator getDihedralBegin() { return gtDihedral_.begin(); }
+
+        GtDihedralIterator getDihedralEnd() { return gtDihedral_.end(); }
+
+        GtDihedralConstIterator getDihedralBegin() const { return gtDihedral_.begin(); }
+
+        GtDihedralConstIterator getDihedralEnd() const { return gtDihedral_.end(); }
+
+	GtDihedralIterator findDihedral(const std::string &btype1, 
+					const std::string &btype2,
+					const std::string &btype3, 
+					const std::string &btype4);
+
+        GtDihedralConstIterator findDihedral(const std::string &btype1, 
+					     const std::string &btype2,
+					     const std::string &btype3, 
+					     const std::string &btype4) const;
+
+	bool setDihedralParams(const std::string &btype1,
+                               const std::string &btype2,
+                               const std::string &btype3, 
+                               const std::string &btype4,
+                               double             angle, 
+                               double             sigma,
+                               int                ntrain, 
+                               const std::string &params);
+
+
+	void addDihedral(const std::string &btype1,
+                         const std::string &btype2,
+                         const std::string &btype3, 
+                         const std::string &btype4,
+                         double             dihedral, 
+                         double             sigma,
+                         int                ntrain,
+                         const std::string &params);
+
+        
+	bool searchDihedral(const std::string &btype1, 
+                            const std::string &btype2,
+                            const std::string &btype3,
+                            const std::string &btype4,
+                            double            *dihedral, 
+                            double            *sigma,
+                            int               *ntrain, 
+                            std::string       &params) const;
+         
+   private:
+	std::vector<GtDihedral> gtDihedral_;
+        const std::string       gtDihedralFunction_;
+	const std::string       gtDihedralUnit_;
+        unsigned int            gtDihedralFtype_; 
+};
+
+using GtDihedralsIterator      = typename std::vector<GtDihedrals>::iterator;
+using GtDihedralsConstIterator = typename std::vector<GtDihedrals>::const_iterator;
 
 class Bosque
 {
-    private:
-        std::string bosque_;
-        double      polarizability_;
     public:
-        Bosque(const std::string &bosque,
-               double             polarizability)
-            :
-              bosque_(bosque),
-              polarizability_(polarizability)
-        {}
+
+        Bosque(const std::string &bosque, double polarizability);
 
         const std::string &getBosque() const { return bosque_; }
 
         double getPolarizability() const { return polarizability_; }
+
+    private:
+        std::string bosque_;
+        double      polarizability_;
+
 };
+
+using BosqueIterator      = typename std::vector<Bosque>::iterator;
+using BosqueConstIterator = typename std::vector<Bosque>::const_iterator;
 
 class Miller
 {
+    public:
+        Miller(const std::string &miller,
+               int                atomnumber,
+               double             tauAhc,
+               double             alphaAhp,
+               const std::string &alexandria_equiv);
+
+        const std::string &getMiller() const { return miller_; }
+
+        int getAtomnumber() const { return atomnumber_; }
+
+        double getTauAhc() const { return tauAhc_; }
+
+        double getAlphaAhp() const { return alphaAhp_; }
+
+        const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
+
     private:
         //! Atom type name
         std::string miller_;
@@ -390,94 +543,59 @@ class Miller
         double      alphaAhp_;
         //! Alexandria type
         std::string alexandria_equiv_;
-    public:
-        Miller(const std::string &miller,
-               int                atomnumber,
-               double             tauAhc,
-               double             alphaAhp,
-               const std::string &alexandria_equiv)
-            :
-              miller_(miller),
-              atomnumber_(atomnumber),
-              tauAhc_(tauAhc),
-              alphaAhp_(alphaAhp),
-              alexandria_equiv_(alexandria_equiv) {}
-
-        const std::string &getMiller() const { return miller_; }
-
-        int getAtomnumber() const { return atomnumber_; }
-
-        double getTauAhc() const { return tauAhc_; }
-
-        double getAlphaAhp() const { return alphaAhp_; }
-
-        const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
 };
+
+using MillerIterator      = typename std::vector<Miller>::iterator;
+using MillerConstIterator = typename std::vector<Miller>::const_iterator;
 
 class Symcharges
 {
-    private:
-        std::string central_;
-        std::string attached_;
-        int         numattach_;
     public:
         Symcharges(const std::string &central,
                    const std::string &attached,
-                   int                numattach) :
-            central_(central),
-            attached_(attached),
-            numattach_(numattach)
-        {
-        }
+                   int                numattach);
 
         const std::string &getCentral() const { return central_; }
 
         const std::string &getAttached() const { return attached_; }
 
         int getNumattach() const { return numattach_; }
+
+    private:
+        const std::string central_;
+        const std::string attached_;
+        int               numattach_;
 };
+
+using SymchargesIterator      = typename std::vector<Symcharges>::iterator;
+using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator;
 
 class Epref
 {
-    private:
-        ChargeDistributionModel eqdModel_;
-        std::string             epref_;
     public:
         Epref(ChargeDistributionModel  eqdModel,
-              const std::string       &epref)
-            : eqdModel_(eqdModel),
-              epref_(epref) {}
+              const std::string       &epref);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
 
         const char *getEpref() const { return epref_.c_str(); }
 
         void setEpref(std::string epref) { epref_ = epref; }
+
+    private:
+        ChargeDistributionModel eqdModel_;
+        std::string             epref_;
 };
-//! Loop over EEMprop references
-typedef std::vector<Epref>::iterator EprefIterator;
-//! Loop over EEMprop references
-typedef std::vector<Epref>::const_iterator EprefConstIterator;
+
+using EprefIterator      = typename std::vector<Epref>::iterator;
+using EprefConstIterator = typename std::vector<Epref>::const_iterator;
 
 class RowZetaQ
 {
     public:
-        RowZetaQ(int row, double zeta, double q) : row_(row), zeta_(zeta), q_(q),
-                                                   zetaRef_(zeta)
-        {
-            zindex_ = -1;
-            char buf[256];
-            row_ = std::min(row_, SLATER_MAX);
-            if (row_ < row && debug)
-            {
-                fprintf(debug, "Reducing row from %d to %d\n", row, row_);
-            }
-            snprintf(buf, sizeof(buf), "Row (%d) in the periodic table must be > 0 and <= %d",
-                     row_, SLATER_MAX);
-            GMX_RELEASE_ASSERT(row_ > 0 && row_ <= SLATER_MAX, buf);
-            fixedQ_ = (q != 0);
-        }
 
+        RowZetaQ(int row, double zeta, double q);
+        
         int row() const { return row_; };
 
         void setRow(int row) { row_ = row; }
@@ -518,24 +636,12 @@ class RowZetaQ
         //! Determines whether a charge is fixed (not to be changed)
         bool   fixedQ_;
 };
-//! Loop over RowZetaQ
-typedef std::vector<RowZetaQ>::iterator RowZetaQIterator;
 
-//! Loop over RowZetaQ
-typedef std::vector<RowZetaQ>::const_iterator RowZetaQConstIterator;
+using RowZetaQIterator      = typename std::vector<RowZetaQ>::iterator;
+using RowZetaQConstIterator = typename std::vector<RowZetaQ>::const_iterator;
 
 class Eemprops
 {
-    private:
-        ChargeDistributionModel eqdModel_;
-        std::string             name_;
-        std::string             rowstr_;
-        std::string             zetastr_;
-        std::string             qstr_;
-        double                  J0_;
-        double                  chi0_;
-        std::vector<RowZetaQ>   rzq_;
-
     public:
         Eemprops(ChargeDistributionModel eqdModel,
                  const std::string      &name,
@@ -584,10 +690,20 @@ class Eemprops
         void setQ(int index, double q) { rzq_[index].setQ(q); }
 
         void setRow(int index, int row) { rzq_[index].setRow(row); }
+
+    private:
+        ChargeDistributionModel eqdModel_;
+        std::string             name_;
+        std::string             rowstr_;
+        std::string             zetastr_;
+        std::string             qstr_;
+        double                  J0_;
+        double                  chi0_;
+        std::vector<RowZetaQ>   rzq_;
 };
-typedef std::vector<Eemprops>::iterator EempropsIterator;
-typedef std::vector<Eemprops>::const_iterator EempropsConstIterator;
+
+using EempropsIterator      = typename std::vector<Eemprops>::iterator;
+using EempropsConstIterator = typename std::vector<Eemprops>::const_iterator;
 
 } // namespace aleaxndria
-
 #endif

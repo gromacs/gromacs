@@ -141,8 +141,7 @@ class MyMol
          *
          * \param[in] bUseVsites
          */
-        void MakeSpecialInteractions(const Poldata &pd,
-                                     bool           bUseVsites);
+        void MakeSpecialInteractions(bool  bUseVsites);
 
         /*! \brief
          * Add shell particles
@@ -272,7 +271,7 @@ class MyMol
          * \param[in] gap      Gaussian atom property
          */
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
-                              alexandria::GaussAtomProp &gap);
+                              const Poldata &pd);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.

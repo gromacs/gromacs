@@ -13,6 +13,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -400,8 +401,7 @@ static void set_linear_angle_params(int                        a[],
     }
 }
 
-void GentopVsites::generateSpecial(const Poldata             &pd,
-                                   bool                       bUseVsites,
+void GentopVsites::generateSpecial(bool                       bUseVsites,
                                    t_atoms                   *atoms, 
                                    rvec                     **x,
                                    std::vector<PlistWrapper>  &plist,
@@ -412,14 +412,16 @@ void GentopVsites::generateSpecial(const Poldata             &pd,
     int     j, nlin_at;
     int     a[MAXATOMLIST], aa[2];
     t_param pp;
-    int     ftb, fta, ftp, fti;
+    unsigned int ftb, fta, ftl, ftp, fti;
 
     mergeLinear(bUseVsites);
 
-    ftb     = pd.getBondFtype();
-    fta     = pd.getAngleFtype();
-    ftp     = pd.getDihedralFtype(egdPDIHS);
-    fti     = pd.getDihedralFtype(egdIDIHS);
+    ftb     = F_MORSE;
+    fta     = F_UREY_BRADLEY;
+    ftl     = F_LINEAR_ANGLES;
+    ftp     = F_PIDIHS;
+    fti     = F_IDIHS;
+
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)
     {
@@ -460,6 +462,7 @@ void GentopVsites::generateSpecial(const Poldata             &pd,
                 a[j] = -1;
             }
             delete_params(plist, fta, a);
+	    delete_params(plist, ftl, a);
             delete_params(plist, ftp, a);
             delete_params(plist, fti, a);
 

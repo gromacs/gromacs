@@ -63,7 +63,7 @@ class CompositionSpec
             name_.assign(name); reference_.assign(reference); abbreviation_.assign(abbreviation);
         }
 
-        ~CompositionSpec() {};
+        //~CompositionSpec() {};
 
         //! Return the iComp
         iComp iC() { return ic_; }

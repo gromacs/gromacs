@@ -70,6 +70,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
@@ -156,20 +157,22 @@ void MyMol::getForceConstants(const Poldata &pd)
             case InteractionType_BONDS:
                 for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
                 {
-                    std::string cai, caj;
-                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj))
+                    std::string btype1, btype2;
+                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], btype1) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], btype2))
                     {
                         int    ntrain;
                         double bo = 0;
                         int    lengthUnit;
 
-                        if (-1 == (lengthUnit = string2unit(pd.getLengthUnit().c_str())))
+                        auto   gtbs = pd.getLastGtBonds();
+
+                        if (-1 == (lengthUnit = string2unit(gtbs.getLengthUnit().c_str())))
                         {
-                            gmx_fatal(FARGS, "Unknown length unit %s for bonds", pd.getLengthUnit().c_str());
+                            gmx_fatal(FARGS, "Unknown length unit %s for bonds", gtbs.getLengthUnit().c_str());
                         }
-                        if (!pd.searchBond(cai, caj,
-                                           &xx, &sx, &ntrain, &bo, params))
+                        if (!pd.searchBond(btype1, btype2, &xx, &sx,
+                                           &ntrain, &bo, params))
                         {
                             j->c[0] = convert2gmx(xx, lengthUnit);
                             std::vector<std::string> ptr = gmx::splitString(params);
@@ -195,13 +198,13 @@ void MyMol::getForceConstants(const Poldata &pd)
             case InteractionType_ANGLES:
                 for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
                 {
-                    std::string cai, caj, cak;
-                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak))
+                    std::string btype1, btype2, btype3;
+                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], btype1) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], btype2) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], btype3))
                     {
                         int ntrain;
-                        if (pd.searchAngle(cai, caj, cak,
+                        if (pd.searchAngle(btype1, btype2, btype3,
                                            &xx, &sx, &ntrain, params))
                         {
                             j->c[0] = xx;
@@ -228,21 +231,16 @@ void MyMol::getForceConstants(const Poldata &pd)
             case InteractionType_PDIHS:
             case InteractionType_IDIHS:
             {
-                int egd = egdPDIHS;
-                if (pw->getFtype() == InteractionType_IDIHS)
-                {
-                    egd = egdIDIHS;
-                }
                 for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
                 {
-                    std::string cai, caj, cak, cal;
-                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], cai) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], caj) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], cak) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], cal))
+                    std::string btype1, btype2, btype3, btype4;
+                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], btype1) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], btype2) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], btype3) &&
+                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], btype4))
                     {
                         int ntrain;
-                        if (pd.searchDihedral(egd, cai, caj, cak, cal,
+                        if (pd.searchDihedral(btype1, btype2, btype3, btype4,
                                               &xx, &sx, &ntrain, params))
                         {
                             j->c[0] = xx;
@@ -284,8 +282,7 @@ void MyMol::getForceConstants(const Poldata &pd)
     }
 }
 
-void MyMol::MakeSpecialInteractions(const Poldata &pd,
-                                    bool           bUseVsites)
+void MyMol::MakeSpecialInteractions(bool bUseVsites)
 {
     std::vector < std::vector < unsigned int> > bonds;
     std::vector<int> nbonds;
@@ -345,62 +342,34 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
     }
     int anr = topology_->atoms.nr;
 
-    gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x_,
+    gvt_.generateSpecial(bUseVsites, &topology_->atoms, &x_,
                          plist_, symtab_, atype_, &excls_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
-static void mv_plists(const Poldata             &pd,
-                      std::vector<PlistWrapper> &plist,
-                      bool                       toPoldataFtype)
+static void mv_plists(std::vector<PlistWrapper> &plist)
 {
     for (auto &p : plist)
     {
         switch (p.interactionType())
         {
-            case InteractionType_BONDS :
-                if (toPoldataFtype)
-                {
-                    p.setFtype(pd.getBondFtype());
-                }
-                else
-                {
-                    p.setFtype(F_BONDS);
-                }
-                break;
+            case InteractionType_BONDS:
+	         p.setFtype(F_MORSE);
+                 break;
             case InteractionType_ANGLES:
-                if (toPoldataFtype)
-                {
-                    p.setFtype(pd.getAngleFtype());
-                }
-                else
-                {
-                    p.setFtype(F_ANGLES);
-                }
-                break;
+	         p.setFtype(F_UREY_BRADLEY);
+                 break;
+            case InteractionType_LINEAR_ANGLES:
+		 p.setFtype(F_LINEAR_ANGLES);
+                 break;
             case InteractionType_PDIHS:
-                if (toPoldataFtype)
-                {
-                    p.setFtype(pd.getDihedralFtype(egdPDIHS));
-                }
-                else
-                {
-                    p.setFtype(F_PDIHS);
-                }
-                break;
+		 p.setFtype(F_PDIHS);
+                 break;
             case InteractionType_IDIHS:
-                if (toPoldataFtype)
-                {
-                    p.setFtype(pd.getDihedralFtype(egdIDIHS));
-                }
-                else
-                {
-                    p.setFtype(F_IDIHS);
-                }
-                break;
+		 p.setFtype(F_IDIHS);
+                 break;
             case InteractionType_LJ14:
             case InteractionType_Polarization:
-            case InteractionType_LINEAR_ANGLES:
             case InteractionType_CONSTR:
             case InteractionType_VSITE2:
                 break;
@@ -473,7 +442,7 @@ void MyMol::MakeAngles(bool bPairs,
     rtp.bKeepAllGeneratedDihedrals    = TRUE;
     rtp.bRemoveDihedralIfWithImproper = TRUE;
     rtp.bGenerateHH14Interactions     = TRUE;
-    rtp.nrexcl = nexcl_;
+    rtp.nrexcl                        = nexcl_;
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
 
     t_blocka *EXCL;
@@ -514,15 +483,21 @@ void MyMol::MakeAngles(bool bPairs,
     done_nnb(&nnb);
 
     cp_plist(&plist[F_ANGLES], F_ANGLES, InteractionType_ANGLES, plist_);
+
+    cp_plist(&plist[F_LINEAR_ANGLES], F_LINEAR_ANGLES, InteractionType_LINEAR_ANGLES, plist_);
+
     if (bDihs)
     {
         cp_plist(&plist[F_PDIHS], F_PDIHS, InteractionType_PDIHS, plist_);
     }
+
     cp_plist(&plist[F_IDIHS], F_IDIHS, InteractionType_IDIHS, plist_);
+
     if (bPairs)
     {
         cp_plist(&plist[F_LJ14], F_LJ14, InteractionType_LJ14, plist_);
     }
+
     for (int i = 0; (i < F_NRE); i++)
     {
         if (plist[i].nr > 0)
@@ -678,6 +653,15 @@ static void getBhamParams(const Poldata     &pd,
             *c = std::sqrt((vdwi[2]) * (vdwj[2]));
             break;
         case eCOMB_ARITHMETIC:
+            *a = 0.5 * ((vdwi[0]) + (vdwj[0]));
+            *b = std::sqrt((vdwi[1]) * (vdwj[1]));
+            *c = 0.5 * ((vdwi[2]) + (vdwj[2]));
+            break;
+        case eCOMB_KONG_MASON:
+            *a = std::sqrt((vdwi[0]) * (vdwj[0]));
+            *b = 2.0*(vdwi[1] * vdwj[1])/(vdwi[1] + vdwj[1]);
+            *c = 0.25*((vdwi[2]/vdwi[0])+(vdwj[2]/vdwj[0]))*((vdwi[0]) + (vdwj[0]));
+            break;
         case eCOMB_GEOM_SIG_EPS:
         case eCOMB_NONE:
         case eCOMB_NR:
@@ -768,6 +752,7 @@ static void do_init_mtop(const Poldata            &pd,
                          t_atoms                  *atoms,
                          std::vector<PlistWrapper> plist)
 {
+
     init_mtop(mtop_);
     mtop_->name     = molname;
     mtop_->nmoltype = 1;
@@ -778,21 +763,16 @@ static void do_init_mtop(const Poldata            &pd,
     mtop_->molblock[0].nmol        = 1;
     mtop_->molblock[0].type        = 0;
     mtop_->molblock[0].natoms_mol  = atoms->nr;
-    mtop_->groups.grps[egcENER].nr = 1;
-
-    mtop_->natoms = atoms->nr;
+    mtop_->natoms                  = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
-    for (int i = 0; i < atoms->nr; i++)
-    {
-        mtop_->moltype[0].atoms.atom[i] = atoms->atom[i];
-    }
 
-    //! Count the number of types in this molecule, at least 1 assuming there is one atom
-    int ntype = 1;
-    for (int i = 1; (i < atoms->nr); i++)
+    /*Count the number of atom types in the molecule*/
+    int ntype      = 0;
+    for (int i = 0; (i < atoms->nr); i++)
     {
-        int  itp   = atoms->atom[i].type;
         bool found = false;
+        int  itp   = atoms->atom[i].type;
+        mtop_->moltype[0].atoms.atom[i] = atoms->atom[i];
         for (int j = 0; !found && (j < i); j++)
         {
             found = (itp == atoms->atom[j].type);
@@ -803,9 +783,26 @@ static void do_init_mtop(const Poldata            &pd,
         }
     }
 
-    mtop_->ffparams.atnr   = ntype;
-    mtop_->ffparams.ntypes = ntype*ntype;
-    mtop_->ffparams.reppow = 12;
+    char **atypes[ntype];
+    for (int i = 0; (i < ntype); i++)
+    {
+        char **atp   = atoms->atomtype[i];
+        bool   found = false;
+        for (int j = 0; !found && (j < i); j++)
+        {
+            found = (atp == atoms->atomtype[j]);
+        }
+        if (!found)
+        {
+            atypes[i] = atp;
+        }
+    }
+
+    mtop_->groups.grpname          = atypes;
+    mtop_->groups.grps[egcENER].nr = ntype*ntype;
+    mtop_->ffparams.atnr           = ntype;
+    mtop_->ffparams.ntypes         = ntype*ntype;
+    mtop_->ffparams.reppow         = 12;
 
     int vdw_type = pd.getVdwFtype();
 
@@ -1145,6 +1142,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     immStatus imm = immOK;
     int       ftb;
     t_param   b;
+    std::string btype1, btype2;
 
     if (nullptr != debug)
     {
@@ -1172,43 +1170,43 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     ftb = F_BONDS;
     if (immOK == imm)
     {
-        int lengthUnit = string2unit(pd.getLengthUnit().c_str());
-        if (-1 == lengthUnit)
+        GtBondConstIterator bb;
+        for (GtBondsConstIterator gtBonds = pd.getBondsBegin();
+             gtBonds != pd.getBondsEnd(); gtBonds++)
         {
-            gmx_fatal(FARGS, "No such length unit '%s' for bonds", pd.getLengthUnit().c_str());
-        }
-        memset(&b, 0, sizeof(b));
-        for (alexandria::BondIterator bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
-        {
-            b.a[0] = bi->getAi() - 1;
-            b.a[1] = bi->getAj() - 1;
-            std::string b1, b0;
-            if (!pd.atypeToBtype(*topology_->atoms.atomtype[b.a[0]], b0) ||
-                !pd.atypeToBtype(*topology_->atoms.atomtype[b.a[1]], b1))
+            int lengthUnit = string2unit(gtBonds->getLengthUnit().c_str());
+            if (-1 == lengthUnit)
             {
-                return immAtomTypes;
+                gmx_fatal(FARGS, "No such length unit '%s' for bonds", gtBonds->getLengthUnit().c_str());
             }
-            auto bb = pd.findBond(b0, b1, 0);
-            if (bb != pd.getBondEnd())
+            memset(&b, 0, sizeof(b));
+            for (alexandria::BondIterator bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
             {
-                std::string         pp = bb->getParams();
-                std::vector<double> dd = getDoubles(pp);
-                int                 ii = 0;
-                b.c[ii++] = convert2gmx(bb->getLength(), lengthUnit);
-                for (auto &d : dd)
+                b.a[0] = bi->getAi() - 1;
+                b.a[1] = bi->getAj() - 1;
+		pd.atypeToBtype(*topology_->atoms.atomtype[b.a[0]], btype1);
+		pd.atypeToBtype(*topology_->atoms.atomtype[b.a[1]], btype2);
+                if (pd.findBond(btype1, btype2, 0, &bb))
                 {
-                    b.c[ii++] = d;
+                    std::string         pp = bb->getParams();
+                    std::vector<double> dd = getDoubles(pp);
+                    int                 ii = 0;
+                    b.c[ii++] = convert2gmx(bb->getLength(), lengthUnit);
+                    for (auto &d : dd)
+                    {
+                        b.c[ii++] = d;
+                    }
+                    add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
                 }
-                add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
-            }
-            else
-            {
-                // Insert dummy bond to be replaced later
-                for (int i = 0; i < MAXFORCEPARAM; i++)
+                else
                 {
-                    b.c[i] = 0;
+                    // Insert dummy bond to be replaced later
+                    for (int i = 0; i < MAXFORCEPARAM; i++)
+                    {
+                        b.c[i] = 0;
+                    }
+                    add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
                 }
-                add_param_to_plist(plist_, ftb, InteractionType_BONDS, b);
             }
         }
         auto pw = SearchPlist(plist_, ftb);
@@ -1217,22 +1215,23 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             imm = immGenBonds;
         }
     }
+
     //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
     //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     if (immOK == imm)
     {
-        /* Make Angles and Dihedrals. This needs the bonds to be F_BONDS. */
+        /* Make Angles, Dihedrals and 13 interaction. This needs the bonds to be F_BONDS. */
         MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
         //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
-        MakeSpecialInteractions(pd, bUseVsites);
+        MakeSpecialInteractions(bUseVsites);
 
         getForceConstants(pd);
 
         /* Move the plist_ to the correct function */
-        mv_plists(pd, plist_, true);
+        mv_plists(plist_);
         //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
 
@@ -1320,6 +1319,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
         }
     }
     ltop_                = gmx_mtop_generate_local_top(mtop_, false);
+    //printf("Gamma2 is %0.1f\n", ltop_->idef.iparams->bham.c);
     ltop_->idef.nthreads = 1;
     setup_bonded_threading(fr_, &ltop_->idef);
 
@@ -1339,7 +1339,6 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
     {
         unsigned long flags = ~0;
         //flags = GMX_FORCE_NS | GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES | GMX_FORCE_ENERGY | GMX_FORCE_STATECHANGED;
-
         do_force(fplog, cr, inputrec_, 0,
                  &my_nrnb, wcycle, ltop_,
                  &(mtop_->groups),
@@ -1541,7 +1540,8 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
     }
     if (nullptr != tabfn)
     {
-        inputrec_->vdwtype     = evdwUSER;
+        /*Wang-Buckingham is implemented in nb-generic; thus, no need to read table now */
+        //inputrec_->vdwtype   = evdwUSER;
         inputrec_->coulombtype = eelUSER;
     }
     init_forcerec(nullptr, fr_, nullptr, inputrec_, mtop_, cr,
@@ -1798,23 +1798,39 @@ static void write_top2(FILE *out, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds2(out, d_bonds,
-                       pd.getBondFtype(),
-                       pd.getBondFtype(),
-                       plist_);
+
+        for (GtBondsConstIterator gtbs = pd.getBondsBegin();
+             gtbs != pd.getBondsEnd(); gtbs++)
+        {
+            print_bondeds2(out, d_bonds,
+                           gtbs->getBondFtype(),
+                           gtbs->getBondFtype(),
+                           plist_);
+        }
+
         print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
-        print_bondeds2(out, d_angles, pd.getAngleFtype(),
-                       pd.getAngleFtype(), plist_);
-        print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES,
-                       plist_);
-        print_bondeds2(out, d_dihedrals, F_PDIHS,
-                       pd.getDihedralFtype( egdPDIHS), plist_);
-        /* Check whether the dihedrals use the same function */
-        print_bondeds2(out, d_dihedrals, F_IDIHS,
-                       pd.getDihedralFtype( egdIDIHS), plist_);
+
+        for (GtAnglesConstIterator gtas = pd.getAnglesBegin();
+             gtas != pd.getAnglesEnd(); gtas++)
+        {
+            print_bondeds2(out, d_angles,
+                           gtas->getAngleFtype(),
+                           gtas->getAngleFtype(),
+                           plist_);
+        }
+
+        for (GtDihedralsConstIterator gtds = pd.getDihedralsBegin();
+             gtds != pd.getDihedralsEnd(); gtds++)
+        {
+            print_bondeds2(out, d_dihedrals,
+                           gtds->getDihedralFtype(),
+                           gtds->getDihedralFtype(),
+                           plist_);
+        }
+
         print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
         print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION,
                        plist_);
@@ -2368,11 +2384,11 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 }
 
 immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
-                             alexandria::GaussAtomProp &gap)
+                             const Poldata &pd)
 {
     immStatus    imm = immOK;
     unsigned int m, nwarn = 0;
-    double       value, dv0, dv298, T = -1, error, vec[3];
+    double       value, Hatom, T = -1, error, vec[3];
     tensor       quadrupole;
     std::string  myref, mylot;
     int          ia;
@@ -2425,16 +2441,14 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         Emol  = value;
         for (ia = 0; (ia < topology_->atoms.nr); ia++)
         {
-            if (gap.getValue(*topology_->atoms.atomname[ia],
-                             (char *)"exp", (char *)"DHf(0K)", 0, &dv0) &&
-                gap.getValue(*topology_->atoms.atomname[ia],
-                             (char *)"exp", (char *)"H(0K)-H(298.15K)",
-                             298.15, &dv298))
+            if (pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[ia], &Hatom))
             {
-                Emol -= convert2gmx(dv0+dv298, eg2cHartree);
+                Emol -= Hatom;
             }
             else
             {
+                fprintf(debug, "WARNING: NO ref enthalpy for molecule %s.\n",
+                        molProp()->getMolname().c_str());
                 Emol = 0;
                 break;
             }
@@ -2495,94 +2509,102 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     int          lu;
     double       value;
 
-    lu = string2unit(pd.getLengthUnit().c_str());
-    if (-1 == lu)
-    {
-        gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
-                  pd.getLengthUnit().c_str());
-    }
     switch (iType)
     {
         case InteractionType_BONDS:
         {
-            int ftb = pd.getBondFtype();
-            for (int i = 0; (i < ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
+            for (GtBondsConstIterator gtbs = pd.getBondsBegin();
+                 gtbs != pd.getBondsEnd(); gtbs++)
             {
-                int         tp  = ltop_->idef.il[ftb].iatoms[i];
-                int         ai  = ltop_->idef.il[ftb].iatoms[i+1];
-                int         aj  = ltop_->idef.il[ftb].iatoms[i+2];
-                std::string aai, aaj;
-                if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
-                    pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
+                lu = string2unit(gtbs->getLengthUnit().c_str());
+                if (-1 == lu)
                 {
-                    /* Here unfortunately we need a case statement for the types */
-                    double sigma, bondorder;
-                    int    ntrain;
-                    if (pd.searchBond(aai, aaj, &value, &sigma, &ntrain, &bondorder, params))
+                    gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
+                              gtbs->getLengthUnit().c_str());
+                }
+                int ftb = gtbs->getBondFtype();
+                for (int i = 0; (i < ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
+                {
+                    int         tp  = ltop_->idef.il[ftb].iatoms[i];
+                    int         ai  = ltop_->idef.il[ftb].iatoms[i+1];
+                    int         aj  = ltop_->idef.il[ftb].iatoms[i+2];
+                    std::string aai, aaj;
+                    if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
+                        pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
                     {
-                        mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
-
-                        std::vector<std::string> ptr = gmx::splitString(params);
-                        int n = 0;
-                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        /* Here unfortunately we need a case statement for the types */
+                        double sigma, bondorder;
+                        int    ntrain;
+                        if (pd.searchBond(aai, aaj, &value, &sigma, &ntrain, &bondorder, params))
                         {
-                            if (pi->length() > 0)
+                            mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
+
+                            std::vector<std::string> ptr = gmx::splitString(params);
+                            int n = 0;
+                            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                             {
-                                if (n == 0)
+                                if (pi->length() > 0)
                                 {
-                                    mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
+                                    if (n == 0)
+                                    {
+                                        mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
+                                    }
+                                    else
+                                    {
+                                        mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
+                                    }
+                                    n++;
                                 }
-                                else
-                                {
-                                    mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
-                                }
-                                n++;
                             }
                         }
                     }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "There are no parameters for bond %s-%s in the force field", aai.c_str(), aaj.c_str());
+                    else
+                    {
+                        gmx_fatal(FARGS, "There are no parameters for bond %s-%s in the force field", aai.c_str(), aaj.c_str());
+                    }
                 }
             }
         }
         break;
         case InteractionType_ANGLES:
         {
-            int fta = pd.getAngleFtype();
-            for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
+            for (GtAnglesConstIterator gtas = pd.getAnglesBegin();
+                 gtas != pd.getAnglesEnd(); gtas++)
             {
-                int         tp  = ltop_->idef.il[fta].iatoms[i];
-                int         ai  = ltop_->idef.il[fta].iatoms[i+1];
-                int         aj  = ltop_->idef.il[fta].iatoms[i+2];
-                int         ak  = ltop_->idef.il[fta].iatoms[i+3];
-                std::string aai, aaj, aak;
-                if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
-                    pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
-                    pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
+                int fta = gtas->getAngleFtype();
+                for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
                 {
-                    double sigma;
-                    int    ntrain;
-                    if (pd.searchAngle( aai, aaj, aak, &value,
-                                        &sigma, &ntrain, params))
+                    int         tp  = ltop_->idef.il[fta].iatoms[i];
+                    int         ai  = ltop_->idef.il[fta].iatoms[i+1];
+                    int         aj  = ltop_->idef.il[fta].iatoms[i+2];
+                    int         ak  = ltop_->idef.il[fta].iatoms[i+3];
+                    std::string aai, aaj, aak;
+                    if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
+                        pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
+                        pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                     {
-                        mtop_->ffparams.iparams[tp].harmonic.rA     =
-                            mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                        auto ptr = gmx::splitString(params);
-                        for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        double sigma;
+                        int    ntrain;
+                        if (pd.searchAngle( aai, aaj, aak, &value,
+                                            &sigma, &ntrain, params))
                         {
-                            if (pi->length() > 0)
+                            mtop_->ffparams.iparams[tp].harmonic.rA     =
+                                mtop_->ffparams.iparams[tp].harmonic.rB = value;
+                            auto ptr = gmx::splitString(params);
+                            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                             {
-                                mtop_->ffparams.iparams[tp].harmonic.krA     =
-                                    mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                                if (pi->length() > 0)
+                                {
+                                    mtop_->ffparams.iparams[tp].harmonic.krA     =
+                                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                                }
                             }
                         }
                     }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "here are no parameters for angle %s-%s-%s in the force field", aai.c_str(), aaj.c_str(), aak.c_str());
+                    else
+                    {
+                        gmx_fatal(FARGS, "here are no parameters for angle %s-%s-%s in the force field", aai.c_str(), aaj.c_str(), aak.c_str());
+                    }
                 }
             }
         }
@@ -2590,9 +2612,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case InteractionType_PDIHS:
         case InteractionType_IDIHS:
         {
-            for (int dd = 0; (dd < egdNR); dd++)
+            for (GtDihedralsConstIterator gtds = pd.getDihedralsBegin();
+                 gtds != pd.getDihedralsEnd(); gtds++)
             {
-                int ftd  = pd.getDihedralFtype(dd);
+                int ftd  = gtds->getDihedralFtype();
                 for (int i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
                 {
                     int         tp  = ltop_->idef.il[ftd].iatoms[i];
@@ -2608,11 +2631,11 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     {
                         double sigma;
                         int    ntrain;
-                        if ((gt = pd.searchDihedral(dd, aai, aaj, aak, aal,
+                        if ((gt = pd.searchDihedral(aai, aaj, aak, aal,
                                                     &value, &sigma, &ntrain, params)) != 0)
                         {
                             std::vector<std::string> ptr = gmx::splitString(params);
-                            if (dd == egdPDIHS)
+                            if (ftd == F_PDIHS)
                             {
                                 mtop_->ffparams.iparams[tp].pdihs.phiA = value;
 

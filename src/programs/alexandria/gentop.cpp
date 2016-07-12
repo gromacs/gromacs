@@ -170,7 +170,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bPairs         = FALSE, bPBC = TRUE;
     static gmx_bool                  bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
     static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = FALSE, bEntropy = FALSE;
-    static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE, bDihedral = FALSE;
+    static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE, bDihedral = FALSE, b13 = FALSE;
     static char                     *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
     static int                       maxpot         = 0;
     static int                       seed           = 0;
@@ -196,6 +196,8 @@ int alex_gentop(int argc, char *argv[])
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-dih",    FALSE, etBOOL, {&bDihedral},
           "Add dihedrals to the topology" },
+	{ "-ub",    FALSE, etBOOL, {&b13},
+          "Add urey-bradely to the topology" },
         { "-H14",    FALSE, etBOOL, {&bH14},
           "HIDDENUse 3rd neighbour interactions for hydrogen atoms" },
         { "-remdih", FALSE, etBOOL, {&bRemoveDih},
@@ -432,7 +434,7 @@ int alex_gentop(int argc, char *argv[])
         const char *tabfn = opt2fn_null("-table", NFILE, fnm);
         if (NULL == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
-            gmx_fatal(FARGS, "Can not generate charges in a polarizable system with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+            gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
         }
         imm = mymol.GenerateCharges(pd, aps,
                                     iChargeDistributionModel,
