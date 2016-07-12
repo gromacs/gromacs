@@ -47,8 +47,12 @@
 
 #include <assert.h>
 
+#include <cctype>
 #include <cstdio>
 
+#include <algorithm>
+#include <array>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -82,8 +86,11 @@ static void fclose_wrapper(FILE *fp)
 std::string makeBinaryCacheFilename(const std::string &kernelFilename,
                                     cl_device_id       deviceId)
 {
-    char   deviceName[1024];
-    cl_int cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, sizeof(deviceName), deviceName, NULL);
+    // Note that the OpenCL API is defined in terms of bytes, and we
+    // assume that sizeof(char) is one byte.
+    std::array<char, 1024> deviceName;
+    size_t                 deviceNameLength;
+    cl_int                 cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, deviceName.size(), deviceName.data(), &deviceNameLength);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s", ocl_get_error_string(cl_error).c_str())));
@@ -91,10 +98,16 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
 
     std::string cacheFilename = "OCL-cache";
     /* remove the kernel source suffix */
-    cacheFilename += "_" + stripSuffixIfPresent(kernelFilename, ".cl");
-    /* the device name often contains spaces, we don't like those */
-    cacheFilename += "_" + replaceAll(stripString(deviceName), " ", "-");
-    cacheFilename  = replaceAll(cacheFilename, ".", "_");
+    cacheFilename += "_" + stripSuffixIfPresent(kernelFilename, ".cl") + "_";
+    /* We want a cache filename that's somewhat human readable, and
+       describes the device because it's based on the vendor's
+       information, but also always works as a filename. So we remove
+       characters that are commonly illegal in filenames (dot, slash),
+       or sometimes inconvenient (whitespace), or perhaps problematic
+       (symbols), by permitting only alphanumeric characters from the
+       current locale. We assume these work well enough in a
+       filename. */
+    std::copy_if(deviceName.begin(), deviceName.begin() + deviceNameLength, std::back_inserter(cacheFilename), isalnum);
     cacheFilename += ".bin";
 
     return cacheFilename;
