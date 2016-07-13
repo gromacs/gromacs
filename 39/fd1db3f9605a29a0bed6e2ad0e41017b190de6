@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+1: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Wed, 13 Jul 2016 14:39:04 +0200
+Reviewed-on: https://gerrit.gromacs.org/6035
+Project: gromacs
+Branch: refs/heads/master
