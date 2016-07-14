@@ -143,10 +143,15 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
         bFirst = FALSE;
     }
 
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->step);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->nre);
-    *bOK = *bOK && gmx_fio_do_real(fio, sh->t);
-    *bOK = *bOK && gmx_fio_do_real(fio, sh->lambda);
+    /* Note that TRR wasn't defined to be extensible, so we can't fix
+     * the fact that we used a default int for the step number, which
+     * is typically defined to be signed and 32 bit. */
+    int intStep = sh->step;
+    *bOK     = *bOK && gmx_fio_do_int(fio, intStep);
+    sh->step = intStep;
+    *bOK     = *bOK && gmx_fio_do_int(fio, sh->nre);
+    *bOK     = *bOK && gmx_fio_do_real(fio, sh->t);
+    *bOK     = *bOK && gmx_fio_do_real(fio, sh->lambda);
 
     return *bOK;
 }
@@ -188,7 +193,7 @@ do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
 }
 
 static gmx_bool
-do_trr_frame(t_fileio *fio, bool bRead, int *step, real *t, real *lambda,
+do_trr_frame(t_fileio *fio, bool bRead, gmx_int64_t *step, real *t, real *lambda,
              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     gmx_trr_header_t *sh;
@@ -263,7 +268,7 @@ gmx_bool gmx_trr_read_frame_header(t_fileio *fio, gmx_trr_header_t *header, gmx_
     return do_trr_frame_header(fio, true, header, bOK);
 }
 
-void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
+void gmx_trr_write_single_frame(const char *fn, gmx_int64_t step, real t, real lambda,
                                 const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "w");
@@ -271,7 +276,7 @@ void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
     gmx_trr_close(fio);
 }
 
-void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
+void gmx_trr_read_single_frame(const char *fn, gmx_int64_t *step, real *t, real *lambda,
                                rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     t_fileio *fio = gmx_trr_open(fn, "r");
@@ -279,7 +284,7 @@ void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
     gmx_trr_close(fio);
 }
 
-void gmx_trr_write_frame(t_fileio *fio, int step, real t, real lambda,
+void gmx_trr_write_frame(t_fileio *fio, gmx_int64_t step, real t, real lambda,
                          const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f)
 {
     if (!do_trr_frame(fio, false, &step, &t, &lambda, const_cast<rvec *>(box), &natoms, const_cast<rvec *>(x), const_cast<rvec *>(v), const_cast<rvec *>(f)))
@@ -289,7 +294,7 @@ void gmx_trr_write_frame(t_fileio *fio, int step, real t, real lambda,
 }
 
 
-gmx_bool gmx_trr_read_frame(t_fileio *fio, int *step, real *t, real *lambda,
+gmx_bool gmx_trr_read_frame(t_fileio *fio, gmx_int64_t *step, real *t, real *lambda,
                             rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     return do_trr_frame(fio, true, step, t, lambda, box, natoms, x, v, f);

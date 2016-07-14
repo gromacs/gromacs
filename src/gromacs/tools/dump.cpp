@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -232,7 +232,7 @@ static void list_trr(const char *fn)
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  lambda=%10g\n",
+            fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  lambda=%10g\n",
                     trrheader.natoms, trrheader.step, trrheader.t, trrheader.lambda);
             if (trrheader.box_size)
             {
@@ -272,14 +272,15 @@ static void list_trr(const char *fn)
 
 void list_xtc(const char *fn)
 {
-    t_fileio  *xd;
-    int        indent;
-    char       buf[256];
-    rvec      *x;
-    matrix     box;
-    int        nframe, natoms, step;
-    real       prec, time;
-    gmx_bool   bOK;
+    t_fileio   *xd;
+    int         indent;
+    char        buf[256];
+    rvec       *x;
+    matrix      box;
+    int         nframe, natoms;
+    gmx_int64_t step;
+    real        prec, time;
+    gmx_bool    bOK;
 
     xd = open_xtc(fn, "r");
     read_first_xtc(xd, &natoms, &step, &time, box, &x, &prec, &bOK);
@@ -291,7 +292,7 @@ void list_xtc(const char *fn)
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  prec=%10g\n",
+        fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  prec=%10g\n",
                 natoms, step, time, prec);
         pr_rvecs(stdout, indent, "box", box, DIM);
         pr_rvecs(stdout, indent, "x", x, natoms);

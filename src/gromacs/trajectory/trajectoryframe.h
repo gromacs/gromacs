@@ -57,7 +57,7 @@ typedef struct t_trxframe
     gmx_bool        bTitle;
     const char     *title;     /* title of the frame            */
     gmx_bool        bStep;
-    int             step;      /* MD step number                   */
+    gmx_int64_t     step;      /* MD step number                   */
     gmx_bool        bTime;
     real            time;      /* time of the frame                */
     gmx_bool        bLambda;

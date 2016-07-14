@@ -54,6 +54,17 @@
  * The file handle returned from gmx_trr_open()
  * can also be used with the routines in gmxfio.h
  *
+ * Note that TRR was designed to represent a step number as a default
+ * integer, which depends on the implementation, but is typically and
+ * 32 bit. We didn't design the format to be extensible, so we can't
+ * fix the fact that after 2^31 frames, step numbers will wrap to be
+ * negative. Fortunately, this tends not to cause serious problems,
+ * and we've fixed it in TNG. Meanwhile, the implementation pretends
+ * to the rest of GROMACS that it functions with gmx_int64_t like all
+ * other step numbers, but the actual range in practice depends on the
+ * defaults of the implementation in use now (or when the file was
+ * written).
+ *
  **************************************************************/
 
 #ifdef __cplusplus
@@ -66,24 +77,24 @@ struct t_fileio;
 /* sizes of the structs in a trr file, sizes are given in bytes. */
 typedef struct gmx_trr_header_t
 {
-    gmx_bool  bDouble;   /* Double precision?                   */
-    int       ir_size;   /* Backward compatibility              */
-    int       e_size;    /* Backward compatibility              */
-    int       box_size;  /* Non zero if a box is present        */
-    int       vir_size;  /* Backward compatibility              */
-    int       pres_size; /* Backward compatibility              */
-    int       top_size;  /* Backward compatibility              */
-    int       sym_size;  /* Backward compatibility              */
-    int       x_size;    /* Non zero if coordinates are present */
-    int       v_size;    /* Non zero if velocities are present  */
-    int       f_size;    /* Non zero if forces are present      */
+    gmx_bool    bDouble;   /* Double precision?                   */
+    int         ir_size;   /* Backward compatibility              */
+    int         e_size;    /* Backward compatibility              */
+    int         box_size;  /* Non zero if a box is present        */
+    int         vir_size;  /* Backward compatibility              */
+    int         pres_size; /* Backward compatibility              */
+    int         top_size;  /* Backward compatibility              */
+    int         sym_size;  /* Backward compatibility              */
+    int         x_size;    /* Non zero if coordinates are present */
+    int         v_size;    /* Non zero if velocities are present  */
+    int         f_size;    /* Non zero if forces are present      */
 
-    int       natoms;    /* The total number of atoms           */
-    int       step;      /* Current step number                 */
-    int       nre;       /* Backward compatibility              */
-    real      t;         /* Current time                        */
-    real      lambda;    /* Current value of lambda             */
-    int       fep_state; /* Current value of alchemical state   */
+    int         natoms;    /* The total number of atoms           */
+    gmx_int64_t step;      /* Current step number                 */
+    int         nre;       /* Backward compatibility              */
+    real        t;         /* Current time                        */
+    real        lambda;    /* Current value of lambda             */
+    int         fep_state; /* Current value of alchemical state   */
 } gmx_trr_header_t;
 
 struct t_fileio *gmx_trr_open(const char *fn, const char *mode);
@@ -104,14 +115,14 @@ gmx_bool gmx_trr_read_frame_data(struct t_fileio *fio, gmx_trr_header_t *sh,
  * Return FALSE on error
  */
 
-gmx_bool gmx_trr_read_frame(struct t_fileio *fio, int *step, real *t, real *lambda,
+gmx_bool gmx_trr_read_frame(struct t_fileio *fio, gmx_int64_t *step, real *t, real *lambda,
                             rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
 /* Read a trr frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.
  * return FALSE on error
  */
 
-void gmx_trr_write_frame(struct t_fileio *fio, int step, real t, real lambda,
+void gmx_trr_write_frame(struct t_fileio *fio, gmx_int64_t step, real t, real lambda,
                          const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f);
 /* Write a trr frame to file fp, box, x, v, f may be NULL */
 
@@ -119,12 +130,12 @@ void gmx_trr_read_single_header(const char *fn, gmx_trr_header_t *header);
 /* Read the header of a trr file from fn, and close the file afterwards.
  */
 
-void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
+void gmx_trr_read_single_frame(const char *fn, gmx_int64_t *step, real *t, real *lambda,
                                rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
 /* Read a single trr frame from file fn, which is closed afterwards
  */
 
-void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
+void gmx_trr_write_single_frame(const char *fn, gmx_int64_t step, real t, real lambda,
                                 const rvec *box, int natoms, const rvec *x, const rvec *v, const rvec *f);
 /* Write a single trr frame to file fn, which is closed afterwards */
 
