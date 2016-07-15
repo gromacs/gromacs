@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Vedran Miletić <vedran@miletic.net>
+Code-Review+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Fri, 15 Jul 2016 14:58:05 +0200
+Reviewed-on: https://gerrit.gromacs.org/6042
+Project: gromacs
+Branch: refs/heads/release-2016
