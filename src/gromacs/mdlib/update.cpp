@@ -70,6 +70,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -77,6 +78,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+
+using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -134,48 +137,236 @@ static void do_update_md(int start, int nrend, double dt,
 
     if (bNH || bPR)
     {
-        /* Update with coupling to extended ensembles, used for
-         * Nose-Hoover and Parrinello-Rahman coupling
-         * Nose-Hoover uses the reversible leap-frog integrator from
-         * Holian et al. Phys Rev E 52(3) : 2338, 1995
-         */
-        for (n = start; n < nrend; n++)
+        if (bNH || cFREEZE || cACC || nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] || bNEMD)
         {
-            imass = invmass[n];
-            if (cFREEZE)
+            /* Update with coupling to extended ensembles, used for
+             * Nose-Hoover and Parrinello-Rahman coupling
+             * Nose-Hoover uses the reversible leap-frog integrator from
+             * Holian et al. Phys Rev E 52(3) : 2338, 1995
+             */
+#pragma simd private(imass, lg, vrel, vn) firstprivate(gf, ga, gt, vxi)
+            for (n = start; n < nrend; n++)
             {
-                gf   = cFREEZE[n];
-            }
-            if (cACC)
-            {
-                ga   = cACC[n];
-            }
-            if (cTC)
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
-            if (bNH)
-            {
-                vxi   = nh_vxi[gt];
-            }
-            rvec_sub(v[n], gstat[ga].u, vrel);
+                imass = invmass[n];
+                if (cFREEZE)
+                {
+                    gf = cFREEZE[n];
+                }
+                if (cACC)
+                {
+                    ga = cACC[n];
+                }
+                if (cTC)
+                {
+                    gt = cTC[n];
+                }
+                lg = tcstat[gt].lambda;
+                if (bNH)
+                {
+                    vxi = nh_vxi[gt];
+                }
+                rvec_sub(v[n], gstat[ga].u, vrel);
 
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                    {
+                        vnrel = (lg * vrel[d] + dt * (imass * f[n][d] - 0.5 * vxi * vrel[d]
+                                                      - iprod(M[d], vrel))) / (1 + 0.5 * vxi * dt);
+                        /* do not scale the mean velocities u */
+                        vn           = gstat[ga].u[d] + accel[ga][d] * dt + vnrel;
+                        v[n][d]      = vn;
+                        xprime[n][d] = x[n][d] + vn * dt;
+                    }
+                    else
+                    {
+                        v[n][d]      = 0.0;
+                        xprime[n][d] = x[n][d];
+                    }
+                }
+            }
+        }
+        else if (cTC)
+        {
+            /* Plain update with Berendsen/v-rescale and PR coupling */
+#pragma simd private(imass, lg, vn) firstprivate(gt)
+            for (n = start; n < nrend; n++)
+            {
+                imass = invmass[n];
+                if (cTC)
+                {
+                    gt = cTC[n];
+                }
+                lg = tcstat[gt].lambda;
+
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
+                    {
+                        vn           = (lg * v[n][d] + dt * (imass * f[n][d] - iprod(M[d], v[n])));
+                        v[n][d]      = vn;
+                        xprime[n][d] = x[n][d] + vn * dt;
+                    }
+                    else
+                    {
+                        v[n][d]      = 0.0;
+                        xprime[n][d] = x[n][d];
+                    }
+                }
+            }
+        }
+        else //Plain update with Berendsen/v-rescale and PR coupling and no groups */
+        {
+#if 0        //correct with shell, vsite, non-isotropic
+            lg = tcstat[0].lambda;
+#pragma simd private(imass, vn) firstprivate(gt)
+            for (n = start; n < nrend; n++)
+            {
+                imass = invmass[n];
+                for (d = 0; d < DIM; d++)
+                {
+                    if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
+                    {
+                        vn           = (lg * v[n][d] + dt * (imass * f[n][d] - iprod(M[d], v[n])));
+                        v[n][d]      = vn;
+                        xprime[n][d] = x[n][d] + vn * dt;
+                    }
+                    else
+                    {
+                        v[n][d]      = 0.0;
+                        xprime[n][d] = x[n][d];
+                    }
+                }
+            }
+#elif 0     //asumming no shell & vsite
+            lg = tcstat[0].lambda;
+#pragma simd private(imass, vn) firstprivate(gt)
+            for (n = start; n < nrend; n++)
+            {
+                imass = invmass[n];
+                for (d = 0; d < DIM; d++)
+                {
+                    vn           = (lg * v[n][d] + dt * (imass * f[n][d] - iprod(M[d], v[n])));
+                    v[n][d]      = vn;
+                    xprime[n][d] = x[n][d] + vn * dt;
+                }
+            }
+#elif 0     //assmining diagonal M (isotropic)
+            lg = tcstat[0].lambda;
+#pragma omp simd private(imass, vn, d)
+            for (n = start; n < nrend; n++)
+            {
+                imass = invmass[n];
+#pragma unroll
+                for (d = 0; d < DIM; d++)
+                {
+                    vn           = (lg * v[n][d] + dt * (imass * f[n][d] - M[d][d]*v[n][d]));
+                    v[n][d]      = vn;
+                    xprime[n][d] = x[n][d] + vn * dt;
+                }
+            }
+#elif 0     //intrinsic version with gatherLoadUTranspose<3>
+            SimdReal lg_S(tcstat[0].lambda);
+            GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH) n_S[GMX_SIMD_REAL_WIDTH];
+            for (n = 0; n < GMX_SIMD_REAL_WIDTH; n++)
+            {
+                n_S[n] = n;
+            }
+
+            int o = 0;
+            //for (n = start; n < nrend-GMX_SIMD_REAL_WIDTH+1; n += GMX_SIMD_REAL_WIDTH) { //version for peel loop
+            for (n = start; n < nrend; n += GMX_SIMD_REAL_WIDTH)
+            {
+                if (n+GMX_SIMD_REAL_WIDTH > nrend)   //overwriting  n_S to avoid the need for a peel loop
+                {
+                    int m;
+                    o = GMX_SIMD_REAL_WIDTH-(nrend-start)%GMX_SIMD_REAL_WIDTH;
+                    for (m = 0; m <= o; m++)
+                    {
+                        n_S[m] = 0; //assumes that transposeScatterStoreU overwrites earlier with later ones
+                    }
+                    for (; m < GMX_SIMD_REAL_WIDTH; m++)
+                    {
+                        n_S[m] = n_S[m-1]+1;
+                    }
+                }
+                SimdReal imass_S = loadU(invmass + n - o);
+                SimdReal x_S[3], v_S[3], f_S[3], vn_S[3], xp_S[3];
+                gatherLoadUTranspose<3>(reinterpret_cast<const real *>(x + n), n_S, &x_S[0], &x_S[1], &x_S[2]);
+                gatherLoadUTranspose<3>(reinterpret_cast<const real *>(v + n), n_S, &v_S[0], &v_S[1], &v_S[2]);
+                gatherLoadUTranspose<3>(reinterpret_cast<const real *>(f + n), n_S, &f_S[0], &f_S[1], &f_S[2]);
+                for (d = 0; d < DIM; d++)
+                {
+                    vn_S[d] = (lg_S * v_S[d] + dt * (imass_S * f_S[d] - M[d][d] * v_S[d]));
+                    xp_S[d] = x_S[d] + vn_S[d] * dt;
+                }
+                transposeScatterStoreU<3>(reinterpret_cast<real *>(v + n), n_S, vn_S[0], vn_S[1], vn_S[2]);
+                transposeScatterStoreU<3>(reinterpret_cast<real *>(xprime + n), n_S, xp_S[0], xp_S[1], xp_S[2]);
+            }
+            //alternative to modifying n_S: use a peel loop:
+            /*
+               lg = tcstat[0].lambda;
+               for (; n < nrend; n++) {
+                imass = invmass[n];
+                for (d = 0; d < DIM; d++) {
+                    vn = (lg * v[n][d] + dt * (imass * f[n][d] - M[d][d]*v[n][d]));
+                    v[n][d] = vn;
+                    xprime[n][d] = x[n][d] + vn * dt;
+                }
+               }*/
+#elif 1     //intrinsic version with expandScalarsToTriplets
+            ;
+            //repeat diagonal M into three vectors
+            SimdReal M_S[DIM];
             for (d = 0; d < DIM; d++)
             {
-                if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+                GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) im[GMX_SIMD_REAL_WIDTH];
+                for (n = 0; n < GMX_SIMD_REAL_WIDTH; n++)
                 {
-                    vnrel = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                              - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
-                    /* do not scale the mean velocities u */
-                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel;
-                    v[n][d]        = vn;
-                    xprime[n][d]   = x[n][d]+vn*dt;
+                    int ed = (n+d)%3;
+                    im[n] = M[ed][ed];
                 }
-                else
+                M_S[d] = load(im);
+            }
+            SimdReal lg_S(tcstat[0].lambda);
+            int      m;
+            for (m = start, n = start*DIM;; m += GMX_SIMD_REAL_WIDTH)
+            {
+                SimdReal imass_S[DIM];
+                expandScalarsToTriplets(loadU(invmass + m), &imass_S[0], &imass_S[1], &imass_S[2]); //todo: loads past end
+                for (d = 0; d < DIM; d++, n += GMX_SIMD_REAL_WIDTH)
                 {
-                    v[n][d]        = 0.0;
-                    xprime[n][d]   = x[n][d];
+                    if (n > nrend * DIM - GMX_SIMD_REAL_WIDTH)
+                    {
+                        goto loop_end;
+                    }
+                    SimdReal x_S  = loadU(reinterpret_cast<real *>(x) + n);
+                    SimdReal v_S  = loadU(reinterpret_cast<real *>(v) + n);
+                    SimdReal f_S  = loadU(reinterpret_cast<real *>(f) + n);
+                    SimdReal vn_S = (lg_S * v_S + dt * (imass_S[d] * f_S - M_S[d] * v_S));
+                    SimdReal xp_S = x_S + vn_S * dt;
+                    storeU(reinterpret_cast<real *>(v) + n, vn_S); //we would require a maskStore to avoid writing a seperate peel loop
+                    storeU(reinterpret_cast<real *>(xprime) + n, xp_S);
+                }
+            }
+loop_end:
+            lg = tcstat[0].lambda;
+            for (; n < nrend*DIM; n++)
+            {
+                m            = n/3;
+                d            = n%3;
+                imass        = invmass[m];
+                vn           = (lg * v[m][d] + dt * (imass * f[m][d] - M[d][d]*v[m][d]));
+                v[m][d]      = vn;
+                xprime[m][d] = x[m][d] + vn * dt;
+            }
+#endif
+            if (debug)
+            {
+                for (n = start; n < nrend; n++)
+                {
+                    fprintf(debug, "x[%d]: %f %f %f\n", n, xprime[n][0], xprime[n][1], xprime[n][2]);
+                    fprintf(debug, "v[%d]: %f %f %f\n", n, v[n][0], v[n][1], v[n][2]);
                 }
             }
         }
@@ -271,7 +462,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     if (bExtended)
     {
         g        = 0.25*dt*veta*alpha;
-        mv1      = exp(-g);
+        mv1      = std::exp(-g);
         mv2      = gmx::series_sinhx(g);
     }
     else
@@ -319,7 +510,7 @@ static void do_update_vv_pos(int start, int nrend, double dt,
     if (bExtended)
     {
         g        = 0.5*dt*veta;
-        mr1      = exp(g);
+        mr1      = std::exp(g);
         mr2      = gmx::series_sinhx(g);
     }
     else
@@ -383,7 +574,7 @@ static void do_update_visc(int start, int nrend, double dt,
                 gt   = cTC[n];
             }
             lg   = tcstat[gt].lambda;
-            cosz = cos(fac*x[n][ZZ]);
+            cosz = std::cos(fac*x[n][ZZ]);
 
             copy_rvec(v[n], vrel);
 
@@ -424,7 +615,7 @@ static void do_update_visc(int start, int nrend, double dt,
                 gt   = cTC[n];
             }
             lg   = tcstat[gt].lambda;
-            cosz = cos(fac*x[n][ZZ]);
+            cosz = std::cos(fac*x[n][ZZ]);
 
             for (d = 0; d < DIM; d++)
             {
@@ -481,7 +672,7 @@ static gmx_stochd_t *init_stochd(const t_inputrec *ir)
         {
             if (opts->tau_t[gt] > 0)
             {
-                sdc[gt].em  = exp(-ir->delta_t/opts->tau_t[gt]);
+                sdc[gt].em  = std::exp(-ir->delta_t/opts->tau_t[gt]);
             }
             else
             {
@@ -955,7 +1146,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
 
         /* Note that the times of x and v differ by half a step */
         /* MRS -- would have to be changed for VV */
-        cosz         = cos(fac*x[n][ZZ]);
+        cosz         = std::cos(fac*x[n][ZZ]);
         /* Calculate the amplitude of the new velocity profile */
         mvcos       += 2*cosz*md->massT[n]*v[n][XX];
 
@@ -1569,7 +1760,7 @@ void update_box(FILE             *fplog,
                        ln V_new = ln V_old + 3*dt*veta => V_new = V_old*exp(3*dt*veta) =>
                        Side length scales as exp(veta*dt) */
 
-                    msmul(state->box, exp(state->veta*dt), state->box);
+                    msmul(state->box, std::exp(state->veta*dt), state->box);
 
                     /* Relate veta to boxv.  veta = d(eta)/dT = (1/DIM)*1/V dV/dT.
                        o               If we assume isotropic scaling, and box length scaling
