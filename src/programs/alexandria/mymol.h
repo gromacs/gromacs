@@ -141,7 +141,8 @@ class MyMol
          *
          * \param[in] bUseVsites
          */
-        void MakeSpecialInteractions(bool  bUseVsites);
+        void MakeSpecialInteractions(const Poldata &pd, 
+				     bool  bUseVsites);
 
         /*! \brief
          * Add shell particles

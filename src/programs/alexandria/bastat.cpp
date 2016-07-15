@@ -407,23 +407,23 @@ static void round_numbers(real *av, real *sig)
 void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
                real Dm, real beta, real kt, 
 	       real klin, real kp, real kub)
-{
-
-    static const std::string angle_unit  = "degree";
-    static const std::string length_unit = "pm";
-    
+{   
     int         N;
     real        av, sig;
     char        pbuf[256];
-    double      bondorder;
+    std::vector<std::string> atoms;
 
-    pd.eraseBonded();
+    auto        morse             = pd.findForces(eitBONDS);
+    auto        angle             = pd.findForces(eitANGLES);
+    auto        linear_angle      = pd.findForces(eitLINEAR_ANGLES);
+    auto        proper_dihedral   = pd.findForces(eitPROPER_DIHEDRALS);
+    auto        improper_dihedral = pd.findForces(eitIMPROPER_DIHEDRALS);
 
-    GtBonds     morse(interaction_function[F_MORSE].name, length_unit);
-    GtAngles    hangle(interaction_function[F_UREY_BRADLEY].name, angle_unit);
-    GtAngles    langle(interaction_function[F_LINEAR_ANGLES].name, angle_unit);
-    GtDihedrals pdh(interaction_function[F_PDIHS].name, angle_unit);
-    GtDihedrals imdh(interaction_function[F_IDIHS].name, angle_unit);
+    morse->eraseListedForce();
+    angle->eraseListedForce();
+    linear_angle->eraseListedForce();
+    proper_dihedral->eraseListedForce();
+    improper_dihedral->eraseListedForce();
 
     for (auto &i : b->bond)
     {
@@ -431,19 +431,13 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
         sprintf(pbuf, "%g  %g", Dm, beta);
-        bondorder = i.order;
         round_numbers(&av, &sig); // Rounding the numbers to 1/10 pm and 1/10 degree
-
-        morse.addBond(i.a1, i.a2, av, sig, N, bondorder, pbuf);
+	atoms = {i.a1, i.a2};
+        morse->addForce(atoms, pbuf, av, sig, N);
 
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 i.a1.c_str(),i.a2.c_str(), av, sig, N,
                 (sig > 1.5) ? " WARNING" : "");
-    }
-    
-    if (morse.getNgtBond() != 0)
-    {
-      pd.addGtBonds(morse);
     }
 
     for (auto &i : b->angle)
@@ -451,14 +445,13 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        round_numbers(&av, &sig);      // Rounding the numbers to 1/10 pm and 1/10 degree
-
+        round_numbers(&av, &sig);      
+	atoms = {i.a1, i.a2, i.a3};
         if ((av > 175) || (av < 5))
         {
 	    sprintf(pbuf, "%g",  klin);
-	    langle.addAngle(i.a1, i.a2, i.a3, av, sig, N, pbuf);
-            
-
+	    linear_angle->addForce(atoms, pbuf, av, sig, N);
+          
 	    fprintf(fp, "linear_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
 		    i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
 		    (sig > 3) ? " WARNING" : "");
@@ -466,22 +459,12 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         else
         {
 	    sprintf(pbuf, "%g  %g", kt, kub);
-            hangle.addAngle(i.a1, i.a2, i.a3, av, sig, N, pbuf);
+            angle->addForce(atoms, pbuf, av, sig, N);
 
 	    fprintf(fp, "harmonic_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
 		    i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
 		    (sig > 3) ? " WARNING" : "");
         }	
-    }
-
-    if (langle.getNgtAngle() != 0 )
-    {
-      pd.addGtAngles(langle);
-    }
-
-    if (hangle.getNgtAngle() != 0 )
-    {
-      pd.addGtAngles(hangle);
     }
     
     
@@ -490,17 +473,13 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        sprintf(pbuf, "%g  1", kp);   // Rounding the numbers to 1/10 pm and 1/10 degree
+        sprintf(pbuf, "%g  1", kp);   
         round_numbers(&av, &sig);
+	atoms = {i.a1, i.a2, i.a3, i.a4};
+        proper_dihedral->addForce(atoms, pbuf, av, sig, N);
 
-        pdh.addDihedral(i.a1, i.a2, i.a3, i.a3, av, sig, N, pbuf);
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
-    }
-
-    if (pdh.getNgtDihedral() != 0)
-    {
-      pd.addGtDihedrals(pdh);
     }
 
     for (auto &i : b->imp)
@@ -508,17 +487,13 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        sprintf(pbuf, "%g  1", kp);  // Rounding the numbers to 1/10 pm and 1/10 degree
+        sprintf(pbuf, "%g  1", kp);  
         round_numbers(&av, &sig);
+        atoms = {i.a1, i.a2, i.a3, i.a4};
+        improper_dihedral->addForce(atoms, pbuf, av, sig, N);
 
-        imdh.addDihedral(i.a1,i.a2, i.a3, i.a4, av, sig, N, pbuf);
         fprintf(fp, "improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                 i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
-    }
-
-    if (imdh.getNgtDihedral() != 0)
-    {
-      pd.addGtDihedrals(imdh);
     }
 }
 
@@ -682,120 +657,125 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
 
-	    for (auto gtbs = pd.getBondsBegin();
-		 gtbs != pd.getBondsEnd(); gtbs++)
+	    for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
 	    {
-
-	      unsigned int funcType = gtbs->getBondFtype();
-
-	      for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr); 
-		   j += interaction_function[funcType].nratoms+1)
-	      {
-		int         ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
-		int         aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-		rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-		std::string cai, caj;
-		if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
-		    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
+	        if (eitBONDS == fs->iType())
 		{
-		  for (alexandria::BondIterator bi = mmi.molProp()->BeginBond(); (bi < mmi.molProp()->EndBond()); bi++)
-		  {
-		    int xi, xj, xb;
-		    bi->get(&xi, &xj, &xb);
-		    xi--;
-		    xj--;
-		    if (!bBondOrder)
-		    {
-		      xb = 1;
-		    }
-		    if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
-		    {
-		      add_bond(fp, mmi.molProp()->getMolname().c_str(), bonds, 
-			       cai.c_str(), caj.c_str(), 1000*norm(dx),
-			       bspacing, xb);
-		      break;
-		    }
-		  }
-		}
-		else
-		{
-		  fprintf(stderr, "No bond_atom type for either %s or %s\n",
-			  ATP(ai), ATP(aj));
-		}
-	      }
-	    }
+		    unsigned int funcType = fs->fType();
 
-	    for (auto gtas = pd.getAnglesBegin();
-		 gtas != pd.getAnglesEnd(); gtas++)
-	    {
-
-	      unsigned int funcType = gtas->getAngleFtype();
-
-	      for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr); 
-		   j += interaction_function[funcType].nratoms+1)
-		{
-		  int ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
-		  int aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-		  int ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
-		  rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-		  rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
-		  double      ang = RAD2DEG*gmx_angle(dx, dx2);
-		  std::string cai, caj, cak;
-		  if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
-		      pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
-		      pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak))
+		    for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr); 
+			 j += interaction_function[funcType].nratoms+1)
 		    {
-		      add_angle(fp, mmi.molProp()->getMolname().c_str(), bonds, 
-				cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
-		      if (NULL != debug)
+		        int         ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
+			int         aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
+			rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
+			std::string cai, caj;
+			if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
+			    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
 			{
-			  fprintf(debug, "Molname: %s  btype1: %s  btype2: %s  btype3: %s  angle: %0.2f\n", 
-				  mmi.molProp()->getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), ang);
+			    for (alexandria::BondIterator bi = mmi.molProp()->BeginBond(); 
+				 (bi < mmi.molProp()->EndBond()); bi++)
+			    {
+			        int xi, xj, xb;
+				bi->get(&xi, &xj, &xb);
+				xi--;
+				xj--;
+				if (!bBondOrder)
+				{
+				    xb = 1;
+				}
+				if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
+				{
+				    add_bond(fp, mmi.molProp()->getMolname().c_str(), bonds, 
+					     cai.c_str(), caj.c_str(), 1000*norm(dx),
+					     bspacing, xb);
+				    break;
+				}
+			    }
+			}
+			else
+			{
+			    fprintf(stderr, "No bond_atom type for either %s or %s\n",
+				    ATP(ai), ATP(aj));
 			}
 		    }
-		  else
+		}
+		else if (eitANGLES == fs->iType() || 
+			 eitLINEAR_ANGLES == fs->iType())
+		{
+		    unsigned int funcType = fs->fType();
+
+		    for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr); 
+			 j+= interaction_function[funcType].nratoms+1)
 		    {
-		      fprintf(stderr, "No bond_atom type for either %s, %s or %s in molecule %s\n",
-			      ATP(ai), ATP(aj), ATP(ak), mmi.molProp()->getMolname().c_str());
+		        int ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
+			int aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
+			int ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
+			rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
+			rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
+			double      ang = RAD2DEG*gmx_angle(dx, dx2);
+			std::string cai, caj, cak;
+			if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
+			    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
+			    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak))
+			{
+			    add_angle(fp, mmi.molProp()->getMolname().c_str(), bonds, 
+				      cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
+			    if (NULL != debug)
+			    {
+			        fprintf(debug, "Molname: %s  btype1: %s  btype2: %s  btype3: %s  angle: %0.2f\n", 
+					mmi.molProp()->getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), ang);
+			    }
+			}
+			else
+			{
+			    fprintf(stderr, "No bond_atom type for either %s, %s or %s in molecule %s\n",
+				    ATP(ai), ATP(aj), ATP(ak), mmi.molProp()->getMolname().c_str());
+			}
 		    }
 		}
+		else if (eitPROPER_DIHEDRALS   == fs->iType()|| 
+			 eitIMPROPER_DIHEDRALS == fs->iType())
+		{
+		    unsigned int funcType = fs->fType();
+		
+		    for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr); 
+			 j += interaction_function[funcType].nratoms+1)
+		    {
+		        int    ai  = mmi.ltop_->idef.il[funcType].iatoms[j+1];
+			int    aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
+			int    ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
+			int    al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
+			double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
+						       mmi.x_[ak], mmi.x_[al],
+						       &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
+						       &sign, &t1, &t2, &t3);
+			std::string cai, caj, cak, cal;
+			if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
+			    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
+			    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak) &&
+			    pd.atypeToBtype(*mmi.topology_->atoms.atomtype[al], cal))
+			{
+                            add_dih(fp, mmi.molProp()->getMolname().c_str(), bonds, 
+				    cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(),
+				    ang, dspacing, funcType);
+			}
+			else
+			{
+			    fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
+				    ATP(ai), ATP(aj), ATP(ak), ATP(al));
+			}
+		    }
+		}
+		else
+	        {
+		    fprintf(stderr, "Alexandria does not support the interaction type of %s\n",
+			    iType2string(fs->iType()));
+	        }
 	    }
+
             clear_mat(box);
             set_pbc(&pbc, epbcNONE, box);
-
-            for(auto gtds = pd.getDihedralsBegin();
-		gtds != pd.getDihedralsEnd(); gtds++)
-            {
-	        unsigned int funcType = gtds->getDihedralFtype();
-		
-                for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr); 
-		     j += interaction_function[funcType].nratoms+1)
-                {
-                    int    ai  = mmi.ltop_->idef.il[funcType].iatoms[j+1];
-                    int    aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-                    int    ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
-                    int    al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
-                    double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
-                                                   mmi.x_[ak], mmi.x_[al],
-                                                   &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
-                                                   &sign, &t1, &t2, &t3);
-                    std::string cai, caj, cak, cal;
-                    if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
-                        pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
-                        pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak) &&
-                        pd.atypeToBtype(*mmi.topology_->atoms.atomtype[al], cal))
-                    {
-                        add_dih(fp, mmi.molProp()->getMolname().c_str(), bonds, 
-                                cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(),
-                                ang, dspacing, funcType);
-                    }
-                    else
-                    {
-                        fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
-                                ATP(ai), ATP(aj), ATP(ak), ATP(al));
-                    }
-                }
-            }
         }
     }
     sort_bonds(bonds);

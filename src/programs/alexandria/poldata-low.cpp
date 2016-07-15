@@ -62,10 +62,42 @@
 
 #include "gmx_simple_comm.h"
 #include "stringutil.h"
-
+#include "plistwrapper.h"
 
 namespace alexandria
 {
+
+static const char * eit_names[eitNR] = {
+  "BONDS", "ANGLES", "PROPER_DIHEDRALS"
+  "IMPROPER_DIHEDRALS", "LINEAR_ANGLES",
+  "LJ14", "POLARIZATION", "CONSTR", 
+  "VSITE2"
+};
+
+const char *iType2string(InteractionType iType)
+
+{
+  if (iType < eitNR)
+    {
+      return eit_names[iType];
+    }
+  return nullptr;
+}
+
+InteractionType string2iType(const char *string)
+{
+    int i;
+
+    for (i = 0; (i < eitNR); i++)
+    {
+        if (gmx_strcasecmp(string, eit_names[i]) == 0)
+        {
+	  return static_cast<InteractionType>(i);
+        }
+    }
+    return eitNR;
+
+}
 
 Ptype::Ptype(const std::string &ptype,
              const std::string &miller,
@@ -97,419 +129,127 @@ Ffatype::Ffatype(const std::string &desc,
       refEnthalpy_(refEnthalpy)
 {}
 
-GtBond::GtBond(const std::string btype1,
-               const std::string btype2,
-               const std::string params,
-               double            length,
-               double            sigma,
-               double            bondorder,
-               int               ntrain)
+ListedForce::ListedForce(const std::vector<std::string> atoms,
+			 std::string                    params, 
+			 double                         refValue,
+			 double                         sigma, 
+			 size_t                         ntrain)
     :
-      atom1_(btype1),
-      atom2_(btype2),
+      atoms_(atoms),
       params_(params),
-      length_(length),
-      sigma_(sigma),
-      bondorder_(bondorder),
-      ntrain_(ntrain)
-{}
-
-GtBonds::GtBonds(const std::string function,
-                 const std::string unit)
-    :
-      gtBondFunction_(function),
-      gtLengthUnit_(unit)
-{
-    unsigned int Functype;
-
-    for (Functype = 0; (Functype < F_NRE); Functype++)
-    {
-        if (strcasecmp(interaction_function[Functype].name, gtBondFunction_.c_str()) == 0)
-        {
-            break;
-        }
-    }
-    if (Functype == F_NRE)
-    {
-        gmx_fatal(FARGS, "Bond function '%s' does not exist in gromacs", gtBondFunction_.c_str());
-    }
-    gtBondFtype_ = Functype;
-}
-
-GtBondIterator GtBonds::findBond(const std::string &btype1,
-                                 const std::string &btype2,
-                                 double             bondorder)
-{
-    GtBondIterator bb = getBondBegin(), be = getBondEnd();
-    return std::find_if(bb, be, [btype1, btype2, bondorder](const GtBond &gtb)
-                        { return ((((btype1.compare(gtb.getAtom1()) == 0)   &&
-                                    (btype2.compare(gtb.getAtom2()) == 0))  ||
-                                   ((btype1.compare(gtb.getAtom2()) == 0)   &&
-                                    (btype2.compare(gtb.getAtom1()) == 0))) &&
-                                  (0 == bondorder || bondorder == gtb.getBondorder())); });
-}
-
-GtBondConstIterator GtBonds::findBond(const std::string &btype1,
-                                      const std::string &btype2,
-                                      double             bondorder) const
-{
-    GtBondConstIterator bb = getBondBegin(), be = getBondEnd();
-    return std::find_if(bb, be, [btype1, btype2, bondorder](const GtBond &gtb)
-                        { return ((((btype1.compare(gtb.getAtom1()) == 0)   &&
-                                    (btype2.compare(gtb.getAtom2()) == 0))  ||
-                                   ((btype1.compare(gtb.getAtom2()) == 0)   &&
-                                    (btype2.compare(gtb.getAtom1()) == 0))) &&
-                                  (0 == bondorder || bondorder == gtb.getBondorder())); });
-}
-
-bool GtBonds::setBondParams(const std::string &btype1,
-                            const std::string &btype2,
-                            double             length,
-                            double             sigma,
-                            int                ntrain,
-                            double             bondorder,
-                            const std::string &params)
-{
-    auto gtb = findBond(btype1, btype2, bondorder);
-
-    if (getBondEnd() != gtb)
-    {
-        gtb->setLength(length);
-        gtb->setSigma(sigma);
-        gtb->setNtrain(ntrain);
-        gtb->setParams(params);
-
-        return true;
-    }
-    return false;
-}
-
-void GtBonds::addBond(const std::string &btype1,
-                      const std::string &btype2,
-                      double             length,
-                      double             sigma,
-                      int                ntrain,
-                      double             bondorder,
-                      const std::string &params)
-{
-
-    if (setBondParams(btype1, btype2, length, sigma,
-                      ntrain, bondorder, params))
-    {
-        return;
-    }
-
-    GtBond gtb(btype1, btype2, params, length,
-               sigma, bondorder, ntrain);
-
-    gtBond_.push_back(gtb);
-
-}
-
-bool GtBonds::searchBond(const std::string &btype1,
-                         const std::string &btype2,
-                         double            *length,
-                         double            *sigma,
-                         int               *ntrain,
-                         double            *bondorder,
-                         std::string       &params) const
-{
-    int minBondOrder = 1, maxBondOrder = 6;
-
-    if (*bondorder > 0)
-    {
-        minBondOrder = maxBondOrder = *bondorder;
-    }
-    for (int i = minBondOrder; (i <= maxBondOrder); i++)
-    {
-        auto gtb = findBond(btype1, btype2, i);
-        if (getBondEnd() != gtb)
-        {
-            *length    = gtb->getLength();
-            *sigma     = gtb->getSigma();
-            *ntrain    = gtb->getNtrain();
-            *bondorder = gtb->getBondorder();
-            params.assign(gtb->getParams());
-
-            return true;
-        }
-    }
-    return false;
-}
-
-GtAngle::GtAngle(const std::string &btype1,
-                 const std::string &btype2,
-                 const std::string &btype3,
-                 const std::string &params,
-                 double             angle,
-                 double             sigma,
-                 int                ntrain)
-    :
-      atom1_(btype1),
-      atom2_(btype2),
-      atom3_(btype3),
-      params_(params),
-      angle_(angle),
+      refValue_(refValue),
       sigma_(sigma),
       ntrain_(ntrain)
+
 {}
 
-GtAngles::GtAngles(const std::string function,
-                   const std::string unit)
+
+ListedForces::ListedForces(const std::string  iType,
+			   const std::string  &function,
+			   const std::string  &unit)
     :
-      gtAngleFunction_(function),
-      gtAngleUnit_(unit)
+      iType_(string2iType(iType.c_str())),
+      function_(function),
+      unit_(unit)
 {
-    unsigned int funcType;
+  unsigned int funcType;
 
     for (funcType = 0; (funcType < F_NRE); funcType++)
     {
-        if (strcasecmp(interaction_function[funcType].name, gtAngleFunction_.c_str()) == 0)
+        if (strcasecmp(interaction_function[funcType].name, function_.c_str()) == 0)
         {
             break;
         }
     }
     if (funcType == F_NRE)
     {
-        gmx_fatal(FARGS, "Angle function '%s' does not exist in gromacs", gtAngleFunction_.c_str());
+        gmx_fatal(FARGS, "Force function '%s' does not exist in gromacs", function_.c_str());
     }
-    gtAngleFtype_ = funcType;
+    
+    fType_ = funcType;
 }
 
-GtAngleIterator GtAngles::findAngle(const std::string &btype1,
-                                    const std::string &btype2,
-                                    const std::string &btype3)
+ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atoms)
 {
-    GtAngleIterator ab = getAngleBegin(), ae = getAngleEnd();
-    return std::find_if(ab, ae, [btype1, btype2, btype3](const GtAngle &gta)
-                        { return ((((btype1.compare(gta.getAtom1()) == 0)   &&
-                                    (btype3.compare(gta.getAtom3()) == 0))  ||
-                                   ((btype1.compare(gta.getAtom3()) == 0)   &&
-                                    (btype3.compare(gta.getAtom1()) == 0))) &&
-                                  (btype2.compare(gta.getAtom2()) == 0)); });
+
+    ListedForceIterator fb = forceBegin(), fe = forceEnd();
+    return std::find_if(fb, fe, [atoms](const ListedForce &force)
+			{	
+			  std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+			  return (atoms == force.atoms() || atoms_re == force.atoms());
+			});
 }
 
-GtAngleConstIterator GtAngles::findAngle(const std::string &btype1,
-                                         const std::string &btype2,
-                                         const std::string &btype3) const
+ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms) const
 {
-    GtAngleConstIterator ab = getAngleBegin(), ae = getAngleEnd();
-    return std::find_if(ab, ae, [btype1, btype2, btype3](const GtAngle &gta)
-                        { return ((((btype1.compare(gta.getAtom1()) == 0)   &&
-                                    (btype3.compare(gta.getAtom3()) == 0))  ||
-                                   ((btype1.compare(gta.getAtom3()) == 0)   &&
-                                    (btype3.compare(gta.getAtom1()) == 0))) &&
-                                  (btype2.compare(gta.getAtom2()) == 0)); });
+
+    ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
+    return std::find_if(fb, fe, [atoms](const ListedForce &force)
+			{
+			  std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+			  return (atoms == force.atoms() || atoms_re == force.atoms());
+			});
 }
 
-bool GtAngles::setAngleParams(const std::string &btype1,
-                              const std::string &btype2,
-                              const std::string &btype3,
-                              double             angle,
-                              double             sigma,
-                              int                ntrain,
-                              const std::string &params)
+bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
+				  const std::string              &params,
+				  double                         refValue, 
+				  double                         sigma,
+				  size_t                         ntrain)
 {
-    auto gta = findAngle(btype1, btype2, btype3);
-
-    if (getAngleEnd() != gta)
+    auto force = findForce(atoms);
+  
+    if (forceEnd() != force)
     {
-        gta->setAngle(angle);
-        gta->setSigma(sigma);
-        gta->setNtrain(ntrain);
-        gta->setParams(params);
+       force->setRefValue(refValue);
+       force->setSigma(sigma);
+       force->setNtrain(ntrain);
+       force->setParams(params);
 
-        return true;
+       return true;
     }
+
     return false;
 }
 
-void GtAngles::addAngle(const std::string &btype1,
-                        const std::string &btype2,
-                        const std::string &btype3,
-                        double             angle,
-                        double             sigma,
-                        int                ntrain,
-                        const std::string &params)
+void ListedForces::addForce(const std::vector<std::string> &atoms,
+			    const std::string              &params,
+			    double                         refValue, 
+			    double                         sigma,
+			    size_t                         ntrain)
 {
-
-    if (setAngleParams(btype1, btype2, btype3, angle,
-                       sigma, ntrain, params))
+    if (setForceParams(atoms, params, refValue, 
+		       sigma, ntrain))
     {
         return;
     }
 
-    GtAngle gta(btype1, btype2, btype3, params,
-                angle, sigma, ntrain);
+    ListedForce force(atoms, params, refValue, 
+		      sigma, ntrain);
 
-    gtAngle_.push_back(gta);
-
+    force_.push_back(force);
 }
 
-bool GtAngles::searchAngle(const std::string &btype1,
-                           const std::string &btype2,
-                           const std::string &btype3,
-                           double            *angle,
-                           double            *sigma,
-                           int               *ntrain,
-                           std::string       &params) const
+bool ListedForces::searchForce(std::vector<std::string> &atoms,
+			       std::string              &params,
+			       double                   *refValue, 
+			       double                   *sigma,
+			       size_t                   *ntrain) const
 {
-    auto gta = findAngle(btype1, btype2, btype3);
-
-    if (getAngleEnd() != gta)
+    auto force = findForce(atoms);
+    
+    if (forceEnd() != force)
     {
-        *angle  = gta->getAngle();
-        *sigma  = gta->getSigma();
-        *ntrain = gta->getNtrain();
-        params.assign(gta->getParams());
+        *refValue = force->refValue();
+	*sigma    = force->sigma();
+	*ntrain   = force->ntrain();
+	params    = force->params();   
 
-        return true;
+	return true;
     }
+
     return false;
 }
-
-GtDihedral::GtDihedral(const std::string &atom1,
-                       const std::string &atom2,
-                       const std::string &atom3,
-                       const std::string &atom4,
-                       const std::string &params,
-                       double             dihedral,
-                       double             sigma,
-                       int                ntrain)
-    :
-      atom1_(atom1),
-      atom2_(atom2),
-      atom3_(atom3),
-      atom4_(atom4),
-      params_(params),
-      dihedral_(dihedral),
-      sigma_(sigma),
-      ntrain_(ntrain)
-{}
-
-GtDihedrals::GtDihedrals(const std::string function,
-                         const std::string unit)
-    :
-      gtDihedralFunction_(function),
-      gtDihedralUnit_(unit)
-{
-    unsigned int funcType;
-
-    for (funcType = 0; (funcType < F_NRE); funcType++)
-    {
-        if (strcasecmp(interaction_function[funcType].name, gtDihedralFunction_.c_str()) == 0)
-        {
-            break;
-        }
-    }
-    if (funcType == F_NRE)
-    {
-        gmx_fatal(FARGS, "Angle function '%s' does not exist in gromacs", gtDihedralFunction_.c_str());
-    }
-    gtDihedralFtype_ = funcType;
-}
-
-GtDihedralIterator GtDihedrals::findDihedral(const std::string &btype1,
-                                             const std::string &btype2,
-                                             const std::string &btype3,
-                                             const std::string &btype4)
-{
-    GtDihedralIterator db = getDihedralBegin(), de = getDihedralEnd();
-    return std::find_if(db, de, [btype1, btype2, btype3, btype4](const GtDihedral &gtd)
-                        { return ((btype1.compare(gtd.getAtom1())  &&
-                                   btype2.compare(gtd.getAtom2())  &&
-                                   btype3.compare(gtd.getAtom3())  &&
-                                   btype4.compare(gtd.getAtom4())) ||
-                                  (btype1.compare(gtd.getAtom4())  &&
-                                   btype2.compare(gtd.getAtom3())  &&
-                                   btype3.compare(gtd.getAtom2())  &&
-                                   btype4.compare(gtd.getAtom1()))); });
-}
-
-GtDihedralConstIterator GtDihedrals::findDihedral(const std::string &btype1,
-                                                  const std::string &btype2,
-                                                  const std::string &btype3,
-                                                  const std::string &btype4) const
-{
-    GtDihedralConstIterator db = getDihedralBegin(), de = getDihedralEnd();
-    return std::find_if(db, de, [btype1, btype2, btype3, btype4](const GtDihedral &gtd)
-                        { return ((btype1.compare(gtd.getAtom1())  &&
-                                   btype2.compare(gtd.getAtom2())  &&
-                                   btype3.compare(gtd.getAtom3())  &&
-                                   btype4.compare(gtd.getAtom4())) ||
-                                  (btype1.compare(gtd.getAtom4())  &&
-                                   btype2.compare(gtd.getAtom3())  &&
-                                   btype3.compare(gtd.getAtom2())  &&
-                                   btype4.compare(gtd.getAtom1()))); });
-}
-
-bool GtDihedrals::setDihedralParams(const std::string &btype1,
-                                    const std::string &btype2,
-                                    const std::string &btype3,
-                                    const std::string &btype4,
-                                    double             dihedral,
-                                    double             sigma,
-                                    int                ntrain,
-                                    const std::string &params)
-{
-    auto gtd = findDihedral(btype1, btype2, btype3, btype4);
-    if (getDihedralEnd() != gtd)
-    {
-        gtd->setDihedral(dihedral);
-        gtd->setSigma(sigma);
-        gtd->setNtrain(ntrain);
-        gtd->setParams(params);
-
-        return true;
-    }
-    return false;
-}
-
-void GtDihedrals::addDihedral(const std::string &btype1,
-                              const std::string &btype2,
-                              const std::string &btype3,
-                              const std::string &btype4,
-                              double             dihedral,
-                              double             sigma,
-                              int                ntrain,
-                              const std::string &params)
-{
-
-    if (setDihedralParams(btype1, btype2, btype3, btype4,
-                          dihedral, sigma, ntrain, params))
-    {
-        return;
-    }
-
-    GtDihedral gtd(btype1, btype2, btype3, btype4,
-                   params, dihedral, sigma, ntrain);
-
-    gtDihedral_.push_back(gtd);
-
-}
-
-bool GtDihedrals::searchDihedral(const std::string &btype1,
-                                 const std::string &btype2,
-                                 const std::string &btype3,
-                                 const std::string &btype4,
-                                 double            *dihedral,
-                                 double            *sigma,
-                                 int               *ntrain,
-                                 std::string       &params) const
-{
-    auto gtd = findDihedral(btype1, btype2, btype3, btype4);
-    if (getDihedralEnd() != gtd)
-    {
-        *dihedral = gtd->getDihedral();
-        *sigma    = gtd->getSigma();
-        *ntrain   = gtd->getNtrain();
-        params    = gtd->getParams();
-
-        return true;
-    }
-    return false;
-}
-
 
 Bosque::Bosque(const std::string &bosque, double polarizability)
     :
@@ -571,12 +311,12 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
 }
 
 Eemprops::Eemprops(ChargeDistributionModel eqdModel,
-                   const std::string      &name,
-                   const std::string      &rowstr,
-                   const std::string      &zetastr,
-                   const std::string      &qstr,
-                   double                  J0,
-                   double                  chi0)
+                   const std::string        &name,
+                   const std::string        &rowstr,
+                   const std::string        &zetastr,
+                   const std::string        &qstr,
+                   double                   J0,
+                   double                   chi0)
     :
       eqdModel_(eqdModel),
       name_(name),

@@ -276,11 +276,12 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
     }
     for (auto &mymol : mm)
     {
-        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr); i += interaction_function[ftype_].nratoms+1)
+        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr); 
+	     i += interaction_function[ftype_].nratoms+1)
         {
+	    std::vector<std::string> atoms;
             std::string params;
             bool        found     = false;
-            double      bondorder = 0;
             int         ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
             int         aj        = mymol.ltop_->idef.il[ftype_].iatoms[i+2];
             if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ai], aai) &&
@@ -288,57 +289,73 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
             {
                 int  index = 0;
                 char buf[STRLEN];
-                switch (bt_)
+		auto iType = static_cast<InteractionType>(bt_);
+                switch (iType)
                 {
-                    case InteractionType_BONDS:
+                    case eitBONDS:
                     {
-                        GtBondConstIterator gtb;
-                        if (pd.findBond(aai, aaj, 0, &gtb, &index))
+		        atoms   = {aai, aaj};
+		        auto fs = pd.findForces(iType);
+                        auto f  = fs->findForce(atoms);
+			
+                        if (fs->forceEnd() != f)
                         {
-                            sprintf(buf, "%s %s",
-                                    gtb->getAtom1().c_str(),
-                                    gtb->getAtom2().c_str());
-                            params    = gtb->getParams();
-                            bondorder = gtb->getBondorder();
+			    sprintf(buf, "%s %s", aai.c_str(), aaj.c_str());
+                            params    = f->params();
+			    index     = f - fs->forceEnd();
                             found     = true;
                         }
                     }
                     break;
-                    case InteractionType_ANGLES:
+                    case eitANGLES:
+		    case eitLINEAR_ANGLES:
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak))
                         {
-                            GtAngleConstIterator gta;
-                            if (pd.findAngle(aai, aaj, aak, &gta, &index))
+			    atoms   = {aai, aaj, aak};
+                            auto fs = pd.findForces(iType);
+			    auto f  = fs->findForce(atoms);
+
+                            if (fs->forceEnd() != f)
                             {
-                                sprintf(buf, "%s %s %s", gta->getAtom1().c_str(),
-                                        gta->getAtom2().c_str(), gta->getAtom3().c_str());
-                                params = gta->getParams();
+			        sprintf(buf, "%s %s %s", aai.c_str(), 
+					aaj.c_str(), aak.c_str());
+                                params = f->params();
+				index  = f - fs->forceEnd();
                                 found  = true;
                             }
                         }
                     }
                     break;
-                    case InteractionType_PDIHS:
-                    case InteractionType_IDIHS:
+                    case eitPROPER_DIHEDRALS:
+                    case eitIMPROPER_DIHEDRALS:
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         int al  = mymol.ltop_->idef.il[ftype_].iatoms[i+4];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak) &&
                             pd.atypeToBtype( *mymol.topology_->atoms.atomtype[al], aal))
                         {
-                            GtDihedralConstIterator gtd;
-                            if (pd.findDihedral(aai, aaj, aak, aal, &gtd, &index))
+			    atoms   = {aai, aaj, aak, aal};
+                            auto fs = pd.findForces(iType);
+			    auto f  = fs->findForce(atoms);
+
+                            if (fs->forceEnd() != f)
                             {
-                                sprintf(buf, "%s %s %s %s",
-                                        gtd->getAtom1().c_str(), gtd->getAtom2().c_str(),
-                                        gtd->getAtom3().c_str(), gtd->getAtom4().c_str());
-                                params = gtd->getParams();
+			        sprintf(buf, "%s %s %s %s", aai.c_str(), 
+					aaj.c_str(), aak.c_str(), aal.c_str());
+                                params = f->params();
+				index  = f - fs->forceEnd();
                                 found  = true;
                             }
                         }
                     }
+                    break;
+		    case eitPOLARIZATION:
+                    case eitLJ14:
+                    case eitVSITE2:
+                    case eitCONSTR:
+	            case eitNR:
                     break;
                 }
                 if (found)
@@ -352,7 +369,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                     }
                     else
                     {
-                        BondNames bn(1, buf, params, index, bondorder);
+                        BondNames bn(1, buf, params, index, 0);
                         addForceConstant(bn);
                     }
                 }
@@ -484,46 +501,20 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
         }
         bool bSupport = true;
 
-        for (int bt = 0; bSupport && (bt <= InteractionType_VSITE2); bt++)
+        for (int bt = 0; bSupport && (bt <= eitNR); bt++)
         {
             int  ft;
             if (bOpt[bt])
             {
-                switch (bt)
-                {
-                    case InteractionType_BONDS:
-                    {
-                        ft = F_MORSE;
-                        break;
-                    }
-                    case InteractionType_ANGLES:
-                    {
-                        ft = F_UREY_BRADLEY;
-                        break;
-                    }
-                    case InteractionType_LINEAR_ANGLES:
-                    {
-                        ft = F_LINEAR_ANGLES;
-                        break;
-                    }
-                    case InteractionType_PDIHS:
-                    {
-                        ft = F_PIDIHS;
-                        break;
-                    }
-                    case InteractionType_IDIHS:
-                    {
-                        ft = F_IDIHS;
-                        break;
-                    }
-                    default:
-                        gmx_fatal(FARGS, "Boe");
-                }
+	        auto iType = static_cast<InteractionType>(bt);
+                ft = pd_.findForces(iType)->fType();
                 bSupport = (mymol->ltop_ != nullptr);
-                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
+                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); 
+		     i += interaction_function[ft].nratoms+1)
                 {
                     int         ai, aj, ak, al;
                     std::string aai, aaj, aak, aal;
+		    std::vector<std::string> atoms;
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
@@ -532,22 +523,26 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                     {
                         bSupport = false;
                     }
-                    switch (bt)
+                    switch (iType)
                     {
-                        case InteractionType_BONDS:
+                        case eitBONDS:
                         {
-                            GtBondConstIterator gtb;
-                            if (!pd_.findBond(aai, aaj, 0, &gtb))
+			    atoms = {aai, aaj};
+                            auto fs = pd_.findForces(iType);
+			    auto f  = fs->findForce(atoms);
+                            if (fs->forceEnd() == f)
                             {
                                 bSupport = false;
                                 if (debug)
                                 {
-                                    fprintf(debug, "Cannot find bond %s-%s\n", aai.c_str(), aaj.c_str());
+                                    fprintf(debug, "Cannot find bond %s-%s\n", 
+					    aai.c_str(), aaj.c_str());
                                 }
                             }
                             break;
                         }
-                        case InteractionType_ANGLES:
+                        case eitANGLES:
+		        case eitLINEAR_ANGLES:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             if (!pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
@@ -556,8 +551,10 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             else
                             {
-                                GtAngleConstIterator gta;
-                                if (!pd_.findAngle(aai, aaj, aak, &gta))
+			        atoms   = {aai, aaj, aak};
+				auto fs = pd_.findForces(iType);
+				auto f  = fs->findForce(atoms);
+                                if (fs->forceEnd() == f)
                                 {
                                     bSupport = false;
                                     if (debug)
@@ -569,8 +566,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                         }
                         break;
-                        case InteractionType_PDIHS:
-                        case InteractionType_IDIHS:
+                        case eitPROPER_DIHEDRALS:
+                        case eitIMPROPER_DIHEDRALS:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
@@ -581,8 +578,10 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             else
                             {
-                                GtDihedralConstIterator gtd;
-                                if (!pd_.findDihedral(aai, aaj, aak, aal, &gtd))
+                                atoms   = {aai, aaj, aak};
+				auto fs = pd_.findForces(iType);
+				auto f  = fs->findForce(atoms);
+                                if (fs->forceEnd() == f)
                                 {
                                     bSupport = false;
                                     if (debug)
@@ -593,6 +592,12 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                 }
                             }
                             break;
+			   case eitPOLARIZATION:
+			   case eitLJ14:
+			   case eitVSITE2:
+			   case eitCONSTR:
+			   case eitNR:
+			     break;
                         }
                     }
                 }
@@ -639,6 +644,7 @@ void OptPrep::opt2List()
 void OptPrep::list2Opt()
 {
     int n = 0;
+    std::vector<std::string> atoms;
     for (auto &fc : ForceConstants_)
     {
         for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
@@ -654,35 +660,42 @@ void OptPrep::list2Opt()
             b->setParamString(buf);
             const std::vector<std::string> bondtypes =
                 gmx::splitString(b->name());
-
-            switch (fc.interactionType())
+	    
+	    auto iType = fc.interactionType();
+            switch (iType)
             {
-                case InteractionType_BONDS:
+                case eitBONDS:
                 {
-                    GtBondIterator fb;
-                    if (pd_.findBond(bondtypes[0], bondtypes[1], 0, &fb))
+		    atoms    = {bondtypes[0], bondtypes[1]};
+		    auto  fs = pd_.findForces(iType);
+		    auto  f  = fs->findForce(atoms);
+                    if (fs->forceEnd() != f)
                     {
-                        fb->setParams(buf);
+                        f->setParams(buf);
                     }
                 }
                 break;
-                case InteractionType_ANGLES:
+                case eitANGLES:
+		case eitLINEAR_ANGLES:
                 {
-                    GtAngleIterator fa;
-                    if (pd_.findAngle(bondtypes[0], bondtypes[1], bondtypes[2], &fa))
+		    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2]};
+		    auto  fs = pd_.findForces(iType);
+		    auto  f  = fs->findForce(atoms);
+                    if (fs->forceEnd() != f)
                     {
-                        fa->setParams(buf);
+                        f->setParams(buf);
                     }
                 }
                 break;
-                case InteractionType_PDIHS:
-                case InteractionType_IDIHS:
+                case eitPROPER_DIHEDRALS:
+                case eitIMPROPER_DIHEDRALS:
                 {
-                    GtDihedralIterator fd;
-                    if (pd_.findDihedral(bondtypes[0], bondtypes[1],
-                                         bondtypes[2], bondtypes[3], &fd))
+		    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2], bondtypes[3]};
+		    auto  fs = pd_.findForces(iType);
+		    auto  f  = fs->findForce(atoms);
+                    if (fs->forceEnd() != f)
                     {
-                        fd->setParams(buf);
+                        f->setParams(buf);
                     }
                 }
                 break;
@@ -701,7 +714,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     std::vector<int>            ntest;
     std::vector<std::string>    ctest;
 
-    int nD   = ForceConstants_[InteractionType_BONDS].nbad();
+    int nD   = ForceConstants_[eitBONDS].nbad();
     int nMol = _mymol.size();
     if ((0 == nD) || (0 == nMol))
     {
@@ -716,49 +729,54 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    for (GtBondsConstIterator gtbs = pd_.getBondsBegin();
-         gtbs != pd_.getBondsEnd(); gtbs++)
+    for (auto fs = pd_.forcesBegin(); fs != pd_.forcesEnd(); fs++)
     {
-        int ftb = gtbs->getBondFtype();
-        int j   = 0;
-        for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
-             (mymol < _mymol.end()); mymol++, j++)
-        {
-            for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
-            {
-                int         ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-                int         aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-                std::string aai, aaj;
-                if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                    pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
-                {
-                    GtBondConstIterator gtb = gtbs->findBond(aai, aaj, 0);
-                    if (gtb != gtbs->getBondEnd())
-                    {
-                        int gt  = gtb - gtbs->getBondBegin();
-                        int gti = ForceConstants_[ebtsBONDS].reverseIndex(gt);
+        if (eitBONDS == fs->iType())
+	{
+	    int ftb = fs->fType();
+	    int j   = 0;
+	    for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
+		 (mymol < _mymol.end()); mymol++, j++)
+	    {
+	        for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); 
+		     i += interaction_function[ftb].nratoms+1)
+		{
+		    int         ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+		    int         aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+		    std::string aai, aaj;
+		    std::vector<std::string> atoms;
+		    if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+			pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+		    {
+		        atoms  = {aai, aaj};
+		        auto f = fs->findForce(atoms);
+			if (fs->forceEnd() != f)
+			{
+			    int gt  = f - fs->forceEnd();
+			    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
 
-                        a[gti][j]++;
-                        ntest[gti]++;
-                        if (ctest[gti].empty())
-                        {
-                            char buf[STRLEN];
-                            snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-                            ctest[gti].assign(buf);
-                        }
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-                              aai.c_str(), aaj.c_str(),
-                              *mymol->topology_->atoms.atomtype[ai],
-                              *mymol->topology_->atoms.atomtype[aj],
-                              mymol->molProp()->getIupac().c_str());
-                }
-            }
-            rhs.push_back(-mymol->Emol);
-        }
+			    a[gti][j]++;
+			    ntest[gti]++;
+			    if (ctest[gti].empty())
+			    {
+			        char buf[STRLEN];
+				snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
+				ctest[gti].assign(buf);
+			    }
+			}
+		    }
+		    else
+		    {
+		        gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
+				  aai.c_str(), aaj.c_str(),
+				  *mymol->topology_->atoms.atomtype[ai],
+				  *mymol->topology_->atoms.atomtype[aj],
+				  mymol->molProp()->getIupac().c_str());
+		    }
+		}
+		rhs.push_back(-mymol->Emol);
+	    }
+	}
     }
     char buf[STRLEN];
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
@@ -801,20 +819,22 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     free_matrix(a2);
     int i = 0;
     //j = 0;
-    for (auto b = ForceConstants_[ebtsBONDS].beginBN();
-         b < ForceConstants_[ebtsBONDS].endBN(); ++b)
+    for (auto b = ForceConstants_[eitBONDS].beginBN();
+         b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
         if (ntest[i] > 0)
         {
-            std::vector<std::string> aa  = gmx::splitString(b->name());
-            GtBondIterator           gtb;
-            GMX_RELEASE_ASSERT(!pd_.findBond(aa[0], aa[1], 0, &gtb), "Cannot find my bonds");
+            std::vector<std::string> aa    = gmx::splitString(b->name());
+	    std::vector<std::string> atoms = {aa[0], aa[1]};
+            auto fs = pd_.findForces(eitBONDS);
+	    auto f  = fs->findForce(atoms);
+            GMX_RELEASE_ASSERT(fs->forceEnd() == f, "Cannot find my bonds");
             std::vector<std::string> pp = gmx::splitString(b->paramString());
             char                     buf[256];
             // Here we use the "knowledge" that the energy is the second parameter in
             // the Morse description. Not good!
             snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
-            gtb->setParams(buf);
+            f->setParams(buf);
             b->setParamString(buf);
         }
         i++;
@@ -825,28 +845,11 @@ void OptPrep::InitOpt(FILE *fplog, bool bOpt[ebtsNR],
                       real  factor)
 {
     std::vector<unsigned int> fts;
-    unsigned int a, b, c;
 
-    for (auto gtbs = pd_.getBondsBegin();
-         gtbs != pd_.getBondsEnd(); gtbs++)
+    for (auto fs = pd_.forcesBegin(); 
+	 fs != pd_.forcesEnd(); fs++)
     {
-        a = gtbs->getBondFtype();
-        fts.push_back(gtbs->getBondFtype());
-    }
-
-
-    for (auto gtas = pd_.getAnglesBegin();
-         gtas != pd_.getAnglesEnd(); gtas++)
-    {
-        b = gtas->getAngleFtype();
-        fts.push_back(gtas->getAngleFtype());
-    }
-
-    for (auto gtds = pd_.getDihedralsBegin();
-         gtds != pd_.getDihedralsEnd(); gtds++)
-    {
-        c = gtds->getDihedralFtype();
-        fts.push_back(gtds->getDihedralFtype());
+        fts.push_back(fs->fType());
     }
 
     for (size_t bt = 0; (bt < fts.size()); bt++)

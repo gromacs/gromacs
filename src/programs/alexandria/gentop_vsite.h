@@ -148,7 +148,8 @@ class GentopVsites
          * Generate linear angles and merges linear vsites in case
          * there are more than 1 in a row.
          */
-        void generateSpecial(bool                       bUseVsites,
+        void generateSpecial(const Poldata             &pd,
+			     bool                       bUseVsites,
                              t_atoms                   *atoms,
                              rvec                     **x,
                              std::vector<PlistWrapper> &plist,

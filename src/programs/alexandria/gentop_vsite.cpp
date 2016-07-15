@@ -254,7 +254,7 @@ static void calc_vsite2parm(t_atoms *atoms,
     pp.a[0] = gvl->a[0];
     pp.a[1] = natoms;
     pp.c[0] = rVV;
-    add_param_to_plist(plist, F_CONSTR, InteractionType_CONSTR, pp);
+    add_param_to_plist(plist, F_CONSTR, eitCONSTR, pp);
 
     /* Add vsites */
     for (i = 1; (i < gvl->nline); i++)
@@ -264,7 +264,7 @@ static void calc_vsite2parm(t_atoms *atoms,
         pp.a[1] = gvl->a[0];
         pp.a[2] = natoms;
         pp.c[0] = ac[i];
-        add_param_to_plist(plist, F_VSITE2, InteractionType_VSITE2, pp);
+        add_param_to_plist(plist, F_VSITE2, eitVSITE2, pp);
     }
 }
 
@@ -363,7 +363,7 @@ static void set_linear_angle_params(int                        a[],
 {
     t_param pp;
     real    b0 = 0, b1 = 0;
-    auto    pw = SearchPlist(plist, InteractionType_BONDS);
+    auto    pw = SearchPlist(plist, eitBONDS);
 
     if (plist.end() == pw)
     {
@@ -392,7 +392,7 @@ static void set_linear_angle_params(int                        a[],
         }
         pp.c[0] = (b1/(b0+b1));
         pp.c[1] = ktheta;
-        add_param_to_plist(plist, F_LINEAR_ANGLES, InteractionType_LINEAR_ANGLES, pp);
+        add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
     }
     else if (NULL != debug)
     {
@@ -401,7 +401,8 @@ static void set_linear_angle_params(int                        a[],
     }
 }
 
-void GentopVsites::generateSpecial(bool                       bUseVsites,
+void GentopVsites::generateSpecial(const Poldata              &pd,
+				   bool                       bUseVsites,
                                    t_atoms                   *atoms, 
                                    rvec                     **x,
                                    std::vector<PlistWrapper>  &plist,
@@ -416,11 +417,11 @@ void GentopVsites::generateSpecial(bool                       bUseVsites,
 
     mergeLinear(bUseVsites);
 
-    ftb     = F_MORSE;
-    fta     = F_UREY_BRADLEY;
-    ftl     = F_LINEAR_ANGLES;
-    ftp     = F_PIDIHS;
-    fti     = F_IDIHS;
+    ftb     = pd.findForces(eitBONDS)->fType();
+    fta     = pd.findForces(eitANGLES)->fType();
+    ftl     = pd.findForces(eitLINEAR_ANGLES)->fType();
+    ftp     = pd.findForces(eitPROPER_DIHEDRALS)->fType();
+    fti     = pd.findForces(eitIMPROPER_DIHEDRALS)->fType();
 
     nlin_at = 0;
     for (unsigned int i = 0; (i < linear_.size()); i++)
@@ -546,7 +547,7 @@ void GentopVsites::generateSpecial(bool                       bUseVsites,
             {
                 pp.a[j] = planar_[i].a[j];
             }
-            add_param_to_plist(plist, F_IDIHS, InteractionType_IDIHS, pp);
+            add_param_to_plist(plist, F_IDIHS, eitIMPROPER_DIHEDRALS, pp);
         }
     }
 }

@@ -114,12 +114,6 @@ class Poldata
 
         size_t getNptypes() const { return ptype_.size(); }
 
-        size_t getNgtBonds() const { return gtBonds_.size(); }
-
-        size_t getNgtAngles() const { return gtAngles_.size(); }
-
-        size_t getNgtDihedrals() const { return gtDihedrals_.size(); }
-
         double getFudgeQQ() const { return fudgeQQ_; }
 
         void setFudgeLJ(double fudgeLJ) { fudgeLJ_ = fudgeLJ; }
@@ -288,221 +282,57 @@ class Poldata
                           double            *polarizability) const;
 
         /* Return true on success or false otherwise */
-        void addBond(GtBonds           *gtbs,
-                     const std::string &atom1,
-                     const std::string &atom2,
-                     double             length,
-                     double             sigma,
-                     int                ntrain,
-                     double             bondorder,
-                     const std::string &params);
 
-        void addGtBonds(GtBonds gtbs) {gtBonds_.push_back(gtbs); }
 
-        GtBonds &getLastGtBonds() { return gtBonds_.back(); }
+        void addForces(ListedForces forces) {forces_.push_back(forces); }
 
-        const GtBonds &getLastGtBonds() const { return gtBonds_.back(); }
+	size_t nforces() const { return forces_.size(); }
 
-        GtBondsIterator getBondsBegin() { return gtBonds_.begin(); }
+        ListedForces &lastForces() { return forces_.back(); }
 
-        GtBondsIterator getBondsEnd() { return gtBonds_.end(); }
+        const ListedForces &lastForces() const { return forces_.back(); }
 
-        GtBondsConstIterator getBondsBegin() const { return gtBonds_.begin(); }
+        ListedForcesIterator forcesBegin() { return forces_.begin(); }
 
-        GtBondsConstIterator getBondsEnd() const { return gtBonds_.end(); }
+        ListedForcesIterator forcesEnd() { return forces_.end(); }
 
-        GtBondsIterator findGtBonds(const std::string bondFunction)
+        ListedForcesConstIterator forcesBegin() const { return forces_.begin(); }
+
+        ListedForcesConstIterator forcesEnd() const { return forces_.end(); }
+
+        ListedForcesIterator findForces(InteractionType iType)
         {
-            return std::find_if(gtBonds_.begin(), gtBonds_.end(),
-                                [bondFunction](GtBonds const &gtbs)
-                                { return (bondFunction.compare(gtbs.getBondFunction()) == 0); });
+            return std::find_if(forces_.begin(), forces_.end(),
+                                [iType](ListedForces const &forces)
+                                { return (iType == forces.iType()); });
         }
 
-        GtBondsConstIterator findGtBonds(const std::string bondFunction) const
+        ListedForcesConstIterator findForces(InteractionType iType) const
         {
-            return std::find_if(gtBonds_.begin(), gtBonds_.end(),
-                                [bondFunction](GtBonds const &gtbs)
-                                { return (bondFunction.compare(gtbs.getBondFunction()) == 0); });
+            return std::find_if(forces_.begin(), forces_.end(),
+                                [iType](ListedForces const &forces)
+                                {return (iType == forces.iType()); });
         }
 
-        bool findBond(const std::string &btype1,
-                      const std::string &btype2,
-                      double             bondorder,
-                      GtBondIterator    *gtb);
+        bool findForce(std::vector<std::string> &atoms,
+		       ListedForceIterator      *force);
 
-        bool findBond(const std::string &btype1,
-                      const std::string &btype2,
-                      double             bondorder,
-                      GtBondIterator    *gtb,
-                      int               *index);
 
-        bool findBond(const std::string   &btype1,
-                      const std::string   &btype2,
-                      double               bondorder,
-                      GtBondConstIterator *gtb) const;
+        bool findForce(const std::vector<std::string> &atoms,
+		       ListedForceConstIterator       *force) const;
 
-        bool findBond(const std::string   &btype1,
-                      const std::string   &btype2,
-                      double               bondorder,
-                      GtBondConstIterator *gtb,
-                      int                 *index) const;
 
-        bool searchBond(const std::string &btype1,
-                        const std::string &btype2,
-                        double            *length,
-                        double            *sigma,
-                        int               *ntrain,
-                        double            *bondorder,
-                        std::string       &params) const;
+        bool searchForce(std::vector<std::string> &atoms,
+			 std::string              &params,
+			 double                   *refValue,
+			 double                   *sigma,
+			 size_t                   *ntrain) const;
 
         const std::string &getVdwFunction() const { return gtVdwFunction_; }
 
         const std::string &getPolarUnit() const { return alexandriaPolarUnit_; }
 
         const std::string &getPolarRef() const { return alexandriaPolarRef_; }
-
-        void addAngle(GtAngles          *gtas,
-                      const std::string &btype1,
-                      const std::string &btype2,
-                      const std::string &btype3,
-                      double             angle,
-                      double             sigma,
-                      int                ntrain,
-                      const std::string &params);
-
-        void addGtAngles(GtAngles gtas) {gtAngles_.push_back(gtas); }
-
-        GtAngles &getLastGtAngles() { return gtAngles_.back(); }
-
-        GtAnglesIterator getAnglesBegin() { return gtAngles_.begin(); }
-
-        GtAnglesIterator getAnglesEnd() { return gtAngles_.end(); }
-
-        GtAnglesConstIterator getAnglesBegin() const { return gtAngles_.begin(); }
-
-        GtAnglesConstIterator getAnglesEnd() const { return gtAngles_.end(); }
-
-        GtAnglesIterator findGtAngles(const std::string angleFunction)
-        {
-            return std::find_if(gtAngles_.begin(), gtAngles_.end(),
-                                [angleFunction](GtAngles const &gtas)
-                                { return (angleFunction.compare(gtas.getAngleFunction()) == 0); });
-        }
-
-        GtAnglesConstIterator findGtAngles(const std::string angleFunction) const
-        {
-            return std::find_if(gtAngles_.begin(), gtAngles_.end(),
-                                [angleFunction](GtAngles const &gtas)
-                                { return (angleFunction.compare(gtas.getAngleFunction()) == 0); });
-        }
-
-        bool findAngle(const std::string &btype1,
-                       const std::string &btype2,
-                       const std::string &btype3,
-                       GtAngleIterator   *gta);
-
-        bool findAngle(const std::string &btype1,
-                       const std::string &btype2,
-                       const std::string &btype3,
-                       GtAngleIterator   *gta,
-                       int               *index);
-
-        bool findAngle(const std::string    &btype1,
-                       const std::string    &btype2,
-                       const std::string    &btype3,
-                       GtAngleConstIterator *gta) const;
-
-        bool findAngle(const std::string    &btype1,
-                       const std::string    &btype2,
-                       const std::string    &btype3,
-                       GtAngleConstIterator *gta,
-                       int                  *index) const;
-
-        bool searchAngle(const std::string &btype1,
-                         const std::string &btype2,
-                         const std::string &btype3,
-                         double            *angle,
-                         double            *sigma,
-                         int               *ntrain,
-                         std::string       &params) const;
-
-        void addDihedral(GtDihedrals       *gtds,
-                         const std::string &btype1,
-                         const std::string &btype2,
-                         const std::string &btype3,
-                         const std::string &btype4,
-                         double             dihedral,
-                         double             sigma,
-                         int                ntrain,
-                         const std::string &params);
-
-        void addGtDihedrals(GtDihedrals gtds) {gtDihedrals_.push_back(gtds); }
-
-        GtDihedrals &getLastGtDihedrals() { return gtDihedrals_.back(); }
-
-        GtDihedralsIterator getDihedralsBegin() { return gtDihedrals_.begin(); }
-
-        GtDihedralsIterator getDihedralsEnd() { return gtDihedrals_.end(); }
-
-        GtDihedralsConstIterator getDihedralsBegin() const { return gtDihedrals_.begin(); }
-
-        GtDihedralsConstIterator getDihedralsEnd() const { return gtDihedrals_.end(); }
-
-        GtDihedralsIterator findGtDihedrals(const std::string dihedralFunction)
-        {
-            return std::find_if(gtDihedrals_.begin(), gtDihedrals_.end(),
-                                [dihedralFunction](GtDihedrals const &gtds)
-                                { return (dihedralFunction.compare(gtds.getDihedralFunction()) == 0); });
-        }
-
-        GtDihedralsConstIterator findGtDihedrals(const std::string dihedralFunction) const
-        {
-            return std::find_if(gtDihedrals_.begin(), gtDihedrals_.end(),
-                                [dihedralFunction](GtDihedrals const &gtds)
-                                { return (dihedralFunction.compare(gtds.getDihedralFunction()) == 0); });
-        }
-
-        bool findDihedral(const std::string  &btype1,
-                          const std::string  &btype2,
-                          const std::string  &btype3,
-                          const std::string  &btype4,
-                          GtDihedralIterator *gtd);
-
-        bool findDihedral(const std::string  &btype1,
-                          const std::string  &btype2,
-                          const std::string  &btype3,
-                          const std::string  &btype4,
-                          GtDihedralIterator *gtd,
-                          int                *index);
-
-        bool findDihedral(const std::string       &btype1,
-                          const std::string       &btype2,
-                          const std::string       &btype3,
-                          const std::string       &btype4,
-                          GtDihedralConstIterator *gtd) const;
-
-        bool findDihedral(const std::string       &btype1,
-                          const std::string       &btype2,
-                          const std::string       &btype3,
-                          const std::string       &btype4,
-                          GtDihedralConstIterator *gtd,
-                          int                     *index) const;
-
-        bool searchDihedral(const std::string &btype1,
-                            const std::string &btype2,
-                            const std::string &btype3,
-                            const std::string &btype4,
-                            double            *dihedral,
-                            double            *sigma,
-                            int               *ntrain,
-                            std::string       &params) const;
-
-        void eraseBonded()
-        {
-            gtBonds_.clear();
-            gtAngles_.clear();
-            gtDihedrals_.clear();
-        }
 
         void addSymcharges(const std::string &central,
                            const std::string &attached,
@@ -593,9 +423,7 @@ class Poldata
         double                                fudgeQQ_, fudgeLJ_;
         std::string                           gtVdwFunction_, gtCombinationRule_;
         int                                   gtVdwFtype_, gtCombRule_;
-        std::vector<GtBonds>                  gtBonds_;
-        std::vector<GtAngles>                 gtAngles_;
-        std::vector<GtDihedrals>              gtDihedrals_;
+        std::vector<ListedForces>             forces_;
         std::vector<Miller>                   miller_;
         std::string                           millerTauUnit_, millerAhpUnit_;
         std::string                           millerRef_;

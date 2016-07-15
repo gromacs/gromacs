@@ -335,9 +335,9 @@ bool Poldata::getMillerPol(const std::string &miller,
 }
 
 /*
- *-+-+-+-+-+-+-+-+
- * BOND STUFF
- *-+-+-+-+-+-+-+-+
+ *-+-+-+-+-+-+-+-+-+-+
+ * LISTED FORCES 
+ *-+-+-+-+-+-+-+-+-+-+
  */
 
 bool Poldata::atypeToBtype(const std::string &atype,
@@ -375,90 +375,46 @@ void Poldata::addBtype(const std::string &btype)
     }
 }
 
-bool Poldata::findBond(const std::string &btype1,
-                       const std::string &btype2,
-                       double             bondorder,
-                       GtBondIterator    *gtb)
+bool Poldata::findForce(std::vector<std::string> &atoms,
+			ListedForceIterator      *force)
 {
-    for (auto &gtbs : gtBonds_)
+    for (auto &f : forces_)
     {
-        auto tmp = gtbs.findBond(btype1, btype2, bondorder);
-        if (gtbs.getBondEnd() != tmp)
+        auto tmp = f.findForce(atoms);
+        if (f.forceEnd() != tmp)
         {
-            *gtb = tmp;
+            *force = tmp;
             return true;
         }
     }
     return false;
 }
 
-bool Poldata::findBond(const std::string &btype1,
-                       const std::string &btype2,
-                       double             bondorder,
-                       GtBondIterator    *gtb,
-                       int               *index = nullptr)
+bool Poldata::findForce(const std::vector<std::string> &atoms,
+			ListedForceConstIterator      *force) const
 {
-    for (auto &gtbs : gtBonds_)
+    for (const auto &f : forces_)
     {
-        auto tmp = gtbs.findBond(btype1, btype2, bondorder);
-        if (gtbs.getBondEnd() != tmp)
+        auto tmp = f.findForce(atoms);
+        if (f.forceEnd() != tmp)
         {
-            *gtb   = tmp;
-            *index = tmp - gtbs.getBondEnd();
+            *force = tmp;
             return true;
         }
     }
     return false;
 }
 
-bool Poldata::findBond(const std::string    &btype1,
-                       const std::string    &btype2,
-                       double                bondorder,
-                       GtBondConstIterator  *gtb) const
+bool Poldata::searchForce(std::vector<std::string> &atoms,
+			  std::string              &params,
+			  double                   *refValue,
+			  double                   *sigma,
+			  size_t                   *ntrain) const
 {
-    for (const auto &gtbs : gtBonds_)
+    for (auto &f : forces_)
     {
-        auto tmp = gtbs.findBond(btype1, btype2, bondorder);
-        if (gtbs.getBondEnd() != tmp)
-        {
-            *gtb = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findBond(const std::string    &btype1,
-                       const std::string    &btype2,
-                       double                bondorder,
-                       GtBondConstIterator  *gtb,
-                       int                  *index = nullptr) const
-{
-    for (const auto &gtbs : gtBonds_)
-    {
-        auto tmp = gtbs.findBond(btype1, btype2, bondorder);
-        if (gtbs.getBondEnd() != tmp)
-        {
-            *gtb   = tmp;
-            *index = tmp - gtbs.getBondEnd();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::searchBond(const std::string &btype1,
-                         const std::string &btype2,
-                         double            *length,
-                         double            *sigma,
-                         int               *ntrain,
-                         double            *bondorder,
-                         std::string       &params) const
-{
-    for (auto &gtbs : gtBonds_)
-    {
-        if (gtbs.searchBond(btype1, btype2, length,
-                            sigma, ntrain, bondorder, params))
+        if (f.searchForce(atoms, params, refValue,
+			  sigma, ntrain))
         {
             return true;
         }
@@ -466,206 +422,6 @@ bool Poldata::searchBond(const std::string &btype1,
     return false;
 }
 
-/*
- *-+-+-+-+-+-+-+-+
- * ANGLE STUFF
- *-+-+-+-+-+-+-+-+
- */
-
-bool Poldata::findAngle(const std::string &btype1,
-                        const std::string &btype2,
-                        const std::string &btype3,
-                        GtAngleIterator   *gta)
-{
-    for (auto &gtas : gtAngles_)
-    {
-        auto tmp = gtas.findAngle(btype1, btype2, btype3);
-        if (gtas.getAngleEnd() != tmp)
-        {
-            *gta = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findAngle(const std::string &btype1,
-                        const std::string &btype2,
-                        const std::string &btype3,
-                        GtAngleIterator   *gta,
-                        int               *index)
-{
-    for (auto &gtas : gtAngles_)
-    {
-        auto tmp = gtas.findAngle(btype1, btype2, btype3);
-        if (gtas.getAngleEnd() != tmp)
-        {
-            *gta   = tmp;
-            *index = tmp - gtas.getAngleEnd();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findAngle(const std::string    &btype1,
-                        const std::string    &btype2,
-                        const std::string    &btype3,
-                        GtAngleConstIterator *gta) const
-{
-    for (const auto &gtas : gtAngles_)
-    {
-        auto tmp = gtas.findAngle(btype1, btype2, btype3);
-        if (gtas.getAngleEnd() != tmp)
-        {
-            *gta = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findAngle(const std::string    &btype1,
-                        const std::string    &btype2,
-                        const std::string    &btype3,
-                        GtAngleConstIterator *gta,
-                        int                  *index) const
-{
-    for (const auto &gtas : gtAngles_)
-    {
-        auto tmp = gtas.findAngle(btype1, btype2, btype3);
-        if (gtas.getAngleEnd() != tmp)
-        {
-            *gta   = tmp;
-            *index = tmp - gtas.getAngleEnd();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::searchAngle(const std::string &btype1,
-                          const std::string &btype2,
-                          const std::string &btype3,
-                          double            *angle,
-                          double            *sigma,
-                          int               *ntrain,
-                          std::string       &params) const
-{
-    for (const auto &gtas : gtAngles_)
-    {
-        if (gtas.searchAngle(btype1, btype2, btype3,
-                             angle, sigma, ntrain, params))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-/*
- *-+-+-+-+-+-+-+-+
- * DIHEDRAL STUFF
- *-+-+-+-+-+-+-+-+
- */
-
-bool Poldata::findDihedral(const std::string  &btype1,
-                           const std::string  &btype2,
-                           const std::string  &btype3,
-                           const std::string  &btype4,
-                           GtDihedralIterator *gtd
-                           )
-{
-    for (auto &gtds : gtDihedrals_)
-    {
-        auto tmp = gtds.findDihedral(btype1, btype2, btype3, btype4);
-        if (gtds.getDihedralEnd() != tmp)
-        {
-            *gtd   = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findDihedral(const std::string  &btype1,
-                           const std::string  &btype2,
-                           const std::string  &btype3,
-                           const std::string  &btype4,
-                           GtDihedralIterator *gtd,
-                           int                *index)
-{
-    for (auto &gtds : gtDihedrals_)
-    {
-        auto tmp = gtds.findDihedral(btype1, btype2, btype3, btype4);
-        if (gtds.getDihedralEnd() != tmp)
-        {
-            *gtd   = tmp;
-            *index = tmp - gtds.getDihedralEnd();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findDihedral(const std::string       &btype1,
-                           const std::string       &btype2,
-                           const std::string       &btype3,
-                           const std::string       &btype4,
-                           GtDihedralConstIterator *gtd
-                           ) const
-{
-    for (const auto &gtds : gtDihedrals_)
-    {
-        auto tmp = gtds.findDihedral(btype1, btype2, btype3, btype4);
-        if (gtds.getDihedralEnd() != tmp)
-        {
-            *gtd = tmp;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::findDihedral(const std::string       &btype1,
-                           const std::string       &btype2,
-                           const std::string       &btype3,
-                           const std::string       &btype4,
-                           GtDihedralConstIterator *gtd,
-                           int                     *index) const
-{
-    for (const auto &gtds : gtDihedrals_)
-    {
-        auto tmp = gtds.findDihedral(btype1, btype2, btype3, btype4);
-        if (gtds.getDihedralEnd() != tmp)
-        {
-            *gtd   = tmp;
-            *index = tmp - gtds.getDihedralEnd();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Poldata::searchDihedral(const std::string &btype1,
-                             const std::string &btype2,
-                             const std::string &btype3,
-                             const std::string &btype4,
-                             double            *dihedral,
-                             double            *sigma,
-                             int               *ntrain,
-                             std::string       &params) const
-{
-    for (const auto &gtds : gtDihedrals_)
-    {
-        if (gtds.searchDihedral(btype1, btype2, btype3, btype4,
-                                dihedral, sigma, ntrain, params))
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 /*
  *-+-+-+-+-+-+-+-+

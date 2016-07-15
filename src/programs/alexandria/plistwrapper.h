@@ -16,18 +16,18 @@ namespace alexandria
 //! Interaction type
 enum InteractionType 
 {
-    InteractionType_BONDS  = ebtsBONDS,
-    InteractionType_ANGLES = ebtsANGLES,
-    InteractionType_PDIHS  = ebtsPDIHS,
-    InteractionType_IDIHS  = ebtsIDIHS,
-    InteractionType_LINEAR_ANGLES,
-    InteractionType_LJ14,
-    InteractionType_Polarization,
-    InteractionType_CONSTR,
-    InteractionType_VSITE2,
+    eitBONDS  = 0,
+    eitANGLES = 1,
+    eitPROPER_DIHEDRALS = 2,
+    eitIMPROPER_DIHEDRALS = 3,
+    eitLINEAR_ANGLES = 4,
+    eitLJ14 = 5,
+    eitPOLARIZATION = 6,
+    eitCONSTR = 7,
+    eitVSITE2 = 8,
+    eitNR = 9,
 };
 
-//! Utility typedef
 using ParamIterator = typename std::vector<t_param>::iterator;
 
 //! Cleaner version of plist array
