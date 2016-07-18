@@ -48,8 +48,8 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
 
-    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR NOT "${CMAKE_C_COMPILER_VERSION}" MATCHES "4.7")
+    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR NOT "${CMAKE_C_COMPILER_VERSION}" MATCHES "4.8")
         message(WARNING "Reference values for regressiontests should use GROMACS compiled with "
-            "gcc 4.7, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
+            "gcc 4.8, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
     endif()
 endif()
