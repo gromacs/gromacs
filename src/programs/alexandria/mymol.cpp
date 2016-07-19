@@ -358,6 +358,12 @@ static void mv_plists(std::vector<PlistWrapper> &plist,
 	auto force = pd.findForces(iType);
 	p.setFtype(force->fType());
     }
+
+    /*for (auto p : plist)
+    {
+        fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
+		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
+		}*/
 }
 
 static void cp_plist(t_params                  *plist,
@@ -391,7 +397,6 @@ void MyMol::MakeAngles(bool bPairs,
     t_nextnb                            nnb;
     t_restp                             rtp;
     t_params                            plist[F_NRE];
-    std::vector<PlistWrapper>::iterator pw;
 
     init_plist(plist);
     for (auto &pw : plist_)
@@ -416,7 +421,7 @@ void MyMol::MakeAngles(bool bPairs,
             break;
         }
     }
-    /* Make Angles and Dihedrals */
+    /* Make Harmonic Angles and Proper Dihedrals */
     snew(excls_, topology_->atoms.nr);
     init_nnb(&nnb, topology_->atoms.nr, nexcl_+2);
     gen_nnb(&nnb, plist);
@@ -426,6 +431,7 @@ void MyMol::MakeAngles(bool bPairs,
     rtp.bRemoveDihedralIfWithImproper = TRUE;
     rtp.bGenerateHH14Interactions     = TRUE;
     rtp.nrexcl                        = nexcl_;
+
     gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
 
     t_blocka *EXCL;
@@ -481,6 +487,12 @@ void MyMol::MakeAngles(bool bPairs,
         cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
     }
 
+    for (auto p : plist_)
+    {
+        fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
+		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
+    }
+
     for (int i = 0; (i < F_NRE); i++)
     {
         if (plist[i].nr > 0)
@@ -490,7 +502,8 @@ void MyMol::MakeAngles(bool bPairs,
     }
 }
 
-static void generate_nbparam(int ftype, int comb, double ci[], double cj[],
+static void generate_nbparam(int ftype, int comb, 
+			     double ci[], double cj[],
                              t_iparams *ip)
 {
     double sig, eps;
@@ -1206,7 +1219,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     if (immOK == imm)
     {
-        /* Make Angles, Dihedrals and 13 interaction. This needs the bonds to be F_BONDS. */
+        /* Make Angles, Dihedrals. This needs the bonds to be F_BONDS. */
         MakeAngles(bPairs, bDih);
 
         /* Linear angles and or vsites etc. */
@@ -1214,10 +1227,23 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
         MakeSpecialInteractions(pd, bUseVsites);
 
+	for (auto p : plist_)
+        {
+	  fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
+		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
+	}
+
         getForceConstants(pd);
 
-        /* Move the plist_ to the correct function */
+	/* Move the plist_ to the correct function */
         mv_plists(plist_, pd);
+
+	for (auto p : plist_)
+        {
+	  fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
+		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
+	}
+
         //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
         //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
 

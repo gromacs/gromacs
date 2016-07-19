@@ -62,6 +62,7 @@ class MolDip
                   real fc_esp, real fc_epot, real fc_force, char *fixchi,
                   gmx_bool bOptHfac, real hfac,
                   gmx_bool bPol, gmx_bool bFitZeta);
+
         void Read(FILE *fp, const char *fn, const char *pd_fn,
                   int minimum_data,
                   gmx_bool bZero,

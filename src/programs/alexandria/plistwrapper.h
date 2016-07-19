@@ -51,6 +51,9 @@ class PlistWrapper
         //! Return the function type
         int getFtype() const { return ftype_; }
 
+	//! Return the interaction type
+	InteractionType getItype() const { return itype_; }
+
         //! Update the function type
         void setFtype(int ftype) { ftype_ = ftype; }
         

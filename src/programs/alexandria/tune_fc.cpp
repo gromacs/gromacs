@@ -247,6 +247,8 @@ class ForceConstants
         int reverseIndex(int poldataIndex)
         {
             GMX_RELEASE_ASSERT(poldataIndex >= 0 && poldataIndex < static_cast<int>(reverseIndex_.size()), "Incorrect poldataIndex");
+	    GMX_RELEASE_ASSERT(reverseIndex_[poldataIndex] != -1, "The reverseIndex is incorrect");
+
             return reverseIndex_[poldataIndex];
         }
 
@@ -302,7 +304,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                         {
 			    sprintf(buf, "%s %s", aai.c_str(), aaj.c_str());
                             params    = f->params();
-			    index     = f - fs->forceEnd();
+			    index     = f - fs->forceBegin();
                             found     = true;
                         }
                     }
@@ -322,7 +324,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
 			        sprintf(buf, "%s %s %s", aai.c_str(), 
 					aaj.c_str(), aak.c_str());
                                 params = f->params();
-				index  = f - fs->forceEnd();
+				index  = f - fs->forceBegin();
                                 found  = true;
                             }
                         }
@@ -345,7 +347,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
 			        sprintf(buf, "%s %s %s %s", aai.c_str(), 
 					aaj.c_str(), aak.c_str(), aal.c_str());
                                 params = f->params();
-				index  = f - fs->forceEnd();
+				index  = f - fs->forceBegin();
                                 found  = true;
                             }
                         }
@@ -468,7 +470,7 @@ class OptPrep : public MolDip
          * energy is the largest contribution to the molecular energy.
          */
         void getDissociationEnergy(FILE *fplog);
-        void InitOpt(FILE *fplog, bool bOpt[ebtsNR], real factor);
+        void InitOpt(FILE *fplog, bool bOpt[eitNR], real factor);
         void guessAll(int                              iter,
                       real                             stepsize,
                       bool                             bRandom,
@@ -522,6 +524,11 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                           pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
                     {
                         bSupport = false;
+			if (debug)
+			{
+			    fprintf(debug, "Cannot find bond types %s and %s in %s.\n", 
+				    aai.c_str(), aaj.c_str(), mymol->molProp()->getMolname().c_str());
+			}
                     }
                     switch (iType)
                     {
@@ -535,8 +542,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                 bSupport = false;
                                 if (debug)
                                 {
-                                    fprintf(debug, "Cannot find bond %s-%s\n", 
-					    aai.c_str(), aaj.c_str());
+                                    fprintf(debug, "Cannot find bond %s-%s in %s.\n", 
+					    aai.c_str(), aaj.c_str(), mymol->molProp()->getMolname().c_str());
                                 }
                             }
                             break;
@@ -548,6 +555,11 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             if (!pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
                             {
                                 bSupport = false;
+				if (debug)
+				{
+				    fprintf(debug, "Cannot find bond types %s, %s and %s in %s.\n",
+					    aai.c_str(), aaj.c_str(), aak.c_str(), mymol->molProp()->getMolname().c_str());
+				}
                             }
                             else
                             {
@@ -559,8 +571,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                     bSupport = false;
                                     if (debug)
                                     {
-                                        fprintf(debug, "Cannot find angle %s-%s-%s\n",
-                                                aai.c_str(), aaj.c_str(), aak.c_str());
+                                        fprintf(debug, "Cannot find angle %s-%s-%s in %s.\n",
+                                                aai.c_str(), aaj.c_str(), aak.c_str(), mymol->molProp()->getMolname().c_str());
                                     }
                                 }
                             }
@@ -575,6 +587,11 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                   pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
                             {
                                 bSupport = false;
+				if (debug)
+                                {
+				    fprintf(debug, "Cannot find bond types %s, %s, %s, and %s in %s\n",
+					    aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), mymol->molProp()->getMolname().c_str());
+				}
                             }
                             else
                             {
@@ -586,8 +603,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                     bSupport = false;
                                     if (debug)
                                     {
-                                        fprintf(debug, "Cannot find dihedral %s-%s-%s-%s\n",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                                        fprintf(debug, "Cannot find dihedral %s-%s-%s-%s in %s\n",
+                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), mymol->molProp()->getMolname().c_str());
                                     }
                                 }
                             }
@@ -752,7 +769,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
 		        auto f = fs->findForce(atoms);
 			if (fs->forceEnd() != f)
 			{
-			    int gt  = f - fs->forceEnd();
+			    int gt  = f - fs->forceBegin();
 			    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
 
 			    a[gti][j]++;
@@ -824,11 +841,10 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     {
         if (ntest[i] > 0)
         {
-            std::vector<std::string> aa    = gmx::splitString(b->name());
-	    std::vector<std::string> atoms = {aa[0], aa[1]};
+            std::vector<std::string> atoms    = gmx::splitString(b->name());
             auto fs = pd_.findForces(eitBONDS);
 	    auto f  = fs->findForce(atoms);
-            GMX_RELEASE_ASSERT(fs->forceEnd() == f, "Cannot find my bonds");
+            GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
             std::vector<std::string> pp = gmx::splitString(b->paramString());
             char                     buf[256];
             // Here we use the "knowledge" that the energy is the second parameter in
@@ -841,8 +857,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     }
 }
 
-void OptPrep::InitOpt(FILE *fplog, bool bOpt[ebtsNR],
-                      real  factor)
+void OptPrep::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
 {
     std::vector<unsigned int> fts;
 
@@ -1162,8 +1177,6 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
     if (MASTER(_cr))
     {
         chi2 = chi2_min  = GMX_REAL_MAX;
-        //int            n = 0;
-        //guessAll(n++, stepsize, bRandom, gen, dis);
         Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
         TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
                     temperature, bBound);
@@ -1201,7 +1214,6 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                 fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
-            //guessAll(n, stepsize, bRandom, gen, dis);
             TuneFc.setParam(best_);
         }
 
@@ -1221,7 +1233,6 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                     fprintf(fplog, "%5d  %10g  %10g\n",
                             static_cast<int>(k), pmean_[k], psigma_[k]);
                 }
-                //print_opt(fplog,opt);
             }
         }
         calcDeviation();
@@ -1407,7 +1418,7 @@ int alex_tune_fc(int argc, char *argv[])
     static const char    *cqgen[]      = {
         NULL, "None", "EEM", "ESP", "RESP", NULL
     };
-    static bool           bOpt[ebtsNR] = { true, false, false, false, false, false };
+    static bool           bOpt[eitNR]  = { true, false, false, false, false, false, false, false, false};
     static real           beta0        = 0, D0 = 0, beta_min = 10, D0_min = 50, temperature;
     static int            nprint       = 10;
     t_pargs               pa[]         = {
@@ -1429,13 +1440,15 @@ int alex_tune_fc(int argc, char *argv[])
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
-        { "-bonds",  FALSE, etBOOL, {&bOpt[ebtsBONDS]},
+        { "-bonds",  FALSE, etBOOL, {&bOpt[eitBONDS]},
           "Optimize bond parameters" },
-        { "-angles",  FALSE, etBOOL, {&bOpt[ebtsANGLES]},
+        { "-angles",  FALSE, etBOOL, {&bOpt[eitANGLES]},
           "Optimize angle parameters" },
-        { "-dihedrals",  FALSE, etBOOL, {&bOpt[ebtsPDIHS]},
+	{ "-langles",  FALSE, etBOOL, {&bOpt[eitLINEAR_ANGLES]},
+          "Optimize linear angle parameters" },
+        { "-dihedrals",  FALSE, etBOOL, {&bOpt[eitPROPER_DIHEDRALS]},
           "Optimize proper dihedral parameters" },
-        { "-impropers",  FALSE, etBOOL, {&bOpt[ebtsIDIHS]},
+        { "-impropers",  FALSE, etBOOL, {&bOpt[eitIMPROPER_DIHEDRALS]},
           "Optimize improper dihedral parameters" },
         { "-beta0", FALSE, etREAL, {&beta0},
           "Reset the initial beta for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
@@ -1527,18 +1540,19 @@ int alex_tune_fc(int argc, char *argv[])
     }
 
     opt.Init(cr, bQM, bGaussianBug, iChargeDistributionModel,
-             iChargeGenerationAlgorithm,
-             rDecrZeta,
+             iChargeGenerationAlgorithm, rDecrZeta,
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
-             fc_esp, fc_epot, fc_force, fixchi, bOptHfac, hfac, bPolar, bFitZeta);
+             fc_esp, fc_epot, fc_force, fixchi, 
+	     bOptHfac, hfac, bPolar, bFitZeta);
+
     opt.Read(fp ? fp : (debug ? debug : NULL),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
              lot, gms, watoms, FALSE,
-             false, bPolar, tabfn);
+             bOpt[eitPROPER_DIHEDRALS], bPolar, tabfn);
 
     opt.checkSupport(fp, bOpt);
 
@@ -1563,6 +1577,7 @@ int alex_tune_fc(int argc, char *argv[])
                opt2fn("-conv", NFILE, fnm),
                opt2fn("-epot", NFILE, fnm),
                temperature, bBound);
+
     if (MASTER(cr))
     {
         print_moldip_mols(fp, opt._mymol, TRUE, FALSE);
