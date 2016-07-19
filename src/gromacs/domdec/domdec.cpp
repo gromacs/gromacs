@@ -2079,10 +2079,10 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
 
     if (cr->npmenodes < dd->nnodes)
     {
-        gmx_domdec_comm_t *comm = dd->comm;
+        gmx_domdec_comm_t *comm    = dd->comm;
+        int                pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
         if (comm->bCartesianPP_PME)
         {
-            int  pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
 #if GMX_MPI
             ivec coords;
             MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, coords);
@@ -2101,7 +2101,6 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
         }
         else
         {
-            int pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
             if (cr->sim_nodeid+1 < cr->nnodes &&
                 dd_simnode2pmenode(dd, cr, cr->sim_nodeid+1) == pmenode)
             {
@@ -5716,8 +5715,8 @@ static void make_pp_communicator(FILE                 *fplog,
     }
 }
 
-static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
-                                      t_commrec gmx_unused *cr)
+static void receive_ddindex2simnodeid(gmx_domdec_t gmx_unused *dd,
+                                      t_commrec gmx_unused    *cr)
 {
 #if GMX_MPI
     gmx_domdec_comm_t *comm = dd->comm;
