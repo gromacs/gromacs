@@ -367,7 +367,7 @@ static void set_linear_angle_params(int                        a[],
 
     if (plist.end() == pw)
     {
-        fprintf(stderr, "Can not find the bonds in set_linear_angle_params. There are %d plist entries.\n", static_cast<int>(plist.size()));
+        fprintf(stderr, "Cannot find the bonds in set_linear_angle_params. There are %d plist entries.\n", static_cast<int>(plist.size()));
         return;
     }
     for (ParamIterator i = pw->beginParam(); (i < pw->endParam()); ++i)
@@ -396,7 +396,7 @@ static void set_linear_angle_params(int                        a[],
     }
     else if (NULL != debug)
     {
-        fprintf(debug, "Can not find bonds in linear angle %d-%d-%d, b0=%g b1=%g",
+        fprintf(debug, "Cannot find bonds in linear angle %d-%d-%d, b0=%g b1=%g",
                 a[0], a[1], a[2], b0, b1);
     }
 }

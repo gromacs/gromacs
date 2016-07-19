@@ -473,24 +473,14 @@ void MyMol::MakeAngles(bool bPairs,
 
     cp_plist(&plist[F_ANGLES], F_ANGLES, eitANGLES, plist_);
 
-    cp_plist(&plist[F_LINEAR_ANGLES], F_LINEAR_ANGLES, eitLINEAR_ANGLES, plist_);
-
     if (bDihs)
     {
         cp_plist(&plist[F_PDIHS], F_PDIHS, eitPROPER_DIHEDRALS, plist_);
     }
 
-    cp_plist(&plist[F_IDIHS], F_IDIHS, eitIMPROPER_DIHEDRALS, plist_);
-
     if (bPairs)
     {
         cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
-    }
-
-    for (auto p : plist_)
-    {
-        fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
-		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
     }
 
     for (int i = 0; (i < F_NRE); i++)
@@ -1215,45 +1205,30 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         }
     }
 
-    //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
-    //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     if (immOK == imm)
     {
-        /* Make Angles, Dihedrals. This needs the bonds to be F_BONDS. */
+        /* Make Harmonic Angles and Proper Dihedrals. This needs the bonds to be F_BONDS.*/
         MakeAngles(bPairs, bDih);
 
-        /* Linear angles and or vsites etc. */
-        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
-        //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
-        MakeSpecialInteractions(pd, bUseVsites);
+	/*for (auto p : plist_)
+	{
+	    fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
+		    interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
+		    }*/
 
-	for (auto p : plist_)
-        {
-	  fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
-		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
-	}
+        /* Make Linear Angles, Improper Dihedrals, and vsites*/
+        MakeSpecialInteractions(pd, bUseVsites);
 
         getForceConstants(pd);
 
-	/* Move the plist_ to the correct function */
+	/* Make the plist_ function types consistent with the poldata*/
         mv_plists(plist_, pd);
-
-	for (auto p : plist_)
-        {
-	  fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
-		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
-	}
-
-        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
-        //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
 
         snew(mtop_, 1);
     }
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
-        //printf("%s, %d plist_.size() = %d %s\n", __FILE__, __LINE__,
-        //     static_cast<int>(plist_.size()), molProp()->getMolname().c_str());
     }
     if (imm == immOK)
     {

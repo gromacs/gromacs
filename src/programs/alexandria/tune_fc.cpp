@@ -501,6 +501,7 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
         {
             continue;
         }
+
         bool bSupport = true;
 
         for (int bt = 0; bSupport && (bt <= eitNR); bt++)
@@ -527,7 +528,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
 			if (debug)
 			{
 			    fprintf(debug, "Cannot find bond types %s and %s in %s.\n", 
-				    aai.c_str(), aaj.c_str(), mymol->molProp()->getMolname().c_str());
+				    aai.c_str(), aaj.c_str(), 
+				    mymol->molProp()->getMolname().c_str());
 			}
                     }
                     switch (iType)
@@ -543,7 +545,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                 if (debug)
                                 {
                                     fprintf(debug, "Cannot find bond %s-%s in %s.\n", 
-					    aai.c_str(), aaj.c_str(), mymol->molProp()->getMolname().c_str());
+					    aai.c_str(), aaj.c_str(), 
+					    mymol->molProp()->getMolname().c_str());
                                 }
                             }
                             break;
@@ -558,7 +561,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
 				if (debug)
 				{
 				    fprintf(debug, "Cannot find bond types %s, %s and %s in %s.\n",
-					    aai.c_str(), aaj.c_str(), aak.c_str(), mymol->molProp()->getMolname().c_str());
+					    aai.c_str(), aaj.c_str(), aak.c_str(), 
+					    mymol->molProp()->getMolname().c_str());
 				}
                             }
                             else
@@ -571,8 +575,10 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                     bSupport = false;
                                     if (debug)
                                     {
-                                        fprintf(debug, "Cannot find angle %s-%s-%s in %s.\n",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), mymol->molProp()->getMolname().c_str());
+				        fprintf(debug, "Cannot find %s %s-%s-%s in %s.\n", 
+						eitANGLES ? "angles" : "linear_angles",
+                                                aai.c_str(), aaj.c_str(), aak.c_str(), 
+						mymol->molProp()->getMolname().c_str());
                                     }
                                 }
                             }
@@ -590,7 +596,8 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
 				if (debug)
                                 {
 				    fprintf(debug, "Cannot find bond types %s, %s, %s, and %s in %s\n",
-					    aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), mymol->molProp()->getMolname().c_str());
+					    aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), 
+					    mymol->molProp()->getMolname().c_str());
 				}
                             }
                             else
@@ -603,8 +610,10 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                     bSupport = false;
                                     if (debug)
                                     {
-                                        fprintf(debug, "Cannot find dihedral %s-%s-%s-%s in %s\n",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), mymol->molProp()->getMolname().c_str());
+				        fprintf(debug, "Cannot find %s dihedral %s-%s-%s-%s in %s\n", 
+						eitPROPER_DIHEDRALS ? "proper" : "improper",
+                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), 
+						mymol->molProp()->getMolname().c_str());
                                     }
                                 }
                             }
@@ -1014,7 +1023,7 @@ double OptPrep::calcDeviation()
 
             /* Now optimize the shell positions */
             dbcopy = debug;
-            debug  = NULL;
+            debug  = nullptr;
             mymol.computeForces(debug, _cr, mu_tot);
             debug         = dbcopy;
             mymol.Force2  = 0;
@@ -1028,10 +1037,10 @@ double OptPrep::calcDeviation()
             ener               = gmx::square(mymol.Ecalc-mymol.Emol);
             _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
 
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 morse   = mymol.enerd_->term[F_MORSE];
-                angle   = mymol.enerd_->term[F_ANGLES];
+                angle   = mymol.enerd_->term[F_UREY_BRADLEY];
                 coulSR  = mymol.enerd_->term[F_COUL_SR];
                 bham    = mymol.enerd_->term[F_BHAM];
                 lj      = mymol.enerd_->term[F_LJ];
