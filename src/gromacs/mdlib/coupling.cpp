@@ -344,10 +344,6 @@ static void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, t_comm
     {
         mtot += grpmass[i];
     }
-    if (DOMAINDECOMP(cr))
-    {
-        gmx_sum(1, &mtot, cr);
-    }
 
     if (bComputeCM)
     {
